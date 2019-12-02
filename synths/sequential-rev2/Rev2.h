@@ -46,12 +46,6 @@ namespace midikraft {
 		//virtual SynthSetup patchToSynthSetup(Synth::PatchData const &patch) override;
 		//virtual std::shared_ptr<Patch> synthSetupToPatch(SynthSetup const &sound, std::function<void(std::string warning)> logWarning) override;
 
-		static NrpnDefinition nrpn(std::string const &name);
-		static NrpnDefinition nrpn(int nrpnNumber);
-		static std::string nameOfNrpn(Rev2Message const &message);
-		static int valueOfNrpnInPatch(Rev2Message const &nrpn, PatchData const &patch);
-		static int valueOfNrpnInPatch(NrpnDefinition const &param, PatchData const &patch);
-
 		// LayerCapability
 		virtual void switchToLayer(int layerNo);
 
