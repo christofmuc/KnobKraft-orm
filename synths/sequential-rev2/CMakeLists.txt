@@ -53,7 +53,7 @@ set_source_files_properties(
 
 # Setup library
 add_library(midikraft-sequential-rev2 ${Sources})
-target_include_directories(midikraft-sequential-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
+target_include_directories(midikraft-sequential-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
 target_link_libraries(midikraft-sequential-rev2 juce-utils midikraft-base)
 
 # Pedantic about warnings
