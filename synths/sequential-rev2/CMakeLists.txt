@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(MidiKraft-DSI-Prophet-Rev2)
+project(MidiKraft-Sequential-Prophet-Rev2)
 
 # Find JUCE, and add the components we need
 IF(NOT DEFINED JUCE_LIBRARIES)
@@ -52,15 +52,15 @@ set_source_files_properties(
 )
 
 # Setup library
-add_library(midikraft-dsi-rev2 ${Sources})
-target_include_directories(midikraft-dsi-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
-target_link_libraries(midikraft-dsi-rev2 juce-utils midikraft-base)
+add_library(midikraft-sequential-rev2 ${Sources})
+target_include_directories(midikraft-sequential-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
+target_link_libraries(midikraft-sequential-rev2 juce-utils midikraft-base)
 
 # Pedantic about warnings
 if (MSVC)
     # warning level 4 and all warnings as errors
-    target_compile_options(midikraft-dsi-rev2 PRIVATE /W4 /WX)
+    target_compile_options(midikraft-sequential-rev2 PRIVATE /W4 /WX)
 else()
     # lots of warnings and all warnings as errors
-    #target_compile_options(midikraft-dsi-rev2 PRIVATE -Wall -Wextra -pedantic -Werror)
+    #target_compile_options(midikraft-sequential-rev2 PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
