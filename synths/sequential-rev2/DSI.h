@@ -4,7 +4,6 @@
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
 
-
 #pragma once
 
 #include "Synth.h"
@@ -18,8 +17,6 @@ namespace midikraft {
 
 	class DSISynth : public Synth, public EditBufferCapability, public ProgramDumpCabability, public SoundExpanderCapability, public MasterkeyboardCapability {
 	public:
-		DSISynth(uint8 midiModelID);
-
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
 
@@ -50,6 +47,8 @@ namespace midikraft {
 		virtual bool isMidiControlOn() const override;
 
 	protected:
+		DSISynth(uint8 midiModelID);
+
 		MidiBuffer createNRPN(int parameterNo, int value);
 		static PatchData unescapeSysex(const uint8 *sysExData, int sysExLen, int expectedLength);
 		static std::vector<uint8> escapeSysex(const PatchData &programEditBuffer);
