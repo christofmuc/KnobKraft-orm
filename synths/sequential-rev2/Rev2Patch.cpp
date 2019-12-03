@@ -455,6 +455,11 @@ namespace midikraft {
 		return nrpn_.sysexIndex();
 	}
 
+	int Rev2ParamDefinition::endSysexIndex() const
+	{
+		return nrpn_.sysexIndex() + nrpn_.numberOfValues() - 1;
+	}
+
 	std::string Rev2ParamDefinition::description() const
 	{
 		return nrpn_.name();
