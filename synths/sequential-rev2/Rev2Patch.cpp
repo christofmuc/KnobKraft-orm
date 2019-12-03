@@ -426,9 +426,9 @@ namespace midikraft {
 		return layerName;
 	}
 
-	Rev2ParamDefinition Rev2Patch::find(std::string const &paramID)
+	std::shared_ptr<Rev2ParamDefinition> Rev2Patch::find(std::string const &paramID)
 	{
-		return Rev2ParamDefinition(nrpn(paramID));
+		return std::make_shared<Rev2ParamDefinition>(nrpn(paramID));
 	}
 
 	std::vector<std::string> Rev2Patch::warnings()

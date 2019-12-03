@@ -66,7 +66,7 @@ namespace midikraft {
 		virtual int numberOfLayers() const override;
 		virtual std::string layerName(int layerNo) const override;
 
-		static Rev2ParamDefinition find(std::string const &paramID);
+		static std::shared_ptr<Rev2ParamDefinition> find(std::string const &paramID);
 
 		static NrpnDefinition nrpn(std::string const &name);
 		static NrpnDefinition nrpn(int nrpnNumber);
