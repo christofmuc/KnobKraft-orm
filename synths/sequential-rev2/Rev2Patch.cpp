@@ -200,7 +200,7 @@ namespace midikraft {
 	Rev2Patch::Rev2Patch() : oscAllocated_(1)
 	{
 		// Load the init patch
-		MidiMessage initPatch = MidiMessage::createSysExMessage(Rev2_InitPatch_syx, Rev2_InitPatch_syx_size);
+		MidiMessage initPatch = MidiMessage(Rev2_InitPatch_syx, Rev2_InitPatch_syx_size);
 
 		// Set data
 		Rev2 rev2;
