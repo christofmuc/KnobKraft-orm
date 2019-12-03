@@ -65,7 +65,7 @@ namespace midikraft {
 		virtual void setLocalControl(MidiController *controller, bool localControlOn) override;
 
 		// More stuff
-		virtual std::string patchToText(PatchData const &patch);
+		//virtual std::string patchToText(PatchData const &patch);
 
 		virtual PatchData filterVoiceRelevantData(PatchData const &unfilteredData) const override;
 
