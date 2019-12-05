@@ -7,6 +7,8 @@
 #pragma once
 
 #include "Patch.h"
+#include "SynthParameterDefinition.h"
+#include "Rev2Message.h"
 
 #include "NrpnDefinition.h"
 
@@ -21,6 +23,26 @@ namespace midikraft {
 
 	private:
 		int bank_; // 0 to 7 for banks U1 to U4 and F1 to F4
+	};
+
+	class Rev2ParamDefinition : public SynthParameterDefinition {
+	public:
+		Rev2ParamDefinition(NrpnDefinition const &nrpn);
+		virtual std::string name() const override;
+		virtual std::string valueAsText(int value) const override;
+		virtual int sysexIndex() const override;
+		virtual int endSysexIndex() const override;
+		virtual std::string description() const override;
+		virtual bool matchesController(int controllerNumber) const override;
+		virtual int minValue() const override;
+		virtual int maxValue() const override;
+		virtual bool isActive(Patch const *patch) const override;
+		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
+
+		virtual MidiBuffer setValueMessage(Patch const &patch, Synth *synth) const override;
+
+	private:
+		NrpnDefinition nrpn_;
 	};
 
 	class Rev2Patch : public Patch, public LayeredPatch {
@@ -46,6 +68,14 @@ namespace midikraft {
 		virtual LayerMode layerMode() const override;
 		virtual int numberOfLayers() const override;
 		virtual std::string layerName(int layerNo) const override;
+
+		static std::shared_ptr<Rev2ParamDefinition> find(std::string const &paramID);
+
+		static NrpnDefinition nrpn(std::string const &name);
+		static NrpnDefinition nrpn(int nrpnNumber);
+		static std::string nameOfNrpn(Rev2Message const &message);
+		static int valueOfNrpnInPatch(Rev2Message const &nrpn, Synth::PatchData const &patch);
+		static int valueOfNrpnInPatch(NrpnDefinition const &param, Synth::PatchData const &patch);
 
 	private:
 		Rev2PatchNumber number_;

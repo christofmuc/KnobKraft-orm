@@ -6,7 +6,7 @@
 
 #include "Rev2Message.h"
 
-#include "Rev2.h"
+#include "Rev2Patch.h"
 
 #include <boost/format.hpp>
 
@@ -54,7 +54,7 @@ namespace midikraft {
 
 	std::string Rev2Message::getName() const
 	{
-		return (boost::format("Set %s (#%d) to %d") % Rev2::nameOfNrpn(*this) % nrpnController() % nrpnValue()).str();
+		return (boost::format("Set %s (#%d) to %d") % Rev2Patch::nameOfNrpn(*this) % nrpnController() % nrpnValue()).str();
 	}
 
 }
