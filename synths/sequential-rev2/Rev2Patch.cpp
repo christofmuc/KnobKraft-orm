@@ -493,6 +493,17 @@ namespace midikraft {
 		return true;
 	}
 
+	MidiBuffer Rev2ParamDefinition::setValueMessage(Patch const &patch, Synth *synth) const
+	{
+		int value;
+		if (valueInPatch(patch, value)) {
+			return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpn_.number(), value, true);
+		}
+		else {
+			return MidiBuffer();
+		}
+	}
+
 	NrpnDefinition Rev2Patch::nrpn(std::string const &name)
 	{
 		for (auto n : nrpns) {

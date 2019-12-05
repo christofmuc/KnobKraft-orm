@@ -39,6 +39,8 @@ namespace midikraft {
 		virtual bool isActive(Patch const *patch) const override;
 		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
 
+		virtual MidiBuffer setValueMessage(Patch const &patch, Synth *synth) const override;
+
 	private:
 		NrpnDefinition nrpn_;
 	};
