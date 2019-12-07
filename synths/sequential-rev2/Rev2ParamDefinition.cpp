@@ -33,11 +33,6 @@ namespace midikraft {
 		return nrpn_.name();
 	}
 
-	bool Rev2ParamDefinition::matchesController(int controllerNumber) const
-	{
-		return nrpn_.matchesController(controllerNumber);
-	}
-
 	int Rev2ParamDefinition::minValue() const
 	{
 		return nrpn_.min();
@@ -46,13 +41,6 @@ namespace midikraft {
 	int Rev2ParamDefinition::maxValue() const
 	{
 		return nrpn_.max();
-	}
-
-	bool Rev2ParamDefinition::isActive(Patch const *patch) const
-	{
-		ignoreUnused(patch);
-		jassert(false); // Not implemented yet
-		return true;
 	}
 
 	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, int &outValue) const
@@ -75,15 +63,30 @@ namespace midikraft {
 		return true;
 	}
 
-	MidiBuffer Rev2ParamDefinition::setValueMessage(Patch const &patch, Synth *synth) const
+	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth *synth) const
 	{
-		int value;
-		if (valueInPatch(patch, value)) {
-			return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpn_.number(), value, true);
+		switch (type()) {
+		case SynthParameterDefinition::ParamType::LOOKUP:
+			// Fall through
+		case SynthParameterDefinition::ParamType::INT: {
+			int value;
+			if (valueInPatch(patch, value)) {
+				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpn_.number(), value, true);
+			}
 		}
-		else {
-			return MidiBuffer();
+		case SynthParameterDefinition::ParamType::INT_ARRAY: {
+			MidiBuffer result;
+			std::vector<int> values;
+			if (valueInPatch(patch, values)) {
+				for (auto value : values) {
+					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpn_.number(), value, true);
+					result.addEvents(buffer, 0, -1, 0);
+				}
+				return result;
+			}
 		}
+		}
+		return MidiBuffer();
 	}
 
 	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const
