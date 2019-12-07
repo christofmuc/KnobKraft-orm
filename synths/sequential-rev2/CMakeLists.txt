@@ -40,6 +40,7 @@ set(Sources
 	#Rev2BCR2000.cpp Rev2BCR2000.h
 	#Rev2ButtonStrip.cpp Rev2ButtonStrip.h
 	Rev2Message.cpp Rev2Message.h
+	Rev2ParamDefinition.cpp Rev2ParamDefinition.h
 	Rev2Patch.cpp Rev2Patch.h
 	README.md
 	LICENSE.md
