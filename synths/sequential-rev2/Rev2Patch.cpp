@@ -394,7 +394,12 @@ namespace midikraft {
 
 	std::vector<SynthParameterDefinition *> Rev2Patch::allParameterDefinitions()
 	{
-		return std::vector<SynthParameterDefinition *>();
+		//TODO this will leak memory
+		std::vector<SynthParameterDefinition *> result;
+		for (auto n : nrpns) {
+			result.push_back(new Rev2ParamDefinition(n));
+		}
+		return result;
 	}
 
 	LayeredPatch::LayerMode Rev2Patch::layerMode() const
