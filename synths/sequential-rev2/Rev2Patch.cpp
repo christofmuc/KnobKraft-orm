@@ -523,6 +523,40 @@ namespace midikraft {
 		}
 	}
 
+	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const
+	{
+		switch (type()) {
+		case SynthParameterDefinition::ParamType::INT: {
+			int value;
+			if (valueInPatch(patch, value)) {
+				return String(value).toStdString();
+			}
+			return "invalid param";
+		}
+		case SynthParameterDefinition::ParamType::INT_ARRAY: {
+			std::vector<int> value;
+			if (valueInPatch(patch, value)) {
+				std::stringstream result;
+				result << "[";
+				for (int i = 0; i < value.size(); i++) {
+					result << String(value[i]);
+					if (i != value.size() - 1) result << ", ";
+				}
+				result << "]";
+				return result.str();
+			}
+			return "invalid vector param";
+		}
+		case SynthParameterDefinition::ParamType::LOOKUP:
+			int value;
+			if (valueInPatch(patch, value)) {
+				return nrpn_.valueAsText(value);
+			}
+			return "invalid lookup param";
+		}
+		return "invalid param type";
+	}
+
 	void Rev2ParamDefinition::setInPatch(Patch &patch, int value) const
 	{
 		jassert(type() == SynthParameterDefinition::ParamType::INT);

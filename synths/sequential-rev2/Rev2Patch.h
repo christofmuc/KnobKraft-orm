@@ -46,6 +46,7 @@ namespace midikraft {
 
 		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
 		virtual bool valueInPatch(Patch const &patch, std::vector<int> &outValue) const override;
+		virtual std::string valueInPatchToText(Patch const &patch) const override;
 
 		virtual void setInPatch(Patch &patch, int value) const override;
 		virtual void setInPatch(Patch &patch, std::vector<int> value) const override;
