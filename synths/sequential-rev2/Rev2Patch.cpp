@@ -493,6 +493,20 @@ namespace midikraft {
 		return true;
 	}
 
+	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, std::vector<int> &outValue) const
+	{
+		if (type() != SynthParameterDefinition::ParamType::INT_ARRAY) {
+			return false;
+		}
+
+		outValue.clear();
+		for (int i = sysexIndex(); i <= endSysexIndex(); i++) {
+			outValue.push_back(patch.at(i));
+		}
+
+		return true;
+	}
+
 	MidiBuffer Rev2ParamDefinition::setValueMessage(Patch const &patch, Synth *synth) const
 	{
 		int value;
@@ -502,6 +516,31 @@ namespace midikraft {
 		else {
 			return MidiBuffer();
 		}
+	}
+
+	void Rev2ParamDefinition::setInPatch(Patch &patch, int value) const
+	{
+		jassert(type() == SynthParameterDefinition::ParamType::INT);
+		patch.setAt(sysexIndex(), (uint8) value);
+	}
+
+	void Rev2ParamDefinition::setInPatch(Patch &patch, std::vector<int> value) const
+	{
+		int read = 0;
+		for (int i = sysexIndex(); i <= endSysexIndex(); i++) {
+			if (read < value.size()) {
+				patch.setAt(i, (uint8) value[read++]);
+			}
+			else {
+				// We just ignore additional bytes specified
+			}
+		}
+	}
+
+	midikraft::SynthParameterDefinition::ParamType Rev2ParamDefinition::type() const
+	{
+		if (sysexIndex() != endSysexIndex()) return SynthParameterDefinition::ParamType::INT_ARRAY;
+		return SynthParameterDefinition::ParamType::INT;
 	}
 
 	NrpnDefinition Rev2Patch::nrpn(std::string const &name)
