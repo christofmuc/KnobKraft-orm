@@ -44,7 +44,7 @@ namespace midikraft {
 		//virtual std::shared_ptr<Patch> synthSetupToPatch(SynthSetup const &sound, std::function<void(std::string warning)> logWarning) override;
 
 		// LayerCapability
-		virtual void switchToLayer(int layerNo);
+		virtual void switchToLayer(int layerNo) override;
 
 		// Implementation of BCR2000 sync
 		//virtual std::string presetName() override;
