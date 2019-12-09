@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Patch.h"
-#include "Rev2Message.h"
 #include "Rev2ParamDefinition.h"
 
 #include "LayeredPatch.h"
@@ -36,7 +35,7 @@ namespace midikraft {
 		virtual SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const override;
 		virtual std::vector<std::string> warnings() override;
 
-		void addNrpns(std::vector<NRPNValue> const &values);
+		//void addNrpns(std::vector<NRPNValue> const &values);
 		//int addOsc2Patch(SimpleOsc const &osc);
 		//void addEnv2Patch(Envelope const &env, int targetEnvNo);
 
@@ -48,12 +47,6 @@ namespace midikraft {
 		virtual std::string layerName(int layerNo) const override;
 
 		static std::shared_ptr<Rev2ParamDefinition> find(std::string const &paramID);
-
-		static NrpnDefinition nrpn(std::string const &name);
-		static NrpnDefinition nrpn(int nrpnNumber);
-		static std::string nameOfNrpn(Rev2Message const &message);
-		static int valueOfNrpnInPatch(Rev2Message const &nrpn, Synth::PatchData const &patch);
-		static int valueOfNrpnInPatch(NrpnDefinition const &param, Synth::PatchData const &patch);
 
 	private:
 		Rev2PatchNumber number_;

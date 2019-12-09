@@ -16,177 +16,177 @@
 
 namespace midikraft {
 
-	std::vector<NrpnDefinition> nrpns = {
-	NrpnDefinition(0, 0, 120, "Osc 1 Freq", 0),
-	NrpnDefinition(1, 0, 100, "Osc 1 Freq Fine", 2),
-	NrpnDefinition(2, 0, 4, "Osc 1 Shape", 4, { {0, "Off"}, { 1, "Saw" }, { 2, "Saw+Triangle"}, { 3, "Triangle" }, { 4, "Pulse" } }),
-	NrpnDefinition(3, 0, 127, "Osc 1 Glide", 8),
-	NrpnDefinition(4, 0, 1, "Osc 1 KBD on/off", 10),
-	NrpnDefinition(5, 0, 120, "Osc 2 Freq", 1),
-	NrpnDefinition(6, 0, 100, "Osc 2 Freq Fine", 3),
-	NrpnDefinition(7, 0, 4, "Osc 2 Shape", 5, { { 0, "Off" },{ 1, "Saw" },{ 2, "Saw+Triangle" },{ 3, "Triangle" },{ 4, "Pulse" } }),
-	NrpnDefinition(8, 0, 127, "Osc 2 Glide", 9),
-	NrpnDefinition(9, 0, 1, "Osc. 2 KBD on/off", 11),
-	NrpnDefinition(10, 0, 1, "Sync On/Off", 17),
-	NrpnDefinition(11, 0, 3, "Glide Mode", 18),
-	NrpnDefinition(12, 0, 127, "Slop", 21),
-	NrpnDefinition(13, 0, 127, "Osc Mix", 14),
-	NrpnDefinition(14, 0, 127, "Noise", 16),
-	NrpnDefinition(15, 0, 164, "Filter Cutoff", 22),
-	NrpnDefinition(16, 0, 127, "Filter Resonance", 23),
-	NrpnDefinition(17, 0, 127, "Keyboard Tracking", 24),
-	NrpnDefinition(18, 0, 127, "Audio Mod", 25),
-	NrpnDefinition(19, 0, 1, "2 pole/4 pole mode", 26),
-	NrpnDefinition(20, 0, 254, "Filter Env Amt", 32),
-	NrpnDefinition(21, 0, 127, "Filter Env Vel", 35),
-	NrpnDefinition(22, 0, 127, "Filter Env Delay", 38),
-	NrpnDefinition(23, 0, 127, "Filter Env Attack", 41),
-	NrpnDefinition(24, 0, 127, "Filter Env Decay", 44),
-	NrpnDefinition(25, 0, 127, "Filter Env Sustain", 47),
-	NrpnDefinition(26, 0, 127, "Filter Env Release", 50),
-	// 27 is really empty.If you try to set this, you get a change in index #33
-	NrpnDefinition(28, 0, 127, "Pan Spread", 29),
-	NrpnDefinition(29, 0, 127, "Voice Volume", 28),
-	NrpnDefinition(30, 0, 127, "VCA Env Amt", 33),
-	NrpnDefinition(31, 0, 127, "VCA Env Vel", 36),
-	NrpnDefinition(32, 0, 127, "VCA Env Delay", 39),
-	NrpnDefinition(33, 0, 127, "VCA Env Attack", 42),
-	NrpnDefinition(34, 0, 127, "VCA Env Decay", 45),
-	NrpnDefinition(35, 0, 127, "VCA Env Sustain", 48),
-	NrpnDefinition(36, 0, 127, "VCA Env Release", 51),
-	NrpnDefinition(37, 0, 127, "LFO 1 Freq", 53),
-	NrpnDefinition(38, 0, 4, "LFO 1 Shape", 57),
-	NrpnDefinition(39, 0, 127, "LFO 1 Amount", 61),
-	NrpnDefinition(40, 0, 52, "LFO 1 Destination", 65),
-	NrpnDefinition(41, 0, 1, "LFO 1 Clock Sync", 69),
-	NrpnDefinition(42, 0, 150, "LFO 2 Freq", 54),
-	NrpnDefinition(43, 0, 4, "LFO 2 Shape", 58),
-	NrpnDefinition(44, 0, 127, "LFO 2 Amount", 62),
-	NrpnDefinition(45, 0, 52, "LFO 2 Destination", 66),
-	NrpnDefinition(46, 0, 1, "LFO 2 Clock Sync", 70),
-	NrpnDefinition(47, 0, 150, "LFO 3 Freq", 55),
-	NrpnDefinition(48, 0, 4, "LFO 3 Shape", 59),
-	NrpnDefinition(49, 0, 127, "LFO 3 Amount", 63),
-	NrpnDefinition(50, 0, 52, "LFO 3 Destination", 67),
-	NrpnDefinition(51, 0, 1, "LFO 3 Clock Sync", 71),
-	NrpnDefinition(52, 0, 150, "LFO 4 Freq", 56),
-	NrpnDefinition(53, 0, 4, "LFO 4 Shape", 60),
-	NrpnDefinition(54, 0, 127, "LFO 4 Amount", 64),
-	NrpnDefinition(55, 0, 52, "LFO 4 Destination", 68),
-	NrpnDefinition(56, 0, 1, "LFO 4 Clock Sync", 72),
-	NrpnDefinition(57, 0, 52, "Env 3 Destination", 30),
-	NrpnDefinition(58, 0, 254, "Env 3 Amount", 34),
-	NrpnDefinition(59, 0, 127, "Env 3 Vel", 37),
-	NrpnDefinition(60, 0, 127, "Env 3 Delay", 40),
-	NrpnDefinition(61, 0, 127, "Env 3 Attack", 43),
-	NrpnDefinition(62, 0, 127, "Env 3 Decay", 46),
-	NrpnDefinition(63, 0, 127, "Env 3 Sustain", 49),
-	NrpnDefinition(64, 0, 127, "Env 3 Release", 52),
-	NrpnDefinition(65, 0, 22, "Mod 1 Source", 77),
-	NrpnDefinition(66, 0, 254, "Mod 1 Amount", 85),
-	NrpnDefinition(67, 0, 52, "Mod 1 Destination", 93),
-	NrpnDefinition(68, 0, 22, "Mod 2 Source", 78),
-	NrpnDefinition(69, 0, 254, "Mod 2 Amount", 86),
-	NrpnDefinition(70, 0, 52, "Mod 2 Destination", 94),
-	NrpnDefinition(71, 0, 22, "Mod 3 Source", 79),
-	NrpnDefinition(72, 0, 254, "Mode 3 Amount", 87),
-	NrpnDefinition(73, 0, 52, "Mode 3 Destination", 95),
-	NrpnDefinition(74, 0, 22, "Mod 4 Source", 80),
-	NrpnDefinition(75, 0, 254, "Mod 4 Amount", 88),
-	NrpnDefinition(76, 0, 52, "Mod 4 Destination", 96),
-	NrpnDefinition(77, 0, 22, "Mod 5 Source", 81),
-	NrpnDefinition(78, 0, 254, "Mod 5 Amount", 89),
-	NrpnDefinition(79, 0, 52, "Mod 5 Destination", 97),
-	NrpnDefinition(80, 0, 22, "Mod 6 Source", 82),
-	NrpnDefinition(81, 0, 254, "Mod 6 Amount", 90),
-	NrpnDefinition(82, 0, 52, "Mod 6 Destination", 98),
-	NrpnDefinition(83, 0, 22, "Mod 7 Source", 83),
-	NrpnDefinition(84, 0, 254, "Mod 7 Amount", 91),
-	NrpnDefinition(85, 0, 52, "Mod 7 Destination", 99),
-	NrpnDefinition(86, 0, 22, "Mod 8 Source", 84),
-	NrpnDefinition(87, 0, 254, "Mod 8 Amount", 92),
-	NrpnDefinition(88, 0, 52, "Mod 8 Destination", 100),
-	// TODO - really no values ?
-	NrpnDefinition(97, 0, 1, "Env 3 Repeat On/Off", 31),
-	// TODO - really no values ?
-	NrpnDefinition(99, 0, 1, "Osc 1 Note Reset", 12),
-	// TODO - really no values ?
-	NrpnDefinition(102, 0, 99, "Osc 1 Pulse Width", 6),
-	NrpnDefinition(103, 0, 99, "Osc 2 Pulse Width", 7),
-	NrpnDefinition(104, 0, 1, "Osc 2 Note Reset", 13),
-	NrpnDefinition(105, 0, 1, "LFO 1 Key Sync", 73),
-	NrpnDefinition(106, 0, 1, "LFO 2 Key Sync", 74),
-	NrpnDefinition(107, 0, 1, "LFO 3 Key Sync", 75),
-	NrpnDefinition(108, 0, 1, "LFO 4 Key Sync", 76),
-	// TODO - really no values ?
-	NrpnDefinition(111, 0, 1, "Glide On/Off", 19),
-	// TODO - really no values ?
-	NrpnDefinition(113, 0, 12, "Pitch Bend Range", 20),
-	NrpnDefinition(114, 0, 1, "Pan Mode", 209),
-	// TODO - really no values ?
-	NrpnDefinition(116, 0, 254, "Mod Wheel Amount", 101),
-	NrpnDefinition(117, 0, 52, "Mod Wheel Dest", 102),
-	NrpnDefinition(118, 0, 254, "Pressure Amount", 103),
-	NrpnDefinition(119, 0, 52, "Pressure Dest", 104),
-	NrpnDefinition(120, 0, 254, "Breath Amount", 105),
-	NrpnDefinition(121, 0, 52, "Breath Dest", 106),
-	NrpnDefinition(122, 0, 254, "Velocity Amount", 107),
-	NrpnDefinition(123, 0, 52, "Velocity Dest", 108),
-	NrpnDefinition(124, 0, 254, "Foot Ctrl Amount", 109),
-	NrpnDefinition(125, 0, 52, "Foot Ctrl Dest", 110),
-	// TODO - really no values ?
-	NrpnDefinition(153, 0, 1, "FX On/Off", 116),
-	NrpnDefinition(154, 0, 13, "FX Select", 115, {
-		{ 0, "Off"}, {1, "Delay Mono"}, { 2, "DDL Stereo" }, { 3, "BBD Delay" }, { 4, "Chorus" },
-		{ 5, "Phaser High" },{ 6, "Phaser Low" },{ 7, "Phase Mst" },{ 8, "Flanger 1" },{ 9, "Flanger 2" },
-		{ 10, "Reverb" },{ 11, "Ring Mod" },{ 12, "Distortion" },{ 13, "HP Filter" }
-	}),
+	std::vector<Rev2ParamDefinition> nrpns = {
+		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0),
+		Rev2ParamDefinition(1, 0, 100, "Osc 1 Freq Fine", 2),
+		Rev2ParamDefinition(2, 0, 4, "Osc 1 Shape", 4, { {0, "Off"}, { 1, "Saw" }, { 2, "Saw+Triangle"}, { 3, "Triangle" }, { 4, "Pulse" } }),
+		Rev2ParamDefinition(3, 0, 127, "Osc 1 Glide", 8),
+		Rev2ParamDefinition(4, 0, 1, "Osc 1 KBD on/off", 10),
+		Rev2ParamDefinition(5, 0, 120, "Osc 2 Freq", 1),
+		Rev2ParamDefinition(6, 0, 100, "Osc 2 Freq Fine", 3),
+		Rev2ParamDefinition(7, 0, 4, "Osc 2 Shape", 5, { { 0, "Off" },{ 1, "Saw" },{ 2, "Saw+Triangle" },{ 3, "Triangle" },{ 4, "Pulse" } }),
+		Rev2ParamDefinition(8, 0, 127, "Osc 2 Glide", 9),
+		Rev2ParamDefinition(9, 0, 1, "Osc. 2 KBD on/off", 11),
+		Rev2ParamDefinition(10, 0, 1, "Sync On/Off", 17),
+		Rev2ParamDefinition(11, 0, 3, "Glide Mode", 18),
+		Rev2ParamDefinition(12, 0, 127, "Slop", 21),
+		Rev2ParamDefinition(13, 0, 127, "Osc Mix", 14),
+		Rev2ParamDefinition(14, 0, 127, "Noise", 16),
+		Rev2ParamDefinition(15, 0, 164, "Filter Cutoff", 22),
+		Rev2ParamDefinition(16, 0, 127, "Filter Resonance", 23),
+		Rev2ParamDefinition(17, 0, 127, "Keyboard Tracking", 24),
+		Rev2ParamDefinition(18, 0, 127, "Audio Mod", 25),
+		Rev2ParamDefinition(19, 0, 1, "2 pole/4 pole mode", 26),
+		Rev2ParamDefinition(20, 0, 254, "Filter Env Amt", 32),
+		Rev2ParamDefinition(21, 0, 127, "Filter Env Vel", 35),
+		Rev2ParamDefinition(22, 0, 127, "Filter Env Delay", 38),
+		Rev2ParamDefinition(23, 0, 127, "Filter Env Attack", 41),
+		Rev2ParamDefinition(24, 0, 127, "Filter Env Decay", 44),
+		Rev2ParamDefinition(25, 0, 127, "Filter Env Sustain", 47),
+		Rev2ParamDefinition(26, 0, 127, "Filter Env Release", 50),
+		// 27 is really empty.If you try to set this, you get a change in index #33
+		Rev2ParamDefinition(28, 0, 127, "Pan Spread", 29),
+		Rev2ParamDefinition(29, 0, 127, "Voice Volume", 28),
+		Rev2ParamDefinition(30, 0, 127, "VCA Env Amt", 33),
+		Rev2ParamDefinition(31, 0, 127, "VCA Env Vel", 36),
+		Rev2ParamDefinition(32, 0, 127, "VCA Env Delay", 39),
+		Rev2ParamDefinition(33, 0, 127, "VCA Env Attack", 42),
+		Rev2ParamDefinition(34, 0, 127, "VCA Env Decay", 45),
+		Rev2ParamDefinition(35, 0, 127, "VCA Env Sustain", 48),
+		Rev2ParamDefinition(36, 0, 127, "VCA Env Release", 51),
+		Rev2ParamDefinition(37, 0, 127, "LFO 1 Freq", 53),
+		Rev2ParamDefinition(38, 0, 4, "LFO 1 Shape", 57),
+		Rev2ParamDefinition(39, 0, 127, "LFO 1 Amount", 61),
+		Rev2ParamDefinition(40, 0, 52, "LFO 1 Destination", 65),
+		Rev2ParamDefinition(41, 0, 1, "LFO 1 Clock Sync", 69),
+		Rev2ParamDefinition(42, 0, 150, "LFO 2 Freq", 54),
+		Rev2ParamDefinition(43, 0, 4, "LFO 2 Shape", 58),
+		Rev2ParamDefinition(44, 0, 127, "LFO 2 Amount", 62),
+		Rev2ParamDefinition(45, 0, 52, "LFO 2 Destination", 66),
+		Rev2ParamDefinition(46, 0, 1, "LFO 2 Clock Sync", 70),
+		Rev2ParamDefinition(47, 0, 150, "LFO 3 Freq", 55),
+		Rev2ParamDefinition(48, 0, 4, "LFO 3 Shape", 59),
+		Rev2ParamDefinition(49, 0, 127, "LFO 3 Amount", 63),
+		Rev2ParamDefinition(50, 0, 52, "LFO 3 Destination", 67),
+		Rev2ParamDefinition(51, 0, 1, "LFO 3 Clock Sync", 71),
+		Rev2ParamDefinition(52, 0, 150, "LFO 4 Freq", 56),
+		Rev2ParamDefinition(53, 0, 4, "LFO 4 Shape", 60),
+		Rev2ParamDefinition(54, 0, 127, "LFO 4 Amount", 64),
+		Rev2ParamDefinition(55, 0, 52, "LFO 4 Destination", 68),
+		Rev2ParamDefinition(56, 0, 1, "LFO 4 Clock Sync", 72),
+		Rev2ParamDefinition(57, 0, 52, "Env 3 Destination", 30),
+		Rev2ParamDefinition(58, 0, 254, "Env 3 Amount", 34),
+		Rev2ParamDefinition(59, 0, 127, "Env 3 Vel", 37),
+		Rev2ParamDefinition(60, 0, 127, "Env 3 Delay", 40),
+		Rev2ParamDefinition(61, 0, 127, "Env 3 Attack", 43),
+		Rev2ParamDefinition(62, 0, 127, "Env 3 Decay", 46),
+		Rev2ParamDefinition(63, 0, 127, "Env 3 Sustain", 49),
+		Rev2ParamDefinition(64, 0, 127, "Env 3 Release", 52),
+		Rev2ParamDefinition(65, 0, 22, "Mod 1 Source", 77),
+		Rev2ParamDefinition(66, 0, 254, "Mod 1 Amount", 85),
+		Rev2ParamDefinition(67, 0, 52, "Mod 1 Destination", 93),
+		Rev2ParamDefinition(68, 0, 22, "Mod 2 Source", 78),
+		Rev2ParamDefinition(69, 0, 254, "Mod 2 Amount", 86),
+		Rev2ParamDefinition(70, 0, 52, "Mod 2 Destination", 94),
+		Rev2ParamDefinition(71, 0, 22, "Mod 3 Source", 79),
+		Rev2ParamDefinition(72, 0, 254, "Mode 3 Amount", 87),
+		Rev2ParamDefinition(73, 0, 52, "Mode 3 Destination", 95),
+		Rev2ParamDefinition(74, 0, 22, "Mod 4 Source", 80),
+		Rev2ParamDefinition(75, 0, 254, "Mod 4 Amount", 88),
+		Rev2ParamDefinition(76, 0, 52, "Mod 4 Destination", 96),
+		Rev2ParamDefinition(77, 0, 22, "Mod 5 Source", 81),
+		Rev2ParamDefinition(78, 0, 254, "Mod 5 Amount", 89),
+		Rev2ParamDefinition(79, 0, 52, "Mod 5 Destination", 97),
+		Rev2ParamDefinition(80, 0, 22, "Mod 6 Source", 82),
+		Rev2ParamDefinition(81, 0, 254, "Mod 6 Amount", 90),
+		Rev2ParamDefinition(82, 0, 52, "Mod 6 Destination", 98),
+		Rev2ParamDefinition(83, 0, 22, "Mod 7 Source", 83),
+		Rev2ParamDefinition(84, 0, 254, "Mod 7 Amount", 91),
+		Rev2ParamDefinition(85, 0, 52, "Mod 7 Destination", 99),
+		Rev2ParamDefinition(86, 0, 22, "Mod 8 Source", 84),
+		Rev2ParamDefinition(87, 0, 254, "Mod 8 Amount", 92),
+		Rev2ParamDefinition(88, 0, 52, "Mod 8 Destination", 100),
 		// TODO - really no values ?
-		NrpnDefinition(156, 0, 255, "FX Param 1", 118),
-		NrpnDefinition(157, 0, 127, "FX Param 2", 119),
-		NrpnDefinition(158, 0, 1, "FX Clock Sync", 120),
+		Rev2ParamDefinition(97, 0, 1, "Env 3 Repeat On/Off", 31),
 		// TODO - really no values ?
-		NrpnDefinition(163, 0, 2, "A/B Mode", 231),
-		NrpnDefinition(164, 0, 1, "Seq Start/Stop", 137),
+		Rev2ParamDefinition(99, 0, 1, "Osc 1 Note Reset", 12),
 		// TODO - really no values ?
-		NrpnDefinition(167, 0, 16, "Unison Detune", 208),
-		NrpnDefinition(168, 0, 1, "Unison On/Off", 123),
-		NrpnDefinition(169, 0, 16, "Unison Mode", 124),
-		NrpnDefinition(170, 0, 5, "Keyboard Mode", 122),
-		NrpnDefinition(171, 0, 120, "Split Point", 232),
-		NrpnDefinition(172, 0, 1, "Arp On/Off", 136),
-		NrpnDefinition(173, 0, 4, "Arp Mode", 132),
-		NrpnDefinition(174, 0, 2, "Arp Octave", 133),
-		NrpnDefinition(175, 0, 12, "Clock Divide", 131),
+		Rev2ParamDefinition(102, 0, 99, "Osc 1 Pulse Width", 6),
+		Rev2ParamDefinition(103, 0, 99, "Osc 2 Pulse Width", 7),
+		Rev2ParamDefinition(104, 0, 1, "Osc 2 Note Reset", 13),
+		Rev2ParamDefinition(105, 0, 1, "LFO 1 Key Sync", 73),
+		Rev2ParamDefinition(106, 0, 1, "LFO 2 Key Sync", 74),
+		Rev2ParamDefinition(107, 0, 1, "LFO 3 Key Sync", 75),
+		Rev2ParamDefinition(108, 0, 1, "LFO 4 Key Sync", 76),
 		// TODO - really no values ?
-		NrpnDefinition(177, 0, 3, "Arp Repeats", 134),
-		NrpnDefinition(178, 0, 1, "Arp Relatch", 135),
-		NrpnDefinition(179, 30, 250, "BPM Tempo", 130),
+		Rev2ParamDefinition(111, 0, 1, "Glide On/Off", 19),
 		// TODO - really no values ?
-		NrpnDefinition(182, 0, 4, "Gated Seq Mode", 138),
-		NrpnDefinition(183, 0, 1, "Gated Seq On/Off", 137),
-		NrpnDefinition(184, 0, 52, "Seq 1 Destination", 111),
-		NrpnDefinition(185, 0, 53, "Seq 2 Destination (slew)", 112),
-		NrpnDefinition(186, 0, 52, "Seq 3 Destination", 113),
-		NrpnDefinition(187, 0, 53, "Seq 4 Destination (slew)", 114),
+		Rev2ParamDefinition(113, 0, 12, "Pitch Bend Range", 20),
+		Rev2ParamDefinition(114, 0, 1, "Pan Mode", 209),
 		// TODO - really no values ?
-		NrpnDefinition(192, 207, 0, 127, "Gated Seq Track 1 Step 1,16", 140), // 126 is Reset, 127 is the Rest (Rest only on Track 1)
-		NrpnDefinition(208, 223, 0, 126, "Gated Seq Track 2 Step 1,16", 156), // 126 is Reset
-		NrpnDefinition(224, 239, 0, 126, "Gated Seq Track 3 Step 1,16", 172), // 126 is Reset
-		NrpnDefinition(240, 255, 0, 126, "Gated Seq Track 4 Step 1,16", 188), // 126 is Reset
+		Rev2ParamDefinition(116, 0, 254, "Mod Wheel Amount", 101),
+		Rev2ParamDefinition(117, 0, 52, "Mod Wheel Dest", 102),
+		Rev2ParamDefinition(118, 0, 254, "Pressure Amount", 103),
+		Rev2ParamDefinition(119, 0, 52, "Pressure Dest", 104),
+		Rev2ParamDefinition(120, 0, 254, "Breath Amount", 105),
+		Rev2ParamDefinition(121, 0, 52, "Breath Dest", 106),
+		Rev2ParamDefinition(122, 0, 254, "Velocity Amount", 107),
+		Rev2ParamDefinition(123, 0, 52, "Velocity Dest", 108),
+		Rev2ParamDefinition(124, 0, 254, "Foot Ctrl Amount", 109),
+		Rev2ParamDefinition(125, 0, 52, "Foot Ctrl Dest", 110),
 		// TODO - really no values ?
-		NrpnDefinition(276, 339, 0, 127, "Seq Step 1,64 Note 1", 256),
-		NrpnDefinition(340, 403, 128, 255, "Seq Step 1,6 Velocity 1", 320),
-		NrpnDefinition(404, 467, 0, 127, "Seq Step 1,64 Note 2", 384),
-		NrpnDefinition(468, 531, 128, 255, "Seq Step 1,64 Velocity 2", 448),
-		NrpnDefinition(532, 595, 0, 127, "Seq Step 1,64 Note 3", 512),
-		NrpnDefinition(596, 659, 128, 255, "Seq Step 1,64 Velocity 3", 576),
-		NrpnDefinition(660, 723, 0, 127, "Seq Step 1,64 Note 4", 640),
-		NrpnDefinition(724, 787, 128, 255, "Seq Step 1,64 Velocity 4", 704),
-		NrpnDefinition(788, 851, 0, 127, "Seq Step 1,64 Note 5", 768),
-		NrpnDefinition(852, 915, 128, 255, "Seq Step 1,64 Velocity 5", 832),
-		NrpnDefinition(916, 979, 0, 127, "Seq Step 1,64 Note 6", 896),
-		NrpnDefinition(980, 1043, 128, 255, "Seq Step 1,64 Velocity 6", 960)
+		Rev2ParamDefinition(153, 0, 1, "FX On/Off", 116),
+		Rev2ParamDefinition(154, 0, 13, "FX Select", 115, {
+			{ 0, "Off"}, {1, "Delay Mono"}, { 2, "DDL Stereo" }, { 3, "BBD Delay" }, { 4, "Chorus" },
+			{ 5, "Phaser High" },{ 6, "Phaser Low" },{ 7, "Phase Mst" },{ 8, "Flanger 1" },{ 9, "Flanger 2" },
+			{ 10, "Reverb" },{ 11, "Ring Mod" },{ 12, "Distortion" },{ 13, "HP Filter" }
+		}),
+		// TODO - really no values ?
+		Rev2ParamDefinition(156, 0, 255, "FX Param 1", 118),
+		Rev2ParamDefinition(157, 0, 127, "FX Param 2", 119),
+		Rev2ParamDefinition(158, 0, 1, "FX Clock Sync", 120),
+		// TODO - really no values ?
+		Rev2ParamDefinition(163, 0, 2, "A/B Mode", 231),
+		Rev2ParamDefinition(164, 0, 1, "Seq Start/Stop", 137),
+		// TODO - really no values ?
+		Rev2ParamDefinition(167, 0, 16, "Unison Detune", 208),
+		Rev2ParamDefinition(168, 0, 1, "Unison On/Off", 123),
+		Rev2ParamDefinition(169, 0, 16, "Unison Mode", 124),
+		Rev2ParamDefinition(170, 0, 5, "Keyboard Mode", 122),
+		Rev2ParamDefinition(171, 0, 120, "Split Point", 232),
+		Rev2ParamDefinition(172, 0, 1, "Arp On/Off", 136),
+		Rev2ParamDefinition(173, 0, 4, "Arp Mode", 132),
+		Rev2ParamDefinition(174, 0, 2, "Arp Octave", 133),
+		Rev2ParamDefinition(175, 0, 12, "Clock Divide", 131),
+		// TODO - really no values ?
+		Rev2ParamDefinition(177, 0, 3, "Arp Repeats", 134),
+		Rev2ParamDefinition(178, 0, 1, "Arp Relatch", 135),
+		Rev2ParamDefinition(179, 30, 250, "BPM Tempo", 130),
+		// TODO - really no values ?
+		Rev2ParamDefinition(182, 0, 4, "Gated Seq Mode", 138),
+		Rev2ParamDefinition(183, 0, 1, "Gated Seq On/Off", 137),
+		Rev2ParamDefinition(184, 0, 52, "Seq 1 Destination", 111),
+		Rev2ParamDefinition(185, 0, 53, "Seq 2 Destination (slew)", 112),
+		Rev2ParamDefinition(186, 0, 52, "Seq 3 Destination", 113),
+		Rev2ParamDefinition(187, 0, 53, "Seq 4 Destination (slew)", 114),
+		// TODO - really no values ?
+		Rev2ParamDefinition(192, 207, 0, 127, "Gated Seq Track 1 Step 1,16", 140), // 126 is Reset, 127 is the Rest (Rest only on Track 1)
+		Rev2ParamDefinition(208, 223, 0, 126, "Gated Seq Track 2 Step 1,16", 156), // 126 is Reset
+		Rev2ParamDefinition(224, 239, 0, 126, "Gated Seq Track 3 Step 1,16", 172), // 126 is Reset
+		Rev2ParamDefinition(240, 255, 0, 126, "Gated Seq Track 4 Step 1,16", 188), // 126 is Reset
+		// TODO - really no values ?
+		Rev2ParamDefinition(276, 339, 0, 127, "Seq Step 1,64 Note 1", 256),
+		Rev2ParamDefinition(340, 403, 128, 255, "Seq Step 1,6 Velocity 1", 320),
+		Rev2ParamDefinition(404, 467, 0, 127, "Seq Step 1,64 Note 2", 384),
+		Rev2ParamDefinition(468, 531, 128, 255, "Seq Step 1,64 Velocity 2", 448),
+		Rev2ParamDefinition(532, 595, 0, 127, "Seq Step 1,64 Note 3", 512),
+		Rev2ParamDefinition(596, 659, 128, 255, "Seq Step 1,64 Velocity 3", 576),
+		Rev2ParamDefinition(660, 723, 0, 127, "Seq Step 1,64 Note 4", 640),
+		Rev2ParamDefinition(724, 787, 128, 255, "Seq Step 1,64 Velocity 4", 704),
+		Rev2ParamDefinition(788, 851, 0, 127, "Seq Step 1,64 Note 5", 768),
+		Rev2ParamDefinition(852, 915, 128, 255, "Seq Step 1,64 Velocity 5", 832),
+		Rev2ParamDefinition(916, 979, 0, 127, "Seq Step 1,64 Note 6", 896),
+		Rev2ParamDefinition(980, 1043, 128, 255, "Seq Step 1,64 Velocity 6", 960)
 	};
 
 	std::string Rev2PatchNumber::friendlyName() const {
@@ -261,7 +261,7 @@ namespace midikraft {
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	void Rev2Patch::addNrpns(std::vector<NRPNValue> const &values)
+	/*void Rev2Patch::addNrpns(std::vector<NRPNValue> const &values)
 	{
 		// This will poke the values into the patch no matter what!
 		for (auto value : values) {
@@ -272,7 +272,7 @@ namespace midikraft {
 				throw new std::runtime_error("Error - this is not a sysex parameter");
 			}
 		}
-	}
+	}*/
 
 /*	int Rev2Patch::addOsc2Patch(SimpleOsc const &osc)
 	{
@@ -432,7 +432,12 @@ namespace midikraft {
 
 	std::shared_ptr<Rev2ParamDefinition> Rev2Patch::find(std::string const &paramID)
 	{
-		return std::make_shared<Rev2ParamDefinition>(nrpn(paramID));
+		for (auto &n : nrpns) {
+			if (n.name() == paramID) {
+				return std::make_shared<Rev2ParamDefinition>(n); // Copy construct a shared ptr owned object, handed off to python 
+			}
+		}
+		return nullptr;
 	}
 
 	std::vector<std::string> Rev2Patch::warnings()
@@ -440,17 +445,7 @@ namespace midikraft {
 		return warnings_;
 	}
 
-	NrpnDefinition Rev2Patch::nrpn(std::string const &name)
-	{
-		for (auto n : nrpns) {
-			if (n.name() == name) {
-				return n;
-			}
-		}
-		throw new std::runtime_error("Unknown nrpn");
-	}
-
-	NrpnDefinition Rev2Patch::nrpn(int nrpnNumber)
+	/*NrpnDefinition Rev2Patch::nrpn(int nrpnNumber)
 	{
 		// Layer B has the identical parameters as Layer A, so you will get back the definition for Layer A
 		if (nrpnNumber >= 2048)
@@ -499,7 +494,7 @@ namespace midikraft {
 		}
 		// Invalid value for patch
 		return 0;
-	}
+	}*/
 
 
 

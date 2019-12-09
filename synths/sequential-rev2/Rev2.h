@@ -11,8 +11,6 @@
 #include "DSI.h"
 //#include "SupportedByBCR2000.h"
 #include "LayerCapability.h"
-#include "NrpnDefinition.h"
-#include "Rev2Message.h"
 
 namespace midikraft {
 

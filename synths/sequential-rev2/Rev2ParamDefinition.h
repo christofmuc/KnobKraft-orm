@@ -1,14 +1,18 @@
 #pragma once
 
 #include "SynthParameterDefinition.h"
-#include "NrpnDefinition.h"
 
 namespace midikraft {
 
 	class Rev2ParamDefinition : public SynthParameterDefinition, 
 		public SynthVectorParameterCapability, public SynthLookupParameterCapability, public SynthParameterLiveEditCapability {
 	public:
-		Rev2ParamDefinition(NrpnDefinition const &nrpn);
+		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex);
+		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup);
+		Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex);
+
+		//! The parameter definition is a meta-data struct only, it is totally ok to copy these around
+		Rev2ParamDefinition(Rev2ParamDefinition const &other) = default; 
 
 		virtual ParamType type() const override;
 		virtual std::string name() const override;
@@ -34,7 +38,15 @@ namespace midikraft {
 		virtual MidiBuffer setValueMessages(Patch const &patch, Synth *synth) const override;
 
 	private:
-		NrpnDefinition nrpn_;
+		std::string lookupValueAsText(int value) const;
+
+		int number_;
+		int endNumber_;
+		int min_;
+		int max_;
+		int sysex_;
+		std::string name_;
+		std::map<int, std::string> valueLookup_;
 	};
 
 }

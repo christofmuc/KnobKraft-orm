@@ -38,8 +38,7 @@ set(Sources
 	DSI.cpp DSI.h	
 	Rev2.cpp Rev2.h
 	#Rev2BCR2000.cpp Rev2BCR2000.h
-	#Rev2ButtonStrip.cpp Rev2ButtonStrip.h
-	Rev2Message.cpp Rev2Message.h
+	#Rev2ButtonStrip.cpp Rev2ButtonStrip.h	
 	Rev2ParamDefinition.cpp Rev2ParamDefinition.h
 	Rev2Patch.cpp Rev2Patch.h
 	README.md

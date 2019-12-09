@@ -4,43 +4,60 @@
 
 namespace midikraft {
 
-	Rev2ParamDefinition::Rev2ParamDefinition(NrpnDefinition const &nrpn) : nrpn_(nrpn)
+	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) : number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
 	{
+	}
+
+	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex) :
+		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex)
+	{
+		endNumber_ = endNumber;
+	}
+
+	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup) :
+		Rev2ParamDefinition(number, min, max, name, sysExIndex)
+	{
+		valueLookup_ = valueLookup;
 	}
 
 	std::string Rev2ParamDefinition::name() const
 	{
-		return nrpn_.name();
+		return name_;
 	}
 
 	std::string Rev2ParamDefinition::valueAsText(int value) const
 	{
-		return nrpn_.valueAsText(value);
+		if (valueLookup_.find(value) != valueLookup_.end()) {
+			return valueLookup_.at(value);
+		}
+		return "unknown";
 	}
 
 	int Rev2ParamDefinition::sysexIndex() const
 	{
-		return nrpn_.sysexIndex();
+		return sysex_;
 	}
 
 	int Rev2ParamDefinition::endSysexIndex() const
 	{
-		return nrpn_.sysexIndex() + nrpn_.numberOfValues() - 1;
+		// This is allowed because parameters with consecutive NRPN controller numbers are stored consecutively in the 
+		// sysex as well.
+		return sysex_ + endNumber_ - number_;
 	}
 
 	std::string Rev2ParamDefinition::description() const
 	{
-		return nrpn_.name();
+		return name_;
 	}
 
 	int Rev2ParamDefinition::minValue() const
 	{
-		return nrpn_.min();
+		return min_;
 	}
 
 	int Rev2ParamDefinition::maxValue() const
 	{
-		return nrpn_.max();
+		return max_;
 	}
 
 	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, int &outValue) const
@@ -71,7 +88,7 @@ namespace midikraft {
 		case SynthParameterDefinition::ParamType::INT: {
 			int value;
 			if (valueInPatch(patch, value)) {
-				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpn_.number(), value, true);
+				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_, value, true);
 			}
 		}
 		case SynthParameterDefinition::ParamType::INT_ARRAY: {
@@ -79,7 +96,7 @@ namespace midikraft {
 			std::vector<int> values;
 			if (valueInPatch(patch, values)) {
 				for (auto value : values) {
-					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpn_.number(), value, true);
+					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_, value, true);
 					result.addEvents(buffer, 0, -1, 0);
 				}
 				return result;
@@ -87,6 +104,14 @@ namespace midikraft {
 		}
 		}
 		return MidiBuffer();
+	}
+
+	std::string Rev2ParamDefinition::lookupValueAsText(int value) const
+	{
+		if (valueLookup_.find(value) != valueLookup_.end()) {
+			return valueLookup_.at(value);
+		}
+		return "unknown";
 	}
 
 	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const
@@ -116,7 +141,7 @@ namespace midikraft {
 		case SynthParameterDefinition::ParamType::LOOKUP:
 			int value;
 			if (valueInPatch(patch, value)) {
-				return nrpn_.valueAsText(value);
+				return lookupValueAsText(value);
 			}
 			return "invalid lookup param";
 		}
@@ -147,7 +172,7 @@ namespace midikraft {
 		if (sysexIndex() != endSysexIndex()) {
 			return SynthParameterDefinition::ParamType::INT_ARRAY;
 		}
-		else if (nrpn_.isLookup()) {
+		else if (!valueLookup_.empty()) {
 			return SynthParameterDefinition::ParamType::LOOKUP;
 		}
 		return SynthParameterDefinition::ParamType::INT;

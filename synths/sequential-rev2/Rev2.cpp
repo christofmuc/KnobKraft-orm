@@ -8,8 +8,6 @@
 
 #include "Patch.h"
 
-#include "Rev2Message.h"
-#include "NrpnDefinition.h"
 //#include "SynthSetup.h"
 
 #include "Rev2Patch.h"
