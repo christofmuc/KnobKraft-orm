@@ -144,7 +144,12 @@ namespace midikraft {
 
 	midikraft::SynthParameterDefinition::ParamType Rev2ParamDefinition::type() const
 	{
-		if (sysexIndex() != endSysexIndex()) return SynthParameterDefinition::ParamType::INT_ARRAY;
+		if (sysexIndex() != endSysexIndex()) {
+			return SynthParameterDefinition::ParamType::INT_ARRAY;
+		}
+		else if (nrpn_.isLookup()) {
+			return SynthParameterDefinition::ParamType::LOOKUP;
+		}
 		return SynthParameterDefinition::ParamType::INT;
 	}
 
