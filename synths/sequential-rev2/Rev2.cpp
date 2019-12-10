@@ -8,11 +8,7 @@
 
 #include "Patch.h"
 
-//#include "SynthSetup.h"
-
 #include "Rev2Patch.h"
-//#include "Rev2BCR2000.h"
-//#include "BCR2000.h"
 
 #include <algorithm>
 #include <boost/format.hpp>
@@ -68,103 +64,6 @@ namespace midikraft {
 	Rev2::Rev2() : DSISynth(0x2f /* Rev2 ID */)
 	{
 	}
-
-/*	std::shared_ptr<Patch> Rev2::synthSetupToPatch(SynthSetup const &sound, std::function<void(std::string warning)> logWarning) {
-		auto patch = std::make_shared<Rev2Patch>();
-
-		// Start with the oscillator setup
-		for (auto osc : sound.oscillators_) {
-			auto compound = std::dynamic_pointer_cast<CompoundOsc>(osc);
-			if (compound) {
-				// Oh, problem - this synth has compound oscillators, that is, many in one. This is going to be tricky, because
-				// the Rev2 can only do one waveform per oscillator.
-				if (compound->osc1().isMakingSound()) {
-					patch->addOsc2Patch(compound->osc1());
-				}
-				if (compound->osc2().isMakingSound()) {
-					patch->addOsc2Patch(compound->osc2());
-				}
-			}
-			else {
-				// Then it must be simple!
-				patch->addOsc2Patch(*std::dynamic_pointer_cast<SimpleOsc>(osc));
-			}
-		}
-		// Set the mix - that value is not very well defined
-		patch->addNrpns({ NRPNValue(nrpn("Osc Mix"), sound.mix_ * 128 / 64) });
-
-		// Now, the envelopes
-		for (auto env : sound.envelopes_) {
-			int targetNo = 0;
-			if (env->name() == "Env 1" || env->name() == Envelope::kFilter) {
-				targetNo = 1;
-			}
-			else if (env->name() == "Env 2" || env->name() == Envelope::kVCA) {
-				targetNo = 0;
-			}
-			else if (env->name() == "Env 3") {
-				targetNo = 2;
-			}
-			else {
-				throw std::runtime_error("Unknown envelope");
-			}
-			patch->addEnv2Patch(*env, targetNo);
-		}
-
-		return patch;
-	}
-
-	std::string Rev2::patchToText(PatchData const &patch) {
-		std::string desc;
-
-		// First, describe the oscillator setup!
-		auto osc1shape = nrpn("Osc 1 Shape");
-		auto osc1on = valueOfNrpnInPatch(osc1shape, patch) != 0;
-		auto osc2shape = nrpn("Osc 2 Shape");
-		auto osc2on = valueOfNrpnInPatch(osc2shape, patch) != 0;
-		auto oscmix = nrpn("Osc Mix");
-		auto osc1freq = nrpn("Osc 1 Freq");
-		auto osc2freq = nrpn("Osc 2 Freq");
-		if (osc1on && !osc2on) {
-			desc = (boost::format("One %s osc") % osc1shape.valueAsText(valueOfNrpnInPatch(osc1shape, patch))).str();
-		}
-		else if (osc2on && !osc1on) {
-			desc = (boost::format("One %s osc") % osc2shape.valueAsText(valueOfNrpnInPatch(osc2shape, patch))).str();
-		}
-		else if (osc2on && osc1on) {
-			// Two oscillators turned on - then we are interested in the balance between the two
-			auto oscmixval = valueOfNrpnInPatch(oscmix, patch);
-			auto osc1perc = (1 - oscmixval / 127.0) * 100.0;
-			auto osc2perc = oscmixval / 127.0 * 100.0;
-			// And the interval
-			auto osc1f = valueOfNrpnInPatch(osc1freq, patch);
-			auto osc2f = valueOfNrpnInPatch(osc2freq, patch);
-			std::string intervalText = "at the same note";
-			if (osc2f < osc1f) {
-				intervalText = (boost::format("%s lower") % intervalToText(osc1f - osc2f)).str();
-			}
-			else if (osc1f < osc2f) {
-				intervalText = (boost::format("%s higher") % intervalToText(osc2f - osc1f)).str();
-			}
-			desc = (boost::format("osc1 is %s (%.0f%%) and osc2 is %s (%.0f%%) %s")
-				% osc1shape.valueAsText(valueOfNrpnInPatch(osc1shape, patch)) % osc1perc
-				% osc2shape.valueAsText(valueOfNrpnInPatch(osc2shape, patch)) % osc2perc
-				% intervalText).str();
-		}
-		else {
-			desc = "Oscillators are off";
-		}
-
-		// Effects section
-		auto fxon = nrpn("FX On/Off");
-		if (valueOfNrpnInPatch(fxon, patch) == 1) {
-			auto fxselect = nrpn("FX Select");
-			std::string effects = fxselect.valueAsText(valueOfNrpnInPatch(fxselect, patch));
-			desc = desc + "\nEffect is " + effects;
-		}
-
-		return desc;
-	}*/
 
 	Synth::PatchData Rev2::filterVoiceRelevantData(PatchData const &unfilteredData) const
 	{
@@ -228,11 +127,6 @@ namespace midikraft {
 		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programEditBufferDataDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(programEditBufferDataDump) });
 	}
-
-/*	SynthSetup Rev2::patchToSynthSetup(Synth::PatchData const &patch)
-	{
-		return SynthSetup("unknown");
-	}*/
 
 	uint8 Rev2::clamp(int value, uint8 minimum /* = 9*/, uint8 maximum /* = 127 */) {
 		return static_cast<uint8>(std::min((int)maximum, std::max(value, (int)minimum)));
@@ -387,34 +281,6 @@ namespace midikraft {
 		auto messages = MidiHelpers::generateRPN(channel().toOneBasedInt(), 4190, layerNo, true, true, true);
 		MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(messages));
 	}
-
-/*	std::string Rev2::presetName()
-	{
-		return "Knobkraft Rev2";
-	}
-
-	void Rev2::setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) {
-		if (!bcr.channel().isValid()) return;
-		if (!channel().isValid()) return;
-
-		auto bcl = Rev2BCR2000::generateBCR(*this, 10);
-		auto syx = bcr.convertToSyx(bcl);
-		controller->enableMidiInput(bcr.midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
-		bcr.sendSysExToBCR(controller->getMidiOutput(bcr.midiOutput()), syx, *controller, logger);
-	}
-
-	void Rev2::syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) {
-		//TODO not implemented yet, all we could do here is to extract the gated sequencer
-	}
-
-	void Rev2::setupBCR2000View(BCR2000_Component &view) {
-		//TODO - this needs to be implemented
-	}
-
-	void Rev2::setupBCR2000Values(BCR2000_Component &view, Patch *patch)
-	{
-		// TODO
-	}*/
 
 	void Rev2::changeInputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> onFinished)
 	{

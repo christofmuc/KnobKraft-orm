@@ -9,7 +9,6 @@
 #include "JuceHeader.h"
 
 #include "DSI.h"
-//#include "SupportedByBCR2000.h"
 #include "LayerCapability.h"
 
 namespace midikraft {
@@ -39,19 +38,8 @@ namespace midikraft {
 
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
 
-		// SynthPatch Capability
-		//virtual SynthSetup patchToSynthSetup(Synth::PatchData const &patch) override;
-		//virtual std::shared_ptr<Patch> synthSetupToPatch(SynthSetup const &sound, std::function<void(std::string warning)> logWarning) override;
-
 		// LayerCapability
 		virtual void switchToLayer(int layerNo) override;
-
-		// Implementation of BCR2000 sync
-		//virtual std::string presetName() override;
-		//virtual void setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-		//virtual void syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-		//virtual void setupBCR2000View(BCR2000_Component &view) override;
-		//virtual void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;
 
 		// SoundExpanderCapability
 		virtual void changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
@@ -60,9 +48,6 @@ namespace midikraft {
 		// MasterkeyboardCapability
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
 		virtual void setLocalControl(MidiController *controller, bool localControlOn) override;
-
-		// More stuff
-		//virtual std::string patchToText(PatchData const &patch);
 
 		virtual PatchData filterVoiceRelevantData(PatchData const &unfilteredData) const override;
 

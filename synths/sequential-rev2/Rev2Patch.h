@@ -31,13 +31,6 @@ namespace midikraft {
 		virtual void setName(std::string const &name) override;
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
-		virtual int value(SynthParameterDefinition const &param) const override;
-		virtual SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const override;
-		virtual std::vector<std::string> warnings() override;
-
-		//void addNrpns(std::vector<NRPNValue> const &values);
-		//int addOsc2Patch(SimpleOsc const &osc);
-		//void addEnv2Patch(Envelope const &env, int targetEnvNo);
 
 		virtual std::vector<SynthParameterDefinition *> allParameterDefinitions() override;
 
@@ -50,8 +43,6 @@ namespace midikraft {
 
 	private:
 		Rev2PatchNumber number_;
-		std::vector<std::string> warnings_;
-		int oscAllocated_;
 	};
 
 }
