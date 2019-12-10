@@ -95,9 +95,11 @@ namespace midikraft {
 			MidiBuffer result;
 			std::vector<int> values;
 			if (valueInPatch(patch, values)) {
+				int idx = 0;
 				for (auto value : values) {
-					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_, value, true);
+					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_ + idx, value, true);
 					result.addEvents(buffer, 0, -1, 0);
+					idx++;
 				}
 				return result;
 			}
