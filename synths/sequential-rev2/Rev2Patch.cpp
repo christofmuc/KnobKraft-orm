@@ -204,7 +204,7 @@ namespace midikraft {
 		Rev2ParamDefinition(240, 255, 0, 126, "Gated Seq Track 4 Step 1,16", 188), // 126 is Reset
 		// TODO - really no values ?
 		Rev2ParamDefinition(276, 339, 0, 127, "Seq Step 1,64 Note 1", 256),
-		Rev2ParamDefinition(340, 403, 128, 255, "Seq Step 1,6 Velocity 1", 320),
+		Rev2ParamDefinition(340, 403, 128, 255, "Seq Step 1,64 Velocity 1", 320),
 		Rev2ParamDefinition(404, 467, 0, 127, "Seq Step 1,64 Note 2", 384),
 		Rev2ParamDefinition(468, 531, 128, 255, "Seq Step 1,64 Velocity 2", 448),
 		Rev2ParamDefinition(532, 595, 0, 127, "Seq Step 1,64 Note 3", 512),
