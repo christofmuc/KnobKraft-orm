@@ -11,6 +11,8 @@
 
 #include "BinaryResources.h"
 
+#include "MidiNote.h"
+
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -42,13 +44,15 @@ namespace midikraft {
 		, {20, "Noise" }, {21, "DC" }, {22, "Audio Out" }
 	};
 
+	std::function<std::string(int)> noteNumberToName = [](int value) { return MidiNote(value).name(); };
+
 	std::vector<Rev2ParamDefinition> nrpns = {
-		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0),
+		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0, noteNumberToName),
 		Rev2ParamDefinition(1, 0, 100, "Osc 1 Freq Fine", 2),
 		Rev2ParamDefinition(2, 0, 4, "Osc 1 Shape Mod", 4, { {0, "Off"}, { 1, "Saw" }, { 2, "Saw+Triangle"}, { 3, "Triangle" }, { 4, "Pulse" } }),
 		Rev2ParamDefinition(3, 0, 127, "Osc 1 Glide", 8),
 		Rev2ParamDefinition(4, 0, 1, "Osc 1 Key On/Off", 10),
-		Rev2ParamDefinition(5, 0, 120, "Osc 2 Freq", 1),
+		Rev2ParamDefinition(5, 0, 120, "Osc 2 Freq", 1, noteNumberToName),
 		Rev2ParamDefinition(6, 0, 100, "Osc 2 Freq Fine", 3),
 		Rev2ParamDefinition(7, 0, 4, "Osc 2 Shape Mod", 5, { { 0, "Off" },{ 1, "Saw" },{ 2, "Saw+Triangle" },{ 3, "Triangle" },{ 4, "Pulse" } }),
 		Rev2ParamDefinition(8, 0, 127, "Osc 2 Glide", 9),
@@ -180,7 +184,7 @@ namespace midikraft {
 		Rev2ParamDefinition(168, 0, 1, "Unison On/Off", 123),
 		Rev2ParamDefinition(169, 0, 16, "Unison Mode", 124),
 		Rev2ParamDefinition(170, 0, 5, "Key Mode", 122, { { 0, "Low" }, { 1, "Hi" }, { 2, "Last" }, { 3, "LowR" }, { 4, "HiR"}, {5, "LastR"} }),
-		Rev2ParamDefinition(171, 0, 120, "Split Point", 232),
+		Rev2ParamDefinition(171, 0, 120, "Split Point", 232, noteNumberToName),
 		Rev2ParamDefinition(172, 0, 1, "Arp On/Off", 136),
 		Rev2ParamDefinition(173, 0, 4, "Arp Mode", 132, { { 0, "Up" }, { 1, "Down"}, { 2, "Up+Down" }, { 3, "Random" },  { 4, "Assign" } }),
 		Rev2ParamDefinition(174, 0, 2, "Arp Octave", 133),

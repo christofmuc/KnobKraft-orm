@@ -5,10 +5,11 @@
 namespace midikraft {
 
 	class Rev2ParamDefinition : public SynthParameterDefinition, 
-		public SynthVectorParameterCapability, public SynthLookupParameterCapability, public SynthParameterLiveEditCapability {
+		public SynthVectorParameterCapability, public SynthParameterLiveEditCapability {
 	public:
 		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex);
 		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup);
+		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction);
 		Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex);
 
 		//! The parameter definition is a meta-data struct only, it is totally ok to copy these around
@@ -31,22 +32,18 @@ namespace midikraft {
 		virtual bool valueInPatch(Patch const &patch, std::vector<int> &outValue) const override;
 		virtual void setInPatch(Patch &patch, std::vector<int> value) const override;
 
-		// SynthLookupCapability
-		virtual std::string valueAsText(int value) const override;
-
 		// SynthParameterLiveEditCapability
 		virtual MidiBuffer setValueMessages(Patch const &patch, Synth *synth) const override;
 
 	private:
-		std::string lookupValueAsText(int value) const;
-
+		ParamType type_;
 		int number_;
 		int endNumber_;
 		int min_;
 		int max_;
 		int sysex_;
 		std::string name_;
-		std::map<int, std::string> valueLookup_;
+		std::function<std::string(int)> lookupFunction_;
 	};
 
 }

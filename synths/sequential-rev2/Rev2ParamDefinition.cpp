@@ -4,33 +4,41 @@
 
 namespace midikraft {
 
-	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) : number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
+	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) :
+		type_(ParamType::INT), number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
 	{
 	}
 
 	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex) :
 		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex)
 	{
+		type_ = SynthParameterDefinition::ParamType::INT_ARRAY;
 		endNumber_ = endNumber;
 	}
 
 	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup) :
 		Rev2ParamDefinition(number, min, max, name, sysExIndex)
 	{
-		valueLookup_ = valueLookup;
+		type_ = SynthParameterDefinition::ParamType::LOOKUP;
+		// Special case
+		lookupFunction_ = [valueLookup](int value) { 	
+			if (valueLookup.find(value) != valueLookup.end()) {
+				return valueLookup.at(value);
+			}
+			return std::string("unknown"); 
+		};
+	}
+
+	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction) :
+		Rev2ParamDefinition(number, min, max, name, sysExIndex)
+	{
+		type_ = SynthParameterDefinition::ParamType::LOOKUP;
+		lookupFunction_ = lookupFunction;
 	}
 
 	std::string Rev2ParamDefinition::name() const
 	{
 		return name_;
-	}
-
-	std::string Rev2ParamDefinition::valueAsText(int value) const
-	{
-		if (valueLookup_.find(value) != valueLookup_.end()) {
-			return valueLookup_.at(value);
-		}
-		return "unknown";
 	}
 
 	int Rev2ParamDefinition::sysexIndex() const
@@ -108,14 +116,6 @@ namespace midikraft {
 		return MidiBuffer();
 	}
 
-	std::string Rev2ParamDefinition::lookupValueAsText(int value) const
-	{
-		if (valueLookup_.find(value) != valueLookup_.end()) {
-			return valueLookup_.at(value);
-		}
-		return "unknown";
-	}
-
 	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const
 	{
 		switch (type()) {
@@ -143,7 +143,7 @@ namespace midikraft {
 		case SynthParameterDefinition::ParamType::LOOKUP:
 			int value;
 			if (valueInPatch(patch, value)) {
-				return lookupValueAsText(value);
+				return lookupFunction_(value);
 			}
 			return "invalid lookup param";
 		}
@@ -171,13 +171,7 @@ namespace midikraft {
 
 	midikraft::SynthParameterDefinition::ParamType Rev2ParamDefinition::type() const
 	{
-		if (sysexIndex() != endSysexIndex()) {
-			return SynthParameterDefinition::ParamType::INT_ARRAY;
-		}
-		else if (!valueLookup_.empty()) {
-			return SynthParameterDefinition::ParamType::LOOKUP;
-		}
-		return SynthParameterDefinition::ParamType::INT;
+		return type_;
 	}
 
 }
