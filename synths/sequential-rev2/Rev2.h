@@ -36,8 +36,6 @@ namespace midikraft {
 		MidiMessage clearPolySequencer(const MidiMessage &programEditBuffer, bool layerA, bool layerB);
 		MidiMessage copySequencersFromOther(const MidiMessage& currentProgram, const MidiMessage &lockedProgram);
 
-		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
-
 		// LayerCapability
 		virtual void switchToLayer(int layerNo) override;
 
@@ -52,6 +50,7 @@ namespace midikraft {
 		virtual PatchData filterVoiceRelevantData(PatchData const &unfilteredData) const override;
 
 	private:
+		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
 		juce::MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
 
 		// That's not very Rev2 specific
