@@ -36,6 +36,20 @@ namespace midikraft {
 		lookupFunction_ = lookupFunction;
 	}
 
+	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup) :
+		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex, valueLookup)
+	{
+		type_ = SynthParameterDefinition::ParamType::LOOKUP_ARRAY;
+		endNumber_ = endNumber;
+	}
+
+	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction) :
+		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex, lookupFunction)
+	{
+		type_ = SynthParameterDefinition::ParamType::LOOKUP_ARRAY;
+		endNumber_ = endNumber;
+	}
+
 	std::string Rev2ParamDefinition::name() const
 	{
 		return name_;
@@ -76,7 +90,8 @@ namespace midikraft {
 
 	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, std::vector<int> &outValue) const
 	{
-		if (type() != SynthParameterDefinition::ParamType::INT_ARRAY) {
+		// If this is not an array type, that won't work
+		if (type() != SynthParameterDefinition::ParamType::INT_ARRAY && type() != SynthParameterDefinition::ParamType::LOOKUP_ARRAY) {
 			return false;
 		}
 
@@ -99,6 +114,8 @@ namespace midikraft {
 				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_, value, true);
 			}
 		}
+		case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
+			// Fall through
 		case SynthParameterDefinition::ParamType::INT_ARRAY: {
 			MidiBuffer result;
 			std::vector<int> values;
@@ -126,13 +143,20 @@ namespace midikraft {
 			}
 			return "invalid param";
 		}
+		case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
+			// Fall through
 		case SynthParameterDefinition::ParamType::INT_ARRAY: {
 			std::vector<int> value;
 			if (valueInPatch(patch, value)) {
 				std::stringstream result;
 				result << "[";
 				for (int i = 0; i < value.size(); i++) {
-					result << String(value[i]);
+					if (type() == SynthParameterDefinition::ParamType::INT_ARRAY) {
+						result << String(value[i]);
+					}
+					else {
+						result << "'" << lookupFunction_(value[i]) << "'";
+					}
 					if (i != value.size() - 1) result << ", ";
 				}
 				result << "]";
