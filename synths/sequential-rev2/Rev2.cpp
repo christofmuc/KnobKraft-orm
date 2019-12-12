@@ -108,7 +108,15 @@ namespace midikraft {
 		// Decode the data
 		const uint8 *startOfData = &message.getSysExData()[startIndex];
 		auto patchData = unescapeSysex(startOfData, message.getSysExDataSize() - startIndex, 2048);
-		return std::make_shared<Rev2Patch>(patchData);
+		auto patch = std::make_shared<Rev2Patch>(patchData);
+
+		if (isSingleProgramDump(message)) {
+			int bank = message.getSysExData()[3];
+			int program = message.getSysExData()[4];
+			patch->setPatchNumber(MidiProgramNumber::fromZeroBase(bank * 100 + program));
+		}
+
+		return patch;
 	}
 
 	std::shared_ptr<Patch> Rev2::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
