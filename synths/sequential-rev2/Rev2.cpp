@@ -113,7 +113,7 @@ namespace midikraft {
 		if (isSingleProgramDump(message)) {
 			int bank = message.getSysExData()[3];
 			int program = message.getSysExData()[4];
-			patch->setPatchNumber(MidiProgramNumber::fromZeroBase(bank * 100 + program));
+			patch->setPatchNumber(MidiProgramNumber::fromZeroBase(bank * 128 + program));
 		}
 
 		return patch;
@@ -129,7 +129,7 @@ namespace midikraft {
 	{
 		// By default, create an edit buffer dump file...
 		std::vector<uint8> programEditBufferDataDump({ 0x01 /* DSI */, midiModelID_, 0x03 /* Edit Buffer Data */ });
-		auto patchData = escapeSysex(patch.data());
+		auto patchData = escapeSysex(patch.data(), 2046);
 		jassert(patch.data().size() == 2046);
 		jassert(patchData.size() == 2339);
 		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programEditBufferDataDump));
@@ -171,7 +171,7 @@ namespace midikraft {
 
 	juce::MidiMessage Rev2::buildSysexFromEditBuffer(std::vector<uint8> editBuffer) {
 		// Done, now create a new encoded buffer
-		std::vector<uint8> encodedBuffer = escapeSysex(editBuffer);
+		std::vector<uint8> encodedBuffer = escapeSysex(editBuffer, 2046);
 
 		// Build the sysex method with the patched buffer
 		std::vector<uint8> sysEx({ 0b00000001, 0b00101111, 0b00000011 });
@@ -326,7 +326,13 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Rev2::patchToProgramDumpSysex(const Patch &patch) const
 	{
-		return patchToSysex(patch);
+		// Create a program data dump message
+		int programPlace = patch.patchNumber()->midiProgramNumber().toZeroBased();
+		std::vector<uint8> programDataDump({ 0x01 /* DSI */, midiModelID_, 0x02 /* Program Data */, (uint8) (programPlace / 128), (uint8) (programPlace % 128) });
+		auto patchData = escapeSysex(patch.data(), 2046);
+		jassert(patchData.size() == 2339);
+		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programDataDump));
+		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(programDataDump) });
 	}
 
 	std::string Rev2::getName() const

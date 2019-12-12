@@ -171,11 +171,11 @@ namespace midikraft {
 		return result;
 	}
 
-	std::vector<juce::uint8> DSISynth::escapeSysex(const PatchData &programEditBuffer)
+	std::vector<juce::uint8> DSISynth::escapeSysex(const PatchData &programEditBuffer, size_t bytesToEscape)
 	{
 		std::vector<juce::uint8> result;
 		int readIndex = 0;
-		while (readIndex < programEditBuffer.size()) {
+		while (readIndex < bytesToEscape) {
 			// Write an empty msb byte and record the index
 			result.push_back(0);
 			size_t msbIndex = result.size() - 1;
@@ -183,7 +183,7 @@ namespace midikraft {
 			// Now append the next 7 bytes from the input, and set their msb byte
 			uint8 msb = 0;
 			for (int i = 0; i < 7; i++) {
-				if (readIndex < programEditBuffer.size()) {
+				if (readIndex < bytesToEscape) {
 					result.push_back(programEditBuffer.at(readIndex) & 0x7f);
 					msb |= (programEditBuffer.at(readIndex) & 0x80) >> (7 - i);
 				}

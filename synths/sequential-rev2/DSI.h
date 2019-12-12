@@ -51,7 +51,7 @@ namespace midikraft {
 
 		MidiBuffer createNRPN(int parameterNo, int value);
 		static PatchData unescapeSysex(const uint8 *sysExData, int sysExLen, int expectedLength);
-		static std::vector<uint8> escapeSysex(const PatchData &programEditBuffer);
+		static std::vector<uint8> escapeSysex(const PatchData &programEditBuffer, size_t bytesToEscape);
 
 		uint8 midiModelID_;
 		std::string versionString_;
