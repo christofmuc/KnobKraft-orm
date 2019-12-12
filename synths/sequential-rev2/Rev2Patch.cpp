@@ -207,18 +207,18 @@ namespace midikraft {
 		Rev2ParamDefinition(224, 239, 0, 126, "Gated Seq Track 3 Step 1,16", 172), // 126 is Reset
 		Rev2ParamDefinition(240, 255, 0, 126, "Gated Seq Track 4 Step 1,16", 188), // 126 is Reset
 		// TODO - really no values ?
-		Rev2ParamDefinition(276, 339, 0, 127, "Seq Step 1,64 Note 1", 256),
-		Rev2ParamDefinition(340, 403, 128, 255, "Seq Step 1,64 Velocity 1", 320),
-		Rev2ParamDefinition(404, 467, 0, 127, "Seq Step 1,64 Note 2", 384),
-		Rev2ParamDefinition(468, 531, 128, 255, "Seq Step 1,64 Velocity 2", 448),
-		Rev2ParamDefinition(532, 595, 0, 127, "Seq Step 1,64 Note 3", 512),
-		Rev2ParamDefinition(596, 659, 128, 255, "Seq Step 1,64 Velocity 3", 576),
-		Rev2ParamDefinition(660, 723, 0, 127, "Seq Step 1,64 Note 4", 640),
-		Rev2ParamDefinition(724, 787, 128, 255, "Seq Step 1,64 Velocity 4", 704),
-		Rev2ParamDefinition(788, 851, 0, 127, "Seq Step 1,64 Note 5", 768),
-		Rev2ParamDefinition(852, 915, 128, 255, "Seq Step 1,64 Velocity 5", 832),
-		Rev2ParamDefinition(916, 979, 0, 127, "Seq Step 1,64 Note 6", 896),
-		Rev2ParamDefinition(980, 1043, 128, 255, "Seq Step 1,64 Velocity 6", 960)
+		Rev2ParamDefinition(276, 339, 0, 127, "Poly Seq Note 1", 256, noteNumberToName),
+		Rev2ParamDefinition(340, 403, 128, 255, "Poly Seq Vel 1", 320),
+		Rev2ParamDefinition(404, 467, 0, 127, "Poly Seq Note 2", 384, noteNumberToName),
+		Rev2ParamDefinition(468, 531, 128, 255, "Poly Seq Vel 2", 448),
+		Rev2ParamDefinition(532, 595, 0, 127, "Poly Seq Note 3", 512, noteNumberToName),
+		Rev2ParamDefinition(596, 659, 128, 255, "Poly Seq Vel 3", 576),
+		Rev2ParamDefinition(660, 723, 0, 127, "Poly Seq Note 4", 640, noteNumberToName),
+		Rev2ParamDefinition(724, 787, 128, 255, "Poly Seq Vel 4", 704),
+		Rev2ParamDefinition(788, 851, 0, 127, "Poly Seq Note 5", 768, noteNumberToName),
+		Rev2ParamDefinition(852, 915, 128, 255, "Poly Seq Vel 5", 832),
+		Rev2ParamDefinition(916, 979, 0, 127, "Poly Seq Note 6", 896, noteNumberToName),
+		Rev2ParamDefinition(980, 1043, 128, 255, "Poly Seq Vel 6", 960)
 	};
 
 	std::string Rev2PatchNumber::friendlyName() const {
