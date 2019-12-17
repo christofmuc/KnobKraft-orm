@@ -178,7 +178,7 @@ namespace midikraft {
 		Rev2ParamDefinition(158, 0, 1, "FX Clock Sync", 120),
 		// TODO - really no values ?
 		Rev2ParamDefinition(163, 0, 2, "A/B Mode", 231, { { 0, "Single Layer" }, { 1, "Stacked" }, { 2, "Split" } }),
-		Rev2ParamDefinition(164, 0, 1, "Seq Start/Stop", 137),
+		Rev2ParamDefinition(164, 0, 1, "Poly Seq Start/Stop", 137),
 		// TODO - really no values ?
 		Rev2ParamDefinition(167, 0, 16, "Unison Detune", 208),
 		Rev2ParamDefinition(168, 0, 1, "Unison On/Off", 123),
@@ -196,16 +196,16 @@ namespace midikraft {
 		Rev2ParamDefinition(179, 30, 250, "BPM Tempo", 130),
 		// TODO - really no values ?
 		Rev2ParamDefinition(182, 0, 4, "Gated Seq Mode", 138, { {0, "Normal"}, { 1, "No Reset"}, { 2, "No Gate"}, { 3, "No G/R"}, {4, "Key Step"} }),
-		Rev2ParamDefinition(183, 0, 1, "Gated Seq On/Off", 137),
-		Rev2ParamDefinition(184, 0, 52, "Seq 1 Destination", 111, kLfoDestinations),
-		Rev2ParamDefinition(185, 0, 53, "Seq 2 Destination (slew)", 112, kLfoDestinations),
-		Rev2ParamDefinition(186, 0, 52, "Seq 3 Destination", 113, kLfoDestinations),
-		Rev2ParamDefinition(187, 0, 53, "Seq 4 Destination (slew)", 114, kLfoDestinations),
+		Rev2ParamDefinition(183, 0, 1, "Seq Mode", 137, { {0, "Gated"}, { 1, "Poly"} }),
+		Rev2ParamDefinition(184, 0, 52, "Seq 1 Dest", 111, kLfoDestinations),
+		Rev2ParamDefinition(185, 0, 53, "Seq 2 Dest", 112, kLfoDestinations),
+		Rev2ParamDefinition(186, 0, 52, "Seq 3 Dest", 113, kLfoDestinations),
+		Rev2ParamDefinition(187, 0, 53, "Seq 4 Dest", 114, kLfoDestinations),
 		// TODO - really no values ?
-		Rev2ParamDefinition(192, 207, 0, 127, "Gated Seq Track 1 Step 1,16", 140), // 126 is Reset, 127 is the Rest (Rest only on Track 1)
-		Rev2ParamDefinition(208, 223, 0, 126, "Gated Seq Track 2 Step 1,16", 156), // 126 is Reset
-		Rev2ParamDefinition(224, 239, 0, 126, "Gated Seq Track 3 Step 1,16", 172), // 126 is Reset
-		Rev2ParamDefinition(240, 255, 0, 126, "Gated Seq Track 4 Step 1,16", 188), // 126 is Reset
+		Rev2ParamDefinition(192, 207, 0, 127, "Seq Track 1", 140), // 126 is Reset, 127 is the Rest (Rest only on Track 1)
+		Rev2ParamDefinition(208, 223, 0, 126, "Seq Track 2", 156), // 126 is Reset
+		Rev2ParamDefinition(224, 239, 0, 126, "Seq Track 3", 172), // 126 is Reset
+		Rev2ParamDefinition(240, 255, 0, 126, "Seq Track 4", 188), // 126 is Reset
 		// TODO - really no values ?
 		Rev2ParamDefinition(276, 339, 0, 127, "Poly Seq Note 1", 256, noteNumberToName),
 		Rev2ParamDefinition(340, 403, 128, 255, "Poly Seq Vel 1", 320),
