@@ -51,7 +51,7 @@ namespace midikraft {
 
 	private:
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
-		juce::MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
+		MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
 
 		// That's not very Rev2 specific
 		static uint8 clamp(int value, uint8 min = 0, uint8 max = 127);
