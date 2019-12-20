@@ -4,8 +4,11 @@
 
 namespace midikraft {
 
+	const int kSysexStartLayerB = 1024; // Layer B starts at sysex index 1024
+	const int kNRPNStartLayerB = 2048; // The NRPN numbers for layer B start 2048 higher than those for layer A
+
 	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) :
-		type_(ParamType::INT), number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
+		type_(ParamType::INT), targetLayer_(0), number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
 	{
 	}
 
@@ -57,14 +60,15 @@ namespace midikraft {
 
 	int Rev2ParamDefinition::sysexIndex() const
 	{
-		return sysex_;
+		jassert(targetLayer_ == 0 || targetLayer_ == 1);
+		return sysex_ + (targetLayer_ == 1 ? kSysexStartLayerB : 0);
 	}
 
 	int Rev2ParamDefinition::endSysexIndex() const
 	{
 		// This is allowed because parameters with consecutive NRPN controller numbers are stored consecutively in the 
 		// sysex as well.
-		return sysex_ + endNumber_ - number_;
+		return sysexIndex() + endNumber_ - number_;
 	}
 
 	std::string Rev2ParamDefinition::description() const
@@ -105,13 +109,14 @@ namespace midikraft {
 
 	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth *synth) const
 	{
+		int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
 		switch (type()) {
 		case SynthParameterDefinition::ParamType::LOOKUP:
 			// Fall through
 		case SynthParameterDefinition::ParamType::INT: {
 			int value;
 			if (valueInPatch(patch, value)) {
-				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_, value, true);
+				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpnNumberToUse, value, true);
 			}
 		}
 		case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
@@ -122,7 +127,7 @@ namespace midikraft {
 			if (valueInPatch(patch, values)) {
 				int idx = 0;
 				for (auto value : values) {
-					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), number_ + idx, value, true);
+					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpnNumberToUse + idx, value, true);
 					result.addEvents(buffer, 0, -1, 0);
 					idx++;
 				}
@@ -131,6 +136,17 @@ namespace midikraft {
 		}
 		}
 		return MidiBuffer();
+	}
+
+	void Rev2ParamDefinition::setTargetLayer(int layerNo)
+	{
+		jassert(layerNo == 0 || layerNo == 1);
+		targetLayer_ = layerNo == 1 ? 1 : 0; // Use only 1 or 0, and 0 is default in case of invalid parameter
+	}
+
+	int Rev2ParamDefinition::getTargetLayer() const
+	{
+		return targetLayer_;
 	}
 
 	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const

@@ -5,7 +5,7 @@
 namespace midikraft {
 
 	class Rev2ParamDefinition : public SynthParameterDefinition, 
-		public SynthVectorParameterCapability, public SynthParameterLiveEditCapability {
+		public SynthVectorParameterCapability, public SynthParameterLiveEditCapability, public SynthMultiLayerParameterCapability {
 	public:
 		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex);
 		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup);
@@ -37,8 +37,13 @@ namespace midikraft {
 		// SynthParameterLiveEditCapability
 		virtual MidiBuffer setValueMessages(Patch const &patch, Synth *synth) const override;
 
+		// SynthMultiLayerParameterCapability 
+		virtual void setTargetLayer(int layerNo) override;
+		virtual int getTargetLayer() const override;
+
 	private:
 		ParamType type_;
+		int targetLayer_; // The Rev2 has no layers, A (=0) and B (=0). By default, we target 0 but can change this calling setTargetLayer()
 		int number_;
 		int endNumber_;
 		int min_;
