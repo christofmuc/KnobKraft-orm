@@ -348,7 +348,12 @@ namespace midikraft {
 		return result;
 	}
 
-	int BCR2000::indexOfPreset(std::string const &name)
+	std::vector<std::string> BCR2000::listOfPresets() const
+	{
+		return bcrPresets_;
+	}
+
+	int BCR2000::indexOfPreset(std::string const &name) const
 	{
 		for (int i = 0; i < bcrPresets_.size(); i++) {
 			if (bcrPresets_[i] == name) {

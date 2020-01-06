@@ -49,7 +49,8 @@ namespace midikraft {
 		static std::string syxToBCRString(MidiMessage const &syx);
 
 		// Preset handling in the BCR2000 itself. This is fully automated management, so we do not need a Librarian
-		int indexOfPreset(std::string const &name);
+		std::vector<std::string> listOfPresets() const;
+		int indexOfPreset(std::string const &name) const;
 		void selectPreset(MidiController *controller, int presetIndex);
 		void refreshListOfPresets(std::function<void()> callback);
 		void invalidateListOfPresets();
