@@ -11,6 +11,7 @@
 #include "SimpleDiscoverableDevice.h"
 #include "MidiController.h"
 #include "MidiChannel.h"
+#include "StreamDumpCapability.h"
 
 #include "Logger.h"
 
@@ -21,7 +22,7 @@ namespace midikraft {
 
 	class BCRdefinition;
 
-	class BCR2000 : public SimpleDiscoverableDevice {
+	class BCR2000 : public SimpleDiscoverableDevice, public StreamDumpCapability {
 	public:
 		BCR2000() {}
 
@@ -54,6 +55,14 @@ namespace midikraft {
 		void selectPreset(MidiController *controller, int presetIndex);
 		void refreshListOfPresets(std::function<void()> callback);
 		void invalidateListOfPresets();
+
+		// Unused so far
+		MidiMessage requestEditBuffer() const;
+
+		// StreamDumpCapability
+		virtual MidiMessage requestDump(int number) const override;
+		virtual bool isPartOfDump(const MidiMessage& message) const override;
+		virtual bool isDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
 
 	private:
 		uint8 sysexCommand(const MidiMessage &message) const;

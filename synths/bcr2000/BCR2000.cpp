@@ -405,4 +405,38 @@ namespace midikraft {
 		bcrPresets_.clear();
 	}
 
+	MidiMessage BCR2000::requestEditBuffer() const
+	{
+		return requestDump(0x7F);
+	}
+
+	juce::MidiMessage BCR2000::requestDump(int number) const
+	{
+		std::vector<uint8> data = createSysexCommandData(REQUEST_DATA);
+		data.push_back((uint8) number);
+		return MidiHelpers::sysexMessage(data);
+	}
+
+	bool BCR2000::isPartOfDump(const MidiMessage& message) const
+	{
+		if (isSysexFromBCR2000(message)) {
+			// This is the reply. We do not use the identity string returned
+			if (message.getSysExDataSize() >= 5 && sysexCommand(message) == SEND_BCL_MESSAGE) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool BCR2000::isDumpFinished(std::vector<MidiMessage> const &bankDump) const
+	{
+		if (!bankDump.empty()) {
+			std::string line = convertSyxToText(bankDump.back());
+			if (line == "$end") {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }
