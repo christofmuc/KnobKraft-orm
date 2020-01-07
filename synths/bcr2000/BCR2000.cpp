@@ -164,12 +164,13 @@ namespace midikraft {
 		return message.getSysExData()[5];
 	}
 
-	void BCR2000::sendSysExToBCR(SafeMidiOutput *midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void()> const &whenDone)
+	void BCR2000::sendSysExToBCR(SafeMidiOutput *midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone)
 	{
+		errorsDuringUpload_.clear();
 		TransferCounters *receivedCounter = new TransferCounters;
 		// Determine what we will do with the answer...
 		auto handle = MidiController::makeOneHandle();
-		MidiController::instance()->addMessageHandler(handle, [messages, midiOutput, logger, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
+		MidiController::instance()->addMessageHandler(handle, [this, messages, midiOutput, logger, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
 			ignoreUnused(source);
 
 			// Check the answer from the BCR2000
@@ -198,7 +199,9 @@ namespace midikraft {
 								errorText = errorNames[error];
 							}
 							if (logicalLineNumber >= 0 && logicalLineNumber < messages.size()) {
-								logger->postMessage((boost::format("Error %d (%s) in line %d: %s") % error % errorText % (logicalLineNumber + 1) % convertSyxToText(messages[logicalLineNumber])).str());
+								auto currentLine = convertSyxToText(messages[logicalLineNumber]);
+								logger->postMessage((boost::format("Error %d (%s) in line %d: %s") % error % errorText % (logicalLineNumber + 1) % currentLine).str());
+								errorsDuringUpload_.push_back({ error, errorText, logicalLineNumber + 1, currentLine });
 							}
 							else {
 								logger->postMessage((boost::format("Error %d (%s) in line %d") % error % errorText % (logicalLineNumber + 1)).str());
@@ -211,7 +214,7 @@ namespace midikraft {
 							delete receivedCounter;
 							MidiController::instance()->removeMessageHandler(handle);
 							logger->postMessage("All messages received by BCR2000");
-							whenDone();
+							whenDone(errorsDuringUpload_);
 						}
 						else {
 							receivedCounter->lastLine = lineNo; // To detect the wrap around
@@ -372,7 +375,7 @@ namespace midikraft {
 
 	void BCR2000::refreshListOfPresets(std::function<void()> callback)
 	{
-		if (bcrPresets_.size() == 0) {
+		if (bcrPresets_.empty()) {
 			auto myhandle = MidiController::makeOneHandle();
 			MidiController::instance()->addMessageHandler(myhandle, [this, myhandle, callback](MidiInput *source, MidiMessage const &message) {
 				ignoreUnused(source);

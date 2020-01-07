@@ -24,7 +24,12 @@ namespace midikraft {
 
 	class BCR2000 : public SimpleDiscoverableDevice, public StreamDumpCapability {
 	public:
-		BCR2000() {}
+		struct BCRError {
+			uint8 errorCode;
+			std::string errorText;
+			int lineNumber;
+			std::string lineText;
+		};
 
 		void writeToFile(std::string const &filename, std::string const &bcl) const;
 		std::vector<MidiMessage> convertToSyx(std::string const &bcl) const;
@@ -32,7 +37,7 @@ namespace midikraft {
 		static std::string convertSyxToText(const MidiMessage &message);
 		static bool isSysexFromBCR2000(const MidiMessage& message);
 
-		static void sendSysExToBCR(SafeMidiOutput *midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void()> const &whenDone = []() {});
+		void sendSysExToBCR(SafeMidiOutput *midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone);
 
 		// Implementation of DiscoverableDevice
 		virtual std::string getName() const override;
@@ -68,6 +73,7 @@ namespace midikraft {
 		uint8 sysexCommand(const MidiMessage &message) const;
 		std::vector<uint8> createSysexCommandData(uint8 commandCode) const;
 		std::vector<std::string> bcrPresets_; // These are the names of the 32 presets stored in the BCR2000
+		std::vector<BCRError> errorsDuringUpload_; // Make sure to not run two uploads in parallel...
 
 		struct TransferCounters {
 			int numMessages;
