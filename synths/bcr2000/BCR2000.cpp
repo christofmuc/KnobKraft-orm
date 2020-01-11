@@ -70,7 +70,7 @@ namespace midikraft {
 		bcrFile.close();
 	}
 
-	std::vector<juce::MidiMessage> BCR2000::convertToSyx(std::string const &bcl) const
+	std::vector<juce::MidiMessage> BCR2000::convertToSyx(std::string const &bcl, bool verbatim /* = false */) const
 	{
 		std::vector<MidiMessage> result;
 
@@ -87,13 +87,19 @@ namespace midikraft {
 			std::string line;
 			std::getline(input, line, '\n');
 
-			// Strip comments to accelerate transmission
-			line = line.substr(0, line.find(";", 0));
-			boost::trim_right(line);
+			if (!verbatim) {
+				// Strip comments to accelerate transmission
+				line = line.substr(0, line.find(";", 0));
+				boost::trim_right(line);
 
-			// No need to send empty lines to BCR
-			if (line.empty())
-				continue;
+				// No need to send empty lines to BCR
+				if (line.empty())
+					continue;
+			}
+			else {
+				// Only trim - this is important for \r\n to \n conversion
+				boost::trim_right(line);
+			}
 
 			for (auto c : line) characters.push_back(c);
 

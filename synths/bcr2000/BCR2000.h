@@ -32,7 +32,7 @@ namespace midikraft {
 		};
 
 		void writeToFile(std::string const &filename, std::string const &bcl) const;
-		std::vector<MidiMessage> convertToSyx(std::string const &bcl) const;
+		std::vector<MidiMessage> convertToSyx(std::string const &bcl, bool verbatim = false) const;
 
 		static std::string convertSyxToText(const MidiMessage &message);
 		static bool isSysexFromBCR2000(const MidiMessage& message);
