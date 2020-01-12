@@ -381,31 +381,33 @@ namespace midikraft {
 
 	void BCR2000::refreshListOfPresets(std::function<void()> callback)
 	{
-		if (bcrPresets_.empty()) {
-			auto myhandle = MidiController::makeOneHandle();
-			MidiController::instance()->addMessageHandler(myhandle, [this, myhandle, callback](MidiInput *source, MidiMessage const &message) {
-				ignoreUnused(source);
-				if (isSysexFromBCR2000(message)) {
-					if (sysexCommand(message) == BCL_REPLY && message.getSysExDataSize() == 32) {
-						int presetNum = message.getSysExData()[7] + 1;
-						std::string presetName(&message.getSysExData()[8], &message.getSysExData()[32]);
-						boost::trim(presetName);
-						SimpleLogger::instance()->postMessage((boost::format("Preset #%d: %s") % presetNum % presetName).str());
-						bcrPresets_.push_back(presetName);
-						if (presetNum == 32) {
-							MidiController::instance()->removeMessageHandler(myhandle);
-							callback();
+		if (channel().isValid()) {
+			if (bcrPresets_.empty()) {
+				auto myhandle = MidiController::makeOneHandle();
+				MidiController::instance()->addMessageHandler(myhandle, [this, myhandle, callback](MidiInput *source, MidiMessage const &message) {
+					ignoreUnused(source);
+					if (isSysexFromBCR2000(message)) {
+						if (sysexCommand(message) == BCL_REPLY && message.getSysExDataSize() == 32) {
+							int presetNum = message.getSysExData()[7] + 1;
+							std::string presetName(&message.getSysExData()[8], &message.getSysExData()[32]);
+							boost::trim(presetName);
+							SimpleLogger::instance()->postMessage((boost::format("Preset #%d: %s") % presetNum % presetName).str());
+							bcrPresets_.push_back(presetName);
+							if (presetNum == 32) {
+								MidiController::instance()->removeMessageHandler(myhandle);
+								callback();
+							}
 						}
 					}
-				}
-			});
-			std::vector<uint8> requestNames = createSysexCommandData(REQUEST_PRESET_NAME);
-			requestNames.push_back(0x7e); // That's for all names
-			MidiController::instance()->getMidiOutput(midiOutput())->sendMessageNow(MidiHelpers::sysexMessage(requestNames));
-		}
-		else {
-			// Nothing to do
-			callback();
+				});
+				std::vector<uint8> requestNames = createSysexCommandData(REQUEST_PRESET_NAME);
+				requestNames.push_back(0x7e); // That's for all names
+				MidiController::instance()->getMidiOutput(midiOutput())->sendMessageNow(MidiHelpers::sysexMessage(requestNames));
+			}
+			else {
+				// Nothing to do
+				callback();
+			}
 		}
 	}
 
