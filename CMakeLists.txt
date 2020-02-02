@@ -31,14 +31,19 @@ ENDIF()
 # We need a little bit support for the JUCE library, and also want to put our own CMake helpers on the module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/third_party/juce-cmake/cmake" "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+# RapidJson is a include-only library, so instead of bothering with their CMake files, just add the include path
+set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
+
+# Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
 add_subdirectory(MidiKraft-base)
-
-set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
-
 add_subdirectory(MidiKraft-librarian)
 
+# Import the synths currently supported
+add_subdirectory(synths/MidiKraft-sequential-rev2)
+
+# Main module
 add_subdirectory(The-Orm)
 
 
