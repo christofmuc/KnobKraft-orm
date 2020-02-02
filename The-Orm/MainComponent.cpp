@@ -27,9 +27,10 @@ private:
 
 //==============================================================================
 MainComponent::MainComponent() :
+	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	grid_(4, 8, [this](int no) { retrievePatch(no); }),
 	resizerBar_(&stretchableManager_, 1, false),
-	logArea_(new HorizontalLayoutContainer(&logView_, &midiLogView_, -0.5, 0.5), BorderSize<int>(8)),
+	logArea_(new HorizontalLayoutContainer(&logView_, nullptr, -0.5, 0.5), BorderSize<int>(8)),
 	buttons_(301, LambdaButtonStrip::Direction::Horizontal)
 {
 	LambdaButtonStrip::TButtonMap buttons = {
@@ -64,6 +65,11 @@ MainComponent::MainComponent() :
 	addKeyListener(commandManager_.getKeyMappings());
 
 	// Setup the rest of the UI
+	mainTabs_.addTab("Library", Colours::aliceblue, nullptr, true);
+	mainTabs_.addTab("MIDI Log", Colours::aliceblue, &midiLogView_, false);
+
+	addAndMakeVisible(mainTabs_);
+
 	logger_ = std::make_unique<LogViewLogger>(logView_);
 	addAndMakeVisible(menuBar_);
 	addAndMakeVisible(resizerBar_);
@@ -92,14 +98,14 @@ MainComponent::~MainComponent()
 void MainComponent::resized()
 {
 	auto area = getLocalBounds();
-	menuBar_.setBounds(area.removeFromTop(30));
+	//menuBar_.setBounds(area.removeFromTop(30));
 
 	// make a list of two of our child components that we want to reposition
-	Component* comps[] = { &resizerBar_, &logArea_ };
+	Component* comps[] = { &mainTabs_, &resizerBar_, &logArea_ };
 
 	// this will position the 3 components, one above the other, to fit
 	// vertically into the rectangle provided.
-	stretchableManager_.layOutComponents(comps, 2,
+	stretchableManager_.layOutComponents(comps, 3,
 		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
 		true, true);
 }

@@ -41,6 +41,7 @@ private:
 	void aboutBox();
 
 	midikraft::AutoDetection autodetector_;
+	TabbedComponent mainTabs_;
 	LogView logView_;
 	PatchButtonGrid grid_;
 	StretchableLayoutManager stretchableManager_;
