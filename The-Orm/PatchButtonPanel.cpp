@@ -1,0 +1,159 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
+#include "PatchButtonPanel.h"
+
+#include "Patch.h"
+
+#include <boost/format.hpp>
+#include <algorithm>
+
+PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
+	handler_(handler), indexOfActive_(-1), pageBase_(0), pageNumber_(0), pageSize_(64)
+{
+	// We want 64 patch buttons
+	patchButtons_ = std::make_unique<PatchButtonGrid>(8, 8, [this](int index) { buttonClicked(index); });
+	addAndMakeVisible(patchButtons_.get());
+
+	midikraft::MidiController::instance()->addMessageHandler(callback_, [this](MidiInput *source, const MidiMessage &message) { 
+		// Check if this is a message we will transform into a macro
+		if (isMacroMessage(message)) {
+			executeMacro(message);
+			return;
+		}
+	});
+
+	addAndMakeVisible(pageUp_); 
+	pageUp_.setButtonText(">");
+	pageUp_.addListener(this);
+	addAndMakeVisible(pageDown_); 
+	pageDown_.setButtonText("<");
+	pageDown_.addListener(this);
+	addAndMakeVisible(pageNumbers_);
+	pageNumbers_.setJustificationType(Justification::centred);
+}
+
+PatchButtonPanel::~PatchButtonPanel() {
+	midikraft::MidiController::instance()->removeMessageHandler(callback_);
+	callback_ = midikraft::MidiController::makeNoneHandle();
+}
+
+void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &patches) {
+	patches_ = patches;
+	pageBase_ = pageNumber_ = 0;
+	refresh(false);
+}
+
+void PatchButtonPanel::refresh(bool keepActive) {
+	// Now set the button text and colors
+	for (size_t i = 0; i < std::max((size_t)patchButtons_->size(), patches_.size() - pageBase_); i++) {
+		if (i < patchButtons_->size()) {
+			if (!keepActive) {
+				patchButtons_->buttonWithIndex(i)->setActive(false);
+			}
+			if (i < patches_.size() - pageBase_) {
+				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i + pageBase_].patch()->patchName());
+				Colour color = Colours::slategrey;
+				auto cats = patches_[i + pageBase_].categories();
+				if (!cats.empty()) {
+					// Random in case the patch has multiple categories
+					color = cats.cbegin()->color;
+				}
+				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
+				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i + pageBase_].isFavorite());
+			}
+			else {
+				patchButtons_->buttonWithIndex(i)->setButtonText("");
+				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, Colours::black);
+				patchButtons_->buttonWithIndex(i)->setFavorite(false);
+			}
+		}
+	}
+	if (!keepActive) {
+		indexOfActive_ = -1;
+	}
+
+	// Also, set the page number stripe
+	std::string pages;
+	size_t numberOfPages = (patches_.size() / pageSize_) + 1;
+	for (size_t i = 0; i < numberOfPages; i++) {
+		if ((i == numberOfPages - 1) && (patches_.size() % pageSize_ == 0)) continue;
+		if (!pages.empty()) pages.append(" ");
+		if (i == pageNumber_) {
+			pages.append((boost::format("<%d>") % (i + 1)).str());
+		}
+		else {
+			pages.append((boost::format("%d") % (i + 1)).str());
+		}
+	}
+	pageNumbers_.setText(pages, dontSendNotification);
+}
+
+void PatchButtonPanel::resized()
+{
+	// Create 64 patch buttons in a grid
+	/*FlexBox fb;
+	fb.flexWrap = FlexBox::Wrap::wrap;
+	fb.justifyContent = FlexBox::JustifyContent::spaceBetween;
+	fb.alignContent = FlexBox::AlignContent::stretch;
+	for (auto patchbutton : patchButtons_) {
+		fb.items.add(FlexItem(*patchbutton).withMinWidth(50.0f).withMinHeight(50.0f));
+	}
+	fb.performLayout(getLocalBounds().toFloat());*/
+	Rectangle<int> area(getLocalBounds());
+	pageNumbers_.setBounds(area.removeFromBottom(20));
+	pageDown_.setBounds(area.removeFromLeft(32).withTrimmedRight(8));
+	pageUp_.setBounds(area.removeFromRight(32).withTrimmedLeft(8));
+
+	patchButtons_->setBounds(area);
+}
+
+void PatchButtonPanel::buttonClicked(int buttonIndex) {
+	if (buttonIndex >= 0 && buttonIndex < (int) patches_.size()) {
+		if (indexOfActive_ != -1) {
+			patchButtons_->buttonWithIndex(indexOfActive_)->setActive(false);
+		}
+		// This button is active, is it?
+		handler_(patches_[buttonIndex + pageBase_]);
+		indexOfActive_ = buttonIndex;
+		patchButtons_->buttonWithIndex(indexOfActive_)->setActive(true);
+	}
+}
+
+void PatchButtonPanel::buttonClicked(Button* button)
+{
+	if (button == &pageUp_) {
+		if (pageBase_ + pageSize_ < (int) patches_.size()) {
+			pageBase_ += pageSize_;
+			pageNumber_++;
+			refresh(false);
+		}
+	}
+	else if (button == &pageDown_) {
+		if (pageBase_ - pageSize_ >= 0) {
+			pageBase_ -= pageSize_;
+			pageNumber_--;
+			refresh(true);
+		}
+	}
+}
+
+bool PatchButtonPanel::isMacroMessage(const MidiMessage& message)
+{
+	// The only macro is the highest C of the Korg DW 8000
+	return (message.isNoteOn() && message.getNoteNumber() == 96 /* C6 */);
+}
+
+
+void PatchButtonPanel::executeMacro(const MidiMessage&)
+{
+	// The only macro is to advance the selected patch by one
+	if ((indexOfActive_ < (int) patches_.size() - 1) && (indexOfActive_ < (int) patchButtons_->size() - 1)) {
+		MessageManager::callAsync([this]() {
+			patchButtons_->buttonWithIndex(indexOfActive_ + 1)->buttonClicked(nullptr);
+		});
+	}
+}

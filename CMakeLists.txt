@@ -39,6 +39,7 @@ add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
 add_subdirectory(MidiKraft-base)
 add_subdirectory(MidiKraft-librarian)
+add_subdirectory(MidiKraft-database)
 
 # Import the synths currently supported
 add_subdirectory(synths/MidiKraft-sequential-rev2)

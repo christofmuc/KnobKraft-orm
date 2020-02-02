@@ -30,19 +30,30 @@ find_package(JUCE REQUIRED
 		juce_audio_utils # AudioAppComponent
 		juce_dsp
 		juce_opengl
+		juce_cryptography # MD5
 )
 
 set(SOURCES
+	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
+	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
+	PatchButtonPanel.cpp PatchButtonPanel.h
+	PatchDiff.cpp PatchDiff.h
+	PatchView.cpp PatchView.h
+	UIModel.cpp UIModel.h
 	setup.iss
 	redist/agpl-3.0.txt
 )
 
+# Need to link against dynamodb
+find_package(aws-cpp-sdk-dynamodb REQUIRED)
+find_package(aws-cpp-sdk-core REQUIRED)
+
 add_executable(KnobKraftOrm WIN32 ${SOURCES})
-target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl")
 IF(WIN32)
-	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} juce-utils juce-widgets midikraft-base)
+	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} juce-utils juce-widgets midikraft-base midikraft-librarian midikraft-database aws-cpp-sdk-core aws-cpp-sdk-dynamodb)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
@@ -58,6 +69,8 @@ ELSEIF(UNIX)
 		juce-widgets
 		midikraft-base
 		midikraft-behringer-bcr2000
+		aws-cpp-sdk-core 
+		aws-cpp-sdk-dynamodb
 		)
 	target_compile_options(KnobKraftOrm PRIVATE -pthread -I/usr/include/webkitgtk-4.0 -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/webkitgtk-4.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include)
 ENDIF()
