@@ -22,3 +22,12 @@
 [submodule "synths/MidiKraft-sequential-rev2"]
 	path = synths/MidiKraft-sequential-rev2
 	url = https://github.com/christofmuc/MidiKraft-sequential-rev2.git
+[submodule "third_party/vcpkg"]
+	path = third_party/vcpkg
+	url = https://github.com/Microsoft/vcpkg.git
+[submodule "third_party/dtl"]
+	path = third_party/dtl
+	url = https://github.com/cubicdaiya/dtl.git
+[submodule "MidiKraft-database"]
+	path = MidiKraft-database
+	url = https://github.com/christofmuc/MidiKraft-database.git
