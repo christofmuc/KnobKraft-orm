@@ -315,7 +315,10 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 				}
 			}
 		}
-		refreshUI();
+		// Back to UI thread
+		MessageManager::callAsync([this]() {
+			refreshUI();
+		});
 	});
 	backgroundThread.runThread();
 }
