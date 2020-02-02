@@ -8,6 +8,7 @@
 
 #include "Logger.h"
 #include "MidiController.h"
+#include "UIModel.h"
 
 #include "HorizontalLayoutContainer.h"
 
@@ -25,14 +26,17 @@ private:
 	LogView &logview_;
 };
 
+
 //==============================================================================
 MainComponent::MainComponent() :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-	grid_(4, 8, [this](int no) { retrievePatch(no); }),
 	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(new HorizontalLayoutContainer(&logView_, nullptr, -0.5, 0.5), BorderSize<int>(8)),
 	buttons_(301, LambdaButtonStrip::Direction::Horizontal)
 {
+	// First init the Internet				
+	Aws::InitAPI(options);
+
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "Detect", {0, "Detect", [this]() {
 		detectBCR();
@@ -64,8 +68,16 @@ MainComponent::MainComponent() :
 	commandManager_.setFirstCommandTarget(this);
 	addKeyListener(commandManager_.getKeyMappings());
 
+	// Create the list of all synthesizers!
+	std::vector<midikraft::SynthHolder>  synths;
+	synths.emplace_back(&rev2_, Colours::aqua);
+	UIModel::instance()->currentSynth_.changeCurrentSynth(&rev2_);
+
+	// Create the patch view
+	patchView_ = std::make_unique<PatchView>(synths);
+
 	// Setup the rest of the UI
-	mainTabs_.addTab("Library", Colours::aliceblue, nullptr, true);
+	mainTabs_.addTab("Library", Colours::aliceblue, patchView_.get(), true);
 	mainTabs_.addTab("MIDI Log", Colours::aliceblue, &midiLogView_, false);
 
 	addAndMakeVisible(mainTabs_);
@@ -92,6 +104,9 @@ MainComponent::MainComponent() :
 
 MainComponent::~MainComponent()
 {
+	// No more Internet
+	Aws::ShutdownAPI(options);
+
 	Logger::setCurrentLogger(nullptr);
 }
 

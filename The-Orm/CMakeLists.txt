@@ -53,7 +53,9 @@ find_package(aws-cpp-sdk-core REQUIRED)
 add_executable(KnobKraftOrm WIN32 ${SOURCES})
 target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl")
 IF(WIN32)
-	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} juce-utils juce-widgets midikraft-base midikraft-librarian midikraft-database aws-cpp-sdk-core aws-cpp-sdk-dynamodb)
+	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} juce-utils juce-widgets midikraft-base midikraft-librarian midikraft-database 
+		midikraft-sequential-rev2
+		aws-cpp-sdk-core aws-cpp-sdk-dynamodb)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
@@ -67,8 +69,8 @@ ELSEIF(UNIX)
 		curl 
 		juce-utils 
 		juce-widgets
-		midikraft-base
-		midikraft-behringer-bcr2000
+		midikraft-base		
+		midikraft-sequential-rev2
 		aws-cpp-sdk-core 
 		aws-cpp-sdk-dynamodb
 		)

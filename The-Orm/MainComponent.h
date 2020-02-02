@@ -14,8 +14,12 @@
 #include "InsetBox.h"
 #include "AutoDetection.h"
 
-class LogViewLogger;
+#include "PatchView.h"
+#include "Rev2.h"
 
+#include <aws/core/Aws.h>
+
+class LogViewLogger;
 
 class MainComponent : public Component, public ApplicationCommandTarget
 {
@@ -41,9 +45,10 @@ private:
 	void aboutBox();
 
 	midikraft::AutoDetection autodetector_;
+	midikraft::Rev2 rev2_;
 	TabbedComponent mainTabs_;
 	LogView logView_;
-	PatchButtonGrid grid_;
+	std::unique_ptr<PatchView> patchView_;
 	StretchableLayoutManager stretchableManager_;
 	StretchableLayoutResizerBar resizerBar_;
 	MidiLogView midiLogView_;
@@ -55,6 +60,9 @@ private:
 
 	LambdaButtonStrip buttons_;
 	ApplicationCommandManager commandManager_;
+
+	// The Internet
+	Aws::SDKOptions options;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
