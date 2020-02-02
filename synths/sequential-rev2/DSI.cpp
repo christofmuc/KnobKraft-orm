@@ -165,7 +165,7 @@ namespace midikraft {
 			}
 		}
 		// This is do work around a bug in the Rev2 firmware 1.1 that made the program edit buffer dump sent 3 bytes short, which is  bytes less after unescaping
-		while (result.size() < expectedLength) {
+		while (result.size() < (size_t) expectedLength) {
 			result.push_back(0);
 		}
 		return result;
@@ -174,7 +174,7 @@ namespace midikraft {
 	std::vector<juce::uint8> DSISynth::escapeSysex(const PatchData &programEditBuffer, size_t bytesToEscape)
 	{
 		std::vector<juce::uint8> result;
-		int readIndex = 0;
+		size_t readIndex = 0;
 		while (readIndex < bytesToEscape) {
 			// Write an empty msb byte and record the index
 			result.push_back(0);

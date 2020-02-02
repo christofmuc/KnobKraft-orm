@@ -166,7 +166,7 @@ namespace midikraft {
 			if (valueInPatch(patch, value)) {
 				std::stringstream result;
 				result << "[";
-				for (int i = 0; i < value.size(); i++) {
+				for (size_t i = 0; i < value.size(); i++) {
 					if (type() == SynthParameterDefinition::ParamType::INT_ARRAY) {
 						result << String(value[i]);
 					}
@@ -200,7 +200,7 @@ namespace midikraft {
 	{
 		int read = 0;
 		for (int i = sysexIndex(); i <= endSysexIndex(); i++) {
-			if (read < value.size()) {
+			if (read < (int) value.size()) {
 				patch.setAt(i, (uint8)value[read++]);
 			}
 			else {
