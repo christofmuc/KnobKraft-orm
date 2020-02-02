@@ -19,3 +19,6 @@
 [submodule "MidiKraft-librarian"]
 	path = MidiKraft-librarian
 	url = https://github.com/christofmuc/MidiKraft-librarian.git
+[submodule "synths/MidiKraft-sequential-rev2"]
+	path = synths/MidiKraft-sequential-rev2
+	url = https://github.com/christofmuc/MidiKraft-sequential-rev2.git
