@@ -35,6 +35,10 @@ add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
 add_subdirectory(MidiKraft-base)
 
+set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
+
+add_subdirectory(MidiKraft-librarian)
+
 add_subdirectory(The-Orm)
 
 

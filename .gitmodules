@@ -13,3 +13,9 @@
 [submodule "juce-utils"]
 	path = juce-utils
 	url = https://github.com/christofmuc/juce-utils.git
+[submodule "third_party/rapidjson"]
+	path = third_party/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "MidiKraft-librarian"]
+	path = MidiKraft-librarian
+	url = https://github.com/christofmuc/MidiKraft-librarian.git
