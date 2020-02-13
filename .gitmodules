@@ -31,3 +31,6 @@
 [submodule "MidiKraft-database"]
 	path = MidiKraft-database
 	url = https://github.com/christofmuc/MidiKraft-database.git
+[submodule "third_party/SQLiteCpp"]
+	path = third_party/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git

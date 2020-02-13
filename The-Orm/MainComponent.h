@@ -17,8 +17,6 @@
 #include "PatchView.h"
 #include "Rev2.h"
 
-#include <aws/core/Aws.h>
-
 class LogViewLogger;
 
 class MainComponent : public Component, public ApplicationCommandTarget
@@ -60,9 +58,6 @@ private:
 
 	LambdaButtonStrip buttons_;
 	ApplicationCommandManager commandManager_;
-
-	// The Internet
-	Aws::SDKOptions options;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

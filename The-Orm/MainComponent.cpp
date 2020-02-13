@@ -34,9 +34,6 @@ MainComponent::MainComponent() :
 	logArea_(new HorizontalLayoutContainer(&logView_, nullptr, -0.5, 0.5), BorderSize<int>(8)),
 	buttons_(301, LambdaButtonStrip::Direction::Horizontal)
 {
-	// First init the Internet				
-	Aws::InitAPI(options);
-
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "Detect", {0, "Detect", [this]() {
 		detectBCR();
@@ -71,10 +68,11 @@ MainComponent::MainComponent() :
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
 	synths.emplace_back(&rev2_, Colours::aqua);
-	UIModel::instance()->currentSynth_.changeCurrentSynth(&rev2_);
 
 	// Create the patch view
 	patchView_ = std::make_unique<PatchView>(synths);
+
+	UIModel::instance()->currentSynth_.changeCurrentSynth(&rev2_);
 
 	// Setup the rest of the UI
 	mainTabs_.addTab("Library", Colours::aliceblue, patchView_.get(), true);
@@ -104,9 +102,6 @@ MainComponent::MainComponent() :
 
 MainComponent::~MainComponent()
 {
-	// No more Internet
-	Aws::ShutdownAPI(options);
-
 	Logger::setCurrentLogger(nullptr);
 }
 

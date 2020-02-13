@@ -34,6 +34,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/third_party/juce-cmake/
 # RapidJson is a include-only library, so instead of bothering with their CMake files, just add the include path
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
+# Include the SQLite wrapper for MidiKraft-database
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp)
+
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
