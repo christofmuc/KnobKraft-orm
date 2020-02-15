@@ -11,7 +11,10 @@
 CurrentPatchDisplay::CurrentPatchDisplay(std::function<void(midikraft::PatchHolder&)> favoriteHandler,
 	std::function<void(midikraft::PatchHolder&)> sessionHandler) : Component(), favoriteHandler_(favoriteHandler), sessionHandler_(sessionHandler)
 	, currentPatch_(nullptr), categories_({}, [this]() { categoryUpdated();  }, false),
-	name_("PATCHNAME", "No patch loaded"), currentSession_("Current Session"), import_("IMPORT", "No import information")
+	name_("PATCHNAME", "No patch loaded"),
+	currentSession_("Current Session"), 
+	favorite_("Fav!"),
+	import_("IMPORT", "No import information")
 {
 	addAndMakeVisible(&name_);
 

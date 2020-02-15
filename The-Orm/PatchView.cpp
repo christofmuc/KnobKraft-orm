@@ -104,7 +104,7 @@ void PatchView::retrieveFirstPageFromDatabase() {
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
 	midikraft::Synth *loadingForWhich = UIModel::currentSynth();
-	database_.getPatchesAsync({ loadingForWhich, currentlySelectedSourceUUID() }, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
+	database_.getPatchesAsync({ loadingForWhich, currentlySelectedSourceUUID(), onlyFaves_.getToggleState() }, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
 		// If the synth is still active, refresh the result. Else, just ignore the result
 		if (UIModel::currentSynth() == loadingForWhich) {
 			refreshUI();
@@ -142,7 +142,9 @@ void PatchView::comboBoxChanged(ComboBox* box)
 
 void PatchView::buttonClicked(Button *button)
 {
-	refreshUI();
+	if (button == &onlyFaves_) {
+		retrieveFirstPageFromDatabase();
+	}
 }
 
 void PatchView::showPatchDiffDialog() {
