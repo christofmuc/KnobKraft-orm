@@ -129,8 +129,8 @@ namespace midikraft {
 	{
 		// By default, create an edit buffer dump file...
 		std::vector<uint8> programEditBufferDataDump({ 0x01 /* DSI */, midiModelID_, 0x03 /* Edit Buffer Data */ });
+		jassert(patch.data().size() == 2046 || patch.data().size() == 2048); // Original size is 2046, but to find some programming errors at some points I buffer to 2048
 		auto patchData = escapeSysex(patch.data(), 2046);
-		jassert(patch.data().size() == 2046);
 		jassert(patchData.size() == 2339);
 		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programEditBufferDataDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(programEditBufferDataDump) });
