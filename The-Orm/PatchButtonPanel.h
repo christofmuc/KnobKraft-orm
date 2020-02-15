@@ -18,11 +18,15 @@ class PatchButtonPanel : public Component,
 	private Button::Listener
 {
 public:
+	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
+
 	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler);
 	virtual ~PatchButtonPanel();
 
+	void setPatchLoader(TPageLoader pageGetter);
+	void setTotalCount(int totalCount);
 	void setPatches(std::vector<midikraft::PatchHolder> const &patches);
-	void refresh(bool keepActive);
+	void refresh(bool keepActive, bool async);
 
 	void resized() override;
 
@@ -39,11 +43,13 @@ private:
 	std::unique_ptr<PatchButtonGrid> patchButtons_;
 	std::function<void(midikraft::PatchHolder &)> handler_;
 	int indexOfActive_;
+	TPageLoader pageLoader_;
 
 	TextButton pageUp_, pageDown_;
 	Label pageNumbers_;
 	int pageBase_;
 	int pageNumber_;
 	int pageSize_;
+	int totalSize_;
 };
 

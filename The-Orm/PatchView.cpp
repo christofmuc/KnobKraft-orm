@@ -35,7 +35,7 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>([this](midikraft::PatchHolder &favoritePatch) {
 		database_.putPatch(UIModel::currentSynth(), favoritePatch);
-		patchButtons_->refresh(true);
+		patchButtons_->refresh(true, true);
 	},
 		[this](midikraft::PatchHolder &sessionPatch) {
 		UIModel::instance()->currentSession_.changedSession();
@@ -66,6 +66,9 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 	buttonStrip_.setButtonDefinitions(buttons);
 	addAndMakeVisible(buttonStrip_);
 	addAndMakeVisible(patchButtons_.get());
+	patchButtons_->setPatchLoader([this](int skip, int limit, std::function<void(std::vector< midikraft::PatchHolder>)> callback) {
+		loadPage(skip, limit, callback);
+	});	
 
 	// Register for updates
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -82,24 +85,28 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
-		// Discard currently loaded patches
-		library_.clear();
 		refreshUI();
-
-		// Kick off loading from the Internet
-		midikraft::Synth *loadingForWhich = currentSynth->synth();
-		database_.getPatchesAsync(loadingForWhich, [this, loadingForWhich](std::vector<midikraft::PatchHolder> const &newPatches) {
-			// If the synth is still active, refresh the result. Else, just ignore the result
-			if (UIModel::currentSynth() == loadingForWhich) {
-				library_ = newPatches;
-				refreshUI();
-				rebuildImportFilterBox();
-			}
-		});
+		// First, we need to find out how many patches there are (for the paging control)
+		int total = database_.getPatchesCount(currentSynth->synth());
+		patchButtons_->setTotalCount(total);
+		patchButtons_->refresh(false, true); // This kicks of loading the first page
 	}
 	else if (dynamic_cast<CurrentPatch *>(source)) {
 		currentPatchDisplay_->setCurrentPatch(UIModel::currentSynth(), UIModel::currentPatch());
 	}
+}
+
+void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
+	// Kick off loading from the database (could be Internet?)
+	midikraft::Synth *loadingForWhich = UIModel::currentSynth();
+	database_.getPatchesAsync(loadingForWhich, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
+		// If the synth is still active, refresh the result. Else, just ignore the result
+		if (UIModel::currentSynth() == loadingForWhich) {
+			refreshUI();
+			rebuildImportFilterBox();
+			callback(newPatches);
+		}
+	}, skip, limit);
 }
 
 void PatchView::resized()
@@ -152,6 +159,7 @@ void PatchView::refreshUI()
 		selectedImport = importList_.getText().toStdString();
 	}
 
+	/*
 	if (categoryFilters_.isAtLeastOne()) {
 		std::vector<midikraft::Category> categories_selected;
 		for (auto c : categoryFilters_.selectedCategories()) {
@@ -161,7 +169,7 @@ void PatchView::refreshUI()
 	}
 	else {
 		patchButtons_->setPatches(onlyFavorites(onlyWithSameImport(library_, selectedImport), onlyFaves_.getToggleState()));
-	}
+	}*/
 	currentPatchDisplay_->reset();
 }
 
@@ -285,11 +293,11 @@ void PatchView::loadPatches() {
 void PatchView::rebuildImportFilterBox() {
 	// Add the import information of all patches loaded into the combo box
 	std::map<std::string, std::shared_ptr<midikraft::SourceInfo>> sources;
-	for (auto patch : library_) {
+	/*for (auto patch : library_) {
 		if (patch.sourceInfo()) {
 			sources.insert_or_assign(patch.sourceInfo()->toDisplayString(UIModel::currentSynth()), patch.sourceInfo());
 		}
-	}
+	}*/
 	StringArray sourceNameList;
 	sourceNameList.add(kAllPatchesFilter);
 	for (auto source : sources) {
@@ -301,9 +309,6 @@ void PatchView::rebuildImportFilterBox() {
 
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
 	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
-		for (auto newPatch : outNewPatches) {
-			library_.push_back(newPatch);
-		}
 		rebuildImportFilterBox();
 		// Select this import
 		auto info = outNewPatches[0].sourceInfo();
