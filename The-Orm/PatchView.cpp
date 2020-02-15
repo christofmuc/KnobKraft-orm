@@ -86,24 +86,28 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
 		refreshUI();
-		// First, we need to find out how many patches there are (for the paging control)
-		int total = database_.getPatchesCount(currentSynth->synth());
-		patchButtons_->setTotalCount(total);
-		patchButtons_->refresh(false, true); // This kicks of loading the first page
+		rebuildImportFilterBox();
+		retrieveFirstPageFromDatabase();
 	}
 	else if (dynamic_cast<CurrentPatch *>(source)) {
 		currentPatchDisplay_->setCurrentPatch(UIModel::currentSynth(), UIModel::currentPatch());
 	}
 }
 
+void PatchView::retrieveFirstPageFromDatabase() {
+	// First, we need to find out how many patches there are (for the paging control)
+	int total = database_.getPatchesCount({ UIModel::currentSynth(), currentlySelectedSourceUUID() });
+	patchButtons_->setTotalCount(total);
+	patchButtons_->refresh(false, true); // This kicks of loading the first page
+}
+
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
 	midikraft::Synth *loadingForWhich = UIModel::currentSynth();
-	database_.getPatchesAsync(loadingForWhich, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
+	database_.getPatchesAsync({ loadingForWhich, currentlySelectedSourceUUID() }, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
 		// If the synth is still active, refresh the result. Else, just ignore the result
 		if (UIModel::currentSynth() == loadingForWhich) {
 			refreshUI();
-			rebuildImportFilterBox();
 			callback(newPatches);
 		}
 	}, skip, limit);
@@ -123,60 +127,16 @@ void PatchView::resized()
 	patchButtons_->setBounds(area.reduced(10));
 }
 
-std::vector<midikraft::PatchHolder> PatchView::onlyFavorites(std::vector<midikraft::PatchHolder> const &patches, bool reallyOnlyFaves) {
-	std::vector<midikraft::PatchHolder> favorites;
-	std::remove_copy_if(patches.begin(), patches.end(), std::back_inserter(favorites), [reallyOnlyFaves](midikraft::PatchHolder const &patch) { return !(patch.isFavorite() || !reallyOnlyFaves);  });
-	return favorites;
-}
-
-std::vector<midikraft::PatchHolder> PatchView::onlyOfCategory(std::vector<midikraft::PatchHolder> const &patches, std::vector<midikraft::Category> const &categories) {
-	std::vector<midikraft::PatchHolder> filtered;
-	std::remove_copy_if(patches.begin(), patches.end(), std::back_inserter(filtered),
-		[&categories](midikraft::PatchHolder const &patch) {
-		return std::none_of(categories.begin(), categories.end(), [&](midikraft::Category const &category) { return patch.hasCategory(category); });
-	});
-	return filtered;
-}
-
-std::vector<midikraft::PatchHolder> PatchView::onlyWithSameImport(std::vector<midikraft::PatchHolder> const &patches, std::string const &importDisplayName) {
-	if (importDisplayName == kAllPatchesFilter) {
-		// Don't filter
-		return patches;
-	}
-
-	std::vector<midikraft::PatchHolder> filtered;
-	std::remove_copy_if(patches.begin(), patches.end(), std::back_inserter(filtered),
-		[importDisplayName, this](midikraft::PatchHolder const &patch) {
-		return !(patch.sourceInfo() && patch.sourceInfo()->toDisplayString(UIModel::currentSynth()) == importDisplayName);
-	});
-	return filtered;
-}
-
 void PatchView::refreshUI()
 {
-	std::string selectedImport = kAllPatchesFilter;
-	if (importList_.getSelectedItemIndex() != -1) {
-		selectedImport = importList_.getText().toStdString();
-	}
-
-	/*
-	if (categoryFilters_.isAtLeastOne()) {
-		std::vector<midikraft::Category> categories_selected;
-		for (auto c : categoryFilters_.selectedCategories()) {
-			categories_selected.emplace_back(c.category, c.color);
-		}
-		patchButtons_->setPatches(onlyOfCategory(onlyFavorites(onlyWithSameImport(library_, selectedImport), onlyFaves_.getToggleState()), categories_selected));
-	}
-	else {
-		patchButtons_->setPatches(onlyFavorites(onlyWithSameImport(library_, selectedImport), onlyFaves_.getToggleState()));
-	}*/
 	currentPatchDisplay_->reset();
 }
 
 void PatchView::comboBoxChanged(ComboBox* box)
 {
 	if (box == &importList_) {
-		refreshUI();
+		// Same logic as if a new synth had been selected
+		retrieveFirstPageFromDatabase();
 	}
 }
 
@@ -290,14 +250,23 @@ void PatchView::loadPatches() {
 	}
 }
 
+std::string PatchView::currentlySelectedSourceUUID() {
+	if (importList_.getSelectedItemIndex() != -1) {
+		return imports_[importList_.getText().toStdString()];
+	}
+	return "";
+}
+
 void PatchView::rebuildImportFilterBox() {
 	// Query the database to get a list of all imports that are available for this synth
 	auto sources = database_.getImportsList(UIModel::currentSynth());
+	imports_.clear();
 
 	StringArray sourceNameList;
 	sourceNameList.add(kAllPatchesFilter);
 	for (auto source : sources) {
 		sourceNameList.add(source.first);
+		imports_[source.first] = source.second;
 	}
 	importList_.clear();
 	importList_.addItemList(sourceNameList, 1);

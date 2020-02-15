@@ -50,16 +50,19 @@ public:
 	// React on synth or patch changed
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
+
 private:
 	std::vector<midikraft::PatchHolder> onlyFavorites(std::vector<midikraft::PatchHolder> const &patches, bool reallyOnlyFaves);
 	std::vector<midikraft::PatchHolder> onlyOfCategory(std::vector<midikraft::PatchHolder> const &patches, std::vector<midikraft::Category> const &categories);
 	std::vector<midikraft::PatchHolder> onlyWithSameImport(std::vector<midikraft::PatchHolder> const &patches, std::string const &importDisplayName);
 
+	void retrieveFirstPageFromDatabase();
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void refreshUI();
 	void retrievePatches();
 	void loadPatches();
+	std::string currentlySelectedSourceUUID();
 	void rebuildImportFilterBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
@@ -78,6 +81,7 @@ private:
 	midikraft::Librarian librarian_;
 
 	std::vector<midikraft::SynthHolder> &synths_;
+	std::map<std::string, std::string> imports_;
 	int currentLayer_;
 
 	midikraft::PatchHolder *compareTarget_;
