@@ -75,8 +75,8 @@ MainComponent::MainComponent() :
 	UIModel::instance()->currentSynth_.changeCurrentSynth(&rev2_);
 
 	// Setup the rest of the UI
-	mainTabs_.addTab("Library", Colours::aliceblue, patchView_.get(), true);
-	mainTabs_.addTab("MIDI Log", Colours::aliceblue, &midiLogView_, false);
+	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);
+	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogView_, false);
 
 	addAndMakeVisible(mainTabs_);
 
