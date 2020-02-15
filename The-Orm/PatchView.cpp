@@ -291,13 +291,9 @@ void PatchView::loadPatches() {
 }
 
 void PatchView::rebuildImportFilterBox() {
-	// Add the import information of all patches loaded into the combo box
-	std::map<std::string, std::shared_ptr<midikraft::SourceInfo>> sources;
-	/*for (auto patch : library_) {
-		if (patch.sourceInfo()) {
-			sources.insert_or_assign(patch.sourceInfo()->toDisplayString(UIModel::currentSynth()), patch.sourceInfo());
-		}
-	}*/
+	// Query the database to get a list of all imports that are available for this synth
+	auto sources = database_.getImportsList(UIModel::currentSynth());
+
 	StringArray sourceNameList;
 	sourceNameList.add(kAllPatchesFilter);
 	for (auto source : sources) {
