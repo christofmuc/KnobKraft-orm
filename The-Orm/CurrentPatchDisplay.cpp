@@ -63,9 +63,9 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 void CurrentPatchDisplay::reset()
 {
 	name_.setText("No patch loaded", dontSendNotification);
+	import_.setText("", dontSendNotification);
 	favorite_.setToggleState(false, dontSendNotification);
 	currentPatch_ = nullptr;
-
 }
 
 void CurrentPatchDisplay::resized()
