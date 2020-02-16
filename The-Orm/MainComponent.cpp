@@ -92,8 +92,15 @@ MainComponent::MainComponent() :
 	stretchableManager_.setItemLayout(2, -0.1, -0.9, -0.2);
 
 	// Install our MidiLogger
-	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
-		midiLogView_.addMessageToList(message, source, isOut);
+	midikraft::MidiController::instance()->setMidiLogFunction([this](const midikraft::GenericMidiMessage& message, const String& source, bool isOut) {
+		if (message.isNormal()) {
+			midiLogView_.addMessageToList(message.midiMessage(), source, isOut);
+		}
+		else {
+			String description = "NRPN message channel " + String(message.nrpn().channel) + " parameter " + String(message.nrpn().parameterNumber) + " value " + String(message.nrpn().value);
+			midiLogView_.addMessageToList(0.0, description, "",  source, isOut);
+		}
+
 	});
 
 	// Do a quickconfigure
