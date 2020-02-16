@@ -21,7 +21,7 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 	: librarian_(synths), synths_(synths),
-	categoryFilters_({}, [this]() { buttonClicked(nullptr); }, true),
+	categoryFilters_(predefinedCategories(), [this]() { saveCurrentPatchCategories(); }, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal),
 	compareTarget_(nullptr)
 {
@@ -33,7 +33,8 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 	onlyFaves_.addListener(this);
 	addAndMakeVisible(onlyFaves_);
 
-	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>([this](midikraft::PatchHolder &favoritePatch) {
+	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
+		[this](midikraft::PatchHolder &favoritePatch) {
 		database_.putPatch(UIModel::currentSynth(), favoritePatch);
 		patchButtons_->refresh(false);
 	},
@@ -91,6 +92,15 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	else if (dynamic_cast<CurrentPatch *>(source)) {
 		currentPatchDisplay_->setCurrentPatch(UIModel::currentSynth(), UIModel::currentPatch());
 	}
+}
+
+std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
+{
+	std::vector<CategoryButtons::Category> result;
+	for (auto c : midikraft::AutoCategory::predefinedCategoryVector()) {
+		result.push_back({ c.category, c.color, c.bitIndex });
+	}
+	return result;
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
@@ -155,6 +165,13 @@ void PatchView::showPatchDiffDialog() {
 	launcher.useNativeTitleBar = false;
 	auto window = launcher.launchAsync();
 
+}
+
+void PatchView::saveCurrentPatchCategories() {
+	if (currentPatchDisplay_->getCurrentPatch()) {
+		database_.putPatch(UIModel::currentSynth(), *currentPatchDisplay_->getCurrentPatch());
+		patchButtons_->refresh(false);
+	}
 }
 
 void PatchView::retrievePatches() {

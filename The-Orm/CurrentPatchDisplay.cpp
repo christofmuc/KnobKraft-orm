@@ -8,9 +8,9 @@
 
 //#include "SessionDatabase.h"
 
-CurrentPatchDisplay::CurrentPatchDisplay(std::function<void(midikraft::PatchHolder&)> favoriteHandler,
+CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(midikraft::PatchHolder&)> favoriteHandler,
 	std::function<void(midikraft::PatchHolder&)> sessionHandler) : Component(), favoriteHandler_(favoriteHandler), sessionHandler_(sessionHandler)
-	, currentPatch_(nullptr), categories_({}, [this]() { categoryUpdated();  }, false),
+	, currentPatch_(nullptr), categories_(categories, [this]() { categoryUpdated();  }, false),
 	name_("PATCHNAME", "No patch loaded"),
 	currentSession_("Current Session"), 
 	favorite_("Fav!"),
@@ -46,7 +46,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 		
 		std::set<CategoryButtons::Category> buttonCategories;
 		for (const auto& cat : patch->categories()) {
-			buttonCategories.insert({ cat.category, cat.color });
+			buttonCategories.insert({ cat.category, cat.color, cat.bitIndex });
 		}
 		categories_.setActive(buttonCategories);
 	}
@@ -99,13 +99,18 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 	}
 }
 
+midikraft::PatchHolder * CurrentPatchDisplay::getCurrentPatch() const
+{
+	return currentPatch_;
+}
+
 void CurrentPatchDisplay::categoryUpdated() {
 	if (currentPatch_) {
 		auto categories = categories_.selectedCategories();
 		currentPatch_->clearCategories();
 		for (const auto& cat : categories) {
 			// Have to convert into juce-widget version of Category here
-			midikraft::Category newCat({ cat.category, cat.color });
+			midikraft::Category newCat(cat.category, cat.color, cat.bitIndex);
 			currentPatch_->setCategory(newCat, true);
 		}
 		favoriteHandler_(*currentPatch_);

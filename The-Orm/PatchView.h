@@ -52,10 +52,7 @@ public:
 
 
 private:
-	std::vector<midikraft::PatchHolder> onlyFavorites(std::vector<midikraft::PatchHolder> const &patches, bool reallyOnlyFaves);
-	std::vector<midikraft::PatchHolder> onlyOfCategory(std::vector<midikraft::PatchHolder> const &patches, std::vector<midikraft::Category> const &categories);
-	std::vector<midikraft::PatchHolder> onlyWithSameImport(std::vector<midikraft::PatchHolder> const &patches, std::string const &importDisplayName);
-
+	static std::vector<CategoryButtons::Category> predefinedCategories();
 	void retrieveFirstPageFromDatabase();
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
@@ -66,6 +63,7 @@ private:
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
+	void saveCurrentPatchCategories();
 
 	ComboBox importList_;
 	CategoryButtons categoryFilters_;

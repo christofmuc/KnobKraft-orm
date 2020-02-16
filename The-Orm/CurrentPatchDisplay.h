@@ -17,13 +17,17 @@ class CurrentPatchDisplay : public Component,
 	private TextButton::Listener
 {
 public:
-	CurrentPatchDisplay(std::function<void(midikraft::PatchHolder&)> favoriteHandler, std::function<void(midikraft::PatchHolder&)> sessionHandler);
+	CurrentPatchDisplay(std::vector<CategoryButtons::Category>  categories, 
+		std::function<void(midikraft::PatchHolder&)> favoriteHandler, 
+		std::function<void(midikraft::PatchHolder&)> sessionHandler);
 
 	void setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder *patch);
 	void reset();
 
 	void resized() override;
 	void buttonClicked(Button*) override;
+
+	midikraft::PatchHolder *getCurrentPatch() const;
 
 private:
 	void categoryUpdated();
