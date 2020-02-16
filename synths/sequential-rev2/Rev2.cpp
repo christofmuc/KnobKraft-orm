@@ -36,7 +36,8 @@ namespace midikraft {
 		{ 211, 231 }, // unused according to doc
 		{ 1235, 1255 }, // same in layer B
 		{ 235, 255 }, // name of layer A
-		{ 1259, 1279 } // name of layer B
+		{ 1259, 1279 }, // name of layer B
+		{ 2044, 2047} // the two bytes that are wrongly not encoded (firmware bug), and two bytes that are only buffered to get to clean 2048 size
 	};
 
 	std::string intervalToText(int interval) {
