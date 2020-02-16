@@ -295,19 +295,18 @@ void PatchView::rebuildImportFilterBox() {
 
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
 	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
-		rebuildImportFilterBox();
-		// Select this import
-		auto info = outNewPatches[0].sourceInfo();
-		if (info) {
-			for (int i = 0; i < importList_.getNumItems(); i++) {
-				if (importList_.getItemText(i).toStdString() == info->toDisplayString(UIModel::currentSynth())) {
-					MessageManager::callAsync([this, i]() {
-						importList_.setSelectedItemIndex(i, sendNotificationAsync); });
+		// Back to UI thread
+		MessageManager::callAsync([this, outNewPatches]() {
+			rebuildImportFilterBox();
+			// Select this import
+			auto info = outNewPatches[0].sourceInfo();
+			if (info) {
+				for (int i = 0; i < importList_.getNumItems(); i++) {
+					if (importList_.getItemText(i).toStdString() == info->toDisplayString(UIModel::currentSynth())) {
+							importList_.setSelectedItemIndex(i, sendNotificationAsync);
+					}
 				}
 			}
-		}
-		// Back to UI thread
-		MessageManager::callAsync([this]() {
 			retrieveFirstPageFromDatabase();
 		});
 	});
