@@ -96,6 +96,11 @@ MainComponent::MainComponent() :
 		midiLogView_.addMessageToList(message, source, isOut);
 	});
 
+	// Do a quickconfigure
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synthForAutodetect;
+	synthForAutodetect.push_back(rev2_);
+	autodetector_.quickconfigure(synthForAutodetect);
+
 	// Make sure you set the size of the component after
 	// you add any child components.
 	setSize(1280, 800);

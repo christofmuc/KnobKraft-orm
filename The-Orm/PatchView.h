@@ -36,7 +36,7 @@ class PatchView : public Component,
 	private ChangeListener
 {
 public:
-	PatchView(std::vector<midikraft::SynthHolder> &synths);
+	PatchView(std::vector<midikraft::SynthHolder> const &synths);
 	virtual ~PatchView();
 
 	void resized() override;
@@ -78,7 +78,7 @@ private:
 
 	midikraft::Librarian librarian_;
 
-	std::vector<midikraft::SynthHolder> &synths_;
+	std::vector<midikraft::SynthHolder> synths_;
 	std::map<std::string, std::string> imports_;
 	int currentLayer_;
 

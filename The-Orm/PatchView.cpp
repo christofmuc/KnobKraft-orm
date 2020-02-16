@@ -14,12 +14,13 @@
 #include "LayerCapability.h"
 #include "Logger.h"
 #include "UIModel.h"
+#include "AutoDetection.h"
 
 #include <boost/format.hpp>
 
 const char *kAllPatchesFilter = "All patches";
 
-PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
+PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	: librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this]() { retrieveFirstPageFromDatabase(); }, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
@@ -45,18 +46,23 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 	addAndMakeVisible(categoryFilters_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "retrieveActiveSynthPatches",{ 0, "Import patches from synth", [this]() {
+	{ "autodetect", { 0, "Autodetect synths", [this]() {
+		midikraft::AutoDetection autodetector;
+		std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
+		for (auto s : synths_) {
+			synths.push_back(s.device());
+		}
+		autodetector.autoconfigure(synths);
+	} } },
+	{ "retrieveActiveSynthPatches",{ 1, "Import patches from synth", [this]() {
 		retrievePatches();
 	} } },
-	{ "loadsysEx", { 1, "Import sysex files from computer", [this]() {
+	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "showDiff", { 2, "Show patch comparison", [this]() {
+	{ "showDiff", { 3, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
-/*	{ "migrate", { 3, "Run patch data migration", [this]() {
-		database_.runMigration(UIModel::currentSynth());
-	} } }*/
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
 		if (UIModel::currentSynth()) {
