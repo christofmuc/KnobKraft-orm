@@ -20,7 +20,7 @@ void CurrentSequencer::changeCurrentSequencer(midikraft::StepSequencer *activeSe
 }
 
 
-void CurrentPatch::changeCurrentPatch(midikraft::PatchHolder *currentPatch)
+void CurrentPatch::changeCurrentPatch(midikraft::PatchHolder const &currentPatch)
 {
 	currentPatch_ = currentPatch;
 	sendChangeMessage();
@@ -54,7 +54,7 @@ midikraft::StepSequencer * UIModel::currentSequencer()
 	return instance_->currentSequencer_.sequencer();
 }
 
-midikraft::PatchHolder * UIModel::currentPatch()
+midikraft::PatchHolder  UIModel::currentPatch()
 {
 	return instance_->currentPatch_.patch();
 }

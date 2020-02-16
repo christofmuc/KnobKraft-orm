@@ -39,14 +39,14 @@ private:
 
 class CurrentPatch : public ChangeBroadcaster {
 public:
-	void changeCurrentPatch(midikraft::PatchHolder *currentPatch);
+	void changeCurrentPatch(midikraft::PatchHolder const &currentPatch);
 
-	midikraft::PatchHolder *patch() {
+	midikraft::PatchHolder patch() {
 		return currentPatch_;
 	}
 
 private:
-	midikraft::PatchHolder *currentPatch_ = nullptr;
+	midikraft::PatchHolder currentPatch_;
 };
 
 class CurrentPatchValues : public ChangeBroadcaster {
@@ -70,7 +70,7 @@ public:
 
 	static midikraft::Synth *currentSynth();
 	static midikraft::StepSequencer *currentSequencer();
-	static midikraft::PatchHolder *currentPatch();
+	static midikraft::PatchHolder currentPatch();
 
 	CurrentSynth currentSynth_; // Listen to this to get updated when the active synth is switched
 	CurrentSequencer currentSequencer_;

@@ -15,7 +15,7 @@ class DiffTokenizer;
 
 class PatchDiff : public Component, private Button::Listener {
 public:
-	PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder *patch1, midikraft::PatchHolder *patch2);
+	PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2);
 
 	void resized() override;
 	void buttonClicked(Button*) override;
@@ -30,7 +30,7 @@ private:
 	std::vector<Range<int>> diffFromData(midikraft::Patch &patch1, midikraft::Patch &patch2);
 
 	midikraft::Synth *activeSynth_;
-	midikraft::PatchHolder *p1_, *p2_;
+	midikraft::PatchHolder p1_, p2_;
 	std::unique_ptr<CodeDocument> p1Document_; 
 	std::unique_ptr<CodeDocument> p2Document_;
 	std::unique_ptr<DiffTokenizer> tokenizer1_;

@@ -53,7 +53,7 @@ private:
 	std::vector<Range<int>> ranges_;
 };
 
-PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder *patch1, midikraft::PatchHolder *patch2) : p1_(patch1), p2_(patch2),
+PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : p1_(patch1), p2_(patch2),
 	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument), showHexDiff_(false)
 {
 	// Create more components, with more complex bootstrapping
@@ -135,20 +135,20 @@ void PatchDiff::buttonStateChanged(Button *button)
 
 void PatchDiff::fillDocuments()
 {
-	patch1Name_.setText(p1_->patch()->patchName(), dontSendNotification);
-	patch2Name_.setText(p2_->patch()->patchName(), dontSendNotification);
+	patch1Name_.setText(p1_.patch()->patchName(), dontSendNotification);
+	patch2Name_.setText(p2_.patch()->patchName(), dontSendNotification);
 
 	String doc1, doc2;
 	if (showHexDiff_) {
-		doc1 = makeHexDocument(p1_);
-		doc2 = makeHexDocument(p2_);
-		std::vector<Range<int>> diffRanges = diffFromData(*p1_->patch(), *p2_->patch());
+		doc1 = makeHexDocument(&p1_);
+		doc2 = makeHexDocument(&p2_);
+		std::vector<Range<int>> diffRanges = diffFromData(*p1_.patch(), *p2_.patch());
 		tokenizer1_->setRangeList(diffRanges);
 		tokenizer2_->setRangeList(diffRanges);
 	}
 	else {
-		doc1 = makeTextDocument(p1_);
-		doc2 = makeTextDocument(p2_);
+		doc1 = makeTextDocument(&p1_);
+		doc2 = makeTextDocument(&p2_);
 		std::vector<Range<int>> diffRanges1 = diffFromText(doc1, doc2);
 		std::vector<Range<int>> diffRanges2 = diffFromText(doc2, doc1);
 		tokenizer1_->setRangeList(diffRanges1);

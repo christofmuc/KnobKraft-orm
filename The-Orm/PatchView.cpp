@@ -22,8 +22,7 @@ const char *kAllPatchesFilter = "All patches";
 PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 	: librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this]() { retrieveFirstPageFromDatabase(); }, true),
-	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal),
-	compareTarget_(nullptr)
+	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
@@ -160,7 +159,7 @@ void PatchView::buttonClicked(Button *button)
 }
 
 void PatchView::showPatchDiffDialog() {
-	if (!compareTarget_ || !UIModel::currentPatch()) {
+	if (!compareTarget_.patch() || !UIModel::currentPatch().patch()) {
 		// Shouldn't have come here
 		return;
 	}
@@ -177,8 +176,8 @@ void PatchView::showPatchDiffDialog() {
 }
 
 void PatchView::saveCurrentPatchCategories() {
-	if (currentPatchDisplay_->getCurrentPatch()) {
-		database_.putPatch(UIModel::currentSynth(), *currentPatchDisplay_->getCurrentPatch());
+	if (currentPatchDisplay_->getCurrentPatch().patch()) {
+		database_.putPatch(UIModel::currentSynth(), currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
 }
@@ -315,13 +314,14 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 
 void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch)
 {
+	// Always refresh the compare target, you just expect it after you clicked it!
+	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
 	// It could be that we clicked on the patch that is already loaded?
-	if (&patch != UIModel::currentPatch()) {
-		SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
+	if (patch.patch() != UIModel::currentPatch().patch()) {
+		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
 		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
 
-		compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
-		UIModel::instance()->currentPatch_.changeCurrentPatch(&patch);
+		UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
 		currentLayer_ = 0;
 
 		// Send out to Synth
@@ -333,10 +333,10 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		if (layers) {
 			currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
 		}
-	}
-	auto layerSynth = dynamic_cast<midikraft::LayerCapability *>(&synth);
-	if (layerSynth) {
-		SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
-		layerSynth->switchToLayer(currentLayer_);
+		auto layerSynth = dynamic_cast<midikraft::LayerCapability *>(&synth);
+		if (layerSynth) {
+			SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
+			layerSynth->switchToLayer(currentLayer_);
+		}
 	}
 }

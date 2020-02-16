@@ -67,12 +67,13 @@ MainComponent::MainComponent() :
 
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
-	synths.emplace_back(&rev2_, Colours::aqua);
+	rev2_ = std::make_shared<midikraft::Rev2>();
+	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
 
 	// Create the patch view
 	patchView_ = std::make_unique<PatchView>(synths);
 
-	UIModel::instance()->currentSynth_.changeCurrentSynth(&rev2_);
+	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
 
 	// Setup the rest of the UI
 	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);

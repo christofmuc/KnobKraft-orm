@@ -21,13 +21,13 @@ public:
 		std::function<void(midikraft::PatchHolder&)> favoriteHandler, 
 		std::function<void(midikraft::PatchHolder&)> sessionHandler);
 
-	void setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder *patch);
+	void setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch);
 	void reset();
 
 	void resized() override;
 	void buttonClicked(Button*) override;
 
-	midikraft::PatchHolder *getCurrentPatch() const;
+	midikraft::PatchHolder getCurrentPatch() const;
 
 private:
 	void categoryUpdated();
@@ -39,6 +39,6 @@ private:
 	CategoryButtons categories_;
 	std::function<void(midikraft::PatchHolder&)> favoriteHandler_;
 	std::function<void(midikraft::PatchHolder&)> sessionHandler_;
-	midikraft::PatchHolder *currentPatch_;
+	midikraft::PatchHolder currentPatch_;
 	midikraft::Synth *currentSynth_;
 };

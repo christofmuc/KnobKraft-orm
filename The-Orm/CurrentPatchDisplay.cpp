@@ -10,7 +10,7 @@
 
 CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(midikraft::PatchHolder&)> favoriteHandler,
 	std::function<void(midikraft::PatchHolder&)> sessionHandler) : Component(), favoriteHandler_(favoriteHandler), sessionHandler_(sessionHandler)
-	, currentPatch_(nullptr), categories_(categories, [this]() { categoryUpdated();  }, false),
+	, categories_(categories, [this]() { categoryUpdated();  }, false),
 	name_("PATCHNAME", "No patch loaded"),
 	currentSession_("Current Session"), 
 	favorite_("Fav!"),
@@ -32,20 +32,20 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	addAndMakeVisible(import_);
 }
 
-void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder *patch)
+void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch)
 {
-	if (patch) {
-		name_.setText(patch->patch()->patchName(), dontSendNotification);
-		if (patch->sourceInfo()) {
-			import_.setText(patch->sourceInfo()->toDisplayString(synth), dontSendNotification);
+	if (patch.patch()) {
+		name_.setText(patch.patch()->patchName(), dontSendNotification);
+		if (patch.sourceInfo()) {
+			import_.setText(patch.sourceInfo()->toDisplayString(synth), dontSendNotification);
 		}
 		else {
 			import_.setText("No import information", dontSendNotification);
 		}
-		favorite_.setToggleState(patch->isFavorite(), dontSendNotification);
+		favorite_.setToggleState(patch.isFavorite(), dontSendNotification);
 		
 		std::set<CategoryButtons::Category> buttonCategories;
-		for (const auto& cat : patch->categories()) {
+		for (const auto& cat : patch.categories()) {
 			buttonCategories.insert({ cat.category, cat.color, cat.bitIndex });
 		}
 		categories_.setActive(buttonCategories);
@@ -65,7 +65,7 @@ void CurrentPatchDisplay::reset()
 	name_.setText("No patch loaded", dontSendNotification);
 	import_.setText("", dontSendNotification);
 	favorite_.setToggleState(false, dontSendNotification);
-	currentPatch_ = nullptr;
+	currentPatch_ = midikraft::PatchHolder();
 }
 
 void CurrentPatchDisplay::resized()
@@ -84,9 +84,9 @@ void CurrentPatchDisplay::resized()
 void CurrentPatchDisplay::buttonClicked(Button *button)
 {
 	if (button == &favorite_) {
-		if (currentPatch_) {
-			currentPatch_->setFavorite(midikraft::Favorite(button->getToggleState()));
-			favoriteHandler_(*currentPatch_);
+		if (currentPatch_.patch()) {
+			currentPatch_.setFavorite(midikraft::Favorite(button->getToggleState()));
+			favoriteHandler_(currentPatch_);
 		}
 	}
 	else if (button == &currentSession_) {
@@ -99,20 +99,20 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 	}
 }
 
-midikraft::PatchHolder * CurrentPatchDisplay::getCurrentPatch() const
+midikraft::PatchHolder CurrentPatchDisplay::getCurrentPatch() const
 {
 	return currentPatch_;
 }
 
 void CurrentPatchDisplay::categoryUpdated() {
-	if (currentPatch_) {
+	if (currentPatch_.patch()) {
 		auto categories = categories_.selectedCategories();
-		currentPatch_->clearCategories();
+		currentPatch_.clearCategories();
 		for (const auto& cat : categories) {
 			// Have to convert into juce-widget version of Category here
 			midikraft::Category newCat(cat.category, cat.color, cat.bitIndex);
-			currentPatch_->setCategory(newCat, true);
+			currentPatch_.setCategory(newCat, true);
 		}
-		favoriteHandler_(*currentPatch_);
+		favoriteHandler_(currentPatch_);
 	}
 }

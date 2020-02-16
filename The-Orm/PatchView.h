@@ -82,7 +82,7 @@ private:
 	std::map<std::string, std::string> imports_;
 	int currentLayer_;
 
-	midikraft::PatchHolder *compareTarget_;
+	midikraft::PatchHolder compareTarget_;
 
 	midikraft::PatchDatabase database_;
 };

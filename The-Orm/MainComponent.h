@@ -43,7 +43,7 @@ private:
 	void aboutBox();
 
 	midikraft::AutoDetection autodetector_;
-	midikraft::Rev2 rev2_;
+	std::shared_ptr<midikraft::Rev2> rev2_;
 	TabbedComponent mainTabs_;
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
