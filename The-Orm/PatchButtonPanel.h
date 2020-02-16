@@ -26,7 +26,7 @@ public:
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);
 	void setPatches(std::vector<midikraft::PatchHolder> const &patches);
-	void refresh(bool keepActive, bool async);
+	void refresh(bool async);
 
 	void resized() override;
 
@@ -37,13 +37,15 @@ public:
 private:
 	bool isMacroMessage(const MidiMessage& message);
 	void executeMacro(const MidiMessage& message);
+	int indexOfActive() const;
 
 	midikraft::MidiController::HandlerHandle callback_  = midikraft::MidiController::makeOneHandle();
 	std::vector<midikraft::PatchHolder> patches_;
 	std::unique_ptr<PatchButtonGrid> patchButtons_;
 	std::function<void(midikraft::PatchHolder &)> handler_;
-	int indexOfActive_;
 	TPageLoader pageLoader_;
+
+	std::string activePatchMd5_;
 
 	TextButton pageUp_, pageDown_;
 	Label pageNumbers_;

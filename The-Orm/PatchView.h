@@ -59,7 +59,6 @@ private:
 	void retrieveFirstPageFromDatabase();
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
-	void refreshUI();
 	void retrievePatches();
 	void loadPatches();
 	std::string currentlySelectedSourceUUID();

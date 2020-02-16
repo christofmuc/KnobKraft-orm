@@ -35,7 +35,7 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>([this](midikraft::PatchHolder &favoritePatch) {
 		database_.putPatch(UIModel::currentSynth(), favoritePatch);
-		patchButtons_->refresh(true, true);
+		patchButtons_->refresh(false);
 	},
 		[this](midikraft::PatchHolder &sessionPatch) {
 		UIModel::instance()->currentSession_.changedSession();
@@ -85,7 +85,6 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
-		refreshUI();
 		rebuildImportFilterBox();
 		retrieveFirstPageFromDatabase();
 	}
@@ -98,7 +97,7 @@ void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
 	int total = database_.getPatchesCount({ UIModel::currentSynth(), currentlySelectedSourceUUID() });
 	patchButtons_->setTotalCount(total);
-	patchButtons_->refresh(false, true); // This kicks of loading the first page
+	patchButtons_->refresh(true); // This kicks of loading the first page
 }
 
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
@@ -107,7 +106,6 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 	database_.getPatchesAsync({ loadingForWhich, currentlySelectedSourceUUID(), onlyFaves_.getToggleState() }, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
 		// If the synth is still active, refresh the result. Else, just ignore the result
 		if (UIModel::currentSynth() == loadingForWhich) {
-			refreshUI();
 			callback(newPatches);
 		}
 	}, skip, limit);
@@ -125,11 +123,6 @@ void PatchView::resized()
 	categoryFilters_.setBounds(filterRow);
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
-}
-
-void PatchView::refreshUI()
-{
-	currentPatchDisplay_->reset();
 }
 
 void PatchView::comboBoxChanged(ComboBox* box)
@@ -289,7 +282,7 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 		}
 		// Back to UI thread
 		MessageManager::callAsync([this]() {
-			refreshUI();
+			
 		});
 	});
 	backgroundThread.runThread();

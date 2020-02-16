@@ -12,7 +12,7 @@
 #include <algorithm>
 
 PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
-	handler_(handler), indexOfActive_(-1), pageBase_(0), pageNumber_(0), pageSize_(64), totalSize_(0)
+	handler_(handler), pageBase_(0), pageNumber_(0), pageSize_(64), totalSize_(0)
 {
 	// We want 64 patch buttons
 	patchButtons_ = std::make_unique<PatchButtonGrid>(8, 8, [this](int index) { buttonClicked(index); });
@@ -55,10 +55,10 @@ void PatchButtonPanel::setTotalCount(int totalCount)
 void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &patches) {
 	patches_ = patches;
 	// This is never an async refresh, as we might be just processing the result of an async operation, and then we'd go into a loop
-	refresh(false, false);
+	refresh(false);
 }
 
-void PatchButtonPanel::refresh(bool keepActive, bool async) {
+void PatchButtonPanel::refresh(bool async) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
 		pageLoader_(pageBase_, pageSize_, [this](std::vector<midikraft::PatchHolder> const &patches) {
@@ -68,11 +68,10 @@ void PatchButtonPanel::refresh(bool keepActive, bool async) {
 	}
 
 	// Now set the button text and colors
+	int active = indexOfActive();
 	for (size_t i = 0; i < std::max((size_t)patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
-			if (!keepActive) {
-				patchButtons_->buttonWithIndex(i)->setActive(false);
-			}
+			patchButtons_->buttonWithIndex(i)->setActive(i == active);
 			if (i < patches_.size()) {
 				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].patch()->patchName());
 				Colour color = Colours::slategrey;
@@ -90,9 +89,6 @@ void PatchButtonPanel::refresh(bool keepActive, bool async) {
 				patchButtons_->buttonWithIndex(i)->setFavorite(false);
 			}
 		}
-	}
-	if (!keepActive) {
-		indexOfActive_ = -1;
 	}
 
 	// Also, set the page number stripe
@@ -132,13 +128,14 @@ void PatchButtonPanel::resized()
 
 void PatchButtonPanel::buttonClicked(int buttonIndex) {
 	if (buttonIndex >= 0 && buttonIndex < (int) patches_.size()) {
-		if (indexOfActive_ != -1) {
-			patchButtons_->buttonWithIndex(indexOfActive_)->setActive(false);
+		int active = indexOfActive();
+		if (active != -1) {
+			patchButtons_->buttonWithIndex(active)->setActive(false);
 		}
 		// This button is active, is it?
 		handler_(patches_[buttonIndex]);
-		indexOfActive_ = buttonIndex;
-		patchButtons_->buttonWithIndex(indexOfActive_)->setActive(true);
+		activePatchMd5_ = patches_[buttonIndex].md5();
+		patchButtons_->buttonWithIndex(buttonIndex)->setActive(true);
 	}
 }
 
@@ -148,14 +145,14 @@ void PatchButtonPanel::buttonClicked(Button* button)
 		if (pageBase_ + pageSize_ < totalSize_) {
 			pageBase_ += pageSize_;
 			pageNumber_++;
-			refresh(false, true);
+			refresh(true);
 		}
 	}
 	else if (button == &pageDown_) {
 		if (pageBase_ - pageSize_ >= 0) {
 			pageBase_ -= pageSize_;
 			pageNumber_--;
-			refresh(true, true);
+			refresh(true);
 		}
 	}
 }
@@ -170,9 +167,19 @@ bool PatchButtonPanel::isMacroMessage(const MidiMessage& message)
 void PatchButtonPanel::executeMacro(const MidiMessage&)
 {
 	// The only macro is to advance the selected patch by one
-	if ((indexOfActive_ < (int) patches_.size() - 1) && (indexOfActive_ < (int) patchButtons_->size() - 1)) {
+	if ((indexOfActive() < (int) patches_.size() - 1) && (indexOfActive() < (int) patchButtons_->size() - 1)) {
 		MessageManager::callAsync([this]() {
-			patchButtons_->buttonWithIndex(indexOfActive_ + 1)->buttonClicked(nullptr);
+			patchButtons_->buttonWithIndex(indexOfActive() + 1)->buttonClicked(nullptr);
 		});
 	}
+}
+
+int PatchButtonPanel::indexOfActive() const
+{
+	for (size_t i = 0; i < patches_.size(); i++) {
+		if (patches_[i].md5() == activePatchMd5_) {
+			return i;
+		}
+	}
+	return -1;
 }
