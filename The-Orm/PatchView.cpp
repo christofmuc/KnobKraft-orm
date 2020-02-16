@@ -21,7 +21,7 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(std::vector<midikraft::SynthHolder> &synths)
 	: librarian_(synths), synths_(synths),
-	categoryFilters_(predefinedCategories(), [this]() { saveCurrentPatchCategories(); }, true),
+	categoryFilters_(predefinedCategories(), [this]() { retrieveFirstPageFromDatabase(); }, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal),
 	compareTarget_(nullptr)
 {
@@ -103,9 +103,18 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 	return result;
 }
 
+midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
+	// Transform into real category
+	std::set<midikraft::Category> catSelected;
+	for (auto c : categoryFilters_.selectedCategories()) {
+		catSelected.emplace(c.category, c.color, c.bitIndex);
+	}
+	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), catSelected };
+}
+
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
-	int total = database_.getPatchesCount({ UIModel::currentSynth(), currentlySelectedSourceUUID() });
+	int total = database_.getPatchesCount(buildFilter());
 	patchButtons_->setTotalCount(total);
 	patchButtons_->refresh(true); // This kicks of loading the first page
 }
@@ -113,7 +122,7 @@ void PatchView::retrieveFirstPageFromDatabase() {
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
 	midikraft::Synth *loadingForWhich = UIModel::currentSynth();
-	database_.getPatchesAsync({ loadingForWhich, currentlySelectedSourceUUID(), onlyFaves_.getToggleState() }, [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
+	database_.getPatchesAsync(buildFilter(), [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
 		// If the synth is still active, refresh the result. Else, just ignore the result
 		if (UIModel::currentSynth() == loadingForWhich) {
 			callback(newPatches);

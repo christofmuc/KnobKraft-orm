@@ -53,6 +53,7 @@ public:
 
 private:
 	static std::vector<CategoryButtons::Category> predefinedCategories();
+	midikraft::PatchDatabase::PatchFilter buildFilter();
 	void retrieveFirstPageFromDatabase();
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
