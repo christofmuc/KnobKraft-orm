@@ -308,7 +308,7 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 		}
 		// Back to UI thread
 		MessageManager::callAsync([this]() {
-			
+			retrieveFirstPageFromDatabase();
 		});
 	});
 	backgroundThread.runThread();
