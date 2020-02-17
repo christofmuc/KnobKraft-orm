@@ -3,6 +3,7 @@ To be done before release:
 * About box with Licenses
 * Installer build
 * Run auto tagging again on visible patches (ask if you really want to do that)
+* Compare two patches should show both layers, needs coupled scroll bars.
 
 
 
@@ -13,6 +14,7 @@ Future work
 * Search box for patch name search
 * Display bulk import content
 * Make regular backups of Database
+* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 
 * The big generic module with Python scriptability!
 
