@@ -36,7 +36,7 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
 		[this](midikraft::PatchHolder &favoritePatch) {
 		database_.putPatch(UIModel::currentSynth(), favoritePatch);
-		patchButtons_->refresh(false);
+		patchButtons_->refresh(true);
 	},
 		[this](midikraft::PatchHolder &sessionPatch) {
 		UIModel::instance()->currentSession_.changedSession();
