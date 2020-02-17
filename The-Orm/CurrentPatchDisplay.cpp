@@ -26,7 +26,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 
 	currentSession_.setClickingTogglesState(true);
 	currentSession_.addListener(this);
-	addAndMakeVisible(currentSession_);
+	//addAndMakeVisible(currentSession_);
 
 	addAndMakeVisible(categories_);
 	addAndMakeVisible(import_);
@@ -73,7 +73,7 @@ void CurrentPatchDisplay::resized()
 	Rectangle<int> area(getLocalBounds());
 	auto topRow = area.removeFromTop(60).reduced(10);
 	favorite_.setBounds(topRow.removeFromRight(100));
-	currentSession_.setBounds(topRow.removeFromRight(100));
+	//currentSession_.setBounds(topRow.removeFromRight(100));
 	import_.setBounds(topRow.removeFromRight(300).withTrimmedRight(10));
 	name_.setBounds(topRow.withTrimmedRight(10));
 	auto bottomRow = area.removeFromTop(80).reduced(10);
