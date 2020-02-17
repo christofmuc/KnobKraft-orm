@@ -63,6 +63,17 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	{ "showDiff", { 3, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
+	{ "editAutoCategories", { 4, "Edit auto-categories", [this]() {
+		if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			getAutoCategoryFile().revealToUser();
+		}
+	} } },
+	{ "rerunAutoCategories", { 5, "Rerun auto categorize", [this]() {
+		autoCategorize();
+		MessageManager::callAsync([this]() {
+			retrieveFirstPageFromDatabase();
+		});
+	} } },
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
 		if (UIModel::currentSynth()) {
@@ -186,6 +197,35 @@ void PatchView::saveCurrentPatchCategories() {
 		database_.putPatch(UIModel::currentSynth(), currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
+}
+
+File PatchView::getAutoCategoryFile() const {
+	File appData = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("KnobKraft");
+	if (!appData.exists()) {
+		appData.createDirectory();
+	}
+	File jsoncFile = appData.getChildFile("automatic_categories.jsonc");
+	if (!jsoncFile.exists()) {
+		// Create an initial file from the resources!
+		FileOutputStream out(jsoncFile);
+		out.writeText(midikraft::AutoCategory::defaultJson(), false, false, "\\n");
+	}
+	return jsoncFile;
+}
+
+void PatchView::autoCategorize()
+{
+	// Load the auto category file and re-categorize everything!
+	midikraft::AutoCategory::loadFromFile(getAutoCategoryFile().getFullPathName().toStdString() );
+	database_.getPatchesAsync(buildFilter(), [this](std::vector < midikraft::PatchHolder > const &patches) {
+		for (auto patch : patches) {
+			if (patch.autoCategorizeAgain()) {
+				// This was changed, updating database
+				SimpleLogger::instance()->postMessage("Updating patch " + String(patch.patch()->patchName()) + " with new categories");
+				database_.putPatch(UIModel::currentSynth(), patch);
+			}
+		}
+	}, 0, 1000);
 }
 
 void PatchView::retrievePatches() {

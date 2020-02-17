@@ -65,6 +65,8 @@ private:
 	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
+	File getAutoCategoryFile() const;
+	void autoCategorize();
 
 	ComboBox importList_;
 	CategoryButtons categoryFilters_;
