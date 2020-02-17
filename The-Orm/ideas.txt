@@ -2,10 +2,7 @@ To be done before release:
 
 * About box with Licenses
 * Installer build
-* Title needs to state "Sequential Rev2 Librarian"
 * Run auto tagging again on visible patches (ask if you really want to do that)
-* Allow for free list of tags?
-* Change database location to... where?
 
 
 

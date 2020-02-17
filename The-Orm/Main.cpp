@@ -29,7 +29,7 @@ public:
         // This method is where you should put your application's initialization code..
 		Settings::setSettingsID("KnobKraftOrm");
 
-        mainWindow = std::make_unique<MainWindow> (getApplicationName());
+        mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sequential Prophet Rev2 Librarian"));
     }
 
     void shutdown() override
