@@ -43,6 +43,7 @@ set(SOURCES
 	PatchView.cpp PatchView.h
 	UIModel.cpp UIModel.h
 	setup.iss
+	ideas.txt
 	redist/agpl-3.0.txt
 )
 

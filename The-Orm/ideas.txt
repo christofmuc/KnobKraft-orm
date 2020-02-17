@@ -1,0 +1,34 @@
+To be done before release:
+
+* About box with Licenses
+* Installer build
+* Title needs to state "Sequential Rev2 Librarian"
+* Allow to edit the auto tagging rules
+* Run auto tagging again on visible patches (ask if you really want to do that)
+* Allow for free list of tags?
+* Change database location to... where?
+
+
+
+Future work
+* Record notes played (duration) a specific patch
+* Allow to sort by playing time
+* Allow to change patch names
+* Search box for patch name search
+* Display bulk import content
+* Make regular backups of Database
+
+* The big generic module with Python scriptability!
+
+
+Future work
+More synthesizers
++ Prepared:
+  + Access Virus B
+  + Kawai K3
+  * Korg DW8000
+  + Oberheim Matrix 10000
+  + DSI OB-6  
+  + Roland MKS80
+  + Yamaha Reface DX
+
