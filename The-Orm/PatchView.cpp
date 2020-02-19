@@ -20,6 +20,45 @@
 
 const char *kAllPatchesFilter = "All patches";
 
+class AutoDetectProgressWindow : public ThreadWithProgressWindow, public midikraft::ProgressHandler {
+public:
+	AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths) :
+		ThreadWithProgressWindow("Detecting synth...", true, true), synths_(synths) {
+	}
+
+	void run() {
+
+		std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
+		for (auto s : synths_) {
+			synths.push_back(s.device());
+		}
+		autodetector_.autoconfigure(synths, this);
+	}
+
+	virtual bool shouldAbort() const override
+	{
+		return threadShouldExit();
+	}
+
+	virtual void setProgressPercentage(double zeroToOne) override
+	{
+		setProgress(zeroToOne);
+	}
+
+	virtual void onSuccess() override
+	{
+	}
+
+	virtual void onCancel() override
+	{
+	}
+
+private:
+	std::vector<midikraft::SynthHolder> synths_;
+	midikraft::AutoDetection autodetector_;
+};
+
+
 PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	: librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true),
@@ -47,12 +86,8 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "autodetect", { 0, "Autodetect synths", [this]() {
-		midikraft::AutoDetection autodetector;
-		std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
-		for (auto s : synths_) {
-			synths.push_back(s.device());
-		}
-		autodetector.autoconfigure(synths);
+		AutoDetectProgressWindow window(synths_);
+		window.runThread();
 	} } },
 	{ "retrieveActiveSynthPatches",{ 1, "Import patches from synth", [this]() {
 		retrievePatches();
@@ -386,3 +421,4 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		}
 	}
 }
+
