@@ -30,7 +30,7 @@ public:
 	midikraft::PatchHolder getCurrentPatch() const;
 
 private:
-	void categoryUpdated();
+	void categoryUpdated(midikraft::Category clicked);
 
 	Label name_;
 	Label import_;

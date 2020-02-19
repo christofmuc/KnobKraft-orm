@@ -22,7 +22,7 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	: librarian_(synths), synths_(synths),
-	categoryFilters_(predefinedCategories(), [this]() { retrieveFirstPageFromDatabase(); }, true),
+	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	addAndMakeVisible(importList_);

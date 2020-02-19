@@ -62,7 +62,7 @@ void PatchButtonPanel::refresh(bool async) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
 		pageLoader_(pageBase_, pageSize_, [this](std::vector<midikraft::PatchHolder> const &patches) {
-			setPatches(patches);
+ 			setPatches(patches);
 		});
 		return;
 	}

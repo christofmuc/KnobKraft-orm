@@ -4,8 +4,10 @@ To be done before release:
 * Installer build
 * Run auto tagging again on visible patches (ask if you really want to do that)
 * Compare two patches should show both layers, needs coupled scroll bars.
-
-
+* Autocategorize should not overwrite manually set tags (what about manually deleted tags?). Idea - second tags column for manual decision, must somehow be calculated with auto decision
+Would that need an "accept auto categories" function? Nee, besser - bits für "this is a user decision", und die beim autocategorisieren ausmaskieren
+* Progress handler during autodetect
+* Memory leaks
 
 Future work
 * Record notes played (duration) a specific patch
