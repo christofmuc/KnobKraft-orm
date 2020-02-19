@@ -50,8 +50,9 @@ public:
 	// React on synth or patch changed
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
-
 private:
+	class AutoCategorizeWindow;
+
 	static std::vector<CategoryButtons::Category> predefinedCategories();
 	midikraft::PatchDatabase::PatchFilter buildFilter();
 	void retrieveFirstPageFromDatabase();

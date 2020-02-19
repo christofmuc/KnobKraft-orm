@@ -59,6 +59,36 @@ private:
 };
 
 
+class PatchView::AutoCategorizeWindow : public ThreadWithProgressWindow {
+public:
+	AutoCategorizeWindow(PatchView *patchView) :
+		ThreadWithProgressWindow("Re-running auto categorization...", true, true), patchView_(patchView) {
+	}
+
+	void run() {
+		// Load the auto category file and re-categorize everything!
+		midikraft::AutoCategory::loadFromFile(patchView_->getAutoCategoryFile().getFullPathName().toStdString());
+		auto patches = patchView_->database_.getPatches(patchView_->buildFilter(), 0, 100000);
+		size_t tick = 0;
+		for (auto patch : patches) {
+			if (patch.autoCategorizeAgain()) {
+				if (threadShouldExit()) break;
+				// This was changed, updating database
+				SimpleLogger::instance()->postMessage("Updating patch " + String(patch.patch()->patchName()) + " with new categories");
+				patchView_->database_.putPatch(UIModel::currentSynth(), patch);
+			}
+			setProgress(tick++ / (double)patches.size());
+		}
+		MessageManager::callAsync([this]() {
+			patchView_->retrieveFirstPageFromDatabase();
+		});
+	}
+
+private:
+	PatchView *patchView_;
+};
+
+
 PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	: librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true),
@@ -104,10 +134,15 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 		}
 	} } },
 	{ "rerunAutoCategories", { 5, "Rerun auto categorize", [this]() {
-		autoCategorize();
-		MessageManager::callAsync([this]() {
-			retrieveFirstPageFromDatabase();
-		});
+		int affected = database_.getPatchesCount(buildFilter());
+		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
+			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
+			"This makes sense if you changed the auto category search strings!\n\n"
+			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
+			)) {
+			AutoCategorizeWindow window(this);
+			window.runThread();
+		}
 	} } },
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
@@ -250,17 +285,6 @@ File PatchView::getAutoCategoryFile() const {
 
 void PatchView::autoCategorize()
 {
-	// Load the auto category file and re-categorize everything!
-	midikraft::AutoCategory::loadFromFile(getAutoCategoryFile().getFullPathName().toStdString() );
-	database_.getPatchesAsync(buildFilter(), [this](std::vector < midikraft::PatchHolder > const &patches) {
-		for (auto patch : patches) {
-			if (patch.autoCategorizeAgain()) {
-				// This was changed, updating database
-				SimpleLogger::instance()->postMessage("Updating patch " + String(patch.patch()->patchName()) + " with new categories");
-				database_.putPatch(UIModel::currentSynth(), patch);
-			}
-		}
-	}, 0, 1000);
 }
 
 void PatchView::retrievePatches() {
