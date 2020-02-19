@@ -88,5 +88,7 @@ private:
 	midikraft::PatchHolder compareTarget_;
 
 	midikraft::PatchDatabase database_;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };
 

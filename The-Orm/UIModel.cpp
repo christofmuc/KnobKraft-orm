@@ -44,6 +44,11 @@ UIModel * UIModel::instance()
 	return instance_.get();
 }
 
+void UIModel::shutdown()
+{
+	instance_.release();
+}
+
 midikraft::Synth * UIModel::currentSynth()
 {
 	return instance_->currentSynth_.synth();

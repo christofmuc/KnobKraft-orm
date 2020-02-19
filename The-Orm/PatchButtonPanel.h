@@ -53,5 +53,7 @@ private:
 	int pageNumber_;
 	int pageSize_;
 	int totalSize_;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchButtonPanel)
 };
 

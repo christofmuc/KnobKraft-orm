@@ -44,4 +44,6 @@ private:
 	TextButton hexBased_, textBased_;
 
 	bool showHexDiff_;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchDiff)
 };

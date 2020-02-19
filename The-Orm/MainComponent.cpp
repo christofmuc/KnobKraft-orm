@@ -31,7 +31,7 @@ private:
 MainComponent::MainComponent() :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	resizerBar_(&stretchableManager_, 1, false),
-	logArea_(new HorizontalLayoutContainer(&logView_, nullptr, -1, 0.0), BorderSize<int>(8)),
+	logArea_(&logView_, BorderSize<int>(8)),
 	buttons_(301, LambdaButtonStrip::Direction::Horizontal)
 {
 	LambdaButtonStrip::TButtonMap buttons = {

@@ -29,4 +29,6 @@ private:
 	std::unique_ptr<ImportFromSynthThread> thread_;
 	ComboBox bank_;
 	TextButton ok_, cancel_;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ImportFromSynthDialog)
 };

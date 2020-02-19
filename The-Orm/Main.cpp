@@ -9,6 +9,7 @@
 #include "MainComponent.h"
 
 #include "Settings.h"
+#include "UIModel.h"
 
 #include <memory>
 
@@ -37,6 +38,15 @@ public:
         // Add your application's shutdown code here..
 
         mainWindow = nullptr; // (deletes our window)
+
+		// The UI is gone, we don't need the UIModel anymore
+		UIModel::shutdown();
+
+		// Shutdown MIDI subsystem after all windows are gone
+		midikraft::MidiController::shutdown();
+
+		// Shutdown settings subsystem
+		Settings::shutdown();
     }
 
     //==============================================================================

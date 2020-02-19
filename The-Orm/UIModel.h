@@ -67,6 +67,7 @@ private:
 class UIModel {
 public:
 	static UIModel *instance();
+	static void shutdown();
 
 	static midikraft::Synth *currentSynth();
 	static midikraft::StepSequencer *currentSequencer();
