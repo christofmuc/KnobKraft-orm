@@ -12,6 +12,7 @@
 #include "PatchHolder.h"
 
 class DiffTokenizer;
+class CoupledScrollCodeEditor;
 
 class PatchDiff : public Component, private Button::Listener {
 public:
@@ -37,8 +38,8 @@ private:
 	std::unique_ptr<DiffTokenizer> tokenizer2_;
 	Label patch1Name_;
 	Label patch2Name_;
-	std::unique_ptr <CodeEditorComponent> p1Editor_;
-	std::unique_ptr <CodeEditorComponent> p2Editor_;
+	std::unique_ptr <CoupledScrollCodeEditor> p1Editor_;
+	std::unique_ptr <CoupledScrollCodeEditor> p2Editor_;
 	TextButton closeButton_;
 	TextButton hexBased_, textBased_;
 

@@ -53,14 +53,40 @@ private:
 	std::vector<Range<int>> ranges_;
 };
 
+class CoupledScrollCodeEditor : public CodeEditorComponent {
+public:
+	using CodeEditorComponent::CodeEditorComponent;
+
+	void setSlavedEditor(CodeEditorComponent *editor) {
+		slave_ = editor;
+	}
+
+	void editorViewportPositionChanged() override {
+		if (slave_) {
+			slave_->scrollToLine(getFirstLineOnScreen());
+			//slave_->scrollToColumn();
+		}
+	}
+
+private:
+	CodeEditorComponent *slave_ = nullptr;
+};
+
 PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : p1_(patch1), p2_(patch2),
 	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument), showHexDiff_(false)
 {
 	// Create more components, with more complex bootstrapping
 	tokenizer1_.reset(new DiffTokenizer(*p1Document_.get()));
 	tokenizer2_.reset(new DiffTokenizer(*p2Document_.get()));
-	p1Editor_.reset(new CodeEditorComponent(*p1Document_, tokenizer1_.get()));
-	p2Editor_.reset(new CodeEditorComponent(*p2Document_, tokenizer2_.get()));
+	p1Editor_.reset(new CoupledScrollCodeEditor(*p1Document_, tokenizer1_.get()));
+	p2Editor_.reset(new CoupledScrollCodeEditor(*p2Document_, tokenizer2_.get()));
+	p1Editor_->setSlavedEditor(p2Editor_.get());
+	p2Editor_->setSlavedEditor(p1Editor_.get());
+	//TODO - I wish I could hide the scrollbar on the left editor, but I can only hide horizontal and vertical at the same time
+	// As the horizontal slaving doesn't work, just keep the ugly scrollbars for now
+	//p1Editor_->setScrollbarThickness(0);
+	p1Editor_->setScrollbarThickness(10);
+	p2Editor_->setScrollbarThickness(10);
 
 	fillDocuments();
 
