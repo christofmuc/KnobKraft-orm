@@ -258,6 +258,7 @@ void PatchView::showPatchDiffDialog() {
 	launcher.componentToCentreAround = patchButtons_.get();
 	launcher.dialogTitle = "Compare two patches";
 	launcher.useNativeTitleBar = false;
+	launcher.dialogBackgroundColour = Colours::black;
 	auto window = launcher.launchAsync();
 
 }
