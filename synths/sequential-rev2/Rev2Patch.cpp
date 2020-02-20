@@ -281,12 +281,12 @@ namespace midikraft {
 		number_ = Rev2PatchNumber(patchNumber);
 	}
 
-	std::vector<SynthParameterDefinition *> Rev2Patch::allParameterDefinitions()
+	std::vector<std::shared_ptr<SynthParameterDefinition>> Rev2Patch::allParameterDefinitions()
 	{
 		//TODO this will leak memory
-		std::vector<SynthParameterDefinition *> result;
+		std::vector<std::shared_ptr<SynthParameterDefinition>> result;
 		for (auto n : nrpns) {
-			result.push_back(new Rev2ParamDefinition(n));
+			result.push_back(std::make_shared<Rev2ParamDefinition>(n));
 		}
 		return result;
 	}
