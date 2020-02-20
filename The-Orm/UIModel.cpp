@@ -46,7 +46,7 @@ UIModel * UIModel::instance()
 
 void UIModel::shutdown()
 {
-	instance_.release();
+	instance_.reset();
 }
 
 midikraft::Synth * UIModel::currentSynth()
