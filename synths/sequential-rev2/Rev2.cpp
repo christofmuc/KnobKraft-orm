@@ -355,25 +355,25 @@ namespace midikraft {
 		{ 5, { "MIDI Param Send", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
 		{ 6, { "MIDI Param Receive", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
 		{ 7, { "MIDI Control Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 8, { "MIDI Prog Send", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 9, { "MIDI Out Select", "MIDI", Value(), ValueType::Lookup, 0, 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" } } } },
+		//{ 8, { "UNKNOWN", "MIDI", Value(), ValueType::Integer, 0, 100 } },
+		{ 22, { "MIDI Prog Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 26, { "MIDI Prog Send", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		{ 10, { "MIDI Sysex Cable", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
+		{ 9, { "MIDI Out Select", "MIDI", Value(), ValueType::Lookup, 0, 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" } } } },
 		{ 11, { "MIDI Arp+Seq", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 25, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
+		{ 21, { "MIDI MultiMode", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
 		{ 12, { "Local Control", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 13, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
-		{ 14, { "Pot Mode", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
-		{ 15, { "Sustain polarity", "Controls", Value(), ValueType::Lookup, 0, 1, { {0, "Normal"}, { 1, "Reversed" } } } },
-		{ 16, { "Alternative Tuning", "Tuning", Value(), ValueType::Integer, 0, 16 } },
 		{ 17, { "Velocity Curve", "Controls", Value(), ValueType::Integer, 0, 7 } }, // Curve1 - Curve8
 		{ 18, { "Pressure Curve", "Controls", Value(), ValueType::Integer, 0, 3 } },
 		{ 19, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
+		{ 14, { "Pot Mode", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
+		{ 16, { "Alternative Tuning", "Tuning", Value(), ValueType::Integer, 0, 16 } },
 		{ 20, { "Screen Saver", "General", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 21, { "MIDI MultiMode", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 22, { "MIDI Prog Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 23, { "Sustain Arp", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Arp Hold"}, { 1, "Sustain" }, { 2, "Arp Hold Mom" } } } },
+		{ 13, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
 		{ 24, { "Foot Assign", "Controls", Value(), ValueType::Lookup, 0, 5, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
-		{ 25, { "MIDI Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
-		{ 26, { "MIDI Prog Send", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 15, { "Sustain polarity", "Controls", Value(), ValueType::Lookup, 0, 1, { {0, "Normal"}, { 1, "Reversed" } } } },
+		{ 23, { "Sustain Arp", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Arp Hold"}, { 1, "Sustain" }, { 2, "Arp Hold Mom" } } } },
 		{ 27, { "Save Edit B", "Controls", Value(), ValueType::Bool } },
 	};
 
@@ -386,10 +386,11 @@ namespace midikraft {
 
 				// Loop over it and fill out the GlobalSettings Properties
 				globalSettings_.clear();
-				for (size_t i = 0; i < globalParameterData.size(); i++) {
-					if (i < kRev2GlobalSettings.size()) {
-						auto setting = std::make_shared<TypedNamedValue>(kRev2GlobalSettings[i]);
-						setting->value = Value(globalParameterData[i]);
+
+				for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
+					if (i < globalParameterData.size()) {
+						auto setting = std::make_shared<TypedNamedValue>(kRev2GlobalSettings[i].typedNamedValue);
+						setting->value = Value(globalParameterData[kRev2GlobalSettings[i].sysexIndex]);
 						globalSettings_.push_back(setting);
 					}
 				}
