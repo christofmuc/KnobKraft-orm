@@ -2,7 +2,6 @@ To be done before release:
 
 * About box with Licenses
 * Installer build
-* Memory leaks
 
 
 Future work
@@ -14,6 +13,7 @@ Future work
 * Make regular backups of Database
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * I could display which categories were set by the user, and which ones were autodetected
+* Global settings editor for the synth using the JUCE property editor
 
 * The big generic module with Python scriptability!
 

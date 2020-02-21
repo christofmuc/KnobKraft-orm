@@ -13,13 +13,15 @@
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
 #include "AutoDetection.h"
+#include "PropertyEditor.h"
 
 #include "PatchView.h"
 #include "Rev2.h"
 
 class LogViewLogger;
 
-class MainComponent : public Component, public ApplicationCommandTarget
+class MainComponent : public Component, public ApplicationCommandTarget,
+	private ChangeListener
 {
 public:
     MainComponent();
@@ -34,6 +36,8 @@ public:
 	void getAllCommands(Array<CommandID>& commands) override;
 	void getCommandInfo(CommandID commandID, ApplicationCommandInfo& result) override;
 	bool perform(const InvocationInfo& info) override;
+
+	void changeListenerCallback(ChangeBroadcaster* source) override;
 
 private:
 	void detectBCR();
@@ -50,6 +54,8 @@ private:
 	StretchableLayoutManager stretchableManager_;
 	StretchableLayoutResizerBar resizerBar_;
 	MidiLogView midiLogView_;
+	PropertyEditor::TProperties globalSettings_;
+	PropertyEditor propertyEditor_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::vector<MidiMessage> currentDownload_;
 	MenuBarComponent menuBar_;

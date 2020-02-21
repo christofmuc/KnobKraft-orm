@@ -32,7 +32,8 @@ MainComponent::MainComponent() :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
-	buttons_(301, LambdaButtonStrip::Direction::Horizontal)
+	buttons_(301, LambdaButtonStrip::Direction::Horizontal),
+	propertyEditor_(globalSettings_)
 {
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "Detect", {0, "Detect", [this]() {
@@ -65,6 +66,9 @@ MainComponent::MainComponent() :
 	commandManager_.setFirstCommandTarget(this);
 	addKeyListener(commandManager_.getKeyMappings());
 
+	// Make sure to listen to changes in selected synth!
+	UIModel::instance()->currentSynth_.addChangeListener(this);
+
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
 	rev2_ = std::make_shared<midikraft::Rev2>();
@@ -78,6 +82,7 @@ MainComponent::MainComponent() :
 	// Setup the rest of the UI
 	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);
 	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogView_, false);
+	mainTabs_.addTab("Global Settings", Colours::black, &propertyEditor_, false);
 
 	addAndMakeVisible(mainTabs_);
 
@@ -165,6 +170,13 @@ bool MainComponent::perform(const InvocationInfo& info)
 	return false;
 }
 
+
+void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
+{
+	// For now, this only means that the global settings of the currently selected synth might have changed, so refresh the PropertyEditor
+	globalSettings_ = rev2_->getGlobalSettings();
+	propertyEditor_.setProperties(globalSettings_);
+}
 
 void MainComponent::aboutBox()
 {
