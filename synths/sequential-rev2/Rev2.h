@@ -10,10 +10,12 @@
 
 #include "DSI.h"
 #include "LayerCapability.h"
+#include "DataFileLoadCapability.h"
+#include "TypedNamedValue.h"
 
 namespace midikraft {
 
-	class Rev2 : public DSISynth, public LayerCapability {
+	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability {
 	public:
 		Rev2();
 
@@ -49,6 +51,15 @@ namespace midikraft {
 
 		virtual PatchData filterVoiceRelevantData(PatchData const &unfilteredData) const override;
 
+		// DataFileLoadCapability - this is used for loading the GlobalSettings from the synth for the property editor
+		std::vector<MidiMessage> requestDataItem(int itemNo, int dataTypeID) override;
+		int numberOfDataItemsPerType(int dataTypeID) override;
+		bool isDataFile(const MidiMessage &message, int dataTypeID) override;
+		void loadData(std::vector<MidiMessage> messages, int dataTypeID) override;
+
+		// Access to global settings for the property editor
+		std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings();
+
 	private:
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
 		MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
@@ -59,6 +70,8 @@ namespace midikraft {
 		// Debug tools
 		static void compareMessages(const MidiMessage &msg1, const MidiMessage &msg2);
 		std::string versionString_;
+
+		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
 	};
 
 }
