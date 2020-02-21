@@ -1,6 +1,6 @@
 To be done before release:
 
-* About box with Licenses
+
 * Installer build
 
 
