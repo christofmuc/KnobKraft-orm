@@ -387,7 +387,7 @@ namespace midikraft {
 				// Loop over it and fill out the GlobalSettings Properties
 				for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
 					if (i < globalParameterData.size()) {
-						globalSettings_[i]->value = Value(globalParameterData[kRev2GlobalSettings[i].sysexIndex]);
+						globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex]));
 					}
 				}
 			}
