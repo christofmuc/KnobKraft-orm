@@ -14,6 +14,11 @@ Future work
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * I could display which categories were set by the user, and which ones were autodetected
 * Global settings editor for the synth using the JUCE property editor
+  * Need to change MIDI channel internally when using the settings editor to change it
+  * Need nicer display for Alternate Tunings
+  * Maybe it should be a dialog pop up, as it is so small
+  * Need "display offset" to show tuning correctly with negative numbers
+  * Need to show MIDI Channel with "Omni"
 
 * The big generic module with Python scriptability!
 

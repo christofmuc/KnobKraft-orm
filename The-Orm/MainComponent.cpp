@@ -103,6 +103,9 @@ MainComponent::MainComponent() :
 	synthForAutodetect.push_back(rev2_);
 	autodetector_.quickconfigure(synthForAutodetect);
 
+	// Feel free to request the globals page from the Rev2
+	settingsView_->loadGlobals();
+
 	// Make sure you set the size of the component after
 	// you add any child components.
 	setSize(1280, 800);

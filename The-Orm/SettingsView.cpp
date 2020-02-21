@@ -35,8 +35,9 @@ SettingsView::~SettingsView()
 void SettingsView::resized()
 {
 	auto area = getLocalBounds();
-	buttonStrip_.setBounds(area.removeFromBottom(100));
-	propertyEditor_.setBounds(area);
+	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
+	auto editorArea = area.reduced(10);
+	propertyEditor_.setBounds(editorArea.withSizeKeepingCentre(std::min(500, editorArea.getWidth()), editorArea.getHeight()));
 }
 
 void SettingsView::loadGlobals() {
