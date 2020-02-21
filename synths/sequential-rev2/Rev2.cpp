@@ -451,10 +451,7 @@ namespace midikraft {
 
 	std::string Rev2::getName() const
 	{
-		if (versionString_.empty())
 			return "DSI Prophet Rev2";
-		else
-			return (boost::format("DSI Prophet Rev2 (%s)") % versionString_).str();
 	}
 
 	juce::MidiMessage Rev2::clearPolySequencer(const MidiMessage &programEditBuffer, bool layerA, bool layerB)
