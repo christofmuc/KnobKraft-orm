@@ -11,7 +11,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{4EF59332-3A6F-45B5-969B-830608745662}
+AppId={{5D92E130-FD5C-4487-99C7-4CEB07869A9F}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
@@ -38,11 +38,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\python36.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\pytschirp.cp36-win_amd64.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_LIST_DIR}\examples\*.py"; DestDir: "{userdocs}\PyTschirperExamples"; Flags: ignoreversion recursesubdirs
-Source: "${CMAKE_CURRENT_LIST_DIR}\examples\Rev2_Programs_v1.0.syx"; DestDir: "{localappdata}\PyTschirperExamples"; Flags: ignoreversion 
-Source: "${CMAKE_CURRENT_LIST_DIR}\examples\Prophet Rev2 Factory Programs ReadMe.txt"; DestDir: "{localappdata}\PyTschirperExamples"; Flags: ignoreversion 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
