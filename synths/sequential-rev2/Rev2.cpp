@@ -65,6 +65,7 @@ namespace midikraft {
 
 	Rev2::Rev2() : DSISynth(0x2f /* Rev2 ID */)
 	{
+		initGlobalSettings();
 	}
 
 	Synth::PatchData Rev2::filterVoiceRelevantData(PatchData const &unfilteredData) const
@@ -343,39 +344,51 @@ namespace midikraft {
 
 	struct Rev2GlobalSettingDefinition {
 		int sysexIndex;
+		int nrpn;
 		TypedNamedValue typedNamedValue;
 	};
 
 	std::vector<Rev2GlobalSettingDefinition> kRev2GlobalSettings = {
-		{ 0, { "Master Coarse Tune", "Tuning", Value(12), ValueType::Integer, 0, 24 } }, // Default 12, displayed as 0
-		{ 1, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, 0, 100 } }, // Default 50, displayed as 0
-		{ 2, { "MIDI Channel", "MIDI", Value(), ValueType::Integer, 0, 16 } }, // 1 based, 0 = Omni
-		{ 3, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
-		{ 4, { "MIDI Clock Cable", "MIDI", Value(1), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
-		{ 5, { "MIDI Param Send", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
-		{ 6, { "MIDI Param Receive", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
-		{ 7, { "MIDI Control Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 0, 4097, { "Master Coarse Tune", "Tuning", Value(12), ValueType::Integer, 0, 24 } }, // Default 12, displayed as 0
+		{ 1, 4096, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, 0, 100 } }, // Default 50, displayed as 0
+		{ 2, 4098, { "MIDI Channel", "MIDI", Value(), ValueType::Integer, 0, 16 } }, // 1 based, 0 = Omni
+		{ 3, 4099, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
+		{ 4, 4100, { "MIDI Clock Cable", "MIDI", Value(1), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
+		{ 5, 4101, { "MIDI Param Send", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
+		{ 6, 4102, { "MIDI Param Receive", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
+		{ 7, 4103, { "MIDI Control Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		//{ 8, { "UNKNOWN", "MIDI", Value(), ValueType::Integer, 0, 100 } },
-		{ 22, { "MIDI Prog Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 26, { "MIDI Prog Send", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 10, { "MIDI Sysex Cable", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
-		{ 9, { "MIDI Out Select", "MIDI", Value(), ValueType::Lookup, 0, 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" } } } },
-		{ 11, { "MIDI Arp+Seq", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 25, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
-		{ 21, { "MIDI MultiMode", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 12, { "Local Control", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 17, { "Velocity Curve", "Keyboard", Value(), ValueType::Integer, 0, 7 } }, // Curve1 - Curve8
-		{ 18, { "Pressure Curve", "Keyboard", Value(), ValueType::Integer, 0, 3 } },
-		{ 19, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
-		{ 14, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
-		{ 16, { "Alternative Tuning", "Scales", Value(), ValueType::Integer, 0, 16 } },
-		{ 20, { "Screen Saver", "General", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 13, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
-		{ 24, { "Foot Assign", "Controls", Value(), ValueType::Lookup, 0, 5, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
-		{ 15, { "Sustain polarity", "Controls", Value(), ValueType::Lookup, 0, 1, { {0, "Normal"}, { 1, "Reversed" } } } },
-		{ 23, { "Sustain Arp", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Arp Hold"}, { 1, "Sustain" }, { 2, "Arp Hold Mom" } } } },
-		{ 27, { "Save Edit B", "Controls", Value(), ValueType::Bool } },
+		{ 22, 4118, { "MIDI Prog Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 26, 4125, { "MIDI Prog Send", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 10, 4104, { "MIDI Sysex Cable", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
+		{ 9, 4105, { "MIDI Out Select", "MIDI", Value(), ValueType::Lookup, 0, 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" } } } },
+		{ 11, 4123, { "MIDI Arp+Seq", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 25, 4124, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
+		{ 21, 4119, { "MIDI MultiMode", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
+		{ 12, 4107, { "Local Control", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
+		{ 17, 4113, { "Velocity Curve", "Keyboard", Value(), ValueType::Integer, 0, 7 } }, // Curve1 - Curve8
+		{ 18, 4114, { "Pressure Curve", "Keyboard", Value(), ValueType::Integer, 0, 3 } },
+		{ 19, 4115, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
+		{ 14, 4109, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
+		{ 16, 4116, { "Alternative Tuning", "Scales", Value(), ValueType::Integer, 0, 16 } },
+		{ 20, 4120, { "Screen Saver", "General", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
+		{ 13, 4111, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
+		{ 24, 4122, { "Foot Assign", "Controls", Value(), ValueType::Lookup, 0, 5, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
+		{ 15, 4112, { "Sustain polarity", "Controls", Value(), ValueType::Lookup, 0, 1, { {0, "Normal"}, { 1, "Reversed" } } } },
+		{ 23, 4121, { "Sustain Arp", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Arp Hold"}, { 1, "Sustain" }, { 2, "Arp Hold Mom" } } } },
+		{ 27, 4126, { "Save Edit B", "Controls", Value(), ValueType::Bool } },
 	};
+
+	void Rev2::initGlobalSettings()
+	{
+		// Loop over it and fill out the GlobalSettings Properties
+		globalSettings_.clear();
+		for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
+			auto setting = std::make_shared<TypedNamedValue>(kRev2GlobalSettings[i].typedNamedValue);
+			globalSettings_.push_back(setting);
+			setting->value.addListener(this);
+		}
+	}
 
 	void Rev2::loadData(std::vector<MidiMessage> messages, int dataTypeID)
 	{
@@ -385,13 +398,9 @@ namespace midikraft {
 				std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
 
 				// Loop over it and fill out the GlobalSettings Properties
-				globalSettings_.clear();
-
 				for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
 					if (i < globalParameterData.size()) {
-						auto setting = std::make_shared<TypedNamedValue>(kRev2GlobalSettings[i].typedNamedValue);
-						setting->value = Value(globalParameterData[kRev2GlobalSettings[i].sysexIndex]);
-						globalSettings_.push_back(setting);
+						globalSettings_[i]->value = Value(globalParameterData[kRev2GlobalSettings[i].sysexIndex]);
 					}
 				}
 			}
@@ -401,6 +410,34 @@ namespace midikraft {
 	std::vector<std::shared_ptr<TypedNamedValue>> Rev2::getGlobalSettings()
 	{
 		return globalSettings_;
+	}
+
+	void Rev2::valueChanged(Value& value)
+	{
+		// Find the global settings object
+		for (auto setting : globalSettings_) {
+			if (setting->value.refersToSameSourceAs(value)) {
+				// Need to find definition for this setting now, suboptimal data structures
+				for (auto def : kRev2GlobalSettings) {
+					if (def.typedNamedValue.name == setting->name) {
+						auto messages = createNRPN(def.nrpn, (int) value.getValue());
+						String valueText;
+						switch (setting->valueType) {
+						case ValueType::Integer:
+							valueText = String(int(value.getValue())); break;
+						case ValueType::Bool:
+							valueText = bool(value.getValue()) ? "On" : "Off"; break;
+						case ValueType::Lookup:
+							valueText = setting->lookup[int(value.getValue())];
+						}
+						SimpleLogger::instance()->postMessage("Setting " + setting->name + " to " + valueText);
+						MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
+						return;
+					}
+				}
+				return;
+			}
+		}
 	}
 
 	void Rev2::setLocalControl(MidiController *controller, bool localControlOn)

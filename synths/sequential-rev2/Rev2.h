@@ -15,7 +15,9 @@
 
 namespace midikraft {
 
-	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability {
+	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability,
+		private Value::Listener
+	{
 	public:
 		Rev2();
 
@@ -63,6 +65,9 @@ namespace midikraft {
 	private:
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
 		MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
+
+		void initGlobalSettings();
+		void valueChanged(Value& value) override; // Value::Listener that gets called when someone changes a global setting value
 
 		// That's not very Rev2 specific
 		static uint8 clamp(int value, uint8 min = 0, uint8 max = 127);
