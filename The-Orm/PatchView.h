@@ -64,6 +64,7 @@ private:
 	void rebuildImportFilterBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
+	void aboutBox();
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 	File getAutoCategoryFile() const;

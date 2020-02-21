@@ -145,6 +145,9 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 			window.runThread();
 		}
 	} } },
+	{ "about", { 6, "About", [this]() {
+		aboutBox();
+	}}}
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
 		if (UIModel::currentSynth()) {
@@ -446,5 +449,21 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 			layerSynth->switchToLayer(currentLayer_);
 		}
 	}
+}
+
+
+void PatchView::aboutBox()
+{
+	String message = "This software is copyright 2020 by Christof Ruch\n\n"
+		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
+		"\n"
+		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
+		"\n"
+		"Other licenses:\n"
+		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
+		"The boost library is used for parts of this software, see https://www.boost.org/.\n"
+		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
+		;
+	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
