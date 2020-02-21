@@ -364,11 +364,11 @@ namespace midikraft {
 		{ 25, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
 		{ 21, { "MIDI MultiMode", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
 		{ 12, { "Local Control", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 17, { "Velocity Curve", "Controls", Value(), ValueType::Integer, 0, 7 } }, // Curve1 - Curve8
-		{ 18, { "Pressure Curve", "Controls", Value(), ValueType::Integer, 0, 3 } },
+		{ 17, { "Velocity Curve", "Keyboard", Value(), ValueType::Integer, 0, 7 } }, // Curve1 - Curve8
+		{ 18, { "Pressure Curve", "Keyboard", Value(), ValueType::Integer, 0, 3 } },
 		{ 19, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
-		{ 14, { "Pot Mode", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
-		{ 16, { "Alternative Tuning", "Tuning", Value(), ValueType::Integer, 0, 16 } },
+		{ 14, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
+		{ 16, { "Alternative Tuning", "Scales", Value(), ValueType::Integer, 0, 16 } },
 		{ 20, { "Screen Saver", "General", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
 		{ 13, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
 		{ 24, { "Foot Assign", "Controls", Value(), ValueType::Lookup, 0, 5, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
