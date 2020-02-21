@@ -32,7 +32,7 @@ MainComponent::MainComponent() :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
-	buttons_(301, LambdaButtonStrip::Direction::Horizontal)
+	midiLogArea_(&midiLogView_, BorderSize<int>(10))
 {
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
@@ -47,7 +47,7 @@ MainComponent::MainComponent() :
 
 	// Setup the rest of the UI
 	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);
-	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogView_, false);
+	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
 	mainTabs_.addTab("Global Settings", Colours::black, settingsView_.get(), false);
 
 	addAndMakeVisible(mainTabs_);

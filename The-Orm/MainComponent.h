@@ -46,6 +46,7 @@ private:
 	StretchableLayoutManager stretchableManager_;
 	StretchableLayoutResizerBar resizerBar_;
 	MidiLogView midiLogView_;
+	InsetBox midiLogArea_;
 	std::unique_ptr<SettingsView> settingsView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::vector<MidiMessage> currentDownload_;
