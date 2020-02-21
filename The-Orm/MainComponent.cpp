@@ -108,7 +108,7 @@ MainComponent::MainComponent() :
 
 	// Make sure you set the size of the component after
 	// you add any child components.
-	setSize(1280, 800);
+	setSize(1536/2, 2048 / 2);
 }
 
 MainComponent::~MainComponent()
