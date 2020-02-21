@@ -41,6 +41,7 @@ set(SOURCES
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
 	PatchView.cpp PatchView.h
+	SettingsView.cpp SettingsView.h
 	UIModel.cpp UIModel.h
 	setup.iss
 	ideas.txt

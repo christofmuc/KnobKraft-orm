@@ -145,9 +145,6 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 			window.runThread();
 		}
 	} } },
-	{ "loadGlobals", { 6, "Load Globals", [this]() {
-		loadGlobals();
-	} } },
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
 		if (UIModel::currentSynth()) {
@@ -170,15 +167,6 @@ PatchView::~PatchView()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
-}
-
-void PatchView::loadGlobals() {
-	auto rev2 = std::dynamic_pointer_cast<midikraft::DataFileLoadCapability>(synths_[0].synth());
-	auto namedDevice = std::dynamic_pointer_cast<midikraft::Synth>(synths_[0].synth());
-	librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(namedDevice->midiOutput()), rev2.get(), 0, nullptr, [this, namedDevice]() {
-		// Kick off an update so the property editor can refresh itself
-		UIModel::instance()->currentSynth_.changeCurrentSynth(namedDevice.get());
-	});
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)

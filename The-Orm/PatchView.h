@@ -39,7 +39,6 @@ public:
 	PatchView(std::vector<midikraft::SynthHolder> const &synths);
 	virtual ~PatchView();
 
-	void loadGlobals();
 	void resized() override;
 
 	// ComboBox Listener
