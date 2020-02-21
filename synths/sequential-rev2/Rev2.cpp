@@ -340,7 +340,7 @@ namespace midikraft {
 		{ 1, 4096, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, 0, 100 } }, // Default 50, displayed as 0
 		{ 2, 4098, { "MIDI Channel", "MIDI", Value(), ValueType::Integer, 0, 16 } }, // 1 based, 0 = Omni
 		{ 3, 4099, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
-		{ 4, 4100, { "MIDI Clock Cable", "MIDI", Value(1), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
+		{ 4, 4100, { "MIDI Clock Cable", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
 		{ 5, 4101, { "MIDI Param Send", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
 		{ 6, 4102, { "MIDI Param Receive", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
 		{ 7, 4103, { "MIDI Control Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
@@ -352,9 +352,9 @@ namespace midikraft {
 		{ 11, 4123, { "MIDI Arp+Seq", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		{ 25, 4124, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
 		{ 21, 4119, { "MIDI MultiMode", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 12, 4107, { "Local Control", "MIDI", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ 17, 4113, { "Velocity Curve", "Keyboard", Value(), ValueType::Integer, 0, 7 } }, // Curve1 - Curve8
-		{ 18, 4114, { "Pressure Curve", "Keyboard", Value(), ValueType::Integer, 0, 3 } },
+		{ 12, 4107, { "Local Control", "MIDI", Value(1), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
+		{ 17, 4113, { "Velocity Curve", "Keyboard", Value(), ValueType::Lookup, 0, 7, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }, {4, "Curve 5" }, {5, "Curve 6" }, {6, "Curve 7" }, {7, "Curve 8" } } } }, 
+		{ 18, 4114, { "Pressure Curve", "Keyboard", Value(), ValueType::Lookup, 0, 3, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
 		{ 19, 4115, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
 		{ 14, 4109, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
 		{ 16, 4116, { "Alternative Tuning", "Scales", Value(), ValueType::Integer, 0, 16 } },
@@ -451,7 +451,7 @@ namespace midikraft {
 
 	std::string Rev2::getName() const
 	{
-			return "DSI Prophet Rev2";
+		return "DSI Prophet Rev2";
 	}
 
 	juce::MidiMessage Rev2::clearPolySequencer(const MidiMessage &programEditBuffer, bool layerA, bool layerB)
