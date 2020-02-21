@@ -72,10 +72,6 @@ namespace midikraft {
 		// That's not very Rev2 specific
 		static uint8 clamp(int value, uint8 min = 0, uint8 max = 127);
 
-		// Debug tools
-		static void compareMessages(const MidiMessage &msg1, const MidiMessage &msg2);
-		std::string versionString_;
-
 		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
 	};
 

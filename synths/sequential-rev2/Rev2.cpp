@@ -143,19 +143,6 @@ namespace midikraft {
 		return static_cast<uint8>(std::min((int)maximum, std::max(value, (int)minimum)));
 	}
 
-	void Rev2::compareMessages(const MidiMessage &msg1, const MidiMessage &msg2) {
-		auto data1 = msg1.getSysExData();
-		auto data2 = msg2.getSysExData();
-		for (int i = 0; i < std::min(msg1.getSysExDataSize(), msg2.getSysExDataSize()); i++) {
-			if (data1[i] != data2[i]) {
-				jassert(false);
-			}
-		}
-		if (msg1.getSysExDataSize() != msg2.getSysExDataSize()) {
-			jassert(false);
-		}
-	}
-
 	juce::MidiMessage Rev2::filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace) {
 		if (!isEditBufferDump(programEditBuffer)) {
 			jassert(false);
