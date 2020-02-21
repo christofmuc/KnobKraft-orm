@@ -21,7 +21,7 @@
 
 class LogViewLogger;
 
-class MainComponent : public Component, public ApplicationCommandTarget
+class MainComponent : public Component
 {
 public:
     MainComponent();
@@ -30,12 +30,6 @@ public:
     void resized() override;
 
 	void refreshListOfPresets();
-
-	// Required to process commands. That seems a bit heavyweight
-	ApplicationCommandTarget* getNextCommandTarget() override;
-	void getAllCommands(Array<CommandID>& commands) override;
-	void getCommandInfo(CommandID commandID, ApplicationCommandInfo& result) override;
-	bool perform(const InvocationInfo& info) override;
 
 private:
 	void detectBCR();
@@ -58,9 +52,6 @@ private:
 	MenuBarComponent menuBar_;
 
 	InsetBox logArea_;
-
-	LambdaButtonStrip buttons_;
-	ApplicationCommandManager commandManager_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
