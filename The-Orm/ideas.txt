@@ -1,18 +1,16 @@
-To be done before release:
-
-
-* Installer build
-
+Simple Features
+* Store current edit buffer (might be a nice sequence!)
+* Allow to change patch names
+* Allow to change patch names
+* Make regular backups of Database
+* I could display which categories were set by the user, and which ones were autodetected
 
 Future work
 * Record notes played (duration) a specific patch
 * Allow to sort by playing time
-* Allow to change patch names
 * Search box for patch name search
-* Display bulk import content
-* Make regular backups of Database
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
-* I could display which categories were set by the user, and which ones were autodetected
+
 * Global settings editor for the synth using the JUCE property editor
   * Need to change MIDI channel internally when using the settings editor to change it
   * Need nicer display for Alternate Tunings
@@ -24,10 +22,11 @@ Future work
 
 * The automatic patch clusterer!
 
+* Multiple synthesizers
 
-Future work
+
 More synthesizers
-+ Prepared:
+
   + Access Virus B
   + Kawai K3
   * Korg DW8000
