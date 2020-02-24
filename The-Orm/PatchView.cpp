@@ -123,18 +123,21 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	{ "retrieveActiveSynthPatches",{ 1, "Import patches from synth", [this]() {
 		retrievePatches();
 	} } },
-	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
+	{ "fetchEditBuffer",{ 2, "Import edit buffer from synth", [this]() {
+		retrieveEditBuffer();
+	} } },
+	{ "loadsysEx", { 3, "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "showDiff", { 3, "Show patch comparison", [this]() {
+	{ "showDiff", { 4, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
-	{ "editAutoCategories", { 4, "Edit auto-categories", [this]() {
+	{ "editAutoCategories", { 5, "Edit auto-categories", [this]() {
 		if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 			getAutoCategoryFile().revealToUser();
 		}
 	} } },
-	{ "rerunAutoCategories", { 5, "Rerun auto categorize", [this]() {
+	{ "rerunAutoCategories", { 6, "Rerun auto categorize", [this]() {
 		int affected = database_.getPatchesCount(buildFilter());
 		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
@@ -145,7 +148,7 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 			window.runThread();
 		}
 	} } },
-	{ "about", { 6, "About", [this]() {
+	{ "about", { 7, "About", [this]() {
 		aboutBox();
 	}}}
 	};
@@ -315,6 +318,26 @@ void PatchView::retrievePatches() {
 		launcher.dialogTitle = "Import from Synth";
 		launcher.useNativeTitleBar = false;
 		auto window = launcher.launchAsync();
+	}
+	else {
+		// Button shouldn't be enabled
+		jassert(false);
+	}
+}
+
+
+void PatchView::retrieveEditBuffer()
+{
+	midikraft::Synth *activeSynth = UIModel::currentSynth();
+	if (activeSynth != nullptr) {
+		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(activeSynth->midiOutput()),
+			activeSynth,
+			nullptr,
+			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
+			MessageManager::callAsync([this, patchesLoaded]() {
+				mergeNewPatches(patchesLoaded);
+			});
+		});
 	}
 	else {
 		// Button shouldn't be enabled

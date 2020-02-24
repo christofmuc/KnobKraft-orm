@@ -59,6 +59,8 @@ private:
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
+	void retrieveEditBuffer();
+
 	void loadPatches();
 	std::string currentlySelectedSourceUUID();
 	void rebuildImportFilterBox();
