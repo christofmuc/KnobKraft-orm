@@ -1,16 +1,20 @@
 Simple Features
-* Store current edit buffer (might be a nice sequence!)
-* Allow to change patch names
+* Better display that synth is connected or not
 * Allow to change patch names
 * Make regular backups of Database
 * I could display which categories were set by the user, and which ones were autodetected
+* Noteoff on send patch (or send mute patch first?)
+* Hide/Delete patches
 
 Future work
+* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
 * Record notes played (duration) a specific patch
 * Allow to sort by playing time
 * Search box for patch name search
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
+* Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 
+Continuation of started features
 * Global settings editor for the synth using the JUCE property editor
   * Need to change MIDI channel internally when using the settings editor to change it
   * Need nicer display for Alternate Tunings
@@ -18,11 +22,13 @@ Future work
   * Need "display offset" to show tuning correctly with negative numbers
   * Need to show MIDI Channel with "Omni"
 
-* The big generic module with Python scriptability!
-
-* The automatic patch clusterer!
-
-* Multiple synthesizers
+Big things
+	* The big generic module with Python scriptability!
+	* The automatic patch clusterer!
+	* Multiple synthesizers
+	* Multiple synths in one grid
+	* Masterkeyboard control ("Follow the patch")
+	* Auto sample patches, calculate previews
 
 
 More synthesizers
@@ -32,6 +38,20 @@ More synthesizers
   * Korg DW8000
   + Oberheim Matrix 10000
   + DSI OB-6  
-  + Roland MKS80
+  
   + Yamaha Reface DX
+
+Not done yet
+
+	+ Roland MKS80	
+	+ Behringer RD 8
+
+Future Synths
+
+	+ Novation Circuit
+
+Librarian for other stuff
+
+	+ BCR2000
+	+ Meris pedal
 
