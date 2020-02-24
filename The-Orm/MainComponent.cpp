@@ -26,6 +26,24 @@ private:
 	LogView &logview_;
 };
 
+class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
+public:
+	ActiveSynthHolder(std::shared_ptr<midikraft::Synth> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
+	}
+
+	std::string getName() override
+	{
+		return synth() ? synth()->getName() : "Unnamed";
+	}
+
+
+	bool isActive() override
+	{
+		return synth() ? synth()->channel().isValid() : false;
+	}
+
+};
+
 
 //==============================================================================
 MainComponent::MainComponent() :
@@ -38,6 +56,13 @@ MainComponent::MainComponent() :
 	std::vector<midikraft::SynthHolder>  synths;
 	rev2_ = std::make_shared<midikraft::Rev2>();
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
+	std::vector<std::shared_ptr<ActiveListItem>> listItems;
+	for (auto s : synths) {
+		listItems.push_back(std::make_shared<ActiveSynthHolder>(s.synth(), s.color()));
+	}
+
+	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {});
+	autodetector_.addChangeListener(&synthList_);
 
 	// Create the patch view
 	patchView_ = std::make_unique<PatchView>(synths);
@@ -46,6 +71,7 @@ MainComponent::MainComponent() :
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
 
 	// Setup the rest of the UI
+	addAndMakeVisible(synthList_);
 	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);
 	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
 	mainTabs_.addTab("Global Settings", Colours::black, settingsView_.get(), false);
@@ -88,6 +114,7 @@ MainComponent::~MainComponent()
 void MainComponent::resized()
 {
 	auto area = getLocalBounds();
+	synthList_.setBounds(area.removeFromTop(60).reduced(8));
 	//menuBar_.setBounds(area.removeFromTop(30));
 
 	// make a list of two of our child components that we want to reposition

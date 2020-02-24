@@ -14,6 +14,8 @@
 #include "InsetBox.h"
 #include "AutoDetection.h"
 #include "PropertyEditor.h"
+#include "SynthList.h"
+
 
 #include "PatchView.h"
 #include "SettingsView.h"
@@ -40,6 +42,7 @@ private:
 
 	midikraft::AutoDetection autodetector_;
 	std::shared_ptr<midikraft::Rev2> rev2_;
+	SynthList synthList_;
 	TabbedComponent mainTabs_;
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
