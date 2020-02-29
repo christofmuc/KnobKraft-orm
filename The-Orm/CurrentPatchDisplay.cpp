@@ -17,6 +17,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	name_("PATCHNAME", "No patch loaded"),
 	currentSession_("Current Session"), 
 	favorite_("Fav!"),
+	hide_("Hide"),
 	import_("IMPORT", "No import information")
 {
 	addAndMakeVisible(&name_);
@@ -26,6 +27,12 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	favorite_.setColour(TextButton::ColourIds::buttonColourId, Colours::black);
 	favorite_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::limegreen);
 	addAndMakeVisible(favorite_);
+
+	hide_.setClickingTogglesState(true);
+	hide_.addListener(this);
+	hide_.setColour(TextButton::ColourIds::buttonColourId, Colours::black);
+	hide_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::indianred);
+	addAndMakeVisible(hide_);
 
 	currentSession_.setClickingTogglesState(true);
 	currentSession_.addListener(this);
@@ -46,6 +53,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 			import_.setText("No import information", dontSendNotification);
 		}
 		favorite_.setToggleState(patch.isFavorite(), dontSendNotification);
+		hide_.setToggleState(patch.isHidden(), dontSendNotification);
 		
 		std::set<CategoryButtons::Category> buttonCategories;
 		for (const auto& cat : patch.categories()) {
@@ -57,6 +65,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 		name_.setText("No patch loaded", dontSendNotification);
 		import_.setText("", dontSendNotification);
 		favorite_.setToggleState(false, dontSendNotification);
+		hide_.setToggleState(false, dontSendNotification);
 		categories_.setActive({});
 	}
 	currentPatch_ = patch;
@@ -75,6 +84,7 @@ void CurrentPatchDisplay::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 	auto topRow = area.removeFromTop(60).reduced(10);
+	hide_.setBounds(topRow.removeFromRight(100));
 	favorite_.setBounds(topRow.removeFromRight(100));
 	//currentSession_.setBounds(topRow.removeFromRight(100));
 	import_.setBounds(topRow.removeFromRight(300).withTrimmedRight(10));
@@ -89,6 +99,12 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 	if (button == &favorite_) {
 		if (currentPatch_.patch()) {
 			currentPatch_.setFavorite(midikraft::Favorite(button->getToggleState()));
+			favoriteHandler_(currentPatch_);
+		}
+	}
+	else if (button == &hide_) {
+		if (currentPatch_.patch()) {
+			currentPatch_.setHidden(hide_.getToggleState());
 			favoriteHandler_(currentPatch_);
 		}
 	}

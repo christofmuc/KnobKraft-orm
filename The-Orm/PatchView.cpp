@@ -99,9 +99,12 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
 	importList_.addListener(this);
-	onlyFaves_.setButtonText("Faves");
+	onlyFaves_.setButtonText("Only Faves");
 	onlyFaves_.addListener(this);
 	addAndMakeVisible(onlyFaves_);
+	showHidden_.setButtonText("Also Hidden");
+	showHidden_.addListener(this);
+	addAndMakeVisible(showHidden_);
 
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
 		[this](midikraft::PatchHolder &favoritePatch) {
@@ -202,7 +205,7 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	for (auto c : categoryFilters_.selectedCategories()) {
 		catSelected.emplace(c.category, c.color, c.bitIndex);
 	}
-	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), catSelected };
+	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), showHidden_.getToggleState(), catSelected };
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
@@ -231,7 +234,8 @@ void PatchView::resized()
 	currentPatchDisplay_->setBounds(topRow);
 	auto sourceRow = area.removeFromTop(36).reduced(8);
 	auto filterRow = area.removeFromTop(40).reduced(10);
-	onlyFaves_.setBounds(sourceRow.removeFromRight(80));
+	showHidden_.setBounds(sourceRow.removeFromRight(120));
+	onlyFaves_.setBounds(sourceRow.removeFromRight(120));
 	categoryFilters_.setBounds(filterRow);
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
@@ -247,7 +251,7 @@ void PatchView::comboBoxChanged(ComboBox* box)
 
 void PatchView::buttonClicked(Button *button)
 {
-	if (button == &onlyFaves_) {
+	if (button == &onlyFaves_ || button == &showHidden_) {
 		retrieveFirstPageFromDatabase();
 	}
 }

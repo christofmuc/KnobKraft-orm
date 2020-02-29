@@ -36,6 +36,7 @@ private:
 	Label import_;
 	TextButton currentSession_;
 	TextButton favorite_;
+	TextButton hide_;
 	CategoryButtons categories_;
 	std::function<void(midikraft::PatchHolder&)> favoriteHandler_;
 	std::function<void(midikraft::PatchHolder&)> sessionHandler_;
