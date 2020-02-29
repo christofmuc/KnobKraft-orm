@@ -82,6 +82,15 @@ IF (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
 
+# Pedantic about warnings
+if (MSVC)
+    # warning level 4 and all warnings as errors
+    target_compile_options(KnobKraftOrm PRIVATE /W4 /WX)
+else()
+    # lots of warnings and all warnings as errors
+    #target_compile_options(juce-widgets PRIVATE -Wall -Wextra -pedantic -Werror)
+endif()
+
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
 	find_program(INNOSETUP NAMES iscc ISCC HINTS "c:/program files (x86)/Inno Setup 6")

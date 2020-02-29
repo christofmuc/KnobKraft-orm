@@ -249,7 +249,7 @@ std::vector<Range<int>> PatchDiff::diffFromData(midikraft::Patch &patch1, midikr
 	std::vector<uint8> const &doc1 = activeSynth_->filterVoiceRelevantData(patch1.data());
 	std::vector<uint8> const &doc2 = activeSynth_->filterVoiceRelevantData(patch2.data());
 
-	for (size_t i = 0; i < doc1.size(); i++) {
+	for (int i = 0; i < (int) doc1.size(); i++) {
 		if (doc1[i] != doc2[i]) {
 			if (!diff) {
 				diff = true;
@@ -268,7 +268,7 @@ std::vector<Range<int>> PatchDiff::diffFromData(midikraft::Patch &patch1, midikr
 	}
 	if (diff) {
 		// Open diff at the end of the document
-		diffRanges.push_back(Range<int>(diffstart, positionInHexDocument(doc1.size())));
+		diffRanges.push_back(Range<int>(diffstart, positionInHexDocument((int) doc1.size())));
 	}
 	return diffRanges;
 }

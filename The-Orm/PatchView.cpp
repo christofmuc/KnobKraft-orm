@@ -115,6 +115,7 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 		patchButtons_->refresh(true);
 	},
 		[this](midikraft::PatchHolder &sessionPatch) {
+		ignoreUnused(sessionPatch);
 		UIModel::instance()->currentSession_.changedSession();
 	});
 	addAndMakeVisible(currentPatchDisplay_.get());
@@ -255,6 +256,7 @@ void PatchView::comboBoxChanged(ComboBox* box)
 
 void PatchView::buttonClicked(Button *button)
 {
+	ignoreUnused(button);
 	retrieveFirstPageFromDatabase();
 }
 
@@ -267,13 +269,13 @@ void PatchView::showPatchDiffDialog() {
 	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentSynth(), compareTarget_, UIModel::currentPatch());
 
 	DialogWindow::LaunchOptions launcher;
-	launcher.content = OptionalScopedPointer<Component>(diffDialog_.get(), false);
+	launcher.content.set(diffDialog_.get(), false);
 	launcher.componentToCentreAround = patchButtons_.get();
 	launcher.dialogTitle = "Compare two patches";
 	launcher.useNativeTitleBar = false;
 	launcher.dialogBackgroundColour = Colours::black;
 	auto window = launcher.launchAsync();
-
+	ignoreUnused(window);
 }
 
 void PatchView::saveCurrentPatchCategories() {
@@ -319,11 +321,12 @@ void PatchView::retrievePatches() {
 		}
 		);
 		DialogWindow::LaunchOptions launcher;
-		launcher.content = OptionalScopedPointer<Component>(importDialog_.get(), false);
+		launcher.content.set(importDialog_.get(), false);
 		launcher.componentToCentreAround = patchButtons_.get();
 		launcher.dialogTitle = "Import from Synth";
 		launcher.useNativeTitleBar = false;
 		auto window = launcher.launchAsync();
+		ignoreUnused(window);
 	}
 	else {
 		// Button shouldn't be enabled

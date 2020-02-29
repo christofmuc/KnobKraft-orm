@@ -19,6 +19,8 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	addAndMakeVisible(patchButtons_.get());
 
 	midikraft::MidiController::instance()->addMessageHandler(callback_, [this](MidiInput *source, const MidiMessage &message) { 
+		ignoreUnused(source);
+
 		// Check if this is a message we will transform into a macro
 		if (isMacroMessage(message)) {
 			executeMacro(message);
@@ -69,7 +71,7 @@ void PatchButtonPanel::refresh(bool async) {
 
 	// Now set the button text and colors
 	int active = indexOfActive();
-	for (size_t i = 0; i < std::max((size_t)patchButtons_->size(), patches_.size()); i++) {
+	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
 			patchButtons_->buttonWithIndex(i)->setActive(i == active);
 			if (i < patches_.size()) {
@@ -178,7 +180,7 @@ void PatchButtonPanel::executeMacro(const MidiMessage&)
 
 int PatchButtonPanel::indexOfActive() const
 {
-	for (size_t i = 0; i < patches_.size(); i++) {
+	for (int i = 0; i < (int) patches_.size(); i++) {
 		if (patches_[i].md5() == activePatchMd5_) {
 			return i;
 		}
