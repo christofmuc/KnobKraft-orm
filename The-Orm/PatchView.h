@@ -76,6 +76,7 @@ private:
 	CategoryButtons categoryFilters_;
 	ToggleButton onlyFaves_;
 	ToggleButton showHidden_;
+	ToggleButton onlyUntagged_;
 	Label patchLabel_;
 	LambdaButtonStrip buttonStrip_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;

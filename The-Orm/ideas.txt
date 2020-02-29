@@ -1,6 +1,5 @@
 Simple Features
 * Separte import entry for "Edit buffers imported", and maybe newest ones first?
-* Filter für "not tagged"
 * Allow to change patch names
 
 Future work

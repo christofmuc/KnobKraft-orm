@@ -105,6 +105,9 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	showHidden_.setButtonText("Also Hidden");
 	showHidden_.addListener(this);
 	addAndMakeVisible(showHidden_);
+	onlyUntagged_.setButtonText("Only Untagged");
+	onlyUntagged_.addListener(this);
+	addAndMakeVisible(onlyUntagged_);
 
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
 		[this](midikraft::PatchHolder &favoritePatch) {
@@ -205,7 +208,7 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	for (auto c : categoryFilters_.selectedCategories()) {
 		catSelected.emplace(c.category, c.color, c.bitIndex);
 	}
-	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), showHidden_.getToggleState(), catSelected };
+	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), showHidden_.getToggleState(), onlyUntagged_.getToggleState(), catSelected };
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
@@ -234,8 +237,9 @@ void PatchView::resized()
 	currentPatchDisplay_->setBounds(topRow);
 	auto sourceRow = area.removeFromTop(36).reduced(8);
 	auto filterRow = area.removeFromTop(40).reduced(10);
-	showHidden_.setBounds(sourceRow.removeFromRight(120));
-	onlyFaves_.setBounds(sourceRow.removeFromRight(120));
+	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
+	showHidden_.setBounds(sourceRow.removeFromRight(100));
+	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
@@ -251,9 +255,7 @@ void PatchView::comboBoxChanged(ComboBox* box)
 
 void PatchView::buttonClicked(Button *button)
 {
-	if (button == &onlyFaves_ || button == &showHidden_) {
-		retrieveFirstPageFromDatabase();
-	}
+	retrieveFirstPageFromDatabase();
 }
 
 void PatchView::showPatchDiffDialog() {
