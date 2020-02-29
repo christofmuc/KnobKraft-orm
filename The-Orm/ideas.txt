@@ -1,11 +1,7 @@
 Simple Features
 * Separte import entry for "Edit buffers imported", and maybe newest ones first?
 * Filter für "not tagged"
-* Hide/Delete patches
 * Allow to change patch names
-* Make regular backups of Database
-* I could display which categories were set by the user, and which ones were autodetected
-
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
@@ -15,6 +11,8 @@ Future work
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 * Noteoff on send patch (or send mute patch first?)
+* Make regular backups of Database
+* I could display which categories were set by the user, and which ones were autodetected
 
 Continuation of started features
 * Global settings editor for the synth using the JUCE property editor

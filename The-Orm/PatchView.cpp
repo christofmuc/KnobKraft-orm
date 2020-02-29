@@ -490,6 +490,8 @@ void PatchView::aboutBox()
 		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
 		"The boost library is used for parts of this software, see https://www.boost.org/.\n"
 		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
+		"\n"
+		"Icons made by Freepik from www.flaticon.com\n"
 		;
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }

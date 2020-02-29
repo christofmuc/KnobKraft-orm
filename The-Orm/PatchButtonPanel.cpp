@@ -82,11 +82,13 @@ void PatchButtonPanel::refresh(bool async) {
 				}
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
 				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
+				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
 			}
 			else {
 				patchButtons_->buttonWithIndex(i)->setButtonText("");
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, Colours::black);
 				patchButtons_->buttonWithIndex(i)->setFavorite(false);
+				patchButtons_->buttonWithIndex(i)->setHidden(false);
 			}
 		}
 	}
