@@ -28,7 +28,7 @@ public:
 
 private:
 	static std::unique_ptr<PatchNameDialog> sPatchNameDialog_;
-	static std::unique_ptr<DialogWindow> sWindow_;
+	static DialogWindow *sWindow_;
 
 	void buttonClicked(Button*) override;
 	std::function<void(midikraft::PatchHolder *result)> callback_;

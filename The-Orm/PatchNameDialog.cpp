@@ -12,7 +12,7 @@
 #include "Logger.h"
 
 std::unique_ptr<PatchNameDialog> PatchNameDialog::sPatchNameDialog_;
-std::unique_ptr<DialogWindow> PatchNameDialog::sWindow_;
+DialogWindow *PatchNameDialog::sWindow_ = nullptr;
 
 PatchNameDialog::PatchNameDialog(std::function<void(midikraft::PatchHolder *result) > callback) : callback_(callback), ok_("OK"), cancel_("Cancel")
 {
@@ -84,13 +84,12 @@ void PatchNameDialog::showPatchNameDialog(midikraft::PatchHolder  *patch, Compon
 	launcher.dialogTitle = "Edit Patch Name";
 	launcher.useNativeTitleBar = false;
 	launcher.dialogBackgroundColour = Colours::black;
-	sWindow_.reset(launcher.launchAsync());
-	ModalComponentManager::getInstance()->attachCallback(sWindow_.get(), ModalCallbackFunction::forComponent(dialogClosed, sPatchNameDialog_.get()));
+	sWindow_ = launcher.launchAsync();
+	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sPatchNameDialog_.get()));
 }
 
 void PatchNameDialog::release()
 {
-	sWindow_.reset();
 	sPatchNameDialog_.reset();
 }
 
@@ -110,10 +109,8 @@ void PatchNameDialog::buttonClicked(Button *button)
 			}
 		}
 		sWindow_->exitModalState(true);
-		sWindow_.reset();
 	}
 	else if (button == &cancel_) {
 		sWindow_->exitModalState(false);
-		sWindow_.reset();
 	}
 }
