@@ -7,6 +7,7 @@
 #include "PatchButtonPanel.h"
 
 #include "Patch.h"
+#include "LayeredPatch.h"
 
 #include <boost/format.hpp>
 #include <algorithm>
@@ -75,7 +76,14 @@ void PatchButtonPanel::refresh(bool async) {
 		if (i < patchButtons_->size()) {
 			patchButtons_->buttonWithIndex(i)->setActive(i == active);
 			if (i < patches_.size()) {
-				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].patch()->patchName());
+				// Could be a layered patch?
+				auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patches_[i].patch());
+				if (layers && layers->numberOfLayers() > 1) {
+					patchButtons_->buttonWithIndex(i)->setButtonText(layers->layerName(0), layers->layerName(1));
+				}
+				else {
+					patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].patch()->patchName());
+				}
 				Colour color = Colours::slategrey;
 				auto cats = patches_[i].categories();
 				if (!cats.empty()) {
@@ -87,7 +95,7 @@ void PatchButtonPanel::refresh(bool async) {
 				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
 			}
 			else {
-				patchButtons_->buttonWithIndex(i)->setButtonText("");
+				patchButtons_->buttonWithIndex(i)->setButtonText("", "");
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, Colours::black);
 				patchButtons_->buttonWithIndex(i)->setFavorite(false);
 				patchButtons_->buttonWithIndex(i)->setHidden(false);

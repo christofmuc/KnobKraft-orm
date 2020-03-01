@@ -52,6 +52,8 @@ MainComponent::MainComponent() :
 	logArea_(&logView_, BorderSize<int>(8)),
 	midiLogArea_(&midiLogView_, BorderSize<int>(10))
 {
+	setLookAndFeel(&ormLookAndFeel_);
+
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
 	rev2_ = std::make_shared<midikraft::Rev2>();
@@ -108,6 +110,7 @@ MainComponent::MainComponent() :
 
 MainComponent::~MainComponent()
 {
+	setLookAndFeel(nullptr);
 	Logger::setCurrentLogger(nullptr);
 }
 

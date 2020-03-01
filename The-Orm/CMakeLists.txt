@@ -38,6 +38,7 @@ set(SOURCES
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
+	OrmLookAndFeel.cpp OrmLookAndFeel.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
 	PatchView.cpp PatchView.h
