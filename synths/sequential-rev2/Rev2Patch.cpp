@@ -320,6 +320,21 @@ namespace midikraft {
 		return layerName;
 	}
 
+	void Rev2Patch::setLayerName(int layerNo, std::string const &layerName)
+	{
+		jassert(layerNo >= 0 && layerNo < numberOfLayers());
+		int baseIndex = layerNo == 0 ? 235 : 1259; // Layer A starts at 235, Layer B starts at 1259
+		for (int i = 0; i < 20; i++) {
+			if (i < (int) layerName.size()) {
+				setAt(baseIndex + i, layerName[i]);
+			}
+			else {
+				// Fill the 20 characters with space
+				setAt(baseIndex + i, ' ');
+			}
+		}
+	}
+
 	std::shared_ptr<Rev2ParamDefinition> Rev2Patch::find(std::string const &paramID)
 	{
 		for (auto &n : nrpns) {

@@ -38,6 +38,7 @@ namespace midikraft {
 		virtual LayerMode layerMode() const override;
 		virtual int numberOfLayers() const override;
 		virtual std::string layerName(int layerNo) const override;
+		virtual void setLayerName(int layerNo, std::string const &layerName) override;
 
 		static std::shared_ptr<Rev2ParamDefinition> find(std::string const &paramID);
 
