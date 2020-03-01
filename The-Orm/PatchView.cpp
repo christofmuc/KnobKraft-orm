@@ -343,9 +343,20 @@ void PatchView::retrieveEditBuffer()
 			activeSynth,
 			nullptr,
 			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
-			MessageManager::callAsync([this, patchesLoaded]() {
-				mergeNewPatches(patchesLoaded);
-			});
+				// There should only be one edit buffer, just check that this is true here
+				jassert(patchesLoaded.size() == 1);
+
+				// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
+				auto now = Time::getCurrentTime();
+				auto editBufferSource = std::make_shared<midikraft::FromSynthSource>(now);
+				for (auto &p : patchesLoaded) {
+					p.setSourceInfo(editBufferSource);
+				}
+
+				// Off to the UI thread (because we will update the UI)
+				MessageManager::callAsync([this, patchesLoaded]() {
+					mergeNewPatches(patchesLoaded);
+				});
 		});
 	}
 	else {
@@ -440,10 +451,12 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 		MessageManager::callAsync([this, outNewPatches]() {
 			rebuildImportFilterBox();
 			// Select this import
-			auto info = outNewPatches[0].sourceInfo();
+			auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
 			if (info) {
 				for (int i = 0; i < importList_.getNumItems(); i++) {
-					if (importList_.getItemText(i).toStdString() == info->toDisplayString(UIModel::currentSynth())) {
+					if ((importList_.getItemText(i).toStdString() == info->toDisplayString(UIModel::currentSynth())) 
+						|| (midikraft::SourceInfo::isEditBufferImport(info) && importList_.getItemText(i) == "Edit buffer imports")) // TODO this will break when the display text is changed
+					{
 							importList_.setSelectedItemIndex(i, sendNotificationAsync);
 					}
 				}
