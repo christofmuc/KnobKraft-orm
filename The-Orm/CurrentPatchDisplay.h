@@ -20,6 +20,7 @@ public:
 	CurrentPatchDisplay(std::vector<CategoryButtons::Category>  categories, 
 		std::function<void(midikraft::PatchHolder&)> favoriteHandler, 
 		std::function<void(midikraft::PatchHolder&)> sessionHandler);
+	virtual ~CurrentPatchDisplay();
 
 	void setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch);
 	void reset();
@@ -32,7 +33,7 @@ public:
 private:
 	void categoryUpdated(midikraft::Category clicked);
 
-	Label name_;
+	TextButton name_;
 	Label import_;
 	TextButton currentSession_;
 	TextButton favorite_;

@@ -6,6 +6,8 @@
 
 #include "CurrentPatchDisplay.h"
 
+#include "PatchNameDialog.h"
+
 //#include "SessionDatabase.h"
 
 CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(midikraft::PatchHolder&)> favoriteHandler,
@@ -20,6 +22,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	hide_("Hide"),
 	import_("IMPORT", "No import information")
 {
+	name_.addListener(this);
 	addAndMakeVisible(&name_);
 
 	favorite_.setClickingTogglesState(true);
@@ -42,10 +45,15 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	addAndMakeVisible(import_);
 }
 
+CurrentPatchDisplay::~CurrentPatchDisplay()
+{
+	PatchNameDialog::release();
+}
+
 void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch)
 {
 	if (patch.patch()) {
-		name_.setText(patch.patch()->patchName(), dontSendNotification);
+		name_.setButtonText(patch.patch()->patchName());
 		if (patch.sourceInfo()) {
 			import_.setText(patch.sourceInfo()->toDisplayString(synth), dontSendNotification);
 		}
@@ -62,7 +70,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 		categories_.setActive(buttonCategories);
 	}
 	else {
-		name_.setText("No patch loaded", dontSendNotification);
+		name_.setButtonText("No patch loaded");
 		import_.setText("", dontSendNotification);
 		favorite_.setToggleState(false, dontSendNotification);
 		hide_.setToggleState(false, dontSendNotification);
@@ -74,7 +82,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 
 void CurrentPatchDisplay::reset()
 {
-	name_.setText("No patch loaded", dontSendNotification);
+	name_.setButtonText("No patch loaded");
 	import_.setText("", dontSendNotification);
 	favorite_.setToggleState(false, dontSendNotification);
 	currentPatch_ = midikraft::PatchHolder();
@@ -107,6 +115,9 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 			currentPatch_.setHidden(hide_.getToggleState());
 			favoriteHandler_(currentPatch_);
 		}
+	}
+	else if (button == &name_) {
+		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent());
 	}
 	else if (button == &currentSession_) {
 	/*	if (currentPatch_) {

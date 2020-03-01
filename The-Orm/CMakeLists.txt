@@ -40,6 +40,7 @@ set(SOURCES
 	Main.cpp
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
+	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
 	SettingsView.cpp SettingsView.h
 	UIModel.cpp UIModel.h

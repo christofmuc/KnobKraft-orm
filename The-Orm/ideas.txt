@@ -1,6 +1,6 @@
-Simple Features
-* Allow to change patch names
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
+
+
+
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
@@ -16,7 +16,10 @@ Future work
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * Make regular backups of Database
 * I could display which categories were set by the user, and which ones were autodetected
-* Could have patch name autogenerator like LaserMammoth
+* Allow to change patch names
+	* Need to be able to edit the individual layers' names, and display the result. Needs dialog box?
+	* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
+	* Could have patch name autogenerator like LaserMammoth
 
 
 Rev2 Features
