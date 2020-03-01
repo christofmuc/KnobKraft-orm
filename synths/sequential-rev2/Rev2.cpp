@@ -415,7 +415,10 @@ namespace midikraft {
 						case ValueType::Bool:
 							valueText = bool(value.getValue()) ? "On" : "Off"; break;
 						case ValueType::Lookup:
-							valueText = setting->lookup[int(value.getValue())];
+							valueText = setting->lookup[int(value.getValue())]; break;
+						default:
+							//TODO not implemented yet
+							jassert(false);
 						}
 						SimpleLogger::instance()->postMessage("Setting " + setting->name + " to " + valueText);
 						MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
