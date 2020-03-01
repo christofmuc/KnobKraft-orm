@@ -117,7 +117,9 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 		}
 	}
 	else if (button == &name_) {
-		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent());
+		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent(), [this](midikraft::PatchHolder *result) {
+			favoriteHandler_(*result);
+		});
 	}
 	else if (button == &currentSession_) {
 	/*	if (currentPatch_) {

@@ -14,21 +14,24 @@
 
 class PatchNameDialog : public Component, private TextButton::Listener {
 public:
-	PatchNameDialog();
+	PatchNameDialog(std::function<void(midikraft::PatchHolder *result)> callback);
 	virtual ~PatchNameDialog() = default;
 
 	void setPatch(midikraft::PatchHolder *patch);
 
 	virtual void resized() override;
 
-	static void showPatchNameDialog(midikraft::PatchHolder *patch, Component *centeredAround);
+	static void showPatchNameDialog(midikraft::PatchHolder *patch, Component *centeredAround, std::function<void(midikraft::PatchHolder *)> callback);
 	static void release();
+
+	void notifyResult();
 
 private:
 	static std::unique_ptr<PatchNameDialog> sPatchNameDialog_;
 	static std::unique_ptr<DialogWindow> sWindow_;
 
 	void buttonClicked(Button*) override;
+	std::function<void(midikraft::PatchHolder *result)> callback_;
 
 	PropertyEditor propertyEditor_;
 	TextButton ok_;

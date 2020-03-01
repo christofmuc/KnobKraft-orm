@@ -14,7 +14,7 @@
 std::unique_ptr<PatchNameDialog> PatchNameDialog::sPatchNameDialog_;
 std::unique_ptr<DialogWindow> PatchNameDialog::sWindow_;
 
-PatchNameDialog::PatchNameDialog() : ok_("OK"), cancel_("Cancel")
+PatchNameDialog::PatchNameDialog(std::function<void(midikraft::PatchHolder *result) > callback) : callback_(callback), ok_("OK"), cancel_("Cancel")
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -61,13 +61,20 @@ void PatchNameDialog::resized()
 	propertyEditor_.setBounds(area);
 }
 
-void PatchNameDialog::showPatchNameDialog(midikraft::PatchHolder  *patch, Component *centeredAround)
+static void dialogClosed(int modalResult, PatchNameDialog* dialog)
+{
+	if (modalResult == 1 && dialog != nullptr) { // (must check that dialog isn't null in case it was deleted..)
+		dialog->notifyResult();
+	}
+}
+
+void PatchNameDialog::showPatchNameDialog(midikraft::PatchHolder  *patch, Component *centeredAround, std::function<void(midikraft::PatchHolder *)> callback)
 {
 	if (!patch || !patch->patch()) {
 		return;
 	}
 	if (!sPatchNameDialog_) {
-		sPatchNameDialog_ = std::make_unique<PatchNameDialog>();
+		sPatchNameDialog_ = std::make_unique<PatchNameDialog>(callback);
 	}
 	sPatchNameDialog_->setPatch(patch);
 
@@ -78,12 +85,18 @@ void PatchNameDialog::showPatchNameDialog(midikraft::PatchHolder  *patch, Compon
 	launcher.useNativeTitleBar = false;
 	launcher.dialogBackgroundColour = Colours::black;
 	sWindow_.reset(launcher.launchAsync());
+	ModalComponentManager::getInstance()->attachCallback(sWindow_.get(), ModalCallbackFunction::forComponent(dialogClosed, sPatchNameDialog_.get()));
 }
 
 void PatchNameDialog::release()
 {
 	sWindow_.reset();
 	sPatchNameDialog_.reset();
+}
+
+void PatchNameDialog::notifyResult()
+{
+	callback_(patch_);
 }
 
 void PatchNameDialog::buttonClicked(Button *button)
@@ -93,6 +106,7 @@ void PatchNameDialog::buttonClicked(Button *button)
 		if (layers) {
 			for (int i = 0; i < layers->numberOfLayers(); i++) {
 				SimpleLogger::instance()->postMessage("Layer " + String(i) + " is " + names_[i].getValue());
+				layers->setLayerName(i, names_[i].getValue().toString().toStdString());
 			}
 		}
 		sWindow_->exitModalState(true);
