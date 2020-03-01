@@ -1,12 +1,12 @@
 Simple Features
 * Allow to change patch names
-* Import could show number of hits in the respective bank (count() group by)
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
   * Record notes played (duration) a specific patch
   * Allow to sort by playing time
-* Better Macro Button support
+* Better Macro Button support. But how to get feedback? Play a sound/chord?
   * Hide key
   * Fav key
   * Forward key
@@ -16,6 +16,7 @@ Future work
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * Make regular backups of Database
 * I could display which categories were set by the user, and which ones were autodetected
+* Could have patch name autogenerator like LaserMammoth
 
 
 Rev2 Features
@@ -29,6 +30,21 @@ Continuation of started features
   * Maybe it should be a dialog pop up, as it is so small
   * Need "display offset" to show tuning correctly with negative numbers
   * Need to show MIDI Channel with "Omni"
+
+Database schema
+* Should have foreign key constraint imports.id == patches.sourceID
+* Should have unique constraing imports.id (should edit buffer import contain synth name? could be scrambled by MD5?)
+* Should have non-null everywhere
+* Should think about naming convention
+* Should create indexes where needed 
+
+UI Cleanup
+* Could add burger menu for seldom used functions like about, autodetect, edit autocategories, rerun autodetect 
+* Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
+* Resize touch areas - paging buttons could go below grid in the same row as the page numbers, much bigger
+* Global Settings -> are actually <Synth name> settings
+* Make the row with the filter category bigger
+* Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things
 	* The big generic module with Python scriptability!

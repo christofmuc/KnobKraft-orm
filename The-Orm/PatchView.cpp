@@ -424,8 +424,8 @@ void PatchView::loadPatches() {
 }
 
 std::string PatchView::currentlySelectedSourceUUID() {
-	if (importList_.getSelectedItemIndex() != -1) {
-		return imports_[importList_.getText().toStdString()];
+	if (importList_.getSelectedItemIndex() > 0) {
+		return imports_[importList_.getSelectedItemIndex() - 1].id;
 	}
 	return "";
 }
@@ -437,9 +437,9 @@ void PatchView::rebuildImportFilterBox() {
 
 	StringArray sourceNameList;
 	sourceNameList.add(kAllPatchesFilter);
-	for (auto source : sources) {
-		sourceNameList.add(source.first);
-		imports_[source.first] = source.second;
+	for (const auto& source : sources) {
+		sourceNameList.add(source.description);
+		imports_.push_back(source);
 	}
 	importList_.clear();
 	importList_.addItemList(sourceNameList, 1);
@@ -453,11 +453,11 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 			// Select this import
 			auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
 			if (info) {
-				for (int i = 0; i < importList_.getNumItems(); i++) {
-					if ((importList_.getItemText(i).toStdString() == info->toDisplayString(UIModel::currentSynth())) 
-						|| (midikraft::SourceInfo::isEditBufferImport(info) && importList_.getItemText(i) == "Edit buffer imports")) // TODO this will break when the display text is changed
+				for (int i = 0; i < (int) imports_.size(); i++) {
+					if ((imports_[i].name == info->toDisplayString(UIModel::currentSynth())) 
+						|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
 					{
-							importList_.setSelectedItemIndex(i, sendNotificationAsync);
+							importList_.setSelectedItemIndex(i + 1, dontSendNotification);
 					}
 				}
 			}

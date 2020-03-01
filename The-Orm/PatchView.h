@@ -87,7 +87,7 @@ private:
 	midikraft::Librarian librarian_;
 
 	std::vector<midikraft::SynthHolder> synths_;
-	std::map<std::string, std::string> imports_;
+	std::vector<midikraft::ImportInfo> imports_;
 	int currentLayer_;
 
 	midikraft::PatchHolder compareTarget_;
