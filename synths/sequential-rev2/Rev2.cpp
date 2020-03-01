@@ -338,7 +338,7 @@ namespace midikraft {
 	std::vector<Rev2GlobalSettingDefinition> kRev2GlobalSettings = {
 		{ 0, 4097, { "Master Coarse Tune", "Tuning", Value(12), ValueType::Integer, 0, 24 } }, // Default 12, displayed as 0
 		{ 1, 4096, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, 0, 100 } }, // Default 50, displayed as 0
-		{ 2, 4098, { "MIDI Channel", "MIDI", Value(), ValueType::Integer, 0, 16 } }, // 1 based, 0 = Omni
+		{ 2, 4098, { "MIDI Channel", "MIDI", Value(), ValueType::Lookup, 0, 16, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } }, 
 		{ 3, 4099, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
 		{ 4, 4100, { "MIDI Clock Cable", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
 		{ 5, 4101, { "MIDI Param Send", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
