@@ -105,7 +105,7 @@ void PatchNameDialog::buttonClicked(Button *button)
 		auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch_->patch());
 		if (layers) {
 			for (int i = 0; i < layers->numberOfLayers(); i++) {
-				SimpleLogger::instance()->postMessage("Layer " + String(i) + " is " + names_[i].getValue());
+				//SimpleLogger::instance()->postMessage("Layer " + String(i) + " is " + names_[i].getValue());
 				layers->setLayerName(i, names_[i].getValue().toString().toStdString());
 			}
 		}
