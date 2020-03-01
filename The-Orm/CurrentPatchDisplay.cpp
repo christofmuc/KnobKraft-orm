@@ -16,7 +16,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 		midikraft::Category cat({ categoryClicked.category, categoryClicked.color, categoryClicked.bitIndex });
 		categoryUpdated(cat);
 	}, false),
-	name_("PATCHNAME", "No patch loaded"),
+	name_("No patch loaded"),
 	currentSession_("Current Session"), 
 	favorite_("Fav!"),
 	hide_("Hide"),
