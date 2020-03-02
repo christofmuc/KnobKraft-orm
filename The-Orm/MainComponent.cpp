@@ -12,19 +12,8 @@
 
 #include "HorizontalLayoutContainer.h"
 
-class LogViewLogger : public SimpleLogger {
-public:
-	LogViewLogger(LogView &logview) : logview_(logview) {}
-
-
-	virtual void postMessage(const String& message) override
-	{
-		logview_.addMessageToList(message);
-	}
-
-private:
-	LogView &logview_;
-};
+#include "AutoCategorizeWindow.h"
+#include "AutoDetectProgressWindow.h"
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
@@ -50,7 +39,8 @@ MainComponent::MainComponent() :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
-	midiLogArea_(&midiLogView_, BorderSize<int>(10))
+	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
+	buttons_(301)
 {
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
@@ -64,8 +54,60 @@ MainComponent::MainComponent() :
 	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {});
 	autodetector_.addChangeListener(&synthList_);
 
+	// Create the menu bar structure
+	LambdaMenuModel::TMenuStructure menuStructure = {
+		{0, { "File", { "Quit" } } },
+		{1, { "MIDI", { "Auto-detect synth" } } },
+		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
+		{3, { "Help", { "About" } } }
+	};
+
+	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
+	LambdaButtonStrip::TButtonMap buttons = {
+	{ "Auto-detect synth", { 0, "Auto-detect synth", [this, synths]() {
+		AutoDetectProgressWindow window(synths);
+		window.runThread();
+	} } },
+	//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
+	{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
+		if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			getAutoCategoryFile().revealToUser();
+		}
+	} } },
+	{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
+		auto currentFilter = patchView_->buildFilter();
+		int affected = database_.getPatchesCount(currentFilter);
+		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
+			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
+			"This makes sense if you changed the auto category search strings!\n\n"
+			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
+			)) {
+			AutoCategorizeWindow window(&database_, getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
+				patchView_->retrieveFirstPageFromDatabase();
+			});
+			window.runThread();
+		}
+	} } },
+	{ "About", { 3, "About", [this]() {
+		aboutBox();
+	}}},
+	{ "Quit", { 4, "Quit", [this]() {
+		JUCEApplicationBase::quit();
+	}}}
+	//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+	};
+	buttons_.setButtonDefinitions(buttons);
+	commandManager_.setFirstCommandTarget(&buttons_);
+	commandManager_.registerAllCommandsForTarget(&buttons_);
+
+	// Setup menu structure
+	menuModel_ = std::make_unique<LambdaMenuModel>(menuStructure, &commandManager_, &buttons_);
+	menuModel_->setApplicationCommandManagerToWatch(&commandManager_);
+	menuBar_.setModel(menuModel_.get());
+	addAndMakeVisible(menuBar_);
+
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(synths);
+	patchView_ = std::make_unique<PatchView>(database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
@@ -114,7 +156,9 @@ MainComponent::~MainComponent()
 void MainComponent::resized()
 {
 	auto area = getLocalBounds();
-	synthList_.setBounds(area.removeFromTop(60).reduced(8));
+	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
+	auto topRow = area.removeFromTop(60).reduced(8);
+	synthList_.setBounds(topRow);
 	//menuBar_.setBounds(area.removeFromTop(30));
 
 	// make a list of two of our child components that we want to reposition
@@ -125,5 +169,36 @@ void MainComponent::resized()
 	stretchableManager_.layOutComponents(comps, 3,
 		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
 		true, true);
+}
+
+File MainComponent::getAutoCategoryFile() const {
+	File appData = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("KnobKraft");
+	if (!appData.exists()) {
+		appData.createDirectory();
+	}
+	File jsoncFile = appData.getChildFile("automatic_categories.jsonc");
+	if (!jsoncFile.exists()) {
+		// Create an initial file from the resources!
+		FileOutputStream out(jsoncFile);
+		out.writeText(midikraft::AutoCategory::defaultJson(), false, false, "\\n");
+	}
+	return jsoncFile;
+}
+
+void MainComponent::aboutBox()
+{
+	String message = "This software is copyright 2020 by Christof Ruch\n\n"
+		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
+		"\n"
+		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
+		"\n"
+		"Other licenses:\n"
+		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
+		"The boost library is used for parts of this software, see https://www.boost.org/.\n"
+		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
+		"\n"
+		"Icons made by Freepik from www.flaticon.com\n"
+		;
+	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 

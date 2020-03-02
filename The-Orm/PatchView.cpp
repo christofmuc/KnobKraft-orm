@@ -21,77 +21,8 @@
 
 const char *kAllPatchesFilter = "All patches";
 
-class AutoDetectProgressWindow : public ThreadWithProgressWindow, public midikraft::ProgressHandler {
-public:
-	AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths) :
-		ThreadWithProgressWindow("Detecting synth...", true, true), synths_(synths) {
-	}
-
-	void run() {
-
-		std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
-		for (auto s : synths_) {
-			synths.push_back(s.device());
-		}
-		autodetector_.autoconfigure(synths, this);
-	}
-
-	virtual bool shouldAbort() const override
-	{
-		return threadShouldExit();
-	}
-
-	virtual void setProgressPercentage(double zeroToOne) override
-	{
-		setProgress(zeroToOne);
-	}
-
-	virtual void onSuccess() override
-	{
-	}
-
-	virtual void onCancel() override
-	{
-	}
-
-private:
-	std::vector<midikraft::SynthHolder> synths_;
-	midikraft::AutoDetection autodetector_;
-};
-
-
-class PatchView::AutoCategorizeWindow : public ThreadWithProgressWindow {
-public:
-	AutoCategorizeWindow(PatchView *patchView) :
-		ThreadWithProgressWindow("Re-running auto categorization...", true, true), patchView_(patchView) {
-	}
-
-	void run() {
-		// Load the auto category file and re-categorize everything!
-		midikraft::AutoCategory::loadFromFile(patchView_->getAutoCategoryFile().getFullPathName().toStdString());
-		auto patches = patchView_->database_.getPatches(patchView_->buildFilter(), 0, 100000);
-		size_t tick = 0;
-		for (auto patch : patches) {
-			if (patch.autoCategorizeAgain()) {
-				if (threadShouldExit()) break;
-				// This was changed, updating database
-				SimpleLogger::instance()->postMessage("Updating patch " + String(patch.patch()->patchName()) + " with new categories");
-				patchView_->database_.putPatch(UIModel::currentSynth(), patch);
-			}
-			setProgress(tick++ / (double)patches.size());
-		}
-		MessageManager::callAsync([this]() {
-			patchView_->retrieveFirstPageFromDatabase();
-		});
-	}
-
-private:
-	PatchView *patchView_;
-};
-
-
-PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
-	: librarian_(synths), synths_(synths),
+PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
+	: database_(database), librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
@@ -123,41 +54,18 @@ PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	addAndMakeVisible(categoryFilters_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "autodetect", { 0, "Autodetect synths", [this]() {
-		AutoDetectProgressWindow window(synths_);
-		window.runThread();
-	} } },
-	{ "retrieveActiveSynthPatches",{ 1, "Import patches from synth", [this]() {
+	{ "retrieveActiveSynthPatches",{ 0, "Import patches from synth", [this]() {
 		retrievePatches();
 	} } },
-	{ "fetchEditBuffer",{ 2, "Import edit buffer from synth", [this]() {
+	{ "fetchEditBuffer",{ 1, "Import edit buffer from synth", [this]() {
 		retrieveEditBuffer();
 	} } },
-	{ "loadsysEx", { 3, "Import sysex files from computer", [this]() {
+	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "showDiff", { 4, "Show patch comparison", [this]() {
+	{ "showDiff", { 3, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
-	{ "editAutoCategories", { 5, "Edit auto-categories", [this]() {
-		if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-			getAutoCategoryFile().revealToUser();
-		}
-	} } },
-	{ "rerunAutoCategories", { 6, "Rerun auto categorize", [this]() {
-		int affected = database_.getPatchesCount(buildFilter());
-		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
-			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
-			"This makes sense if you changed the auto category search strings!\n\n"
-			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
-			)) {
-			AutoCategorizeWindow window(this);
-			window.runThread();
-		}
-	} } },
-	{ "about", { 7, "About", [this]() {
-		aboutBox();
-	}}}
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
 		if (UIModel::currentSynth()) {
@@ -283,24 +191,6 @@ void PatchView::saveCurrentPatchCategories() {
 		database_.putPatch(UIModel::currentSynth(), currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
-}
-
-File PatchView::getAutoCategoryFile() const {
-	File appData = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("KnobKraft");
-	if (!appData.exists()) {
-		appData.createDirectory();
-	}
-	File jsoncFile = appData.getChildFile("automatic_categories.jsonc");
-	if (!jsoncFile.exists()) {
-		// Create an initial file from the resources!
-		FileOutputStream out(jsoncFile);
-		out.writeText(midikraft::AutoCategory::defaultJson(), false, false, "\\n");
-	}
-	return jsoncFile;
-}
-
-void PatchView::autoCategorize()
-{
 }
 
 void PatchView::retrievePatches() {
@@ -495,22 +385,3 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		}
 	}
 }
-
-
-void PatchView::aboutBox()
-{
-	String message = "This software is copyright 2020 by Christof Ruch\n\n"
-		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
-		"\n"
-		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
-		"\n"
-		"Other licenses:\n"
-		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
-		"The boost library is used for parts of this software, see https://www.boost.org/.\n"
-		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
-		"\n"
-		"Icons made by Freepik from www.flaticon.com\n"
-		;
-	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
-}
-

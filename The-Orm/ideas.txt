@@ -24,7 +24,6 @@ Continuation of started features
 * Global settings editor for the synth using the JUCE property editor
   * Need to change MIDI channel internally when using the settings editor to change it
   * Need nicer display for Alternate Tunings
-  * Maybe it should be a dialog pop up, as it is so small
   * Need "display offset" to show tuning correctly with negative numbers
 
 Database schema
@@ -35,8 +34,8 @@ Database schema
 * Should create indexes where needed 
 
 UI Cleanup
-* Could add burger menu for seldom used functions like about, autodetect, edit autocategories, rerun autodetect 
 * Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
+* Could mode LambdaButtonStrip to the very top (like a toolbar?)
 * Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things

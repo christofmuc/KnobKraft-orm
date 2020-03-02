@@ -12,10 +12,13 @@
 #include "MidiLogView.h"
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
+
+#include "PatchDatabase.h"
 #include "AutoDetection.h"
 #include "PropertyEditor.h"
 #include "SynthList.h"
-
+#include "LambdaMenuModel.h"
+#include "LambdaButtonStrip.h"
 
 #include "PatchView.h"
 #include "SettingsView.h"
@@ -31,17 +34,20 @@ public:
 
     void resized() override;
 
-	void refreshListOfPresets();
-
 private:
-	void detectBCR();
-	void refreshFromBCR();
-	void retrievePatch(int no);
-
+	File getAutoCategoryFile() const;
 	void aboutBox();
 
+	midikraft::PatchDatabase database_;
 	midikraft::AutoDetection autodetector_;
 	std::shared_ptr<midikraft::Rev2> rev2_;
+
+	// The infrastructure for the menu and the short cut keys
+	std::unique_ptr<LambdaMenuModel> menuModel_;
+	LambdaButtonStrip buttons_;
+	ApplicationCommandManager commandManager_;
+	MenuBarComponent menuBar_;
+
 	SynthList synthList_;
 	TabbedComponent mainTabs_;
 	LogView logView_;
@@ -53,7 +59,6 @@ private:
 	std::unique_ptr<SettingsView> settingsView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::vector<MidiMessage> currentDownload_;
-	MenuBarComponent menuBar_;
 
 	InsetBox logArea_;
 

@@ -36,7 +36,7 @@ class PatchView : public Component,
 	private ChangeListener
 {
 public:
-	PatchView(std::vector<midikraft::SynthHolder> const &synths);
+	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths);
 	virtual ~PatchView();
 
 	void resized() override;
@@ -50,12 +50,13 @@ public:
 	// React on synth or patch changed
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
-private:
-	class AutoCategorizeWindow;
-
-	static std::vector<CategoryButtons::Category> predefinedCategories();
 	midikraft::PatchDatabase::PatchFilter buildFilter();
 	void retrieveFirstPageFromDatabase();
+
+private:
+	static std::vector<CategoryButtons::Category> predefinedCategories();
+	
+	
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
@@ -66,11 +67,8 @@ private:
 	void rebuildImportFilterBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
-	void aboutBox();
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
-	File getAutoCategoryFile() const;
-	void autoCategorize();
 
 	ComboBox importList_;
 	CategoryButtons categoryFilters_;
@@ -92,7 +90,7 @@ private:
 
 	midikraft::PatchHolder compareTarget_;
 
-	midikraft::PatchDatabase database_;
+	midikraft::PatchDatabase &database_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };
