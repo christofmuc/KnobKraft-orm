@@ -92,7 +92,7 @@ private:
 
 PatchView::PatchView(std::vector<midikraft::SynthHolder> const &synths)
 	: librarian_(synths), synths_(synths),
-	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true),
+	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	addAndMakeVisible(importList_);
@@ -237,7 +237,7 @@ void PatchView::resized()
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 	currentPatchDisplay_->setBounds(topRow);
 	auto sourceRow = area.removeFromTop(36).reduced(8);
-	auto filterRow = area.removeFromTop(40).reduced(10);
+	auto filterRow = area.removeFromTop(80).reduced(8);
 	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));

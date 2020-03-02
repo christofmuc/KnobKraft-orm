@@ -74,7 +74,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(synthList_);
 	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);
 	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
-	mainTabs_.addTab("Global Settings", Colours::black, settingsView_.get(), false);
+	mainTabs_.addTab(rev2_->getName() + " Settings", Colours::black, settingsView_.get(), false);
 
 	addAndMakeVisible(mainTabs_);
 

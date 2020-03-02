@@ -37,9 +37,6 @@ Database schema
 UI Cleanup
 * Could add burger menu for seldom used functions like about, autodetect, edit autocategories, rerun autodetect 
 * Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
-* Resize touch areas - paging buttons could go below grid in the same row as the page numbers, much bigger
-* Global Settings -> are actually <Synth name> settings
-* Make the row with the filter category bigger
 * Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things
