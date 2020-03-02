@@ -333,11 +333,32 @@ namespace midikraft {
 		int sysexIndex;
 		int nrpn;
 		TypedNamedValue typedNamedValue;
+		int displayOffset = 0;
+	};
+
+	std::map<int, std::string> kAlternateTunings = {
+		{0, "12-Tone Equal Temperament"},
+		{1, "Harmonic Series"},
+		{2, "Carlos Harmonic Twelve Tone"},
+		{3, "Meantone Temperament"},
+		{4, "1/4 Tone Equal Temperament"},
+		{5, "19 Tone Equal Temperament"},
+		{6, "31 Tone Equal Temperament"},
+		{7, "Pythagorean C"},
+		{8, "Just Intonation in A with 7-limit Tritone at D#"},
+		{9, "3-5 Lattice in A"},
+		{10, "3-7 Lattice in A"},
+		{11, "Other Music 7-Limit Black Keys in C"},
+		{12, "Dan Schmidt Pelog/Slendro"},
+		{13, "Yamaha Just Major C"},
+		{14, "Yamaha Just Minor C"},
+		{15, "Harry Partch 11-Limit 43 Just Intonation"},
+		{16, "Arabic 12-Tone"},
 	};
 
 	std::vector<Rev2GlobalSettingDefinition> kRev2GlobalSettings = {
-		{ 0, 4097, { "Master Coarse Tune", "Tuning", Value(12), ValueType::Integer, 0, 24 } }, // Default 12, displayed as 0
-		{ 1, 4096, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, 0, 100 } }, // Default 50, displayed as 0
+		{ 0, 4097, { "Master Coarse Tune", "Tuning", Value(12), ValueType::Integer, -12, 12 }, -12 }, // Default 12, displayed as 0
+		{ 1, 4096, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, -50, 50 }, -50 }, // Default 50, displayed as 0
 		{ 2, 4098, { "MIDI Channel", "MIDI", Value(), ValueType::Lookup, 0, 16, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } }, 
 		{ 3, 4099, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
 		{ 4, 4100, { "MIDI Clock Cable", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
@@ -357,7 +378,7 @@ namespace midikraft {
 		{ 18, 4114, { "Pressure Curve", "Keyboard", Value(), ValueType::Lookup, 0, 3, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
 		{ 19, 4115, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
 		{ 14, 4109, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
-		{ 16, 4116, { "Alternative Tuning", "Scales", Value(), ValueType::Integer, 0, 16 } },
+		{ 16, 4116, { "Alternative Tuning", "Scales", Value(), ValueType::Lookup, 0, 16, kAlternateTunings } },
 		{ 20, 4120, { "Screen Saver", "General", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
 		{ 13, 4111, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
 		{ 24, 4122, { "Foot Assign", "Controls", Value(), ValueType::Lookup, 0, 5, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
@@ -387,7 +408,7 @@ namespace midikraft {
 				// Loop over it and fill out the GlobalSettings Properties
 				for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
 					if (i < globalParameterData.size()) {
-						globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex]));
+						globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex] + kRev2GlobalSettings[i].displayOffset));
 					}
 				}
 			}
@@ -407,7 +428,8 @@ namespace midikraft {
 				// Need to find definition for this setting now, suboptimal data structures
 				for (auto def : kRev2GlobalSettings) {
 					if (def.typedNamedValue.name == setting->name) {
-						auto messages = createNRPN(def.nrpn, (int) value.getValue());
+						int newMidiValue = ((int)value.getValue()) - def.displayOffset;
+						auto messages = createNRPN(def.nrpn, newMidiValue);
 						String valueText;
 						switch (setting->valueType) {
 						case ValueType::Integer:
