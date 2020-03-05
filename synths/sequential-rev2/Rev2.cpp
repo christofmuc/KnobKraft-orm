@@ -15,6 +15,7 @@
 
 #include "MidiHelpers.h"
 #include "TypedNamedValue.h"
+#include "MidiTuning.h"
 
 namespace midikraft {
 
@@ -31,7 +32,6 @@ namespace midikraft {
 
 	// Some constants
 	const uint8 cDefaultNote = 0x3c;
-
 
 	std::vector<Range<int>> kRev2BlankOutZones = {
 		{ 211, 231 }, // unused according to doc
@@ -307,24 +307,46 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Rev2::requestDataItem(int itemNo, int dataTypeID)
 	{
-		ignoreUnused(itemNo);
-		ignoreUnused(dataTypeID);
-		return { MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00001110 /* Request global parameter transmit */ }) };
+		switch (dataTypeID) {
+		case GLOBAL_SETTINGS:
+			return { MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00001110 /* Request global parameter transmit */ }) };
+		case ALTERNATE_TUNING:
+			return { MidiTuning::createTuningDumpRequest(0x01, MidiProgramNumber::fromZeroBase(itemNo)) };
+		default:
+			// Undefined
+			jassert(false);
+		}
+		return {};
 	}
 
 	int Rev2::numberOfDataItemsPerType(int dataTypeID)
 	{
-		ignoreUnused(dataTypeID);
-		return 1;
+		switch (dataTypeID) {
+		case GLOBAL_SETTINGS:
+			return 1;
+		case ALTERNATE_TUNING:
+			return 17;
+		default:
+			jassert(false);
+		}
+		return 0;
 	}
 
 	bool Rev2::isDataFile(const MidiMessage &message, int dataTypeID)
 	{
-		ignoreUnused(dataTypeID);
-		if (isOwnSysex(message)) {
-			if (message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0b00001111 /* Main Parameter Data*/) {
-				return true;
+		switch (dataTypeID)
+		{
+		case GLOBAL_SETTINGS:
+			if (isOwnSysex(message)) {
+				if (message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0b00001111 /* Main Parameter Data*/) {
+					return true;
+				}
 			}
+			break;
+		case ALTERNATE_TUNING:
+			return MidiTuning::isTuningDump(message);
+		default:
+			jassert(false);
 		}
 		return false;
 	}
@@ -402,14 +424,31 @@ namespace midikraft {
 	{
 		for (auto m : messages) {
 			if (isDataFile(m, dataTypeID)) {
-				// This is the global message parameter dump
-				std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
+				switch (dataTypeID) {
+				case GLOBAL_SETTINGS: {
+					// This is the global message parameter dump
+					std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
 
-				// Loop over it and fill out the GlobalSettings Properties
-				for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
-					if (i < globalParameterData.size()) {
-						globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex] + kRev2GlobalSettings[i].displayOffset));
+					// Loop over it and fill out the GlobalSettings Properties
+					for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
+						if (i < globalParameterData.size()) {
+							globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex] + kRev2GlobalSettings[i].displayOffset));
+						}
 					}
+					break;
+				}
+				case ALTERNATE_TUNING: {
+					MidiTuning tuning(MidiProgramNumber::fromZeroBase(0), "unused", {});
+					if (MidiTuning::fromMidiMessage(m, tuning)) {
+						jassert(false);
+					}
+					else {
+						jassert(false);
+					}
+					break;
+				}
+				default:
+					jassert(false);
 				}
 			}
 		}

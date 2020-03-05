@@ -19,6 +19,12 @@ namespace midikraft {
 		private Value::Listener
 	{
 	public:
+		// Data Item Types
+		enum DataType {
+			GLOBAL_SETTINGS = 0,
+			ALTERNATE_TUNING = 1
+		};
+
 		Rev2();
 
 		// Basic Synth
