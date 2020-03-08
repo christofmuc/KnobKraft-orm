@@ -219,8 +219,14 @@ String PatchDiff::makeHexDocument(midikraft::PatchHolder *patch)
 }
 
 String PatchDiff::makeTextDocument(midikraft::PatchHolder *patch) {
-	// Use the generic parameter list mode of the patch itself. Not pretty, but does the job for now
-	return patch->patch()->patchToTextRaw(false);
+	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
+	if (realPatch) {
+		// Use the generic parameter list mode of the patch itself. Not pretty, but does the job for now
+		return realPatch->patchToTextRaw(false);
+	}
+	else {
+		return "makeTextDocument not implemented yet";
+	}
 }
 
 std::vector<Range<int>> PatchDiff::diffFromText(String &doc1, String &doc2) {
@@ -241,7 +247,7 @@ std::vector<Range<int>> PatchDiff::diffFromText(String &doc1, String &doc2) {
 	return diffRanges;
 }
 
-std::vector<Range<int>> PatchDiff::diffFromData(midikraft::Patch &patch1, midikraft::Patch &patch2) {
+std::vector<Range<int>> PatchDiff::diffFromData(midikraft::DataFile &patch1, midikraft::DataFile &patch2) {
 	// Diff calculation for highlighting
 	std::vector<Range<int>> diffRanges;
 	bool diff = false;

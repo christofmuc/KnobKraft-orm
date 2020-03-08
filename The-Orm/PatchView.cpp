@@ -30,6 +30,12 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
 	importList_.addListener(this);
+
+	addAndMakeVisible(dataTypeSelector_);
+	dataTypeSelector_.setTextWhenNoChoicesAvailable("This synth does not support different data types");
+	dataTypeSelector_.setTextWhenNothingSelected("Click here to show only data of a specific type");
+	dataTypeSelector_.addListener(this);
+
 	onlyFaves_.setButtonText("Only Faves");
 	onlyFaves_.addListener(this);
 	addAndMakeVisible(onlyFaves_);
@@ -95,6 +101,7 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
 		rebuildImportFilterBox();
+		rebuildDataTypeFilterBox();
 		retrieveFirstPageFromDatabase();
 	}
 	else if (dynamic_cast<CurrentPatch *>(source)) {
@@ -150,13 +157,14 @@ void PatchView::resized()
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
-	importList_.setBounds(sourceRow);
+	importList_.setBounds(sourceRow.removeFromLeft(300));
+	dataTypeSelector_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
 }
 
 void PatchView::comboBoxChanged(ComboBox* box)
 {
-	if (box == &importList_) {
+	if (box == &importList_ || box == &dataTypeSelector_) {
 		// Same logic as if a new synth had been selected
 		retrieveFirstPageFromDatabase();
 	}
@@ -335,6 +343,20 @@ void PatchView::rebuildImportFilterBox() {
 	importList_.addItemList(sourceNameList, 1);
 }
 
+void PatchView::rebuildDataTypeFilterBox() {
+	StringArray typeNameList;
+	auto dflc = dynamic_cast<midikraft::DataFileLoadCapability *>(UIModel::currentSynth());
+	if (dflc) {
+		for (auto const &typeName : dflc->dataTypeNames()) {
+			if (typeName.canBeSent) {
+				typeNameList.add(typeName.name);
+			}
+		}
+	}
+	dataTypeSelector_.clear();
+	dataTypeSelector_.addItemList(typeNameList, 1);
+}
+
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
 	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
 		// Back to UI thread
@@ -370,7 +392,13 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		currentLayer_ = 0;
 
 		// Send out to Synth
-		synth.sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), *patch.patch());
+		auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch.patch());
+		if (realPatch) {
+			synth.sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), *realPatch);
+		}
+		else {
+			jassert(false);
+		}
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...

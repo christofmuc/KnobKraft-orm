@@ -65,12 +65,14 @@ private:
 	void loadPatches();
 	std::string currentlySelectedSourceUUID();
 	void rebuildImportFilterBox();
+	void rebuildDataTypeFilterBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 
 	ComboBox importList_;
+	ComboBox dataTypeSelector_;
 	CategoryButtons categoryFilters_;
 	ToggleButton onlyFaves_;
 	ToggleButton showHidden_;
