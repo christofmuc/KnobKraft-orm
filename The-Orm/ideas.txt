@@ -15,16 +15,12 @@ Future work
 * Allow to change patch names
 	* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 	* Could have patch name autogenerator like LaserMammoth
+* Global settings editor for the synth using the JUCE property editor
+  * Need to change MIDI channel internally when using the settings editor to change it
 
 Rev2 Features
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 * Noteoff on send patch (or send mute patch first?)
-
-Continuation of started features
-* Global settings editor for the synth using the JUCE property editor
-  * Need to change MIDI channel internally when using the settings editor to change it
-  * Need nicer display for Alternate Tunings
-  * Need "display offset" to show tuning correctly with negative numbers
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
