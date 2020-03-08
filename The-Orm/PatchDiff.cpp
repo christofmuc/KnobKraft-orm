@@ -168,7 +168,7 @@ void PatchDiff::fillDocuments()
 	if (showHexDiff_) {
 		doc1 = makeHexDocument(&p1_);
 		doc2 = makeHexDocument(&p2_);
-		std::vector<Range<int>> diffRanges = diffFromData(*p1_.patch(), *p2_.patch());
+		std::vector<Range<int>> diffRanges = diffFromData(p1_.patch(), p2_.patch());
 		tokenizer1_->setRangeList(diffRanges);
 		tokenizer2_->setRangeList(diffRanges);
 	}
@@ -247,13 +247,13 @@ std::vector<Range<int>> PatchDiff::diffFromText(String &doc1, String &doc2) {
 	return diffRanges;
 }
 
-std::vector<Range<int>> PatchDiff::diffFromData(midikraft::DataFile &patch1, midikraft::DataFile &patch2) {
+std::vector<Range<int>> PatchDiff::diffFromData(std::shared_ptr<midikraft::DataFile> patch1, std::shared_ptr<midikraft::DataFile> patch2) {
 	// Diff calculation for highlighting
 	std::vector<Range<int>> diffRanges;
 	bool diff = false;
 	int diffstart = 0;
-	std::vector<uint8> const &doc1 = activeSynth_->filterVoiceRelevantData(patch1.data());
-	std::vector<uint8> const &doc2 = activeSynth_->filterVoiceRelevantData(patch2.data());
+	std::vector<uint8> const &doc1 = activeSynth_->filterVoiceRelevantData(patch1);
+	std::vector<uint8> const &doc2 = activeSynth_->filterVoiceRelevantData(patch2);
 
 	for (int i = 0; i < (int) doc1.size(); i++) {
 		if (doc1[i] != doc2[i]) {

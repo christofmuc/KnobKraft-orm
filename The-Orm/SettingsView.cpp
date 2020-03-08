@@ -44,11 +44,13 @@ void SettingsView::loadGlobals() {
 	auto rev2 = std::dynamic_pointer_cast<midikraft::DataFileLoadCapability>(synths_[0].synth());
 	auto namedDevice = std::dynamic_pointer_cast<midikraft::Synth>(synths_[0].synth());
 	auto rev2synth = std::dynamic_pointer_cast<midikraft::Rev2>(synths_[0].synth());
-	librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(namedDevice->midiOutput()), rev2.get(), 0, nullptr, [this, rev2synth]() {
-		MessageManager::callAsync([this, rev2synth]() {
-			// Kick off an update so the property editor can refresh itself
-			auto settings = rev2synth->getGlobalSettings();
-			propertyEditor_.setProperties(settings);
+	librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(namedDevice->midiOutput()), rev2.get(), midikraft::Rev2::GLOBAL_SETTINGS, nullptr, 
+		[this, rev2synth](std::vector<std::shared_ptr<midikraft::DataFile>> dataLoaded) {
+			rev2synth->setGlobalSettingsFromDataFile(dataLoaded[0]);
+			MessageManager::callAsync([this, rev2synth]() {
+				// Kick off an update so the property editor can refresh itself
+				auto settings = rev2synth->getGlobalSettings();
+				propertyEditor_.setProperties(settings);
 		});
 	});
 }
