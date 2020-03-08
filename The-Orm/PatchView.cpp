@@ -198,7 +198,7 @@ void PatchView::retrievePatches() {
 	if (activeSynth != nullptr) {
 		midikraft::MidiController::instance()->enableMidiInput(activeSynth->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
-			[this, activeSynth](midikraft::MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
+			[this, activeSynth](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
 			librarian_.startDownloadingAllPatches(
 				midikraft::MidiController::instance()->getMidiOutput(activeSynth->midiOutput()),
 				activeSynth,

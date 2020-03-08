@@ -17,7 +17,7 @@ class ImportFromSynthThread;
 class ImportFromSynthDialog : public Component, private Button::Listener
 {
 public:
-	typedef std::function<void(midikraft::MidiBankNumber bankNo, midikraft::ProgressHandler *)> TBankLoadHandler;
+	typedef std::function<void(MidiBankNumber bankNo, midikraft::ProgressHandler *)> TBankLoadHandler;
 
 	ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadHandler onOk);
 

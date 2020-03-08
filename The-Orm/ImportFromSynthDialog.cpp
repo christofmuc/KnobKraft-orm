@@ -9,7 +9,7 @@
 class ImportFromSynthThread : public ThreadWithProgressWindow, public midikraft::ProgressHandler
 {
 public:
-	ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk) : ThreadWithProgressWindow("Importing...", true, true), onOk_(onOk), bank_(midikraft::MidiBankNumber::fromZeroBase(0))
+	ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk) : ThreadWithProgressWindow("Importing...", true, true), onOk_(onOk), bank_(MidiBankNumber::fromZeroBase(0))
 	{
 	}
 
@@ -22,7 +22,7 @@ public:
 		}
 	}
 
-	void setBank(midikraft::MidiBankNumber id) {
+	void setBank(MidiBankNumber id) {
 		bank_ = id;
 	}
 
@@ -49,7 +49,7 @@ public:
 private:
 	ImportFromSynthDialog::TBankLoadHandler onOk_;
 	bool stop_;
-	midikraft::MidiBankNumber bank_;
+	MidiBankNumber bank_;
 };
 
 ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadHandler onOk) : onOk_(onOk)
@@ -66,7 +66,7 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadH
 
 	// Populate the bank selector
 	for (int i = 0; i < synth->numberOfBanks(); i++) {
-		bank_.addItem(synth->friendlyBankName(midikraft::MidiBankNumber::fromZeroBase(i)), i + 1);
+		bank_.addItem(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)), i + 1);
 	}
 	bank_.setSelectedItemIndex(0, dontSendNotification);
 }
@@ -87,7 +87,7 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
 			dw->exitModalState(1);
 		}
-		thread_->setBank(midikraft::MidiBankNumber::fromOneBase(bank_.getSelectedId()));
+		thread_->setBank(MidiBankNumber::fromOneBase(bank_.getSelectedId()));
 		thread_->runThread();
 	}
 	else if (button == &cancel_) {
