@@ -21,8 +21,9 @@ namespace midikraft {
 	public:
 		// Data Item Types
 		enum DataType {
-			GLOBAL_SETTINGS = 0,
-			ALTERNATE_TUNING = 1
+			PATCH = 0, 
+			GLOBAL_SETTINGS = 1,
+			ALTERNATE_TUNING = 2
 		};
 
 		Rev2();
@@ -64,6 +65,7 @@ namespace midikraft {
 		int numberOfDataItemsPerType(int dataTypeID) override;
 		bool isDataFile(const MidiMessage &message, int dataTypeID) override;
 		void loadData(std::vector<MidiMessage> messages, int dataTypeID) override;
+		std::vector<DataFileDescription> dataTypeNames() override;
 
 		// Access to global settings for the property editor
 		std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings();

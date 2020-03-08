@@ -454,6 +454,11 @@ namespace midikraft {
 		}
 	}
 
+	std::vector<DataFileLoadCapability::DataFileDescription> Rev2::dataTypeNames()
+	{
+		return { { "Patch", true, true}, { "Global Settings", true, false}, { "Alternate Tuning", false, true } };
+	}
+
 	std::vector<std::shared_ptr<TypedNamedValue>> Rev2::getGlobalSettings()
 	{
 		return globalSettings_;
