@@ -64,7 +64,7 @@ namespace midikraft {
 		std::vector<MidiMessage> requestDataItem(int itemNo, int dataTypeID) override;
 		int numberOfDataItemsPerType(int dataTypeID) override;
 		bool isDataFile(const MidiMessage &message, int dataTypeID) override;
-		void loadData(std::vector<MidiMessage> messages, int dataTypeID) override;
+		std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) override;
 		std::vector<DataFileDescription> dataTypeNames() override;
 
 		// Access to global settings for the property editor

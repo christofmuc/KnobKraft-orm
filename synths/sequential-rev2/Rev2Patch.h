@@ -46,5 +46,16 @@ namespace midikraft {
 		Rev2PatchNumber number_;
 	};
 
+	class Rev2Settings : public Patch {
+	public:
+		using Patch::Patch;
+
+		std::string patchName() const override;
+		void setName(std::string const &name) override;
+		std::shared_ptr<PatchNumber> patchNumber() const override;
+		void setPatchNumber(MidiProgramNumber patchNumber) override;
+		std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+	};
+
 }
 

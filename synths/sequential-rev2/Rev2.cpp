@@ -16,6 +16,7 @@
 #include "MidiHelpers.h"
 #include "TypedNamedValue.h"
 #include "MidiTuning.h"
+#include "MTSFile.h"
 
 namespace midikraft {
 
@@ -420,14 +421,19 @@ namespace midikraft {
 		}
 	}
 
-	void Rev2::loadData(std::vector<MidiMessage> messages, int dataTypeID)
+	std::vector<std::shared_ptr<DataFile>> Rev2::loadData(std::vector<MidiMessage> messages, int dataTypeID)
 	{
+		std::vector<std::shared_ptr<DataFile>> result;
 		for (auto m : messages) {
 			if (isDataFile(m, dataTypeID)) {
 				switch (dataTypeID) {
 				case GLOBAL_SETTINGS: {
 					// This is the global message parameter dump
 					std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
+
+					// Create a patch structure storing this data
+					auto storage = std::make_shared<MTSFile>(globalParameterData);
+					result.push_back(storage);
 
 					// Loop over it and fill out the GlobalSettings Properties
 					for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
@@ -440,7 +446,9 @@ namespace midikraft {
 				case ALTERNATE_TUNING: {
 					MidiTuning tuning(MidiProgramNumber::fromZeroBase(0), "unused", {});
 					if (MidiTuning::fromMidiMessage(m, tuning)) {
-						jassert(false);
+						std::vector<uint8> mtsData({ m.getSysExData(), m.getSysExData() + m.getSysExDataSize() });
+						auto storage = std::make_shared<MTSFile>(mtsData);
+						result.push_back(storage);
 					}
 					else {
 						jassert(false);
@@ -452,6 +460,7 @@ namespace midikraft {
 				}
 			}
 		}
+		return result;
 	}
 
 	std::vector<DataFileLoadCapability::DataFileDescription> Rev2::dataTypeNames()
