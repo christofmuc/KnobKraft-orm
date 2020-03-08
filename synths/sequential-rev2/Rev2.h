@@ -30,7 +30,7 @@ namespace midikraft {
 
 		// Basic Synth
 		virtual std::string getName() const override;
-		virtual std::shared_ptr<Patch> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
@@ -58,16 +58,17 @@ namespace midikraft {
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
 		virtual void setLocalControl(MidiController *controller, bool localControlOn) override;
 
-		virtual PatchData filterVoiceRelevantData(PatchData const &unfilteredData) const override;
+		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// DataFileLoadCapability - this is used for loading the GlobalSettings from the synth for the property editor
 		std::vector<MidiMessage> requestDataItem(int itemNo, int dataTypeID) override;
-		int numberOfDataItemsPerType(int dataTypeID) override;
-		bool isDataFile(const MidiMessage &message, int dataTypeID) override;
-		std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) override;
-		std::vector<DataFileDescription> dataTypeNames() override;
+		int numberOfDataItemsPerType(int dataTypeID) const override;
+		bool isDataFile(const MidiMessage &message, int dataTypeID) const override;
+		std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) const override;
+		std::vector<DataFileDescription> dataTypeNames() const override;
 
 		// Access to global settings for the property editor
+		void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile);
 		std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings();
 
 	private:
@@ -75,6 +76,7 @@ namespace midikraft {
 		MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
 
 		void initGlobalSettings();
+		
 		void valueChanged(Value& value) override; // Value::Listener that gets called when someone changes a global setting value
 
 		// That's not very Rev2 specific

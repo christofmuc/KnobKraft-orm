@@ -228,7 +228,7 @@ namespace midikraft {
 		return (boost::format("%s%d P%d") % (section == 0 ? "U" : "F") % ((bank_ % 4) + 1) % program).str();
 	}
 
-	Rev2Patch::Rev2Patch() 
+	Rev2Patch::Rev2Patch() : Patch(Rev2::PATCH)
 	{
 		// Load the init patch
 		MidiMessage initPatch = MidiMessage(Rev2_InitPatch_syx, Rev2_InitPatch_syx_size);
@@ -239,7 +239,7 @@ namespace midikraft {
 		setData(initpatch->data());
 	}
 
-	Rev2Patch::Rev2Patch(Synth::PatchData const &patchData) : Patch(patchData)
+	Rev2Patch::Rev2Patch(Synth::PatchData const &patchData) : Patch(Rev2::PATCH, patchData)
 	{
 	}
 

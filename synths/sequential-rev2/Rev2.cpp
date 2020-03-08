@@ -69,9 +69,21 @@ namespace midikraft {
 		initGlobalSettings();
 	}
 
-	Synth::PatchData Rev2::filterVoiceRelevantData(PatchData const &unfilteredData) const
+	Synth::PatchData Rev2::filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const
 	{
-		return Patch::blankOut(kRev2BlankOutZones, unfilteredData);
+		switch (unfilteredData->dataTypeID())
+		{
+		case PATCH:
+			return Patch::blankOut(kRev2BlankOutZones, unfilteredData->data());
+		case GLOBAL_SETTINGS:
+			// Global settings don't contain a name, all data is relevant
+			return unfilteredData->data();
+		case ALTERNATE_TUNING:
+			//TBD - name irrelevant?
+			return unfilteredData->data();
+		default:
+			throw new std::runtime_error("Invalid argument - unknown data type id");
+		}
 	}
 
 	int Rev2::numberOfBanks() const
@@ -123,8 +135,21 @@ namespace midikraft {
 		return patch;
 	}
 
-	std::shared_ptr<Patch> Rev2::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
+	std::shared_ptr<DataFile> Rev2::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
 		ignoreUnused(name, place);
+
+		//TODO - this is a hack. We should only store MIDI messages in the database, should we?
+		// Recreate a MIDI message from the bytes given, and test if it is a valid datafile...
+		auto message = MidiMessage::createSysExMessage(data.data(), (int) data.size());
+		if (isDataFile(message, GLOBAL_SETTINGS)) {
+			auto result = loadData({ message }, GLOBAL_SETTINGS);
+			return result[0];
+		}
+		else if (isDataFile(message, ALTERNATE_TUNING)) {
+			auto result = loadData({ message }, ALTERNATE_TUNING);
+			return result[0];
+		}
+
 		return std::make_shared<Rev2Patch>(data);
 	}
 
@@ -320,7 +345,7 @@ namespace midikraft {
 		return {};
 	}
 
-	int Rev2::numberOfDataItemsPerType(int dataTypeID)
+	int Rev2::numberOfDataItemsPerType(int dataTypeID) const
 	{
 		switch (dataTypeID) {
 		case GLOBAL_SETTINGS:
@@ -333,10 +358,13 @@ namespace midikraft {
 		return 0;
 	}
 
-	bool Rev2::isDataFile(const MidiMessage &message, int dataTypeID)
+	bool Rev2::isDataFile(const MidiMessage &message, int dataTypeID) const
 	{
 		switch (dataTypeID)
 		{
+		case PATCH:
+			//TODO Patch Loading is done via the Edit Buffer mechanism
+			return false;
 		case GLOBAL_SETTINGS:
 			if (isOwnSysex(message)) {
 				if (message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0b00001111 /* Main Parameter Data*/) {
@@ -421,33 +449,36 @@ namespace midikraft {
 		}
 	}
 
-	std::vector<std::shared_ptr<DataFile>> Rev2::loadData(std::vector<MidiMessage> messages, int dataTypeID)
+	void Rev2::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) {
+		auto m = MidiMessage::createSysExMessage(dataFile->data().data(), (int) dataFile->data().size());
+		// This is the global message parameter dump
+		std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
+
+		// Loop over it and fill out the GlobalSettings Properties
+		for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
+			if (i < globalParameterData.size()) {
+				globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex] + kRev2GlobalSettings[i].displayOffset));
+			}
+		}
+	}
+
+	std::vector<std::shared_ptr<DataFile>> Rev2::loadData(std::vector<MidiMessage> messages, int dataTypeID) const
 	{
 		std::vector<std::shared_ptr<DataFile>> result;
 		for (auto m : messages) {
 			if (isDataFile(m, dataTypeID)) {
 				switch (dataTypeID) {
 				case GLOBAL_SETTINGS: {
-					// This is the global message parameter dump
-					std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
-
-					// Create a patch structure storing this data
-					auto storage = std::make_shared<MTSFile>(globalParameterData);
+					std::vector<uint8> syx(m.getSysExData(), m.getSysExData() + m.getSysExDataSize());
+					auto storage = std::make_shared<MTSFile>(GLOBAL_SETTINGS, syx);
 					result.push_back(storage);
-
-					// Loop over it and fill out the GlobalSettings Properties
-					for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
-						if (i < globalParameterData.size()) {
-							globalSettings_[i]->value.setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex] + kRev2GlobalSettings[i].displayOffset));
-						}
-					}
 					break;
 				}
 				case ALTERNATE_TUNING: {
 					MidiTuning tuning(MidiProgramNumber::fromZeroBase(0), "unused", {});
 					if (MidiTuning::fromMidiMessage(m, tuning)) {
 						std::vector<uint8> mtsData({ m.getSysExData(), m.getSysExData() + m.getSysExDataSize() });
-						auto storage = std::make_shared<MTSFile>(mtsData);
+						auto storage = std::make_shared<MTSFile>(ALTERNATE_TUNING, mtsData);
 						result.push_back(storage);
 					}
 					else {
@@ -463,7 +494,7 @@ namespace midikraft {
 		return result;
 	}
 
-	std::vector<DataFileLoadCapability::DataFileDescription> Rev2::dataTypeNames()
+	std::vector<DataFileLoadCapability::DataFileDescription> Rev2::dataTypeNames() const
 	{
 		return { { "Patch", true, true}, { "Global Settings", true, false}, { "Alternate Tuning", false, true } };
 	}
