@@ -124,7 +124,13 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	for (auto c : categoryFilters_.selectedCategories()) {
 		catSelected.emplace(c.category, c.color, c.bitIndex);
 	}
-	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), showHidden_.getToggleState(), onlyUntagged_.getToggleState(), catSelected };
+	bool typeSelected = false;
+	int filterType = 0;
+	if (dataTypeSelector_.getSelectedId() > 0) {
+		typeSelected = true;
+		filterType = dataTypeSelector_.getSelectedId() - 1;
+	}
+	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), typeSelected, filterType, showHidden_.getToggleState(), onlyUntagged_.getToggleState(), catSelected };
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
@@ -344,17 +350,17 @@ void PatchView::rebuildImportFilterBox() {
 }
 
 void PatchView::rebuildDataTypeFilterBox() {
-	StringArray typeNameList;
+	dataTypeSelector_.clear();
 	auto dflc = dynamic_cast<midikraft::DataFileLoadCapability *>(UIModel::currentSynth());
 	if (dflc) {
-		for (auto const &typeName : dflc->dataTypeNames()) {
+		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
+			auto typeName = dflc->dataTypeNames()[i];
 			if (typeName.canBeSent) {
-				typeNameList.add(typeName.name);
+				dataTypeSelector_.addItem(typeName.name, (int) i + 1);
 			}
 		}
 	}
-	dataTypeSelector_.clear();
-	dataTypeSelector_.addItemList(typeNameList, 1);
+	
 }
 
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
@@ -392,13 +398,7 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		currentLayer_ = 0;
 
 		// Send out to Synth
-		auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch.patch());
-		if (realPatch) {
-			synth.sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), *realPatch);
-		}
-		else {
-			jassert(false);
-		}
+		synth.sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), patch.patch());
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...
