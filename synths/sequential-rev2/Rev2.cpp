@@ -499,6 +499,33 @@ namespace midikraft {
 		return { { "Patch", true, true}, { "Global Settings", true, false}, { "Alternate Tuning", false, true } };
 	}
 
+	std::vector<juce::MidiMessage> Rev2::dataFileToMessages(std::shared_ptr<DataFile> dataFile) const
+	{
+		switch (dataFile->dataTypeID()) {
+		case PATCH:
+			// You should not come here?
+			jassert(false);
+			break;
+		case GLOBAL_SETTINGS:
+			// Not possible
+			jassert(false);
+			SimpleLogger::instance()->postMessage("Program error - don't try to send global settings in one messages to synth");
+			break;
+		case ALTERNATE_TUNING: {
+			// This makes sense, though we should patch the program place in the program
+			auto mts = std::dynamic_pointer_cast<MTSFile>(dataFile);
+			jassert(mts);
+			if (mts) {
+				return mts->createMidiMessagesFromDataFile(MidiProgramNumber::fromOneBase(16));
+			}
+			break;
+		}
+		default:
+			jassert(false);
+		}
+		return {};
+	}
+
 	std::vector<std::shared_ptr<TypedNamedValue>> Rev2::getGlobalSettings()
 	{
 		return globalSettings_;

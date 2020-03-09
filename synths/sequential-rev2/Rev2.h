@@ -15,7 +15,7 @@
 
 namespace midikraft {
 
-	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability,
+	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability,
 		private Value::Listener
 	{
 	public:
@@ -66,6 +66,9 @@ namespace midikraft {
 		bool isDataFile(const MidiMessage &message, int dataTypeID) const override;
 		std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) const override;
 		std::vector<DataFileDescription> dataTypeNames() const override;
+
+		// DataFileSendCapability
+		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
 
 		// Access to global settings for the property editor
 		void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile);
