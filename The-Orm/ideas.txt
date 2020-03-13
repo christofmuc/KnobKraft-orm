@@ -15,9 +15,8 @@ Future work
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * Make regular backups of Database
 * I could display which categories were set by the user, and which ones were autodetected
-* Allow to change patch names
-	* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
-	* Could have patch name autogenerator like LaserMammoth
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
+* Could have patch name autogenerator like LaserMammoth
 * Global settings editor for the synth using the JUCE property editor
   * Need to change MIDI channel internally when using the settings editor to change it
 
@@ -37,7 +36,7 @@ MIDI setup
 
 UI Cleanup
 * Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
-* Could mode LambdaButtonStrip to the very top (like a toolbar?)
+* Could move LambdaButtonStrip to the very top (like a toolbar?)
 * Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things
@@ -56,12 +55,11 @@ More synthesizers
   * Korg DW8000
   + Oberheim Matrix 10000
   + DSI OB-6  
-  
+  + Roland MKS80	  
   + Yamaha Reface DX
 
 Not done yet
-
-	+ Roland MKS80	
+	
 	+ Behringer RD 8
 
 Future Synths
