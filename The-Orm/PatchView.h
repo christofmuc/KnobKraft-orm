@@ -33,7 +33,8 @@ class PatchDiff;
 class PatchView : public Component,
 	private ComboBox::Listener,
 	private ToggleButton::Listener,
-	private ChangeListener
+	private ChangeListener,
+	private TextEditor::Listener
 {
 public:
 	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths);
@@ -55,7 +56,9 @@ public:
 
 private:
 	static std::vector<CategoryButtons::Category> predefinedCategories();
-	
+
+	virtual void textEditorTextChanged(TextEditor&) override;
+	virtual void textEditorEscapeKeyPressed(TextEditor&) override;
 	
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
@@ -71,6 +74,8 @@ private:
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 
+	TextEditor nameSearchText_; 
+	ToggleButton useNameSearch_;
 	ComboBox importList_;
 	ComboBox dataTypeSelector_;
 	CategoryButtons categoryFilters_;

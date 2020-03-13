@@ -26,6 +26,12 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
+	addAndMakeVisible(nameSearchText_);
+	nameSearchText_.addListener(this);
+	addAndMakeVisible(useNameSearch_);
+	useNameSearch_.setButtonText("search in name");
+	useNameSearch_.addListener(this);
+
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
@@ -118,6 +124,20 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 	return result;
 }
 
+void PatchView::textEditorTextChanged(TextEditor&)
+{
+	if (nameSearchText_.getText().isNotEmpty()) {
+		useNameSearch_.setToggleState(true, dontSendNotification);
+	}
+	retrieveFirstPageFromDatabase();
+}
+
+void PatchView::textEditorEscapeKeyPressed(TextEditor&)
+{
+	nameSearchText_.setText("", true);
+	useNameSearch_.setToggleState(false, dontSendNotification);
+}
+
 midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	// Transform into real category
 	std::set<midikraft::Category> catSelected;
@@ -130,7 +150,19 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 		typeSelected = true;
 		filterType = dataTypeSelector_.getSelectedId() - 1;
 	}
-	return { UIModel::currentSynth(), currentlySelectedSourceUUID(), onlyFaves_.getToggleState(), typeSelected, filterType, showHidden_.getToggleState(), onlyUntagged_.getToggleState(), catSelected };
+	std::string nameFilter = "";
+	if (useNameSearch_.getToggleState()) {
+		nameFilter = nameSearchText_.getText().toStdString();
+	}
+	return { UIModel::currentSynth(), 
+		currentlySelectedSourceUUID(), 
+		nameFilter, 
+		onlyFaves_.getToggleState(), 
+		typeSelected, 
+		filterType, 
+		showHidden_.getToggleState(), 
+		onlyUntagged_.getToggleState(), 
+		catSelected };
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
@@ -158,6 +190,9 @@ void PatchView::resized()
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 	currentPatchDisplay_->setBounds(topRow);
 	auto sourceRow = area.removeFromTop(36).reduced(8);
+	auto nameFilterRow = area.removeFromTop(40).reduced(8);
+	useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));
+	nameSearchText_.setBounds(nameFilterRow);
 	auto filterRow = area.removeFromTop(80).reduced(8);
 	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
