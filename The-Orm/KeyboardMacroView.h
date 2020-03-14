@@ -10,6 +10,13 @@
 
 #include "MidiController.h"
 
+#include <set>
+
+struct KeyboardMacro {
+	std::set<int> midiNotes;
+	std::function<void()> execute;
+};
+
 class KeyboardMacroView : public Component {
 public:
 	KeyboardMacroView();
@@ -18,8 +25,12 @@ public:
 	virtual void resized() override;
 
 private:
+	bool isMacroState(KeyboardMacro const &macro);
+
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
+
+	std::vector<KeyboardMacro> macros_;
 
 	midikraft::MidiController::HandlerHandle handle_ = midikraft::MidiController::makeNoneHandle();
 };
