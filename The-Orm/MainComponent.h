@@ -22,6 +22,7 @@
 
 #include "PatchView.h"
 #include "SettingsView.h"
+#include "KeyboardMacroView.h"
 #include "Rev2.h"
 
 class LogViewLogger;
@@ -52,6 +53,7 @@ private:
 	TabbedComponent mainTabs_;
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
+	std::unique_ptr<KeyboardMacroView> keyboardView_;
 	StretchableLayoutManager stretchableManager_;
 	StretchableLayoutResizerBar resizerBar_;
 	MidiLogView midiLogView_;

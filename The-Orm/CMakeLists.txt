@@ -38,6 +38,7 @@ set(SOURCES
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
+	KeyboardMacroView.cpp KeyboardMacroView.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
 	PatchButtonPanel.cpp PatchButtonPanel.h

@@ -110,11 +110,15 @@ MainComponent::MainComponent() :
 	patchView_ = std::make_unique<PatchView>(database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 
+	// Create Macro Definition view
+	keyboardView_ = std::make_unique<KeyboardMacroView>();
+
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
 
 	// Setup the rest of the UI
 	addAndMakeVisible(synthList_);
-	mainTabs_.addTab("Library", Colours::black, patchView_.get(), true);
+	mainTabs_.addTab("Library", Colours::black, patchView_.get(), false);
+	mainTabs_.addTab("Macros", Colours::black, keyboardView_.get(), false);
 	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
 	mainTabs_.addTab(rev2_->getName() + " Settings", Colours::black, settingsView_.get(), false);
 
