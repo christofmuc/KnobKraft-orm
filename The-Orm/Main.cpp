@@ -48,6 +48,7 @@ public:
 		midikraft::MidiController::shutdown();
 
 		// Shutdown settings subsystem
+		Settings::instance().saveAndClose();
 		Settings::shutdown();
     }
 

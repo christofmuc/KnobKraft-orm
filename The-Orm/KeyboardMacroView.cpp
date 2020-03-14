@@ -8,7 +8,9 @@
 
 #include "Logger.h"
 
-KeyboardMacroView::KeyboardMacroView() : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard)
+#include "Settings.h"
+
+KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback) : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard), executeMacro_(callback)
 {
 	addAndMakeVisible(keyboard_);
 
@@ -22,24 +24,93 @@ KeyboardMacroView::KeyboardMacroView() : keyboard_(state_, MidiKeyboardComponent
 
 			// Check if this is a message we will transform into a macro
 			for (const auto& macro : macros_) {
-				if (isMacroState(macro)) {
-					macro.execute();
+				if (isMacroState(macro.second)) {
+					executeMacro_(macro.first);
 				}
 			}
 		}
 	});
 
-	// Define a macro
-	macros_ = {
-		{{ 0x24 }, [this]() {
-			SimpleLogger::instance()->postMessage("Macro executed");
-		} }
-	};
+	// Load Macro Definitions
+	loadFromSettings();
+	/*macros_ = {
+		{ KeyboardMacroEvent::PreviousPatch, {{ 0x24 }} }
+	};*/
 }
 
 KeyboardMacroView::~KeyboardMacroView()
 {
 	midikraft::MidiController::instance()->removeMessageHandler(handle_);
+	saveSettings();
+}
+
+void KeyboardMacroView::loadFromSettings() {
+	auto json = Settings::instance().get("MacroDefinitions");
+	var macros = JSON::parse(String(json));
+
+	if (macros.isArray()) {
+		for (var macro : *macros.getArray()) {
+			if (macro.isObject()) {
+				std::set<int> midiNoteValues;
+				auto notes = macro.getProperty("Notes", var());
+				if (notes.isArray()) {
+					for (var noteVar : *notes.getArray()) {
+						if (noteVar.isInt()) {
+							midiNoteValues.insert((int)noteVar);
+						}
+					}
+				}
+				auto event = macro.getProperty("Event", var());
+				KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
+				if (event.isString()) {
+					if ("Hide" == event) {
+						macroEventCode = KeyboardMacroEvent::Hide;
+					}
+					else if ("Favorite" == event) {
+						macroEventCode = KeyboardMacroEvent::Favorite;
+					}
+					else if ("PreviousPatch" == event) {
+						macroEventCode = KeyboardMacroEvent::PreviousPatch;
+					}
+					else if ("NextPatch" == event) {
+						macroEventCode = KeyboardMacroEvent::NextPatch;
+					}
+					else if ("ImportEditBuffer" == event) {
+						macroEventCode = KeyboardMacroEvent::ImportEditBuffer;
+					}
+				}
+				if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
+					macros_[macroEventCode] = { midiNoteValues };
+				}
+			}
+		}
+	}
+}
+
+void KeyboardMacroView::saveSettings() {
+	var result;
+	
+	for (auto macro : macros_) {
+		String event;
+		switch (macro.first) {
+		case KeyboardMacroEvent::Hide: event = "Hide"; break;
+		case KeyboardMacroEvent::Favorite: event = "Favorite"; break;
+		case KeyboardMacroEvent::PreviousPatch: event = "PreviousPatch"; break;
+		case KeyboardMacroEvent::NextPatch: event = "NextPatch"; break;
+		case KeyboardMacroEvent::ImportEditBuffer: event = "ImportEditBuffer"; break;
+		}
+		var notes;
+		for (auto note : macro.second.midiNotes) {
+			notes.append(note);
+		}
+		auto def = new DynamicObject();
+		def->setProperty("Notes", notes);
+		def->setProperty("Event", event);
+		result.append(def);
+	}
+	String json = JSON::toString(result);
+	Settings::instance().set("MacroDefinitions", json.toStdString());	
+	Settings::instance().flush();
 }
 
 void KeyboardMacroView::resized()
@@ -50,7 +121,6 @@ void KeyboardMacroView::resized()
 	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + 16;
 
 	keyboard_.setBounds(area.withSizeKeepingCentre((int) keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
-	
 }
 
 bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)

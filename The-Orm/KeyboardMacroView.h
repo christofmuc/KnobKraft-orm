@@ -12,25 +12,36 @@
 
 #include <set>
 
+enum class KeyboardMacroEvent {
+	Hide,
+	Favorite,
+	PreviousPatch,
+	NextPatch,
+	ImportEditBuffer,
+	Unknown
+};
+
 struct KeyboardMacro {
 	std::set<int> midiNotes;
-	std::function<void()> execute;
 };
 
 class KeyboardMacroView : public Component {
 public:
-	KeyboardMacroView();
+	KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback);
 	virtual ~KeyboardMacroView();
 
 	virtual void resized() override;
 
 private:
+	void loadFromSettings();
+	void saveSettings();
 	bool isMacroState(KeyboardMacro const &macro);
 
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
 
-	std::vector<KeyboardMacro> macros_;
+	std::map<KeyboardMacroEvent, KeyboardMacro> macros_;
+	std::function<void(KeyboardMacroEvent)> executeMacro_;
 
 	midikraft::MidiController::HandlerHandle handle_ = midikraft::MidiController::makeNoneHandle();
 };

@@ -111,7 +111,10 @@ MainComponent::MainComponent() :
 	settingsView_ = std::make_unique<SettingsView>(synths);
 
 	// Create Macro Definition view
-	keyboardView_ = std::make_unique<KeyboardMacroView>();
+	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
+		ignoreUnused(event);
+		SimpleLogger::instance()->postMessage("Keyboard Macro event fired");
+	});
 
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
 
