@@ -137,6 +137,20 @@ midikraft::PatchHolder CurrentPatchDisplay::getCurrentPatch() const
 	return currentPatch_;
 }
 
+void CurrentPatchDisplay::toggleFavorite()
+{
+	if (currentPatch_.patch()) {
+		favorite_.setToggleState(!favorite_.getToggleState(), sendNotificationAsync);
+	}
+}
+
+void CurrentPatchDisplay::toggleHide()
+{
+	if (currentPatch_.patch()) {
+		hide_.setToggleState(!hide_.getToggleState(), sendNotificationAsync);
+	}
+}
+
 void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
 	if (currentPatch_.patch()) {
 		currentPatch_.setUserDecision(clicked);

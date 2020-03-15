@@ -18,16 +18,6 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	patchButtons_ = std::make_unique<PatchButtonGrid>(8, 8, [this](int index) { buttonClicked(index); });
 	addAndMakeVisible(patchButtons_.get());
 
-	midikraft::MidiController::instance()->addMessageHandler(callback_, [this](MidiInput *source, const MidiMessage &message) { 
-		ignoreUnused(source);
-
-		// Check if this is a message we will transform into a macro
-		if (isMacroMessage(message)) {
-			executeMacro(message);
-			return;
-		}
-	});
-
 	addAndMakeVisible(pageUp_); 
 	pageUp_.setButtonText(">");
 	pageUp_.addListener(this);
@@ -146,35 +136,54 @@ void PatchButtonPanel::buttonClicked(int buttonIndex) {
 void PatchButtonPanel::buttonClicked(Button* button)
 {
 	if (button == &pageUp_) {
-		if (pageBase_ + pageSize_ < totalSize_) {
-			pageBase_ += pageSize_;
-			pageNumber_++;
-			refresh(true);
-		}
+		pageUp();
 	}
 	else if (button == &pageDown_) {
-		if (pageBase_ - pageSize_ >= 0) {
-			pageBase_ -= pageSize_;
-			pageNumber_--;
-			refresh(true);
+		pageDown();
+	}
+}
+
+void PatchButtonPanel::pageUp() {
+	if (pageBase_ + pageSize_ < totalSize_) {
+		pageBase_ += pageSize_;
+		pageNumber_++;
+		refresh(true);
+	}
+}
+
+void PatchButtonPanel::pageDown() {
+	if (pageBase_ - pageSize_ >= 0) {
+		pageBase_ -= pageSize_;
+		pageNumber_--;
+		refresh(true);
+	}
+}
+
+void PatchButtonPanel::selectPrevious()
+{
+	int active = indexOfActive();
+	if (active != -1) {
+		if (active - 1 > 0) {
+			patchButtons_->buttonWithIndex(active - 1)->buttonClicked(nullptr);
+		}
+		else {
+			pageDown();
+			//patchButtons_->buttonWithIndex()->buttonClicked(nullptr);
 		}
 	}
 }
 
-bool PatchButtonPanel::isMacroMessage(const MidiMessage& message)
+void PatchButtonPanel::selectNext()
 {
-	// The only macro is the highest C of the Korg DW 8000
-	return (message.isNoteOn() && message.getNoteNumber() == 96 /* C6 */);
-}
-
-
-void PatchButtonPanel::executeMacro(const MidiMessage&)
-{
-	// The only macro is to advance the selected patch by one
-	if ((indexOfActive() < (int) patches_.size() - 1) && (indexOfActive() < (int) patchButtons_->size() - 1)) {
-		MessageManager::callAsync([this]() {
-			patchButtons_->buttonWithIndex(indexOfActive() + 1)->buttonClicked(nullptr);
-		});
+	int active = indexOfActive();
+	if (active != -1) {
+		if (active + 1 < patchButtons_->size()) {
+			patchButtons_->buttonWithIndex(active + 1)->buttonClicked(nullptr);
+		}
+		else {
+			pageUp();
+			patchButtons_->buttonWithIndex(0)->buttonClicked(nullptr);
+		}
 	}
 }
 

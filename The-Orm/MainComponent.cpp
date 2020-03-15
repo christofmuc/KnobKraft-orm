@@ -112,8 +112,14 @@ MainComponent::MainComponent() :
 
 	// Create Macro Definition view
 	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
-		ignoreUnused(event);
-		SimpleLogger::instance()->postMessage("Keyboard Macro event fired");
+		switch (event) {
+		case KeyboardMacroEvent::Hide: patchView_->hideCurrentPatch(); break;
+		case KeyboardMacroEvent::Favorite: patchView_->favoriteCurrentPatch(); break;
+		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
+		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
+		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
+		}
+		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
 	});
 
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());

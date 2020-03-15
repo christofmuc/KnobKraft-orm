@@ -172,6 +172,26 @@ void PatchView::retrieveFirstPageFromDatabase() {
 	patchButtons_->refresh(true); // This kicks of loading the first page
 }
 
+void PatchView::hideCurrentPatch()
+{
+	currentPatchDisplay_->toggleHide();
+}
+
+void PatchView::favoriteCurrentPatch()
+{
+	currentPatchDisplay_->toggleFavorite();
+}
+
+void PatchView::selectPreviousPatch()
+{
+	patchButtons_->selectPrevious();
+}
+
+void PatchView::selectNextPatch()
+{
+	patchButtons_->selectNext();
+}
+
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
 	midikraft::Synth *loadingForWhich = UIModel::currentSynth();

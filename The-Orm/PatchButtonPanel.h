@@ -34,9 +34,13 @@ public:
 
 	void buttonClicked(int buttonIndex);
 
+	// Remote control
+	void selectPrevious();
+	void selectNext();
+	void pageUp();
+	void pageDown();
+
 private:
-	bool isMacroMessage(const MidiMessage& message);
-	void executeMacro(const MidiMessage& message);
 	int indexOfActive() const;
 
 	midikraft::MidiController::HandlerHandle callback_  = midikraft::MidiController::makeOneHandle();

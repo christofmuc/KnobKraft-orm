@@ -30,6 +30,10 @@ public:
 
 	midikraft::PatchHolder getCurrentPatch() const;
 
+	// For remote control via MidiKeyboard
+	void toggleFavorite();
+	void toggleHide();
+
 private:
 	void categoryUpdated(midikraft::Category clicked);
 

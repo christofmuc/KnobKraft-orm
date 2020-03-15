@@ -54,6 +54,13 @@ public:
 	midikraft::PatchDatabase::PatchFilter buildFilter();
 	void retrieveFirstPageFromDatabase();
 
+	// Macro controls triggered by the MidiKeyboard
+	void hideCurrentPatch();
+	void favoriteCurrentPatch();
+	void selectPreviousPatch();
+	void selectNextPatch();
+	void retrieveEditBuffer();
+
 private:
 	static std::vector<CategoryButtons::Category> predefinedCategories();
 
@@ -63,8 +70,7 @@ private:
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
-	void retrieveEditBuffer();
-
+	
 	void loadPatches();
 	std::string currentlySelectedSourceUUID();
 	void rebuildImportFilterBox();
