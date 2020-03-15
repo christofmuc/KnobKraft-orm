@@ -185,7 +185,9 @@ void PatchButtonPanel::selectNext()
 	int active = indexOfActive();
 	if (active != -1) {
 		if (active + 1 < patchButtons_->size()) {
-			patchButtons_->buttonWithIndex(active + 1)->buttonClicked(nullptr);
+			if (active + 1 < patches_.size()) {
+				patchButtons_->buttonWithIndex(active + 1)->buttonClicked(nullptr);
+			}
 		}
 		else {
 			pageUp(true);
