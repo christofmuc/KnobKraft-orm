@@ -44,17 +44,25 @@ void PatchButtonPanel::setTotalCount(int totalCount)
 	totalSize_ = totalCount;
 }
 
-void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &patches) {
+void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget /* = -1 */) {
 	patches_ = patches;
 	// This is never an async refresh, as we might be just processing the result of an async operation, and then we'd go into a loop
 	refresh(false);
+	if (autoSelectTarget != -1) {
+		if (autoSelectTarget == 0) {
+			buttonClicked(autoSelectTarget);
+		}
+		else if (autoSelectTarget == 1) {
+			buttonClicked(((int) patches_.size()) - 1);
+		}
+	}
 }
 
-void PatchButtonPanel::refresh(bool async) {
+void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
-		pageLoader_(pageBase_, pageSize_, [this](std::vector<midikraft::PatchHolder> const &patches) {
- 			setPatches(patches);
+		pageLoader_(pageBase_, pageSize_, [this, autoSelectTarget](std::vector<midikraft::PatchHolder> const &patches) {
+ 			setPatches(patches, autoSelectTarget);
 		});
 		return;
 	}
@@ -136,26 +144,26 @@ void PatchButtonPanel::buttonClicked(int buttonIndex) {
 void PatchButtonPanel::buttonClicked(Button* button)
 {
 	if (button == &pageUp_) {
-		pageUp();
+		pageUp(false);
 	}
 	else if (button == &pageDown_) {
-		pageDown();
+		pageDown(false);
 	}
 }
 
-void PatchButtonPanel::pageUp() {
+void PatchButtonPanel::pageUp(bool selectNext) {
 	if (pageBase_ + pageSize_ < totalSize_) {
 		pageBase_ += pageSize_;
 		pageNumber_++;
-		refresh(true);
+		refresh(true, selectNext ? 0 : -1);
 	}
 }
 
-void PatchButtonPanel::pageDown() {
+void PatchButtonPanel::pageDown(bool selectLast) {
 	if (pageBase_ - pageSize_ >= 0) {
 		pageBase_ -= pageSize_;
 		pageNumber_--;
-		refresh(true);
+		refresh(true, selectLast ? 1 : -1);
 	}
 }
 
@@ -163,12 +171,11 @@ void PatchButtonPanel::selectPrevious()
 {
 	int active = indexOfActive();
 	if (active != -1) {
-		if (active - 1 > 0) {
+		if (active - 1 >= 0) {
 			patchButtons_->buttonWithIndex(active - 1)->buttonClicked(nullptr);
 		}
 		else {
-			pageDown();
-			//patchButtons_->buttonWithIndex()->buttonClicked(nullptr);
+			pageDown(true);
 		}
 	}
 }
@@ -181,8 +188,7 @@ void PatchButtonPanel::selectNext()
 			patchButtons_->buttonWithIndex(active + 1)->buttonClicked(nullptr);
 		}
 		else {
-			pageUp();
-			patchButtons_->buttonWithIndex(0)->buttonClicked(nullptr);
+			pageUp(true);
 		}
 	}
 }

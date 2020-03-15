@@ -25,8 +25,8 @@ public:
 
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);
-	void setPatches(std::vector<midikraft::PatchHolder> const &patches);
-	void refresh(bool async);
+	void setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget = -1);
+	void refresh(bool async, int autoSelectTarget = -1);
 
 	void resized() override;
 
@@ -37,8 +37,8 @@ public:
 	// Remote control
 	void selectPrevious();
 	void selectNext();
-	void pageUp();
-	void pageDown();
+	void pageUp(bool selectNext);
+	void pageDown(bool selectLast);
 
 private:
 	int indexOfActive() const;
