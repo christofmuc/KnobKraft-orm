@@ -35,7 +35,7 @@ class MacroConfig : public Component,
 	private TextButton::Listener
 {
 public:
-	MacroConfig(KeyboardMacroEvent event, std::function<void(KeyboardMacroEvent, bool)> showHandler);
+	MacroConfig(KeyboardMacroEvent event, std::function<void(KeyboardMacroEvent)> recordHander, std::function<void(KeyboardMacroEvent, bool)> showHandler);
 
 	virtual void resized() override;
 
@@ -46,6 +46,7 @@ private:
 	void buttonStateChanged(Button* button) override;
 
 	KeyboardMacroEvent event_;
+	std::function<void(KeyboardMacroEvent)> recordHander_;
 	std::function<void(KeyboardMacroEvent, bool)> showHandler_;
 	Label name_;
 	Label keyList_;

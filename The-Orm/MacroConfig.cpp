@@ -51,13 +51,18 @@ KeyboardMacroEvent KeyboardMacro::fromText(std::string const &event)
 	return KeyboardMacroEvent::Unknown;
 }
 
-MacroConfig::MacroConfig(KeyboardMacroEvent event, std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event), showHandler_(showHandler), play_([this](TextButton *button) { buttonStateChanged(button);  })
+MacroConfig::MacroConfig(KeyboardMacroEvent event, 
+	std::function<void(KeyboardMacroEvent)> recordHander,
+	std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event), 
+	recordHander_(recordHander),
+	showHandler_(showHandler), play_([this](TextButton *button) { buttonStateChanged(button);  })
 {
 	addAndMakeVisible(name_);
 	name_.setText(KeyboardMacro::toText(event_), dontSendNotification);
 	addAndMakeVisible(keyList_);
 	addAndMakeVisible(record_);
 	record_.setButtonText("Record keys");
+	record_.addListener(this);
 	addAndMakeVisible(play_);
 	play_.setButtonText("Show keys");
 	play_.addListener(this);
@@ -93,7 +98,10 @@ void MacroConfig::buttonStateChanged(Button *button)
 	}
 }
 
-void MacroConfig::buttonClicked(Button *)
+void MacroConfig::buttonClicked(Button *button)
 {
+	if (button == &record_) {
+		recordHander_(event_);
+	}
 }
 

@@ -23,6 +23,7 @@ private:
 	void loadFromSettings();
 	void saveSettings();
 	bool isMacroState(KeyboardMacro const &macro);
+	void refreshUI();
 
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;

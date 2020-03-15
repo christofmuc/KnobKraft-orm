@@ -10,6 +10,52 @@
 
 #include "Settings.h"
 
+class RecordProgress : public ThreadWithProgressWindow, private MidiKeyboardStateListener {
+public:
+	RecordProgress(MidiKeyboardState &state) : ThreadWithProgressWindow("Press key(s) on your MIDI keyboard", false, true), state_(state), atLeastOneKey_(false), done_(false)
+	{
+	}
+
+	virtual ~RecordProgress() {
+		state_.removeListener(this);
+	}
+
+	virtual void run() override {
+		state_.addListener(this);
+		while (!threadShouldExit() && !done_) {
+			Thread::sleep(10);
+		}
+	}
+
+	virtual void handleNoteOn(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity) override {
+		ignoreUnused(source, midiChannel, velocity);
+		notes_.insert(midiNoteNumber);
+		atLeastOneKey_ = true;
+	}
+
+	virtual void handleNoteOff(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity) override {
+		ignoreUnused(source, midiChannel, midiNoteNumber, velocity);
+		int keyPressed = 0;
+		for (int i = 0; i < 128; i++) {
+			if (state_.isNoteOnForChannels(0xf, i)) {
+				keyPressed++;
+			}
+		}
+		if (keyPressed == 0) {
+			done_ = true; 
+		}
+	}
+
+	std::set<int> notesSelected() { return notes_; }
+
+private:
+	std::set<int> notes_;
+	MidiKeyboardState &state_;
+	bool atLeastOneKey_;
+	bool done_;
+
+};
+
 KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback) : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard), executeMacro_(callback)
 {
 	addAndMakeVisible(keyboard_);
@@ -18,7 +64,17 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 	// Create config table
 	for (auto config : kAllKeyboardMacroEvents) {
-		auto configComponent = new MacroConfig(config, [this](KeyboardMacroEvent event, bool down) {
+		auto configComponent = new MacroConfig(config,
+			[this](KeyboardMacroEvent event) {
+				RecordProgress recorder(state_);
+				if (recorder.runThread()) {
+					KeyboardMacro newMacro = { event, recorder.notesSelected() };
+					macros_[event] = newMacro;
+					saveSettings();
+					refreshUI();
+				}
+			},
+			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
 				for (auto key : macros_[event].midiNotes) {
 					if (down) {
@@ -51,7 +107,16 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 	// Load Macro Definitions
 	loadFromSettings();
+	refreshUI();
+}
 
+KeyboardMacroView::~KeyboardMacroView()
+{
+	midikraft::MidiController::instance()->removeMessageHandler(handle_);
+	saveSettings();
+}
+
+void KeyboardMacroView::refreshUI() {
 	// Set UI
 	int i = 0;
 	for (auto config : kAllKeyboardMacroEvents) {
@@ -60,12 +125,6 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 		}
 		i++;
 	}
-}
-
-KeyboardMacroView::~KeyboardMacroView()
-{
-	midikraft::MidiController::instance()->removeMessageHandler(handle_);
-	saveSettings();
 }
 
 void KeyboardMacroView::loadFromSettings() {
