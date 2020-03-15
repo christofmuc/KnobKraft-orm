@@ -218,8 +218,8 @@ void PatchView::resized()
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
-	importList_.setBounds(sourceRow.removeFromLeft(300));
-	dataTypeSelector_.setBounds(sourceRow);
+	dataTypeSelector_.setBounds(sourceRow.removeFromLeft(200));
+	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
 }
 
