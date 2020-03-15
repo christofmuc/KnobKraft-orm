@@ -39,6 +39,7 @@ set(SOURCES
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
+	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
 	PatchButtonPanel.cpp PatchButtonPanel.h

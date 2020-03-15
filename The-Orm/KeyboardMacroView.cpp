@@ -13,8 +13,26 @@
 KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback) : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard), executeMacro_(callback)
 {
 	addAndMakeVisible(keyboard_);
-
 	keyboard_.setAvailableRange(0x24, 0x60);
+	keyboard_.setOctaveForMiddleC(4);
+
+	// Create config table
+	for (auto config : kAllKeyboardMacroEvents) {
+		auto configComponent = new MacroConfig(config, [this](KeyboardMacroEvent event, bool down) {
+			if (macros_.find(event) != macros_.end()) {
+				for (auto key : macros_[event].midiNotes) {
+					if (down) {
+						state_.noteOn(1, key, 1.0f);
+					}
+					else {
+						state_.noteOff(1, key, 1.0f);
+					}
+				}
+			}
+		});
+		configs_.add(configComponent);
+		addAndMakeVisible(configComponent);
+	}
 
 	// Install keyboard handler to refresh midi keyboard display
 	midikraft::MidiController::instance()->addMessageHandler(handle_, [this](MidiInput *source, MidiMessage const &message) {
@@ -33,9 +51,15 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 	// Load Macro Definitions
 	loadFromSettings();
-	/*macros_ = {
-		{ KeyboardMacroEvent::PreviousPatch, {{ 0x24 }} }
-	};*/
+
+	// Set UI
+	int i = 0;
+	for (auto config : kAllKeyboardMacroEvents) {
+		if (macros_.find(config) != macros_.end()) {
+			configs_[i]->setData(macros_[config]);
+		}
+		i++;
+	}
 }
 
 KeyboardMacroView::~KeyboardMacroView()
@@ -63,24 +87,11 @@ void KeyboardMacroView::loadFromSettings() {
 				auto event = macro.getProperty("Event", var());
 				KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
 				if (event.isString()) {
-					if ("Hide" == event) {
-						macroEventCode = KeyboardMacroEvent::Hide;
-					}
-					else if ("Favorite" == event) {
-						macroEventCode = KeyboardMacroEvent::Favorite;
-					}
-					else if ("PreviousPatch" == event) {
-						macroEventCode = KeyboardMacroEvent::PreviousPatch;
-					}
-					else if ("NextPatch" == event) {
-						macroEventCode = KeyboardMacroEvent::NextPatch;
-					}
-					else if ("ImportEditBuffer" == event) {
-						macroEventCode = KeyboardMacroEvent::ImportEditBuffer;
-					}
+					String eventString = event;
+					macroEventCode = KeyboardMacro::fromText(eventString.toStdString());
 				}
 				if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
-					macros_[macroEventCode] = { midiNoteValues };
+					macros_[macroEventCode] = { macroEventCode, midiNoteValues };
 				}
 			}
 		}
@@ -91,21 +102,13 @@ void KeyboardMacroView::saveSettings() {
 	var result;
 	
 	for (auto macro : macros_) {
-		String event;
-		switch (macro.first) {
-		case KeyboardMacroEvent::Hide: event = "Hide"; break;
-		case KeyboardMacroEvent::Favorite: event = "Favorite"; break;
-		case KeyboardMacroEvent::PreviousPatch: event = "PreviousPatch"; break;
-		case KeyboardMacroEvent::NextPatch: event = "NextPatch"; break;
-		case KeyboardMacroEvent::ImportEditBuffer: event = "ImportEditBuffer"; break;
-		}
 		var notes;
 		for (auto note : macro.second.midiNotes) {
 			notes.append(note);
 		}
 		auto def = new DynamicObject();
 		def->setProperty("Notes", notes);
-		def->setProperty("Event", event);
+		def->setProperty("Event", String(KeyboardMacro::toText(macro.first)));
 		result.append(def);
 	}
 	String json = JSON::toString(result);
@@ -117,10 +120,15 @@ void KeyboardMacroView::resized()
 {
 	auto area = getLocalBounds();
 
-	// Needed with
+	// Needed width
+	auto keyboardArea = area.removeFromTop(166);
 	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + 16;
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int) keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
 
-	keyboard_.setBounds(area.withSizeKeepingCentre((int) keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
+	// Set up table
+	for (auto c : configs_) {
+		c->setBounds(area.removeFromTop(80).reduced(8));
+	}
 }
 
 bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)

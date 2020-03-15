@@ -10,20 +10,7 @@
 
 #include "MidiController.h"
 
-#include <set>
-
-enum class KeyboardMacroEvent {
-	Hide,
-	Favorite,
-	PreviousPatch,
-	NextPatch,
-	ImportEditBuffer,
-	Unknown
-};
-
-struct KeyboardMacro {
-	std::set<int> midiNotes;
-};
+#include "MacroConfig.h"
 
 class KeyboardMacroView : public Component {
 public:
@@ -39,6 +26,8 @@ private:
 
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
+
+	OwnedArray<MacroConfig> configs_;
 
 	std::map<KeyboardMacroEvent, KeyboardMacro> macros_;
 	std::function<void(KeyboardMacroEvent)> executeMacro_;
