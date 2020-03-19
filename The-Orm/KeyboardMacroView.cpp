@@ -186,7 +186,8 @@ void KeyboardMacroView::resized()
 
 	// Set up table
 	for (auto c : configs_) {
-		c->setBounds(area.removeFromTop(80).reduced(8));
+		auto row = area.removeFromTop(40);
+		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), keyboard_.getWidth()), 30));
 	}
 }
 
