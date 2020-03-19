@@ -174,6 +174,7 @@ void PatchView::retrieveFirstPageFromDatabase() {
 
 void PatchView::hideCurrentPatch()
 {
+	selectNextPatch();
 	currentPatchDisplay_->toggleHide();
 }
 
