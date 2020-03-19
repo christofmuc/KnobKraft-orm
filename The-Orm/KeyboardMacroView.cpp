@@ -37,7 +37,7 @@ public:
 		ignoreUnused(source, midiChannel, midiNoteNumber, velocity);
 		int keyPressed = 0;
 		for (int i = 0; i < 128; i++) {
-			if (state_.isNoteOnForChannels(0xf, i)) {
+			if (state_.isNoteOnForChannels(0xffff, i)) {
 				keyPressed++;
 			}
 		}
@@ -196,7 +196,7 @@ bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 	// Check if the keyboard state does contain all keys of the keyboard macro
 	bool allDetected = true;
 	for (int note : macro.midiNotes) {
-		if (!state_.isNoteOnForChannels(0xf, note)) {
+		if (!state_.isNoteOnForChannels(0xffff, note)) {
 			// No, this note is missing
 			allDetected = false;
 			break;
@@ -205,7 +205,7 @@ bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 	// Check that no extra key is pressed
 	bool extraKeyDetected = false;
 	for (int note = 0; note < 128; note++) {
-		if (state_.isNoteOnForChannels(0xf, note)) {
+		if (state_.isNoteOnForChannels(0xffff, note)) {
 			if (macro.midiNotes.find(note) == macro.midiNotes.end()) {
 				extraKeyDetected = true;
 				break;
