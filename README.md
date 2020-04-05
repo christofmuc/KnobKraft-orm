@@ -22,6 +22,15 @@ I made a video to show you the software and the most basic functionality, checko
 
 [![](youtube-screenshot.PNG)](https://youtu.be/lPoFOVpTANM)
 
+# Downloading the software
+
+I provide installer builds for Windows, they are hosted here in github. To install, just grab the following installer executable and run it:
+
+[https://github.com/christofmuc/KnobKraft-orm/releases/download/1.0.0/knobkraft_orm_setup.exe](https://github.com/christofmuc/KnobKraft-orm/releases/download/1.0.0/knobkraft_orm_setup.exe)
+
+Releases for the other platforms macOS and Linux could be provided, but as I don't have either I would be looking for help in getting these to work and uploading them here.
+
+You can always use the source to build it yourself, please read on for more instructions.
 
 # Building the software
 
