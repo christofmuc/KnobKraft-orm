@@ -101,12 +101,19 @@ void PatchNameDialog::notifyResult()
 void PatchNameDialog::buttonClicked(Button *button)
 {
 	if (button == &ok_) {
+		
 		auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch_->patch());
 		if (layers) {
 			for (int i = 0; i < layers->numberOfLayers(); i++) {
+				String newName = names_[i].getValue().toString();
 				//SimpleLogger::instance()->postMessage("Layer " + String(i) + " is " + names_[i].getValue());
-				layers->setLayerName(i, names_[i].getValue().toString().toStdString());
+				layers->setLayerName(i, newName.toStdString());
 			}
+		}
+		else {
+			String newName = names_[0].getValue().toString();
+			patch_->patch()->setName(newName.toStdString());
+			SimpleLogger::instance()->postMessage("Changed patch name to " + newName.toStdString());
 		}
 		sWindow_->exitModalState(true);
 	}
