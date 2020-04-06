@@ -1,6 +1,9 @@
 Small things
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 
+Librarian
+* Allow multi-select of banks to import (with all feature)
+
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
   * Record notes played (duration) a specific patch
