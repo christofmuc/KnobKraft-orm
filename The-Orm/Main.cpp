@@ -18,7 +18,7 @@ class TheOrmApplication  : public JUCEApplication
 {
 public:
     //==============================================================================
-    TheOrmApplication() {}
+	TheOrmApplication() = default;
 
     const String getApplicationName() override       { return ProjectInfo::projectName; }
     const String getApplicationVersion() override    { return ProjectInfo::versionString; }
@@ -32,7 +32,7 @@ public:
         // This method is where you should put your application's initialization code..
 		Settings::setSettingsID("KnobKraftOrm");
 
-        mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sequential Prophet Rev2 Librarian"));
+        mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian"));
     }
 
     void shutdown() override
