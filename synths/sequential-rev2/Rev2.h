@@ -11,11 +11,11 @@
 #include "DSI.h"
 #include "LayerCapability.h"
 #include "DataFileLoadCapability.h"
-#include "TypedNamedValue.h"
+#include "GlobalSettingsCapability.h"
 
 namespace midikraft {
 
-	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability,
+	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability, public GlobalSettingsCapability,
 		private Value::Listener
 	{
 	public:
@@ -70,9 +70,11 @@ namespace midikraft {
 		// DataFileSendCapability
 		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
 
-		// Access to global settings for the property editor
-		void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile);
-		std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings();
+		// GlobalSettingsCapability
+		virtual void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) override;
+		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
+		virtual DataFileLoadCapability *loader() override;
+		virtual int settingsDataFileType() const override;
 
 	private:
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);

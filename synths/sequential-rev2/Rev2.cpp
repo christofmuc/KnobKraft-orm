@@ -531,6 +531,11 @@ namespace midikraft {
 		return globalSettings_;
 	}
 
+	midikraft::DataFileLoadCapability * Rev2::loader()
+	{
+		return this;
+	}
+
 	void Rev2::valueChanged(Value& value)
 	{
 		// Find the global settings object
@@ -607,6 +612,11 @@ namespace midikraft {
 				}
 			}
 		});
+	}
+
+	int Rev2::settingsDataFileType() const
+	{
+		return GLOBAL_SETTINGS;
 	}
 
 }
