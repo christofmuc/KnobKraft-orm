@@ -53,7 +53,16 @@ MainComponent::MainComponent() :
 		listItems.push_back(std::make_shared<ActiveSynthHolder>(s.synth(), s.color()));
 	}
 
-	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {});
+	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {
+		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
+		if (activeSynth) {
+			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth().get());
+		}
+		else {
+			// What did you put into the list?
+			jassert(false);
+		}
+	});
 	autodetector_.addChangeListener(&synthList_);
 
 	// Create the menu bar structure
@@ -151,9 +160,14 @@ MainComponent::MainComponent() :
 	});
 
 	// Do a quickconfigure
-	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synthForAutodetect;
-	synthForAutodetect.push_back(rev2_);
-	autodetector_.quickconfigure(synthForAutodetect);
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synthsForAutodetect;
+	for (auto synth : synths) {
+		auto device = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(synth.synth());
+		if (device) {
+			synthsForAutodetect.push_back(device);
+		}
+	}
+	autodetector_.quickconfigure(synthsForAutodetect);
 
 	// Feel free to request the globals page from the Rev2
 	settingsView_->loadGlobals();
