@@ -23,7 +23,9 @@
 #include "PatchView.h"
 #include "SettingsView.h"
 #include "KeyboardMacroView.h"
+
 #include "Rev2.h"
+#include "OB6.h"
 
 class LogViewLogger;
 
@@ -42,6 +44,7 @@ private:
 	midikraft::PatchDatabase database_;
 	midikraft::AutoDetection autodetector_;
 	std::shared_ptr<midikraft::Rev2> rev2_;
+	std::shared_ptr<midikraft::OB6> ob6_;
 
 	// The infrastructure for the menu and the short cut keys
 	std::unique_ptr<LambdaMenuModel> menuModel_;

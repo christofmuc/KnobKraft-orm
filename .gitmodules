@@ -31,3 +31,6 @@
 [submodule "third_party/SQLiteCpp"]
 	path = third_party/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
+[submodule "synths/MidiKraft-sequential-ob6"]
+	path = synths/MidiKraft-sequential-ob6
+	url = https://github.com/christofmuc/MidiKraft-sequential-ob6.git

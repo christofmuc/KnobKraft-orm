@@ -16,7 +16,7 @@
 class SettingsView : public Component {
 public:
 	SettingsView(std::vector<midikraft::SynthHolder> const &synths);
-	virtual ~SettingsView();
+	virtual ~SettingsView() = default;
 
 	void loadGlobals();
 

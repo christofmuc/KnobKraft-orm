@@ -58,6 +58,7 @@ target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIV
 IF(WIN32)
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} juce-utils juce-widgets midikraft-base midikraft-librarian midikraft-database 
 		midikraft-sequential-rev2   
+		midikraft-sequential-ob6  
 		SQLiteCpp
 		sqlite3
 		)

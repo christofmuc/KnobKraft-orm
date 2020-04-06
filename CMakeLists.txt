@@ -46,6 +46,7 @@ add_subdirectory(MidiKraft-database)
 
 # Import the synths currently supported
 add_subdirectory(synths/MidiKraft-sequential-rev2)
+add_subdirectory(synths/MidiKraft-sequential-ob6)
 
 # Main module
 add_subdirectory(The-Orm)

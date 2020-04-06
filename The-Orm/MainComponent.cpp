@@ -45,6 +45,8 @@ MainComponent::MainComponent() :
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
 	rev2_ = std::make_shared<midikraft::Rev2>();
+	ob6_ = std::make_shared<midikraft::OB6>();
+	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
 	for (auto s : synths) {
