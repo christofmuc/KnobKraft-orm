@@ -73,7 +73,7 @@ namespace midikraft {
 			if (message.getSysExDataSize() > 2) {
 				uint8 messageCode = message.getSysExData()[2];
 				if (messageCode == 0x02 /* program data dump */ || messageCode == 0x03 /* edit buffer dump */) {
-					int startIndex = messageCode == 0x02 ? 5 : 4;
+					int startIndex = messageCode == 0x02 ? 5 : 3;
 					const uint8 *startOfData = &message.getSysExData()[startIndex];
 					auto globalDumpData = unescapeSysex(startOfData, message.getSysExDataSize() - startIndex, 1024);
 					auto patch = std::make_shared<OB6Patch>(OB6::PATCH, globalDumpData);
