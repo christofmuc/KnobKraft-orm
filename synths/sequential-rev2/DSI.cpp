@@ -168,6 +168,8 @@ namespace midikraft {
 
 	juce::MidiBuffer DSISynth::createNRPN(int parameterNo, int value)
 	{
+		// Tried the first line to generate the NRPN in the same way the OB6 and Rev2 do it, but it does not make any difference in terms of fixing the sysex problems of the OB-6
+		//return MidiHelpers::bufferFromMessages(MidiHelpers::generateRPN(channel().toOneBasedInt(), parameterNo, value, true, true, true));
 		return MidiRPNGenerator::generate(channel().toOneBasedInt(), parameterNo, value, true);
 	}
 
