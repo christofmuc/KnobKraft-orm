@@ -26,10 +26,12 @@ SettingsView::SettingsView(std::vector<midikraft::SynthHolder> const &synths) : 
 	addAndMakeVisible(buttonStrip_);
 	addAndMakeVisible(propertyEditor_);
 
-	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(UIModel::currentSynth());
-	if (gsc) {
-		propertyEditor_.setProperties(gsc->getGlobalSettings());
-	}
+	UIModel::instance()->currentSynth_.addChangeListener(this);
+}
+
+SettingsView::~SettingsView()
+{
+	UIModel::instance()->currentSynth_.removeChangeListener(this);
 }
 
 void SettingsView::resized()
@@ -38,6 +40,15 @@ void SettingsView::resized()
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 	auto editorArea = area.reduced(10);
 	propertyEditor_.setBounds(editorArea.withSizeKeepingCentre(std::min(500, editorArea.getWidth()), editorArea.getHeight()));
+}
+
+void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(UIModel::currentSynth());
+	if (gsc) {
+		propertyEditor_.setProperties(gsc->getGlobalSettings());
+	}
 }
 
 void SettingsView::loadGlobals() {

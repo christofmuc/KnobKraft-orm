@@ -13,16 +13,20 @@
 #include "SynthHolder.h"
 #include "Librarian.h"
 
-class SettingsView : public Component {
+class SettingsView : public Component,
+	private ChangeListener
+{
 public:
 	SettingsView(std::vector<midikraft::SynthHolder> const &synths);
-	virtual ~SettingsView() = default;
+	virtual ~SettingsView();
 
 	void loadGlobals();
 
 	virtual void resized() override;
 
 private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
+
 	std::vector<midikraft::SynthHolder> synths_;
 	midikraft::Librarian librarian_;
 

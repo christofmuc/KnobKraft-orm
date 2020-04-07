@@ -68,14 +68,14 @@ MainComponent::MainComponent() :
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
 		{0, { "File", { "Quit" } } },
-		{1, { "MIDI", { "Auto-detect synth" } } },
+		{1, { "MIDI", { "Auto-detect synths" } } },
 		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
 		{3, { "Help", { "About" } } }
 	};
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synth", { 0, "Auto-detect synth", [this, synths]() {
+	{ "Auto-detect synths", { 0, "Auto-detect synths", [this, synths]() {
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
 	} } },
@@ -133,13 +133,10 @@ MainComponent::MainComponent() :
 		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
 	});
 
-	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
-
-	// Setup the rest of the UI
 	addAndMakeVisible(synthList_);
 	mainTabs_.addTab("Library", Colours::black, patchView_.get(), false);
 	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
-	mainTabs_.addTab(rev2_->getName() + " Settings", Colours::black, settingsView_.get(), false);
+	mainTabs_.addTab("Settings", Colours::black, settingsView_.get(), false);
 	mainTabs_.addTab("Macros", Colours::black, keyboardView_.get(), false);
 
 	addAndMakeVisible(mainTabs_);
@@ -149,6 +146,10 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(resizerBar_);
 	addAndMakeVisible(logArea_);
 
+	UIModel::instance()->currentSynth_.addChangeListener(this);
+	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
+
+	// Setup the rest of the UI
 	// Resizer bar allows to enlarge the log area
 	stretchableManager_.setItemLayout(0, -0.1, -0.9, -0.8); // The editor tab window prefers to get 80%
 	stretchableManager_.setItemLayout(1, 5, 5, 5);  // The resizer is hard-coded to 5 pixels
@@ -179,6 +180,7 @@ MainComponent::MainComponent() :
 
 MainComponent::~MainComponent()
 {
+	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
 }
 
@@ -198,6 +200,12 @@ void MainComponent::resized()
 	stretchableManager_.layOutComponents(comps, 3,
 		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
 		true, true);
+}
+
+void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+	mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
 }
 
 File MainComponent::getAutoCategoryFile() const {

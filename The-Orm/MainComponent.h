@@ -29,17 +29,19 @@
 
 class LogViewLogger;
 
-class MainComponent : public Component
+class MainComponent : public Component, private ChangeListener
 {
 public:
     MainComponent();
     ~MainComponent();
 
-    void resized() override;
+    virtual void resized() override;
 
 private:
 	File getAutoCategoryFile() const;
 	void aboutBox();
+
+	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	midikraft::PatchDatabase database_;
 	midikraft::AutoDetection autodetector_;
