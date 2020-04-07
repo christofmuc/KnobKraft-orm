@@ -10,6 +10,8 @@
 
 #include "MidiHelpers.h"
 #include "MidiController.h"
+#include "MidiTuning.h"
+#include "MTSFile.h"
 
 #include <boost/format.hpp>
 
@@ -38,6 +40,51 @@ namespace midikraft {
 		ARP_BEAT_SYNC
 	};
 
+	struct OB6GlobalSettingDefinition {
+		int sysexIndex;
+		int nrpn;
+		TypedNamedValue typedNamedValue;
+		int displayOffset = 0;
+	};
+
+	std::vector<OB6GlobalSettingDefinition> kOB6GlobalSettings = {
+		{ TRANSPOSE, 1024, { "Transpose", "Tuning", Value(12), ValueType::Integer, -12, 12 }, -12 }, // Default 12, displayed as 0
+		{ MASTER_TUNE, 1025, { "Master Tune", "Tuning", Value(25), ValueType::Integer, -50, 50 }, -50 }, // Default 50, displayed as 0
+		{ MIDI_CHANNEL, 1026, { "MIDI Channel", "MIDI", Value(), ValueType::Lookup, 0, 16, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } },
+		{ MIDI_CLOCK, 1027, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
+		{ CLOCK_PORT, 1028, { "Clock Port", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
+		{ PARAM_TRANSMIT, 1029, { "MIDI Param Xmit", "MIDI", Value(2), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"}, {3, "CC with sequencer"}, {4, "NRPN with sequencer"} } } },
+		{ PARAM_RECEIVE, 1030, { "MIDI Param Rcv", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
+		{ MIDI_CONTROL, 1031, { "MIDI Control", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ MIDI_SYSEX, 1032, { "MIDI SysEx", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
+		{ MIDI_OUT, 1033, { "MIDI Out", "MIDI", Value(), ValueType::Lookup, 0, 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" }, { 3, "Ply" } } } },
+		{ ARP_BEAT_SYNC, 1045 /* unknown */, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
+		{ LOCAL_CONTROL, 1035, { "Local Control", "MIDI", Value(1), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
+		{ VELOCITY_RESPONSE, 1041, { "Velocity Response", "Keyboard", Value(), ValueType::Lookup, 0, 7, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }, {4, "Curve 5" }, {5, "Curve 6" }, {6, "Curve 7" }, {7, "Curve 8" } } } },
+		{ AFTERTOUCH_RESPONSE, 1042, { "Aftertouch Response", "Keyboard", Value(), ValueType::Lookup, 0, 3, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
+		{ STEREO_MONO, 1043, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
+		{ POT_MODE, 1037, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
+		{ SEQ_JACK, 1039, { "Seq jack", "Pedals", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Tri" }, { 2, "Gate" }, { 3, "Gate/Trigger" } } } },
+		{ ALT_TUNING, 1044, { "Alternative Tuning", "Scales", Value(), ValueType::Lookup, 0, 16, kDSIAlternateTunings() } },
+		{ SUSTAIN_POLARITY, 1040, { "Sustain polarity", "Controls", Value(), ValueType::Lookup, 0, 2, { {0, "Normal"}, { 1, "Reversed" }, { 2, "n-r" }, { 3, "r-n" } } } },
+	};
+
+	class GlobalSettingsFile : public DataFile {
+	public:
+		using DataFile::DataFile;
+
+		std::string patchName() const override
+		{
+			//TODO - these should probably go into a datafilecapability?
+			return "unnamed";
+		}
+
+		void setName(std::string const &name) override
+		{
+			ignoreUnused(name);
+		}
+	};
+
 	std::vector<Range<int>> kOB6BlankOutZones = {
 		{ 107, 127 }, // 20 Characters for the name
 	};
@@ -45,6 +92,7 @@ namespace midikraft {
 
 	OB6::OB6() : DSISynth(0b00101110 /* OB-6 ID */)
 	{
+		initGlobalSettings();
 	}
 
 	std::string OB6::getName() const
@@ -111,22 +159,20 @@ namespace midikraft {
 	juce::MidiMessage OB6::deviceDetect(int channel)
 	{
 		ignoreUnused(channel);
-		return MidiHelpers::sysexMessage({ 0x01 /* DSI */, midiModelID_, 0x0e /* Global parameter transmit */ });
+		return requestGlobalSettingsDump();
 	}
 
 	MidiChannel OB6::channelIfValidDeviceResponse(const MidiMessage &message)
 	{
-		if (isOwnSysex(message)) {
-			if (message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0x0f /* main parameter data */) {
-				localControl_ = message.getSysExData()[3 + LOCAL_CONTROL] == 1;
-				midiControl_ = message.getSysExData()[3 + MIDI_CONTROL] == 1;
-				int midiChannel = message.getSysExData()[MIDI_CHANNEL + 3];
-				if (midiChannel == 0) {
-					return MidiChannel::omniChannel();
+		if (isGlobalSettingsDump(message)) {
+			localControl_ = message.getSysExData()[3 + LOCAL_CONTROL] == 1;
+			midiControl_ = message.getSysExData()[3 + MIDI_CONTROL] == 1;
+			int midiChannel = message.getSysExData()[MIDI_CHANNEL + 3];
+			if (midiChannel == 0) {
+				return MidiChannel::omniChannel();
 
-				}
-				return  MidiChannel::fromOneBase(midiChannel);
 			}
+			return  MidiChannel::fromOneBase(midiChannel);
 		}
 		return MidiChannel::invalidChannel();
 	}
@@ -161,6 +207,176 @@ namespace midikraft {
 		// Interestingly, this works even when the "Param Rcv" is set to NRPN. The documentation suggestions otherwise.
 		controller->getMidiOutput(midiOutput())->sendMessageNow(MidiMessage::controllerEvent(channel().toOneBasedInt(), 0x7a, localControlOn ? 1 : 0));
 		localControl_ = localControlOn;
+	}
+
+	std::vector<juce::MidiMessage> OB6::requestDataItem(int itemNo, int dataTypeID)
+	{
+		switch (dataTypeID) {
+		case PATCH:
+			return { requestEditBufferDump() }; // Interpreting this as the edit buffer
+		case GLOBAL_SETTINGS:
+			return { requestGlobalSettingsDump() }; 
+		case ALTERNATE_TUNING:
+			return { MidiTuning::createTuningDumpRequest(0x01, MidiProgramNumber::fromZeroBase(itemNo)) };
+		default:
+			jassert(false);
+		}
+		return {};
+	}
+
+	int OB6::numberOfDataItemsPerType(int dataTypeID) const
+	{
+		switch (dataTypeID)
+		{
+		case PATCH: return 1;
+		case GLOBAL_SETTINGS: return 1;
+		case ALTERNATE_TUNING: return 17;
+		default: return 0;
+		}
+	}
+
+	bool OB6::isDataFile(const MidiMessage &message, int dataTypeID) const
+	{
+		if (isOwnSysex(message)) {
+			switch (dataTypeID)
+			{
+			case PATCH:
+				return isEditBufferDump(message);
+			case GLOBAL_SETTINGS:
+				return isGlobalSettingsDump(message);
+			case ALTERNATE_TUNING:
+				return MidiTuning::isTuningDump(message);
+			default:
+				jassert(false);
+			}
+		}
+		return false;
+	}
+
+	std::vector<std::shared_ptr<midikraft::DataFile>> OB6::loadData(std::vector<MidiMessage> messages, int dataTypeID) const
+	{
+		std::vector<std::shared_ptr<DataFile>> result;
+		for (auto m : messages) {
+			if (isDataFile(m, dataTypeID)) {
+				switch (dataTypeID) {
+				case GLOBAL_SETTINGS: {
+					std::vector<uint8> syx(m.getSysExData(), m.getSysExData() + m.getSysExDataSize());
+					auto storage = std::make_shared<GlobalSettingsFile>(GLOBAL_SETTINGS, syx);
+					result.push_back(storage);
+					break;
+				}
+				case ALTERNATE_TUNING: {
+					MidiTuning tuning(MidiProgramNumber::fromZeroBase(0), "unused", {});
+					if (MidiTuning::fromMidiMessage(m, tuning)) {
+						std::vector<uint8> mtsData({ m.getSysExData(), m.getSysExData() + m.getSysExDataSize() });
+						auto storage = std::make_shared<MTSFile>(ALTERNATE_TUNING, mtsData);
+						result.push_back(storage);
+					}
+					else {
+						jassert(false);
+					}
+					break;
+				}
+				default:
+					jassert(false);
+					// Not implemented yet
+				}
+			}
+		}
+		return result;
+	}
+
+	std::vector<midikraft::DataFileLoadCapability::DataFileDescription> OB6::dataTypeNames() const
+	{
+		return { { "Patch", true, true}, { "Global Settings", true, false}, { "Alternate Tuning", false, true } };
+	}
+
+	MidiMessage OB6::requestGlobalSettingsDump() const {
+		return MidiHelpers::sysexMessage({ 0x01 /* DSI */, midiModelID_, 0x0e /* Global parameter transmit */ });
+	}
+
+	bool OB6::isGlobalSettingsDump(MidiMessage const &message) const {
+		return isOwnSysex(message) && message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0x0f /* main parameter data */;
+	}
+
+	void OB6::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile)
+	{
+		if (dataFile && dataFile->dataTypeID() == GLOBAL_SETTINGS) {
+			auto message = MidiMessage::createSysExMessage(dataFile->data().data(), (int)dataFile->data().size());
+			if (isGlobalSettingsDump(message)) {
+				std::vector<uint8> globalParameterData(&message.getSysExData()[3], message.getSysExData() + message.getSysExDataSize());
+				if (globalParameterData.size() == 19) {
+					// Loop over it and fill out the GlobalSettings Properties
+					for (size_t i = 0; i < kOB6GlobalSettings.size(); i++) {
+						if (i < globalParameterData.size()) {
+							globalSettings_[i]->value.setValue(var(globalParameterData[kOB6GlobalSettings[i].sysexIndex] + kOB6GlobalSettings[i].displayOffset));
+						}
+					}
+				}
+				else {
+					SimpleLogger::instance()->postMessage("Invalid size of global settings data - maybe an old OS version? Update the OB6 to 1.5.8!");
+				}
+			}
+		}
+	}
+
+	//TODO needs to be merged with Rev2 code
+	void OB6::valueChanged(Value& value)
+	{
+		// Find the global settings object
+		for (auto setting : globalSettings_) {
+			if (setting->value.refersToSameSourceAs(value)) {
+				// Need to find definition for this setting now, suboptimal data structures
+				for (auto def : kOB6GlobalSettings) {
+					if (def.typedNamedValue.name == setting->name) {
+						int newMidiValue = ((int)value.getValue()) - def.displayOffset;
+						auto messages = createNRPN(def.nrpn, newMidiValue);
+						String valueText;
+						switch (setting->valueType) {
+						case ValueType::Integer:
+							valueText = String(int(value.getValue())); break;
+						case ValueType::Bool:
+							valueText = bool(value.getValue()) ? "On" : "Off"; break;
+						case ValueType::Lookup:
+							valueText = setting->lookup[int(value.getValue())]; break;
+						default:
+							//TODO not implemented yet
+							jassert(false);
+						}
+						SimpleLogger::instance()->postMessage("Setting " + setting->name + " to " + valueText);
+						MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
+						return;
+					}
+				}
+				return;
+			}
+		}
+	}
+
+	void OB6::initGlobalSettings()
+	{
+		// Loop over it and fill out the GlobalSettings Properties
+		globalSettings_.clear();
+		for (size_t i = 0; i < kOB6GlobalSettings.size(); i++) {
+			auto setting = std::make_shared<TypedNamedValue>(kOB6GlobalSettings[i].typedNamedValue);
+			globalSettings_.push_back(setting);
+			setting->value.addListener(this);
+		}
+	}
+
+	std::vector<std::shared_ptr<TypedNamedValue>> OB6::getGlobalSettings()
+	{
+		return globalSettings_;
+	}
+
+	midikraft::DataFileLoadCapability * OB6::loader()
+	{
+		return this;
+	}
+
+	int OB6::settingsDataFileType() const
+	{
+		return GLOBAL_SETTINGS;
 	}
 
 	std::shared_ptr<Patch> OB6::patchFromProgramDumpSysex(const MidiMessage& message) const

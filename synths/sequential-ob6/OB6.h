@@ -7,10 +7,13 @@
 #pragma once
 
 #include "DSI.h"
+#include "GlobalSettingsCapability.h"
 
 namespace midikraft {
 
-	class OB6 : public DSISynth {
+	class OB6 : public DSISynth, public DataFileLoadCapability, public GlobalSettingsCapability,
+		private Value::Listener 
+	{
 	public:
 		enum DataType {
 			PATCH = 0,
@@ -46,6 +49,28 @@ namespace midikraft {
 		// MasterkeyboardCapability
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
 		virtual void setLocalControl(MidiController *controller, bool localControlOn) override;
+
+		// DataFileLoadCapability
+		virtual std::vector<MidiMessage> requestDataItem(int itemNo, int dataTypeID) override;
+		virtual int numberOfDataItemsPerType(int dataTypeID) const override;
+		virtual bool isDataFile(const MidiMessage &message, int dataTypeID) const override;
+		virtual std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) const override;
+		virtual std::vector<DataFileDescription> dataTypeNames() const override;
+
+		// GlobaSettingsCapability
+		virtual void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) override;
+		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
+		virtual DataFileLoadCapability *loader() override;
+		virtual int settingsDataFileType() const override;
+
+	private:
+		void initGlobalSettings();
+		MidiMessage requestGlobalSettingsDump() const;
+		bool isGlobalSettingsDump(MidiMessage const &message) const;
+
+		virtual void valueChanged(Value& value) override;
+
+		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
 	};
 
 }
