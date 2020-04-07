@@ -356,6 +356,8 @@ namespace midikraft {
 	//TODO needs to be merged with Rev2 code
 	void OB6::valueChanged(Value& value)
 	{
+		if (!channel().isValid()) return;
+
 		// Find the global settings object
 		for (auto setting : globalSettings_) {
 			if (setting->value.refersToSameSourceAs(value)) {
