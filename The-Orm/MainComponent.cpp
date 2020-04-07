@@ -146,6 +146,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(resizerBar_);
 	addAndMakeVisible(logArea_);
 
+	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
 
@@ -180,6 +181,7 @@ MainComponent::MainComponent() :
 
 MainComponent::~MainComponent()
 {
+	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
 }

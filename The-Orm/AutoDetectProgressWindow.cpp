@@ -6,6 +6,8 @@
 
 #include "AutoDetectProgressWindow.h"
 
+#include "UIModel.h"
+
 void AutoDetectProgressWindow::run()
 {
 	std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
@@ -13,6 +15,12 @@ void AutoDetectProgressWindow::run()
 		synths.push_back(s.device());
 	}
 	autodetector_.autoconfigure(synths, this);
+	if (!shouldAbort()) {
+		onSuccess();
+	}
+	else {
+		onCancel();
+	}
 }
 
 bool AutoDetectProgressWindow::shouldAbort() const
@@ -27,6 +35,8 @@ void AutoDetectProgressWindow::setProgressPercentage(double zeroToOne)
 
 void AutoDetectProgressWindow::onSuccess()
 {
+	// The detection state could be different, fire an update message
+	UIModel::instance()->currentSynth_.sendChangeMessage();
 }
 
 void AutoDetectProgressWindow::onCancel()
