@@ -47,9 +47,36 @@ namespace midikraft {
 		int displayOffset = 0;
 	};
 
+	// Warnings for the user
+	// 
+	// The panel will only work when the parameter "MIDI Param Rcv" is set to NRPN. And if you switch it away, it will stop working.
+	// Same with MIDI Control Off - the synth will no longer respond to the NRPN messages we send.
+	// Also, the MIDI sysex switch must be set to USB if we talk to the synth via USB
+
+	// Bugs in the OB6 Sysex implementation (V 1.5.8):
+	//
+	// Clock Mode has 5 values, but value "4" cannot be set via NRPN (nSS), only via front panel. It is reported correctly back via global settings dump, though.
+	// MIDI Param Xmit has 5 values, but the last value "4" cannot be set via NRPN ("nAS" - NRPN and sequencer)
+	// MIDI Out has 4 values, but the last value "3" cannot be set via NRPN
+	// Local Control has 2 values, but the last value "1" cannot be set via NRPN (which is bad, because you cannot switch on Local Control remotely with an NRPN)
+	// Velocity Response cannot set the highest value either via NRPN
+	// Aftertouch Response cannot be set to the highest value either via NRPN
+	// Stereo/Mono cannot be set to the highest value "Mono" via NRPN
+	// Pot Mode cannot be set to "Jump"
+	// Seq Jack cannot be set to "Gate/Trigger"
+	// Alt Tuning cannot be set to the highest number
+	// Sustain polarity cannot be set to "r-n"
+	// 
+	// Arp Beat Sync is not written in byte 19 (probably it should be byte 20, and they forgot)
+	//
+	//
+	// Documentation bugs
+	// ARP_BEAT_SYNC 1036 is not documented. Doesn't help, because you can only switch it off, due to the bug above you can't switch it on
+	// Manual states wrongly on page 77 that MIDI Param Receive is ignored when received, but that is not entirely true 
+
 	std::vector<OB6GlobalSettingDefinition> kOB6GlobalSettings = {
-		{ TRANSPOSE, 1024, { "Transpose", "Tuning", Value(12), ValueType::Integer, -12, 12 }, -12 }, // Default 12, displayed as 0
-		{ MASTER_TUNE, 1025, { "Master Tune", "Tuning", Value(25), ValueType::Integer, -50, 50 }, -50 }, // Default 50, displayed as 0
+		{ TRANSPOSE, 1025, { "Transpose", "Tuning", Value(12), ValueType::Integer, -12, 12 },  -12 }, // Default 12, displayed as 0
+		{ MASTER_TUNE, 1024, { "Master Tune", "Tuning", Value(25), ValueType::Integer, -50, 50 }, -50 }, // Default 50, displayed as 0
 		{ MIDI_CHANNEL, 1026, { "MIDI Channel", "MIDI", Value(), ValueType::Lookup, 0, 16, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } },
 		{ MIDI_CLOCK, 1027, { "MIDI Clock Mode", "MIDI", Value(1), ValueType::Lookup, 0, 4, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
 		{ CLOCK_PORT, 1028, { "Clock Port", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
@@ -57,11 +84,11 @@ namespace midikraft {
 		{ PARAM_RECEIVE, 1030, { "MIDI Param Rcv", "MIDI", Value(2), ValueType::Lookup, 0, 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
 		{ MIDI_CONTROL, 1031, { "MIDI Control", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		{ MIDI_SYSEX, 1032, { "MIDI SysEx", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "MIDI"}, { 1, "USB" } } } },
-		{ MIDI_OUT, 1033, { "MIDI Out", "MIDI", Value(), ValueType::Lookup, 0, 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" }, { 3, "Ply" } } } },
-		{ ARP_BEAT_SYNC, 1045 /* unknown */, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
+		{ MIDI_OUT, 1033, { "MIDI Out", "MIDI", Value(), ValueType::Lookup, 0, 3, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" }, { 3, "Ply" } } } },
+		//{ ARP_BEAT_SYNC, 1036 /* undocumented */, { "Arp Beat Sync", "MIDI", Value(), ValueType::Lookup, 0, 1, { {0, "Off"}, { 1, "Quantize" } } } },
 		{ LOCAL_CONTROL, 1035, { "Local Control", "MIDI", Value(1), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
-		{ VELOCITY_RESPONSE, 1041, { "Velocity Response", "Keyboard", Value(), ValueType::Lookup, 0, 7, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }, {4, "Curve 5" }, {5, "Curve 6" }, {6, "Curve 7" }, {7, "Curve 8" } } } },
-		{ AFTERTOUCH_RESPONSE, 1042, { "Aftertouch Response", "Keyboard", Value(), ValueType::Lookup, 0, 3, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
+		{ VELOCITY_RESPONSE, 1041, { "Velocity Response", "Keyboard", Value(), ValueType::Integer, 0, 7 }  },
+		{ AFTERTOUCH_RESPONSE, 1042, { "Aftertouch Response", "Keyboard", Value(), ValueType::Integer, -1, 3 } },
 		{ STEREO_MONO, 1043, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
 		{ POT_MODE, 1037, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
 		{ SEQ_JACK, 1039, { "Seq jack", "Pedals", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Tri" }, { 2, "Gate" }, { 3, "Gate/Trigger" } } } },
@@ -172,6 +199,12 @@ namespace midikraft {
 				return MidiChannel::omniChannel();
 
 			}
+			// Can you use this to init the global settings!
+			auto dataFile = loadData({ message }, GLOBAL_SETTINGS);
+			if (dataFile.size() > 0) {
+				setGlobalSettingsFromDataFile(dataFile[0]);
+			}
+
 			return  MidiChannel::fromOneBase(midiChannel);
 		}
 		return MidiChannel::invalidChannel();
