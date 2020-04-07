@@ -12,6 +12,29 @@
 
 namespace midikraft {
 
+	std::map<int, std::string> kDSIAlternateTunings() {
+		static std::map<int, std::string> sAlternateTunings = {
+			{0, "12-Tone Equal Temperament"},
+			{1, "Harmonic Series"},
+			{2, "Carlos Harmonic Twelve Tone"},
+			{3, "Meantone Temperament"},
+			{4, "1/4 Tone Equal Temperament"},
+			{5, "19 Tone Equal Temperament"},
+			{6, "31 Tone Equal Temperament"},
+			{7, "Pythagorean C"},
+			{8, "Just Intonation in A with 7-limit Tritone at D#"},
+			{9, "3-5 Lattice in A"},
+			{10, "3-7 Lattice in A"},
+			{11, "Other Music 7-Limit Black Keys in C"},
+			{12, "Dan Schmidt Pelog/Slendro"},
+			{13, "Yamaha Just Major C"},
+			{14, "Yamaha Just Minor C"},
+			{15, "Harry Partch 11-Limit 43 Just Intonation"},
+			{16, "Arabic 12-Tone"},
+		};
+		return sAlternateTunings;
+	}
+
 	DSISynth::DSISynth(uint8 midiModelID) : midiModelID_(midiModelID), localControl_(true), midiControl_(true)
 	{
 	}

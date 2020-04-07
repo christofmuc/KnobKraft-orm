@@ -387,26 +387,6 @@ namespace midikraft {
 		int displayOffset = 0;
 	};
 
-	std::map<int, std::string> kAlternateTunings = {
-		{0, "12-Tone Equal Temperament"},
-		{1, "Harmonic Series"},
-		{2, "Carlos Harmonic Twelve Tone"},
-		{3, "Meantone Temperament"},
-		{4, "1/4 Tone Equal Temperament"},
-		{5, "19 Tone Equal Temperament"},
-		{6, "31 Tone Equal Temperament"},
-		{7, "Pythagorean C"},
-		{8, "Just Intonation in A with 7-limit Tritone at D#"},
-		{9, "3-5 Lattice in A"},
-		{10, "3-7 Lattice in A"},
-		{11, "Other Music 7-Limit Black Keys in C"},
-		{12, "Dan Schmidt Pelog/Slendro"},
-		{13, "Yamaha Just Major C"},
-		{14, "Yamaha Just Minor C"},
-		{15, "Harry Partch 11-Limit 43 Just Intonation"},
-		{16, "Arabic 12-Tone"},
-	};
-
 	std::vector<Rev2GlobalSettingDefinition> kRev2GlobalSettings = {
 		{ 0, 4097, { "Master Coarse Tune", "Tuning", Value(12), ValueType::Integer, -12, 12 }, -12 }, // Default 12, displayed as 0
 		{ 1, 4096, { "Master Fine Tune", "Tuning", Value(25), ValueType::Integer, -50, 50 }, -50 }, // Default 50, displayed as 0
@@ -429,7 +409,7 @@ namespace midikraft {
 		{ 18, 4114, { "Pressure Curve", "Keyboard", Value(), ValueType::Lookup, 0, 3, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
 		{ 19, 4115, { "Stereo or Mono", "Audio Setup", Value(), ValueType::Lookup, 0, 1, { {0, "Stereo" }, { 1, "Mono" } } } },
 		{ 14, 4109, { "Pot Mode", "Front controls", Value(), ValueType::Lookup, 0, 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
-		{ 16, 4116, { "Alternative Tuning", "Scales", Value(), ValueType::Lookup, 0, 16, kAlternateTunings } },
+		{ 16, 4116, { "Alternative Tuning", "Scales", Value(), ValueType::Lookup, 0, 16, kDSIAlternateTunings() } },
 		{ 20, 4120, { "Screen Saver", "General", Value(), ValueType::Bool, 0, 1, { {0, "Off"}, { 1, "On" } } } },
 		{ 13, 4111, { "Seq Pedal Mode", "Controls", Value(), ValueType::Lookup, 0, 3, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
 		{ 24, 4122, { "Foot Assign", "Controls", Value(), ValueType::Lookup, 0, 5, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
