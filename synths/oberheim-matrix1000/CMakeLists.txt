@@ -24,7 +24,7 @@ ENDIF()
 # Define the sources for the static library
 set(Sources
 	Matrix1000.cpp Matrix1000.h
-	Matrix1000BCR.cpp Matrix1000BCR.h
+	#Matrix1000BCR.cpp Matrix1000BCR.h
 	Matrix1000ParamDefinition.cpp Matrix1000ParamDefinition.h
 	Matrix1000Patch.cpp Matrix1000Patch.h
 	README.md

@@ -1,36 +1,45 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
 #pragma once
 
 #include "Patch.h"
 
 #include "Matrix1000ParamDefinition.h"
 
-class Matrix1000PatchNumber : public PatchNumber {
-public:
-	using PatchNumber::PatchNumber;
-	virtual std::string friendlyName() const override;
-};
+namespace midikraft {
 
-class Matrix1000Patch : public Patch {
-public:
-	Matrix1000Patch(Synth::PatchData const &patchdata);
+	class Matrix1000PatchNumber : public PatchNumber {
+	public:
+		using PatchNumber::PatchNumber;
+		virtual std::string friendlyName() const override;
+	};
 
-	virtual std::string patchName() const override;
-	virtual void setName(std::string const &name) override;
-	virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-	virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
-	virtual int value(SynthParameterDefinition const &param) const;
-	virtual int param(Matrix1000Param id) const;
-	virtual SynthParameterDefinition const &paramBySysexIndex(int sysexIndex) const;
-	virtual std::vector<std::string> warnings() override;
+	class Matrix1000Patch : public Patch {
+	public:
+		Matrix1000Patch(Synth::PatchData const &patchdata);
 
-	bool paramActive(Matrix1000Param id) const;
-	std::string lookupValue(Matrix1000Param id) const;
+		virtual std::string patchName() const override;
+		virtual void setName(std::string const &name) override;
+		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
+		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
 
-	virtual std::vector<SynthParameterDefinition *> allParameterDefinitions() override;
+		int value(SynthParameterDefinition const &param) const;
+		int param(Matrix1000Param id) const;
+		SynthParameterDefinition const &paramBySysexIndex(int sysexIndex) const;
 
-private:
-	Matrix1000PatchNumber number_;
-};
+		bool paramActive(Matrix1000Param id) const;
+		std::string lookupValue(Matrix1000Param id) const;
 
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+
+	private:
+		Matrix1000PatchNumber number_;
+	};
+
+}
 
 
