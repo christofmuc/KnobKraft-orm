@@ -27,6 +27,7 @@
 #include "Rev2.h"
 #include "OB6.h"
 #include "Matrix1000.h"
+#include "MKS80.h"
 
 class LogViewLogger;
 
@@ -49,6 +50,7 @@ private:
 	std::shared_ptr<midikraft::Rev2> rev2_;
 	std::shared_ptr<midikraft::OB6> ob6_;
 	std::shared_ptr<midikraft::Matrix1000> matrix1000_;
+	std::shared_ptr<midikraft::MKS80> mks80_;
 
 	// The infrastructure for the menu and the short cut keys
 	std::unique_ptr<LambdaMenuModel> menuModel_;

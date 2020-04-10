@@ -60,6 +60,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-librarian 
 		midikraft-database 
 		midikraft-oberheim-matrix1000
+		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
 )

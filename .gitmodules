@@ -37,3 +37,6 @@
 [submodule "synths/MidiKraft-oberheim-matrix1000"]
 	path = synths/MidiKraft-oberheim-matrix1000
 	url = https://github.com/christofmuc/MidiKraft-oberheim-matrix1000.git
+[submodule "synths/MidiKraft-roland-mks80"]
+	path = synths/MidiKraft-roland-mks80
+	url = https://github.com/christofmuc/MidiKraft-roland-mks80.git

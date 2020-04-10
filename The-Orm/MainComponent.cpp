@@ -47,7 +47,9 @@ MainComponent::MainComponent() :
 	rev2_ = std::make_shared<midikraft::Rev2>();
 	ob6_ = std::make_shared<midikraft::OB6>();
 	matrix1000_ = std::make_shared<midikraft::Matrix1000>();
+	mks80_= std::make_shared<midikraft::MKS80>();
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(matrix1000_), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(mks80_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
