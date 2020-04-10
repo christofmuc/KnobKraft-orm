@@ -1,3 +1,9 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
 #include "MKS80.h"
 
 #include "MKS80_Patch.h"
