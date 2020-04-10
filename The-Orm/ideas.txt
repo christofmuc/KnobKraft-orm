@@ -1,5 +1,9 @@
 Small things
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
+* UI - Can't see which synth selected
+
+For the OB-6 branch
++ Implement parameter set of OB-6 for patch diff?
 
 Librarian
 * Allow multi-select of banks to import (with all feature)
@@ -50,6 +54,9 @@ Big things
 	* Masterkeyboard control ("Follow the patch")
 	* Auto sample patches, calculate previews
 
+
+Alternate Tunings
+https://forum.sequential.com/index.php/topic,3468.0.html
 
 More synthesizers
 
