@@ -45,6 +45,7 @@ add_subdirectory(MidiKraft-librarian)
 add_subdirectory(MidiKraft-database)
 
 # Import the synths currently supported
+add_subdirectory(synths/MidiKraft-oberheim-matrix1000)
 add_subdirectory(synths/MidiKraft-sequential-rev2)
 add_subdirectory(synths/MidiKraft-sequential-ob6)
 

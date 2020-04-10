@@ -34,3 +34,6 @@
 [submodule "synths/MidiKraft-sequential-ob6"]
 	path = synths/MidiKraft-sequential-ob6
 	url = https://github.com/christofmuc/MidiKraft-sequential-ob6.git
+[submodule "synths/MidiKraft-oberheim-matrix1000"]
+	path = synths/MidiKraft-oberheim-matrix1000
+	url = https://github.com/christofmuc/MidiKraft-oberheim-matrix1000.git
