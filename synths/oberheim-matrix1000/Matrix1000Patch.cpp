@@ -9,6 +9,7 @@
 #include "Matrix1000ParamDefinition.h"
 
 #include <boost/format.hpp>
+#include <unicode/ucnv.h>
 
 namespace midikraft {
 
@@ -40,9 +41,36 @@ namespace midikraft {
 
 	void Matrix1000Patch::setName(std::string const &name)
 	{
-		//TODO to be implemented
-		ignoreUnused(name);
-		jassert(false);
+		// The String, coming from the UI, should be UTF8. We need some serious software to get back into ASCII land now
+		// Let's use the ICU library
+		char asciiResult[20];
+		UErrorCode error = U_ZERO_ERROR;
+		auto length = ucnv_convert("US-ASCII", "UTF-8", asciiResult, 20, name.c_str(), (int32_t) name.size(), &error);
+		if (U_SUCCESS(error)) {
+			for (int i = 0; i < 8; i++) {
+				if (i < length) {
+					if (asciiResult[i] == 0x1a) {
+						// This is the substitution character ucnv_convert creates. We will replace it with something funny
+						setAt(i, 0x40 /* @ */);
+					}
+					else if (asciiResult[i] > 0x5f) {
+						// The sysex spec of the Matrix says it only uses 6 bits for the name, so I would think it does uppercase letters only (6 bits would be up to 2^6 = ascii 64)
+						setAt(i, asciiResult[i] - 0x20); // This works because it would bring the highest ascii character 7f down to 5f
+					}
+					else if (asciiResult[i] < 0x20) {
+						// Any other non-printable ASCII character, use a different substitution character, like "_"
+						setAt(i, 0x5f);
+					}
+					else {
+						// Valid ASCII
+						setAt(i, asciiResult[i]);
+					}
+				}
+				else {
+					setAt(i, 0x20 /* space */);
+				}
+			}
+		}
 	}
 
 	std::shared_ptr<PatchNumber> Matrix1000Patch::patchNumber() const {
