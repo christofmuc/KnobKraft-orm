@@ -19,6 +19,12 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(boost)
 
+    FetchContent_Declare(
+	  icu
+	  URL https://github.com/unicode-org/icu/releases/download/release-66-1/icu4c-66_1-Win64-MSVC2017.zip
+	)
+	FetchContent_MakeAvailable(icu)
+
 	FetchContent_Declare(
 		vcredist
 		URL https://aka.ms/vs/16/release/vc_redist.x64.exe
