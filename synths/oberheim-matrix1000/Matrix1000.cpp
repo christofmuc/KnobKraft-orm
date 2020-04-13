@@ -62,7 +62,7 @@ namespace midikraft {
 		<number>   = 0 when <type> = 0 or 3
 				   = Number of patch requested when <type> = 1
 				   */
-		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, REQUEST_DATA, (uint8)typeNo, number });
+		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, REQUEST_DATA, (uint8)typeNo, (uint8)((typeNo == REQUEST_TYPE::SINGLE_PATCH) ? number : 0) });
 	}
 
 	juce::MidiMessage Matrix1000::createBankSelect(MidiBankNumber bankNo) const {
@@ -138,12 +138,12 @@ namespace midikraft {
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(singleProgramDump) });
 	}
 
-	juce::MidiMessage Matrix1000::requestBankDump(MidiBankNumber bankNo) const
+	std::vector<MidiMessage>  Matrix1000::requestBankDump(MidiBankNumber bankNo) const
 	{
 		if (!bankNo.isValid()) {
-			return MidiMessage();
+			return {};
 		}
-		return createRequest(BANK_AND_MASTER, (uint8) bankNo.toZeroBased());
+		return { createBankSelect(bankNo), createRequest(BANK_AND_MASTER, 0) };
 	}
 
 	bool Matrix1000::isBankDump(const MidiMessage& message) const
@@ -165,7 +165,7 @@ namespace midikraft {
 	TPatchVector Matrix1000::patchesFromSysexBank(const MidiMessage& message) const
 	{
 		ignoreUnused(message);
-		// Coming here would be a logic error - the Virus has a patch dump request, but the synth will reply with lots of individual patch dumps
+		// Coming here would be a logic error - the Matrix has a patch dump request, but the synth will reply with lots of individual patch dumps
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 

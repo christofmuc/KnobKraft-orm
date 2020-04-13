@@ -49,7 +49,7 @@ namespace midikraft {
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const Patch &patch) const;
 
 		// Bank Dump Capability
-		virtual MidiMessage requestBankDump(MidiBankNumber bankNo) const override;
+		virtual std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
 		virtual bool isBankDump(const MidiMessage& message) const override;
 		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const;
 		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
