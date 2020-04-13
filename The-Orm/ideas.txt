@@ -5,6 +5,13 @@ Small things
 For the OB-6 branch
 + Implement parameter set of OB-6 for patch diff?
 
+
+Macro page
+* Select which MIDI input/Synth to use
+* Display size of master keyboard (or select lower and upper key)
+* Turn macros on/off on a global level (and show it on a global level)
+* Also allow sequences, not just chords
+
 Librarian
 * Allow multi-select of banks to import (with all feature)
 
