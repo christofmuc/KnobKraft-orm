@@ -14,6 +14,7 @@
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 #include "SoundExpanderCapability.h"
+#include "GlobalSettingsCapability.h"
 //#include "SupportedByBCR2000.h"
 
 #include "MidiController.h"
@@ -22,9 +23,12 @@ namespace midikraft {
 
 	class Matrix1000 : public Synth, /* public SupportedByBCR2000, */
 		public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, // pretty complete MIDI implementation of the Matrix1000
-		public SoundExpanderCapability
+		public SoundExpanderCapability, public GlobalSettingsCapability,
+		private Value::Listener
 	{
 	public:
+		Matrix1000();
+		virtual ~Matrix1000();
 
 		// Basic Synth implementation
 		virtual std::string getName() const override;
@@ -77,11 +81,23 @@ namespace midikraft {
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		virtual bool needsChannelSpecificDetection() override;
 
+		// GlobalSettingsCapability
+		virtual void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) override;
+		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
+		virtual DataFileLoadCapability *loader() override;
+		virtual int settingsDataFileType() const override;
+
 		//private: Only for testing public
 		PatchData unescapeSysex(const uint8 *sysExData, int sysExLen) const;
 		std::vector<uint8> escapeSysex(const PatchData &programEditBuffer) const;
 
 	private:
+		friend class Matrix1000_GlobalSettings_Loader;
+
+		enum Matrix1000_DataFileType {
+			PATCH = 0,
+			DF_MATRIX1000_SETTINGS = 1
+		};
 		enum REQUEST_TYPE {
 			BANK_AND_MASTER = 0x00,
 			SINGLE_PATCH = 0x01,
@@ -94,6 +110,11 @@ namespace midikraft {
 		MidiMessage createBankUnlock() const;
 
 		MidiController::HandlerHandle matrixBCRSyncHandler_ = MidiController::makeNoneHandle();
+
+		void initGlobalSettings(); 
+		virtual void valueChanged(Value& value) override; // This is called when somebody edited a global setting value
+		Matrix1000_GlobalSettings_Loader *globalSettingsLoader_; // Sort of a pimpl pattern
+		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
 	};
 
 }

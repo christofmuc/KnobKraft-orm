@@ -12,6 +12,7 @@
 #include <boost/format.hpp>
 
 #include "Matrix1000Patch.h"
+#include "Matrix1000_GlobalSettings.h"
 
 //#include "Matrix1000BCR.h"
 //#include "BCR2000.h"
@@ -42,6 +43,43 @@ namespace midikraft {
 	// These unused bytes need to be blanked for us to compare patches in order to detect duplicates
 	std::vector<Range<int>> kMatrix1000BlankOutZones = {
 		{0, 8} // This is the ASCII name, 8 character. The Matrix1000 will never display it, but I think a Matrix6 will
+	};
+
+	struct Matrix1000GlobalSettingDefinition {
+		int sysexIndex;
+		TypedNamedValue typedNamedValue;
+		int displayOffset = 0;
+	};
+
+	// Table of global settings. What I left out was the "group enabled" array for one bit per patch to specify if it is deemed to be group-worthy.
+	std::vector<Matrix1000GlobalSettingDefinition> kMatrix1000GlobalSettings = {
+		{ 34, { "Master Transpose", "Tuning", Value(), ValueType::Integer, 0, 48 }, 0 }, //TODO: This is the weird ones complement, should be -24 to 24
+		{ 8, { "Master Tune", "Tuning", Value(), ValueType::Integer, 0, 63 } }, //TODO - same here, should be -31 to 31
+		{ 11, { "MIDI Basic Channel", "MIDI", Value(), ValueType::Integer, 0, 15 }, 1 /* Make it one based */},
+		{ 12, { "MIDI OMNI Mode Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 13, { "MIDI Controllers enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 14, { "MIDI Patch Changes Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
+		{ 17, { "MIDI Pedal 1 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } }, //TODO - could make a lookup of CC controller names? 121 is from the manual
+		{ 18, { "MIDI Pedal 2 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
+		{ 19, { "MIDI Pedal 3 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
+		{ 20, { "MIDI Pedal 4 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
+		{ 32, { "MIDI Echo Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } }
+		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", Value(), ValueType::Integer, 0, 9 } },
+		{ 165, { "Bank Lock Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } }, // (In MSB only)
+		{ 4, { "Vibrato Waveform", "Global Vibrato", Value(), ValueType::Lookup, 0, 7, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
+		{ 1, { "Vibrato Speed", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
+		{ 5, { "Vibrato Amplitude", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },		
+		{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", Value(), ValueType::Lookup, 0, 2, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
+		{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
+		{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", Value(), ValueType::Lookup, 0, 2, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
+		{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
+		{ 164, { "Bend Range", "Controls", Value(), ValueType::Integer, 1, 24 } },		
+		{ 166, { "Number of Units", "Group Mode", Value(), ValueType::Integer, 1, 6 } }, 
+		{ 167, { "Current Unit Number", "Group Mode", Value(), ValueType::Integer, 0, 7 } }, // (In MSB only)
+		{ 168, { "Group Mode Enable", "Group Mode", Value(), ValueType::Bool, 0, 1 } }, // (In MSB only)
+		{ 169, { "Unison Enable", "General", Value(), ValueType::Bool, 0, 1 } }, 
+		{ 170, { "Volume Invert Enable", "General", Value(), ValueType::Bool, 0, 1 } }, 
+		{ 171, { "Memory Protect Enable", "General", Value(), ValueType::Bool, 0, 1 } }, 
 	};
 
 	juce::MidiMessage Matrix1000::requestEditBufferDump()
@@ -75,6 +113,23 @@ namespace midikraft {
 
 	MidiMessage Matrix1000::createBankUnlock() const {
 		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, BANK_UNLOCK });
+	}
+
+	void Matrix1000::initGlobalSettings()
+	{
+		// Loop over it and fill out the GlobalSettings Properties
+		globalSettings_.clear();
+		for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
+			auto setting = std::make_shared<TypedNamedValue>(kMatrix1000GlobalSettings[i].typedNamedValue);
+			globalSettings_.push_back(setting);
+			setting->value.addListener(this);
+		}
+	}
+
+	void Matrix1000::valueChanged(Value& value)
+	{
+		//TODO to be implemented
+		ignoreUnused(value);
 	}
 
 	bool Matrix1000::isOwnSysex(MidiMessage const &message) const
@@ -538,12 +593,54 @@ namespace midikraft {
 		return true;
 	}
 
+	void Matrix1000::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile)
+	{
+		auto settingsArray = unescapeSysex(dataFile->data().data(), (int) dataFile->data().size());
+		if (settingsArray.size() == 172) {
+			for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
+				if (i < settingsArray.size()) {
+					globalSettings_[i]->value.setValue(var(settingsArray[kMatrix1000GlobalSettings[i].sysexIndex] + kMatrix1000GlobalSettings[i].displayOffset));
+				}
+			}
+		}
+		else {
+			SimpleLogger::instance()->postMessage("Ignoring Matrix1000 global settings data - unescaped block size is not 172 bytes");
+			jassert(settingsArray.size() == 172);
+		}
+	}
+
+	std::vector<std::shared_ptr<TypedNamedValue>> Matrix1000::getGlobalSettings()
+	{
+		return globalSettings_;
+	}
+
+	midikraft::DataFileLoadCapability * Matrix1000::loader()
+	{
+		return globalSettingsLoader_;
+	}
+
+	int Matrix1000::settingsDataFileType() const
+	{
+		return DF_MATRIX1000_SETTINGS;
+	}
+
 	std::vector<juce::MidiMessage> Matrix1000::patchToSysex(const Patch &patch) const
 	{
 		std::vector<uint8> editBufferDump({ OBERHEIM, MATRIX6_1000, SINGLE_PATCH_TO_EDIT_BUFFER, 0x00 });
 		auto patchdata = escapeSysex(patch.data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(editBufferDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(editBufferDump) });
+	}
+
+	Matrix1000::Matrix1000()
+	{
+		globalSettingsLoader_ = new Matrix1000_GlobalSettings_Loader(this);
+		initGlobalSettings();
+	}
+
+	Matrix1000::~Matrix1000()
+	{
+		delete globalSettingsLoader_;
 	}
 
 	std::string Matrix1000::getName() const
