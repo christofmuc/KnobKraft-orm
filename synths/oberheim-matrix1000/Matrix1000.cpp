@@ -48,13 +48,13 @@ namespace midikraft {
 	struct Matrix1000GlobalSettingDefinition {
 		int sysexIndex;
 		TypedNamedValue typedNamedValue;
-		int displayOffset = 0;
+		bool isOnesComplement;
 	};
 
 	// Table of global settings. What I left out was the "group enabled" array for one bit per patch to specify if it is deemed to be group-worthy.
 	std::vector<Matrix1000GlobalSettingDefinition> kMatrix1000GlobalSettings = {
-		{ 34, { "Master Transpose", "Tuning", Value(), ValueType::Integer, 0, 48 }, 0 }, //TODO: This is the weird ones complement, should be -24 to 24
-		{ 8, { "Master Tune", "Tuning", Value(), ValueType::Integer, 0, 63 } }, //TODO - same here, should be -31 to 31
+		{ 34, { "Master Transpose", "Tuning", Value(), ValueType::Integer, -24, 24 }, true },
+		{ 8, { "Master Tune", "Tuning", Value(), ValueType::Integer, -32, 32 }, true },
 		{ 11, { "MIDI Basic Channel", "MIDI", Value(), ValueType::Integer, 0, 15 }, 1 /* Make it one based */},
 		{ 12, { "MIDI OMNI Mode Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		{ 13, { "MIDI Controllers enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
@@ -599,7 +599,15 @@ namespace midikraft {
 		if (settingsArray.size() == 172) {
 			for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
 				if (i < settingsArray.size()) {
-					globalSettings_[i]->value.setValue(var(settingsArray[kMatrix1000GlobalSettings[i].sysexIndex] + kMatrix1000GlobalSettings[i].displayOffset));
+					int intValue = settingsArray[kMatrix1000GlobalSettings[i].sysexIndex];
+					if (kMatrix1000GlobalSettings[i].isOnesComplement) {
+						// Very special code that only works because there are just two fields in the global settings that need it
+						// Master transpose and Master tuning
+						if (intValue > 127) {
+							intValue = (int8) intValue;
+						}
+					}
+					globalSettings_[i]->value.setValue(var(intValue));
 				}
 			}
 		}
