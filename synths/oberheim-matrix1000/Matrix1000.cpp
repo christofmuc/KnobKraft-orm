@@ -63,7 +63,7 @@ namespace midikraft {
 		{ 18, { "MIDI Pedal 2 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
 		{ 19, { "MIDI Pedal 3 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
 		{ 20, { "MIDI Pedal 4 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
-		{ 32, { "MIDI Echo Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } }
+		{ 32, { "MIDI Echo Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", Value(), ValueType::Integer, 0, 9 } },
 		{ 165, { "Bank Lock Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } }, // (In MSB only)
 		{ 4, { "Vibrato Waveform", "Global Vibrato", Value(), ValueType::Lookup, 0, 7, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
