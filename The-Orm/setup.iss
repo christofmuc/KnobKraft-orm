@@ -39,6 +39,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icuuc66.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icudt66.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
 

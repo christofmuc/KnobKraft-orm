@@ -67,8 +67,9 @@ set(MIDIKRAFT_LIBRARIES
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})
 target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl")
-IF(WIN32)
+IF(WIN32)	
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+		icuuc
 		SQLiteCpp
 		sqlite3
 		)
@@ -77,6 +78,7 @@ ELSEIF(UNIX)
 		${JUCE_LIBRARIES} 
 		PkgConfig::WEBKIT 
 		PkgConfig::GTK 
+		PkgConfig::ICU
 		Xext 
 		X11 
 		pthread 
@@ -103,6 +105,15 @@ else()
     # lots of warnings and all warnings as errors
     #target_compile_options(juce-widgets PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
+
+IF(WIN32)
+	# Post build commands - copy the DLLs (Windows only I guess)
+	add_custom_command(
+			TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+					"${icu_SOURCE_DIR}/bin64/icuuc66.dll" "${icu_SOURCE_DIR}/bin64/icudt66.dll"
+					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+ENDIF()
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
