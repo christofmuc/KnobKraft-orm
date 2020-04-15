@@ -29,18 +29,18 @@ namespace midikraft {
 
 	int MKS80::numberOfBanks() const
 	{
-		return 8;
+		return 1; // The manual sees the MKS80 to have 8 banks of 8 patches each, but as you can only load all 64 patches in bulk, and that is quick, let's assume it is only one bank.
 	}
 
 	int MKS80::numberOfPatches() const
 	{
-		return 8;
+		return 64;
 	}
 
 	std::string MKS80::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		//TODO needs to match the definitions above
-		return bankNo.toZeroBased() <= 63 ? "Bank A" : "Bank B";
+		return bankNo.toZeroBased() == 0 ? "Bank A" : "Bank B";
 	}
 
 	std::shared_ptr<DataFile> MKS80::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const
@@ -70,7 +70,7 @@ namespace midikraft {
 	int MKS80::deviceDetectSleepMS()
 	{
 		// Just a guess
-		return 500;
+		return 800;
 	}
 
 	MidiChannel MKS80::channelIfValidDeviceResponse(const MidiMessage &message)
