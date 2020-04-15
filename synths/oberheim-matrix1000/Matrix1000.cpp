@@ -24,20 +24,21 @@
 
 namespace midikraft {
 
-	enum MIDI_ID {
-		OBERHEIM = 0x10,
-		MATRIX6_1000 = 0x06
-	};
+	const struct {
+		uint8 OBERHEIM = 0x10;
+		uint8 MATRIX6_1000 = 0x06;
+		uint8 MATRIX1000_VERSION = 0x03; // To differentiate the master data from that of a Matrix6, I guess
+	} MIDI_ID;
 
-	enum MIDI_COMMAND {
-		SINGLE_PATCH_DATA = 0x01,
-		REQUEST_DATA = 0x04,
-		SET_BANK = 0x0a,
-		PARAMETER_EDIT = 0x0b,
-		BANK_UNLOCK = 0x0c,
-		SINGLE_PATCH_TO_EDIT_BUFFER = 0x0d,
-		STORE_EDIT_BUFFER = 0x0e,
-	};
+	const struct {
+		uint8 SINGLE_PATCH_DATA = 0x01;
+		uint8 REQUEST_DATA = 0x04;
+		uint8 SET_BANK = 0x0a;
+		uint8 PARAMETER_EDIT = 0x0b;
+		uint8 BANK_UNLOCK = 0x0c;
+		uint8 SINGLE_PATCH_TO_EDIT_BUFFER = 0x0d;
+		uint8 STORE_EDIT_BUFFER = 0x0e;
+	} MIDI_COMMAND;
 
 	// Definition for the "unused" data bytes inside the sysex of the Matrix 1000
 	// These unused bytes need to be blanked for us to compare patches in order to detect duplicates
@@ -65,7 +66,7 @@ namespace midikraft {
 		{ 19, { "MIDI Pedal 3 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
 		{ 20, { "MIDI Pedal 4 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
 		{ 32, { "MIDI Echo Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", Value(), ValueType::Integer, 0, 9 } },
+		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", Value(), ValueType::Bool, 0, 1 } },
 		{ 165, { "Bank Lock Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } }, // (In MSB only)
 		{ 4, { "Vibrato Waveform", "Global Vibrato", Value(), ValueType::Lookup, 0, 7, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
 		{ 1, { "Vibrato Speed", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
@@ -101,27 +102,27 @@ namespace midikraft {
 		<number>   = 0 when <type> = 0 or 3
 				   = Number of patch requested when <type> = 1
 				   */
-		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, REQUEST_DATA, (uint8)typeNo, (uint8)((typeNo == REQUEST_TYPE::SINGLE_PATCH) ? number : 0) });
+		return MidiHelpers::sysexMessage({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.REQUEST_DATA, (uint8)typeNo, (uint8)((typeNo == REQUEST_TYPE::SINGLE_PATCH) ? number : 0) });
 	}
 
-	juce::MidiMessage Matrix1000::createBankSelect(MidiBankNumber bankNo) const {
+	MidiMessage Matrix1000::createBankSelect(MidiBankNumber bankNo) const {
 		if (!bankNo.isValid()) {
 			jassert(false);
 			return MidiMessage();
 		}
-		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, SET_BANK, (uint8)bankNo.toZeroBased() });
+		return MidiHelpers::sysexMessage({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SET_BANK, (uint8)bankNo.toZeroBased() });
 	}
 
 	MidiMessage Matrix1000::createBankUnlock() const {
-		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, BANK_UNLOCK });
+		return MidiHelpers::sysexMessage({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.BANK_UNLOCK });
 	}
 
 	void Matrix1000::initGlobalSettings()
 	{
 		// Loop over it and fill out the GlobalSettings Properties
 		globalSettings_.clear();
-		for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
-			auto setting = std::make_shared<TypedNamedValue>(kMatrix1000GlobalSettings[i].typedNamedValue);
+		for (auto & matrix1000GlobalSetting : kMatrix1000GlobalSettings) {
+			auto setting = std::make_shared<TypedNamedValue>(matrix1000GlobalSetting.typedNamedValue);
 			globalSettings_.push_back(setting);
 			setting->value.addListener(this);
 		}
@@ -129,16 +130,38 @@ namespace midikraft {
 
 	void Matrix1000::valueChanged(Value& value)
 	{
-		//TODO to be implemented
+		// No matter which value changed, we need to create a new global settings sysex message and queue it for sending debounced
 		ignoreUnused(value);
+				
+		if (!globalSettingsData_.empty() && channel().isValid()) {
+			auto newMessage = globalSettingsData_;
+			// Poke all values from the globalSettings array into the data
+			for (auto & setting : globalSettings_) {
+				//TODO Need to find definition for this setting now, suboptimal data structures
+				for (auto const &def : kMatrix1000GlobalSettings) {
+					if (def.typedNamedValue.name == setting->name) {
+						int newMidiValue = ((int)setting->value.getValue()) - def.displayOffset;
+						if (def.isTwosComplement) {
+							if (newMidiValue < 0) {
+								newMidiValue = (uint8)newMidiValue;
+							}
+						}
+						newMessage[def.sysexIndex] = (uint8) newMidiValue;
+					}
+				}
+			}
+
+			// Done, now create a new global sysex dump message
+			std::vector<uint8> globalSettingsData({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, REQUEST_TYPE::MASTER, MIDI_ID.MATRIX1000_VERSION });
+			auto patchdata = escapeSysex(newMessage);
+			std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(globalSettingsData));
+			MidiController::instance()->getMidiOutput(midiOutput())->sendMessageDebounced(MidiHelpers::sysexMessage(globalSettingsData), 800);
+		}
 	}
 
 	bool Matrix1000::isOwnSysex(MidiMessage const &message) const
 	{
-		return message.isSysEx()
-			&& message.getSysExDataSize() > 1
-			&& message.getSysExData()[0] == OBERHEIM
-			&& message.getSysExData()[1] == MATRIX6_1000;
+		return MidiHelpers::isSysexMessageMatching(message, { {0, MIDI_ID.OBERHEIM}, { 1, MIDI_ID.MATRIX6_1000 } });
 	}
 
 	int Matrix1000::numberOfBanks() const
@@ -158,10 +181,8 @@ namespace midikraft {
 
 	bool Matrix1000::isEditBufferDump(const MidiMessage& message) const
 	{
-		return isOwnSysex(message)
-			&& message.getSysExDataSize() > 3
-			&& message.getSysExData()[2] == SINGLE_PATCH_DATA
-			&& message.getSysExData()[3] == 0x00; // Unspecified, but let's assume else it's a single program dump
+		return isOwnSysex(message) &&
+			MidiHelpers::isSysexMessageMatching(message, { {2, MIDI_COMMAND.SINGLE_PATCH_DATA}, { 3, (uint8) 0x00 /* Unspecified, but let's assume else it's a single program dump */ } });
 	}
 
 
@@ -169,7 +190,7 @@ namespace midikraft {
 	{
 		return isOwnSysex(message)
 			&& message.getSysExDataSize() > 3
-			&& message.getSysExData()[2] == SINGLE_PATCH_DATA
+			&& message.getSysExData()[2] == MIDI_COMMAND.SINGLE_PATCH_DATA
 			&& message.getSysExData()[3] >= 0x00
 			&& message.getSysExData()[3] < 100; // Should be a valid program number in this bank
 	}
@@ -177,6 +198,7 @@ namespace midikraft {
 	std::shared_ptr<Patch> Matrix1000::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		if (isSingleProgramDump(message)) {
+			//TODO doesn't check length of data provided
 			auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(&message.getSysExData()[4], message.getSysExDataSize() - 4));
 			matrixPatch->setPatchNumber(MidiProgramNumber::fromZeroBase(message.getSysExData()[3]));
 			return matrixPatch;
@@ -188,7 +210,7 @@ namespace midikraft {
 	{
 		//TODO - this is nearly a copy of the patchToSysex
 		uint8 programNo = patch.patchNumber()->midiProgramNumber().toZeroBased() % 100;
-		std::vector<uint8> singleProgramDump({ OBERHEIM, MATRIX6_1000, SINGLE_PATCH_DATA, programNo });
+		std::vector<uint8> singleProgramDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_DATA, programNo });
 		auto patchdata = escapeSysex(patch.data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(singleProgramDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(singleProgramDump) });
@@ -230,7 +252,7 @@ namespace midikraft {
 		jassert(programNumber >= 0 && programNumber < 1000);
 		uint8 bank = (uint8)(programNumber / 100);
 		uint8 num = (uint8)(programNumber % 100);
-		return MidiHelpers::sysexMessage({ OBERHEIM, MATRIX6_1000, STORE_EDIT_BUFFER, num, bank, 0 /* this says group mode off */ });
+		return MidiHelpers::sysexMessage({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.STORE_EDIT_BUFFER, num, bank, 0 /* this says group mode off */ });
 	}
 
 	std::vector<juce::MidiMessage> Matrix1000::requestPatch(int programNumber)
@@ -276,246 +298,6 @@ namespace midikraft {
 		// So we must ignore them by setting them to 0!
 		return Patch::blankOut(kMatrix1000BlankOutZones, unfilteredData->data());
 	}
-
-	/*std::string Matrix1000::patchToText(PatchData const &patch) {
-		SynthSetup sound = patchToSynthSetup(patch);
-		std::string result = sound.toText();
-		return result;
-	}
-
-	SynthSetup Matrix1000::patchToSynthSetup(PatchData const &patch)
-	{
-		Matrix1000Patch m1000(patch);
-		SynthSetup sound(m1000.patchName());
-
-		// Read the oscillator model from the patch data
-		std::string shape1, shape2;
-		if (m1000.param(DCO_1_Waveform_Enable_Pulse)) {
-			if (m1000.param(DCO_1_Initial_Pulse_width) == 31)
-				shape1 = "Square";
-			else
-				shape1 = "Pulse";
-		}
-		if (m1000.param(DCO_1_Waveform_Enable_Saw)) {
-			auto wave = m1000.param(DCO_1_Initial_Waveshape_0);
-			if (wave == 0)
-				shape2 = "Saw";
-			else if (wave == 31)
-				shape2 = "Triangle";
-			else
-				shape2 = "Sawwave";
-		}
-		auto osc1 = std::make_shared<CompoundOsc>("Osc1", m1000.param(DCO_1_Initial_Frequency_LSB), shape1, m1000.param(DCO_1_Initial_Pulse_width), shape2, m1000.param(DCO_1_Initial_Waveshape_0));
-		if (m1000.param(DCO_1_Click) != 0) {
-			osc1->addSpecial(std::make_shared<FlagParameter>("click"));
-		}
-
-		if (m1000.param(DCO_2_Waveform_Enable_Pulse)) {
-			if (m1000.param(DCO_2_Initial_Pulse_width) == 31)
-				shape1 = "Square";
-			else
-				shape1 = "Pulse";
-		}
-		if (m1000.param(DCO_2_Waveform_Enable_Saw)) {
-			auto wave = m1000.param(DCO_2_Initial_Waveshape_0);
-			if (wave == 0)
-				shape2 = "Saw";
-			else if (wave == 31)
-				shape2 = "Triangle";
-			else
-				shape2 = "Sawwave";
-		}
-		sound.oscillators_.push_back(osc1);
-
-		auto osc2 = std::make_shared<CompoundOsc>("Osc2", m1000.param(DCO_2_Initial_Frequency_LSB), shape1, m1000.param(DCO_2_Initial_Pulse_width), shape2, m1000.param(DCO_2_Initial_Waveshape_0));
-		if (m1000.param(DCO_2_Waveform_Enable_Noise) != 0) {
-			osc2->addSpecial(std::make_shared<SoundGeneratingFlag>("Noise"));
-		}
-		if (m1000.param(DCO_2_Click) != 0) {
-			osc2->addSpecial(std::make_shared<FlagParameter>("Click"));
-		}
-		if (m1000.param(DCO_2_Detune) != 0) {
-			osc2->addSpecial(std::make_shared<ValueParameter>("Detune", m1000.param(DCO_2_Detune)));
-		}
-		sound.oscillators_.push_back(osc2);
-		sound.mix_ = m1000.param(MIX);
-
-		// Information on the filter - the Matrix only has a 4-pole filter, so we can hardcode that
-		auto filter = std::make_shared<Filter>("LPF",
-			Frequency::knobPercentage(m1000.param(VCF_Initial_Frequency_LSB) / 63.0f),
-			4, m1000.param(VCF_Initial_Resonance), m1000.param(VCF_FM_Initial_Amount));
-		sound.filters_.push_back(filter);
-
-		// Time to create the envelopes used!
-		auto env1 = std::make_shared<Envelope>("Env 1",
-			TimeValue::midiValue(m1000.param(Env_1_Initial_Delay_Time), 63),
-			TimeValue::midiValue(m1000.param(Env_1_Initial_Attack_Time), 63),
-			TimeValue::midiValue(m1000.param(Env_1_Initial_Decay_Time), 63),
-			ControlValue::midiValue(m1000.param(Env_1_Sustain_Level), 63),
-			TimeValue::midiValue(m1000.param(Env_1_Initial_Release_Time), 63));
-		sound.envelopes_.push_back(env1);
-		auto env2 = std::make_shared<Envelope>("Env 2",
-			TimeValue::midiValue(m1000.param(Env_2_Initial_Delay_Time), 63),
-			TimeValue::midiValue(m1000.param(Env_2_Initial_Attack_Time), 63),
-			TimeValue::midiValue(m1000.param(Env_2_Initial_Decay_Time), 63),
-			ControlValue::midiValue(m1000.param(Env_2_Sustain_Level), 63),
-			TimeValue::midiValue(m1000.param(Env_2_Initial_Release_Time), 63));
-		sound.envelopes_.push_back(env2);
-		auto env3 = std::make_shared<Envelope>("Env 3",
-			TimeValue::midiValue(m1000.param(Env_3_Initial_Delay_Time), 63),
-			TimeValue::midiValue(m1000.param(Env_3_Initial_Attack_Time), 63),
-			TimeValue::midiValue(m1000.param(Env_3_Initial_Decay_Time), 63),
-			ControlValue::midiValue(m1000.param(Env_3_Sustain_Level), 63),
-			TimeValue::midiValue(m1000.param(Env_3_Initial_Release_Time), 63));
-		sound.envelopes_.push_back(env3);
-
-		// Now to the LFOs
-		auto lfo1 = std::make_shared<LFO>("LFO 1", m1000.lookupValue(LFO_1_Waveshape), (float)m1000.param(LFO_1_Initial_Speed), (float)m1000.param(LFO_1_Initial_Amplitude));
-		auto lfo2 = std::make_shared<LFO>("LFO 2", m1000.lookupValue(LFO_2_Waveshape), (float)m1000.param(LFO_2_Initial_Speed), (float)m1000.param(LFO_2_Initial_Amplitude));
-		sound.lfos_.push_back(lfo1);
-		sound.lfos_.push_back(lfo2);
-
-		// Now, construct text to describe the fixed modulations, sorted by modulate source
-		std::vector<Modulation> modulations;
-
-		// First, collect modulations which are distributed quite through the normal parameters
-		if (m1000.paramActive(DCO_1_Fixed_Modulations_PitchBend)) {
-			modulations.push_back(Modulation("Pitch Bend", "DCO 1 freq", 63));
-		}
-		if (m1000.paramActive(DCO_1_Fixed_Modulations_Vibrato)) {
-			modulations.push_back(Modulation("Vibrato", "DCO 1 freq", 63));
-		}
-		if (m1000.paramActive(DCO_2_Fixed_Modulations_PitchBend)) {
-			modulations.push_back(Modulation("Pitch Bend", "DCO 2 freq", 63));
-		}
-		if (m1000.paramActive(DCO_2_Fixed_Modulations_Vibrato)) {
-			modulations.push_back(Modulation("Vibrato", "DCO 2 freq", 63));
-		}
-		if (m1000.paramActive(DCO_1_Fixed_Modulations_Portamento)) {
-			modulations.push_back(Modulation("Portamento", "DCO 1 freq", 63));
-		}
-		if (m1000.paramActive(DCO_2_Fixed_Modulations_Portamento)) {
-			modulations.push_back(Modulation("Portamento", "DCO 2 freq", 63));
-		}
-		if (!m1000.paramActive(DCO_2_Fixed_Modulations_KeyboardTracking)) {
-			modulations.push_back(Modulation("KeyboardTracking off", "DCO 2 freq", 63));
-		}
-		if (m1000.paramActive(VCF_Fixed_Modulations_Lever1)) {
-			modulations.push_back(Modulation("Pitch Bend", "Cutoff", 63));
-		}
-		if (m1000.paramActive(VCF_Fixed_Modulations_Vibrato)) {
-			modulations.push_back(Modulation("Vibrato", "Cutoff", 63));
-		}
-		if (m1000.paramActive(VCF_Keyboard_Modulation_Portamento)) {
-			modulations.push_back(Modulation("Portamento", "Cutoff", 63));
-		}
-		if (m1000.paramActive(VCF_Keyboard_Modulation_Key)) {
-			modulations.push_back(Modulation("Key", "Cutoff", 63));
-		}
-		if (m1000.param(Tracking_Generator_Input_Source_Code) != 0) {
-			modulations.push_back(Modulation(m1000.lookupValue(Tracking_Generator_Input_Source_Code), "Tracking Generator", m1000.param(Tracking_Generator_Input_Source_Code)));
-		}
-
-		// The Matrix 10000 has 18 dedicated fixed modulations, kind of the "most commonly used" modulations stored in these flags
-		if (m1000.paramActive(DCO_1_Freq_by_LFO_1_Amount)) {
-			modulations.push_back(Modulation("LFO 1", "OSC 1 pitch", m1000.param(DCO_1_Freq_by_LFO_1_Amount)));
-		}
-		if (m1000.paramActive(DCO_1_PW_by_LFO_2_Amount)) {
-			modulations.push_back(Modulation("LFO 2", "OSC 1 pulse width", m1000.param(DCO_1_PW_by_LFO_2_Amount)));
-		}
-		if (m1000.paramActive(DCO_2_Freq_by_LFO_1_Amount)) {
-			modulations.push_back(Modulation("LFO 1", "OSC 2 pitch", m1000.param(DCO_2_Freq_by_LFO_1_Amount)));
-		}
-		if (m1000.paramActive(DCO_2_PW_by_LFO_2_Amount)) {
-			modulations.push_back(Modulation("LFO 2", "OSC 2 pulse width", m1000.param(DCO_2_PW_by_LFO_2_Amount)));
-		}
-		if (m1000.paramActive(VCF_Freq_by_Env_1_Amount)) {
-			modulations.push_back(Modulation("Env 1", "Cutoff", m1000.param(VCF_Freq_by_Env_1_Amount)));
-		}
-		if (m1000.paramActive(VCF_Freq_by_Pressure_Amount)) {
-			modulations.push_back(Modulation("Aftertouch", "Cutoff", m1000.param(VCF_Freq_by_Pressure_Amount)));
-		}
-		if (m1000.paramActive(VCA_1_by_Velocity_Amount)) {
-			modulations.push_back(Modulation("Velocity", "Amplitude 1", m1000.param(VCA_1_by_Velocity_Amount)));
-		}
-		if (m1000.paramActive(VCA_2_by_Env_2_Amount)) {
-			modulations.push_back(Modulation("Env 2", "Amplitude 2", m1000.param(VCA_2_by_Env_2_Amount)));
-		}
-		if (m1000.paramActive(Env_1_Amplitude_by_Velocity_Amount)) {
-			modulations.push_back(Modulation("Velocity", "Env 1 Amplitude", m1000.param(Env_1_Amplitude_by_Velocity_Amount)));
-		}
-		if (m1000.paramActive(Env_2_Amplitude_by_Velocity_Amount)) {
-			modulations.push_back(Modulation("Velocity", "Env 2 Amplitude", m1000.param(Env_2_Amplitude_by_Velocity_Amount)));
-		}
-		if (m1000.paramActive(Env_3_Amplitude_by_Velocity_Amount)) {
-			modulations.push_back(Modulation("Velocity", "Env 3 Amplitude", m1000.param(Env_3_Amplitude_by_Velocity_Amount)));
-		}
-		if (m1000.paramActive(LFO_1_Amp_by_Ramp_1_Amount)) {
-			modulations.push_back(Modulation("Ramp 1", "LFO 1 Amplitude", m1000.param(LFO_1_Amp_by_Ramp_1_Amount)));
-		}
-		if (m1000.paramActive(LFO_2_Amp_by_Ramp_2_Amount)) {
-			modulations.push_back(Modulation("Ramp 2", "LFO 2 Amplitude", m1000.param(LFO_2_Amp_by_Ramp_2_Amount)));
-		}
-		if (m1000.paramActive(Portamento_rate_by_Velocity_Amount)) {
-			modulations.push_back(Modulation("Velocity", "Portamento Rate", m1000.param(Portamento_rate_by_Velocity_Amount)));
-		}
-		if (m1000.paramActive(VCF_FM_Amount_by_Env_3_Amount)) {
-			modulations.push_back(Modulation("Env 3", "FM Amount", m1000.param(VCF_FM_Amount_by_Env_3_Amount)));
-		}
-		if (m1000.paramActive(VCF_FM_Amount_by_Pressure_Amount)) {
-			modulations.push_back(Modulation("Aftertouch", "FM Amount", m1000.param(VCF_FM_Amount_by_Pressure_Amount)));
-		}
-		if (m1000.paramActive(LFO_1_Speed_by_Pressure_Amount)) {
-			modulations.push_back(Modulation("Aftertouch", "LFO 1 freq", m1000.param(LFO_1_Speed_by_Pressure_Amount)));
-		}
-		if (m1000.paramActive(LFO_2_Speed_by_Keyboard_Amount)) {
-			modulations.push_back(Modulation("Key", "LFO 2 freq", m1000.param(LFO_2_Speed_by_Keyboard_Amount)));
-		}
-
-		// But then, it also has 10 slots for a proper modulation matrix!
-		if (m1000.paramActive(Matrix_Modulation_Bus_0_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_0_Source_Code), m1000.lookupValue(MM_Bus_0_Destination_Code), m1000.param(M_Bus_0_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_1_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_1_Source_Code), m1000.lookupValue(MM_Bus_1_Destination_Code), m1000.param(M_Bus_1_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_2_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_2_Source_Code), m1000.lookupValue(MM_Bus_2_Destination_Code), m1000.param(M_Bus_2_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_3_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_3_Source_Code), m1000.lookupValue(MM_Bus_3_Destination_Code), m1000.param(M_Bus_3_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_4_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_4_Source_Code), m1000.lookupValue(MM_Bus_4_Destination_Code), m1000.param(M_Bus_4_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_5_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_5_Source_Code), m1000.lookupValue(MM_Bus_5_Destination_Code), m1000.param(M_Bus_5_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_6_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_6_Source_Code), m1000.lookupValue(MM_Bus_6_Destination_Code), m1000.param(M_Bus_6_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_7_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_7_Source_Code), m1000.lookupValue(MM_Bus_7_Destination_Code), m1000.param(M_Bus_7_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_8_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_8_Source_Code), m1000.lookupValue(MM_Bus_8_Destination_Code), m1000.param(M_Bus_8_Amount)));
-		}
-		if (m1000.paramActive(Matrix_Modulation_Bus_9_Source_Code)) {
-			modulations.push_back(Modulation(m1000.lookupValue(Matrix_Modulation_Bus_9_Source_Code), m1000.lookupValue(MM_Bus_9_Destination_Code), m1000.param(M_Bus_9_Amount)));
-		}
-
-		// Copy modulations into sound
-		for (auto modulation : modulations) {
-			sound.modulations_.push_back(std::make_shared<Modulation>(modulation));
-		}
-
-		return sound;
-	}
-
-	std::shared_ptr<Patch> Matrix1000::synthSetupToPatch(SynthSetup const &sound, std::function<void(std::string warning)> logWarning)
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}*/
 
 	bool Matrix1000::canChangeInputChannel() const
 	{
@@ -578,8 +360,8 @@ namespace midikraft {
 			data[0] == 0x7e &&
 			data[2] == 0x06 &&
 			data[3] == 0x02 &&
-			data[4] == OBERHEIM &&
-			data[5] == MATRIX6_1000 &&
+			data[4] == MIDI_ID.OBERHEIM &&
+			data[5] == MIDI_ID.MATRIX6_1000 &&
 			data[6] == 0x00 &&
 			//data[7] == 0x02 && // Fam member = Matrix 1000
 			data[8] == 0x00) {
@@ -598,6 +380,7 @@ namespace midikraft {
 	{
 		auto settingsArray = unescapeSysex(dataFile->data().data(), (int) dataFile->data().size());
 		if (settingsArray.size() == 172) {
+			globalSettingsData_ = settingsArray;
 			for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
 				if (i < settingsArray.size()) {
 					int intValue = settingsArray[kMatrix1000GlobalSettings[i].sysexIndex] + kMatrix1000GlobalSettings[i].displayOffset;
@@ -635,7 +418,7 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Matrix1000::patchToSysex(const Patch &patch) const
 	{
-		std::vector<uint8> editBufferDump({ OBERHEIM, MATRIX6_1000, SINGLE_PATCH_TO_EDIT_BUFFER, 0x00 });
+		std::vector<uint8> editBufferDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER, 0x00 });
 		auto patchdata = escapeSysex(patch.data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(editBufferDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(editBufferDump) });

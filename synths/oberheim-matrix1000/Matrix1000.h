@@ -58,8 +58,6 @@ namespace midikraft {
 		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const;
 		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
 
-		//std::string patchToText(PatchData const &patch);
-
 		// SoundExpanderCapability
 		virtual bool canChangeInputChannel() const override;
 		virtual void changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
@@ -115,6 +113,7 @@ namespace midikraft {
 		virtual void valueChanged(Value& value) override; // This is called when somebody edited a global setting value
 		Matrix1000_GlobalSettings_Loader *globalSettingsLoader_; // Sort of a pimpl pattern
 		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
+		std::vector<uint8> globalSettingsData_; // The global settings data as last retrieved from the synth
 	};
 
 }
