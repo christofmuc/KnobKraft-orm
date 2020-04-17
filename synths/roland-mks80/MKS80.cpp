@@ -437,26 +437,24 @@ namespace midikraft {
 
 	std::string MKS80::additionalFileExtensions()
 	{
-		return "*.m80;*.mks80";
+		return "*.m80;*.mks80;*";
 	}
 
 	bool MKS80::supportsExtension(std::string const &filename)
 	{
 		File file(filename);
-		return file.getFileExtension().toUpperCase() == ".M80" || file.getFileExtension().toUpperCase() == ".MKS80";
+		return file.getFileExtension().toUpperCase() == ".M80" || file.getFileExtension().toUpperCase() == ".MKS80" || file.getFileExtension() == "";
 	}
 
 	midikraft::TPatchVector MKS80::load(std::string const &fullpath, std::vector<uint8> const &fileContent)
 	{
-		File file(fullpath);
-		if (file.getFileExtension().toUpperCase() == ".M80") {
-			return MKS80_LegacyBankLoader::loadM80File(fileContent);
+		ignoreUnused(fullpath);
+		// Just try the different formats...
+		auto result = MKS80_LegacyBankLoader::loadM80File(fileContent);
+		if (result.empty()) {
+			result = MKS80_LegacyBankLoader::loadMKS80File(fileContent);
 		}
-		else if (file.getFileExtension().toUpperCase() == ".MKS80") {
-			return MKS80_LegacyBankLoader::loadMKS80File(fileContent);
-		}
-		jassert(false);
-		return {};
+		return result;
 	}
 
 	TPatchVector MKS80::patchesFromAPRs(std::vector<std::vector<uint8>> const &toneData, std::vector<std::vector<uint8>> const &patchData) {

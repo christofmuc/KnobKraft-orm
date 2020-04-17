@@ -3,15 +3,20 @@
 #include "MKS80.h"
 #include "MKS80_Patch.h"
 
+#include <boost/format.hpp>
+
 namespace midikraft {
 
-	std::string MKS80_LegacyBankLoader::readPascalString(std::vector<uint8>::iterator &position, std::vector<uint8>::iterator const &end)
+	std::string MKS80_LegacyBankLoader::readPascalString(std::vector<uint8>::iterator start, std::vector<uint8>::iterator &position, std::vector<uint8>::iterator const &end)
 	{
 		std::string name;
 		if (position != end) {
 			// Read length of string
 			size_t len = *(position++);
-			while (position != end && *position <= 0x20) len = *(position++);
+			while (position != end && *position < 0x20) {
+				//SimpleLogger::instance()->postMessage((boost::format("skipping byte valued %d at position %d") % ((int) *(position-1)) % std::distance(start, position-1)).str());
+				len = *(position++);
+			}
 			while (name.size() < len && position != end) {
 				name.push_back((char) *(position++));
 			}
@@ -38,9 +43,9 @@ namespace midikraft {
 
 		auto nextByte = fileContent.begin();
 		while (nextByte != fileContent.end()) {
-			std::string patch = readPascalString(nextByte, fileContent.end());
+			std::string patch = readPascalString(fileContent.begin(), nextByte, fileContent.end());
 			std::vector<uint8> patchData = readBinaryBlock(nextByte, fileContent.end(), 0x17); // 0x17 bytes (23 dec) is one patch in the DAT format
-			std::string tone = readPascalString(nextByte, fileContent.end());
+			std::string tone = readPascalString(fileContent.begin(), nextByte, fileContent.end());
 			std::vector<uint8> toneData = readBinaryBlock(nextByte, fileContent.end(), 0x27); // 0x27 bytes (39 dec) is one tone in the DAT format
 			std::copy(toneData.begin(), toneData.end(), std::back_inserter(patchData));
 			if (patchData.size() == 0x17 + 0x27) {
@@ -51,7 +56,7 @@ namespace midikraft {
 			}
 			else {
 				// Premature end of file
-				SimpleLogger::instance()->postMessage("Aborting load of M80 file, file appears to be truncated");
+				SimpleLogger::instance()->postMessage("M80 loader: Could not parse patch and tone structure, cannot load file, trying other formats");
 				return {};
 			}
 		}
@@ -62,7 +67,7 @@ namespace midikraft {
 			return MKS80::patchesFromAPRs(toneDatas, patchDatas);
 		}
 		else {
-			SimpleLogger::instance()->postMessage("Did not find 64 patches and 64 tones, are you sure this is an M80 bank file?");
+			SimpleLogger::instance()->postMessage("M80 loader: Did not find 64 patches and 64 tones, trying other formats");
 			return {};
 		}
 	}
@@ -70,7 +75,7 @@ namespace midikraft {
 	midikraft::TPatchVector MKS80_LegacyBankLoader::loadMKS80File(std::vector<uint8> fileContent)
 	{
 		if (fileContent.size() != 0xf80) {
-			SimpleLogger::instance()->postMessage("File length is not 0xf80, this does not seem to be a proper mks80 file");
+			SimpleLogger::instance()->postMessage("MKS80 loader: File length is not 0xf80, this does not seem to be an mks80 file, trying other formats");
 			return {};
 		}
 
