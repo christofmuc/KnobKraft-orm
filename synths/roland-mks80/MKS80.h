@@ -12,13 +12,15 @@
 #include "EditBufferCapability.h"
 #include "HandshakeLoadingCapability.h"
 #include "SoundExpanderCapability.h"
+#include "LegacyLoaderCapability.h"
 //#include "SupportedByBCR2000.h"
 
 #include "MKS80_Parameter.h"
 
 namespace midikraft {
 
-	class MKS80 : public Synth, public EditBufferCapability, public HandshakeLoadingCapability, public SoundExpanderCapability /*, public SupportedByBCR2000 */ {
+	class MKS80 : public Synth, public EditBufferCapability, public HandshakeLoadingCapability,
+		public LegacyLoaderCapability, public SoundExpanderCapability /*, public SupportedByBCR2000 */ {
 	public:
 		MKS80();
 
@@ -58,10 +60,14 @@ namespace midikraft {
 		virtual bool isMidiControlOn() const override;
 		virtual void setMidiControl(MidiController *controller, bool isOn) override;
 
-
 		// Override for funky formats
 		TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
 
+		// LegacyLoaderCapability
+		virtual std::string additionalFileExtensions() override;
+		virtual bool supportsExtension(std::string const &filename) override;
+		virtual TPatchVector load(std::string const &filename, std::vector<uint8> const &fileContent) override;
+		
 		// SupportedByBCR2000
 		/*std::vector<std::string> presetNames() override;
 		void setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
@@ -69,8 +75,11 @@ namespace midikraft {
 		void setupBCR2000View(BCR2000_Component &view) override;
 		void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;*/
 
+		// Other methods to help with the complexity of the MKS80 format
+		static TPatchVector patchesFromAPRs(std::vector<std::vector<uint8>> const &toneData, std::vector<std::vector<uint8>> const &patchData);
+
 	private:
-		std::string presetName();
+		//std::string presetName();
 
 		static uint8 rolandChecksum(std::vector<uint8>::iterator start, std::vector<uint8>::iterator end);
 

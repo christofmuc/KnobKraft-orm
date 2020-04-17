@@ -25,6 +25,7 @@ ENDIF()
 set(Sources
 	MKS80.cpp MKS80.h
 	#MKS80_BCR2000.cpp MKS80_BCR2000.h
+	MKS80_LegacyBankLoader.cpp MKS80_LegacyBankLoader.h
 	MKS80_Parameter.cpp MKS80_Parameter.h
 	MKS80_Patch.cpp MKS80_Patch.h
 	README.md

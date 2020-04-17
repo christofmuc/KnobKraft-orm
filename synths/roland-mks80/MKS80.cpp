@@ -8,6 +8,7 @@
 
 #include "MKS80_Patch.h"
 #include "MKS80_Parameter.h"
+#include "MKS80_LegacyBankLoader.h"
 #include "MidiHelpers.h"
 
 //#include "BCR2000.h"
@@ -429,18 +430,49 @@ namespace midikraft {
 				// Now extract upper and lower patch definition, in this case into one array of 30 bytes
 				patchData.emplace_back(MKS80_Patch::patchesFromDat(state.datBlocks[i]));
 			}
-			// Now, build up 64 standalone patches that ignore the complexity of where the tone data is stored in RAM
-			for (int i = 0; i < toneData.size(); i++) {
-				std::map<MKS80_Patch::APR_Section, std::vector<uint8>> patch;
-				patch[MKS80_Patch::APR_Section::PATCH_UPPER] = std::vector<uint8>(patchData[i].begin(), patchData[i].begin() + 15); //TODO - no range check done here...
-				patch[MKS80_Patch::APR_Section::PATCH_LOWER] = std::vector<uint8>(patchData[i].begin() + 15, patchData[i].end());
-				int upperTone = patch[MKS80_Patch::APR_Section::PATCH_UPPER][MKS80_Parameter::TONE_NUMBER];
-				patch[MKS80_Patch::APR_Section::TONE_UPPER] = toneData[upperTone];
-				int lowerTone = patch[MKS80_Patch::APR_Section::PATCH_LOWER][MKS80_Parameter::TONE_NUMBER];
-				//jassert(lowerTone== i); // If this is not guaranteed, we might not archive the whole data because a patch might refer to "outside" tone data, leaving tone data unused
-				patch[MKS80_Patch::APR_Section::TONE_LOWER] = toneData[lowerTone];
-				result.push_back(std::make_shared<MKS80_Patch>(std::make_shared<MKS80_PatchNumber>(MidiProgramNumber::fromZeroBase(i)), patch));
-			}
+			return patchesFromAPRs(toneData, patchData);
+		}
+		return result;
+	}
+
+	std::string MKS80::additionalFileExtensions()
+	{
+		return "*.m80;*.mks80";
+	}
+
+	bool MKS80::supportsExtension(std::string const &filename)
+	{
+		File file(filename);
+		return file.getFileExtension().toUpperCase() == ".M80" || file.getFileExtension().toUpperCase() == ".MKS80";
+	}
+
+	midikraft::TPatchVector MKS80::load(std::string const &fullpath, std::vector<uint8> const &fileContent)
+	{
+		File file(fullpath);
+		if (file.getFileExtension().toUpperCase() == ".M80") {
+			return MKS80_LegacyBankLoader::loadM80File(fileContent);
+		}
+		else if (file.getFileExtension().toUpperCase() == ".MKS80") {
+			return MKS80_LegacyBankLoader::loadMKS80File(fileContent);
+		}
+		jassert(false);
+		return {};
+	}
+
+	TPatchVector MKS80::patchesFromAPRs(std::vector<std::vector<uint8>> const &toneData, std::vector<std::vector<uint8>> const &patchData) {
+		TPatchVector result;
+
+		// Now, build up 64 standalone patches that ignore the complexity of where the tone data is stored in RAM
+		for (int i = 0; i < toneData.size(); i++) {
+			std::map<MKS80_Patch::APR_Section, std::vector<uint8>> patch;
+			patch[MKS80_Patch::APR_Section::PATCH_UPPER] = std::vector<uint8>(patchData[i].begin(), patchData[i].begin() + 15); //TODO - no range check done here...
+			patch[MKS80_Patch::APR_Section::PATCH_LOWER] = std::vector<uint8>(patchData[i].begin() + 15, patchData[i].end());
+			int upperTone = patch[MKS80_Patch::APR_Section::PATCH_UPPER][MKS80_Parameter::TONE_NUMBER];
+			patch[MKS80_Patch::APR_Section::TONE_UPPER] = toneData[upperTone];
+			int lowerTone = patch[MKS80_Patch::APR_Section::PATCH_LOWER][MKS80_Parameter::TONE_NUMBER];
+			//jassert(lowerTone== i); // If this is not guaranteed, we might not archive the whole data because a patch might refer to "outside" tone data, leaving tone data unused
+			patch[MKS80_Patch::APR_Section::TONE_LOWER] = toneData[lowerTone];
+			result.push_back(std::make_shared<MKS80_Patch>(std::make_shared<MKS80_PatchNumber>(MidiProgramNumber::fromZeroBase(i)), patch));
 		}
 
 		return result;
