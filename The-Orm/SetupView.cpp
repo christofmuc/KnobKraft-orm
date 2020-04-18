@@ -19,24 +19,30 @@
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
 	autoDetection_(autoDetection)/*, lights_(lights) */, functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
 {
+	// Build lists of input and output MIDI devices
+	int i = 0;
+	for (const auto &device : currentInputDevices()) {
+		inputLookup_[++i] = device;
+	}
+	
+	int j = 0;
+	for (const auto &device : currentOutputDevices()) {
+		outputLookup_[++j] = device;
+	}
+
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
-		auto button = new TextButton(synth.device()->getName());
-		button->setRadioGroupId(112);
-		buttons_.add(button);
-		addAndMakeVisible(button);
-
-		auto label = new Label();
-		labels_.add(label);
-		addAndMakeVisible(label);
-
-		auto color = new ColourSelector(ColourSelector::showColourspace);
+		String sectionName = synth.device()->getName();
 		
-		color->addChangeListener(this);
-		colours_.add(color);
-		addAndMakeVisible(color);
+		// For each synth, we need 5 properties: 
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Activated", sectionName, Value(1), ValueType::Bool, 0, 1 })));
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Sent to device", sectionName, Value(1), ValueType::Lookup, 1, (int) outputLookup_.size() + 1, outputLookup_ })));
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Receive from device", sectionName, Value(1), ValueType::Lookup, 1, (int)inputLookup_.size() + 1, inputLookup_ })));
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "MIDI channel", sectionName, Value(1), ValueType::Integer, 0, 15})));
 	}
 	refreshData();
+	addAndMakeVisible(propertyEditor_);
+	propertyEditor_.setProperties(properties_);
 
 	// Define function buttons
 	functionButtons_.setButtonDefinitions({
@@ -54,42 +60,39 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 			} } } 
 		});
 	addAndMakeVisible(functionButtons_);
+
+	UIModel::instance()->currentSynth_.addChangeListener(this);
+}
+
+SetupView::~SetupView() {
+	UIModel::instance()->currentSynth_.removeChangeListener(this);
 }
 
 void SetupView::resized() {
 	Rectangle<int> area(getLocalBounds());
 
 	functionButtons_.setBounds(area.removeFromBottom(40).reduced(8));
-
-	juce::Grid grid;
-	grid.setGap(20_px);
-	using Track = juce::Grid::TrackInfo;
-	for (int i = 0; i < buttons_.size(); i++) grid.templateRows.add(Track(1_fr));
-	for (int i = 0; i < 3; i++) grid.templateColumns.add(Track(1_fr));
-	for (int i = 0; i < buttons_.size(); i++) {
-		grid.items.add(juce::GridItem(buttons_[i]));
-		grid.items.add(juce::GridItem(labels_[i]));
-		grid.items.add(juce::GridItem(colours_[i]));
-	}
-	// Height of grid - max 100 * synths
-	int height = std::min(100 * buttons_.size(), area.getHeight() - 16);
-	grid.performLayout(area.removeFromTop(height).reduced(8));
+	propertyEditor_.setBounds(area.reduced(8));
 }
 
 void SetupView::refreshData() {
-	int i = 0;
+	int prop = 0;
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
-		labels_[i]->setText(midiSetupDescription(synth.device()), dontSendNotification);
-		labels_[i]->setColour(Label::ColourIds::backgroundColourId, synth.device()->channel().isValid() ? Colours::darkgreen : Colours::darkgrey);
-		//colours_[i]->setCurrentColour(synth.color(), dontSendNotification);
-		i++;
+		// Skip the active prop
+		prop++;
+		// Set output, input, and channel
+		properties_[prop++]->value.setValue(indexOfOutputDevice(synth.device()->midiOutput()));
+		properties_[prop++]->value.setValue(indexOfInputDevice(synth.device()->midiInput()));
+		properties_[prop++]->value.setValue(synth.device()->channel().toOneBasedInt());
 	}
 }
 
 void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 {
-	// Find out which of the color selectors sent this message
+	ignoreUnused(source);
+	refreshData();
+	/*// Find out which of the color selectors sent this message
 	for (int i = 0; i < colours_.size(); i++) {
 		if (colours_[i] == source) {
 			auto newColour = colours_[i]->getCurrentColour();
@@ -98,17 +101,44 @@ void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 			// Persist the new colour in the synth
 			//synths_[i].setColor(newColour);
 		}
-	}
+	}*/
 }
 
-std::string SetupView::midiSetupDescription(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) const
-{
-	if (synth->channel().isValid()) {
-		return (boost::format("Input: %s\nOutput: %s\nChannel: %d") %
-			synth->midiInput() % synth->midiOutput() % synth->channel().toOneBasedInt()).str();
+std::vector<std::string> SetupView::currentOutputDevices() const  {
+	std::vector<std::string> outputs;
+	auto devices = MidiOutput::getDevices();
+	for (const auto& device : devices) {
+		outputs.push_back(device.toStdString());
 	}
-	else {
-		return "Not detected";
-	}
+	return outputs;
 }
+
+//TODO this should go into MidiController
+std::vector<std::string> SetupView::currentInputDevices() const {
+	std::vector<std::string> inputs;
+	auto devices = MidiInput::getDevices();
+	for (const auto& device : devices) {
+		inputs.push_back(device.toStdString());
+	}
+	return inputs;
+}
+
+int SetupView::indexOfOutputDevice(std::string const &outputDevice) const {
+	for (auto const &d : outputLookup_) {
+		if (d.second == outputDevice) {
+			return d.first;
+		}
+	}
+	return 0;
+}
+
+int SetupView::indexOfInputDevice(std::string const &inputDevice) const {
+	for (auto const &d : inputLookup_) {
+		if (d.second == inputDevice) {
+			return d.first;
+		}
+	}
+	return 0;
+}
+
 
