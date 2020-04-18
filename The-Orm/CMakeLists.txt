@@ -47,6 +47,7 @@ set(SOURCES
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
 	SettingsView.cpp SettingsView.h
+	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
 	setup.iss
 	ideas.txt

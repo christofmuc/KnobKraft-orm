@@ -65,3 +65,24 @@ midikraft::PatchHolder  UIModel::currentPatch()
 }
 
 std::unique_ptr<UIModel> UIModel::instance_;
+
+void CurrentSynthList::setSynthList(std::vector<midikraft::SynthHolder> const &synths)
+{
+	synths_ = synths;
+	sendChangeMessage();
+}
+
+std::vector<midikraft::SynthHolder> CurrentSynthList::allSynths()
+{
+	return synths_;
+}
+
+std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthList::activeSynths()
+{
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
+	for (auto synth : synths_) {
+		if (!synth.device()) continue;
+		result.push_back(synth.device());
+	}
+	return result;
+}

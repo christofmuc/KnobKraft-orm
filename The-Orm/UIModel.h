@@ -11,6 +11,7 @@
 #include "Synth.h"
 #include "StepSequencer.h"
 #include "PatchHolder.h"
+#include "SynthHolder.h"
 #include "Session.h"
 
 class CurrentSynth : public ChangeBroadcaster {
@@ -64,6 +65,17 @@ private:
 	std::vector<std::shared_ptr<midikraft::SessionPatch>> sessionPatches;
 };
 
+class CurrentSynthList : public ChangeBroadcaster {
+public:
+	void setSynthList(std::vector<midikraft::SynthHolder> const &synths);
+
+	std::vector<midikraft::SynthHolder> allSynths();
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> activeSynths();
+
+private:
+	std::vector<midikraft::SynthHolder> synths_;
+};
+
 class UIModel {
 public:
 	static UIModel *instance();
@@ -78,6 +90,7 @@ public:
 	CurrentPatch currentPatch_; // Listen to this to get updated when the current patch changes
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified
 	CurrentSession currentSession_; // Listen to this to find out if the current session was modified
+	CurrentSynthList synthList_;
 
 private:
 	UIModel() {};

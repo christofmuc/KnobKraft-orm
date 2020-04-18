@@ -50,6 +50,7 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(matrix1000_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
+	UIModel::instance()->synthList_.setSynthList(synths);
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
 	for (auto s : synths) {
 		listItems.push_back(std::make_shared<ActiveSynthHolder>(s.synth(), s.color()));
@@ -122,6 +123,7 @@ MainComponent::MainComponent() :
 	// Create the patch view
 	patchView_ = std::make_unique<PatchView>(database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
+	setupView_ = std::make_unique<SetupView>(&autodetector_);
 
 	// Create Macro Definition view
 	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
@@ -140,6 +142,7 @@ MainComponent::MainComponent() :
 	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
 	mainTabs_.addTab("Settings", Colours::black, settingsView_.get(), false);
 	mainTabs_.addTab("Macros", Colours::black, keyboardView_.get(), false);
+	mainTabs_.addTab("Setup", Colours::black, setupView_.get(), false);
 
 	addAndMakeVisible(mainTabs_);
 

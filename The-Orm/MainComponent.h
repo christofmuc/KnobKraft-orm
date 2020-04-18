@@ -23,6 +23,7 @@
 #include "PatchView.h"
 #include "SettingsView.h"
 #include "KeyboardMacroView.h"
+#include "SetupView.h"
 
 #include "Rev2.h"
 #include "OB6.h"
@@ -66,6 +67,7 @@ private:
 	MidiLogView midiLogView_;
 	InsetBox midiLogArea_;
 	std::unique_ptr<SettingsView> settingsView_;
+	std::unique_ptr<SetupView> setupView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::vector<MidiMessage> currentDownload_;
 

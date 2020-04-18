@@ -24,7 +24,6 @@ Future work
   * Forward key
   * Backward key
   * Import edit buffer
-* Search box for patch name search
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * Make regular backups of Database
 * I could display which categories were set by the user, and which ones were autodetected
