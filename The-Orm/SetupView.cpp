@@ -46,12 +46,12 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 		properties_.back()->value.addListener(this);
 	}
 	refreshData();
-	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
-		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
-	header_.setColour(TextEditor::ColourIds::outlineColourId, Colours::black);
-	header_.setColour(TextEditor::ColourIds::backgroundColourId, Colours::black);
 	header_.setMultiLine(true);
 	header_.setReadOnly(true);
+	header_.setColour(TextEditor::ColourIds::outlineColourId, Colours::black);
+	header_.setColour(TextEditor::ColourIds::backgroundColourId, Colours::black);
+	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
+		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
 	addAndMakeVisible(header_);
 	addAndMakeVisible(propertyEditor_);
 	propertyEditor_.setProperties(properties_);
@@ -128,6 +128,9 @@ void SetupView::valueChanged(Value& value)
 				}
 				else if (prop->name == "MIDI channel") {
 					synthFound->setChannel(MidiChannel::fromOneBase(value.getValue()));
+				}
+				else if (prop->name == "Activated") {
+					UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
 				}
 				autoDetection_->persistSetting(synthFound.get());
 			//	quickConfigure();

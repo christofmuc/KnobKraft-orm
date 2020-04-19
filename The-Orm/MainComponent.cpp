@@ -51,21 +51,8 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
 	UIModel::instance()->synthList_.setSynthList(synths);
-	std::vector<std::shared_ptr<ActiveListItem>> listItems;
-	for (auto s : synths) {
-		listItems.push_back(std::make_shared<ActiveSynthHolder>(s.synth(), s.color()));
-	}
-
-	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {
-		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
-		if (activeSynth) {
-			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth().get());
-		}
-		else {
-			// What did you put into the list?
-			jassert(false);
-		}
-	});
+	refreshSynthList();
+	
 	autodetector_.addChangeListener(&synthList_);
 
 	// Create the menu bar structure
@@ -153,6 +140,7 @@ MainComponent::MainComponent() :
 
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
+	UIModel::instance()->synthList_.addChangeListener(this);
 	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
 
 	// Setup the rest of the UI
@@ -186,6 +174,7 @@ MainComponent::MainComponent() :
 
 MainComponent::~MainComponent()
 {
+	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
@@ -209,10 +198,41 @@ void MainComponent::resized()
 		true, true);
 }
 
+void MainComponent::refreshSynthList() {
+	std::vector<std::shared_ptr<ActiveListItem>> listItems;
+	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
+		auto reallyASynth = std::dynamic_pointer_cast<midikraft::Synth>(s);
+		if (reallyASynth) {
+			listItems.push_back(std::make_shared<ActiveSynthHolder>(reallyASynth, Colours::black));
+		}
+	}
+
+	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {
+		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
+		if (activeSynth) {
+			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth().get());
+		}
+		else {
+			// What did you put into the list?
+			jassert(false);
+		}
+	});
+
+	/*MessageManager::callAsync([this]() {
+		resized();
+	});*/
+}
+
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-	mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
+	if (source == &UIModel::instance()->synthList_) {
+		// A synth has been activated or deactivated - rebuild the whole list at the top
+		refreshSynthList();
+	}
+	else {
+		// The active synth has been switched, make sure to refresh the tab name properly
+		mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
+	}
 }
 
 File MainComponent::getAutoCategoryFile() const {

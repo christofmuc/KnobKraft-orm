@@ -68,12 +68,13 @@ private:
 class CurrentSynthList : public ChangeBroadcaster {
 public:
 	void setSynthList(std::vector<midikraft::SynthHolder> const &synths);
+	void setSynthActive(midikraft::SimpleDiscoverableDevice *synth, bool isActive);
 
 	std::vector<midikraft::SynthHolder> allSynths();
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> activeSynths();
 
 private:
-	std::vector<midikraft::SynthHolder> synths_;
+	std::vector<std::pair<midikraft::SynthHolder, bool>> synths_;	
 };
 
 class UIModel {

@@ -40,6 +40,7 @@ public:
     virtual void resized() override;
 
 private:
+	void refreshSynthList();
 	File getAutoCategoryFile() const;
 	void aboutBox();
 

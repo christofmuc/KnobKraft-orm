@@ -68,21 +68,42 @@ std::unique_ptr<UIModel> UIModel::instance_;
 
 void CurrentSynthList::setSynthList(std::vector<midikraft::SynthHolder> const &synths)
 {
-	synths_ = synths;
+	synths_.clear();
+	for (auto synth : synths) {
+		synths_.emplace_back(synth, true);
+	}
 	sendChangeMessage();
+}
+
+void CurrentSynthList::setSynthActive(midikraft::SimpleDiscoverableDevice *synth, bool isActive)
+{
+	for (auto &s : synths_) {
+		if (!s.first.device()) continue;
+		if (s.first.device()->getName() == synth->getName()) {
+			s.second = isActive;
+			sendChangeMessage();
+			return;
+		}
+	}
+	jassert(false);
 }
 
 std::vector<midikraft::SynthHolder> CurrentSynthList::allSynths()
 {
-	return synths_;
+	std::vector<midikraft::SynthHolder> result;
+	for (auto synth : synths_) {
+		result.push_back(synth.first);
+	}
+	return result;
 }
 
 std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthList::activeSynths()
 {
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
 	for (auto synth : synths_) {
-		if (!synth.device()) continue;
-		result.push_back(synth.device());
+		if (!synth.second) continue;
+		if (!synth.first.device()) continue;
+		result.push_back(synth.first.device());
 	}
 	return result;
 }
