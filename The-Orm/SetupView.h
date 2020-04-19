@@ -11,6 +11,7 @@
 //#include "HueLightControl.h"
 #include "PropertyEditor.h"
 #include "LambdaButtonStrip.h"
+#include "DebounceTimer.h"
 
 #include "AutoDetection.h"
 
@@ -45,5 +46,7 @@ private:
 	//HueLightControl * lights_;
 	LambdaButtonStrip functionButtons_;
 	PropertyEditor propertyEditor_;
+
+	DebounceTimer timedAction_;
 };
 

@@ -59,15 +59,9 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	// Define function buttons
 	functionButtons_.setButtonDefinitions({
 			{
-			"synthDetection", {0, "Quick check", [this]() {
+			"synthDetection", {0, "Re-check connectivity", [this]() {
 				quickConfigure();
-			} } },
-			{
-			"autoconfigure",{1, "Rerun Autoconfigure", [this]() {
-				auto currentSynths = UIModel::instance()->synthList_.activeSynths();
-				autoDetection_->autoconfigure(currentSynths, nullptr);
-				refreshData();
-			} } } 
+			} } }
 		});
 	addAndMakeVisible(functionButtons_);
 
@@ -133,7 +127,9 @@ void SetupView::valueChanged(Value& value)
 					UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
 				}
 				autoDetection_->persistSetting(synthFound.get());
-			//	quickConfigure();
+				timedAction_.callDebounced([this]() {
+					quickConfigure();
+				}, 1000);
 			}
 			else {
 				jassert(false);

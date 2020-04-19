@@ -217,10 +217,6 @@ void MainComponent::refreshSynthList() {
 			jassert(false);
 		}
 	});
-
-	/*MessageManager::callAsync([this]() {
-		resized();
-	});*/
 }
 
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
