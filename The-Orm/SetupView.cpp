@@ -17,7 +17,8 @@
 #include <boost/format.hpp>
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
-	autoDetection_(autoDetection)/*, lights_(lights) */, functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
+	autoDetection_(autoDetection)/*, lights_(lights) */, 
+	functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
 {
 	// Build lists of input and output MIDI devices
 	int i = 0;
@@ -34,13 +35,24 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 		if (!synth.device()) continue;
 		String sectionName = synth.device()->getName();
 		
-		// For each synth, we need 5 properties: 
+		// For each synth, we need 4 properties, and we need to listen to changes: 
 		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Activated", sectionName, Value(1), ValueType::Bool, 0, 1 })));
+		properties_.back()->value.addListener(this);
 		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Sent to device", sectionName, Value(1), ValueType::Lookup, 1, (int) outputLookup_.size() + 1, outputLookup_ })));
+		properties_.back()->value.addListener(this);
 		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Receive from device", sectionName, Value(1), ValueType::Lookup, 1, (int)inputLookup_.size() + 1, inputLookup_ })));
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "MIDI channel", sectionName, Value(1), ValueType::Integer, 0, 15})));
+		properties_.back()->value.addListener(this);
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "MIDI channel", sectionName, Value(1), ValueType::Integer, 1, 16})));
+		properties_.back()->value.addListener(this);
 	}
 	refreshData();
+	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
+		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
+	header_.setColour(TextEditor::ColourIds::outlineColourId, Colours::black);
+	header_.setColour(TextEditor::ColourIds::backgroundColourId, Colours::black);
+	header_.setMultiLine(true);
+	header_.setReadOnly(true);
+	addAndMakeVisible(header_);
 	addAndMakeVisible(propertyEditor_);
 	propertyEditor_.setProperties(properties_);
 
@@ -48,9 +60,7 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	functionButtons_.setButtonDefinitions({
 			{
 			"synthDetection", {0, "Quick check", [this]() {
-				auto currentSynths = UIModel::instance()->synthList_.activeSynths();
-				autoDetection_->quickconfigure(currentSynths); // This rather should be synchronous!
-				refreshData();
+				quickConfigure();
 			} } },
 			{
 			"autoconfigure",{1, "Rerun Autoconfigure", [this]() {
@@ -71,8 +81,17 @@ SetupView::~SetupView() {
 void SetupView::resized() {
 	Rectangle<int> area(getLocalBounds());
 
+	int width = std::min(area.getWidth(), 600);
+
 	functionButtons_.setBounds(area.removeFromBottom(40).reduced(8));
-	propertyEditor_.setBounds(area.reduced(8));
+	header_.setBounds(area.removeFromTop(100).withSizeKeepingCentre(width, 100).reduced(8));
+	propertyEditor_.setBounds(area.withSizeKeepingCentre(width, area.getHeight()).reduced(8));
+}
+
+void SetupView::setValueWithoutListeners(Value &value, int newValue) {
+	value.removeListener(this);
+	value.setValue(newValue);
+	value.addListener(this);
 }
 
 void SetupView::refreshData() {
@@ -82,9 +101,41 @@ void SetupView::refreshData() {
 		// Skip the active prop
 		prop++;
 		// Set output, input, and channel
-		properties_[prop++]->value.setValue(indexOfOutputDevice(synth.device()->midiOutput()));
-		properties_[prop++]->value.setValue(indexOfInputDevice(synth.device()->midiInput()));
-		properties_[prop++]->value.setValue(synth.device()->channel().toOneBasedInt());
+		setValueWithoutListeners(properties_[prop++]->value, indexOfOutputDevice(synth.device()->midiOutput()));
+		setValueWithoutListeners(properties_[prop++]->value, indexOfInputDevice(synth.device()->midiInput()));
+		setValueWithoutListeners(properties_[prop++]->value, synth.device()->channel().toOneBasedInt());
+	}
+}
+
+void SetupView::valueChanged(Value& value)
+{
+	// Determine the property that was changed
+	for (auto prop : properties_) {
+		if (prop->value.refersToSameSourceAs(value)) {
+			std::shared_ptr<midikraft::SimpleDiscoverableDevice> synthFound;
+			for (auto synth : UIModel::instance()->synthList_.allSynths()) {
+				if (synth.device() && synth.device()->getName() == prop->sectionName) {
+					synthFound = synth.device();
+				}
+			}
+
+			if (synthFound) {
+				if (prop->name == "Sent to device") {
+					synthFound->setOutput(outputLookup_[value.getValue()]);
+				}
+				else if (prop->name == "Receive from device") {
+					synthFound->setInput(inputLookup_[value.getValue()]);
+				}
+				else if (prop->name == "MIDI channel") {
+					synthFound->setChannel(MidiChannel::fromOneBase(value.getValue()));
+				}
+				autoDetection_->persistSetting(synthFound.get());
+			//	quickConfigure();
+			}
+			else {
+				jassert(false);
+			}
+		}
 	}
 }
 
@@ -102,6 +153,13 @@ void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 			//synths_[i].setColor(newColour);
 		}
 	}*/
+}
+
+void SetupView::quickConfigure()
+{
+	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
+	autoDetection_->quickconfigure(currentSynths); // This rather should be synchronous!
+	refreshData();
 }
 
 std::vector<std::string> SetupView::currentOutputDevices() const  {
