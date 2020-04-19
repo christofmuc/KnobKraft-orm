@@ -107,3 +107,13 @@ std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthLi
 	}
 	return result;
 }
+
+bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth)
+{
+	for (auto s : activeSynths()) {
+		if (s->getName() == synth->getName()) {
+			return true;
+		}
+	}
+	return false;
+}

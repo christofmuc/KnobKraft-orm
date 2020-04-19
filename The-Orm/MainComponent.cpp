@@ -15,6 +15,8 @@
 #include "AutoCategorizeWindow.h"
 #include "AutoDetectProgressWindow.h"
 
+#include "Settings.h"
+
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
 	ActiveSynthHolder(std::shared_ptr<midikraft::Synth> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
@@ -51,6 +53,15 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
 	UIModel::instance()->synthList_.setSynthList(synths);
+
+	// Load activated state
+	for (auto synth : synths) {
+		if (!synth.device()) continue;
+		auto activeKey = String(synth.device()->getName()) + String("-activated");
+		auto active = var(String(Settings::instance().get(activeKey.toStdString(), "1")));
+		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
+	}
+
 	refreshSynthList();
 	
 	autodetector_.addChangeListener(&synthList_);

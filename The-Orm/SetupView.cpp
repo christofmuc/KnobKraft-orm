@@ -11,6 +11,7 @@
 #include "SoundExpanderCapability.h"
 #include "Logger.h"
 #include "AutoDetection.h"
+#include "Settings.h"
 
 #include "UIModel.h"
 
@@ -93,7 +94,7 @@ void SetupView::refreshData() {
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		// Skip the active prop
-		prop++;
+		setValueWithoutListeners(properties_[prop++]->value, UIModel::instance()->synthList_.isSynthActive(synth.device()));
 		// Set output, input, and channel
 		setValueWithoutListeners(properties_[prop++]->value, indexOfOutputDevice(synth.device()->midiOutput()));
 		setValueWithoutListeners(properties_[prop++]->value, indexOfInputDevice(synth.device()->midiInput()));
@@ -125,6 +126,8 @@ void SetupView::valueChanged(Value& value)
 				}
 				else if (prop->name == "Activated") {
 					UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
+					auto activeKey = String(synthFound->getName()) + String("-activated");
+					Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
 				}
 				autoDetection_->persistSetting(synthFound.get());
 				timedAction_.callDebounced([this]() {
