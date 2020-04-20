@@ -24,6 +24,7 @@
 #include "SettingsView.h"
 #include "KeyboardMacroView.h"
 #include "SetupView.h"
+#include "RecordingView.h"
 
 #include "Rev2.h"
 #include "OB6.h"
@@ -70,6 +71,7 @@ private:
 	std::unique_ptr<SettingsView> settingsView_;
 	std::unique_ptr<SetupView> setupView_;
 	std::unique_ptr<LogViewLogger> logger_;
+	std::unique_ptr<RecordingView> recordingView_;
 	std::vector<MidiMessage> currentDownload_;
 
 	InsetBox logArea_;

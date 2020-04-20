@@ -43,6 +43,11 @@ Database schema
 * Should think about naming convention
 * Should create indexes where needed 
 
+Autosampler 
+* Auto-Thumbnailing
+* Render thumbnails
+* Save them... where?
+
 MIDI setup
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
 
