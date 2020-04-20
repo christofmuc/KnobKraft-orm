@@ -9,6 +9,7 @@
 #include "JuceHeader.h"
 
 #include "AudioRecorder.h"
+#include "Thumbnail.h"
 
 class RecordingView : public Component {
 public:
@@ -25,5 +26,7 @@ private:
 	AudioSourcePlayer audioSource_;
 
 	AudioRecorder recorder_;
+
+	Thumbnail thumbnail_;
 };
 

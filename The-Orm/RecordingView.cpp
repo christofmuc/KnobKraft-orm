@@ -9,7 +9,7 @@
 #include "Logger.h"
 
 RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
-	recorder_(File("."), "knobkraft-audio-log", RecordingType::WAV)
+	recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV)
 {
 	addAndMakeVisible(deviceSelector_);
 
@@ -19,6 +19,9 @@ RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, fal
 	}
 
 	deviceManager_.addAudioCallback(&recorder_);
+
+	addAndMakeVisible(thumbnail_);
+	thumbnail_.loadFromFile(File::getCurrentWorkingDirectory().getChildFile("knobkraft-audio-log-2020-04-20-14-04-58.wav").getFullPathName().toStdString());
 }
 
 RecordingView::~RecordingView()
@@ -34,6 +37,7 @@ void RecordingView::resized()
 {
 	auto area = getLocalBounds();
 
+	thumbnail_.setBounds(area.removeFromBottom(100).reduced(8));
 	deviceSelector_.setBounds(area.reduced(8));
 }
 
