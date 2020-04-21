@@ -10,8 +10,11 @@
 
 #include "AudioRecorder.h"
 #include "Thumbnail.h"
+#include "TimedMidiSender.h"
 
-class RecordingView : public Component {
+#include "LambdaButtonStrip.h"
+
+class RecordingView : public Component, private ChangeListener {
 public:
 	RecordingView();
 	~RecordingView();
@@ -20,13 +23,19 @@ public:
 
 	virtual void resized() override;
 
+	void sampleNote();
+
 private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
+
 	AudioDeviceManager deviceManager_;
 	AudioDeviceSelectorComponent deviceSelector_;
 	AudioSourcePlayer audioSource_;
 
 	AudioRecorder recorder_;
+	midikraft::TimedMidiSender midiSender_;
 
+	LambdaButtonStrip buttons_;
 	Thumbnail thumbnail_;
 };
 
