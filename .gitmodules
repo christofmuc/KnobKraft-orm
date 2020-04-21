@@ -7,33 +7,41 @@
 [submodule "MidiKraft-base"]
 	path = MidiKraft-base
 	url = https://github.com/christofmuc/MidiKraft-base.git
+	branch = master
 [submodule "juce-widgets"]
 	path = juce-widgets
 	url = https://github.com/christofmuc/juce-widgets.git
+	branch = master
 [submodule "juce-utils"]
 	path = juce-utils
 	url = https://github.com/christofmuc/juce-utils.git
+	branch = master
 [submodule "third_party/rapidjson"]
 	path = third_party/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
 [submodule "MidiKraft-librarian"]
 	path = MidiKraft-librarian
 	url = https://github.com/christofmuc/MidiKraft-librarian.git
+	branch = master
 [submodule "synths/MidiKraft-sequential-rev2"]
 	path = synths/MidiKraft-sequential-rev2
 	url = https://github.com/christofmuc/MidiKraft-sequential-rev2.git
+	branch = master
 [submodule "third_party/dtl"]
 	path = third_party/dtl
 	url = https://github.com/cubicdaiya/dtl.git
 [submodule "MidiKraft-database"]
 	path = MidiKraft-database
 	url = https://github.com/christofmuc/MidiKraft-database.git
+	branch = master
 [submodule "third_party/SQLiteCpp"]
 	path = third_party/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
 [submodule "synths/MidiKraft-sequential-ob6"]
 	path = synths/MidiKraft-sequential-ob6
 	url = https://github.com/christofmuc/MidiKraft-sequential-ob6.git
+	branch = master
 [submodule "synths/MidiKraft-oberheim-matrix1000"]
 	path = synths/MidiKraft-oberheim-matrix1000
 	url = https://github.com/christofmuc/MidiKraft-oberheim-matrix1000.git
+	branch = master
