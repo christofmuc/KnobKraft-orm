@@ -20,7 +20,6 @@ RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, fal
 	if (!audioError.isEmpty()) {
 		SimpleLogger::instance()->postMessage("Error initializing audio device manager: " + audioError);
 	}
-	recorder_.setRecording(false, []() {});
 	deviceManager_.addAudioCallback(&recorder_);
 
 	addAndMakeVisible(thumbnail_);
@@ -55,12 +54,32 @@ void RecordingView::resized()
 	deviceSelector_.setBounds(area.reduced(8));
 }
 
+File RecordingView::getPrehearDirectory() {
+	File dataDir = File::getSpecialLocation(File::userApplicationDataDirectory);
+
+	//TODO this could be done more elegantly
+	if (!dataDir.getChildFile("KnobKraftOrm").exists()) {
+		dataDir.getChildFile("KnobKraftOrm").createDirectory();
+	}
+	if (!dataDir.getChildFile("KnobKraftOrm").getChildFile("PatchPrehear").exists()) {
+		dataDir.getChildFile("KnobKraftOrm").getChildFile("PatchPrehear").createDirectory();
+	}
+	return dataDir.getChildFile("KnobKraftOrm").getChildFile("PatchPrehear");
+}
+
 void RecordingView::sampleNote() {
+	if (!UIModel::currentPatch().patch()) return;
+
+	auto patchMD5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), UIModel::currentPatch().patch());
+
+	File directory = getPrehearDirectory();
+	std::string filename = directory.getChildFile(patchMD5 + ".wav").getFullPathName().toStdString();
+
 	// Ok, what we'll do is to 
 	// a) start the recorder to listen for audio coming in
 	// b) send a MIDI note to the current synth
 	// register a callback that the recorder will call when the signal is done, and then refresh the Thumbnail
-	recorder_.setRecording(true, [this]() {
+	recorder_.startRecording(filename ,true, [this]() {
 		String filename = recorder_.getFilename();
 		thumbnail_.loadFromFile(filename.toStdString());
 	});
