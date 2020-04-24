@@ -74,17 +74,17 @@ void RecordingView::resized()
 	deviceSelector_.setBounds(area.reduced(8));
 }
 
-File RecordingView::getPrehearDirectory() {
-	File dataDir = File::getSpecialLocation(File::userApplicationDataDirectory);
+File getOrCreateSubdirectory(File dir, String const &name) {
+	File subdir = dir.getChildFile(name);
+	if (!subdir.exists()) {
+		subdir.createDirectory();
+	}
+	return subdir;
+}
 
-	//TODO this could be done more elegantly
-	if (!dataDir.getChildFile("KnobKraftOrm").exists()) {
-		dataDir.getChildFile("KnobKraftOrm").createDirectory();
-	}
-	if (!dataDir.getChildFile("KnobKraftOrm").getChildFile("PatchPrehear").exists()) {
-		dataDir.getChildFile("KnobKraftOrm").getChildFile("PatchPrehear").createDirectory();
-	}
-	return dataDir.getChildFile("KnobKraftOrm").getChildFile("PatchPrehear");
+File RecordingView::getPrehearDirectory() {
+	auto knobkraftorm = getOrCreateSubdirectory(File::getSpecialLocation(File::userApplicationDataDirectory), "KnobKraftOrm"); //TODO this should be a define?
+	return getOrCreateSubdirectory(knobkraftorm, "PatchPrehear");
 }
 
 void RecordingView::sampleNote() {
