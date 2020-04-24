@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "MidiNote.h"
 #include "UIModel.h"
+#include "Settings.h"
 
 RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
 	recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV), buttons_(1111, LambdaButtonStrip::Direction::Horizontal),
@@ -16,7 +17,17 @@ RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, fal
 {
 	addAndMakeVisible(deviceSelector_);
 
-	auto audioError = deviceManager_.initialise(1, 0, nullptr, true);
+	// Load last setup
+	std::string xmlString = Settings::instance().get("audioSetup", "");
+	std::unique_ptr<XmlElement> xml;
+	if (!xmlString.empty()) {
+		// Try to parse this as XML
+		xml = XmlDocument::parse(xmlString);
+		if (!xml) {
+			SimpleLogger::instance()->postMessage("Settings file corrupt, error parsing audio setup");
+		}
+	}
+	auto audioError = deviceManager_.initialise(1, 0, xml.get(), true);
 	if (!audioError.isEmpty()) {
 		SimpleLogger::instance()->postMessage("Error initializing audio device manager: " + audioError);
 	}
@@ -39,6 +50,15 @@ RecordingView::~RecordingView()
 {
 	thumbnail_.removeChangeListener(this);
 	stopAudio();
+
+	// Save the selected Audio device for the next startup
+	auto xml = deviceManager_.createStateXml();
+	if (xml) {
+		// Could be nullptr if the user did not touch the default...
+		String setupString = xml->toString();
+		// Store in the settings file
+		Settings::instance().set("audioSetup", setupString.toStdString());
+	}
 }
 
 void RecordingView::stopAudio() {
