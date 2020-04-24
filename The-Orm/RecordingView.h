@@ -28,8 +28,6 @@ public:
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
-	File getPrehearDirectory();
-
 	AudioDeviceManager deviceManager_;
 	AudioDeviceSelectorComponent deviceSelector_;
 	AudioSourcePlayer audioSource_;

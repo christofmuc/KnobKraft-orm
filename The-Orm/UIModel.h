@@ -87,6 +87,8 @@ public:
 	static midikraft::StepSequencer *currentSequencer();
 	static midikraft::PatchHolder currentPatch();
 
+	static File getPrehearDirectory();
+
 	CurrentSynth currentSynth_; // Listen to this to get updated when the active synth is switched
 	CurrentSequencer currentSequencer_;
 	CurrentPatch currentPatch_; // Listen to this to get updated when the current patch changes

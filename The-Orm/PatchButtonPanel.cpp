@@ -7,6 +7,7 @@
 #include "PatchButtonPanel.h"
 
 #include "Patch.h"
+#include "UIModel.h"
 
 #include <boost/format.hpp>
 #include <algorithm>
@@ -58,6 +59,15 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	}
 }
 
+String PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
+	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
+	File prehear = UIModel::getPrehearDirectory().getChildFile(md5 + ".wav");
+	if (prehear.existsAsFile()) {
+		return prehear.getFullPathName();
+	}
+	return "";
+}
+
 void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
@@ -83,12 +93,14 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
 				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
 				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
+				patchButtons_->buttonWithIndex(i)->setThumbnailFile(findPrehearFile(patches_[i]));
 			}
 			else {
 				patchButtons_->buttonWithIndex(i)->setButtonText("");
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, Colours::black);
 				patchButtons_->buttonWithIndex(i)->setFavorite(false);
 				patchButtons_->buttonWithIndex(i)->setHidden(false);
+				patchButtons_->buttonWithIndex(i)->clearThumbnailFile();
 			}
 		}
 	}

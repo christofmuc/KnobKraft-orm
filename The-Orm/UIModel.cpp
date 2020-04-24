@@ -6,6 +6,8 @@
 
 #include "UIModel.h"
 
+#include "FileHelpers.h"
+
 void CurrentSynth::changeCurrentSynth(midikraft::Synth *activeSynth)
 {
 	currentSynth_ = activeSynth;
@@ -62,6 +64,12 @@ midikraft::StepSequencer * UIModel::currentSequencer()
 midikraft::PatchHolder  UIModel::currentPatch()
 {
 	return instance_->currentPatch_.patch();
+}
+
+juce::File UIModel::getPrehearDirectory()
+{
+	auto knobkraftorm = getOrCreateSubdirectory(File::getSpecialLocation(File::userApplicationDataDirectory), "KnobKraftOrm"); //TODO this should be a define?
+	return getOrCreateSubdirectory(knobkraftorm, "PatchPrehear");
 }
 
 std::unique_ptr<UIModel> UIModel::instance_;

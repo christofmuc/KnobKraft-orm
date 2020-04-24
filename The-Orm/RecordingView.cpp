@@ -74,26 +74,12 @@ void RecordingView::resized()
 	deviceSelector_.setBounds(area.reduced(8));
 }
 
-File getOrCreateSubdirectory(File dir, String const &name) {
-	File subdir = dir.getChildFile(name);
-	if (!subdir.exists()) {
-		subdir.createDirectory();
-	}
-	return subdir;
-}
-
-File RecordingView::getPrehearDirectory() {
-	auto knobkraftorm = getOrCreateSubdirectory(File::getSpecialLocation(File::userApplicationDataDirectory), "KnobKraftOrm"); //TODO this should be a define?
-	return getOrCreateSubdirectory(knobkraftorm, "PatchPrehear");
-}
-
 void RecordingView::sampleNote() {
 	if (!UIModel::currentPatch().patch()) return;
 
 	auto patchMD5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), UIModel::currentPatch().patch());
 
-	File directory = getPrehearDirectory();
-	std::string filename = directory.getChildFile(patchMD5 + ".wav").getFullPathName().toStdString();
+	std::string filename = UIModel::getPrehearDirectory().getChildFile(patchMD5 + ".wav").getFullPathName().toStdString();
 
 	// Ok, what we'll do is to 
 	// a) start the recorder to listen for audio coming in
