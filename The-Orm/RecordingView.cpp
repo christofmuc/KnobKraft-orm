@@ -87,7 +87,7 @@ void RecordingView::sampleNote() {
 	// register a callback that the recorder will call when the signal is done, and then refresh the Thumbnail
 	recorder_.startRecording(filename ,true, [this]() {
 		String filename = recorder_.getFilename();
-		thumbnail_.loadFromFile(filename.toStdString());
+		thumbnail_.loadFromFile(filename.toStdString(), "");
 	});
 
 	auto currentChannel = UIModel::instance()->currentSynth()->channel();

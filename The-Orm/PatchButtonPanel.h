@@ -27,6 +27,7 @@ public:
 	void setTotalCount(int totalCount);
 	void setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget = -1);
 	
+
 	void refresh(bool async, int autoSelectTarget = -1);
 
 	void resized() override;
@@ -41,8 +42,9 @@ public:
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 
-private:
-	String findPrehearFile(midikraft::PatchHolder const &patch);
+private:	
+	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
+	File findPrehearFile(midikraft::PatchHolder const &patch);
 	int indexOfActive() const;
 
 	midikraft::MidiController::HandlerHandle callback_  = midikraft::MidiController::makeOneHandle();

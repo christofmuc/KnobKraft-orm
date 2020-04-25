@@ -72,6 +72,12 @@ juce::File UIModel::getPrehearDirectory()
 	return getOrCreateSubdirectory(knobkraftorm, "PatchPrehear");
 }
 
+juce::File UIModel::getThumbnailDirectory()
+{
+	auto knobkraftorm = getOrCreateSubdirectory(File::getSpecialLocation(File::userApplicationDataDirectory), "KnobKraftOrm"); //TODO this should be a define?
+	return getOrCreateSubdirectory(knobkraftorm, "PatchThumbnails");
+}
+
 std::unique_ptr<UIModel> UIModel::instance_;
 
 void CurrentSynthList::setSynthList(std::vector<midikraft::SynthHolder> const &synths)

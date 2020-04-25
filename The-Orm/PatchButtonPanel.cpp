@@ -59,13 +59,26 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	}
 }
 
-String PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
+String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {
 	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
+	File thumbnailCache = UIModel::getThumbnailDirectory().getChildFile(md5 + ".kkc");
+	return thumbnailCache.getFullPathName();
+}
+
+File PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
+	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
+
+	// First check the cache
+	File thumbnailCache(createNameOfThubnailCacheFile(patch));
+	if (thumbnailCache.existsAsFile()) {
+		return thumbnailCache;
+	}
+
 	File prehear = UIModel::getPrehearDirectory().getChildFile(md5 + ".wav");
 	if (prehear.existsAsFile()) {
-		return prehear.getFullPathName();
+		return prehear;
 	}
-	return "";
+	return File();
 }
 
 void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
@@ -93,7 +106,18 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
 				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
 				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
-				patchButtons_->buttonWithIndex(i)->setThumbnailFile(findPrehearFile(patches_[i]));
+				File thumbnail = findPrehearFile(patches_[i]);
+				if (thumbnail.existsAsFile()) {
+					if (thumbnail.getFileExtension() == ".wav") {
+						patchButtons_->buttonWithIndex(i)->setThumbnailFile(thumbnail.getFullPathName().toStdString(), createNameOfThubnailCacheFile(patches_[i]).toStdString());
+					}
+					else {
+						patchButtons_->buttonWithIndex(i)->setThumbnailFromCache(Thumbnail::loadCacheInfo(thumbnail));
+					}
+				}
+				else {
+					patchButtons_->buttonWithIndex(i)->clearThumbnailFile();
+				}
 			}
 			else {
 				patchButtons_->buttonWithIndex(i)->setButtonText("");

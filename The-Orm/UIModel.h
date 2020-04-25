@@ -88,6 +88,7 @@ public:
 	static midikraft::PatchHolder currentPatch();
 
 	static File getPrehearDirectory();
+	static File getThumbnailDirectory();
 
 	CurrentSynth currentSynth_; // Listen to this to get updated when the active synth is switched
 	CurrentSequencer currentSequencer_;
@@ -97,7 +98,7 @@ public:
 	CurrentSynthList synthList_;
 
 private:
-	UIModel() {};
+	UIModel() = default;
 
 	static std::unique_ptr<UIModel> instance_;
 };
