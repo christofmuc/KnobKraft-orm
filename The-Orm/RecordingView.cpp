@@ -12,7 +12,7 @@
 #include "Settings.h"
 #include "AutoThumbnailingDialog.h"
 
-RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
+RecordingView::RecordingView(PatchView &patchView) : patchView_(patchView), deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
 	recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV), buttons_(1111, LambdaButtonStrip::Direction::Horizontal),
 	midiSender_(48000)
 {
@@ -38,10 +38,10 @@ RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, fal
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "performSample", { 0, "Sample one note", [this]() {
-		sampleNote([]() {});
+		sampleNote();
 	} } },
 	{ "autoThumbnail", { 1, "Create thumbnails", [this]() {
-		AutoThubnailingDialog dialog(*this);
+		AutoThumbnailingDialog dialog(patchView_, *this);
 		dialog.runThread();
 	} } },
 	};
@@ -79,7 +79,7 @@ void RecordingView::resized()
 	deviceSelector_.setBounds(area.reduced(8));
 }
 
-void RecordingView::sampleNote(std::function<void()> doneHandler) {
+void RecordingView::sampleNote() {
 	if (!UIModel::currentPatch().patch()) return;
 
 	auto patchMD5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), UIModel::currentPatch().patch());
@@ -90,10 +90,10 @@ void RecordingView::sampleNote(std::function<void()> doneHandler) {
 	// a) start the recorder to listen for audio coming in
 	// b) send a MIDI note to the current synth
 	// register a callback that the recorder will call when the signal is done, and then refresh the Thumbnail
-	recorder_.startRecording(filename ,true, [this, doneHandler]() {
+	recorder_.startRecording(filename ,true, [this]() {
 		String filename = recorder_.getFilename();
 		thumbnail_.loadFromFile(filename.toStdString(), "");
-		doneHandler();
+		sendChangeMessage();
 	});
 
 	auto currentChannel = UIModel::instance()->currentSynth()->channel();
@@ -104,6 +104,11 @@ void RecordingView::sampleNote(std::function<void()> doneHandler) {
 		midiSender_.addMessageToBuffer(UIModel::currentSynth()->midiOutput(), noteOn, 0.0);
 		midiSender_.addMessageToBuffer(UIModel::currentSynth()->midiOutput(), noteOff, 0.5);
 	}
+}
+
+bool RecordingView::hasDetectedSignal() const
+{
+	return recorder_.hasDetectedSignal();
 }
 
 void RecordingView::changeListenerCallback(ChangeBroadcaster* source)

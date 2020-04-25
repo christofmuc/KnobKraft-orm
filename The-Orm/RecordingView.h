@@ -14,19 +14,24 @@
 
 #include "LambdaButtonStrip.h"
 
-class RecordingView : public Component, private ChangeListener {
+#include "PatchView.h"
+
+class RecordingView : public Component, public ChangeBroadcaster, private ChangeListener {
 public:
-	RecordingView();
+	RecordingView(PatchView &patchView);
 	~RecordingView();
 
 	void stopAudio();
 
 	virtual void resized() override;
 
-	void sampleNote(std::function<void()> doneHandler);
+	void sampleNote();
+	bool hasDetectedSignal() const;
 
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
+
+	PatchView &patchView_;
 
 	AudioDeviceManager deviceManager_;
 	AudioDeviceSelectorComponent deviceSelector_;

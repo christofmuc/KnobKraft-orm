@@ -122,7 +122,7 @@ MainComponent::MainComponent() :
 	patchView_ = std::make_unique<PatchView>(database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
-	recordingView_ = std::make_unique<RecordingView>();
+	recordingView_ = std::make_unique<RecordingView>(*patchView_);
 
 	// Create Macro Definition view
 	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {

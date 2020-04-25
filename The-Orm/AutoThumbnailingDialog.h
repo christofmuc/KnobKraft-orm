@@ -8,15 +8,22 @@
 
 #include "JuceHeader.h"
 
+#include "PatchView.h"
 #include "RecordingView.h"
 
-class AutoThubnailingDialog : public ThreadWithProgressWindow {
+class AutoThumbnailingDialog : public ThreadWithProgressWindow, private ChangeListener {
 public:
-	AutoThubnailingDialog(RecordingView &recordingView);
+	AutoThumbnailingDialog(PatchView &patchView, RecordingView &recordingView);
+	virtual ~AutoThumbnailingDialog();
 
 	virtual void run() override;
 
 private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
+
+	PatchView &patchView_;
 	RecordingView &recordingView_;
+	bool patchSwitched_;
+	bool thumbnailDone_;
 };
 
