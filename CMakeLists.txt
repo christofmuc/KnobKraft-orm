@@ -8,6 +8,8 @@ cmake_minimum_required(VERSION 3.14)
 
 project(KnobKraft_Orm)
 
+#set(USE_ASIO true)
+
 # On Windows, we need to download external dependencies
 IF (WIN32)
 	# Include useful scripts for CMake    
@@ -32,6 +34,16 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(vcredist)
 	set(VCREDIST_PATH "${CMAKE_CURRENT_BINARY_DIR}/_deps/vcredist-subbuild/vcredist-populate-prefix/src")
+
+	IF (USE_ASIO)
+		add_definitions(-DJUCE_ASIO)
+		FetchContent_Declare(
+		  asiosdk
+		  URL https://www.steinberg.net/asiosdk
+		)
+		FetchContent_MakeAvailable(asiosdk)
+		include_directories("${asiosdk_SOURCE_DIR}/common")
+	ENDIF()
 ENDIF()
 
 # We need a little bit support for the JUCE library, and also want to put our own CMake helpers on the module path
