@@ -23,7 +23,7 @@ public:
 
 	virtual void resized() override;
 
-	void sampleNote();
+	void sampleNote(std::function<void()> doneHandler);
 
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;

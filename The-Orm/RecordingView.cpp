@@ -10,6 +10,7 @@
 #include "MidiNote.h"
 #include "UIModel.h"
 #include "Settings.h"
+#include "AutoThumbnailingDialog.h"
 
 RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
 	recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV), buttons_(1111, LambdaButtonStrip::Direction::Horizontal),
@@ -37,7 +38,11 @@ RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, fal
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "performSample", { 0, "Sample one note", [this]() {
-		sampleNote();
+		sampleNote([]() {});
+	} } },
+	{ "autoThumbnail", { 1, "Create thumbnails", [this]() {
+		AutoThubnailingDialog dialog(*this);
+		dialog.runThread();
 	} } },
 	};
 	buttons_.setButtonDefinitions(buttons);
@@ -74,7 +79,7 @@ void RecordingView::resized()
 	deviceSelector_.setBounds(area.reduced(8));
 }
 
-void RecordingView::sampleNote() {
+void RecordingView::sampleNote(std::function<void()> doneHandler) {
 	if (!UIModel::currentPatch().patch()) return;
 
 	auto patchMD5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), UIModel::currentPatch().patch());
@@ -85,9 +90,10 @@ void RecordingView::sampleNote() {
 	// a) start the recorder to listen for audio coming in
 	// b) send a MIDI note to the current synth
 	// register a callback that the recorder will call when the signal is done, and then refresh the Thumbnail
-	recorder_.startRecording(filename ,true, [this]() {
+	recorder_.startRecording(filename ,true, [this, doneHandler]() {
 		String filename = recorder_.getFilename();
 		thumbnail_.loadFromFile(filename.toStdString(), "");
+		doneHandler();
 	});
 
 	auto currentChannel = UIModel::instance()->currentSynth()->channel();

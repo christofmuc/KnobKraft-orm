@@ -36,6 +36,7 @@ find_package(JUCE REQUIRED
 set(SOURCES
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
+	AutoThumbnailingDialog.cpp AutoThumbnailingDialog.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
