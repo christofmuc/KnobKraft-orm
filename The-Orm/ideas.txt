@@ -13,6 +13,7 @@ Macro page
 
 Librarian
 * Allow multi-select of banks to import (with all feature)
+* Advanced filter editor to allow to filter for specific patch settings (e.g. sync sounds only)
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
@@ -43,10 +44,18 @@ Database schema
 * Should think about naming convention
 * Should create indexes where needed 
 
-Autosampler 
-* Auto-Thumbnailing
-* Render thumbnails
-* Save them... where?
+Autosampler (the lazy synthesist)
+* Progress bar needs to work. Needs to be able to stop.
+* How to decide this is a drone and will not stop (endless release?)
+* Need to be able to sample first one
+* Need to connect input with output
+* Need to enable ASIO build
+* Need preview mode that will play it to synth (when synth is not turned on?)
+* Could allow to record "played" previews with typical midi file per patch type (e.g. bassline/leadline)
+* Need to refresh UI after acquiring a new thumbnail 
+* Should have autosample dialog in front of patch grid so you can see where it is
+* Could add different preview - "oscilloscope" to show only one cycle
+* Could add FFT preview as well
 
 MIDI setup
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
