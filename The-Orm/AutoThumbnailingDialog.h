@@ -19,6 +19,8 @@ public:
 	virtual void run() override;
 
 private:
+	bool syncSwitchToNextPatch();
+	bool syncRecordThumbnail();
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	PatchView &patchView_;

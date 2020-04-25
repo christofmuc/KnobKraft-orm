@@ -14,6 +14,7 @@ Macro page
 Librarian
 * Allow multi-select of banks to import (with all feature)
 * Advanced filter editor to allow to filter for specific patch settings (e.g. sync sounds only)
+* Allow patch name override when loading banks with non-default names for existing patches (M1000)
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
@@ -47,9 +48,7 @@ Database schema
 Autosampler (the lazy synthesist)
 * Progress bar needs to work. Needs to be able to stop.
 * How to decide this is a drone and will not stop (endless release?)
-* Need to be able to sample first one
 * Need to connect input with output
-* Need to enable ASIO build
 * Need preview mode that will play it to synth (when synth is not turned on?)
 * Could allow to record "played" previews with typical midi file per patch type (e.g. bassline/leadline)
 * Need to refresh UI after acquiring a new thumbnail 
