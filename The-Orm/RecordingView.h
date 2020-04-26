@@ -16,7 +16,7 @@
 
 #include "PatchView.h"
 
-class RecordingView : public Component, public ChangeBroadcaster, private ChangeListener {
+class RecordingView : public Component, private ChangeListener {
 public:
 	RecordingView(PatchView &patchView);
 	~RecordingView();

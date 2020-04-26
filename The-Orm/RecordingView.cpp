@@ -93,7 +93,7 @@ void RecordingView::sampleNote() {
 	recorder_.startRecording(filename ,true, [this]() {
 		String filename = recorder_.getFilename();
 		thumbnail_.loadFromFile(filename.toStdString(), "");
-		sendChangeMessage();
+		UIModel::instance()->thumbnails_.sendChangeMessage();
 	});
 
 	auto currentChannel = UIModel::instance()->currentSynth()->channel();

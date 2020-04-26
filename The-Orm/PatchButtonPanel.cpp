@@ -26,10 +26,13 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
 	addAndMakeVisible(pageNumbers_);
-	pageNumbers_.setJustificationType(Justification::centred);
+	pageNumbers_.setJustificationType(Justification::centred);	
+
+	UIModel::instance()->thumbnails_.addChangeListener(this);
 }
 
 PatchButtonPanel::~PatchButtonPanel() {
+	UIModel::instance()->thumbnails_.removeChangeListener(this);
 	midikraft::MidiController::instance()->removeMessageHandler(callback_);
 	callback_ = midikraft::MidiController::makeNoneHandle();
 }
@@ -81,6 +84,21 @@ File PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
 	return File();
 }
 
+void PatchButtonPanel::refreshThumbnail(int i) {
+	File thumbnail = findPrehearFile(patches_[i]);
+	if (thumbnail.existsAsFile()) {
+		if (thumbnail.getFileExtension() == ".wav") {
+			patchButtons_->buttonWithIndex(i)->setThumbnailFile(thumbnail.getFullPathName().toStdString(), createNameOfThubnailCacheFile(patches_[i]).toStdString());
+		}
+		else {
+			patchButtons_->buttonWithIndex(i)->setThumbnailFromCache(Thumbnail::loadCacheInfo(thumbnail));
+		}
+	}
+	else {
+		patchButtons_->buttonWithIndex(i)->clearThumbnailFile();
+	}
+}
+
 void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
@@ -106,18 +124,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
 				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
 				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
-				File thumbnail = findPrehearFile(patches_[i]);
-				if (thumbnail.existsAsFile()) {
-					if (thumbnail.getFileExtension() == ".wav") {
-						patchButtons_->buttonWithIndex(i)->setThumbnailFile(thumbnail.getFullPathName().toStdString(), createNameOfThubnailCacheFile(patches_[i]).toStdString());
-					}
-					else {
-						patchButtons_->buttonWithIndex(i)->setThumbnailFromCache(Thumbnail::loadCacheInfo(thumbnail));
-					}
-				}
-				else {
-					patchButtons_->buttonWithIndex(i)->clearThumbnailFile();
-				}
+				refreshThumbnail(i);
 			}
 			else {
 				patchButtons_->buttonWithIndex(i)->setButtonText("");
@@ -200,6 +207,15 @@ void PatchButtonPanel::pageDown(bool selectLast) {
 		pageBase_ -= pageSize_;
 		pageNumber_--;
 		refresh(true, selectLast ? 1 : -1);
+	}
+}
+
+void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+	// Some Thumbnail has changed, most likely it is visible...
+	for (int i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
+		refreshThumbnail(i);
 	}
 }
 

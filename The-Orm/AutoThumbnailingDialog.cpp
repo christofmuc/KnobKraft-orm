@@ -15,13 +15,13 @@ AutoThumbnailingDialog::AutoThumbnailingDialog(PatchView &patchView, RecordingVi
 	ThreadWithProgressWindow("Recording patch thumbnails", true, true), patchView_(patchView), recordingView_(recordingView)
 {
 	UIModel::instance()->currentPatch_.addChangeListener(this);
-	recordingView_.addChangeListener(this);
+	UIModel::instance()->thumbnails_.addChangeListener(this);
 }
 
 AutoThumbnailingDialog::~AutoThumbnailingDialog()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
-	recordingView_.removeChangeListener(this);
+	UIModel::instance()->thumbnails_.removeChangeListener(this);
 }
 
 bool AutoThumbnailingDialog::syncSwitchToNextPatch() {
@@ -129,7 +129,7 @@ void AutoThumbnailingDialog::changeListenerCallback(ChangeBroadcaster* source)
 	if (source == &UIModel::instance()->currentPatch_) {
 		patchSwitched_ = true;
 	}
-	else if (source == &recordingView_) {
+	else if (source == &UIModel::instance()->thumbnails_) {
 		thumbnailDone_ = true;
 	}
 }

@@ -46,10 +46,10 @@ Database schema
 * Should create indexes where needed 
 
 Autosampler (the lazy synthesist)
-* Need to refresh UI after acquiring a new thumbnail 
 * Need preview mode that will play it to synth (when synth is not turned on?)
 * Should have autosample dialog in front of patch grid so you can see where it is
 * Cancel should send all notes off!
+* Could offer to sample only patches which have no thumbnail yet
 * Could allow to record "played" previews with typical midi file per patch type (e.g. bassline/leadline)
 * Could add different preview - "oscilloscope" to show only one cycle
 * Could add FFT preview as well

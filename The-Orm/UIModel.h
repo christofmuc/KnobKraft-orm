@@ -78,6 +78,9 @@ private:
 	std::vector<std::pair<midikraft::SynthHolder, bool>> synths_;	
 };
 
+class ThumbnailChanges : public ChangeBroadcaster {
+};
+
 class UIModel {
 public:
 	static UIModel *instance();
@@ -96,6 +99,7 @@ public:
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified
 	CurrentSession currentSession_; // Listen to this to find out if the current session was modified
 	CurrentSynthList synthList_;
+	ThumbnailChanges thumbnails_;
 
 private:
 	UIModel() = default;

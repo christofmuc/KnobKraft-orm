@@ -15,7 +15,7 @@
 #include "Synth.h"
 
 class PatchButtonPanel : public Component,
-	private Button::Listener
+	private Button::Listener, private ChangeListener
 {
 public:
 	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
@@ -26,14 +26,11 @@ public:
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);
 	void setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget = -1);
-	
-
 	void refresh(bool async, int autoSelectTarget = -1);
 
 	void resized() override;
 
 	void buttonClicked(Button* button) override;
-
 	void buttonClicked(int buttonIndex);
 
 	// Remote control
@@ -43,9 +40,12 @@ public:
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 
-private:	
+private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
+
 	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
 	File findPrehearFile(midikraft::PatchHolder const &patch);
+	void refreshThumbnail(int i);
 	int indexOfActive() const;
 
 	midikraft::MidiController::HandlerHandle callback_  = midikraft::MidiController::makeOneHandle();
