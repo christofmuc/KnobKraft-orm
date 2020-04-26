@@ -31,11 +31,15 @@ bool AutoThumbnailingDialog::syncSwitchToNextPatch() {
 	MessageManager::callAsync([patchView]() {
 		patchView->selectNextPatch();
 	});
+	return waitForPatchSwitchAndSendToSynth();
+}
+
+bool AutoThumbnailingDialog::waitForPatchSwitchAndSendToSynth() {
 	WaitForEvent waiter1([this]() { return patchSwitched_;  }, this);
 	waiter1.startThread();
 	if (!wait(1000)) {
 		waiter1.stopThread(1000);
-		SimpleLogger::instance()->postMessage("Critical error - couldn't select the next patch. Program error?");
+		// No more patches!
 		return false;
 	}
 
@@ -45,6 +49,17 @@ bool AutoThumbnailingDialog::syncSwitchToNextPatch() {
 	sleep(synth->deviceDetectSleepMS());
 	return true;
 }
+
+bool AutoThumbnailingDialog::syncSwitchToFirstPatch() {
+	// Select the next patch. This is asynchronous, because the database might need to load
+	patchSwitched_ = false;
+	PatchView *patchView = &patchView_;
+	MessageManager::callAsync([patchView]() {
+		patchView->selectFirstPatch();
+	});
+	return waitForPatchSwitchAndSendToSynth();
+}
+
 
 bool AutoThumbnailingDialog::syncRecordThumbnail() {
 	// Record the current patch
@@ -89,16 +104,22 @@ void AutoThumbnailingDialog::run()
 	}
 
 	// Loop over all selected patches and record the thumbnails!
-	while (!threadShouldExit()) {
-		// Record current patch
-		if (!syncRecordThumbnail()) {
-			break;
-		}
+	if (syncSwitchToFirstPatch()) {
+		int recordedCount = 1;
+		int toRecord = patchView_.totalNumberOfPatches();
+		while (!threadShouldExit()) {
+			// Record current patch
+			if (!syncRecordThumbnail()) {
+				break;
+			}
 
-		// Switch to next Patch
-		if (!syncSwitchToNextPatch()) {
-			// That didn't work
-			break;
+			// Switch to next Patch
+			if (!syncSwitchToNextPatch()) {
+				// That didn't work, no more patches
+				break;
+			}
+
+			setProgress(recordedCount++ / (double)toRecord);
 		}
 	}
 }

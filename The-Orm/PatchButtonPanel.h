@@ -39,6 +39,7 @@ public:
 	// Remote control
 	void selectPrevious();
 	void selectNext();
+	void selectFirst();
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 

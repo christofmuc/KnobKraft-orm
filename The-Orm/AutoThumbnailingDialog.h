@@ -20,6 +20,8 @@ public:
 
 private:
 	bool syncSwitchToNextPatch();
+	bool waitForPatchSwitchAndSendToSynth();
+	bool syncSwitchToFirstPatch();
 	bool syncRecordThumbnail();
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 

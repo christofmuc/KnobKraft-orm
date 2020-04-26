@@ -61,6 +61,10 @@ public:
 	void selectNextPatch();
 	void retrieveEditBuffer();
 
+	// Additional functions for the auto thumbnailer
+	int totalNumberOfPatches();
+	void selectFirstPatch();
+
 private:
 	static std::vector<CategoryButtons::Category> predefinedCategories();
 

@@ -231,6 +231,13 @@ void PatchButtonPanel::selectNext()
 	}
 }
 
+void PatchButtonPanel::selectFirst()
+{
+	pageBase_ = 0;
+	pageNumber_ = 0;
+	refresh(true, 0);
+}
+
 int PatchButtonPanel::indexOfActive() const
 {
 	for (int i = 0; i < (int) patches_.size(); i++) {

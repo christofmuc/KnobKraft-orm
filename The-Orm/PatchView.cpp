@@ -325,6 +325,16 @@ void PatchView::retrieveEditBuffer()
 	}
 }
 
+int PatchView::totalNumberOfPatches() 
+{
+	return database_.getPatchesCount(buildFilter());
+}
+
+void PatchView::selectFirstPatch()
+{
+	patchButtons_->selectFirst();
+}
+
 class MergeManyPatchFiles: public ThreadWithProgressWindow, public midikraft::ProgressHandler {
 public:
 	MergeManyPatchFiles(midikraft::PatchDatabase &database, std::vector<midikraft::PatchHolder> &patchesLoaded, std::function<void(std::vector<midikraft::PatchHolder>)> successHandler) :
