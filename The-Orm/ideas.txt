@@ -47,7 +47,6 @@ Database schema
 
 Autosampler (the lazy synthesist)
 * Need to refresh UI after acquiring a new thumbnail 
-* Need to connect input with output
 * Need preview mode that will play it to synth (when synth is not turned on?)
 * Should have autosample dialog in front of patch grid so you can see where it is
 * Cancel should send all notes off!
