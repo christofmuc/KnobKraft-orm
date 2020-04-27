@@ -1,32 +1,38 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
 #pragma once
 
 #include "Patch.h"
 #include "PatchNumber.h"
 
-class RefaceDXPatchNumber : public PatchNumber {
-	using PatchNumber::PatchNumber;
-	virtual std::string friendlyName() const override;
-};
+namespace midikraft {
 
-class RefaceDXPatch : public Patch {
-public:
-	typedef struct { std::vector<uint8> common; std::vector<uint8> op[4]; } TVoiceData;
+	class RefaceDXPatchNumber : public PatchNumber {
+		using PatchNumber::PatchNumber;
+		virtual std::string friendlyName() const override;
+	};
 
-	RefaceDXPatch(Synth::PatchData const &voiceData);
+	class RefaceDXPatch : public Patch {
+	public:
+		typedef struct { std::vector<uint8> common; std::vector<uint8> op[4]; } TVoiceData;
 
-	virtual std::string patchName() const override;
-	virtual void setName(std::string const &name) override;
+		RefaceDXPatch(Synth::PatchData const &voiceData);
 
-	virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-	virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
+		virtual std::string patchName() const override;
+		virtual void setName(std::string const &name) override;
 
-	virtual int value(SynthParameterDefinition const &param) const override;
-	virtual SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const override;
-	virtual std::vector<std::string> warnings() override;
+		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
+		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
 
-	virtual std::vector<SynthParameterDefinition *> allParameterDefinitions() override;
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
 
-private:
-	friend class RefaceDX;
-	MidiProgramNumber originalProgramNumber_;
-};
+	private:
+		friend class RefaceDX;
+		MidiProgramNumber originalProgramNumber_;
+	};
+
+}
