@@ -33,6 +33,11 @@ namespace midikraft {
 	{
 	}
 
+	SynthParameterDefinition::ParamType KorgDW8000Parameter::type() const
+	{
+		return SynthParameterDefinition::ParamType::INT;
+	}
+
 	std::string KorgDW8000Parameter::name() const
 	{
 		return parameterName_;
@@ -60,6 +65,15 @@ namespace midikraft {
 		return name();
 	}
 
+	std::string KorgDW8000Parameter::valueInPatchToText(Patch const &patch) const
+	{
+		int value;
+		if (valueInPatch(patch, value)) {
+			return valueAsText(value);
+		}
+		return "invalid";
+	}
+
 	bool KorgDW8000Parameter::valueInPatch(Patch const &patch, int &outValue) const
 	{
 		if (paramIndex_ >= patch.data().size()) {
@@ -74,6 +88,11 @@ namespace midikraft {
 
 		outValue = value;
 		return true;
+	}
+
+	void KorgDW8000Parameter::setInPatch(Patch &patch, int value) const
+	{
+		patch.setAt(sysexIndex(), (uint8) value);
 	}
 
 	int KorgDW8000Parameter::minValue() const
