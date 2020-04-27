@@ -1,23 +1,30 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
 #pragma once
 
 #include "KawaiK3.h"
 
-#include "EditBufferHandler.h"
+#include "MidiController.h"
 
-class KawaiK3_Reverse {
-public:
-	KawaiK3_Reverse(KawaiK3 &k3);
+namespace midikraft {
 
-	// For reverse engineering the sysex format
-	void createReverseEngineeringData(MidiOutput *midiOutput, EditBufferHandler &continuationHandler, SimpleLogger &logger);
+	class KawaiK3_Reverse {
+	public:
+		KawaiK3_Reverse(KawaiK3 &k3);
 
-private:
-	KawaiK3 &k3_;
-	EditBufferHandler::HandlerHandle handle_ = EditBufferHandler::makeNone();
-	EditBufferHandler *handler_;
+		// For reverse engineering the sysex format
+		void createReverseEngineeringData(MidiOutput *midiOutput);
 
-	juce::MidiMessage emptyTone();
-	void handleNextEditBufferDump(MidiOutput *midiOutput, juce::MidiMessage editBuffer, SimpleLogger &logger);
-};
+	private:
+		KawaiK3 &k3_;
+		MidiController::HandlerHandle handle_ = MidiController::makeNoneHandle();
 
+		juce::MidiMessage emptyTone();
+		void handleNextEditBufferDump(MidiOutput *midiOutput, juce::MidiMessage editBuffer);
+	};
 
+}
