@@ -56,10 +56,10 @@ Big things
 	* The automatic patch clusterer!
 	* Multiple synths in one grid
 	* Masterkeyboard control ("Follow the patch")
-	* Auto sample patches, calculate previews
 
 Alternate Tunings
 https://forum.sequential.com/index.php/topic,3468.0.html
+have you managed to change the slot number
 
 More synthesizers
 

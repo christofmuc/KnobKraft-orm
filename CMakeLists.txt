@@ -57,7 +57,7 @@ add_subdirectory(synths/MidiKraft-korg-dw8000)
 add_subdirectory(synths/MidiKraft-oberheim-matrix1000)
 add_subdirectory(synths/MidiKraft-sequential-rev2)
 add_subdirectory(synths/MidiKraft-sequential-ob6)
-add_subdirectory(synths/MidiKraft-yamaha-reface-dx)
+add_subdirectory(synths/MidiKraft-yamaha-refacedx)
 
 # Main module
 add_subdirectory(The-Orm)
