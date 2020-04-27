@@ -60,10 +60,13 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-base 
 		midikraft-librarian 
 		midikraft-database 
+		midikraft-access-virus
+		midikraft-kawai-k3
 		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
+		midikraft-yamaha-refacedx
 )
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})

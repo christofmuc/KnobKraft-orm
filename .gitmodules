@@ -41,3 +41,15 @@
 	path = synths/MidiKraft-korg-dw8000
 	url = https://github.com/christofmuc/MidiKraft-korg-dw8000.git
 	branch = master
+[submodule "synths/MidiKraft-yamaha-refacedx"]
+	path = synths/MidiKraft-yamaha-refacedx
+	url = https://github.com/christofmuc/MidiKraft-yamaha-refacedx.git
+	branch = master
+[submodule "synths/MidiKraft-kawai-k3"]
+	path = synths/MidiKraft-kawai-k3
+	url = https://github.com/christofmuc/MidiKraft-kawai-k3.git
+	branch = master
+[submodule "synths/MidiKraft-access-virus"]
+	path = synths/MidiKraft-access-virus
+	url = https://github.com/christofmuc/MidiKraft-access-virus.git
+	branch = master

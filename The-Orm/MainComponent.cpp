@@ -17,6 +17,15 @@
 
 #include "Settings.h"
 
+#include "Virus.h"
+#include "Rev2.h"
+#include "OB6.h"
+#include "KorgDW8000.h"
+#include "KawaiK3.h"
+#include "Matrix1000.h"
+#include "RefaceDX.h"
+
+
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
 	ActiveSynthHolder(std::shared_ptr<midikraft::Synth> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
@@ -44,16 +53,18 @@ MainComponent::MainComponent() :
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	buttons_(301)
 {
+	// Default synth
+	auto rev2 = std::make_shared<midikraft::Rev2>();
 	// Create the list of all synthesizers!
+
 	std::vector<midikraft::SynthHolder>  synths;
-	rev2_ = std::make_shared<midikraft::Rev2>();
-	ob6_ = std::make_shared<midikraft::OB6>();
-	dw8000_ = std::make_shared<midikraft::KorgDW8000>();
-	matrix1000_ = std::make_shared<midikraft::Matrix1000>();
-	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(matrix1000_), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(dw8000_), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(rev2, Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), Colours::aqua));
 	UIModel::instance()->synthList_.setSynthList(synths);
 
 	// Load activated state
@@ -154,7 +165,7 @@ MainComponent::MainComponent() :
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
-	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2_.get());
+	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2.get());
 
 	// Setup the rest of the UI
 	// Resizer bar allows to enlarge the log area

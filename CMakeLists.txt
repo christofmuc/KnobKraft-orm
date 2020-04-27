@@ -51,10 +51,13 @@ add_subdirectory(MidiKraft-librarian)
 add_subdirectory(MidiKraft-database)
 
 # Import the synths currently supported
+add_subdirectory(synths/MidiKraft-access-virus)
+add_subdirectory(synths/MidiKraft-kawai-k3)
 add_subdirectory(synths/MidiKraft-korg-dw8000)
 add_subdirectory(synths/MidiKraft-oberheim-matrix1000)
 add_subdirectory(synths/MidiKraft-sequential-rev2)
 add_subdirectory(synths/MidiKraft-sequential-ob6)
+add_subdirectory(synths/MidiKraft-yamaha-reface-dx)
 
 # Main module
 add_subdirectory(The-Orm)
