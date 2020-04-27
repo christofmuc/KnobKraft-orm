@@ -168,6 +168,31 @@ namespace midikraft {
 		return true;
 	}
 
+	void KawaiK3Parameter::setInPatch(Patch &patch, int value) const
+	{
+		//TODO This is redundant with the KawaiK3Patch::setValue function - I think I should only keep this one
+		//TODO - range checking for the parameter, we might specify values out of range?
+		int currentValue = patch.at(sysexIndex() - 1);
+		if (minValue() < 0) {
+			if (value < 0) {
+				uint8 cleanValue = (uint8)(currentValue & (~shiftedBitMask()));
+				uint8 setValue = (uint8)(((abs(value) & bitMask()) << shift()) | 0x80); // Additionally set the sign bit
+				patch.setAt(sysexIndex() - 1, cleanValue | setValue);
+			}
+			else {
+				uint8 cleanValue = currentValue & (!bitMask()) & 0x7F;  // Additionally clear out the sign bit
+				uint8 setValue = (uint8)((value & bitMask()) << shift());
+				patch.setAt(sysexIndex() - 1, cleanValue | setValue);
+			}
+		}
+		else {
+			jassert(value >= 0);
+			uint8 cleanValue = (uint8)(currentValue & (~shiftedBitMask()));
+			uint8 setValue = (uint8)((value & bitMask()) << shift());
+			patch.setAt(sysexIndex() - 1, cleanValue | setValue);
+		}
+	}
+
 	KawaiK3Parameter::Parameter KawaiK3Parameter::paramNo() const
 	{
 		return paramNo_;

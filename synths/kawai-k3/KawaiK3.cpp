@@ -22,6 +22,8 @@
 #include "MidiHelpers.h"
 #include "MidiProgramNumber.h"
 
+#include "BinaryResources.h"
+
 #include <boost/format.hpp>
 
 namespace midikraft {
@@ -456,7 +458,7 @@ namespace midikraft {
 		return patchToSysex(wavePatch.data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE)); //TODO the program number is ignored, that's a shame
 	}
 
-	/*std::vector<float> KawaiK3::romWave(int waveNo)
+	std::vector<float> KawaiK3::romWave(int waveNo)
 	{
 		std::vector<float> result;
 		if (waveNo <= 0 || waveNo > 31) {
@@ -465,8 +467,8 @@ namespace midikraft {
 		}
 
 		// Load the ROM
-		const uint8 *romData = reinterpret_cast<const uint8 *>(BinaryData::_6P09_27c256_BIN);
-		jassert(BinaryData::_6P09_27c256_BINSize == 32768);
+		const uint8 *romData = reinterpret_cast<const uint8 *>(R6P_09_27c256_BIN);
+		jassert(R6P_09_27c256_BIN_size == 32768);
 
 		// Build up the address bits!
 		// see https://acreil.wordpress.com/2018/07/15/kawai-k3-and-k3m-1986/
@@ -479,8 +481,8 @@ namespace midikraft {
 			}
 		}
 		return result;
-	}*/
-
+	}
+		
 	std::string KawaiK3::waveName(WaveType waveType)
 	{
 		switch (waveType) {
@@ -498,15 +500,16 @@ namespace midikraft {
 		return KawaiK3Parameter::waveName(waveNo);
 	}
 
+	bool KawaiK3::isWriteConfirmation(MidiMessage const &message)
+	{
+		return sysexFunction(message) == WRITE_COMPLETE;
+	}
+
 	/*std::vector<std::string> KawaiK3::presetNames()
 	{
 		return { (boost::format("Knobkraft %s %d") % getName() % channel().toOneBasedInt()).str() };
 	}
 
-	bool KawaiK3::isWriteConfirmation(MidiMessage const &message)
-	{
-		return sysexFunction(message) == WRITE_COMPLETE;
-	}
 
 	int getP(KawaiK3Parameter::Parameter param, Patch const &patch) {
 		auto synthParam = KawaiK3Parameter::findParameter(param);
