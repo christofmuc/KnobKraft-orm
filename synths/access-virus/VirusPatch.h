@@ -1,30 +1,39 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
 #pragma once
 
 #include "Patch.h"
 #include "PatchNumber.h"
 
-class VirusPatchNumber : public PatchNumber {
-public:
-	using PatchNumber::PatchNumber;
-	virtual std::string friendlyName() const override;
-};
+namespace midikraft {
 
-class VirusPatch : public Patch {
-public:
-	VirusPatch(Synth::PatchData const &data);
+	class VirusPatchNumber : public PatchNumber {
+	public:
+		using PatchNumber::PatchNumber;
+		virtual std::string friendlyName() const override;
+	};
 
-	virtual std::string patchName() const override;
-	virtual void setName(std::string const &name) override;
-	virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-	virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
-	virtual int value(SynthParameterDefinition const &param) const override;
-	virtual SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const override;
-	virtual std::vector<std::string> warnings() override;
-	virtual std::vector<SynthParameterDefinition *> allParameterDefinitions() override;
+	class VirusPatch : public Patch {
+	public:
+		VirusPatch(Synth::PatchData const &data);
 
-	enum Page { PageA = 0, PageB = 1 };
-	static int index(Page page, int index);
+		virtual std::string patchName() const override;
+		virtual void setName(std::string const &name) override;
+		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
+		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
+		
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
 
-private:
-	MidiProgramNumber place_ = MidiProgramNumber::fromZeroBase(0);
-};
+		enum DataFileTypes { PATCH_VIRUS_B = 0 };
+		enum Page { PageA = 0, PageB = 1 };
+		static int index(Page page, int index);
+
+	private:
+		MidiProgramNumber place_ = MidiProgramNumber::fromZeroBase(0);
+	};
+
+}
