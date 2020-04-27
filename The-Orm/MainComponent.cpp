@@ -48,8 +48,10 @@ MainComponent::MainComponent() :
 	std::vector<midikraft::SynthHolder>  synths;
 	rev2_ = std::make_shared<midikraft::Rev2>();
 	ob6_ = std::make_shared<midikraft::OB6>();
+	dw8000_ = std::make_shared<midikraft::KorgDW8000>();
 	matrix1000_ = std::make_shared<midikraft::Matrix1000>();
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(matrix1000_), Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(dw8000_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(ob6_), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::dynamic_pointer_cast<midikraft::Synth>(rev2_), Colours::aqua));
 	UIModel::instance()->synthList_.setSynthList(synths);

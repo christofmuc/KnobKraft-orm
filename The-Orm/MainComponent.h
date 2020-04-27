@@ -27,7 +27,9 @@
 
 #include "Rev2.h"
 #include "OB6.h"
+#include "KorgDW8000.h"
 #include "Matrix1000.h"
+
 
 class LogViewLogger;
 
@@ -50,6 +52,7 @@ private:
 	midikraft::AutoDetection autodetector_;
 	std::shared_ptr<midikraft::Rev2> rev2_;
 	std::shared_ptr<midikraft::OB6> ob6_;
+	std::shared_ptr<midikraft::KorgDW8000> dw8000_;
 	std::shared_ptr<midikraft::Matrix1000> matrix1000_;
 
 	// The infrastructure for the menu and the short cut keys

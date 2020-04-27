@@ -60,6 +60,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-base 
 		midikraft-librarian 
 		midikraft-database 
+		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
