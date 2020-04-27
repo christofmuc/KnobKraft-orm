@@ -57,7 +57,7 @@ namespace midikraft {
 
 		// SoundExpanderCapability
 		virtual bool canChangeInputChannel() const override;
-		virtual void changeInputChannel(MidiController *controller, MidiChannel channel);
+		virtual void changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> finished) override;
 		virtual MidiChannel getInputChannel() const override;
 		virtual bool hasMidiControl() const override;
 		virtual bool isMidiControlOn() const override;

@@ -280,7 +280,7 @@ namespace midikraft {
 		return true;
 	}
 
-	void Virus::changeInputChannel(MidiController *controller, MidiChannel channel)
+	void Virus::changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> finished)
 	{
 		// We're changing the global channel here. This is parameter 124 in Page C
 		controller->getMidiOutput(midiOutput())->sendMessageNow(createParameterChangeSingle(2, 124, (uint8) channel.toZeroBasedInt()));
