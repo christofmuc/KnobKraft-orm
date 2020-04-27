@@ -1,3 +1,9 @@
+/*
+   Copyright (c) 2020 Christof Ruch. All rights reserved.
+
+   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
+*/
+
 #include "KorgDW8000Patch.h"
 
 #include "KorgDW8000Parameter.h"
