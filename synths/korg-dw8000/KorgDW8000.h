@@ -9,56 +9,58 @@
 #include "Synth.h"
 #include "Patch.h"
 #include "ReadonlySoundExpander.h"
-#include "SupportedByBCR2000.h"
+//#include "SupportedByBCR2000.h"
 #include "EditBufferCapability.h"
 
-class KorgDW8000Patch;
+namespace midikraft {
 
-class KorgDW8000 : public Synth, public SupportedByBCR2000, public EditBufferCapability, ReadonlySoundExpander {
-public:
+	class KorgDW8000Patch;
 
-	// Basic Synth implementation
-	virtual std::string getName() const override;
-	virtual bool isOwnSysex(MidiMessage const &message) const override;
-	virtual int numberOfBanks() const override;
-	virtual int numberOfPatches() const override;
-	virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
+	class KorgDW8000 : public Synth /*, public SupportedByBCR2000 */, public EditBufferCapability, public ReadonlySoundExpander {
+	public:
 
-	virtual std::shared_ptr<Patch>patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		// Basic Synth implementation
+		virtual std::string getName() const override;
+		virtual bool isOwnSysex(MidiMessage const &message) const override;
+		virtual int numberOfBanks() const override;
+		virtual int numberOfPatches() const override;
+		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 
-	// Discoverable Device
-	virtual MidiMessage deviceDetect(int channel) override;
-	virtual int deviceDetectSleepMS() override;
-	virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
-	virtual bool needsChannelSpecificDetection() override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
 
-	// Edit Buffer Capability
-	virtual MidiMessage requestEditBufferDump() override;
-	virtual bool isEditBufferDump(const MidiMessage& message) const override;
-	virtual std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message) const override;
-	virtual std::vector<MidiMessage> patchToSysex(const Patch &patch) const override;
-	virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
+		// Discoverable Device
+		virtual MidiMessage deviceDetect(int channel) override;
+		virtual int deviceDetectSleepMS() override;
+		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
+		virtual bool needsChannelSpecificDetection() override;
 
-	// SoundExpanderCapability
-	virtual MidiChannel getInputChannel() const override;
+		// Edit Buffer Capability
+		virtual MidiMessage requestEditBufferDump() override;
+		virtual bool isEditBufferDump(const MidiMessage& message) const override;
+		virtual std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> patchToSysex(const Patch &patch) const override;
+		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
-	// Implementation of BCR2000 sync
-	virtual std::vector<std::string> presetNames() override;
-	virtual void setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-	virtual void syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-	virtual void setupBCR2000View(BCR2000_Component &view) override;
-	virtual void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;
+		// SoundExpanderCapability
+		virtual MidiChannel getInputChannel() const override;
 
-	static std::vector<float> romWave(int waveNo);
-	static std::string waveName(int waveNo);
-	void createReverseEngineeringData();
+		// Implementation of BCR2000 sync
+	/*	virtual std::vector<std::string> presetNames() override;
+		virtual void setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
+		virtual void syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
+		virtual void setupBCR2000View(BCR2000_Component &view) override;
+		virtual void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;*/
 
-private:
-	enum SysexCommand {
-		DATA_SAVE_REQUEST = 0x10,
-		WRITE_REQUEST = 0x11,
-		DATA_DUMP = 0x40
+		static std::vector<float> romWave(int waveNo);
+		static std::string waveName(int waveNo);
+		void createReverseEngineeringData();
+
+	private:
+		enum SysexCommand {
+			DATA_SAVE_REQUEST = 0x10,
+			WRITE_REQUEST = 0x11,
+			DATA_DUMP = 0x40
+		};
 	};
-};
 
-
+}

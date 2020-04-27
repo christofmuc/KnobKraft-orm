@@ -24,7 +24,7 @@ ENDIF()
 # Define the sources for the static library
 set(Sources
 	KorgDW8000.cpp KorgDW8000.h
-	KorgDW8000_BCR2000.cpp KorgDW8000_BCR2000.h
+	#KorgDW8000_BCR2000.cpp KorgDW8000_BCR2000.h
 	KorgDW8000Parameter.cpp KorgDW8000Parameter.h
 	KorgDW8000Patch.cpp KorgDW8000Patch.h
 	README.md
