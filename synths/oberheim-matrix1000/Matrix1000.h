@@ -36,7 +36,7 @@ namespace midikraft {
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// Edit Buffer Capability

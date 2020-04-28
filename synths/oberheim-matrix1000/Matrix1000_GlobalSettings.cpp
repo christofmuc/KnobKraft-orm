@@ -12,15 +12,9 @@ namespace midikraft {
 	public:
 		using DataFile::DataFile;
 
-		std::string patchName() const override
+		std::string name() const override
 		{
 			return "MASTER DATA";
-		}
-
-
-		void setName(std::string const &name) override
-		{
-			ignoreUnused(name);
 		}
 	};
 

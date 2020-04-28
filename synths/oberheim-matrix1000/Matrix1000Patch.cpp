@@ -24,7 +24,7 @@ namespace midikraft {
 	{
 	}
 
-	std::string Matrix1000Patch::patchName() const
+	std::string Matrix1000Patch::name() const
 	{
 		// The patch name are the first 8 bytes ASCII
 		std::string name;

@@ -18,11 +18,11 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class Matrix1000Patch : public Patch {
+	class Matrix1000Patch : public Patch, public StoredPatchNameCapability {
 	public:
 		Matrix1000Patch(Synth::PatchData const &patchdata);
 
-		virtual std::string patchName() const override;
+		virtual std::string name() const override;
 		virtual void setName(std::string const &name) override;
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;

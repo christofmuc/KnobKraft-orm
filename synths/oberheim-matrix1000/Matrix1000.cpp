@@ -284,8 +284,7 @@ namespace midikraft {
 		return matrixPatch;
 	}
 
-	std::shared_ptr<DataFile> Matrix1000::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
-		ignoreUnused(name);
+	std::shared_ptr<DataFile> Matrix1000::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
 		auto newPatch = std::make_shared<Matrix1000Patch>(data);
 		newPatch->setPatchNumber(place);
 		return newPatch;
