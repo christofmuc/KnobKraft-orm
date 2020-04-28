@@ -51,7 +51,7 @@ CurrentPatchDisplay::~CurrentPatchDisplay()
 void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch)
 {
 	if (patch.patch()) {
-		name_.setButtonText(patch.patch()->patchName());
+		name_.setButtonText(patch.name());
 		if (patch.sourceInfo()) {
 			import_.setText(patch.sourceInfo()->toDisplayString(synth), dontSendNotification);
 		}

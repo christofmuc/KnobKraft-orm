@@ -76,7 +76,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 			patchButtons_->buttonWithIndex(i)->setActive(i == active);
 			Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 			if (i < patches_.size()) {
-				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].patch()->patchName());
+				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].name());
 				auto cats = patches_[i].categories();
 				if (!cats.empty()) {
 					// Random in case the patch has multiple categories

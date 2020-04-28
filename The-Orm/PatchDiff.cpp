@@ -161,8 +161,8 @@ void PatchDiff::buttonStateChanged(Button *button)
 
 void PatchDiff::fillDocuments()
 {
-	patch1Name_.setText(p1_.patch()->patchName(), dontSendNotification);
-	patch2Name_.setText(p2_.patch()->patchName(), dontSendNotification);
+	patch1Name_.setText(p1_.name(), dontSendNotification);
+	patch2Name_.setText(p2_.name(), dontSendNotification);
 
 	String doc1, doc2;
 	if (showHexDiff_) {

@@ -16,7 +16,7 @@ void AutoCategorizeWindow::run()
 		if (patch.autoCategorizeAgain()) {
 			if (threadShouldExit()) break;
 			// This was changed, updating database
-			SimpleLogger::instance()->postMessage("Updating patch " + String(patch.patch()->patchName()) + " with new categories");
+			SimpleLogger::instance()->postMessage("Updating patch " + String(patch.name()) + " with new categories");
 			database_->putPatch(UIModel::currentSynth(), patch);
 		}
 		setProgress(tick++ / (double)patches.size());

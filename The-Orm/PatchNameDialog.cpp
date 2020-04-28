@@ -45,7 +45,7 @@ void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
 		}
 	}
 	else if (patch->patch()) {
-		names_.push_back(Value(String(patch->patch()->patchName()).trim()));
+		names_.push_back(Value(String(patch->name()).trim()));
 		TypedNamedValue v({ "Patch name", "Patch name", names_[0], ValueType::String, 0, 20, {}, true });
 		props.push_back(std::make_shared<TypedNamedValue>(v));
 	}
@@ -112,8 +112,8 @@ void PatchNameDialog::buttonClicked(Button *button)
 		}
 		else {
 			String newName = names_[0].getValue().toString();
-			patch_->patch()->setName(newName.toStdString());
 			SimpleLogger::instance()->postMessage("Changed patch name to " + newName.toStdString());
+			patch_->setName(newName.toStdString());
 		}
 		sWindow_->exitModalState(true);
 	}
