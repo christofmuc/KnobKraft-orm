@@ -243,7 +243,7 @@ namespace midikraft {
 	{
 	}
 
-	std::string Rev2Patch::patchName() const
+	std::string Rev2Patch::name() const
 	{
 		std::string layerA = layerName(0);
 		std::string layerB = layerName(1);

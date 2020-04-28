@@ -135,8 +135,8 @@ namespace midikraft {
 		return patch;
 	}
 
-	std::shared_ptr<DataFile> Rev2::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
-		ignoreUnused(name, place);
+	std::shared_ptr<DataFile> Rev2::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
+		ignoreUnused(place);
 
 		//TODO - this is a hack. We should only store MIDI messages in the database, should we?
 		// Recreate a MIDI message from the bytes given, and test if it is a valid datafile...
