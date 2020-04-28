@@ -188,9 +188,8 @@ namespace midikraft {
 		return std::shared_ptr<Patch>();
 	}
 
-	std::shared_ptr<DataFile> Virus::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const
+	std::shared_ptr<DataFile> Virus::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		ignoreUnused(name);
 		auto patch = std::make_shared<VirusPatch>(data);
 		patch->setPatchNumber(place);
 		return patch;
