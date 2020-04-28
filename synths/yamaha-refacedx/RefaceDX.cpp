@@ -261,9 +261,8 @@ namespace midikraft {
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	std::shared_ptr<DataFile> RefaceDX::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const
+	std::shared_ptr<DataFile> RefaceDX::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		ignoreUnused(name);
 		auto newPatch = std::make_shared<RefaceDXPatch>(data);
 		newPatch->setPatchNumber(place);
 		return newPatch;

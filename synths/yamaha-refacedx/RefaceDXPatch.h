@@ -16,13 +16,13 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class RefaceDXPatch : public Patch {
+	class RefaceDXPatch : public Patch, public StoredPatchNameCapability {
 	public:
 		typedef struct { std::vector<uint8> common; std::vector<uint8> op[4]; } TVoiceData;
 
 		RefaceDXPatch(Synth::PatchData const &voiceData);
 
-		virtual std::string patchName() const override;
+		virtual std::string name() const override;
 		virtual void setName(std::string const &name) override;
 
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;

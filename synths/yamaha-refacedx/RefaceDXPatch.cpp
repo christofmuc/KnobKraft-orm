@@ -17,7 +17,7 @@ namespace midikraft {
 	{
 	}
 
-	std::string RefaceDXPatch::patchName() const
+	std::string RefaceDXPatch::name() const
 	{
 		std::string result;
 		// Extract the first 10 bytes of the common block, that's the ascii name

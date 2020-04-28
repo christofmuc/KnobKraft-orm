@@ -21,7 +21,7 @@ namespace midikraft {
 
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
