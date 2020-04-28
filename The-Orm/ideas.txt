@@ -1,6 +1,5 @@
 Small things
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
-* UI - Can't see which synth selected
 
 For the OB-6 branch
 + Implement parameter set of OB-6 for patch diff?

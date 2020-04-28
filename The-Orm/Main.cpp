@@ -36,7 +36,7 @@ public:
 		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
 		auto v4 = dynamic_cast<LookAndFeel_V4 *>(lookAndFeel);
 		if (v4) {
-			v4->setColourScheme(LookAndFeel_V4::getDarkColourScheme());
+			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
         mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian"));
     }
