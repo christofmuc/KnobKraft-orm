@@ -53,16 +53,13 @@ MainComponent::MainComponent() :
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	buttons_(301)
 {
-	// Default synth
-	auto rev2 = std::make_shared<midikraft::Rev2>();
 	// Create the list of all synthesizers!
-
 	std::vector<midikraft::SynthHolder>  synths;
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(rev2, Colours::aqua));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), Colours::aqua));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), Colours::aqua));
 	UIModel::instance()->synthList_.setSynthList(synths);
@@ -165,7 +162,14 @@ MainComponent::MainComponent() :
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
-	UIModel::instance()->currentSynth_.changeCurrentSynth(rev2.get());
+
+	// If at least one synth is enabled, use the first one!
+	if (UIModel::instance()->synthList_.activeSynths().size() > 0) {
+		auto activeSynth = std::dynamic_pointer_cast<midikraft::Synth>(UIModel::instance()->synthList_.activeSynths()[0]);
+		if (activeSynth) {
+			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth.get());
+		}
+	}
 
 	// Setup the rest of the UI
 	// Resizer bar allows to enlarge the log area
