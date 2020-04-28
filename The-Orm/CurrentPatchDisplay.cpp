@@ -27,13 +27,11 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 
 	favorite_.setClickingTogglesState(true);
 	favorite_.addListener(this);
-	favorite_.setColour(TextButton::ColourIds::buttonColourId, Colours::black);
-	favorite_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::limegreen);
+	favorite_.setColour(TextButton::ColourIds::buttonOnColourId, Colour::fromString("ffffa500"));
 	addAndMakeVisible(favorite_);
 
 	hide_.setClickingTogglesState(true);
 	hide_.addListener(this);
-	hide_.setColour(TextButton::ColourIds::buttonColourId, Colours::black);
 	hide_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::indianred);
 	addAndMakeVisible(hide_);
 

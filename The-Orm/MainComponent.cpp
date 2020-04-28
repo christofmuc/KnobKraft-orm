@@ -42,8 +42,24 @@ public:
 		return synth() ? synth()->channel().isValid() : false;
 	}
 
+
+	Colour getColour() override
+	{
+		return color();
+	}
+
 };
 
+Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet) {
+	auto lAF = &getLookAndFeel();
+	auto v4 = dynamic_cast<LookAndFeel_V4 *>(lAF);
+	if (v4) {
+		auto colorScheme = v4->getCurrentColourScheme();
+		return colorScheme.getUIColour(colourToGet);
+	}
+	jassertfalse;
+	return Colours::black;
+}
 
 //==============================================================================
 MainComponent::MainComponent() :
@@ -55,13 +71,14 @@ MainComponent::MainComponent() :
 {
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), Colours::aqua));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), Colours::aqua));
+	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	UIModel::instance()->synthList_.setSynthList(synths);
 
 	// Load activated state
@@ -146,11 +163,12 @@ MainComponent::MainComponent() :
 	});
 
 	addAndMakeVisible(synthList_);
-	mainTabs_.addTab("Library", Colours::black, patchView_.get(), false);
-	mainTabs_.addTab("MIDI Log", Colours::black, &midiLogArea_, false);
-	mainTabs_.addTab("Settings", Colours::black, settingsView_.get(), false);
-	mainTabs_.addTab("Macros", Colours::black, keyboardView_.get(), false);
-	mainTabs_.addTab("Setup", Colours::black, setupView_.get(), false);
+	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
+	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
+	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
+	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
+	mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
+	mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
 
 	addAndMakeVisible(mainTabs_);
 
@@ -228,10 +246,12 @@ void MainComponent::resized()
 
 void MainComponent::refreshSynthList() {
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
-	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
-		auto reallyASynth = std::dynamic_pointer_cast<midikraft::Synth>(s);
-		if (reallyASynth) {
-			listItems.push_back(std::make_shared<ActiveSynthHolder>(reallyASynth, Colours::black));
+	for (auto s : UIModel::instance()->synthList_.allSynths()) {
+		if (UIModel::instance()->synthList_.isSynthActive(s.device())) {
+			auto reallyASynth = s.synth();
+			if (reallyASynth) {
+				listItems.push_back(std::make_shared<ActiveSynthHolder>(reallyASynth, s.color()));
+			}
 		}
 	}
 

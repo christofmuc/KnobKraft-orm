@@ -30,12 +30,13 @@ class LogViewLogger;
 class MainComponent : public Component, private ChangeListener
 {
 public:
-    MainComponent();
+	MainComponent();
     ~MainComponent();
 
     virtual void resized() override;
 
 private:
+	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
 	File getAutoCategoryFile() const;
 	void aboutBox();

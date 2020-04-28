@@ -32,6 +32,12 @@ public:
         // This method is where you should put your application's initialization code..
 		Settings::setSettingsID("KnobKraftOrm");
 
+		// Select colour scheme
+		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
+		auto v4 = dynamic_cast<LookAndFeel_V4 *>(lookAndFeel);
+		if (v4) {
+			v4->setColourScheme(LookAndFeel_V4::getDarkColourScheme());
+		}
         mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian"));
     }
 

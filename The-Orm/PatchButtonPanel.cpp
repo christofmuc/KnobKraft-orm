@@ -8,6 +8,8 @@
 
 #include "Patch.h"
 
+#include "ColourHelpers.h"
+
 #include <boost/format.hpp>
 #include <algorithm>
 
@@ -72,21 +74,21 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
 			patchButtons_->buttonWithIndex(i)->setActive(i == active);
+			Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 			if (i < patches_.size()) {
 				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].patch()->patchName());
-				Colour color = Colours::slategrey;
 				auto cats = patches_[i].categories();
 				if (!cats.empty()) {
 					// Random in case the patch has multiple categories
-					color = cats.cbegin()->color;
+					color = cats.cbegin()->color.darker();
 				}
-				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
+				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color);
 				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
 				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
 			}
 			else {
 				patchButtons_->buttonWithIndex(i)->setButtonText("");
-				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, Colours::black);
+				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color);
 				patchButtons_->buttonWithIndex(i)->setFavorite(false);
 				patchButtons_->buttonWithIndex(i)->setHidden(false);
 			}
