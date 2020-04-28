@@ -130,7 +130,7 @@ namespace midikraft {
 		// The DW8000 is so primitive that it does do nothing to the few bytes of data it needs per patch
 		if (!isEditBufferDump(message)) {
 			jassert(false);
-			return std::make_shared<KorgDW8000Patch>(PatchData(), "");
+			return {};
 		}
 
 		// Extract the data
@@ -139,13 +139,11 @@ namespace midikraft {
 		for (int index = 4; index < message.getSysExDataSize(); index++) {
 			patchdata.push_back(data[index]);
 		}
-		return std::make_shared<KorgDW8000Patch>(patchdata, "");
-
+		return {std::make_shared<KorgDW8000Patch>(patchdata, MidiProgramNumber::fromZeroBase(0))};
 	}
 
-	std::shared_ptr<DataFile> KorgDW8000::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
-		ignoreUnused(place);
-		return std::make_shared<KorgDW8000Patch>(data, name);
+	std::shared_ptr<DataFile> KorgDW8000::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
+		return std::make_shared<KorgDW8000Patch>(data, place);
 	}
 
 	std::vector<juce::MidiMessage> KorgDW8000::patchToSysex(const Patch &patch) const

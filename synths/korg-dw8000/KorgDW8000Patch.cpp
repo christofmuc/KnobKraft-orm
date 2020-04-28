@@ -12,26 +12,21 @@
 
 namespace midikraft {
 
-	const int kKorgDW8000DataTypeID = 0; // The DW8000 has only one datatype, no layers, tones, tunings, or other stuff
+	const int kKorgDW8000DataTypeID = 0; // The DW8000 has only one data-type, no layers, tones, tunings, or other stuff
 
 	std::string KorgDW8000PatchNumber::friendlyName() const {
 		return (boost::format("%d%d") % ((programNumber_.toZeroBased() / 8) + 1) % ((programNumber_.toZeroBased() % 8) + 1)).str();
 	}
 
-	KorgDW8000Patch::KorgDW8000Patch(Synth::PatchData const &patchdata, std::string const &name) : Patch(kKorgDW8000DataTypeID, patchdata), name_(name)
+	KorgDW8000Patch::KorgDW8000Patch(Synth::PatchData const &patchdata, MidiProgramNumber const &programNumber) : Patch(kKorgDW8000DataTypeID, patchdata), number_(programNumber)
 	{
 		// The DW 8000 uses an astounding amount of 51 bytes per patch
 		jassert(patchdata.size() == 51);
 	}
 
-	std::string KorgDW8000Patch::patchName() const
+	std::string KorgDW8000Patch::name() const
 	{
-		return name_;
-	}
-
-	void KorgDW8000Patch::setName(std::string const &name)
-	{
-		name_ = name;
+		return number_.friendlyName();
 	}
 
 	std::shared_ptr<PatchNumber> KorgDW8000Patch::patchNumber() const {
@@ -40,18 +35,6 @@ namespace midikraft {
 
 	void KorgDW8000Patch::setPatchNumber(MidiProgramNumber patchNumber) {
 		number_ = KorgDW8000PatchNumber(patchNumber);
-	}
-
-	int KorgDW8000Patch::value(SynthParameterDefinition const &param) const
-	{
-		ignoreUnused(param);
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
-	SynthParameterDefinition const & KorgDW8000Patch::paramBySysexIndex(int sysexIndex) const
-	{
-		ignoreUnused(sysexIndex);
-		throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	std::vector<std::shared_ptr<SynthParameterDefinition>> KorgDW8000Patch::allParameterDefinitions()

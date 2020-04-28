@@ -18,21 +18,16 @@ namespace midikraft {
 
 	class KorgDW8000Patch : public Patch {
 	public:
-		KorgDW8000Patch(Synth::PatchData const &patchdata, std::string const &name);
+		KorgDW8000Patch(Synth::PatchData const &patchdata, MidiProgramNumber const &programNumber);
 
-		virtual std::string patchName() const override;
-		virtual void setName(std::string const &name) override;
+		virtual std::string name() const override;
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
-
-		int value(SynthParameterDefinition const &param) const;
-		SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const;
 
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
 
 	private:
 		KorgDW8000PatchNumber number_;
-		std::string name_;
 	};
 
 }
