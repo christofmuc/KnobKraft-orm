@@ -30,7 +30,7 @@ namespace midikraft {
 
 
 		virtual std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message) const override;
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 		virtual std::vector<MidiMessage> patchToSysex(const Patch &patch) const override;

@@ -13,7 +13,7 @@
 
 namespace midikraft {
 
-	std::string OB6Patch::patchName() const
+	std::string OB6Patch::name() const
 	{
 		// The OB6 has a 20 character patch name storage
 		std::string result;

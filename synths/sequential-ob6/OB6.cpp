@@ -100,15 +100,9 @@ namespace midikraft {
 	public:
 		using DataFile::DataFile;
 
-		std::string patchName() const override
+		std::string name() const override
 		{
-			//TODO - these should probably go into a datafilecapability?
-			return "unnamed";
-		}
-
-		void setName(std::string const &name) override
-		{
-			ignoreUnused(name);
+			return "OB6 MASTER DATA";
 		}
 	};
 
@@ -162,9 +156,8 @@ namespace midikraft {
 		return std::shared_ptr<Patch>();
 	}
 
-	std::shared_ptr<DataFile> OB6::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const
+	std::shared_ptr<DataFile> OB6::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		ignoreUnused(name);
 		auto patch = std::make_shared<OB6Patch>(OB6::PATCH, data);
 		patch->setPatchNumber(place);
 		return patch;

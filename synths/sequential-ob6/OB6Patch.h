@@ -16,15 +16,18 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class OB6Patch : public Patch {
+	class OB6Patch : public Patch, public StoredPatchNameCapability {
 	public:
 		using Patch::Patch;
 
-		virtual std::string patchName() const override;
-		virtual void setName(std::string const &name) override;
+		virtual std::string name() const override;
+		
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+
+		// StoredPatchNameCapability - even if the OB6 does not show patch names, it stores them!
+		virtual void setName(std::string const &name) override;
 
 	private:
 		MidiProgramNumber place_ = MidiProgramNumber::fromZeroBase(0);
