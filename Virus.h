@@ -47,7 +47,7 @@ namespace midikraft {
 		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const;
 		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
 
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 
 		// Discoverable Device
 		virtual MidiMessage deviceDetect(int channel) override;

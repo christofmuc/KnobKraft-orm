@@ -36,7 +36,7 @@ namespace midikraft {
 		jassert(data.size() == 256);
 	}
 
-	std::string VirusPatch::patchName() const
+	std::string VirusPatch::name() const
 	{
 		std::string result;
 		for (int i = index(PageB, 112); i < index(PageB, 122); i++) {
@@ -56,7 +56,7 @@ namespace midikraft {
 	void VirusPatch::setName(std::string const &name)
 	{
 		ignoreUnused(name);
-		throw std::logic_error("The method or operation is not implemented.");
+		//TODO
 	}
 
 	std::shared_ptr<PatchNumber> VirusPatch::patchNumber() const
