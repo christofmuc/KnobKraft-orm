@@ -18,12 +18,6 @@ namespace midikraft {
 
 	KawaiK3Patch::KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata) : Patch(kKawaiK3PatchDataTypeID, patchdata), number_(programNo)
 	{
-		setNameFromPatchNumber();
-	}
-
-	void KawaiK3Patch::setNameFromPatchNumber() {
-		// The Kawai K3 is so old is has no display to display a patch name, hence, also none stored in the patch data
-		name_ = (boost::format("Patch #%d") % number_.friendlyName()).str();
 	}
 
 	std::shared_ptr<KawaiK3Patch> KawaiK3Patch::createInitPatch()
@@ -49,14 +43,10 @@ namespace midikraft {
 		return patch;
 	}
 
-	std::string KawaiK3Patch::patchName() const
+	std::string KawaiK3Patch::name() const
 	{
-		return name_;
-	}
-
-	void KawaiK3Patch::setName(std::string const &name)
-	{
-		name_ = name;
+		// The Kawai K3 is so old is has no display to display a patch name, hence, also none stored in the patch data
+		return number_.friendlyName();
 	}
 
 	std::shared_ptr<PatchNumber> KawaiK3Patch::patchNumber() const {
@@ -65,7 +55,6 @@ namespace midikraft {
 
 	void KawaiK3Patch::setPatchNumber(MidiProgramNumber patchNumber) {
 		number_ = KawaiK3PatchNumber(patchNumber);
-		setNameFromPatchNumber();
 	}
 
 	int KawaiK3Patch::value(SynthParameterDefinition const &param) const

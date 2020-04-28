@@ -284,9 +284,8 @@ namespace midikraft {
 		}
 	}
 
-	std::shared_ptr<DataFile> KawaiK3::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const {
+	std::shared_ptr<DataFile> KawaiK3::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
 		auto patch = std::make_shared<KawaiK3Patch>(place, data);
-		patch->setName(name);
 		return patch;
 	}
 

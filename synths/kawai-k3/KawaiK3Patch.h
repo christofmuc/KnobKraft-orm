@@ -26,8 +26,7 @@ namespace midikraft {
 		static std::shared_ptr<KawaiK3Patch> createInitPatch();
 
 		// Implementation of Patch interface
-		virtual std::string patchName() const override;
-		virtual void setName(std::string const &name) override;
+		virtual std::string name() const override;
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
 
@@ -37,10 +36,7 @@ namespace midikraft {
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
 
 	private:
-		void setNameFromPatchNumber();
-
 		KawaiK3PatchNumber number_;
-		std::string name_;
 	};
 
 }
