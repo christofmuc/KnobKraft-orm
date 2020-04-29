@@ -28,6 +28,7 @@ namespace midikraft {
 
 		// StoredPatchNameCapability - even if the OB6 does not show patch names, it stores them!
 		virtual void setName(std::string const &name) override;
+		virtual bool isDefaultName() const override;
 
 	private:
 		MidiProgramNumber place_ = MidiProgramNumber::fromZeroBase(0);

@@ -37,6 +37,11 @@ namespace midikraft {
 		}
 	}
 
+	bool OB6Patch::isDefaultName() const
+	{
+		return name() == "Basic Program";
+	}
+
 	std::shared_ptr<PatchNumber> OB6Patch::patchNumber() const
 	{
 		return std::make_shared<OB6Number>(place_);
