@@ -273,6 +273,11 @@ namespace midikraft {
 		jassert(false);
 	}
 
+	bool Rev2Patch::isDefaultName() const
+	{
+		return name() == "Basic Program A.Basic Program B";
+	}
+
 	std::shared_ptr<PatchNumber> Rev2Patch::patchNumber() const {
 		return std::make_shared<Rev2PatchNumber>(number_);
 	}
