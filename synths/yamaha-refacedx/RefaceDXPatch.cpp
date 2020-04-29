@@ -33,6 +33,11 @@ namespace midikraft {
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 
+	bool RefaceDXPatch::isDefaultName() const
+	{
+		return name() == "Init Voice";
+	}
+
 	std::shared_ptr<PatchNumber> RefaceDXPatch::patchNumber() const
 	{
 		return std::make_shared<RefaceDXPatchNumber>(originalProgramNumber_);
