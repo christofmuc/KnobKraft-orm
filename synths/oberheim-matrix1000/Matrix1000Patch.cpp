@@ -11,6 +11,8 @@
 #include <boost/format.hpp>
 #include <unicode/ucnv.h>
 
+#include <regex>
+
 namespace midikraft {
 
 	const int kMatrix1000DataType = 0; // The Matrix1000 has just one data file type - the patch. No layers, voices, alternate tunings...
@@ -71,6 +73,12 @@ namespace midikraft {
 				}
 			}
 		}
+	}
+
+	bool Matrix1000Patch::isDefaultName() const
+	{
+		std::regex matcher("BNK[0-9]: [0-9][0-9]", std::regex::icase);
+		return std::regex_search(name(), matcher);
 	}
 
 	std::shared_ptr<PatchNumber> Matrix1000Patch::patchNumber() const {
