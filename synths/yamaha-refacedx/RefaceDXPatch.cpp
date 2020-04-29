@@ -21,7 +21,7 @@ namespace midikraft {
 	{
 		std::string result;
 		// Extract the first 10 bytes of the common block, that's the ascii name
-		for (int i = 0; i < std::max((size_t)10, data().size()); i++) {
+		for (int i = 0; i < std::min((size_t)10, data().size()); i++) {
 			result.push_back(data()[i]);
 		}
 		return result;
@@ -30,7 +30,7 @@ namespace midikraft {
 	void RefaceDXPatch::setName(std::string const &name)
 	{
 		ignoreUnused(name);
-		throw std::logic_error("The method or operation is not implemented.");
+
 	}
 
 	bool RefaceDXPatch::isDefaultName() const
