@@ -1,8 +1,24 @@
-Small things
-* Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
+Completely unprioritised list of things to do
+=============================================
 
-For the OB-6 branch
-+ Implement parameter set of OB-6 for patch diff?
+OB-6
++ Implement parameter set of OB-6 for patch diff
+
+RefaceDX
+* Patch renaming
+* Parameter set missing
+
+Virus
+* Patch renaming has to be implemented
+* Parameter set missing
+
+Rev2
+* Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
+* Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
+* Noteoff on send patch (or send mute patch first?)
+
+K3
+* Wave form support (Second DataFile type)
 
 Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
@@ -12,10 +28,11 @@ Macro page
 * Display size of master keyboard (or select lower and upper key)
 * Turn macros on/off on a global level (and show it on a global level)
 * Also allow sequences, not just chords
+* Masterkeyboard support (manualy setup lowest key, highest key), as well as 
 
 Librarian
 * Allow multi-select of banks to import (with all feature)
-
+* Allow recursive directory traversal during import
 * Allow dependencies between DataFiles (patch -> wave for K3)
 
 Future work
@@ -35,10 +52,6 @@ Future work
 * Could have patch name autogenerator like LaserMammoth
 * Global settings editor for the synth using the JUCE property editor
   * Need to change MIDI channel internally when using the settings editor to change it
-
-Rev2 Features
-* Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
-* Noteoff on send patch (or send mute patch first?)
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
