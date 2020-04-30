@@ -4,6 +4,9 @@ Small things
 For the OB-6 branch
 + Implement parameter set of OB-6 for patch diff?
 
+Archiving
++ Durability - also write all patches on the disk as individual patch files ready to send back to synth
+
 Macro page
 * Select which MIDI input/Synth to use
 * Display size of master keyboard (or select lower and upper key)
@@ -12,6 +15,8 @@ Macro page
 
 Librarian
 * Allow multi-select of banks to import (with all feature)
+
+* Allow dependencies between DataFiles (patch -> wave for K3)
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
