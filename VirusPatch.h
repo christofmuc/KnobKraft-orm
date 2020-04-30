@@ -29,6 +29,7 @@ namespace midikraft {
 
 		// StoredPatchNameCapability
 		virtual void setName(std::string const &name) override;
+		virtual bool isDefaultName() const override;
 
 		enum DataFileTypes { PATCH_VIRUS_B = 0 };
 		enum Page { PageA = 0, PageB = 1 };

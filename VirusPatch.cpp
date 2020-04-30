@@ -59,6 +59,11 @@ namespace midikraft {
 		//TODO
 	}
 
+	bool VirusPatch::isDefaultName() const
+	{
+		return name() == "- Init -";
+	}
+
 	std::shared_ptr<PatchNumber> VirusPatch::patchNumber() const
 	{
 		return std::make_shared<VirusPatchNumber>(place_);
