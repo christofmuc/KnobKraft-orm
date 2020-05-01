@@ -133,8 +133,17 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericAdaption::patchToSysex(const midikraft::Patch &patch) const
 	{
+		try {
+			auto data = patch.data();
+			py::object result = adaption_module.attr("convertToEditBuffer")(data);
+			return { vectorToMessage(py::cast<std::vector<int>>(result)) };
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Error calling convertToEditBuffer: %s") % ex.what()).str());
+			return {};
+		}
 		// For the Generic Adaption, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-		return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
+		//return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
 	}
 
 	juce::MidiMessage GenericAdaption::saveEditBufferToProgram(int programNumber)

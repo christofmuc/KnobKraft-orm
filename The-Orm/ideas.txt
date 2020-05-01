@@ -24,8 +24,8 @@ Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 
 Generic Module
-+ Need to parse patch name from patch
-+ Need to transform to send to edit buffer, else it always ends up in the place where it came from
++ Need to parse patch name from patch for AS-1, and transform to edit buffer from program dump
++ Matrix 1000 needs bank switching
 + Need to allow multiple midi message in one vector
 
 Macro page
