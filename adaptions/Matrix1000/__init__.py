@@ -40,6 +40,13 @@ def channelIfValidDeviceResponse(message):
 		return message[2]
 	return -1
 
+def createEditBufferRequest(channel):
+	return [0xf0, 0x10, 0x06, 0x04, 4, 0, 0xf7]
+
+def isEditBufferDump(message):
+	# The Matrix1000 sends the edit buffer in the same format as a single program 
+	return isSingleProgramDump(message)
+
 def createProgramDumpRequest(channel, patchNo):
 	return [0xf0, 0x10, 0x06, 0x04, 1, patchNo, 0xf7]
 

@@ -48,6 +48,24 @@ def channelIfValidDeviceResponse(message):
 			return message[2]
 	return -1
 
+def createEditBufferRequest(channel):
+	# See page 34 of the Toraiz manual
+	return [0xf0, 0b00000000, 0b01000000, 0b00000101, 0b00000000, 0b000000000, 0b00000001, 0b00001000, 0b00010000, 0b00000110, 0xf7]
+
+def isEditBufferDump(message):
+	# see page 35 of the manual
+	return (len(message) > 9
+		and message[0] == 0xf0 
+		and message[1] == 0b00000000  # Pioneer ID byte 1 
+		and message[2] == 0b01000000  # Pioneer ID byte 2
+		and message[3] == 0b00000101  # Pioneer ID byte 3
+		and message[4] == 0b00000000  # Toriaz ID byte 1
+		and message[5] == 0b00000000  # Toriaz ID byte 2
+		and message[6] == 0b00000001  # Toriaz ID byte 3
+		and message[7] == 0b00001000  # Toriaz ID byte 4
+		and message[8] == 0b00010000  # Device ID
+		and message[9] == 0b00000011) # Edit Buffer Dump
+
 def createProgramDumpRequest(channel, patchNo):
 	# Calculate bank and program - the KnobKraft Orm will just think the patches are 0 to 999, but the Toraiz needs a bank number 0-9 and the patch number within that bank
 	bank = patchNo / 100

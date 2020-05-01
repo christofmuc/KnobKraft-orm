@@ -7,13 +7,14 @@
 #include "JuceHeader.h"
 
 #include "Synth.h"
+#include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 
 #include <pybind11/embed.h>
 
 namespace knobkraft {
 
-	class GenericAdaption : public midikraft::Synth, public midikraft::ProgramDumpCabability {
+	class GenericAdaption : public midikraft::Synth, public midikraft::EditBufferCapability, public midikraft::ProgramDumpCabability {
 	public:
 		GenericAdaption(std::string const &pythonModuleFilePath);
 
@@ -31,12 +32,19 @@ namespace knobkraft {
 		MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		bool needsChannelSpecificDetection() override;
 
+		MidiMessage requestEditBufferDump() override;
+
+		// EditBufferCapability
+		bool isEditBufferDump(const MidiMessage& message) const override;
+		std::shared_ptr<midikraft::Patch> patchFromSysex(const MidiMessage& message) const override;
+		std::vector<MidiMessage> patchToSysex(const midikraft::Patch &patch) const override;
+		MidiMessage saveEditBufferToProgram(int programNumber) override;
+
 		// ProgramDumpCapability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
 		virtual std::shared_ptr<midikraft::Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const midikraft::Patch &patch) const override;
-
 
 		// The following functions are implemented generically and current cannot be defined in Python
 		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
@@ -44,6 +52,7 @@ namespace knobkraft {
 
 		// Internal workings of the Generic Adaption module
 		static void startupGenericAdaption();
+
 
 	private:
 		static std::vector<int> messageToVector(MidiMessage const &message);
