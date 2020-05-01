@@ -338,7 +338,7 @@ public:
 			SimpleLogger::instance()->postMessage("No patches contained in data, nothing to upload.");
 		}
 		else {
-			auto numberNew = database_.mergePatchesIntoDatabase(UIModel::currentSynth(), patchesLoaded_, outNewPatches, this);
+			auto numberNew = database_.mergePatchesIntoDatabase(UIModel::currentSynth(), patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME);
 			if (numberNew > 0) {
 				SimpleLogger::instance()->postMessage((boost::format("Retrieved %d new or changed patches from the synth, uploaded to database") % numberNew).str());
 				finished_(outNewPatches);
