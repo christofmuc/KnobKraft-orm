@@ -7,33 +7,51 @@
 #include "JuceHeader.h"
 
 #include "Synth.h"
+#include "ProgramDumpCapability.h"
+
+#include <pybind11/embed.h>
 
 namespace knobkraft {
 
-	class GenericAdaption : public midikraft::Synth {
+	class GenericAdaption : public midikraft::Synth, public midikraft::ProgramDumpCabability {
 	public:
 		GenericAdaption(std::string const &pythonModuleFilePath);
 
+		// This needs to be implemented, and never changed, as the result is used as a primary key in the database to store the patches
 		std::string getName() const override;
 
+		// Implement hints for the UI of the Librarian
 		int numberOfBanks() const override;
 		int numberOfPatches() const override;
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;
-
-		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
-		bool isOwnSysex(MidiMessage const &message) const override;
-
+	
+		// Implement the methods needed for device detection
 		MidiMessage deviceDetect(int channel) override;
 		int deviceDetectSleepMS() override;
 		MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		bool needsChannelSpecificDetection() override;
 
+		// ProgramDumpCapability
+		virtual std::vector<MidiMessage> requestPatch(int patchNo) override;
+		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
+		virtual std::shared_ptr<midikraft::Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const midikraft::Patch &patch) const override;
+
+
+		// The following functions are implemented generically and current cannot be defined in Python
+		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
+		bool isOwnSysex(MidiMessage const &message) const override;
+
 		// Internal workings of the Generic Adaption module
 		static void startupGenericAdaption();
 
 	private:
-		class AdaptionImpl;
-		std::unique_ptr<AdaptionImpl> impl;
+		static std::vector<int> messageToVector(MidiMessage const &message);
+		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
+		static MidiMessage vectorToMessage(std::vector<int> const &data);
+
+		pybind11::module adaption_module;
+		std::string filepath_;
 	};
 
 }

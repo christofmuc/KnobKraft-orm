@@ -14,7 +14,8 @@ def numberOfPatchesPerBank():
 	return 100
 
 def createDeviceDetectMessage(channel):
-	return [0xf0, 0x7e, 0x7f, 0b0110, 1, 0xf7]
+	# See page 33 of the Toraiz AS-1 manual
+	return [0xf0, 0x7e, 0x7f, 0b00000110, 1, 0xf7]
 
 def deviceDetectWaitMilliseconds():
 	return 200
@@ -23,19 +24,47 @@ def needsChannelSpecificDetection():
 	return False
 
 def channelIfValidDeviceResponse(message):
-	# The manual states the AS1 replies with a 15 byte long message
-	if len(message) == 15 and message[0] == 0xf0 and message[1] == 0x7e:
-		# Goodness, the Toraiz sends quite a large packge we need to check
-		expected = [0b0110, 0b0010, 0, 0b01000000, 0b0101, 0, 0, 1, 0b1000 ]
-		for i in range(len(expected)):
-			if expected[i] != message[i + 3]:
-				# Mismatch, this is not from the AS1
-				return -1
-		# If we reached this, all bytes of the message are as expected, we can extract
-		# the real channel of the AS1 from index 2 of the message
+	# The manual states the AS1 replies with a 15 byte long message, see page 33
+	if (len(message) == 15 
+		and message[0] == 0xf0    # Sysex
+		and message[1] == 0x7e    # Non-realtime
+		# ignore message[2] - that's the current midi channel
+		and message[3] == 0b0110  # Device request
+		and message[4] == 0b0010  # Reply
+		and message[5] == 0b00000000  # Pioneer ID byte 1
+		and message[6] == 0b01000000  # Pioneer ID byte 2
+		and message[7] == 0b00000101  # Pioneer ID byte 3
+		and message[8] == 0b00000000  # Toriaz ID byte 1
+		and message[9] == 0b00000000  # Toriaz ID byte 2
+		and message[10] == 0b00000001  # Toriaz ID byte 3
+		and message[11] == 0b00001000  # Toriaz ID byte 4
+		and message[12] == 0b00010000  # Device ID
+		): 
+		# This is indeed the right package, now extract the MIDI channel from the message
 		if message[2] == 0x7f:
 			# The Toraiz is set to OMNI. Not a good idea, but let's treat this as channel 1 for now
 			return 1
 		else:
 			return message[2]
 	return -1
+
+def createProgramDumpRequest(channel, patchNo):
+	# Calculate bank and program - the KnobKraft Orm will just think the patches are 0 to 999, but the Toraiz needs a bank number 0-9 and the patch number within that bank
+	bank = patchNo / 100
+	program = patchNo % 100
+	# See page 33 of the Toraiz manual
+	return [0xf0, 0b00000000, 0b01000000, 0b00000101, 0b00000000, 0b000000000, 0b00000001, 0b00001000, 0b00010000, 0b00000101, bank, program, 0xf7]
+
+def isSingleProgramDump(message):
+	# see page 34 of the manual
+	return (len(message) > 9
+		and message[0] == 0xf0 
+		and message[1] == 0b00000000  # Pioneer ID byte 1 
+		and message[2] == 0b01000000  # Pioneer ID byte 2
+		and message[3] == 0b00000101  # Pioneer ID byte 3
+		and message[4] == 0b00000000  # Toriaz ID byte 1
+		and message[5] == 0b00000000  # Toriaz ID byte 2
+		and message[6] == 0b00000001  # Toriaz ID byte 3
+		and message[7] == 0b00001000  # Toriaz ID byte 4
+		and message[8] == 0b00010000  # Device ID
+		and message[9] == 0b00000010) # Program Dump

@@ -34,6 +34,7 @@ Librarian
 * Allow multi-select of banks to import (with all feature)
 * Allow recursive directory traversal during import
 * Allow dependencies between DataFiles (patch -> wave for K3)
+* Could accept synth-initiated dumps at any time
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.

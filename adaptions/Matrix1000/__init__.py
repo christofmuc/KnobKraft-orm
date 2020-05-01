@@ -25,21 +25,27 @@ def needsChannelSpecificDetection():
 
 def channelIfValidDeviceResponse(message):
 	# The Matrix 1000 answers with 15 bytes
-	if len(message) == 15 and message[0] == 0xf0 and message[1] == 0x7e:
-		# Goodness, the Toraiz sends quite a large packge we need to check
-		expected = [0x06, 
-			0x02, 
-			0x10,  # Oberheim
-			0x06,  # Matrix
-			0x00, 
-			0x02,  # Family member Matrix 1000
-			0x00
-			]
-		for i in range(len(expected)):
-			if expected[i] != message[i + 3]:
-				# Mismatch, this is not from the AS1
-				return -1
-		# If we reached this, all bytes of the message are as expected, we can extract
-		# the real channel from index 2 of the message
+	if (len(message) == 15 
+		and message[0] == 0xf0  # Sysex
+		and message[1] == 0x7e  # Non-realtime
+		and message[3] == 0x06  # Device request
+		and message[4] == 0x02  # Device request reply
+		and message[5] == 0x10  # Oberheim
+		and message[6] == 0x06  # Matrix
+		and message[7] == 0x00
+		and message[8] == 0x02  # Family member Matrix 1000
+		and message[9] == 0x00
+		):
+		# Extrat the current MIDI channel from index 2 of the message
 		return message[2]
 	return -1
+
+def createProgramDumpRequest(channel, patchNo):
+	return [0xf0, 0x10, 0x06, 0x04, 1, patchNo, 0xf7]
+
+def isSingleProgramDump(message):
+	return (len(message) > 3 
+		and message[0] == 0xf0 
+		and message[1] == 0x10   # Oberheim
+		and message[2] == 0x06   # Matrix
+		and message[3] == 0x01)  # Single Patch Data
