@@ -42,13 +42,21 @@ namespace knobkraft {
 			EDIT_BUFFER
 		};
 
-		GenericPatch(std::string const &name, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::Patch(dataType, data), name_(name) {
+		GenericPatch(pybind11::module &adaption_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::Patch(dataType, data), adaption_(adaption_module) {
 			patchNumber_ = std::make_shared<GenericPatchNumber>(MidiProgramNumber::fromZeroBase(0));
 		}
 
 		std::string name() const override
 		{
-			return name_;
+			try {
+				auto message = data();
+				py::object result = adaption_.attr("nameFromDump")(message);
+				return result.cast<std::string>();
+			}
+			catch (std::exception &ex) {
+				SimpleLogger::instance()->postMessage((boost::format("Error calling nameFromDump: %s") % ex.what()).str());
+				return false;
+			}
 		}
 
 		std::shared_ptr<midikraft::PatchNumber> patchNumber() const override
@@ -69,6 +77,7 @@ namespace knobkraft {
 		}
 
 	private:
+		pybind11::module &adaption_;
 		std::string name_;
 		std::shared_ptr<midikraft::PatchNumber> patchNumber_;
 	};
@@ -119,7 +128,7 @@ namespace knobkraft {
 	{
 		// For the Generic Adaption, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(getName() + " Patch", data, GenericPatch::EDIT_BUFFER);
+		return std::make_shared<GenericPatch>(const_cast<py::module &>(adaption_module), data, GenericPatch::EDIT_BUFFER);
 	}
 
 	std::vector<juce::MidiMessage> GenericAdaption::patchToSysex(const midikraft::Patch &patch) const
@@ -166,7 +175,7 @@ namespace knobkraft {
 
 	std::shared_ptr<midikraft::DataFile> GenericAdaption::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		auto patch = std::make_shared<GenericPatch>(getName() + " Patch", data, GenericPatch::PROGRAM_DUMP);
+		auto patch = std::make_shared<GenericPatch>(const_cast<py::module &>(adaption_module), data, GenericPatch::PROGRAM_DUMP);
 		patch->setPatchNumber(place);
 		return patch;
 	}
@@ -240,7 +249,7 @@ namespace knobkraft {
 	{
 		// For the Generic Adaption, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(getName() + " Patch", data, GenericPatch::PROGRAM_DUMP);
+		return std::make_shared<GenericPatch>(const_cast<py::module &>(adaption_module), data, GenericPatch::PROGRAM_DUMP);
 	}
 
 	std::vector<juce::MidiMessage> GenericAdaption::patchToProgramDumpSysex(const midikraft::Patch &patch) const
