@@ -63,7 +63,7 @@ def nameFromDump(message):
 	if isSingleProgramDump(message):
 		# To extract the name from the Matrix 1000 program dump, we need to correctly de-nibble and then force the first 8 bytes into ASCII 
 		patchData = [message[x] | (message[x + 1] << 4) for x in range(5, len(message) - 2, 2)]
-		return ''.join([chr(x if x >= 32 else x + 32) for x in patchData[0:8]])
+		return ''.join([chr(x if x >= 32 else x + 0x40) for x in patchData[0:8]])
 
 def convertToEditBuffer(message):
 	if isSingleProgramDump(message) or isEditBufferDump(message):
