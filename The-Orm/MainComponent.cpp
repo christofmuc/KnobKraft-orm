@@ -71,6 +71,8 @@ MainComponent::MainComponent() :
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	buttons_(301)
 {
+	logger_ = std::make_unique<LogViewLogger>(logView_);
+
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
@@ -177,7 +179,7 @@ MainComponent::MainComponent() :
 
 	addAndMakeVisible(mainTabs_);
 
-	logger_ = std::make_unique<LogViewLogger>(logView_);
+	
 	addAndMakeVisible(menuBar_);
 	addAndMakeVisible(resizerBar_);
 	addAndMakeVisible(logArea_);
