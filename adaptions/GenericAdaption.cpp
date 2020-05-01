@@ -134,7 +134,16 @@ namespace knobkraft {
 		}
 
 		MidiMessage vectorToMessage(std::vector<int> const &data) {
-			return MidiMessage(data.data(), (int)data.size());
+			std::vector<uint8> byteData;
+			for (int byte : data) {
+				if (byte >= 0 && byte < 256) {
+					byteData.push_back((uint8) byte);
+				}
+				else {
+					throw new std::runtime_error("Value out of range in Midi Message");
+				}
+			}
+			return MidiMessage(byteData.data(), (int)byteData.size());
 		}
 
 		py::module adaption_module;

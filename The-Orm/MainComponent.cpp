@@ -84,7 +84,7 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 
-	synths.push_back(midikraft::SynthHolder(std::make_shared<knobkraft::GenericAdaption>("PioneerToraiz-AS1"), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<knobkraft::GenericAdaption>("Matrix1000"), buttonColour));
 
 	UIModel::instance()->synthList_.setSynthList(synths);
 

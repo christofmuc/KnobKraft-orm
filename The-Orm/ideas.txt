@@ -62,6 +62,7 @@ Database schema
 
 MIDI setup
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
+* MIDI log needs a "save log function"
 
 UI Cleanup
 * Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
