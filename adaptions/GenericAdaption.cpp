@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "Logger.h"
+#include "Sysex.h"
 
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
@@ -282,9 +283,10 @@ namespace knobkraft {
 	std::vector<juce::MidiMessage> GenericAdaption::requestPatch(int patchNo)
 	{
 		try {
-			py::object result = adaption_module.attr("createProgramDumpRequest")(channel().toZeroBasedInt(), patchNo);
-			// These should be only one midi message...
-			return { vectorToMessage(result.cast<std::vector<int>>()) };
+			int c = channel().toZeroBasedInt();
+			py::object result = adaption_module.attr("createProgramDumpRequest")(c, patchNo);
+			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Error calling createProgramDumpRequest: %s") % ex.what()).str());
