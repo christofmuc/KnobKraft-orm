@@ -48,7 +48,9 @@ def isEditBufferDump(message):
 	return isSingleProgramDump(message)
 
 def createProgramDumpRequest(channel, patchNo):
-	return [0xf0, 0x10, 0x06, 0x04, 1, patchNo, 0xf7]
+	# Todo - I need to create a bank select upfront
+	program = patchNo % 100
+	return [0xf0, 0x10, 0x06, 0x04, 1, program, 0xf7]
 
 def isSingleProgramDump(message):
 	return (len(message) > 3 
