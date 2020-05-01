@@ -67,6 +67,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
 		midikraft-yamaha-refacedx
+		knobkraft-generic-adaption
 )
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})
@@ -117,7 +118,14 @@ IF(WIN32)
 			COMMAND ${CMAKE_COMMAND} -E copy
 					"${icu_SOURCE_DIR}/bin64/icuuc66.dll" "${icu_SOURCE_DIR}/bin64/icudt66.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
+	add_custom_command(
+			TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+					"${PYTHONPATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
+					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
+
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer

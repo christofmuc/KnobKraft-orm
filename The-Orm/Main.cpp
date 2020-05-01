@@ -11,6 +11,8 @@
 #include "Settings.h"
 #include "UIModel.h"
 
+#include "GenericAdaption.h"
+
 #include <memory>
 
 //==============================================================================
@@ -31,6 +33,9 @@ public:
 
         // This method is where you should put your application's initialization code..
 		Settings::setSettingsID("KnobKraftOrm");
+
+		// Init python for GenericAdaption
+		knobkraft::GenericAdaption::startupGenericAdaption();
 
 		// Select colour scheme
 		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();

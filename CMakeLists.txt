@@ -40,6 +40,18 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/third_party/juce-cmake/
 # RapidJson is an include-only library, so instead of bothering with their CMake files, just add the include path
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
+# Setup pybind11
+IF(WIN32)
+	IF(DEFINED ENV{APPVEYOR})
+		# Fixed path in Appveyor Windows build machine
+		set(PYTHON_EXECUTABLE "C:/Python36-x64/python.exe")
+	ELSE()
+		set(PYTHON_EXECUTABLE "c:/python/python36/python.exe")
+	ENDIF()
+ENDIF()
+set(PYBIND11_PYTHON_VERSION 3.6)
+add_subdirectory("third_party/pybind11")
+
 # Include the SQLite wrapper for MidiKraft-database
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp)
 
@@ -58,6 +70,9 @@ add_subdirectory(synths/MidiKraft-oberheim-matrix1000)
 add_subdirectory(synths/MidiKraft-sequential-rev2)
 add_subdirectory(synths/MidiKraft-sequential-ob6)
 add_subdirectory(synths/MidiKraft-yamaha-refacedx)
+
+# Add the generic adaptions module, that allows to define synths via Python
+add_subdirectory(adaptions)
 
 # Main module
 add_subdirectory(The-Orm)
