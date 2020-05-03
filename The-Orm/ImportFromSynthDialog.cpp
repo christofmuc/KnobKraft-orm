@@ -65,7 +65,8 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadH
 	cancel_.addListener(this);
 
 	// Populate the bank selector
-	for (int i = 0; i < synth->numberOfBanks(); i++) {
+	int numBanks = synth->numberOfBanks();
+	for (int i = 0; i < numBanks; i++) {
 		bank_.addItem(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)), i + 1);
 	}
 	bank_.setSelectedItemIndex(0, dontSendNotification);
