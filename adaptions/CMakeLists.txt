@@ -30,6 +30,7 @@ set(Adaptions
 # Define the sources for the static library
 set(Sources
 	GenericAdaption.cpp GenericAdaption.h
+	PythonUtils.cpp PythonUtils.h
 	${Adaptions}
 )
 

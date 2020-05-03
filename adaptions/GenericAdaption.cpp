@@ -10,6 +10,8 @@
 #include "Logger.h"
 #include "Sysex.h"
 
+#include "PythonUtils.h"
+
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
 #include <memory>
@@ -21,6 +23,11 @@ namespace py = pybind11;
 namespace knobkraft {
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptionPythonEmbeddedGuard;
+	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptionPyOutputRedirect;
+
+	void checkForPythonOutputAndLog() {
+		sGenericAdaptionPyOutputRedirect->flushToLogger("Adaption");
+	}
 
 	class GenericPatchNumber : public midikraft::PatchNumber {
 	public:
@@ -52,6 +59,7 @@ namespace knobkraft {
 			try {
 				auto message = data();
 				py::object result = adaption_.attr("nameFromDump")(message);
+				checkForPythonOutputAndLog();
 				return result.cast<std::string>();
 			}
 			catch (std::exception &ex) {
@@ -81,27 +89,46 @@ namespace knobkraft {
 	{
 		try {
 			adaption_module = py::module::import(filepath_.c_str());
+			checkForPythonOutputAndLog();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Failure loading python module: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure loading python module: %s") % ex.what()).str());
 		}
 	}
 
 	void GenericAdaption::startupGenericAdaption()
 	{
 		sGenericAdaptionPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
+		sGenericAdaptionPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
 		py::exec("import sys\nsys.path.append(\"d:/Development/github/KnobKraft-Orm/adaptions\")\n");
+		checkForPythonOutputAndLog();
+	}
+
+	py::object GenericAdaption::callMethod(std::string const &methodName) const {
+		if (!adaption_module) {
+			return py::object();
+		}
+		if (py::hasattr(adaption_module, methodName.c_str())) {
+			auto result = adaption_module.attr(methodName.c_str())();
+			checkForPythonOutputAndLog();
+			return result;
+		}
+		else {
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: method %s not found, fatal!") % methodName).str());
+			return py::object();
+		}
 	}
 
 	juce::MidiMessage GenericAdaption::requestEditBufferDump()
 	{
 		try {
 			py::object result = adaption_module.attr("createEditBufferRequest")(channel().toZeroBasedInt());
+			checkForPythonOutputAndLog();
 			// These should be only one midi message...
 			return { vectorToMessage(result.cast<std::vector<int>>()) };
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling createEditBufferRequest: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createEditBufferRequest: %s") % ex.what()).str());
 			return {};
 		}
 	}
@@ -111,10 +138,11 @@ namespace knobkraft {
 		try {
 			auto vectorForm = messageToVector(message);
 			py::object result = adaption_module.attr("isEditBufferDump")(vectorForm);
+			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling isEditBufferDump: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling isEditBufferDump: %s") % ex.what()).str());
 			return false;
 		}
 	}
@@ -131,10 +159,11 @@ namespace knobkraft {
 		try {
 			auto data = patch.data();
 			py::object result = adaption_module.attr("convertToEditBuffer")(data);
+			checkForPythonOutputAndLog();
 			return { vectorToMessage(py::cast<std::vector<int>>(result)) };
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling convertToEditBuffer: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling convertToEditBuffer: %s") % ex.what()).str());
 			return {};
 		}
 		// For the Generic Adaption, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
@@ -150,11 +179,11 @@ namespace knobkraft {
 	int GenericAdaption::numberOfBanks() const
 	{
 		try {
-			py::object result = adaption_module.attr("numberOfBanks")();
+			py::object result = callMethod("numberOfBanks")();
 			return result.cast<int>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling numberOfBanks: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling numberOfBanks: %s") % ex.what()).str());
 			return 1;
 		}
 	}
@@ -163,10 +192,11 @@ namespace knobkraft {
 	{
 		try {
 			py::object result = adaption_module.attr("numberOfPatchesPerBank")();
+			checkForPythonOutputAndLog();
 			return result.cast<int>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling numberOfPatchesPerBank: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling numberOfPatchesPerBank: %s") % ex.what()).str());
 			return 0;
 		}
 	}
@@ -196,10 +226,11 @@ namespace knobkraft {
 	{
 		try {
 			py::object result = adaption_module.attr("createDeviceDetectMessage")(channel);
+			checkForPythonOutputAndLog();
 			return vectorToMessage(result.cast<std::vector<int>>());
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling createDeviceDetectMessage: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createDeviceDetectMessage: %s") % ex.what()).str());
 			return MidiMessage();
 		}
 	}
@@ -209,11 +240,12 @@ namespace knobkraft {
 		try
 		{
 			py::object result = adaption_module.attr("deviceDetectWaitMilliseconds")();
+			checkForPythonOutputAndLog();
 			return result.cast<int>();
 
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling deviceDetectSleepMS: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling deviceDetectSleepMS: %s") % ex.what()).str());
 			return 100;
 		}
 	}
@@ -222,6 +254,7 @@ namespace knobkraft {
 	{
 		try {
 			py::object result = adaption_module.attr("channelIfValidDeviceResponse")(messageToVector(message));
+			checkForPythonOutputAndLog();
 			int intResult = result.cast<int>();
 			if (intResult >= 0 && intResult < 16) {
 				return MidiChannel::fromZeroBase(intResult);
@@ -231,7 +264,7 @@ namespace knobkraft {
 			}
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling channelIfValidDeviceResponse: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling channelIfValidDeviceResponse: %s") % ex.what()).str());
 			return MidiChannel::invalidChannel();
 		}
 	}
@@ -241,10 +274,11 @@ namespace knobkraft {
 		try
 		{
 			py::object result = adaption_module.attr("needsChannelSpecificDetection")();
+			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling needsChannelSpecificDetection: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling needsChannelSpecificDetection: %s") % ex.what()).str());
 			return true;
 		}
 	}
@@ -265,11 +299,11 @@ namespace knobkraft {
 	std::string GenericAdaption::getName() const
 	{
 		try {
-			py::object result = adaption_module.attr("name")();
+			py::object result = callMethod("name")();
 			return result.cast<std::string>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling getName: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling getName: %s") % ex.what()).str());
 			return "Generic";
 		}
 	}
@@ -279,11 +313,12 @@ namespace knobkraft {
 		try {
 			int c = channel().toZeroBasedInt();
 			py::object result = adaption_module.attr("createProgramDumpRequest")(c, patchNo);
+			checkForPythonOutputAndLog();
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling createProgramDumpRequest: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createProgramDumpRequest: %s") % ex.what()).str());
 			return {};
 		}
 	}
@@ -292,10 +327,11 @@ namespace knobkraft {
 	{
 		try {
 			py::object result = adaption_module.attr("isSingleProgramDump")(messageToVector(message));
+			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Error calling isSingleProgramDump: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling isSingleProgramDump: %s") % ex.what()).str());
 			return false;
 		}
 	}
@@ -311,7 +347,7 @@ namespace knobkraft {
 				byteData.push_back((uint8)byte);
 			}
 			else {
-				throw new std::runtime_error("Value out of range in Midi Message");
+				throw new std::runtime_error("Adaption: Value out of range in Midi Message");
 			}
 		}
 		return byteData;
@@ -322,6 +358,5 @@ namespace knobkraft {
 		auto byteData = intVectorToByteVector(data);
 		return MidiMessage(byteData.data(), (int)byteData.size());
 	}
-
 
 }
