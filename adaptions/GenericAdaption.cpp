@@ -64,8 +64,8 @@ namespace knobkraft {
 			}
 			catch (std::exception &ex) {
 				SimpleLogger::instance()->postMessage((boost::format("Error calling nameFromDump: %s") % ex.what()).str());
-				return false;
 			}
+			return "invalid";
 		}
 
 		std::shared_ptr<midikraft::PatchNumber> patchNumber() const override
@@ -106,16 +106,16 @@ namespace knobkraft {
 
 	py::object GenericAdaption::callMethod(std::string const &methodName) const {
 		if (!adaption_module) {
-			return py::object();
+			return py::none();
 		}
-		if (py::hasattr(adaption_module, methodName.c_str())) {
+		if (py::hasattr(*adaption_module, methodName.c_str())) {
 			auto result = adaption_module.attr(methodName.c_str())();
 			checkForPythonOutputAndLog();
 			return result;
 		}
 		else {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: method %s not found, fatal!") % methodName).str());
-			return py::object();
+			return py::none();
 		}
 	}
 
@@ -179,7 +179,7 @@ namespace knobkraft {
 	int GenericAdaption::numberOfBanks() const
 	{
 		try {
-			py::object result = callMethod("numberOfBanks")();
+			py::object result = callMethod("numberOfBanks");
 			return result.cast<int>();
 		}
 		catch (std::exception &ex) {
@@ -299,12 +299,12 @@ namespace knobkraft {
 	std::string GenericAdaption::getName() const
 	{
 		try {
-			py::object result = callMethod("name")();
+			py::object result = callMethod("name");
 			return result.cast<std::string>();
 		}
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling getName: %s") % ex.what()).str());
-			return "Generic";
+			return "Invalid";
 		}
 	}
 
