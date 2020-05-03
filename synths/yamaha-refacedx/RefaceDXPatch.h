@@ -29,8 +29,6 @@ namespace midikraft {
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
 
-		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
-
 	private:
 		friend class RefaceDX;
 		MidiProgramNumber originalProgramNumber_;

@@ -48,11 +48,6 @@ namespace midikraft {
 		originalProgramNumber_ = patchNumber;
 	}
 
-	std::vector<std::shared_ptr<SynthParameterDefinition>> RefaceDXPatch::allParameterDefinitions()
-	{
-		return {};
-	}
-
 	std::string RefaceDXPatchNumber::friendlyName() const
 	{
 		int bank = midiProgramNumber().toZeroBased() / 8;
