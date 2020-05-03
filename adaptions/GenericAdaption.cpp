@@ -100,16 +100,25 @@ namespace knobkraft {
 	{
 		sGenericAdaptionPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptionPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
-		py::exec("import sys\nsys.path.append(\"d:/Development/github/KnobKraft-Orm/adaptions\")\n");
+		std::string command = "import sys\nsys.path.append(R\"" + getAdaptionDirectory().getFullPathName().toStdString() + "\")\n";
+		py::exec(command);
 		checkForPythonOutputAndLog();
+	}
+
+	juce::File GenericAdaption::getAdaptionDirectory()
+	{
+		// Should I make this configurable?
+		return File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/KnobKraft-Orm-adaptions");
 	}
 
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
 	{
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
-		File adaptionDirectory("d:/Development/github/KnobKraft-Orm/adaptions");
-		for (auto f : adaptionDirectory.findChildFiles(File::findFiles, false, "*.py")) {
-			result.push_back(std::make_shared<GenericAdaption>(f.getFileNameWithoutExtension().toStdString()));
+		File adaptionDirectory = getAdaptionDirectory();
+		if (adaptionDirectory.exists()) {
+			for (auto f : adaptionDirectory.findChildFiles(File::findFiles, false, "*.py")) {
+				result.push_back(std::make_shared<GenericAdaption>(f.getFileNameWithoutExtension().toStdString()));
+			}
 		}
 		return result;
 	}

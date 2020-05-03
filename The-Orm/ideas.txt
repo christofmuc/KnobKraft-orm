@@ -25,12 +25,12 @@ K3
 
 Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
+* Make regular backups of Database
 
 Generic Module
-+ Need to parse patch name from patch for AS-1, and transform to edit buffer from program dump
-+ Need to list available modules in some directory. 
-+ Need to automatically add the found modules to the setup screen
++ Need to parse patch name from patch for AS-1
 + Provide "orm" python package with denibble, DSI packing etc.
++ Could watch files and hot reload module when changed on disk (for easier development)
 + Could add python editor with hot reload function
 
 Macro page
@@ -46,6 +46,9 @@ Librarian
 * Allow dependencies between DataFiles (patch -> wave for K3)
 * Could accept synth-initiated dumps at any time
 
+Global settings 
+* Need to change MIDI channel internally when using the settings editor to change it
+
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
   * Record notes played (duration) a specific patch
@@ -57,12 +60,11 @@ Future work
   * Backward key
   * Import edit buffer
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
-* Make regular backups of Database
+
 * I could display which categories were set by the user, and which ones were autodetected
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Could have patch name autogenerator like LaserMammoth
-* Global settings editor for the synth using the JUCE property editor
-  * Need to change MIDI channel internally when using the settings editor to change it
+* editor for the synth using the JUCE property editor
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
