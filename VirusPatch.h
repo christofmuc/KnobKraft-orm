@@ -25,8 +25,6 @@ namespace midikraft {
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
 		
-		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
-
 		// StoredPatchNameCapability
 		virtual void setName(std::string const &name) override;
 		virtual bool isDefaultName() const override;

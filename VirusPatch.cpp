@@ -74,11 +74,6 @@ namespace midikraft {
 		place_ = patchNumber;
 	}
 
-	std::vector<std::shared_ptr<SynthParameterDefinition>> VirusPatch::allParameterDefinitions()
-	{
-		return std::vector<std::shared_ptr<SynthParameterDefinition>>();
-	}
-
 	int VirusPatch::index(Page page, int index)
 	{
 		// We have stored the A and the B pages in one vector
