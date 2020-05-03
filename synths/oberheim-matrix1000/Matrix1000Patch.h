@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Patch.h"
+#include "DetailedParametersCapability.h"
 
 #include "Matrix1000ParamDefinition.h"
 
@@ -18,7 +19,7 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class Matrix1000Patch : public Patch, public StoredPatchNameCapability {
+	class Matrix1000Patch : public Patch, public StoredPatchNameCapability, public DetailedParametersCapability {
 	public:
 		Matrix1000Patch(Synth::PatchData const &patchdata);
 
