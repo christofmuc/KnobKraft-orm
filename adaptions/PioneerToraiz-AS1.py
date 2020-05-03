@@ -7,13 +7,6 @@
 def name():
 	return "Pioneer Toraiz AS-1"
 
-def numberOfBanks():
-	print("Pioneer Toraiz has 10 banks")
-	return 10
-
-def numberOfPatchesPerBank():
-	return 100
-
 def createDeviceDetectMessage(channel):
 	# See page 33 of the Toraiz AS-1 manual
 	return [0xf0, 0x7e, 0x7f, 0b00000110, 1, 0xf7]
@@ -67,10 +60,16 @@ def isEditBufferDump(message):
 		and message[8] == 0b00010000  # Device ID
 		and message[9] == 0b00000011) # Edit Buffer Dump
 
+def numberOfBanks():
+	return 10
+
+def numberOfPatchesPerBank():
+	return 100
+
 def createProgramDumpRequest(channel, patchNo):
 	# Calculate bank and program - the KnobKraft Orm will just think the patches are 0 to 999, but the Toraiz needs a bank number 0-9 and the patch number within that bank
-	bank = patchNo / 100
-	program = patchNo % 100
+	bank = patchNo / numberOfPatchesPerBank()
+	program = patchNo % numberOfPatchesPerBank()
 	# See page 33 of the Toraiz manual
 	return [0xf0, 0b00000000, 0b01000000, 0b00000101, 0b00000000, 0b000000000, 0b00000001, 0b00001000, 0b00010000, 0b00000101, bank, program, 0xf7]
 
@@ -87,3 +86,15 @@ def isSingleProgramDump(message):
 		and message[7] == 0b00001000  # Toriaz ID byte 4
 		and message[8] == 0b00010000  # Device ID
 		and message[9] == 0b00000010) # Program Dump
+
+def nameFromDump(message):
+	#TODO this has to be implemented still, for that we need the unpacking of the MIDI data first, and do not have documentation of the patch format. Should be easy to find
+	return "AS-1 Patch"
+
+def convertToEditBuffer(message):
+	if isEditBufferDump(message):
+		return message
+	if isSingleProgramDump(message):
+		# To turn a single program dump into an edit buffer dump, we need to remove the bank and program number, and switch the command to 0b00000011
+		return message[0:9] + [0b00000011] + message[12:]
+	raise "Data is neither edit buffer nor single program buffer from Toraiz AS-1"

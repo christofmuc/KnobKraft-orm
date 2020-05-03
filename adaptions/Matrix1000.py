@@ -4,14 +4,11 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
+# Note that for real life usage the native C++ implementation of the Matrix1000 is more powerful and should be used
+# This is an example adaption to show how a fully working adaption can look like
+
 def name():
-	return "Matrix 1000 generic"
-
-def numberOfBanks():
-	return 10
-
-def numberOfPatchesPerBank():
-	return 100
+	return "Matrix 1000 Adaption"
 
 def createDeviceDetectMessage(channel):
 	# This is a sysex generic device detect message
@@ -47,9 +44,15 @@ def isEditBufferDump(message):
 	# The Matrix1000 sends the edit buffer in the same format as a single program 
 	return isSingleProgramDump(message)
 
+def numberOfBanks():
+	return 10
+
+def numberOfPatchesPerBank():
+	return 100
+
 def createProgramDumpRequest(channel, patchNo):
-	bank = patchNo // 100
-	program = patchNo % 100
+	bank = patchNo // numberOfPatchesPerBank()
+	program = patchNo % numberOfPatchesPerBank()
 	return [0xf0, 0x10, 0x06, 0x0a, bank, 0xf7] + [0xf0, 0x10, 0x06, 0x04, 1, program, 0xf7]
 
 def isSingleProgramDump(message):
