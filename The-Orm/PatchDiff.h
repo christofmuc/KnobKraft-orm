@@ -29,6 +29,7 @@ private:
 	String makeTextDocument(midikraft::PatchHolder *patch);
 	std::vector<Range<int>> diffFromText(String &doc1, String &doc2);
 	std::vector<Range<int>> diffFromData(std::shared_ptr<midikraft::DataFile> patch1, std::shared_ptr<midikraft::DataFile> patch2);
+	std::string patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive);
 
 	midikraft::Synth *activeSynth_;
 	midikraft::PatchHolder p1_, p2_;

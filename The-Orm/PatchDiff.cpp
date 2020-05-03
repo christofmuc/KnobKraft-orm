@@ -10,7 +10,11 @@
 #include "PatchHolder.h"
 #include "Patch.h"
 
+#include "LayeredPatch.h"
+#include "DetailedParametersCapability.h"
+
 #include <algorithm>
+#include <boost/format.hpp>
 #include "dtl/dtl.hpp"
 
 class DiffTokenizer : public CodeTokeniser {
@@ -73,7 +77,7 @@ private:
 };
 
 PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : p1_(patch1), p2_(patch2),
-	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument), showHexDiff_(false)
+	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument)
 {
 	// Create more components, with more complex bootstrapping
 	tokenizer1_.reset(new DiffTokenizer(*p1Document_.get()));
@@ -87,8 +91,6 @@ PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const
 	//p1Editor_->setScrollbarThickness(0);
 	p1Editor_->setScrollbarThickness(10);
 	p2Editor_->setScrollbarThickness(10);
-
-	fillDocuments();
 
 	// Close button for dialog
 	closeButton_.setButtonText("Close");
@@ -107,16 +109,26 @@ PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const
 
 	// Build the toggle buttons for the diff mode
 	addAndMakeVisible(hexBased_);
-	addAndMakeVisible(textBased_);
 	hexBased_.setButtonText("Show hex values");
 	hexBased_.setClickingTogglesState(true);
+	hexBased_.setToggleState(true, dontSendNotification);
 	hexBased_.setRadioGroupId(3, dontSendNotification);
 	hexBased_.addListener(this);
-	textBased_.setButtonText("Show parameter values");
-	textBased_.setToggleState(true, dontSendNotification);
-	textBased_.setRadioGroupId(3, dontSendNotification);
-	textBased_.setClickingTogglesState(true);
-	textBased_.addListener(this);
+	showHexDiff_ = true;
+
+	// If there is detailed parameter information, also show the second option
+	auto parameterDetails = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(patch1.patch());
+	if (parameterDetails) {
+		addAndMakeVisible(textBased_);
+		textBased_.setButtonText("Show parameter values");
+		textBased_.setToggleState(true, dontSendNotification);
+		textBased_.setRadioGroupId(3, dontSendNotification);
+		textBased_.setClickingTogglesState(true);
+		textBased_.addListener(this);	
+		showHexDiff_ = false;
+	}
+
+	fillDocuments();
 
 	// Finally we need a default size
 	setBounds(0, 0, 540, 600);
@@ -221,8 +233,7 @@ String PatchDiff::makeHexDocument(midikraft::PatchHolder *patch)
 String PatchDiff::makeTextDocument(midikraft::PatchHolder *patch) {
 	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
 	if (realPatch) {
-		// Use the generic parameter list mode of the patch itself. Not pretty, but does the job for now
-		return realPatch->patchToTextRaw(false);
+		return patchToTextRaw(realPatch, false);
 	}
 	else {
 		return "makeTextDocument not implemented yet";
@@ -278,3 +289,40 @@ std::vector<Range<int>> PatchDiff::diffFromData(std::shared_ptr<midikraft::DataF
 	}
 	return diffRanges;
 }
+
+std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
+{
+	std::string result;
+
+	int numLayers = 1;
+	auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch);
+	if (layers) {
+		numLayers = layers->numberOfLayers();
+	}
+
+	auto parameterDetails = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(patch);
+
+	if (parameterDetails) {
+		for (int layer = 0; layer < numLayers; layer++) {
+			if (layers) {
+				if (layer > 0) result += "\n";
+				result = result + (boost::format("Layer: %s\n") % layers->layerName(layer)).str();
+			}
+			for (auto param : parameterDetails->allParameterDefinitions()) {
+				if (layers) {
+					auto multiLayerParam = std::dynamic_pointer_cast<midikraft::SynthMultiLayerParameterCapability>(param);
+					jassert(multiLayerParam);
+					if (multiLayerParam) {
+						multiLayerParam->setTargetLayer(layer);
+					}
+				}
+				auto activeCheck = std::dynamic_pointer_cast<midikraft::SynthParameterActiveDetectionCapability>(param);
+				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
+					result = result + (boost::format("%s: %s\n") % param->description() % param->valueInPatchToText(*patch)).str();
+				}
+			}
+		}
+	}
+	return result;
+}
+

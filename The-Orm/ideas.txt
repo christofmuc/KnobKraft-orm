@@ -15,18 +15,25 @@ Virus
 Rev2
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
-* Noteoff on send patch (or send mute patch first?)
+* Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
 
 K3
 * Wave form support (Second DataFile type)
+* Dependency between patch and wave form
+* Drawbar Organ Waveform Generator
+* Generic Oscillator shape optimizer? 
 
 Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 
 Generic Module
 + Need to parse patch name from patch for AS-1, and transform to edit buffer from program dump
-+ Matrix 1000 needs bank switching
-+ Need to allow multiple midi message in one vector
++ Need to list available modules in some directory. 
++ Need to automatically add the found modules to the setup screen
++ Diff dialog - don't show parameter diff if list is empty (should use capability!)
++ Hook up print from python to console
++ Provide "orm" python package with denibble, DSI packing etc.
++ How to make it more robust against crashes?
 
 Macro page
 * Select which MIDI input/Synth to use
@@ -77,6 +84,8 @@ UI Cleanup
 
 Big things
 	* The big generic module with Python scriptability!
+	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
+	* Adding full BCR2000 support
 	* The automatic patch clusterer!
 	* Multiple synths in one grid
 	* Masterkeyboard control ("Follow the patch")

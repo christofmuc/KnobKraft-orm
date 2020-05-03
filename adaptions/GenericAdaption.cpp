@@ -71,12 +71,6 @@ namespace knobkraft {
 			patchNumber_ = std::make_shared<GenericPatchNumber>(patchNumber);
 		}
 
-
-		std::vector<std::shared_ptr<midikraft::SynthParameterDefinition>> allParameterDefinitions() override
-		{
-			return {};
-		}
-
 	private:
 		pybind11::module &adaption_;
 		std::string name_;
