@@ -84,7 +84,11 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 
-	synths.push_back(midikraft::SynthHolder(std::make_shared<knobkraft::GenericAdaption>("Matrix1000"), buttonColour));
+	// Now adding all adaptions
+	auto adaptions = knobkraft::GenericAdaption::allAdaptions();
+	for (auto adaption : adaptions) {
+		synths.push_back(midikraft::SynthHolder(adaption, buttonColour));
+	}
 
 	UIModel::instance()->synthList_.setSynthList(synths);
 

@@ -30,10 +30,8 @@ Generic Module
 + Need to parse patch name from patch for AS-1, and transform to edit buffer from program dump
 + Need to list available modules in some directory. 
 + Need to automatically add the found modules to the setup screen
-+ Diff dialog - don't show parameter diff if list is empty (should use capability!)
-+ Hook up print from python to console
 + Provide "orm" python package with denibble, DSI packing etc.
-+ How to make it more robust against crashes?
++ Could add python editor with hot reload function
 
 Macro page
 * Select which MIDI input/Synth to use

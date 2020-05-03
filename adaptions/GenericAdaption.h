@@ -52,6 +52,7 @@ namespace knobkraft {
 
 		// Internal workings of the Generic Adaption module
 		static void startupGenericAdaption();
+		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptions();
 
 	private:
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;

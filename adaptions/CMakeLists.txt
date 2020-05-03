@@ -23,8 +23,8 @@ ENDIF()
 
 # Define the shipped adaptions
 set(Adaptions
-	 Matrix1000/__init__.py
-	 PioneerToraiz-AS1/__init__.py
+	 Matrix1000.py
+	 PioneerToraiz-AS1.py
 )
 
 # Define the sources for the static library

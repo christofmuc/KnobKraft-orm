@@ -104,6 +104,16 @@ namespace knobkraft {
 		checkForPythonOutputAndLog();
 	}
 
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
+	{
+		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
+		File adaptionDirectory("d:/Development/github/KnobKraft-Orm/adaptions");
+		for (auto f : adaptionDirectory.findChildFiles(File::findFiles, false, "*.py")) {
+			result.push_back(std::make_shared<GenericAdaption>(f.getFileNameWithoutExtension().toStdString()));
+		}
+		return result;
+	}
+
 	template <typename ... Args>
 	py::object GenericAdaption::callMethod(std::string const &methodName, Args& ... args) const {
 		if (!adaption_module) {

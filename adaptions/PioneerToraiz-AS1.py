@@ -8,6 +8,7 @@ def name():
 	return "Pioneer Toraiz AS-1"
 
 def numberOfBanks():
+	print("Pioneer Toraiz has 10 banks")
 	return 10
 
 def numberOfPatchesPerBank():
