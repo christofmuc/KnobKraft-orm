@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Patch.h"
+#include "DetailedParametersCapability.h"
 
 #include "KawaiK3Parameter.h"
 #include "PatchNumber.h"
@@ -19,7 +20,7 @@ namespace midikraft {
 		virtual std::string friendlyName() const;
 	};
 
-	class KawaiK3Patch : public Patch {
+	class KawaiK3Patch : public Patch, public DetailedParametersCapability {
 	public:
 		KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata);
 
