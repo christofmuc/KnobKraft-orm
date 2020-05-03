@@ -73,6 +73,7 @@ namespace midikraft {
 			for (auto param : KawaiK3Parameter::allParameters) {
 				if (param->paramNo() >= 0 && param->paramNo() != KawaiK3Parameter::MONO) { // The MONO parameter can not be set by the sysex change parameter...
 					int should = std::max(param->minValue(), std::min(value, param->maxValue()));
+					ignoreUnused(should);
 					auto is = k3patch->value(*param);
 					//auto raw = patch->data()[param->sysexIndex() - 1];
 					jassert(is == should);
