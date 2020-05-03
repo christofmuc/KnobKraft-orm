@@ -54,7 +54,7 @@ namespace knobkraft {
 		static void startupGenericAdaption();
 
 	private:
-		pybind11::object callMethod(std::string const &methodName) const;
+		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
 		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);

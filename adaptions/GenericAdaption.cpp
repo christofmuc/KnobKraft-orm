@@ -104,12 +104,13 @@ namespace knobkraft {
 		checkForPythonOutputAndLog();
 	}
 
-	py::object GenericAdaption::callMethod(std::string const &methodName) const {
+	template <typename ... Args>
+	py::object GenericAdaption::callMethod(std::string const &methodName, Args& ... args) const {
 		if (!adaption_module) {
 			return py::none();
 		}
 		if (py::hasattr(*adaption_module, methodName.c_str())) {
-			auto result = adaption_module.attr(methodName.c_str())();
+			auto result = adaption_module.attr(methodName.c_str())(args...);
 			checkForPythonOutputAndLog();
 			return result;
 		}
@@ -122,7 +123,8 @@ namespace knobkraft {
 	juce::MidiMessage GenericAdaption::requestEditBufferDump()
 	{
 		try {
-			py::object result = adaption_module.attr("createEditBufferRequest")(channel().toZeroBasedInt());
+			int c = channel().toZeroBasedInt();
+			py::object result = callMethod("createEditBufferRequest", c);
 			checkForPythonOutputAndLog();
 			// These should be only one midi message...
 			return { vectorToMessage(result.cast<std::vector<int>>()) };
@@ -137,7 +139,7 @@ namespace knobkraft {
 	{
 		try {
 			auto vectorForm = messageToVector(message);
-			py::object result = adaption_module.attr("isEditBufferDump")(vectorForm);
+			py::object result = callMethod("isEditBufferDump", vectorForm);
 			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
@@ -158,7 +160,7 @@ namespace knobkraft {
 	{
 		try {
 			auto data = patch.data();
-			py::object result = adaption_module.attr("convertToEditBuffer")(data);
+			py::object result = callMethod("convertToEditBuffer", data);
 			checkForPythonOutputAndLog();
 			return { vectorToMessage(py::cast<std::vector<int>>(result)) };
 		}
@@ -191,7 +193,7 @@ namespace knobkraft {
 	int GenericAdaption::numberOfPatches() const
 	{
 		try {
-			py::object result = adaption_module.attr("numberOfPatchesPerBank")();
+			py::object result = callMethod("numberOfPatchesPerBank");
 			checkForPythonOutputAndLog();
 			return result.cast<int>();
 		}
@@ -225,7 +227,7 @@ namespace knobkraft {
 	juce::MidiMessage GenericAdaption::deviceDetect(int channel)
 	{
 		try {
-			py::object result = adaption_module.attr("createDeviceDetectMessage")(channel);
+			py::object result = callMethod("createDeviceDetectMessage", channel);
 			checkForPythonOutputAndLog();
 			return vectorToMessage(result.cast<std::vector<int>>());
 		}
@@ -239,7 +241,7 @@ namespace knobkraft {
 	{
 		try
 		{
-			py::object result = adaption_module.attr("deviceDetectWaitMilliseconds")();
+			py::object result = callMethod("deviceDetectWaitMilliseconds");
 			checkForPythonOutputAndLog();
 			return result.cast<int>();
 
@@ -253,7 +255,8 @@ namespace knobkraft {
 	MidiChannel GenericAdaption::channelIfValidDeviceResponse(const MidiMessage &message)
 	{
 		try {
-			py::object result = adaption_module.attr("channelIfValidDeviceResponse")(messageToVector(message));
+			auto vector = messageToVector(message);
+			py::object result = callMethod("channelIfValidDeviceResponse", vector);
 			checkForPythonOutputAndLog();
 			int intResult = result.cast<int>();
 			if (intResult >= 0 && intResult < 16) {
@@ -273,7 +276,7 @@ namespace knobkraft {
 	{
 		try
 		{
-			py::object result = adaption_module.attr("needsChannelSpecificDetection")();
+			py::object result = callMethod("needsChannelSpecificDetection");
 			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
@@ -312,7 +315,7 @@ namespace knobkraft {
 	{
 		try {
 			int c = channel().toZeroBasedInt();
-			py::object result = adaption_module.attr("createProgramDumpRequest")(c, patchNo);
+			py::object result = callMethod("createProgramDumpRequest", c, patchNo);
 			checkForPythonOutputAndLog();
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
@@ -326,7 +329,8 @@ namespace knobkraft {
 	bool GenericAdaption::isSingleProgramDump(const MidiMessage& message) const
 	{
 		try {
-			py::object result = adaption_module.attr("isSingleProgramDump")(messageToVector(message));
+			auto vector = messageToVector(message);
+			py::object result = callMethod("isSingleProgramDump", vector);
 			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
