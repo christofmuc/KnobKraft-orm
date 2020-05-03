@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "Rev2ParamDefinition.h"
+#include "DetailedParametersCapability.h"
 
 #include "LayeredPatch.h"
 
@@ -22,7 +23,7 @@ namespace midikraft {
 		int bank_; // 0 to 7 for banks U1 to U4 and F1 to F4
 	};
 
-	class Rev2Patch : public Patch, public LayeredPatch, public StoredPatchNameCapability {
+	class Rev2Patch : public Patch, public LayeredPatch, public StoredPatchNameCapability, public DetailedParametersCapability {
 	public:
 		Rev2Patch();
 		Rev2Patch(Synth::PatchData const &patchData);
