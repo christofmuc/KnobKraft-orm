@@ -24,7 +24,6 @@ namespace midikraft {
 		
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
-		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
 
 		// StoredPatchNameCapability - even if the OB6 does not show patch names, it stores them!
 		virtual void setName(std::string const &name) override;

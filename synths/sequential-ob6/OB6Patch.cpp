@@ -52,11 +52,6 @@ namespace midikraft {
 		place_ = patchNumber;
 	}
 
-	std::vector<std::shared_ptr<midikraft::SynthParameterDefinition>> OB6Patch::allParameterDefinitions()
-	{
-		return {};
-	}
-
 	std::string OB6Number::friendlyName() const
 	{
 		return (boost::format("#%03d") % programNumber_.toOneBased()).str();
