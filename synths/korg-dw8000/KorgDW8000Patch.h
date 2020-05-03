@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Patch.h"
+#include "DetailedParametersCapability.h"
 
 namespace midikraft {
 
@@ -16,7 +17,7 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class KorgDW8000Patch : public Patch {
+	class KorgDW8000Patch : public Patch, public DetailedParametersCapability {
 	public:
 		KorgDW8000Patch(Synth::PatchData const &patchdata, MidiProgramNumber const &programNumber);
 
