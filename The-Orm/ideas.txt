@@ -23,13 +23,19 @@ K3
 * Drawbar Organ Waveform Generator
 * Generic Oscillator shape optimizer? 
 
+MKS80
+* how to deal with tones and patches
+
 Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 * Make regular backups of Database
 
 Generic Module
++ Build process should deploy module files into ~/KnobKraft-Orm-adaptions so you will test the right file
 + Need to parse patch name from patch for AS-1
 + Provide "orm" python package with denibble, DSI packing etc.
++ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability
++ Could create FlowChart to select which methods to implement!
 + Could watch files and hot reload module when changed on disk (for easier development)
 + Could add python editor with hot reload function
 
@@ -41,6 +47,7 @@ Macro page
 * Masterkeyboard support (manualy setup lowest key, highest key), as well as 
 
 Librarian
+* Make page number clickable to switch to that page
 * Allow multi-select of banks to import (with all feature)
 * Allow recursive directory traversal during import
 * Allow dependencies between DataFiles (patch -> wave for K3)
@@ -48,6 +55,7 @@ Librarian
 
 Global settings 
 * Need to change MIDI channel internally when using the settings editor to change it
+* Could show nice text instead of empty page
 
 Future work
 * Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
@@ -60,11 +68,11 @@ Future work
   * Backward key
   * Import edit buffer
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
-
 * I could display which categories were set by the user, and which ones were autodetected
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Could have patch name autogenerator like LaserMammoth
 * editor for the synth using the JUCE property editor
+* Synth_v2 class/interface more following the generic adaption design than the original Synth class
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
@@ -83,34 +91,27 @@ UI Cleanup
 * Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things
-	* The big generic module with Python scriptability!
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
 	* Adding full BCR2000 support
 	* The automatic patch clusterer!
 	* Multiple synths in one grid
 	* Masterkeyboard control ("Follow the patch")
+	* MIDI routing (first only to and forth, then remapping channels, ...)
+	* Interface into LaserMammoth devices? Can I execute Javascript?
+	* Integrate with CTRLR? Can I host their panels? If yes, for what?
+	* Can I synchronize multiple devices via the LaserMammoth Backend?
+	* Should I use Amazon DynamoDB to synchronize multiple installations? Encryption?
 
 Alternate Tunings
-https://forum.sequential.com/index.php/topic,3468.0.html
-have you managed to change the slot number
+* https://forum.sequential.com/index.php/topic,3468.0.html
+* have you managed to change the slot number
 
 More synthesizers
 
-  + Access Virus B
-  + Kawai K3
-  * Korg DW8000
-  + Roland MKS80	  
-  + Yamaha Reface DX
-
-Not done yet
-	
 	+ Behringer RD 8
-
-Future Synths
-
 	+ Novation Circuit
 
-Librarian for other stuff
+Librarian for other stuff (should rather do with adaption?)
 
 	+ BCR2000
 	+ Meris pedal

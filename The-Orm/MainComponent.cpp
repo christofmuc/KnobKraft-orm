@@ -96,7 +96,20 @@ MainComponent::MainComponent() :
 	for (auto synth : synths) {
 		if (!synth.device()) continue;
 		auto activeKey = String(synth.device()->getName()) + String("-activated");
-		auto active = var(String(Settings::instance().get(activeKey.toStdString(), "1")));
+		// Check if the setting is set
+		bool active = false;
+		if (Settings::instance().keyIsSet(activeKey.toStdString())) {
+			active = var(String(Settings::instance().get(activeKey.toStdString(), "1")));
+		}
+		else {
+			// No user decision on active or not
+			if (synth.device()->getName() != "Matrix 1000 Adaption") {
+				// All synths except the example Matrix 1000 Adaption or turned on by default.
+				// That one is turned off by default because there is a C++ implementation for the Matrix 1000 as well
+				// and having both might confuse a first time user.
+				active = true;
+			}
+		}
 		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
 	}
 
