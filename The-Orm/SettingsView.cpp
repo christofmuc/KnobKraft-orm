@@ -49,6 +49,9 @@ void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
 	if (gsc) {
 		propertyEditor_.setProperties(gsc->getGlobalSettings());
 	}
+	else {
+		propertyEditor_.clear();
+	}
 }
 
 void SettingsView::loadGlobals() {
