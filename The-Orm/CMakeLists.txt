@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm)
+project(KnobKraftOrm VERSION 1.1.0)
 
 IF (WIN32)
 	# All setup for UI software on Windows
@@ -33,6 +33,8 @@ find_package(JUCE REQUIRED
 		juce_cryptography # MD5
 )
 
+configure_file("version.cpp.in" "version.cpp")
+
 set(SOURCES
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
@@ -49,6 +51,7 @@ set(SOURCES
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
+	version.cpp.in
 	setup.iss
 	ideas.txt
 	redist/agpl-3.0.txt
@@ -71,7 +74,7 @@ set(MIDIKRAFT_LIBRARIES
 )
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})
-target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl")
+target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc

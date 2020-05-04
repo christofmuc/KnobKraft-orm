@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "KnobKraftOrm"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "${KnobKraftOrm_VERSION}"
 #define MyAppPublisher "Christof Ruch Beratungs UG (haftungsbeschraenkt)"
 #define MyAppURL ""
 #define MyAppExeName "KnobKraftOrm.exe"

@@ -15,6 +15,9 @@
 
 #include <memory>
 
+#include "version.cpp"
+
+
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication
 {
@@ -43,7 +46,7 @@ public:
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
-        mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian"));
+		mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion())); 
     }
 
     void shutdown() override
