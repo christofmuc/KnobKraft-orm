@@ -34,7 +34,7 @@ Generic Module
 + Build process should deploy module files into ~/KnobKraft-Orm-adaptions so you will test the right file
 + Need to parse patch name from patch for AS-1
 + Provide "orm" python package with denibble, DSI packing etc.
-+ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability
++ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could create FlowChart to select which methods to implement!
 + Could watch files and hot reload module when changed on disk (for easier development)
 + Could add python editor with hot reload function
