@@ -6,51 +6,47 @@
 
 #include "ImportFromSynthDialog.h"
 
-class ImportFromSynthThread : public ThreadWithProgressWindow, public midikraft::ProgressHandler
+ImportFromSynthThread::ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk) : ThreadWithProgressWindow("Importing...", true, true), onOk_(onOk), bank_(MidiBankNumber::fromZeroBase(0))
 {
-public:
-	ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk) : ThreadWithProgressWindow("Importing...", true, true), onOk_(onOk), bank_(MidiBankNumber::fromZeroBase(0))
-	{
-	}
+}
 
-	void run() override
-	{
-		stop_ = false;
-		onOk_(bank_, this);
-		while (!stop_ && !threadShouldExit()) {
-			Thread::sleep(100);
-		}
-	}
+ImportFromSynthThread::~ImportFromSynthThread()
+{
+}
 
-	void setBank(MidiBankNumber id) {
-		bank_ = id;
+void ImportFromSynthThread::run()
+{
+	stop_ = false;
+	onOk_(bank_, this);
+	while (!stop_ && !threadShouldExit()) {
+		Thread::sleep(100);
 	}
+}
 
-	bool shouldAbort() const override
-	{
-		return threadShouldExit();
-	}
+void ImportFromSynthThread::setBank(MidiBankNumber id)
+{
+	bank_ = id;
+}
 
-	void setProgressPercentage(double zeroToOne) override
-	{
-		setProgress(zeroToOne);
-	}
+bool ImportFromSynthThread::shouldAbort() const
+{
+	return threadShouldExit();
+}
 
-	void onSuccess() override
-	{
-		stop_ = true;
-	}
+void ImportFromSynthThread::setProgressPercentage(double zeroToOne)
+{
+	setProgress(zeroToOne);
+}
 
-	void onCancel() override
-	{
-		stop_ = true;
-	}
+void ImportFromSynthThread::onSuccess()
+{
+	stop_ = true;
+}
 
-private:
-	ImportFromSynthDialog::TBankLoadHandler onOk_;
-	bool stop_;
-	MidiBankNumber bank_;
-};
+void ImportFromSynthThread::onCancel()
+{
+	stop_ = true;
+}
 
 ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadHandler onOk) : onOk_(onOk)
 {

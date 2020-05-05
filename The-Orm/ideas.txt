@@ -52,6 +52,8 @@ Librarian
 * Allow recursive directory traversal during import
 * Allow dependencies between DataFiles (patch -> wave for K3)
 * Could accept synth-initiated dumps at any time
+* Better display of bulk imports with real file source
+* UI - could hide / fold "advanced search"
 
 Global settings 
 * Need to change MIDI channel internally when using the settings editor to change it

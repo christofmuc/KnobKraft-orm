@@ -18,6 +18,7 @@ ELSEIF(UNIX)
 	# These calls create special `PkgConfig::<MODULE>` variables
 	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+	find_package(ICU REQUIRED i18n)
 ENDIF()
 
 find_package(JUCE REQUIRED 
@@ -86,7 +87,7 @@ ELSEIF(UNIX)
 		${JUCE_LIBRARIES} 
 		PkgConfig::WEBKIT 
 		PkgConfig::GTK 
-		PkgConfig::ICU
+		ICU::i18n
 		Xext 
 		X11 
 		pthread 
