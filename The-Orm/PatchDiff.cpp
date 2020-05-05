@@ -134,6 +134,10 @@ PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const
 	setBounds(0, 0, 540, 600);
 }
 
+PatchDiff::~PatchDiff()
+{
+}
+
 void PatchDiff::resized()
 {
 	Rectangle<int> area(getLocalBounds());

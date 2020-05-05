@@ -17,6 +17,7 @@ class CoupledScrollCodeEditor;
 class PatchDiff : public Component, private Button::Listener {
 public:
 	PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2);
+	~PatchDiff();
 
 	void resized() override;
 	void buttonClicked(Button*) override;
