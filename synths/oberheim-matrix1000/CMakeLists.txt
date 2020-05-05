@@ -37,8 +37,10 @@ add_library(midikraft-oberheim-matrix1000 ${Sources})
 target_include_directories(midikraft-oberheim-matrix1000 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(midikraft-oberheim-matrix1000 PUBLIC "${icu_SOURCE_DIR}/lib64")
-endif()
-target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base)
+	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base)
+ELSE()
+	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base icudata icuuc)
+ENDIF()
 
 # Pedantic about warnings
 if (MSVC)
