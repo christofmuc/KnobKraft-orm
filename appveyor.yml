@@ -10,11 +10,10 @@ environment:
   matrix:
   - {}
 build_script:
-- cmd:
+- cmd: |
     cmake -S . -B builds -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\Python36-x64\python.exe
     cmake --build builds --config Debug
     cmake --build builds --config Release
 - sh: >-
     cmake -S . -B builds &&
     cmake --build builds
-    
