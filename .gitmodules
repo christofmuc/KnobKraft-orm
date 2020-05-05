@@ -53,3 +53,6 @@
 	path = synths/MidiKraft-access-virus
 	url = https://github.com/christofmuc/MidiKraft-access-virus.git
 	branch = master
+[submodule "third_party/pybind11"]
+	path = third_party/pybind11
+	url = https://github.com/pybind/pybind11.git
