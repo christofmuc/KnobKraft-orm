@@ -17,8 +17,15 @@ namespace midikraft {
 	//                                       &' )   -./0         :    ?@A                          ¥                                }
 	// Second line lists verified characters
 
+	// Now, this gets more ugly the longer I look at it. The whole uconvert function down there is also deprecated from C++ 17, so I am sure I will come back
+#ifdef _MSC_VER
+	typedef int32_t CHAR32_T_FIX;
+#else
+	typedef char32_t CHAR32_T_FIX;
+#endif
+
 	// Constructing the converter is really slow, so don't do this in a loop!
-	std::wstring_convert<std::codecvt_utf8<int32_t>, int32_t> convert;
+	std::wstring_convert<std::codecvt_utf8<CHAR32_T_FIX>, CHAR32_T_FIX> convert;
 
 	// Sigh
 	// https://stackoverflow.com/questions/32055357/visual-studio-c-2015-stdcodecvt-with-char16-t-or-char32-t
@@ -26,7 +33,7 @@ namespace midikraft {
 	{
 		std::u32string utf32_string;
 		utf32_string.push_back(utf32_char);
-		auto p = reinterpret_cast<const int32_t *>(utf32_string.data());
+		auto p = reinterpret_cast<const CHAR32_T_FIX *>(utf32_string.data());
 		return convert.to_bytes(p, p + utf32_string.size());
 	}
 
