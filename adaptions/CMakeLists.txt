@@ -25,6 +25,7 @@ ENDIF()
 set(Adaptions
 	 Matrix1000.py
 	 PioneerToraiz-AS1.py
+	 "Roland JX-8P.py"
 )
 
 # Define the sources for the static library

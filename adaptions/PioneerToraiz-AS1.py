@@ -91,7 +91,7 @@ def nameFromDump(message):
 	#TODO this has to be implemented still, for that we need the unpacking of the MIDI data first, and do not have documentation of the patch format. Should be easy to find
 	return "AS-1 Patch"
 
-def convertToEditBuffer(message):
+def convertToEditBuffer(channel, message):
 	if isEditBufferDump(message):
 		return message
 	if isSingleProgramDump(message):

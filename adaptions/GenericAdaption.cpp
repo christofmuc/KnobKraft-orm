@@ -54,16 +54,33 @@ namespace knobkraft {
 			patchNumber_ = std::make_shared<GenericPatchNumber>(MidiProgramNumber::fromZeroBase(0));
 		}
 
+		template <typename ... Args>
+		py::object callMethod(std::string const &methodName, Args& ... args) const {
+			if (!adaption_) {
+				return py::none();
+			}
+			if (py::hasattr(*adaption_, methodName.c_str())) {
+				auto result = adaption_.attr(methodName.c_str())(args...);
+				checkForPythonOutputAndLog();
+				return result;
+			}
+			else {
+				SimpleLogger::instance()->postMessage((boost::format("Adaption: method %s not found, fatal!") % methodName).str());
+				return py::none();
+			}
+		}
+
+
 		std::string name() const override
 		{
 			try {
 				auto message = data();
-				py::object result = adaption_.attr("nameFromDump")(message);
-				checkForPythonOutputAndLog();
+				auto result = callMethod("nameFromDump", message);
 				return result.cast<std::string>();
 			}
 			catch (std::exception &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Error calling nameFromDump: %s") % ex.what()).str());
+				std::string errorMessage = (boost::format("Error calling nameFromDump: %s") % ex.what()).str();
+				SimpleLogger::instance()->postMessage(errorMessage);
 			}
 			return "invalid";
 		}
@@ -144,7 +161,6 @@ namespace knobkraft {
 		try {
 			int c = channel().toZeroBasedInt();
 			py::object result = callMethod("createEditBufferRequest", c);
-			checkForPythonOutputAndLog();
 			// These should be only one midi message...
 			return { vectorToMessage(result.cast<std::vector<int>>()) };
 		}
@@ -159,7 +175,6 @@ namespace knobkraft {
 		try {
 			auto vectorForm = messageToVector(message);
 			py::object result = callMethod("isEditBufferDump", vectorForm);
-			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
@@ -179,8 +194,8 @@ namespace knobkraft {
 	{
 		try {
 			auto data = patch.data();
-			py::object result = callMethod("convertToEditBuffer", data);
-			checkForPythonOutputAndLog();
+			int c = channel().toZeroBasedInt();
+			py::object result = callMethod("convertToEditBuffer", c, data);
 			return { vectorToMessage(py::cast<std::vector<int>>(result)) };
 		}
 		catch (std::exception &ex) {
@@ -213,7 +228,6 @@ namespace knobkraft {
 	{
 		try {
 			py::object result = callMethod("numberOfPatchesPerBank");
-			checkForPythonOutputAndLog();
 			return result.cast<int>();
 		}
 		catch (std::exception &ex) {
@@ -247,7 +261,6 @@ namespace knobkraft {
 	{
 		try {
 			py::object result = callMethod("createDeviceDetectMessage", channel);
-			checkForPythonOutputAndLog();
 			return vectorToMessage(result.cast<std::vector<int>>());
 		}
 		catch (std::exception &ex) {
@@ -261,7 +274,6 @@ namespace knobkraft {
 		try
 		{
 			py::object result = callMethod("deviceDetectWaitMilliseconds");
-			checkForPythonOutputAndLog();
 			return result.cast<int>();
 
 		}
@@ -276,7 +288,6 @@ namespace knobkraft {
 		try {
 			auto vector = messageToVector(message);
 			py::object result = callMethod("channelIfValidDeviceResponse", vector);
-			checkForPythonOutputAndLog();
 			int intResult = result.cast<int>();
 			if (intResult >= 0 && intResult < 16) {
 				return MidiChannel::fromZeroBase(intResult);
@@ -296,7 +307,6 @@ namespace knobkraft {
 		try
 		{
 			py::object result = callMethod("needsChannelSpecificDetection");
-			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
@@ -335,7 +345,6 @@ namespace knobkraft {
 		try {
 			int c = channel().toZeroBasedInt();
 			py::object result = callMethod("createProgramDumpRequest", c, patchNo);
-			checkForPythonOutputAndLog();
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
@@ -350,7 +359,6 @@ namespace knobkraft {
 		try {
 			auto vector = messageToVector(message);
 			py::object result = callMethod("isSingleProgramDump", vector);
-			checkForPythonOutputAndLog();
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
@@ -370,7 +378,7 @@ namespace knobkraft {
 				byteData.push_back((uint8)byte);
 			}
 			else {
-				throw new std::runtime_error("Adaption: Value out of range in Midi Message");
+				throw std::runtime_error("Adaption: Value out of range in Midi Message");
 			}
 		}
 		return byteData;
