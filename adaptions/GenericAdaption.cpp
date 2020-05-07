@@ -60,9 +60,17 @@ namespace knobkraft {
 				return py::none();
 			}
 			if (py::hasattr(*adaption_, methodName.c_str())) {
-				auto result = adaption_.attr(methodName.c_str())(args...);
-				checkForPythonOutputAndLog();
-				return result;
+				try {
+					auto result = adaption_.attr(methodName.c_str())(args...);
+					checkForPythonOutputAndLog();
+					return result;
+				}
+				catch (std::exception &ex) {
+					throw ex;
+				}
+				catch (...) {
+					throw std::runtime_error("Unhandled exception");
+				}
 			}
 			else {
 				SimpleLogger::instance()->postMessage((boost::format("Adaption: method %s not found, fatal!") % methodName).str());
