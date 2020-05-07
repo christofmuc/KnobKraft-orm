@@ -24,6 +24,7 @@ namespace midikraft {
 	class Matrix1000_GlobalSettings_Loader;
 
 	class Matrix1000 : public Synth, /* public SupportedByBCR2000, */
+		public SimpleDiscoverableDevice,
 		public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, // pretty complete MIDI implementation of the Matrix1000
 		public SoundExpanderCapability, public GlobalSettingsCapability,
 		private Value::Listener
