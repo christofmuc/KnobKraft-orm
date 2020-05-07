@@ -16,7 +16,8 @@ def createDeviceDetectMessage(channel):
 	return [0xf0, 0xf7]
 
 def deviceDetectWaitMilliseconds():
-	return 10
+	# Negative value means don't autodetect at all
+	return -1
 
 def needsChannelSpecificDetection():
 	return False
