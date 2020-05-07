@@ -83,12 +83,16 @@ namespace knobkraft {
 		{
 			try {
 				auto message = data();
-				auto result = callMethod("nameFromDump", message);
+				auto result = adaption_.attr("nameFromDump")(message);
+				checkForPythonOutputAndLog();
 				return result.cast<std::string>();
 			}
 			catch (std::exception &ex) {
 				std::string errorMessage = (boost::format("Error calling nameFromDump: %s") % ex.what()).str();
 				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+			catch (...) {
+				SimpleLogger::instance()->postMessage("Uncaught exception");
 			}
 			return "invalid";
 		}
@@ -155,7 +159,7 @@ namespace knobkraft {
 		}
 		if (py::hasattr(*adaption_module, methodName.c_str())) {
 			auto result = adaption_module.attr(methodName.c_str())(args...);
-			checkForPythonOutputAndLog();
+			//checkForPythonOutputAndLog();
 			return result;
 		}
 		else {

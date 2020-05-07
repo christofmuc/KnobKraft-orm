@@ -14,6 +14,7 @@
 
 namespace knobkraft {
 
+
 	class GenericAdaption : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, public midikraft::EditBufferCapability, public midikraft::ProgramDumpCabability {
 	public:
 		GenericAdaption(std::string const &pythonModuleFilePath);
