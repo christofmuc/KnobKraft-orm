@@ -109,31 +109,34 @@ namespace midikraft {
 
 	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth *synth) const
 	{
-		int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
-		switch (type()) {
-		case SynthParameterDefinition::ParamType::LOOKUP:
-			// Fall through
-		case SynthParameterDefinition::ParamType::INT: {
-			int value;
-			if (valueInPatch(patch, value)) {
-				return MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpnNumberToUse, value, true);
-			}
-		}
-		case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
-			// Fall through
-		case SynthParameterDefinition::ParamType::INT_ARRAY: {
-			MidiBuffer result;
-			std::vector<int> values;
-			if (valueInPatch(patch, values)) {
-				int idx = 0;
-				for (auto value : values) {
-					auto buffer = MidiRPNGenerator::generate(synth->channel().toOneBasedInt(), nrpnNumberToUse + idx, value, true);
-					result.addEvents(buffer, 0, -1, 0);
-					idx++;
+		auto midiLocation = dynamic_cast<MidiLocationCapability *>(synth);
+		if (midiLocation) {
+			int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
+			switch (type()) {
+			case SynthParameterDefinition::ParamType::LOOKUP:
+				// Fall through
+			case SynthParameterDefinition::ParamType::INT: {
+				int value;
+				if (valueInPatch(patch, value)) {
+					return MidiRPNGenerator::generate(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse, value, true);
 				}
-				return result;
 			}
-		}
+			case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
+				// Fall through
+			case SynthParameterDefinition::ParamType::INT_ARRAY: {
+				MidiBuffer result;
+				std::vector<int> values;
+				if (valueInPatch(patch, values)) {
+					int idx = 0;
+					for (auto value : values) {
+						auto buffer = MidiRPNGenerator::generate(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse + idx, value, true);
+						result.addEvents(buffer, 0, -1, 0);
+						idx++;
+					}
+					return result;
+				}
+			}
+			}
 		}
 		return MidiBuffer();
 	}

@@ -18,7 +18,7 @@ namespace midikraft {
 	// Global constants
 	extern std::map<int, std::string> kDSIAlternateTunings();
 
-	class DSISynth : public Synth, public EditBufferCapability, public ProgramDumpCabability, public SoundExpanderCapability, public MasterkeyboardCapability {
+	class DSISynth : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability, public SoundExpanderCapability, public MasterkeyboardCapability {
 	public:
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
