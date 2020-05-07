@@ -20,7 +20,7 @@
 #include <boost/format.hpp>
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
-	autoDetection_(autoDetection)/*, lights_(lights) */, 
+	autoDetection_(autoDetection)/*, lights_(lights) */,
 	functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
 {
 	// Build lists of input and output MIDI devices
@@ -28,24 +28,29 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	for (const auto &device : currentInputDevices()) {
 		inputLookup_[++i] = device;
 	}
-	
+
 	int j = 0;
 	for (const auto &device : currentOutputDevices()) {
 		outputLookup_[++j] = device;
 	}
 
+	midiChannelLookup_ = {
+		{ 1, "1" }, { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" }, { 6, "6" }, { 7, "7" }, { 8, "8" }, { 9, "9" },
+		{ 10, "10" }, { 11, "11" }, { 12, "12" }, { 13, "13" }, { 14, "14" }, { 15, "15" }, { 16, "16" }, { 17, "Omni" }, { 18, "Invalid" },
+	};
+
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		String sectionName = synth.device()->getName();
-		
+
 		// For each synth, we need 4 properties, and we need to listen to changes: 
 		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Activated", sectionName, Value(1), ValueType::Bool, 0, 1 })));
 		properties_.back()->value.addListener(this);
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Sent to device", sectionName, Value(1), ValueType::Lookup, 1, (int) outputLookup_.size() + 1, outputLookup_ })));
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Sent to device", sectionName, Value(1), ValueType::Lookup, 1, (int)outputLookup_.size() + 1, outputLookup_ })));
 		properties_.back()->value.addListener(this);
 		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Receive from device", sectionName, Value(1), ValueType::Lookup, 1, (int)inputLookup_.size() + 1, inputLookup_ })));
 		properties_.back()->value.addListener(this);
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "MIDI channel", sectionName, Value(1), ValueType::Integer, 1, 16})));
+		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "MIDI channel", sectionName, Value(18), ValueType::Lookup, 1, 18, midiChannelLookup_ })));
 		properties_.back()->value.addListener(this);
 	}
 	refreshData();
@@ -100,7 +105,15 @@ void SetupView::refreshData() {
 		// Set output, input, and channel
 		setValueWithoutListeners(properties_[prop++]->value, indexOfOutputDevice(synth.device()->midiOutput()));
 		setValueWithoutListeners(properties_[prop++]->value, indexOfInputDevice(synth.device()->midiInput()));
-		setValueWithoutListeners(properties_[prop++]->value, synth.device()->channel().toOneBasedInt());
+		if (!synth.device()->inputChannel().isValid()) {
+			setValueWithoutListeners(properties_[prop++]->value, 18);
+		}
+		else if (synth.device()->inputChannel().isOmni()) {
+			setValueWithoutListeners(properties_[prop++]->value, 17);
+		}
+		else {
+			setValueWithoutListeners(properties_[prop++]->value, synth.device()->inputChannel().toOneBasedInt());
+		}
 	}
 }
 
@@ -132,9 +145,9 @@ void SetupView::valueChanged(Value& value)
 					Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
 				}
 				autoDetection_->persistSetting(synthFound.get());
-				timedAction_.callDebounced([this]() {
+				/*timedAction_.callDebounced([this]() {
 					quickConfigure();
-				}, 1000);
+				}, 1000);*/
 			}
 			else {
 				jassert(false);
@@ -166,7 +179,7 @@ void SetupView::quickConfigure()
 	refreshData();
 }
 
-std::vector<std::string> SetupView::currentOutputDevices() const  {
+std::vector<std::string> SetupView::currentOutputDevices() const {
 	std::vector<std::string> outputs;
 	auto devices = MidiOutput::getDevices();
 	for (const auto& device : devices) {

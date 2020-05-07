@@ -41,6 +41,7 @@ private:
 	std::vector<std::shared_ptr<TypedNamedValue>> properties_;
 	std::map<int, std::string> inputLookup_;
 	std::map<int, std::string> outputLookup_;
+	std::map<int, std::string> midiChannelLookup_;
 	midikraft::AutoDetection *autoDetection_;
 	TextEditor header_;
 	//HueLightControl * lights_;
