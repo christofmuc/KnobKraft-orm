@@ -105,14 +105,14 @@ void SetupView::refreshData() {
 		// Set output, input, and channel
 		setValueWithoutListeners(properties_[prop++]->value, indexOfOutputDevice(synth.device()->midiOutput()));
 		setValueWithoutListeners(properties_[prop++]->value, indexOfInputDevice(synth.device()->midiInput()));
-		if (!synth.device()->inputChannel().isValid()) {
+		if (!synth.device()->channel().isValid()) {
 			setValueWithoutListeners(properties_[prop++]->value, 18);
 		}
-		else if (synth.device()->inputChannel().isOmni()) {
+		else if (synth.device()->channel().isOmni()) {
 			setValueWithoutListeners(properties_[prop++]->value, 17);
 		}
 		else {
-			setValueWithoutListeners(properties_[prop++]->value, synth.device()->inputChannel().toOneBasedInt());
+			setValueWithoutListeners(properties_[prop++]->value, synth.device()->channel().toOneBasedInt());
 		}
 	}
 }

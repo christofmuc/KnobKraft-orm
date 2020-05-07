@@ -265,12 +265,13 @@ void PatchView::saveCurrentPatchCategories() {
 
 void PatchView::retrievePatches() {
 	midikraft::Synth *activeSynth = UIModel::currentSynth();
-	if (activeSynth != nullptr) {
-		midikraft::MidiController::instance()->enableMidiInput(activeSynth->midiInput());
+	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(activeSynth);
+	if (activeSynth && midiLocation) {
+		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
-			[this, activeSynth](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
+			[this, activeSynth, midiLocation](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
 			librarian_.startDownloadingAllPatches(
-				midikraft::MidiController::instance()->getMidiOutput(activeSynth->midiOutput()),
+				midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 				activeSynth,
 				bankNo,
 				progressHandler, [this](std::vector<midikraft::PatchHolder> patchesLoaded) {
@@ -298,8 +299,9 @@ void PatchView::retrievePatches() {
 void PatchView::retrieveEditBuffer()
 {
 	midikraft::Synth *activeSynth = UIModel::currentSynth();
-	if (activeSynth != nullptr) {
-		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(activeSynth->midiOutput()),
+	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(activeSynth);
+	if (activeSynth && midiLocation) {
+		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 			activeSynth,
 			nullptr,
 			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {

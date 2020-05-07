@@ -30,7 +30,7 @@
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
-	ActiveSynthHolder(std::shared_ptr<midikraft::Synth> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
+	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
 	}
 
 	std::string getName() override
@@ -41,7 +41,7 @@ public:
 
 	bool isActive() override
 	{
-		return synth() ? synth()->channel().isValid() : false;
+		return device() ? device()->channel().isValid() : false;
 	}
 
 
@@ -272,10 +272,7 @@ void MainComponent::refreshSynthList() {
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
 	for (auto s : UIModel::instance()->synthList_.allSynths()) {
 		if (UIModel::instance()->synthList_.isSynthActive(s.device())) {
-			auto reallyASynth = s.synth();
-			if (reallyASynth) {
-				listItems.push_back(std::make_shared<ActiveSynthHolder>(reallyASynth, s.color()));
-			}
+			listItems.push_back(std::make_shared<ActiveSynthHolder>(s.device(), s.color()));
 		}
 	}
 

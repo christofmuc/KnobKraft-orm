@@ -56,9 +56,10 @@ void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
 
 void SettingsView::loadGlobals() {
 	auto synth = UIModel::currentSynth();
+	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(synth);
 	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(synth);
-	if (gsc) {
-		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(synth->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), nullptr,
+	if (midiLocation && gsc) {
+		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), nullptr,
 			[this, gsc](std::vector<std::shared_ptr<midikraft::DataFile>> dataLoaded) {
 			gsc->setGlobalSettingsFromDataFile(dataLoaded[0]);
 			MessageManager::callAsync([this, gsc]() {
