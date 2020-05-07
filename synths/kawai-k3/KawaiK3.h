@@ -28,7 +28,7 @@ namespace midikraft {
 	class KawaiK3Patch;
 	class SynthView;
 
-	class KawaiK3 : public Synth, /* public SupportedByBCR2000, */ public ProgramDumpCabability, public BankDumpCapability,
+	class KawaiK3 : public Synth, /* public SupportedByBCR2000, */ public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
 		static const MidiProgramNumber kFakeEditBuffer;
