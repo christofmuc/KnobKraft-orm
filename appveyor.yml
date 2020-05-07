@@ -29,6 +29,5 @@ deploy:
   artifact: /**/knobkraft_orm_setup.exe/
   draft: true
   prerelease: false
-  on:
-    branch: master                 # release from master branch only
+  on:    
     APPVEYOR_REPO_TAG: true        # deploy on tag push only
