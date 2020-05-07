@@ -16,7 +16,7 @@ namespace midikraft {
 
 	class KorgDW8000Patch;
 
-	class KorgDW8000 : public Synth /*, public SupportedByBCR2000 */, public EditBufferCapability, public ReadonlySoundExpander {
+	class KorgDW8000 : public Synth /*, public SupportedByBCR2000 */, public SimpleDiscoverableDevice, public EditBufferCapability, public ReadonlySoundExpander {
 	public:
 
 		// Basic Synth implementation
