@@ -15,7 +15,7 @@
 
 namespace midikraft {
 
-	class RefaceDX : public RefaceDXDiscovery, public EditBufferCapability, public StreamLoadCapability, public SoundExpanderCapability, public MasterkeyboardCapability {
+	class RefaceDX : public Synth, public RefaceDXDiscovery, public EditBufferCapability, public StreamLoadCapability, public SoundExpanderCapability, public MasterkeyboardCapability {
 	public:
 		virtual std::string getName() const override;
 
@@ -25,7 +25,7 @@ namespace midikraft {
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-		Synth::PatchData filterVoiceRelevantData(PatchData const &unfilteredData) const;
+		Synth::PatchData filterVoiceRelevantData(Synth::PatchData const &unfilteredData) const;
 
 		// Edit Buffer Capability
 		virtual MidiMessage requestEditBufferDump() override;

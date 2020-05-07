@@ -11,7 +11,7 @@
 
 namespace midikraft {
 
-	class RefaceDXDiscovery : public Synth /* TODO should actually only derive from SimpleDiscoverableDevice */ {
+	class RefaceDXDiscovery : public SimpleDiscoverableDevice /* TODO should actually only derive from SimpleDiscoverableDevice */ {
 	public:
 		virtual MidiMessage deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;
