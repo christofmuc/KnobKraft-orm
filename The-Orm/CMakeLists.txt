@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.1.0)
+project(KnobKraftOrm VERSION 1.2.0)
 
 IF (WIN32)
 	# All setup for UI software on Windows
