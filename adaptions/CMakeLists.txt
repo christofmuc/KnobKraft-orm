@@ -23,9 +23,10 @@ ENDIF()
 
 # Define the shipped adaptions
 set(Adaptions
-	 Matrix1000.py
-	 PioneerToraiz-AS1.py
+	 "Matrix1000.py"
+	 "PioneerToraiz-AS1.py"
 	 "Roland JX-8P.py"
+	 "DSI Prophet 08.py"
 )
 
 # Define the sources for the static library

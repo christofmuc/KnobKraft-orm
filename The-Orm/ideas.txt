@@ -113,6 +113,17 @@ More synthesizers
 	+ Behringer RD 8
 	+ Novation Circuit
 
+Requested on Reddit
+
+	* JX-8P
+    * Prophet 6
+	* Yamaha TX802
+	* Yamaha AN1X
+
+Requested on Facebook
+
+	* Prophet 08
+
 Librarian for other stuff (should rather do with adaption?)
 
 	+ BCR2000
