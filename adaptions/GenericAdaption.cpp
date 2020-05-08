@@ -24,6 +24,7 @@ namespace knobkraft {
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptionPythonEmbeddedGuard;
 	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptionPyOutputRedirect;
+	CriticalSection GenericAdaption::multiThreadGuard;
 
 	void checkForPythonOutputAndLog() {
 		sGenericAdaptionPyOutputRedirect->flushToLogger("Adaption");
@@ -56,6 +57,7 @@ namespace knobkraft {
 
 		template <typename ... Args>
 		py::object callMethod(std::string const &methodName, Args& ... args) const {
+			ScopedLock lock(GenericAdaption::multiThreadGuard);
 			if (!adaption_) {
 				return py::none();
 			}
@@ -81,6 +83,7 @@ namespace knobkraft {
 
 		std::string name() const override
 		{
+			ScopedLock lock(GenericAdaption::multiThreadGuard);
 			try {
 				auto message = data();
 				auto result = adaption_.attr("nameFromDump")(message);
@@ -117,6 +120,7 @@ namespace knobkraft {
 	GenericAdaption::GenericAdaption(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
 		try {
+			ScopedLock lock(GenericAdaption::multiThreadGuard);
 			adaption_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
 		}
@@ -157,6 +161,7 @@ namespace knobkraft {
 		if (!adaption_module) {
 			return py::none();
 		}
+		ScopedLock lock(GenericAdaption::multiThreadGuard);
 		if (py::hasattr(*adaption_module, methodName.c_str())) {
 			auto result = adaption_module.attr(methodName.c_str())(args...);
 			//checkForPythonOutputAndLog();

@@ -55,6 +55,7 @@ namespace knobkraft {
 		static void startupGenericAdaption();
 		static File getAdaptionDirectory();
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptions();
+		static CriticalSection multiThreadGuard;
 
 	private:
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;
