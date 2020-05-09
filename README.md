@@ -2,33 +2,32 @@
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
-Currently supported synths as of version 1.1.0:
+Questions / help with implementing new synths wanted, I am trying to get us across many forums in the Internet into one common place, and have created a room on Gitter for that to reach me. If you have found a bug, also feel free to report directly here on Github. 
+
+[![Gitter](https://badges.gitter.im/knobkraft/community.svg)](https://gitter.im/knobkraft/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
+Currently supported synths as of version 1.2.0:
 
 * Access Virus B
 * Oberheim Matrix 1000
+* DSI Prophet 08 (untested, looking for feedback and help)
 * Sequential/Dave Smith Instruments OB-6
 * Sequential/Dave Smith Instruments Prophet Rev2
 * Yamaha Reface DX
+* Pioneer Toraiz AS-1 (untested)
+* Roland JX-8P (untested)
 
-Additionally, there is a generic module that let's you hook up other MIDI gear using a bit of scripting in Python, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned.
+Additionally, there is a generic module that let's you hook up other MIDI gear using a bit of scripting in Python, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices!
 
 As adaption currently available:
 
-* Pioneer Toraiz AS-1 (untested, looking for feedback and help)
 
-
-Next up under development are:
+Next up for development are:
 
 * Behringer RD-8
 * Korg DW8000
 * Kawai K3/K3M
 * Roland MKS-80
-
-
-Let me know if want a specific device to be supported, maybe I can help.
-
-
-
 
 I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well:
 
