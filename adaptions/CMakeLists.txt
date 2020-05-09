@@ -27,7 +27,11 @@ set(Adaptions
 	 "PioneerToraiz-AS1.py"
 	 "Roland JX-8P.py"
 	 "DSI Prophet 08.py"
+	 "DSI Prophet 12.py"
+	 "DSI Prophet 6.py"
 )
+
+file(GLOB adaption_files "${CMAKE_CURRENT_LIST_DIR}/*.py")
 
 # Define the sources for the static library
 set(Sources
@@ -35,7 +39,6 @@ set(Sources
 	PythonUtils.cpp PythonUtils.h
 	${Adaptions}
 )
-
 
 # Setup library
 add_library(knobkraft-generic-adaption ${Sources})
@@ -53,3 +56,17 @@ else()
     # lots of warnings and all warnings as errors
     #target_compile_options(knobkraft-generic-adaption PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
+
+# Copy to documents directory, because this is where the exectuable after installation wants them to load from
+if (WIN32)
+	set(ADAPTION_DIRECTORY_PROD $ENV{USERPROFILE}/Documents/KnobKraft-orm-adaptions)
+else()
+	set(ADAPTION_DIRECTORY_PROD $ENV{HOME}/KnobKraft-orm-adaptions)
+endif()
+foreach (globalFile ${adaption_files})
+	get_filename_component(file ${globalFile} NAME)	
+	add_custom_command(
+		OUTPUT ${ADAPTION_DIRECTORY_PROD}/${file}
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${ADAPTION_DIRECTORY_PROD}/${file}
+		MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${file})
+endforeach()
