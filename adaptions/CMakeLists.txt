@@ -27,10 +27,10 @@ set(Adaptions
 	 "PioneerToraiz-AS1.py"
 	 "Roland JX-8P.py"
 	 "DSI Pro 2.py"
-	 "DSI Pro 3.py"
+	 "Sequential Pro 3.py"
 	 "DSI Prophet 08.py"
 	 "DSI Prophet 12.py"
-	 "DSI Prophet 6.py"
+	 "Sequential Prophet 6.py"
 )
 
 file(GLOB adaption_files "${CMAKE_CURRENT_LIST_DIR}/*.py")

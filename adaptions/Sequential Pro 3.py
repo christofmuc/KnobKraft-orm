@@ -4,9 +4,11 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
+device_ID = 0b00110001  # See Page 147 of the Pro 3 manual
+
 
 def name():
-    return "DSI Prophet 6"
+    return "Sequential Pro 3"
 
 
 def createDeviceDetectMessage(channel):
@@ -29,24 +31,24 @@ def channelIfValidDeviceResponse(message):
             and message[3] == 0x06  # Device request
             and message[4] == 0x02  # Device request reply
             and message[5] == 0x01  # Sequential / Dave Smith Instruments
-            and message[6] == 0b00101101  # Prophet 6
-            and message[7] == 0x01  # Familiry MS
-            and message[8] == 0x00  # Family
-            and message[9] == 0x00):  # Family
+            and message[6] == device_ID
+            and message[7] == 0x01  # Family MS is 1
+            and message[8] == 0x00  # Family member
+            and message[9] == 0x00):  # Family member
         # Extract the current MIDI channel from index 2 of the message
         return message[2]
     return -1
 
 
 def createEditBufferRequest(channel):
-    return [0xf0, 0x01, 0b00101101, 0b00000110, 0xf7]
+    return [0xf0, 0x01, device_ID, 0b00000110, 0xf7]
 
 
 def isEditBufferDump(message):
     return (len(message) > 3
             and message[0] == 0xf0
             and message[1] == 0x01  # Sequential
-            and message[2] == 0b00101101  # Prophet 6
+            and message[2] == device_ID
             and message[3] == 0b00000011  # Edit Buffer Data
             )
 
@@ -62,14 +64,14 @@ def numberOfPatchesPerBank():
 def createProgramDumpRequest(channel, patchNo):
     bank = patchNo // numberOfPatchesPerBank()
     program = patchNo % numberOfPatchesPerBank()
-    return [0xf0, 0x01, 0b00101101, 0b00000101, bank, program, 0xf7]
+    return [0xf0, 0x01, device_ID, 0b00000101, bank, program, 0xf7]
 
 
 def isSingleProgramDump(message):
     return (len(message) > 3
             and message[0] == 0xf0
             and message[1] == 0x01  # Sequential
-            and message[2] == 0b00101101  # Prophet 6
+            and message[2] == device_ID
             and message[3] == 0b00000010  # Program Data
             )
 
@@ -82,7 +84,7 @@ def nameFromDump(message):
         dataBlock = message[4:-1]
     if len(dataBlock) > 0:
         patchData = unescapeSysex(dataBlock)
-        return ''.join([chr(x) for x in patchData[107:127]])
+        return ''.join([chr(x) for x in patchData[321:321+20]])
     return "Invalid"
 
 
