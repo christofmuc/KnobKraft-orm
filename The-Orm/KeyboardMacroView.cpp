@@ -6,9 +6,12 @@
 
 #include "KeyboardMacroView.h"
 
-#include "Logger.h"
+#include "MasterkeyboardCapability.h"
 
+#include "Logger.h"
 #include "Settings.h"
+#include "MidiChannelPropertyEditor.h"
+#include "UIModel.h"
 
 class RecordProgress : public ThreadWithProgressWindow, private MidiKeyboardStateListener {
 public:
@@ -42,7 +45,7 @@ public:
 			}
 		}
 		if (keyPressed == 0) {
-			done_ = true; 
+			done_ = true;
 		}
 	}
 
@@ -58,22 +61,22 @@ private:
 
 KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback) : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard), executeMacro_(callback)
 {
+	addAndMakeVisible(customSetup_);
 	addAndMakeVisible(keyboard_);
-	keyboard_.setAvailableRange(0x24, 0x60);
-	keyboard_.setOctaveForMiddleC(4);
+	keyboard_.setOctaveForMiddleC(4); // This is correct for the DSI Synths, I just don't know what the standard is
 
 	// Create config table
 	for (auto config : kAllKeyboardMacroEvents) {
 		auto configComponent = new MacroConfig(config,
 			[this](KeyboardMacroEvent event) {
-				RecordProgress recorder(state_);
-				if (recorder.runThread()) {
-					KeyboardMacro newMacro = { event, recorder.notesSelected() };
-					macros_[event] = newMacro;
-					saveSettings();
-					refreshUI();
-				}
-			},
+			RecordProgress recorder(state_);
+			if (recorder.runThread()) {
+				KeyboardMacro newMacro = { event, recorder.notesSelected() };
+				macros_[event] = newMacro;
+				saveSettings();
+				refreshUI();
+			}
+		},
 			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
 				for (auto key : macros_[event].midiNotes) {
@@ -88,6 +91,8 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 		});
 		configs_.add(configComponent);
 		addAndMakeVisible(configComponent);
+
+		UIModel::instance()->currentSynth_.addChangeListener(this);
 	}
 
 	// Install keyboard handler to refresh midi keyboard display
@@ -106,6 +111,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	});
 
 	// Load Macro Definitions
+	setupPropertyEditor();
 	loadFromSettings();
 	refreshUI();
 }
@@ -114,6 +120,20 @@ KeyboardMacroView::~KeyboardMacroView()
 {
 	midikraft::MidiController::instance()->removeMessageHandler(handle_);
 	saveSettings();
+}
+
+void KeyboardMacroView::setupPropertyEditor() {
+	customMasterkeyboardSetup_.clear();
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Macros enabled", "Setup", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Automatic master keyboard setup", "Setup", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<MidiDevicePropertyEditor>("MIDI Input Device", "Setup Masterkeyboard", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", "Setup Masterkeyboard"));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Lowest MIDI Note", "Setup Masterkeyboard", 0x24, 0, 127 ));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Highest MIDI Note", "Setup Masterkeyboard", 0x60, 0, 127 ));
+	for (auto tnv : customMasterkeyboardSetup_) {
+		tnv->value().addListener(this);
+	}
+	customSetup_.setProperties(customMasterkeyboardSetup_);
 }
 
 void KeyboardMacroView::refreshUI() {
@@ -159,7 +179,7 @@ void KeyboardMacroView::loadFromSettings() {
 
 void KeyboardMacroView::saveSettings() {
 	var result;
-	
+
 	for (auto macro : macros_) {
 		var notes;
 		for (auto note : macro.second.midiNotes) {
@@ -171,7 +191,7 @@ void KeyboardMacroView::saveSettings() {
 		result.append(def);
 	}
 	String json = JSON::toString(result);
-	Settings::instance().set("MacroDefinitions", json.toStdString());	
+	Settings::instance().set("MacroDefinitions", json.toStdString());
 	Settings::instance().flush();
 }
 
@@ -180,14 +200,64 @@ void KeyboardMacroView::resized()
 	auto area = getLocalBounds();
 
 	// Needed width
-	auto keyboardArea = area.removeFromTop(166);
 	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + 16;
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int) keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
+	int contentWidth = std::min(area.getWidth(), 600);
+
+	// On Top, the setup
+	customSetup_.setBounds(area.removeFromTop(200).withSizeKeepingCentre(contentWidth, 200).reduced(8));
+	// Then the keyboard	
+	auto keyboardArea = area.removeFromTop(166);
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
 
 	// Set up table
 	for (auto c : configs_) {
 		auto row = area.removeFromTop(40);
-		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), keyboard_.getWidth()), 30));
+		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), contentWidth), 30));
+	}
+}
+
+void KeyboardMacroView::valueChanged(Value& value)
+{
+	if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName("Lowest MIDI Note")) ||
+		value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName("Highest MIDI Note"))) {
+		int lowNote = customMasterkeyboardSetup_.valueByName("Lowest MIDI Note").getValue();
+		int highNote = customMasterkeyboardSetup_.valueByName("Highest MIDI Note").getValue();
+		keyboard_.setAvailableRange(lowNote, highNote);
+		keyboard_.setLowestVisibleKey(lowNote);
+		resized();
+	}
+}
+
+void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+
+	// Mode 1 - follow current synth, use that as master keyboard
+	auto currentSynth = UIModel::currentSynth();
+	auto masterKeyboard = dynamic_cast<midikraft::MasterkeyboardCapability *>(currentSynth);
+	auto location = dynamic_cast<midikraft::MidiLocationCapability *>(currentSynth);
+	if (location) {
+		auto tnv = customMasterkeyboardSetup_.typedNamedValueByName("MIDI Input Device");
+		tnv->value().setValue(tnv->indexOfValue(location->midiInput()));
+		tnv = customMasterkeyboardSetup_.typedNamedValueByName("MIDI channel");
+		auto midiChannel = std::dynamic_pointer_cast<MidiChannelPropertyEditor>(tnv);
+		if (midiChannel) {
+			if (masterKeyboard) {
+				// If this is a real master keyboard (or a Yamaha RefaceDX), it might have a different output channel than input channel.
+				midiChannel->setValue(masterKeyboard->getOutputChannel());
+			}
+			else {
+				midiChannel->setValue(location->channel());
+			}
+		}
+	}
+	auto keyboard = dynamic_cast<midikraft::KeyboardCapability *>(currentSynth);
+	if (keyboard) {
+		customMasterkeyboardSetup_.valueByName("Lowest MIDI Note").setValue(keyboard->getLowestKey().noteNumber());
+		customMasterkeyboardSetup_.valueByName("Highest MIDI Note").setValue(keyboard->getHighestKey().noteNumber());
+	}
+	else {
+		// Fall back to mode 2?
 	}
 }
 

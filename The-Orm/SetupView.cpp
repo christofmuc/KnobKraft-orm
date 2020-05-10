@@ -7,7 +7,7 @@
 #include "SetupView.h"
 
 #include "Synth.h"
-#include "MidiChannelEntry.h"
+#include "MidiChannelPropertyEditor.h"
 #include "SoundExpanderCapability.h"
 #include "Logger.h"
 #include "AutoDetection.h"
@@ -23,35 +23,16 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	autoDetection_(autoDetection)/*, lights_(lights) */,
 	functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
 {
-	// Build lists of input and output MIDI devices
-	int i = 0;
-	for (const auto &device : currentInputDevices()) {
-		inputLookup_[++i] = device;
-	}
-
-	int j = 0;
-	for (const auto &device : currentOutputDevices()) {
-		outputLookup_[++j] = device;
-	}
-
-	midiChannelLookup_ = {
-		{ 1, "1" }, { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" }, { 6, "6" }, { 7, "7" }, { 8, "8" }, { 9, "9" },
-		{ 10, "10" }, { 11, "11" }, { 12, "12" }, { 13, "13" }, { 14, "14" }, { 15, "15" }, { 16, "16" }, { 17, "Omni" }, { 18, "Invalid" },
-	};
-
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
-		String sectionName = synth.device()->getName();
+		auto sectionName = synth.device()->getName();
 
 		// For each synth, we need 4 properties, and we need to listen to changes: 
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Activated", sectionName, Value(1), ValueType::Bool, 0, 1 })));
-		properties_.back()->value.addListener(this);
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Sent to device", sectionName, Value(1), ValueType::Lookup, 1, (int)outputLookup_.size() + 1, outputLookup_ })));
-		properties_.back()->value.addListener(this);
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "Receive from device", sectionName, Value(1), ValueType::Lookup, 1, (int)inputLookup_.size() + 1, inputLookup_ })));
-		properties_.back()->value.addListener(this);
-		properties_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue({ "MIDI channel", sectionName, Value(18), ValueType::Lookup, 1, 18, midiChannelLookup_ })));
-		properties_.back()->value.addListener(this);
+		properties_.push_back(std::make_shared<TypedNamedValue>("Activated", sectionName, true));
+		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
+		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
+		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
+		for (auto prop : properties_) prop->value().addListener(this);
 	}
 	refreshData();
 	header_.setMultiLine(true);
@@ -101,18 +82,20 @@ void SetupView::refreshData() {
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		// Skip the active prop
-		setValueWithoutListeners(properties_[prop++]->value, UIModel::instance()->synthList_.isSynthActive(synth.device()));
+		setValueWithoutListeners(properties_[prop++]->value(), UIModel::instance()->synthList_.isSynthActive(synth.device()));
 		// Set output, input, and channel
-		setValueWithoutListeners(properties_[prop++]->value, indexOfOutputDevice(synth.device()->midiOutput()));
-		setValueWithoutListeners(properties_[prop++]->value, indexOfInputDevice(synth.device()->midiInput()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput()));
+		prop++;
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiInput()));
+		prop++;
 		if (!synth.device()->channel().isValid()) {
-			setValueWithoutListeners(properties_[prop++]->value, 18);
+			setValueWithoutListeners(properties_[prop++]->value(), 18);
 		}
 		else if (synth.device()->channel().isOmni()) {
-			setValueWithoutListeners(properties_[prop++]->value, 17);
+			setValueWithoutListeners(properties_[prop++]->value(), 17);
 		}
 		else {
-			setValueWithoutListeners(properties_[prop++]->value, synth.device()->channel().toOneBasedInt());
+			setValueWithoutListeners(properties_[prop++]->value(), synth.device()->channel().toOneBasedInt());
 		}
 	}
 }
@@ -121,25 +104,25 @@ void SetupView::valueChanged(Value& value)
 {
 	// Determine the property that was changed
 	for (auto prop : properties_) {
-		if (prop->value.refersToSameSourceAs(value)) {
+		if (prop->value().refersToSameSourceAs(value)) {
 			std::shared_ptr<midikraft::SimpleDiscoverableDevice> synthFound;
 			for (auto synth : UIModel::instance()->synthList_.allSynths()) {
-				if (synth.device() && synth.device()->getName() == prop->sectionName) {
+				if (synth.device() && synth.device()->getName() == prop->sectionName()) {
 					synthFound = synth.device();
 				}
 			}
 
 			if (synthFound) {
-				if (prop->name == "Sent to device") {
-					synthFound->setOutput(outputLookup_[value.getValue()]);
+				if (prop->name() == "Sent to device") {
+					synthFound->setOutput(prop->lookup()[value.getValue()]);
 				}
-				else if (prop->name == "Receive from device") {
-					synthFound->setInput(inputLookup_[value.getValue()]);
+				else if (prop->name() == "Receive from device") {
+					synthFound->setInput(prop->lookup()[value.getValue()]);
 				}
-				else if (prop->name == "MIDI channel") {
+				else if (prop->name() == "MIDI channel") {
 					synthFound->setChannel(MidiChannel::fromOneBase(value.getValue()));
 				}
-				else if (prop->name == "Activated") {
+				else if (prop->name() == "Activated") {
 					UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
 					auto activeKey = String(synthFound->getName()) + String("-activated");
 					Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
@@ -177,43 +160,6 @@ void SetupView::quickConfigure()
 	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
 	autoDetection_->quickconfigure(currentSynths); // This rather should be synchronous!
 	refreshData();
-}
-
-std::vector<std::string> SetupView::currentOutputDevices() const {
-	std::vector<std::string> outputs;
-	auto devices = MidiOutput::getDevices();
-	for (const auto& device : devices) {
-		outputs.push_back(device.toStdString());
-	}
-	return outputs;
-}
-
-//TODO this should go into MidiController
-std::vector<std::string> SetupView::currentInputDevices() const {
-	std::vector<std::string> inputs;
-	auto devices = MidiInput::getDevices();
-	for (const auto& device : devices) {
-		inputs.push_back(device.toStdString());
-	}
-	return inputs;
-}
-
-int SetupView::indexOfOutputDevice(std::string const &outputDevice) const {
-	for (auto const &d : outputLookup_) {
-		if (d.second == outputDevice) {
-			return d.first;
-		}
-	}
-	return 0;
-}
-
-int SetupView::indexOfInputDevice(std::string const &inputDevice) const {
-	for (auto const &d : inputLookup_) {
-		if (d.second == inputDevice) {
-			return d.first;
-		}
-	}
-	return 0;
 }
 
 

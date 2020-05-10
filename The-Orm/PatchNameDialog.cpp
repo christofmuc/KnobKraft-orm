@@ -40,13 +40,13 @@ void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
 	if (layers) {
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
 			names_.push_back(Value(String(layers->layerName(i)).trim()));
-			TypedNamedValue v({ "Layer " + String(i), "Patch name", names_[i], ValueType::String, 0, 20, {}, true});
+			TypedNamedValue v("Layer " + String(i), "Patch name", names_[i].getValue(), 20);
 			props.push_back(std::make_shared<TypedNamedValue>(v));
 		}
 	}
 	else if (patch->patch()) {
 		names_.push_back(Value(String(patch->name()).trim()));
-		TypedNamedValue v({ "Patch name", "Patch name", names_[0], ValueType::String, 0, 20, {}, true });
+		TypedNamedValue v("Patch name", "Patch name", names_[0].getValue(), 20);
 		props.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 	propertyEditor_.setProperties(props);
