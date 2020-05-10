@@ -55,33 +55,33 @@ namespace midikraft {
 
 	// Table of global settings. What I left out was the "group enabled" array for one bit per patch to specify if it is deemed to be group-worthy.
 	std::vector<Matrix1000GlobalSettingDefinition> kMatrix1000GlobalSettings = {
-		{ 34, { "Master Transpose", "Tuning", Value(), ValueType::Integer, -24, 24 }, true },
-		{ 8, { "Master Tune", "Tuning", Value(), ValueType::Integer, -32, 32 }, true },
-		{ 11, { "MIDI Basic Channel", "MIDI", Value(), ValueType::Integer, 1, 16 }, false, 1 /* Make it one based */},
-		{ 12, { "MIDI OMNI Mode Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 13, { "MIDI Controllers enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 14, { "MIDI Patch Changes Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 17, { "MIDI Pedal 1 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } }, //TODO - could make a lookup of CC controller names? 121 is from the manual
-		{ 18, { "MIDI Pedal 2 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
-		{ 19, { "MIDI Pedal 3 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
-		{ 20, { "MIDI Pedal 4 Controller", "MIDI", Value(), ValueType::Integer, 0, 121 } },
-		{ 32, { "MIDI Echo Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", Value(), ValueType::Bool, 0, 1 } },
-		{ 165, { "Bank Lock Enable", "MIDI", Value(), ValueType::Bool, 0, 1 } }, // (In MSB only)
-		{ 4, { "Vibrato Waveform", "Global Vibrato", Value(), ValueType::Lookup, 0, 7, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
-		{ 1, { "Vibrato Speed", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
-		{ 5, { "Vibrato Amplitude", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },		
-		{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", Value(), ValueType::Lookup, 0, 2, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
-		{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
-		{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", Value(), ValueType::Lookup, 0, 2, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
-		{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", Value(), ValueType::Integer, 0, 63 } },
-		{ 164, { "Bend Range", "Controls", Value(), ValueType::Integer, 1, 24 } },		
-		{ 166, { "Number of Units", "Group Mode", Value(), ValueType::Integer, 1, 6 } }, 
-		{ 167, { "Current Unit Number", "Group Mode", Value(), ValueType::Integer, 0, 7 } }, // (In MSB only)
-		{ 168, { "Group Mode Enable", "Group Mode", Value(), ValueType::Bool, 0, 1 } }, // (In MSB only)
-		{ 169, { "Unison Enable", "General", Value(), ValueType::Bool, 0, 1 } }, 
-		{ 170, { "Volume Invert Enable", "General", Value(), ValueType::Bool, 0, 1 } }, 
-		{ 171, { "Memory Protect Enable", "General", Value(), ValueType::Bool, 0, 1 } }, 
+		{ 34, { "Master Transpose", "Tuning", 0, -24, 24 }, true },
+		{ 8, { "Master Tune", "Tuning", 0, -32, 32 }, true },
+		{ 11, { "MIDI Basic Channel", "MIDI", 1, 1, 16 }, false, 1 /* Make it one based */},
+		{ 12, { "MIDI OMNI Mode Enable", "MIDI", false } },
+		{ 13, { "MIDI Controllers enable", "MIDI", true} },
+		{ 14, { "MIDI Patch Changes Enable", "MIDI", true } },
+		{ 17, { "MIDI Pedal 1 Controller", "MIDI", 0, 0, 121 } }, //TODO - could make a lookup of CC controller names? 121 is from the manual
+		{ 18, { "MIDI Pedal 2 Controller", "MIDI", 0, 0, 121 } },
+		{ 19, { "MIDI Pedal 3 Controller", "MIDI", 0, 0, 121 } },
+		{ 20, { "MIDI Pedal 4 Controller", "MIDI", 0, 0, 121 } },
+		{ 32, { "MIDI Echo Enable", "MIDI", false } },
+		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", false } },
+		{ 165, { "Bank Lock Enable", "MIDI", false} }, // (In MSB only)
+		{ 4, { "Vibrato Waveform", "Global Vibrato", 0, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
+		{ 1, { "Vibrato Speed", "Global Vibrato", 0, 0, 63 } },
+		{ 5, { "Vibrato Amplitude", "Global Vibrato", 0, 0, 63 } },		
+		{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
+		{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", 0, 0, 63 } },
+		{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
+		{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", 0, 0, 63 } },
+		{ 164, { "Bend Range", "Controls", 2, 1, 24 } },		
+		{ 166, { "Number of Units", "Group Mode", 1, 1, 6 } }, 
+		{ 167, { "Current Unit Number", "Group Mode", 0, 0, 7 } }, // (In MSB only)
+		{ 168, { "Group Mode Enable", "Group Mode", false } }, // (In MSB only)
+		{ 169, { "Unison Enable", "General", false } }, 
+		{ 170, { "Volume Invert Enable", "General", false } }, 
+		{ 171, { "Memory Protect Enable", "General", false } }, 
 	};
 
 	juce::MidiMessage Matrix1000::requestEditBufferDump()
@@ -124,7 +124,7 @@ namespace midikraft {
 		for (auto & matrix1000GlobalSetting : kMatrix1000GlobalSettings) {
 			auto setting = std::make_shared<TypedNamedValue>(matrix1000GlobalSetting.typedNamedValue);
 			globalSettings_.push_back(setting);
-			setting->value.addListener(this);
+			setting->value().addListener(this);
 		}
 	}
 
@@ -139,8 +139,8 @@ namespace midikraft {
 			for (auto & setting : globalSettings_) {
 				//TODO Need to find definition for this setting now, suboptimal data structures
 				for (auto const &def : kMatrix1000GlobalSettings) {
-					if (def.typedNamedValue.name == setting->name) {
-						int newMidiValue = ((int)setting->value.getValue()) - def.displayOffset;
+					if (def.typedNamedValue.name() == setting->name()) {
+						int newMidiValue = ((int)setting->value().getValue()) - def.displayOffset;
 						if (def.isTwosComplement) {
 							if (newMidiValue < 0) {
 								newMidiValue = (uint8)newMidiValue;
@@ -390,7 +390,7 @@ namespace midikraft {
 							intValue = (int8) intValue;
 						}
 					}
-					globalSettings_[i]->value.setValue(var(intValue));
+					globalSettings_[i]->value().setValue(var(intValue));
 				}
 			}
 		}
