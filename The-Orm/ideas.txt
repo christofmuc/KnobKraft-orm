@@ -19,6 +19,7 @@ Rev2
 
 K3
 * Wave form support (Second DataFile type)
+* Allow dependencies between DataFiles (patch -> wave for K3)
 * Dependency between patch and wave form
 * Drawbar Organ Waveform Generator
 * Generic Oscillator shape optimizer? 
@@ -31,8 +32,6 @@ Archiving
 * Make regular backups of Database
 
 Generic Module
-+ Build process should deploy module files into ~/KnobKraft-Orm-adaptions so you will test the right file
-+ Need to parse patch name from patch for AS-1
 + Provide "orm" python package with denibble, DSI packing etc.
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could create FlowChart to select which methods to implement!
@@ -50,7 +49,6 @@ Librarian
 * Make page number clickable to switch to that page
 * Allow multi-select of banks to import (with all feature)
 * Allow recursive directory traversal during import
-* Allow dependencies between DataFiles (patch -> wave for K3)
 * Could accept synth-initiated dumps at any time
 * Better display of bulk imports with real file source
 * UI - could hide / fold "advanced search"
@@ -73,7 +71,8 @@ Future work
 * I could display which categories were set by the user, and which ones were autodetected
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Could have patch name autogenerator like LaserMammoth
-* editor for the synth using the JUCE property editor
+* Could have voice input for naming patches? General voice control?
+* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
 * Synth_v2 class/interface more following the generic adaption design than the original Synth class
 
 Database schema
@@ -86,6 +85,8 @@ Database schema
 MIDI setup
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
 * MIDI log needs a "save log function"
+* With more synths, should split "select synth" and "configure synth" into two columns
+* Debounce is currently disabled - can I reenable it?
 
 UI Cleanup
 * Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
@@ -94,6 +95,7 @@ UI Cleanup
 
 Big things
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
+	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
 	* Adding full BCR2000 support
 	* The automatic patch clusterer!
 	* Multiple synths in one grid
@@ -115,14 +117,8 @@ More synthesizers
 
 Requested on Reddit
 
-	* JX-8P
-    * Prophet 6
 	* Yamaha TX802
 	* Yamaha AN1X
-
-Requested on Facebook
-
-	* Prophet 08
 
 Librarian for other stuff (should rather do with adaption?)
 
