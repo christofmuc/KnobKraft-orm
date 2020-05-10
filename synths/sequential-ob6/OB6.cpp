@@ -219,6 +219,16 @@ namespace midikraft {
 		midiControl_ = isOn;
 	}
 
+	MidiNote OB6::getLowestKey() const
+	{
+		return MidiNote(0x24);
+	}
+
+	MidiNote OB6::getHighestKey() const
+	{
+		return MidiNote(0x60 - 12);
+	}
+
 	void OB6::changeOutputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished)
 	{
 		// The OB6 has no split output and input MIDI channels, so we must take care with the MIDI routing. Don't do that now
