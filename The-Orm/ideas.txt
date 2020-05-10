@@ -62,11 +62,6 @@ Future work
   * Record notes played (duration) a specific patch
   * Allow to sort by playing time
 * Better Macro Button support. But how to get feedback? Play a sound/chord?
-  * Hide key
-  * Fav key
-  * Forward key
-  * Backward key
-  * Import edit buffer
 * Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 * I could display which categories were set by the user, and which ones were autodetected
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
@@ -96,6 +91,7 @@ UI Cleanup
 Big things
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
+	  * Could use this for additional "filter by property" feature. E.g. show only patches with a particular synth feature
 	* Adding full BCR2000 support
 	* The automatic patch clusterer!
 	* Multiple synths in one grid
