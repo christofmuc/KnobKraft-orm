@@ -18,7 +18,8 @@ namespace midikraft {
 	// Global constants
 	extern std::map<int, std::string> kDSIAlternateTunings();
 
-	class DSISynth : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability, public SoundExpanderCapability, public MasterkeyboardCapability {
+	class DSISynth : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability, 
+		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability {
 	public:
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
@@ -42,6 +43,9 @@ namespace midikraft {
 		virtual MidiChannel getOutputChannel() const override;
 		virtual bool hasLocalControl() const override;
 		virtual bool getLocalControl() const override;
+
+		// KeyboardCapability
+		virtual bool hasKeyboard() const override;
 
 		// SoundExpanderCapability, common
 		virtual bool canChangeInputChannel() const override;

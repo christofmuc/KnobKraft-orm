@@ -54,6 +54,10 @@ namespace midikraft {
 		virtual void changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
 		virtual void setMidiControl(MidiController *controller, bool isOn) override;
 
+		// KeyboardCapability
+		MidiNote getLowestKey() const override;
+		MidiNote getHighestKey() const override;
+
 		// MasterkeyboardCapability
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
 		virtual void setLocalControl(MidiController *controller, bool localControlOn) override;

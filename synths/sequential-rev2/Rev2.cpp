@@ -331,6 +331,16 @@ namespace midikraft {
 		changeInputChannel(controller, channel, onFinished);
 	}
 
+	MidiNote Rev2::getLowestKey() const
+	{
+		return MidiNote(0x24);
+	}
+
+	MidiNote Rev2::getHighestKey() const
+	{
+		return MidiNote(0x60);
+	}
+
 	std::vector<juce::MidiMessage> Rev2::requestDataItem(int itemNo, int dataTypeID)
 	{
 		switch (dataTypeID) {

@@ -138,6 +138,11 @@ namespace midikraft {
 		return localControl_;
 	}
 
+	bool DSISynth::hasKeyboard() const
+	{
+		return true;
+	}
+
 	bool DSISynth::canChangeInputChannel() const
 	{
 		return true;
