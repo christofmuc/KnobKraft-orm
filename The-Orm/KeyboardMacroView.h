@@ -21,6 +21,7 @@ public:
 
 private:
 	void setupPropertyEditor();
+	void setupKeyboardControl();
 	void loadFromSettings();
 	void saveSettings();
 	bool isMacroState(KeyboardMacro const &macro);

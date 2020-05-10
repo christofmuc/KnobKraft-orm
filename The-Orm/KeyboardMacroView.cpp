@@ -13,6 +13,15 @@
 #include "MidiChannelPropertyEditor.h"
 #include "UIModel.h"
 
+// Standardize text
+const char *kMacrosEnabled = "Macros enabled";
+const char *kAutomaticSetup = "Use current synth as master";
+const char *kInputDevice = "MIDI Input Device";
+const char *kMidiChannel = "MIDI channel";
+const char *kLowestNote = "Lowest MIDI Note";
+const char *kHighestNote = "Highest MIDI Note";
+
+
 class RecordProgress : public ThreadWithProgressWindow, private MidiKeyboardStateListener {
 public:
 	RecordProgress(MidiKeyboardState &state) : ThreadWithProgressWindow("Press key(s) on your MIDI keyboard", false, true), state_(state), atLeastOneKey_(false), done_(false)
@@ -114,6 +123,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	setupPropertyEditor();
 	loadFromSettings();
 	refreshUI();
+	setupKeyboardControl();
 }
 
 KeyboardMacroView::~KeyboardMacroView()
@@ -124,12 +134,12 @@ KeyboardMacroView::~KeyboardMacroView()
 
 void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.clear();
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Macros enabled", "Setup", true));
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Automatic master keyboard setup", "Setup", true));
-	customMasterkeyboardSetup_.push_back(std::make_shared<MidiDevicePropertyEditor>("MIDI Input Device", "Setup Masterkeyboard", true));
-	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", "Setup Masterkeyboard"));
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Lowest MIDI Note", "Setup Masterkeyboard", 0x24, 0, 127 ));
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>("Highest MIDI Note", "Setup Masterkeyboard", 0x60, 0, 127 ));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127 ));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kHighestNote, "Setup Masterkeyboard", 0x60, 0, 127 ));
 	for (auto tnv : customMasterkeyboardSetup_) {
 		tnv->value().addListener(this);
 	}
@@ -175,6 +185,12 @@ void KeyboardMacroView::loadFromSettings() {
 			}
 		}
 	}
+
+	for (auto &prop : customMasterkeyboardSetup_) {
+		std::string storedValue = Settings::instance().get(prop->name().toStdString());
+		int intValue = std::atoi(storedValue.c_str());
+		prop->value().setValue(intValue);
+	}
 }
 
 void KeyboardMacroView::saveSettings() {
@@ -192,6 +208,11 @@ void KeyboardMacroView::saveSettings() {
 	}
 	String json = JSON::toString(result);
 	Settings::instance().set("MacroDefinitions", json.toStdString());
+
+	for (auto &prop : customMasterkeyboardSetup_) {
+		Settings::instance().set(prop->name().toStdString(), prop->value().toString().toStdString());
+	}
+
 	Settings::instance().flush();
 }
 
@@ -204,7 +225,7 @@ void KeyboardMacroView::resized()
 	int contentWidth = std::min(area.getWidth(), 600);
 
 	// On Top, the setup
-	customSetup_.setBounds(area.removeFromTop(200).withSizeKeepingCentre(contentWidth, 200).reduced(8));
+	customSetup_.setBounds(area.removeFromTop(220).withSizeKeepingCentre(contentWidth, 220).reduced(8));
 	// Then the keyboard	
 	auto keyboardArea = area.removeFromTop(166);
 	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
@@ -216,15 +237,19 @@ void KeyboardMacroView::resized()
 	}
 }
 
+void KeyboardMacroView::setupKeyboardControl() {
+	int lowNote = customMasterkeyboardSetup_.valueByName(kLowestNote).getValue();
+	int highNote = customMasterkeyboardSetup_.valueByName(kHighestNote).getValue();
+	keyboard_.setAvailableRange(lowNote, highNote);
+	keyboard_.setLowestVisibleKey(lowNote);
+	resized();
+}
+
 void KeyboardMacroView::valueChanged(Value& value)
 {
-	if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName("Lowest MIDI Note")) ||
-		value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName("Highest MIDI Note"))) {
-		int lowNote = customMasterkeyboardSetup_.valueByName("Lowest MIDI Note").getValue();
-		int highNote = customMasterkeyboardSetup_.valueByName("Highest MIDI Note").getValue();
-		keyboard_.setAvailableRange(lowNote, highNote);
-		keyboard_.setLowestVisibleKey(lowNote);
-		resized();
+	if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kLowestNote)) ||
+		value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kHighestNote))) {
+		setupKeyboardControl();
 	}
 }
 
@@ -232,37 +257,45 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	ignoreUnused(source);
 
-	// Mode 1 - follow current synth, use that as master keyboard
-	auto currentSynth = UIModel::currentSynth();
-	auto masterKeyboard = dynamic_cast<midikraft::MasterkeyboardCapability *>(currentSynth);
-	auto location = dynamic_cast<midikraft::MidiLocationCapability *>(currentSynth);
-	if (location) {
-		auto tnv = customMasterkeyboardSetup_.typedNamedValueByName("MIDI Input Device");
-		tnv->value().setValue(tnv->indexOfValue(location->midiInput()));
-		tnv = customMasterkeyboardSetup_.typedNamedValueByName("MIDI channel");
-		auto midiChannel = std::dynamic_pointer_cast<MidiChannelPropertyEditor>(tnv);
-		if (midiChannel) {
-			if (masterKeyboard) {
-				// If this is a real master keyboard (or a Yamaha RefaceDX), it might have a different output channel than input channel.
-				midiChannel->setValue(masterKeyboard->getOutputChannel());
-			}
-			else {
-				midiChannel->setValue(location->channel());
+	if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
+		// Mode 1 - follow current synth, use that as master keyboard
+		auto currentSynth = UIModel::currentSynth();
+		auto masterKeyboard = dynamic_cast<midikraft::MasterkeyboardCapability *>(currentSynth);
+		auto location = dynamic_cast<midikraft::MidiLocationCapability *>(currentSynth);
+		if (location) {
+			auto tnv = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice);
+			tnv->value().setValue(tnv->indexOfValue(location->midiInput()));
+			tnv = customMasterkeyboardSetup_.typedNamedValueByName(kMidiChannel);
+			auto midiChannel = std::dynamic_pointer_cast<MidiChannelPropertyEditor>(tnv);
+			if (midiChannel) {
+				if (masterKeyboard) {
+					// If this is a real master keyboard (or a Yamaha RefaceDX), it might have a different output channel than input channel.
+					midiChannel->setValue(masterKeyboard->getOutputChannel());
+				}
+				else {
+					midiChannel->setValue(location->channel());
+				}
 			}
 		}
-	}
-	auto keyboard = dynamic_cast<midikraft::KeyboardCapability *>(currentSynth);
-	if (keyboard) {
-		customMasterkeyboardSetup_.valueByName("Lowest MIDI Note").setValue(keyboard->getLowestKey().noteNumber());
-		customMasterkeyboardSetup_.valueByName("Highest MIDI Note").setValue(keyboard->getHighestKey().noteNumber());
+		auto keyboard = dynamic_cast<midikraft::KeyboardCapability *>(currentSynth);
+		if (keyboard) {
+			customMasterkeyboardSetup_.valueByName(kLowestNote).setValue(keyboard->getLowestKey().noteNumber());
+			customMasterkeyboardSetup_.valueByName(kHighestNote).setValue(keyboard->getHighestKey().noteNumber());
+		}
 	}
 	else {
-		// Fall back to mode 2?
+		// Automatic is off - don't change the current master keyboard
 	}
 }
 
 bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 {
+	// Check if macros are turned on
+	if (!customMasterkeyboardSetup_.valueByName(kMacrosEnabled).getValue()) {
+		// No - then don't do anything
+		return false;
+	}
+
 	// Check if the keyboard state does contain all keys of the keyboard macro
 	bool allDetected = true;
 	for (int note : macro.midiNotes) {
