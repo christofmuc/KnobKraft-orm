@@ -225,14 +225,8 @@ MainComponent::MainComponent() :
 	});
 
 	// Do a quickconfigure
-	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synthsForAutodetect;
-	for (auto synth : synths) {
-		auto device = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(synth.synth());
-		if (device) {
-			synthsForAutodetect.push_back(device);
-		}
-	}
-	autodetector_.quickconfigure(synthsForAutodetect);
+	auto list = UIModel::instance()->synthList_.activeSynths();
+	autodetector_.quickconfigure(list);
 
 	// Feel free to request the globals page from the Rev2
 	settingsView_->loadGlobals();
