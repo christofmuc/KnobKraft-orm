@@ -19,19 +19,27 @@
 #include "ReadonlySoundExpander.h"
 #include "AdditiveCapability.h"
 #include "HybridWaveCapability.h"
+#include "DataFileLoadCapability.h"
 
 #include <set>
 
 namespace midikraft {
 
+	class KawaiK3Wave;
 	class KawaiK3Parameter;
-	class KawaiK3Patch;
+	class KawaiK3Control;
 	class SynthView;
 
 	class KawaiK3 : public Synth, /* public SupportedByBCR2000, */ public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
+		public DataFileLoadCapability, public DataFileSendCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
 		static const MidiProgramNumber kFakeEditBuffer;
+
+		enum DataFileType {
+			K3_PATCH = 0,
+			K3_WAVE = 1
+		};
 
 		enum class WaveType {
 			USER_WAVE = 100,
@@ -64,7 +72,7 @@ namespace midikraft {
 		juce::MidiMessage mapCCtoSysex(juce::MidiMessage const &ccMessage);
 
 		// Program Dump Capability
-		virtual std::vector<MidiMessage> requestPatch(int patchNo) override;
+		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
 		virtual std::shared_ptr<Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const Patch &patch) const override;
@@ -93,26 +101,40 @@ namespace midikraft {
 		virtual void setupBCR2000View(BCR2000_Component &view) override;
 		virtual void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;*/
 
+		// This needs to be overridden to handle the wave dumps together with the patch dumps
+		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
+
 		// Kawai K3 specifics
 		std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const;
-		MidiMessage patchToSysex(Synth::PatchData const &patch, int programNo) const;
+		MidiMessage patchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const;
 
-		/*void retrieveWave(MidiController *controller, SynthView *synthView);
-		void sendK3Wave(MidiController *controller, Patch *patch, MidiMessage const &userWave);*/
+		void retrieveWave();
+		void sendK3Wave(Patch *patch, MidiMessage const &userWave);
 
 		// Kawai K3 specifics
 		typedef std::vector<uint8> WaveData;
 
-		MidiMessage requestWaveBufferDump(WaveType waveType);
+		MidiMessage requestWaveBufferDump(WaveType waveType) const;
 		bool isWaveBufferDump(const MidiMessage& message) const;
-		Additive::Harmonics waveFromSysex(const MidiMessage& message);
-		MidiMessage waveToSysex(const Additive::Harmonics& harmonics);
-
-		static std::string waveName(WaveType waveType);
+		bool isBankDumpAndNotWaveDump(const MidiMessage& message) const;
+		std::shared_ptr<DataFile> waveFromSysex(const MidiMessage& message) const;
+		MidiMessage waveToSysex(std::shared_ptr<KawaiK3Wave> wave);
 
 		bool isWriteConfirmation(MidiMessage const &message);
 
+		// DataFileLoadCapability
+		virtual std::vector<MidiMessage> requestDataItem(int itemNo, int dataTypeID) override;
+		virtual int numberOfDataItemsPerType(int dataTypeID) const override;
+		virtual bool isDataFile(const MidiMessage &message, int dataTypeID) const override;
+		virtual std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) const override;
+		virtual std::vector<DataFileDescription> dataTypeNames() const override;
+
+		// DataFileSendCapability
+		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+
 	private:
+		friend class KawaiK3Control;
+
 		// See Manual p. 49 for the sysex "commands"
 		enum SysexFunction {
 			ONE_BLOCK_DATA_REQUEST = 0,
@@ -136,7 +158,6 @@ namespace midikraft {
 		uint8 sysexSubcommand(juce::MidiMessage const &message) const;
 
 		MidiController::HandlerHandle k3BCRSyncHandler_ = MidiController::makeNoneHandle();
-		std::shared_ptr<KawaiK3Patch> currentPatch_;
 	};
 
 }

@@ -133,17 +133,22 @@ namespace midikraft {
 
 	std::vector<MidiMessage> KawaiK3::requestBankDump(MidiBankNumber bankNo) const
 	{
-		return { buildSysexFunctionMessage(ALL_BLOCK_DATA_REQUEST, (uint8)bankNo.toZeroBased()) };
+		// When we request a bank dump from the K3, we always also request the user wave, because if one of the patches
+		// references the wave, we need to know which wave?
+		return {
+			requestWaveBufferDump(bankNo.toZeroBased() == 0 ? WaveType::USER_WAVE : WaveType::USER_WAVE_CARTRIDGE),
+			buildSysexFunctionMessage(ALL_BLOCK_DATA_REQUEST, (uint8)bankNo.toZeroBased())
+		};
 	}
 
-	std::vector<juce::MidiMessage> KawaiK3::requestPatch(int patchNo)
+	std::vector<juce::MidiMessage> KawaiK3::requestPatch(int patchNo) const
 	{
 		// This is called a "One Block Data Request" in the Manual (p. 48)
 		if (patchNo < 0 || patchNo > 101) {
-			jassert(false);
-			return std::vector<MidiMessage>();
+			jassertfalse;
+			return {};
 		}
-		return std::vector<MidiMessage>{buildSysexFunctionMessage(ONE_BLOCK_DATA_REQUEST, (uint8)patchNo)};
+		return {buildSysexFunctionMessage(ONE_BLOCK_DATA_REQUEST, (uint8)patchNo)};
 	}
 
 	int KawaiK3::numberOfPatches() const
@@ -160,7 +165,7 @@ namespace midikraft {
 		return false;
 	}
 
-	juce::MidiMessage KawaiK3::requestWaveBufferDump(WaveType waveType)
+	juce::MidiMessage KawaiK3::requestWaveBufferDump(WaveType waveType) const
 	{
 		return requestPatch(static_cast<int>(waveType))[0];
 	}
@@ -174,8 +179,7 @@ namespace midikraft {
 		return false;
 	}
 
-	bool KawaiK3::isBankDump(const MidiMessage& message) const
-	{
+	bool KawaiK3::isBankDumpAndNotWaveDump(const MidiMessage& message) const {
 		if (sysexFunction(message) == ALL_BLOCK_DATA_DUMP) {
 			uint8 bank = sysexSubcommand(message);
 			return bank == 0 || bank == 1; // 0 and 1 are the two banks, 1 being the RAM cartridge
@@ -183,13 +187,23 @@ namespace midikraft {
 		return false;
 	}
 
+	bool KawaiK3::isBankDump(const MidiMessage& message) const
+	{
+		// This should return for all messages that are part of a bank dump, and I want to include the wave dump here as well
+		return isBankDumpAndNotWaveDump(message) || isWaveBufferDump(message);
+	}
+
 	bool KawaiK3::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
 	{
-		// For the K3, the bank is a single Midi Message. Therefore, we just need to find one bank dump in the data and we're good
-		for (auto message : bankDump) {
-			if (isBankDump(message)) return true;
+		// For the K3, the bank is a single Midi Message. But we have requested also the WaveDump, so we need to check if both are present in the
+		// stream
+		bool hasBank = false;
+		bool hasWave = false;
+		for (const auto& message : bankDump) {
+			if (isBankDumpAndNotWaveDump(message)) hasBank = true;
+			if (isWaveBufferDump(message)) hasWave = true;
 		}
-		return false;
+		return hasBank && hasWave;
 	}
 
 	std::string KawaiK3::friendlyBankName(MidiBankNumber bankNo) const
@@ -215,20 +229,20 @@ namespace midikraft {
 			auto singlePatch = patchFromSysex(message, MidiProgramNumber::fromZeroBase(0));
 			if (singlePatch) {
 				singlePatch->setPatchNumber(MidiProgramNumber::fromZeroBase(sysexSubcommand(message)));
+				return singlePatch;
 			}
-			return singlePatch;
 		}
-		return nullptr;
+		return {};
 	}
 
 	std::vector<juce::MidiMessage> KawaiK3::patchToProgramDumpSysex(const Patch &patch) const
 	{
-		return std::vector<juce::MidiMessage>({ patchToSysex(patch.data(), patch.patchNumber()->midiProgramNumber().toZeroBased()) });
+		return { patchToSysex(patch.data(), patch.patchNumber()->midiProgramNumber().toZeroBased(), false) };
 	}
 
 	std::shared_ptr<Patch> KawaiK3::patchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const {
 		// Parse the sysex and build a patch class that allows access to the individual params in that patch
-		if (isSingleProgramDump(message) || isBankDump(message)) {
+		if (isSingleProgramDump(message) || isBankDumpAndNotWaveDump(message)) {
 			// Build the patch data ("tone data") from the nibbles
 			std::vector<uint8> data;
 			auto rawData = message.getSysExData();
@@ -256,29 +270,24 @@ namespace midikraft {
 					return std::make_shared<KawaiK3Patch>(programIndex, toneData);
 				}
 				else {
-					//TODO - the debug sysex generation should be replaced by a proper log
-					std::vector<MidiMessage> messages;
-					messages.push_back(message);
-					messages.push_back(patchToProgramDumpSysex(KawaiK3Patch(programIndex, toneData))[0]);
-					jassert(false);
+					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 patch. Expected %02X but got %02X") % data[34] % (sum & 0xff)).str());
+					//messages.push_back(patchToProgramDumpSysex(KawaiK3Patch(programIndex, toneData))[0]);
 				}
 			}
 			else {
-				//TODO - need log about program error
-				jassert(false);
+				SimpleLogger::instance()->postMessage((boost::format("Invalid length of data while loading Kawai K3 patch. Expected 35 bytes but got %02X") % data.size()).str());
 			}
 		}
 		else {
-			//TODO - need log about program error
-			jassert(false);
+			SimpleLogger::instance()->postMessage("MIDI message is neither single program dump nor bank dump from Kawai K3, ignoring data!");
 		}
-		return nullptr;
+		return {};
 	}
 
 	TPatchVector KawaiK3::patchesFromSysexBank(const MidiMessage& message) const
 	{
 		TPatchVector result;
-		if (isBankDump(message)) {
+		if (isBankDumpAndNotWaveDump(message)) {
 			// A bank has 50 programs...
 			for (int i = 0; i < 50; i++) {
 				// This is not really efficient, but for now I'd be good with this
@@ -286,13 +295,12 @@ namespace midikraft {
 			}
 		}
 		else {
-			//TODO - need log about program error
-			jassert(false);
+			jassertfalse;
 		}
 		return result;
 	}
 
-	Additive::Harmonics KawaiK3::waveFromSysex(const MidiMessage& message) {
+	std::shared_ptr<DataFile> KawaiK3::waveFromSysex(const MidiMessage& message) const {
 		// Parse the sysex and build a patch class that allows access to the individual params in that patch
 		if (isWaveBufferDump(message)) {
 			// Build the wave data from the nibbles
@@ -319,62 +327,20 @@ namespace midikraft {
 				}
 				if (data[64] == (sum & 0xff)) {
 					// CRC check successful
-					// Build the Harmonics data structure
-					Additive::Harmonics harmonics;
-					for (int i = 0; i < 64; i += 2) {
-						harmonics.push_back(std::make_pair(data[i], data[i + 1] / 31.0f));
-						if (data[i] == 0) {
-							// It seems a 0 entry stopped the series
-							break;
-						}
-					}
-					return harmonics;
+					uint8 waveNo = sysexSubcommand(message);
+					return std::make_shared<KawaiK3Wave>(data, MidiProgramNumber::fromZeroBase(waveNo));
 				}
 				else {
-					//TODO - the debug sysex generation should be replaced by a proper log
-					std::vector<MidiMessage> messages;
-					messages.push_back(message);
-					messages.push_back(patchToProgramDumpSysex(KawaiK3Patch(MidiProgramNumber::fromZeroBase(0) // TODO - this is weird, the wave should be position 100 or 101?
-						, waveData))[0]);
-					jassert(false);
+					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 wave. Expected %02X but got %02X") % data[64] % (sum & 0xff)).str());
 				}
 			}
-			else {
-				//TODO - need log about program error
-				jassert(false);
-			}
 		}
-		else {
-			//TODO - need log about program error
-			jassert(false);
-		}
-		return Additive::Harmonics();
+		return {};
 	}
 
-	juce::MidiMessage KawaiK3::waveToSysex(const Additive::Harmonics& harmonics)
+	juce::MidiMessage KawaiK3::waveToSysex(std::shared_ptr<KawaiK3Wave> wave)
 	{
-		std::vector<uint8> harmonicArray(64);
-
-		// Fill the harmonic array appropriately
-		int writeIndex = 0;
-		for (auto harmonic : harmonics) {
-			// Ignore zero harmonic definitions - that's the default, and would make the K3 stop looking at the following harmonics
-			uint8 harmonicAmp = (uint8)roundToInt(harmonic.second * 31.0);
-			if (harmonicAmp > 0) {
-				if (harmonic.first >= 1 && harmonic.first <= 128) {
-					harmonicArray[writeIndex] = (uint8)harmonic.first;
-					harmonicArray[writeIndex + 1] = harmonicAmp;
-					writeIndex += 2;
-				}
-				else {
-					//TODO - need log about program error
-					jassert(false);
-				}
-			}
-		}
-
-		KawaiK3Patch wavePatch(MidiProgramNumber::fromZeroBase(static_cast<int>(KawaiK3::WaveType::USER_WAVE)), harmonicArray);
-		return patchToSysex(wavePatch.data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE)); //TODO the program number is ignored, that's a shame
+		return patchToSysex(wave->data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE), false);
 	}
 
 	std::vector<float> KawaiK3::romWave(int waveNo)
@@ -401,27 +367,132 @@ namespace midikraft {
 		}
 		return result;
 	}
-		
-	std::string KawaiK3::waveName(WaveType waveType)
-	{
-		switch (waveType) {
-		case WaveType::USER_WAVE: return "User Wave";
-		case WaveType::USER_WAVE_CARTRIDGE: return "User Wave Cartridge";
-			//case WaveType::MIDI_WAVE: return "MIDI Wave";
-		default:
-			jassert(false);
-			return "";
-		}
-	}
 
 	std::string KawaiK3::waveName(int waveNo)
 	{
 		return KawaiK3Parameter::waveName(waveNo);
 	}
 
+	midikraft::TPatchVector KawaiK3::loadSysex(std::vector<MidiMessage> const &sysexMessages)
+	{
+		midikraft::TPatchVector result;
+		std::shared_ptr<DataFile> currentWave;
+		for (auto const &message : sysexMessages) {
+			if (isWaveBufferDump(message)) {
+				// A new wave, make it current (relevant for future patches) and do store it itself in the result vector
+				currentWave = waveFromSysex(message);
+				result.push_back(currentWave);
+			}
+			else if (isBankDumpAndNotWaveDump(message)) {
+				auto newPatches = patchesFromSysexBank(message);
+				for (auto n : newPatches) {
+					auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(n);
+					if (newPatch) {
+						newPatch->addWaveIfOscillatorUsesIt(currentWave);
+						result.push_back(newPatch);
+					}
+					else {
+						jassertfalse;
+					}
+				}
+			}
+			else if (isSingleProgramDump(message)) {
+				auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(patchFromProgramDumpSysex(message));
+				if (newPatch) {
+					newPatch->addWaveIfOscillatorUsesIt(currentWave);
+					result.push_back(newPatch);
+				}
+				else {
+					jassertfalse;
+				}
+			}
+		}
+		return result;
+	}
+
 	bool KawaiK3::isWriteConfirmation(MidiMessage const &message)
 	{
 		return sysexFunction(message) == WRITE_COMPLETE;
+	}
+
+	std::vector<juce::MidiMessage> KawaiK3::requestDataItem(int itemNo, int dataTypeID)
+	{
+		switch (dataTypeID) {
+		case K3_PATCH:
+			return requestPatch(itemNo);
+		case K3_WAVE:
+			return { requestWaveBufferDump(itemNo == 0 ? WaveType::USER_WAVE : WaveType::USER_WAVE_CARTRIDGE) };
+		default:
+			jassertfalse;
+			return {};
+		}
+	}
+
+	int KawaiK3::numberOfDataItemsPerType(int dataTypeID) const
+	{
+		switch (dataTypeID) {
+		case K3_PATCH:
+			return numberOfBanks() * numberOfPatches();
+		case K3_WAVE:
+			return 2;
+		default:
+			jassertfalse;
+			return 0;
+		}
+	}
+
+	bool KawaiK3::isDataFile(const MidiMessage &message, int dataTypeID) const
+	{
+		switch (dataTypeID) {
+		case K3_PATCH:
+			return isSingleProgramDump(message);
+		case K3_WAVE:
+			return isWaveBufferDump(message);
+		default:
+			return false;
+		}
+	}
+
+	std::vector<std::shared_ptr<midikraft::DataFile>> KawaiK3::loadData(std::vector<MidiMessage> messages, int dataTypeID) const
+	{
+		std::vector<std::shared_ptr<midikraft::DataFile>> result;
+		for (auto const &message : messages) {
+			if (isDataFile(message, dataTypeID)) {
+				switch (dataTypeID)
+				{
+				case K3_PATCH:
+					result.push_back(patchFromProgramDumpSysex(message));
+					break;
+				case K3_WAVE:
+					result.push_back(waveFromSysex(message));
+					break;
+				default:
+					jassertfalse;
+					break;
+				}
+			}
+		}
+		return result;
+	}
+
+	std::vector<midikraft::DataFileLoadCapability::DataFileDescription> KawaiK3::dataTypeNames() const
+	{
+		return { { "Patch", true, true}, { "User Wave", true, true} };
+	}
+
+	std::vector<juce::MidiMessage> KawaiK3::dataFileToMessages(std::shared_ptr<DataFile> dataFile) const
+	{
+		std::vector<juce::MidiMessage> result;
+		switch (dataFile->dataTypeID())
+		{
+		case K3_PATCH:
+			return { patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), false), patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), true) };
+		case K3_WAVE:
+			return { patchToSysex(dataFile->data(), 100, false) };
+		default:
+			break;
+		}
+		return result;
 	}
 
 	/*std::vector<std::string> KawaiK3::presetNames()
@@ -454,25 +525,37 @@ namespace midikraft {
 		return channel();
 	}
 
-	juce::MidiMessage KawaiK3::patchToSysex(Synth::PatchData const &patch, int programNo) const
+	juce::MidiMessage KawaiK3::patchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const
 	{
 		if (programNo < 0 || programNo > 101) {
 			jassert(false);
 			return MidiMessage();
 		}
 
-		// This is just the reverse nibbling for that patch data...
-		// Works for the wave as well
-		std::vector<uint8> data = buildSysexFunction(ONE_BLOCK_DATA_DUMP, (uint8)programNo);
-		uint8 sum = 0;
-		for (auto item : patch) {
-			sum += item;
-			data.push_back((item & 0xf0) >> 4);
-			data.push_back(item & 0x0f);
+		int start = 0;
+		int end = 34;
+		if (produceWaveInsteadOfPatch) {
+			start = 34;
+			end = 34 + 64;
 		}
-		data.push_back((sum & 0xf0) >> 4);
-		data.push_back(sum & 0x0f);
-		return MidiMessage::createSysExMessage(&data[0], static_cast<int>(data.size()));
+		if (patch.size() >= end) {
+			// This is just the reverse nibbling for that patch data...
+			// Works for the wave as well
+			std::vector<uint8> data = buildSysexFunction(ONE_BLOCK_DATA_DUMP, (uint8)programNo);
+			uint8 sum = 0;
+			for (int i = start; i < end; i++) {
+				auto byte = patch.at(i);
+				sum += byte;
+				data.push_back((byte & 0xf0) >> 4);
+				data.push_back(byte & 0x0f);
+			}
+			data.push_back((sum & 0xf0) >> 4);
+			data.push_back(sum & 0x0f);
+			return MidiMessage::createSysExMessage(&data[0], static_cast<int>(data.size()));
+		}
+		else {
+			return MidiMessage();
+		}
 	}
 
 	void KawaiK3::selectRegistration(Patch *currentPatch, DrawbarOrgan::RegistrationDefinition selectedRegistration)
@@ -484,15 +567,15 @@ namespace midikraft {
 	{
 		auto samples = Additive::createSamplesFromHarmonics(selectedHarmonics);
 		//wave1_.displaySampledWave(samples);
-		auto userWave = waveToSysex(selectedHarmonics);
+		auto wave = std::make_shared<KawaiK3Wave>(selectedHarmonics, MidiProgramNumber::fromZeroBase(static_cast<int>(WaveType::USER_WAVE)));
+		auto userWave = waveToSysex(wave);
 		SimpleLogger::instance()->postMessage((boost::format("Sending user wave for registration %s to K3") % name).str());
 		ignoreUnused(currentPatch);
 		//sendK3Wave(MidiController::instance(), MidiController::instance(), SimpleLogger::instance(), currentPatch, userWave);
 	}
 
 	void KawaiK3::sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) {
-		MidiBuffer messages;
-		messages.addEvent(patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased()), 0);
+		MidiBuffer messages = MidiHelpers::bufferFromMessages(dataFileToMessages(dataFile));
 		auto secondHandler = MidiController::makeOneHandle();
 		MidiController::instance()->addMessageHandler(secondHandler, [this, logger, controller, secondHandler](MidiInput *source, MidiMessage const &message) {
 			ignoreUnused(source);
@@ -512,7 +595,7 @@ namespace midikraft {
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
 	}
 
-/*	void KawaiK3::retrieveWave(MidiController *controller, EditBufferHandler *handler, SimpleLogger *logger, SynthView *synthView) {
+	/*void KawaiK3::retrieveWave(MidiController *controller, EditBufferHandler *handler, SimpleLogger *logger, SynthView *synthView) {
 		controller->enableMidiInput(midiInput());
 		auto handle = EditBufferHandler::makeOne();
 		KawaiK3::WaveType waveType = KawaiK3::WaveType::USER_WAVE;
@@ -556,7 +639,7 @@ namespace midikraft {
 				logger->postMessage("Got wave write confirmation from K3");
 				if (dynamic_cast<KawaiK3Patch *>(currentPatch) != nullptr) {
 					// Interesting, the patch is a KawaiK3 patch - send it to the K3!
-					// Now... if the current patch is known and uses at least one user waveform oscillator, we want to make sure it is stored 
+					// Now... if the current patch is known and uses at least one user waveform oscillator, we want to make sure it is stored
 					// in the K3 and then issue a program change so the new user wave gets picked up!
 					//TODO - optimize and don't send when no oscillator uses user wave
 					sendPatchToSynth(controller, handler, logger, *currentPatch);

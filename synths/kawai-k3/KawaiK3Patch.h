@@ -12,12 +12,26 @@
 #include "KawaiK3Parameter.h"
 #include "PatchNumber.h"
 
+#include "Additive.h"
+
+
 namespace midikraft {
 
 	class KawaiK3PatchNumber : public PatchNumber {
 	public:
 		using PatchNumber::PatchNumber;
 		virtual std::string friendlyName() const;
+	};
+
+	class KawaiK3Wave : public DataFile {
+	public:
+		KawaiK3Wave(Synth::PatchData const &data, MidiProgramNumber programNo);
+		KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo);
+
+		std::string name() const override;
+
+	private:
+		MidiProgramNumber programNo_;
 	};
 
 	class KawaiK3Patch : public Patch, public DetailedParametersCapability {
@@ -35,6 +49,10 @@ namespace midikraft {
 		void setValue(KawaiK3Parameter const &param, int value);
 
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+
+		Additive::Harmonics harmonicsFromWave();
+
+		void addWaveIfOscillatorUsesIt(std::shared_ptr<DataFile> wave);
 
 	private:
 		KawaiK3PatchNumber number_;

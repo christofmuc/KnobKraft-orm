@@ -6,17 +6,18 @@
 
 #include "KawaiK3Patch.h"
 
+#include "KawaiK3.h"
+
 #include <boost/format.hpp>
 
 namespace midikraft {
-
-	const int kKawaiK3PatchDataTypeID = 0;
 
 	std::string KawaiK3PatchNumber::friendlyName() const {
 		return (boost::format("%02d") % programNumber_.toOneBased()).str();
 	}
 
-	KawaiK3Patch::KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata) : Patch(kKawaiK3PatchDataTypeID, patchdata), number_(programNo)
+	KawaiK3Patch::KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata) 
+		: Patch(programNo.toZeroBased() >= 100 ? KawaiK3::K3_WAVE : KawaiK3::K3_PATCH, patchdata), number_(programNo)
 	{
 	}
 
@@ -102,6 +103,86 @@ namespace midikraft {
 			result.push_back(std::make_shared<KawaiK3Parameter>(*param));
 		}
 		return result;
+	}
+
+	midikraft::Additive::Harmonics KawaiK3Patch::harmonicsFromWave()
+	{
+		// Build the Harmonics data structure
+		Additive::Harmonics harmonics;
+		for (int i = 0; i < 64; i += 2) {
+			harmonics.push_back(std::make_pair(data()[i], data()[i + 1] / 31.0f));
+			if (data()[i] == 0) {
+				// It seems a 0 entry stopped the series
+				break;
+			}
+		}
+		return harmonics;
+	}
+
+	void KawaiK3Patch::addWaveIfOscillatorUsesIt(std::shared_ptr<DataFile> wave)
+	{
+		// Determine if one of our two oscillators uses the "user" waveform!
+		bool usesUserWave = false;
+		auto wave1 = KawaiK3Parameter::findParameter(KawaiK3Parameter::OSC1_WAVE_SELECT);
+		auto wave2 = KawaiK3Parameter::findParameter(KawaiK3Parameter::OSC2_WAVE_SELECT);
+		if (wave1 && wave2) {
+			int value;
+			if (wave1->valueInPatch(*this, value)) {
+				// 32 is the "programmable" wave form
+				if (value == 32) usesUserWave = true;
+			}
+			if (wave2->valueInPatch(*this, value)) {
+				// 32 is the "programmable" wave form
+				if (value == 32) usesUserWave = true;
+			}
+		}
+		else {
+			jassertfalse;
+		}
+
+		if (usesUserWave) {
+			// We want to append the user wave data to this patch's data, so the user wave is stored where it is needed
+			if (wave) {
+				auto patchData = data();
+				std::copy(wave->data().cbegin(), wave->data().cend(), std::back_inserter(patchData));
+				setData(patchData);
+			}
+			else {
+				SimpleLogger::instance()->postMessage("No user wave recorded for programmable oscillator, sound can not be reproduced");
+			}
+		}
+	}
+
+	KawaiK3Wave::KawaiK3Wave(Synth::PatchData const &data, MidiProgramNumber programNo) : DataFile(KawaiK3::K3_WAVE, data), programNo_(programNo)
+	{
+	}
+
+	KawaiK3Wave::KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo) : DataFile(KawaiK3::K3_WAVE), programNo_(programNo)
+	{
+		std::vector<uint8> harmonicArray(64);
+
+		// Fill the harmonic array appropriately
+		int writeIndex = 0;
+		for (auto harmonic : harmonics) {
+			// Ignore zero harmonic definitions - that's the default, and would make the K3 stop looking at the following harmonics
+			uint8 harmonicAmp = (uint8)roundToInt(harmonic.second * 31.0);
+			if (harmonicAmp > 0) {
+				if (harmonic.first >= 1 && harmonic.first <= 128) {
+					harmonicArray[writeIndex] = (uint8)harmonic.first;
+					harmonicArray[writeIndex + 1] = harmonicAmp;
+					writeIndex += 2;
+				}
+				else {
+					jassertfalse;
+				}
+			}
+		}
+		setData(harmonicArray);
+	}
+
+	std::string KawaiK3Wave::name() const
+	{
+		return "User Wave";
 	}
 
 }
