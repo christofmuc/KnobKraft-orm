@@ -45,7 +45,7 @@ namespace midikraft {
 		MACHINE_ID_ACKNOWLEDE
 	};
 
-	KawaiK3::KawaiK3() : currentPatch_()
+	KawaiK3::KawaiK3()
 	{
 	}
 
@@ -62,8 +62,7 @@ namespace midikraft {
 	}
 
 	std::vector<uint8> KawaiK3::buildSysexFunction(SysexFunction function, uint8 subcommand) const {
-		std::vector<uint8> sysEx({ 0x40 /* Korg */, uint8(0x00 | channel().toZeroBasedInt()), (uint8)function, 0x00 /* Group No */, 0x01 /* Kawai K3 */,  subcommand });
-		return sysEx;
+		return { 0x40 /* Korg */, uint8(0x00 | channel().toZeroBasedInt()), (uint8)function, 0x00 /* Group No */, 0x01 /* Kawai K3 */,  subcommand };
 	}
 
 	juce::MidiMessage KawaiK3::buildSysexFunctionMessage(SysexFunction function, uint8 subcommand) const {
@@ -86,7 +85,7 @@ namespace midikraft {
 		if (isOwnSysex(message) && message.getSysExDataSize() > 5) {
 			return message.getSysExData()[5];
 		}
-		jassert(false);
+		jassertfalse;
 		return 255;
 	}
 
@@ -235,7 +234,7 @@ namespace midikraft {
 	{
 		if (sysexFunction(message) == ONE_BLOCK_DATA_DUMP) {
 			uint8 patchNo = sysexSubcommand(message);
-			return (patchNo >= 0 && patchNo < 100);
+			return patchNo < 100;
 		}
 		return false;
 	}
