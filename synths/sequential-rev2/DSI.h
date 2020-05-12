@@ -36,7 +36,7 @@ namespace midikraft {
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
 		// Program Dump Capability
-		virtual std::vector<MidiMessage> requestPatch(int patchNo) override;
+		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
 
 		// MasterkeyboadCapability, common
