@@ -69,7 +69,7 @@ namespace midikraft {
 		return createSysexMessage(message);
 	}
 
-	std::vector<juce::MidiMessage> Virus::requestPatch(int patchNo)
+	std::vector<juce::MidiMessage> Virus::requestPatch(int patchNo) const
 	{
 		jassert(patchNo >= 0 && patchNo < 1024);
 		uint8 bank = (uint8)((patchNo / 128) + 1);
