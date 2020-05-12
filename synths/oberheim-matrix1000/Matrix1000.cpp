@@ -255,7 +255,7 @@ namespace midikraft {
 		return MidiHelpers::sysexMessage({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.STORE_EDIT_BUFFER, num, bank, 0 /* this says group mode off */ });
 	}
 
-	std::vector<juce::MidiMessage> Matrix1000::requestPatch(int programNumber)
+	std::vector<juce::MidiMessage> Matrix1000::requestPatch(int programNumber) const
 	{
 		std::vector<MidiMessage> result;
 		jassert(programNumber >= 0 && programNumber < 1000);
