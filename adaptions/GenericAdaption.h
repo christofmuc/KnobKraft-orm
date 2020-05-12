@@ -42,7 +42,7 @@ namespace knobkraft {
 		MidiMessage saveEditBufferToProgram(int programNumber) override;
 
 		// ProgramDumpCapability
-		virtual std::vector<MidiMessage> requestPatch(int patchNo) override;
+		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
 		virtual std::shared_ptr<midikraft::Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const midikraft::Patch &patch) const override;

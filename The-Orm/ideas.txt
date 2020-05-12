@@ -18,7 +18,9 @@ Rev2
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
 
 K3
+* Need to display the patch type in the current patch display
 * Wave form support (Second DataFile type)
+* Could render wave as Thumbnail
 * Allow dependencies between DataFiles (patch -> wave for K3)
 * Dependency between patch and wave form
 * Drawbar Organ Waveform Generator

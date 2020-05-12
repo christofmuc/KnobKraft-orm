@@ -357,7 +357,7 @@ namespace knobkraft {
 		}
 	}
 
-	std::vector<juce::MidiMessage> GenericAdaption::requestPatch(int patchNo)
+	std::vector<juce::MidiMessage> GenericAdaption::requestPatch(int patchNo) const
 	{
 		try {
 			int c = channel().toZeroBasedInt();
