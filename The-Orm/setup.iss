@@ -37,12 +37,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\python36.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\{#MyAppExeName}"; DestDir: "{app}"; 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icuuc66.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icudt66.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_LIST_DIR}\..\adaptions\*.py"; DestDir: "{userdocs}\KnobKraft-Orm-adaptions"; Flags: ignoreversion 
+Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; 
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icuuc67.dll"; DestDir: "{app}";
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icudt67.dll"; DestDir: "{app}";
+Source: "${CMAKE_CURRENT_LIST_DIR}\..\adaptions\*.py"; DestDir: "{userdocs}\KnobKraft-Orm-adaptions";
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
 

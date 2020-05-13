@@ -21,7 +21,7 @@ IF (WIN32)
 
     FetchContent_Declare(
 	  icu
-	  URL https://github.com/unicode-org/icu/releases/download/release-66-1/icu4c-66_1-Win64-MSVC2017.zip
+	  URL https://github.com/unicode-org/icu/releases/download/release-67-1/icu4c-67_1-Win64-MSVC2017.zip
 	)
 	FetchContent_MakeAvailable(icu)
 
@@ -32,6 +32,12 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(vcredist)
 	set(VCREDIST_PATH "${CMAKE_CURRENT_BINARY_DIR}/_deps/vcredist-subbuild/vcredist-populate-prefix/src")
+
+	FetchContent_Declare(
+		pythonembedded
+		URL https://www.python.org/ftp/python/3.6.8/python-3.6.8-embed-amd64.zip
+	)
+	FetchContent_MakeAvailable(pythonembedded)
 ENDIF()
 
 # We need a little bit support for the JUCE library, and also want to put our own CMake helpers on the module path
