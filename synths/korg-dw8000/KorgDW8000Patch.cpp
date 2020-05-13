@@ -37,7 +37,7 @@ namespace midikraft {
 		number_ = KorgDW8000PatchNumber(patchNumber);
 	}
 
-	std::vector<std::shared_ptr<SynthParameterDefinition>> KorgDW8000Patch::allParameterDefinitions()
+	std::vector<std::shared_ptr<SynthParameterDefinition>> KorgDW8000Patch::allParameterDefinitions() const
 	{
 		return KorgDW8000Parameter::allParameters;
 	}
