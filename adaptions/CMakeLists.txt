@@ -22,8 +22,9 @@ IF(NOT DEFINED JUCE_LIBRARIES)
 ENDIF()
 
 # Define the shipped adaptions
-set(Adaptions
+set(Adaptions		
 	 "Matrix1000.py"
+	 "Matrix 6.py"
 	 "PioneerToraiz-AS1.py"
 	 "Roland JX-8P.py"
 	 "DSI Pro 2.py"
