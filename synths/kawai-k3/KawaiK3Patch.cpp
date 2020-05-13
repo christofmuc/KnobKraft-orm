@@ -95,7 +95,7 @@ namespace midikraft {
 		}
 	}
 
-	std::vector<std::shared_ptr<SynthParameterDefinition>> KawaiK3Patch::allParameterDefinitions()
+	std::vector<std::shared_ptr<SynthParameterDefinition>> KawaiK3Patch::allParameterDefinitions() const
 	{
 		std::vector<std::shared_ptr<SynthParameterDefinition>> result;
 		//TODO This loop should be necessary

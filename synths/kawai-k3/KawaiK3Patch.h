@@ -48,7 +48,7 @@ namespace midikraft {
 		int value(SynthParameterDefinition const &param) const;
 		void setValue(KawaiK3Parameter const &param, int value);
 
-		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
 		Additive::Harmonics harmonicsFromWave();
 
