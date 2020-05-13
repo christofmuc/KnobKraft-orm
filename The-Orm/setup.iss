@@ -25,7 +25,7 @@ LicenseFile=${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 OutputDir=${CMAKE_CURRENT_BINARY_DIR}
-OutputBaseFilename=knobkraft_orm_setup
+OutputBaseFilename=knobkraft_orm_setup_${KnobKraftOrm_VERSION}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
