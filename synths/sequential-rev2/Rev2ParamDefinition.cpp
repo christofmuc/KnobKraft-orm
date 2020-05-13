@@ -8,7 +8,7 @@ namespace midikraft {
 	const int kNRPNStartLayerB = 2048; // The NRPN numbers for layer B start 2048 higher than those for layer A
 
 	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) :
-		type_(ParamType::INT), targetLayer_(0), number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
+		type_(ParamType::INT), targetLayer_(0), sourceLayer_(0), number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
 	{
 	}
 
@@ -64,12 +64,26 @@ namespace midikraft {
 		return sysex_ + (targetLayer_ == 1 ? kSysexStartLayerB : 0);
 	}
 
+	int Rev2ParamDefinition::readSysexIndex() const
+	{
+		jassert(sourceLayer_ == 0 || sourceLayer_ == 1);
+		return sysex_ + (sourceLayer_ == 1 ? kSysexStartLayerB : 0);
+	}
+
 	int Rev2ParamDefinition::endSysexIndex() const
 	{
 		// This is allowed because parameters with consecutive NRPN controller numbers are stored consecutively in the 
 		// sysex as well.
 		return sysexIndex() + endNumber_ - number_;
 	}
+
+	int Rev2ParamDefinition::readEndSysexIndex() const
+	{
+		// This is allowed because parameters with consecutive NRPN controller numbers are stored consecutively in the 
+		// sysex as well.
+		return readSysexIndex() + endNumber_ - number_;
+	}
+
 
 	std::string Rev2ParamDefinition::description() const
 	{
@@ -88,7 +102,7 @@ namespace midikraft {
 
 	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, int &outValue) const
 	{
-		outValue = patch.at(sysexIndex());
+		outValue = patch.at(readSysexIndex());
 		return true;
 	}
 
@@ -100,16 +114,16 @@ namespace midikraft {
 		}
 
 		outValue.clear();
-		for (int i = sysexIndex(); i <= endSysexIndex(); i++) {
+		for (int i = readSysexIndex(); i <= readEndSysexIndex(); i++) {
 			outValue.push_back(patch.at(i));
 		}
 
 		return true;
 	}
 
-	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth *synth) const
+	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth const *synth) const
 	{
-		auto midiLocation = dynamic_cast<MidiLocationCapability *>(synth);
+		auto midiLocation = dynamic_cast<MidiLocationCapability const *>(synth);
 		if (midiLocation) {
 			int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
 			switch (type()) {
@@ -150,6 +164,17 @@ namespace midikraft {
 	int Rev2ParamDefinition::getTargetLayer() const
 	{
 		return targetLayer_;
+	}
+
+	void Rev2ParamDefinition::setSourceLayer(int layerNo)
+	{
+		jassert(layerNo == 0 || layerNo == 1);
+		sourceLayer_ = layerNo;
+	}
+
+	int Rev2ParamDefinition::getSourceLayer() const
+	{
+		return sourceLayer_;
 	}
 
 	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const

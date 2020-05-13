@@ -28,22 +28,28 @@ namespace midikraft {
 		virtual int sysexIndex() const override;
 		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
 		virtual void setInPatch(Patch &patch, int value) const override;
+		int readSysexIndex() const;
 
 		// SynthVectorParameterCapability
 		virtual int endSysexIndex() const override;
+		int readEndSysexIndex() const;
+	
 		virtual bool valueInPatch(Patch const &patch, std::vector<int> &outValue) const override;
 		virtual void setInPatch(Patch &patch, std::vector<int> value) const override;
 
 		// SynthParameterLiveEditCapability
-		virtual MidiBuffer setValueMessages(Patch const &patch, Synth *synth) const override;
+		virtual MidiBuffer setValueMessages(Patch const &patch, Synth const *synth) const override;
 
 		// SynthMultiLayerParameterCapability 
 		virtual void setTargetLayer(int layerNo) override;
 		virtual int getTargetLayer() const override;
+		virtual void setSourceLayer(int layerNo) override;
+		virtual int getSourceLayer() const override;
 
 	private:
 		ParamType type_;
 		int targetLayer_; // The Rev2 has no layers, A (=0) and B (=0). By default, we target 0 but can change this calling setTargetLayer()
+		int sourceLayer_;
 		int number_;
 		int endNumber_;
 		int min_;

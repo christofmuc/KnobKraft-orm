@@ -49,6 +49,7 @@ namespace midikraft {
 
 		// LayerCapability
 		virtual void switchToLayer(int layerNo) override;
+		virtual MidiBuffer layerToSysex(std::shared_ptr<DataFile> const patch, int sourceLayer, int targetLayer) const override;
 
 		// SoundExpanderCapability
 		virtual void changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
