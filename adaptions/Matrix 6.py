@@ -78,7 +78,7 @@ def nameFromDump(message):
 def convertToEditBuffer(channel, message):
     if isSingleProgramDump(message):
         # The Matrix 6 cannot send to the edit buffer, so we send into program 100
-        return message[0:4] + 99 + message[5:]
+        return message[0:4] + [99] + message[5:]
     raise Exception("This is not a program dump, can't be converted")
 
 
