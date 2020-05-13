@@ -130,7 +130,7 @@ namespace midikraft {
 		return param.valueInPatchToText(*this);
 	}
 
-	std::vector<std::shared_ptr<SynthParameterDefinition>> Matrix1000Patch::allParameterDefinitions()
+	std::vector<std::shared_ptr<SynthParameterDefinition>> Matrix1000Patch::allParameterDefinitions() const
 	{
 		return Matrix1000ParamDefinition::allDefinitions;
 	}

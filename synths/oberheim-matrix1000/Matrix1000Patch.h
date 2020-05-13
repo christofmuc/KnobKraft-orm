@@ -36,7 +36,7 @@ namespace midikraft {
 		bool paramActive(Matrix1000Param id) const;
 		std::string lookupValue(Matrix1000Param id) const;
 
-		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
 	private:
 		Matrix1000PatchNumber number_;
