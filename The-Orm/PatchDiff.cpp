@@ -317,7 +317,7 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 					auto multiLayerParam = std::dynamic_pointer_cast<midikraft::SynthMultiLayerParameterCapability>(param);
 					jassert(multiLayerParam);
 					if (multiLayerParam) {
-						multiLayerParam->setTargetLayer(layer);
+						multiLayerParam->setSourceLayer(layer);
 					}
 				}
 				auto activeCheck = std::dynamic_pointer_cast<midikraft::SynthParameterActiveDetectionCapability>(param);
