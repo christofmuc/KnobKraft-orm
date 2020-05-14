@@ -10,9 +10,9 @@
 
 namespace midikraft {
 
-	juce::MidiMessage RefaceDXDiscovery::deviceDetect(int /* channel */)
+	std::vector<juce::MidiMessage> RefaceDXDiscovery::deviceDetect(int /* channel */)
 	{
-		return MidiHelpers::sysexMessage({ 0x7e, (uint8)(0x00 | deviceID_), 0x06, 0x01 });
+		return { MidiHelpers::sysexMessage({ 0x7e, (uint8)(0x00 | deviceID_), 0x06, 0x01 }) };
 	}
 
 	int RefaceDXDiscovery::deviceDetectSleepMS()

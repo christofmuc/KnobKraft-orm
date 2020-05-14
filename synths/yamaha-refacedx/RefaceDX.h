@@ -55,7 +55,7 @@ namespace midikraft {
 		virtual void setMidiControl(MidiController *controller, bool isOn) override;
 
 		// This is overridden from the official implementation in the RefaceDXDiscovery, because that will not tell us the MIDI channel
-		virtual MidiMessage deviceDetect(int channel) override;
+		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 
 		// This needs to be overridden because the base implementation assumes a patch fits into a single MidiMessage, which is not true for the Reface DX

@@ -281,12 +281,12 @@ namespace midikraft {
 		return result;
 	}
 
-	juce::MidiMessage RefaceDX::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> RefaceDX::deviceDetect(int channel)
 	{
 		ignoreUnused(channel);
 		// Instead of using the official device ID request, we will just send a dump request for the system settings, in which
 		// we will find both receiving and sending channel (which, excellently, can be different on the Reface).
-		return buildRequest(0x00, 0x00, 0x00 /* Address system settings */);
+		return { buildRequest(0x00, 0x00, 0x00 /* Address system settings */) };
 	}
 
 	MidiChannel RefaceDX::channelIfValidDeviceResponse(const MidiMessage &message)

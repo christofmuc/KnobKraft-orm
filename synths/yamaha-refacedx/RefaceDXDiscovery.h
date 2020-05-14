@@ -13,7 +13,7 @@ namespace midikraft {
 
 	class RefaceDXDiscovery : public SimpleDiscoverableDevice /* TODO should actually only derive from SimpleDiscoverableDevice */ {
 	public:
-		virtual MidiMessage deviceDetect(int channel) override;
+		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		virtual bool needsChannelSpecificDetection() override;
