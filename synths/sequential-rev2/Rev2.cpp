@@ -308,6 +308,12 @@ namespace midikraft {
 		}
 	}
 
+	juce::MidiBuffer Rev2::layerToSysex(std::shared_ptr<DataFile> const patch, int sourceLayer, int targetLayer) const
+	{
+		ignoreUnused(patch, sourceLayer, targetLayer);
+		return MidiBuffer();
+	}
+
 	void Rev2::changeInputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> onFinished)
 	{
 		// The Rev2 will change its channel with a nice NRPN message

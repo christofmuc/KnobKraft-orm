@@ -40,7 +40,8 @@ namespace midikraft {
 		// SynthMultiLayerParameterCapability 
 		virtual void setTargetLayer(int layerNo) override;
 		virtual int getTargetLayer() const override;
-
+		virtual void setSourceLayer(int layerNo) override;
+		virtual int getSourceLayer() const override;
 	private:
 		ParamType type_;
 		int targetLayer_; // The Rev2 has no layers, A (=0) and B (=0). By default, we target 0 but can change this calling setTargetLayer()

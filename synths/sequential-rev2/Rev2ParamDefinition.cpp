@@ -152,6 +152,16 @@ namespace midikraft {
 		return targetLayer_;
 	}
 
+	void Rev2ParamDefinition::setSourceLayer(int layerNo)
+	{
+		ignoreUnused(layerNo);
+	}
+
+	int Rev2ParamDefinition::getSourceLayer() const
+	{
+		return 0;
+	}
+
 	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const
 	{
 		switch (type()) {
