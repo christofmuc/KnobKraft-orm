@@ -21,12 +21,12 @@ build_script:
     cmake -S . -B builds &&
     cmake --build builds
 deploy:
-  release: knobkraft-orm-v$(appveyor_build_version)
+  release: knobkraft-orm-v${appveyor_build_version}
   description: 'Release description'
   provider: GitHub
   auth_token:
     secure: xIPND/jowVYubaRd6lsailrqsm+YttjrFJpECRVDc5wO2/TRmC0HORzphBBSvB1s
-  artifact: /**/knobkraft_orm_setup.exe/
+  artifact: /**/knobkraft_orm_setup*.exe/
   draft: true
   prerelease: false
   on:    

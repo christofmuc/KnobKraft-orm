@@ -1,32 +1,42 @@
 # A free MIDI Sysex Librarian - The KnobKraft Orm
 
+[![Build status](https://ci.appveyor.com/api/projects/status/f9xfonpyp07lb9cp/branch/master?svg=true)](https://ci.appveyor.com/project/christofmuc/knobkraft-orm/branch/master)
+
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
 Questions / help with implementing new synths wanted, I am trying to get us across many forums in the Internet into one common place, and have created a room on Gitter for that to reach me. If you have found a bug, also feel free to report directly here on Github. 
 
 [![Gitter](https://badges.gitter.im/knobkraft/community.svg)](https://gitter.im/knobkraft/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-Currently supported synths as of version 1.2.0:
+Currently natively supported and tested synths as of version 1.4.0:
 
 * Access Virus B
+* Kawai K3/K3M
 * Oberheim Matrix 1000
-* DSI Prophet 08 (untested, looking for feedback and help)
 * Sequential/Dave Smith Instruments OB-6
 * Sequential/Dave Smith Instruments Prophet Rev2
 * Yamaha Reface DX
+
+As adaption currently available and tested
+
+* Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
+
+ Already implemented adaptions, which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
+
+* DSI Pro 2 (untested)
+* DSI Prophet 08 (untested)
+* DSI Prophet 12 (untested)
 * Pioneer Toraiz AS-1 (untested)
 * Roland JX-8P (untested)
+* Sequential Pro 3 (untested)
+* Sequential Prophet 6 (untested)
 
-Additionally, there is a generic module that let's you hook up other MIDI gear using a bit of scripting in Python, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices!
-
-As adaption currently available:
-
+The adaptions are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices! They might not be as powerful or fully integrated as the natively supported synths, but they are done really quickly!
 
 Next up for development are:
 
 * Behringer RD-8
 * Korg DW8000
-* Kawai K3/K3M
 * Roland MKS-80
 
 I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well:
@@ -35,9 +45,9 @@ I made a video to show you the software and the most basic functionality, checko
 
 # Downloading the software
 
-I provide installer builds for Windows, they are hosted here in github. To install, just grab the following installer executable and run it:
+I provide installer builds for Windows, they are hosted here in github. To install, just grab the latest installer executable from the following page and run it:
 
-[https://github.com/christofmuc/KnobKraft-orm/releases/download/1.1.0/knobkraft_orm_setup.exe](https://github.com/christofmuc/KnobKraft-orm/releases/download/1.0.0/knobkraft_orm_setup.exe)
+[https://github.com/christofmuc/KnobKraft-orm/releases](https://github.com/christofmuc/KnobKraft-orm/releases)
 
 Releases for the other platforms macOS and Linux could be provided, but as I don't have either I would be looking for help in getting these to work and uploading them here. Linux builds and runs in a virtual Debian 10, I tried that, but I haven't tested the software itself.
 
@@ -96,6 +106,12 @@ As some substantial work has gone into the development of this, I decided to off
 ## Contributing
 
 All pull requests and issues welcome, I will try to get back to you as soon as I can. Due to the dual licensing please be aware that I will need to request transfer of copyright on accepting a PR. 
+
+## Acknowledgements
+
+Really big thanks to everybody who contributes and comments on YouTube, here on Github, or any of the other forums out in the Internet to motivate me to continue this work!
+
+Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaption to work with restless tests and trials!
 
 ## About the author
 

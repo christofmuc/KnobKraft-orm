@@ -28,7 +28,7 @@ namespace knobkraft {
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;
 	
 		// Implement the methods needed for device detection
-		MidiMessage deviceDetect(int channel) override;
+		std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		int deviceDetectSleepMS() override;
 		MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		bool needsChannelSpecificDetection() override;

@@ -213,7 +213,8 @@ namespace knobkraft {
 			auto data = patch.data();
 			int c = channel().toZeroBasedInt();
 			py::object result = callMethod("convertToEditBuffer", c, data);
-			return { vectorToMessage(py::cast<std::vector<int>>(result)) };
+			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling convertToEditBuffer: %s") % ex.what()).str());
@@ -274,15 +275,16 @@ namespace knobkraft {
 		return false;
 	}
 
-	juce::MidiMessage GenericAdaption::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> GenericAdaption::deviceDetect(int channel)
 	{
 		try {
 			py::object result = callMethod("createDeviceDetectMessage", channel);
-			return vectorToMessage(result.cast<std::vector<int>>());
+			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createDeviceDetectMessage: %s") % ex.what()).str());
-			return MidiMessage();
+			return {};
 		}
 	}
 
