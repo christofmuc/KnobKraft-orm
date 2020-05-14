@@ -54,11 +54,11 @@ namespace midikraft {
 		return "Kawai K3/K3M";
 	}
 
-	juce::MidiMessage KawaiK3::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> KawaiK3::deviceDetect(int channel)
 	{
 		// Build Device ID request message. Manual p. 48. Why is this shorter than all other command messages?
 		std::vector<uint8> sysEx({ 0x40 /* Kawai */, uint8(0x00 | channel), MACHINE_ID_REQUEST });
-		return MidiHelpers::sysexMessage(sysEx);
+		return { MidiHelpers::sysexMessage(sysEx) };
 	}
 
 	std::vector<uint8> KawaiK3::buildSysexFunction(SysexFunction function, uint8 subcommand) const {

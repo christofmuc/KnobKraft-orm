@@ -62,7 +62,7 @@ namespace midikraft {
 		virtual void sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) override;
 
 		// Discoverable Device
-		virtual MidiMessage deviceDetect(int channel) override;
+		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		virtual bool needsChannelSpecificDetection() override;
