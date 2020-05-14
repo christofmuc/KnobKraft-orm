@@ -6,20 +6,24 @@ Questions / help with implementing new synths wanted, I am trying to get us acro
 
 [![Gitter](https://badges.gitter.im/knobkraft/community.svg)](https://gitter.im/knobkraft/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-Currently natively supported and tested synths as of version 1.3.0:
+Currently natively supported and tested synths as of version 1.4.0:
 
 * Access Virus B
+* Kawai K3/K3M
 * Oberheim Matrix 1000
 * Sequential/Dave Smith Instruments OB-6
 * Sequential/Dave Smith Instruments Prophet Rev2
 * Yamaha Reface DX
 
-As adaption currently available (most untested as I don't own the synths, get back to me to help getting them finished):
+As adaption currently available and tested
+
+* Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
+
+ Already implemented adaptions, which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
 
 * DSI Pro 2 (untested)
 * DSI Prophet 08 (untested)
 * DSI Prophet 12 (untested)
-* Oberheim Matrix 6/6R (untested)
 * Pioneer Toraiz AS-1 (untested)
 * Roland JX-8P (untested)
 * Sequential Pro 3 (untested)
@@ -31,7 +35,6 @@ Next up for development are:
 
 * Behringer RD-8
 * Korg DW8000
-* Kawai K3/K3M
 * Roland MKS-80
 
 I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well:
@@ -40,7 +43,7 @@ I made a video to show you the software and the most basic functionality, checko
 
 # Downloading the software
 
-I provide installer builds for Windows, they are hosted here in github. To install, just grab the following installer executable and run it:
+I provide installer builds for Windows, they are hosted here in github. To install, just grab the latest installer executable from the following page and run it:
 
 [https://github.com/christofmuc/KnobKraft-orm/releases](https://github.com/christofmuc/KnobKraft-orm/releases)
 
@@ -101,6 +104,12 @@ As some substantial work has gone into the development of this, I decided to off
 ## Contributing
 
 All pull requests and issues welcome, I will try to get back to you as soon as I can. Due to the dual licensing please be aware that I will need to request transfer of copyright on accepting a PR. 
+
+## Acknowledgements
+
+Really big thanks to everybody who contributes and comments on YouTube, here on Github, or any of the other forums out in the Internet to motivate me to continue this work!
+
+Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaption to work with restless tests and trials!
 
 ## About the author
 
