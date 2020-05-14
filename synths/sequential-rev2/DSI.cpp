@@ -39,12 +39,12 @@ namespace midikraft {
 	{
 	}
 
-	juce::MidiMessage DSISynth::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> DSISynth::deviceDetect(int channel)
 	{
 		ignoreUnused(channel);
 		// This is identical for the OB-6 and the Rev2
 		std::vector<uint8> sysEx({ 0b01111110, 0b01111111, 0b00000110 /* Inquiry Message */, 0b00000001 /* Inquiry Request */ });
-		return MidiMessage::createSysExMessage(&sysEx[0], (int)sysEx.size());
+		return { MidiMessage::createSysExMessage(&sysEx[0], (int)sysEx.size()) };
 	}
 
 	int DSISynth::deviceDetectSleepMS()
