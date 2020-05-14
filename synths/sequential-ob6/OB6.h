@@ -39,7 +39,7 @@ namespace midikraft {
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const Patch &patch) const override;
 
 		// It should not be necessary to override these two, but somehow I don't see the Sysex output for the device inquiry by the OB-6
-		virtual MidiMessage deviceDetect(int channel) override;
+		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 
 		// SoundExpanderCapability

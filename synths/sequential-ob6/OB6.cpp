@@ -176,10 +176,10 @@ namespace midikraft {
 		return std::vector<juce::MidiMessage>({ MidiHelpers::sysexMessage(message) });
 	}
 
-	juce::MidiMessage OB6::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> OB6::deviceDetect(int channel)
 	{
 		ignoreUnused(channel);
-		return requestGlobalSettingsDump();
+		return { requestGlobalSettingsDump() };
 	}
 
 	MidiChannel OB6::channelIfValidDeviceResponse(const MidiMessage &message)
