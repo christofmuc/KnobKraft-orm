@@ -25,10 +25,10 @@ namespace midikraft {
 		return "Korg DW 8000";
 	}
 
-	juce::MidiMessage KorgDW8000::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> KorgDW8000::deviceDetect(int channel)
 	{
 		// Build Device ID request message
-		return MidiHelpers::sysexMessage({ 0x42 /* Korg */, uint8(0x40 | channel) });
+		return { MidiHelpers::sysexMessage({ 0x42 /* Korg */, uint8(0x40 | channel) }) };
 	}
 
 	int KorgDW8000::deviceDetectSleepMS()
