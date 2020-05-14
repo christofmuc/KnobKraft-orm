@@ -107,9 +107,9 @@ namespace midikraft {
 		return true;
 	}
 
-	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth *synth) const
+	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth const *synth) const
 	{
-		auto midiLocation = dynamic_cast<MidiLocationCapability *>(synth);
+		auto midiLocation = dynamic_cast<MidiLocationCapability const *>(synth);
 		if (midiLocation) {
 			int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
 			switch (type()) {
