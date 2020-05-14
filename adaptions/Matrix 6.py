@@ -24,12 +24,11 @@ def needsChannelSpecificDetection():
 
 def channelIfValidDeviceResponse(message):
     # The answer is a master data dump
-    if (len(message) == 15
+    if (len(message) > 3
             and message[0] == 0xf0  # Sysex
             and message[1] == 0x10  # Oberheim
             and message[2] == 0x06  # Matrix 6/6R
-            and message[3] == 0x03  # Master parameter data
-    ):
+            and message[3] == 0x03):  # Master parameter data
         # Extract the current MIDI channel from byte 11 of the master data
         master_data = denibble(message, 4)
         if len(master_data) != 236:
