@@ -337,10 +337,10 @@ namespace midikraft {
 		return { basename + " Main", basename + " Second" };
 	}*/
 
-	juce::MidiMessage Matrix1000::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> Matrix1000::deviceDetect(int channel)
 	{
 		std::vector<uint8> sysEx({ 0x7e, (uint8)channel, 0x06, 0x01 });
-		return MidiMessage::createSysExMessage(&sysEx[0], (int)sysEx.size());
+		return { MidiMessage::createSysExMessage(&sysEx[0], (int)sysEx.size()) };
 	}
 
 	int Matrix1000::deviceDetectSleepMS()
