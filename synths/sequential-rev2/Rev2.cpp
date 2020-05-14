@@ -308,10 +308,32 @@ namespace midikraft {
 		}
 	}
 
-	juce::MidiBuffer Rev2::layerToSysex(std::shared_ptr<DataFile> const patch, int sourceLayer, int targetLayer) const
+	MidiBuffer Rev2::layerToSysex(std::shared_ptr<DataFile> const patch, int sourceLayer, int targetLayer) const
 	{
-		ignoreUnused(patch, sourceLayer, targetLayer);
-		return MidiBuffer();
+		ignoreUnused(targetLayer);
+		MidiBuffer allMessages;
+		// Now, these will be a lot of NRPN messages generated, but what we can do is to generate a layer change by settings all values of all parameters via NRPN
+		auto rev2patch = std::dynamic_pointer_cast<Rev2Patch>(patch);
+		if (rev2patch) {
+			// Loop all parameters, and create set value messages for them
+			int deltaTimeInSamples = 0;
+			int count = 0;
+			for (auto param : rev2patch->allParameterDefinitions()) {
+				count++;
+				if (count > 88) break;
+				auto rev2param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
+				if (rev2param) {
+					rev2param->setSourceLayer(sourceLayer);
+					rev2param->setTargetLayer(targetLayer);
+					auto p = std::dynamic_pointer_cast<Patch>(patch);
+					if (p) {
+						allMessages.addEvents(rev2param->setValueMessages(*p, this), 0, -1, deltaTimeInSamples);
+						deltaTimeInSamples += 10;
+					}
+				}
+			}
+		}
+		return allMessages;
 	}
 
 	void Rev2::changeInputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> onFinished)
