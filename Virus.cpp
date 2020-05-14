@@ -209,11 +209,11 @@ namespace midikraft {
 		return "Access Virus B";
 	}
 
-	juce::MidiMessage Virus::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> Virus::deviceDetect(int channel)
 	{
 		ignoreUnused(channel);
 		// Send a global request, from which we can read the device ID and the global channel of the Virus
-		return createSysexMessage(std::vector<uint8>({ 0x35 /* Global request */ }));
+		return { createSysexMessage(std::vector<uint8>({ 0x35 /* Global request */ })) };
 	}
 
 	int Virus::deviceDetectSleepMS()
