@@ -25,7 +25,7 @@ LicenseFile=${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 OutputDir=${CMAKE_CURRENT_BINARY_DIR}
-OutputBaseFilename=knobkraft_orm_setup
+OutputBaseFilename=knobkraft_orm_setup_${KnobKraftOrm_VERSION}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -37,12 +37,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\python36.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\{#MyAppExeName}"; DestDir: "{app}"; 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icuuc66.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icudt66.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_LIST_DIR}\..\adaptions\*.py"; DestDir: "{userdocs}\KnobKraft-Orm-adaptions"; Flags: ignoreversion 
+Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; 
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icuuc67.dll"; DestDir: "{app}";
+Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icudt67.dll"; DestDir: "{app}";
+Source: "${CMAKE_CURRENT_LIST_DIR}\..\adaptions\*.py"; DestDir: "{userdocs}\KnobKraft-Orm-adaptions";
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
 

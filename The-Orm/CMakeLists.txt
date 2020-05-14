@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.2.0)
+project(KnobKraftOrm VERSION 1.3.0)
 
 IF (WIN32)
 	# All setup for UI software on Windows
@@ -123,7 +123,7 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc66.dll" "${icu_SOURCE_DIR}/bin64/icudt66.dll"
+					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(

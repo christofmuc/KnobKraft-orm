@@ -6,21 +6,26 @@ Questions / help with implementing new synths wanted, I am trying to get us acro
 
 [![Gitter](https://badges.gitter.im/knobkraft/community.svg)](https://gitter.im/knobkraft/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-Currently supported synths as of version 1.2.0:
+Currently natively supported and tested synths as of version 1.3.0:
 
 * Access Virus B
 * Oberheim Matrix 1000
-* DSI Prophet 08 (untested, looking for feedback and help)
 * Sequential/Dave Smith Instruments OB-6
 * Sequential/Dave Smith Instruments Prophet Rev2
 * Yamaha Reface DX
+
+As adaption currently available (most untested as I don't own the synths, get back to me to help getting them finished):
+
+* DSI Pro 2 (untested)
+* DSI Prophet 08 (untested)
+* DSI Prophet 12 (untested)
+* Oberheim Matrix 6/6R (untested)
 * Pioneer Toraiz AS-1 (untested)
 * Roland JX-8P (untested)
+* Sequential Pro 3 (untested)
+* Sequential Prophet 6 (untested)
 
-Additionally, there is a generic module that let's you hook up other MIDI gear using a bit of scripting in Python, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices!
-
-As adaption currently available:
-
+The adaptions are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices! They might not be as powerful or fully integrated as the natively supported synths, but they are done really quickly!
 
 Next up for development are:
 
@@ -37,7 +42,7 @@ I made a video to show you the software and the most basic functionality, checko
 
 I provide installer builds for Windows, they are hosted here in github. To install, just grab the following installer executable and run it:
 
-[https://github.com/christofmuc/KnobKraft-orm/releases/download/1.1.0/knobkraft_orm_setup.exe](https://github.com/christofmuc/KnobKraft-orm/releases/download/1.0.0/knobkraft_orm_setup.exe)
+[https://github.com/christofmuc/KnobKraft-orm/releases](https://github.com/christofmuc/KnobKraft-orm/releases)
 
 Releases for the other platforms macOS and Linux could be provided, but as I don't have either I would be looking for help in getting these to work and uploading them here. Linux builds and runs in a virtual Debian 10, I tried that, but I haven't tested the software itself.
 
