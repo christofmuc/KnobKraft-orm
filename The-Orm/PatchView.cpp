@@ -24,6 +24,7 @@ const char *kAllPatchesFilter = "All patches";
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
 	: database_(database), librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
+	synthFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase();  }, false, true),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	addAndMakeVisible(nameSearchText_);
@@ -64,6 +65,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(currentPatchDisplay_.get());
 
 	addAndMakeVisible(categoryFilters_);
+	addAndMakeVisible(synthFilters_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "retrieveActiveSynthPatches",{ 0, "Import patches from synth", [this]() {
@@ -91,21 +93,33 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		loadPage(skip, limit, callback);
 	});	
 
+	rebuildSynthFilters();
+
 	// Register for updates
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->currentPatch_.addChangeListener(this);
+	UIModel::instance()->synthList_.addChangeListener(this);
 }
 
 PatchView::~PatchView()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+	UIModel::instance()->synthList_.removeChangeListener(this);
+}
+
+CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability *name) {
+	return CategoryButtons::Category(name->getName(), Colours::black, 0);
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
+		// Select only the newly selected synth in the synth filters
+		synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
+
+		// Rebuild the other features
 		rebuildImportFilterBox();
 		rebuildDataTypeFilterBox();
 		retrieveFirstPageFromDatabase();
@@ -113,6 +127,18 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	else if (dynamic_cast<CurrentPatch *>(source)) {
 		currentPatchDisplay_->setCurrentPatch(UIModel::currentSynth(), UIModel::currentPatch());
 	}
+	else if (dynamic_cast<CurrentSynthList *>(source)) {
+		rebuildSynthFilters();
+	}
+}
+
+void PatchView::rebuildSynthFilters() {
+	// The available list of synths changed, reset the synth filters
+	std::vector<CategoryButtons::Category> synthFilter;
+	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+		synthFilter.push_back(synthCategory(synth.get()));
+	}
+	synthFilters_.setCategories(synthFilter);
 }
 
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
@@ -155,7 +181,13 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 		nameFilter = nameSearchText_.getText().toStdString();
 	}
 	std::map<std::string, midikraft::Synth *> synthMap;
-	synthMap[UIModel::currentSynth()->getName()] = UIModel::currentSynth();
+	// Build synth list
+	for (auto s : synthFilters_.selectedCategories()) {
+		midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(s.category);
+		if (synthFound.synth()) {
+			synthMap[synthFound.synth()->getName()] = synthFound.synth().get(); //TODO these non-shared-pointers make me nervous
+		}
+	}
 	return { synthMap, 
 		currentlySelectedSourceUUID(), 
 		nameFilter, 
@@ -214,10 +246,12 @@ void PatchView::resized()
 	useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));
 	nameSearchText_.setBounds(nameFilterRow);
 	auto filterRow = area.removeFromTop(80).reduced(8);
+	auto synthRow = area.removeFromTop(80).reduced(8);
 	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
+	synthFilters_.setBounds(synthRow);
 	dataTypeSelector_.setBounds(sourceRow.removeFromLeft(200));
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));

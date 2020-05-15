@@ -71,6 +71,7 @@ public:
 	void setSynthActive(midikraft::SimpleDiscoverableDevice *synth, bool isActive);
 
 	std::vector<midikraft::SynthHolder> allSynths();
+	midikraft::SynthHolder synthByName(std::string const &name);
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> activeSynths();
 	bool isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
 

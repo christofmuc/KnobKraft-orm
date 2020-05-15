@@ -97,6 +97,19 @@ std::vector<midikraft::SynthHolder> CurrentSynthList::allSynths()
 	return result;
 }
 
+midikraft::SynthHolder CurrentSynthList::synthByName(std::string const &name)
+{
+	for (auto synth : synths_) {
+		if (synth.first.device() && synth.first.device()->getName() == name) {
+			return synth.first;
+		}
+		else if (synth.first.synth() && synth.first.synth()->getName() == name) {
+			return synth.first;
+		}
+	}
+	return midikraft::SynthHolder(nullptr);
+}
+
 std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthList::activeSynths()
 {
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
