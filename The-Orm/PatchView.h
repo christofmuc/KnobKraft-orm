@@ -76,7 +76,7 @@ private:
 	void rebuildImportFilterBox();
 	void rebuildDataTypeFilterBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
-	void selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch);
+	void selectPatch(midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 

@@ -24,6 +24,7 @@ K3
 * Could render wave as Thumbnail
 * Allow dependencies between DataFiles (patch -> wave for K3)
 * Generic Oscillator shape optimizer? 
+* Default name handling shaky
 
 MKS80
 * how to deal with tones and patches

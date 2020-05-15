@@ -54,7 +54,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
 		[this](midikraft::PatchHolder &favoritePatch) {
-		database_.putPatch(UIModel::currentSynth(), favoritePatch);
+		database_.putPatch(favoritePatch);
 		patchButtons_->refresh(true);
 	},
 		[this](midikraft::PatchHolder &sessionPatch) {
@@ -81,7 +81,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	};
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
 		if (UIModel::currentSynth()) {
-			selectPatch(*UIModel::currentSynth(), patch);
+			selectPatch(patch);
 		}
 	});
 	buttonStrip_.setButtonDefinitions(buttons);
@@ -154,7 +154,9 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	if (useNameSearch_.getToggleState()) {
 		nameFilter = nameSearchText_.getText().toStdString();
 	}
-	return { UIModel::currentSynth(), 
+	std::map<std::string, midikraft::Synth *> synthMap;
+	synthMap[UIModel::currentSynth()->getName()] = UIModel::currentSynth();
+	return { synthMap, 
 		currentlySelectedSourceUUID(), 
 		nameFilter, 
 		onlyFaves_.getToggleState(), 
@@ -195,12 +197,9 @@ void PatchView::selectNextPatch()
 
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	midikraft::Synth *loadingForWhich = UIModel::currentSynth();
-	database_.getPatchesAsync(buildFilter(), [this, loadingForWhich, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
-		// If the synth is still active, refresh the result. Else, just ignore the result
-		if (UIModel::currentSynth() == loadingForWhich) {
-			callback(newPatches);
-		}
+	database_.getPatchesAsync(buildFilter(), [this, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
+		// TODO - we might want to cancel a running query if the user clicks fast?
+		callback(newPatches);
 	}, skip, limit);
 }
 
@@ -244,7 +243,15 @@ void PatchView::showPatchDiffDialog() {
 		return;
 	}
 
-	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentSynth(), compareTarget_, UIModel::currentPatch());
+	if (compareTarget_.synth()->getName() != UIModel::currentPatch().synth()->getName()) {
+		// Should have come either
+		SimpleLogger::instance()->postMessage((boost::format("Can't compare patch %s of synth %s with patch %s of synth %s") %
+			UIModel::currentPatch().patch()->name() % UIModel::currentPatch().synth()->getName()
+			% compareTarget_.patch()->name() % compareTarget_.synth()->getName()).str());
+		return;
+	}
+
+	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentPatch().synth(), compareTarget_, UIModel::currentPatch());
 
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(diffDialog_.get(), false);
@@ -258,7 +265,7 @@ void PatchView::showPatchDiffDialog() {
 
 void PatchView::saveCurrentPatchCategories() {
 	if (currentPatchDisplay_->getCurrentPatch().patch()) {
-		database_.putPatch(UIModel::currentSynth(), currentPatchDisplay_->getCurrentPatch());
+		database_.putPatch(currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
 }
@@ -340,7 +347,7 @@ public:
 			SimpleLogger::instance()->postMessage("No patches contained in data, nothing to upload.");
 		}
 		else {
-			auto numberNew = database_.mergePatchesIntoDatabase(UIModel::currentSynth(), patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME);
+			auto numberNew = database_.mergePatchesIntoDatabase(patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME);
 			if (numberNew > 0) {
 				SimpleLogger::instance()->postMessage((boost::format("Retrieved %d new or changed patches from the synth, uploaded to database") % numberNew).str());
 				finished_(outNewPatches);
@@ -443,7 +450,7 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 	backgroundThread.runThread();
 }
 
-void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &patch)
+void PatchView::selectPatch(midikraft::PatchHolder &patch)
 {
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
@@ -456,7 +463,7 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		currentLayer_ = 0;
 
 		// Send out to Synth
-		synth.sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), patch.patch());
+		patch.synth()->sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), patch.patch());
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...
@@ -464,12 +471,12 @@ void PatchView::selectPatch(midikraft::Synth &synth, midikraft::PatchHolder &pat
 		if (layers) {
 			currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
 		}
-		auto layerSynth = dynamic_cast<midikraft::LayerCapability *>(&synth);
+		auto layerSynth = dynamic_cast<midikraft::LayerCapability *>(patch.synth());
 		if (layerSynth) {
 			SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
 			//layerSynth->switchToLayer(currentLayer_);
 			MidiBuffer allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
-			auto location = dynamic_cast<midikraft::MidiLocationCapability *>(&synth);
+			auto location = dynamic_cast<midikraft::MidiLocationCapability *>(patch.synth());
 			if (location) {
 				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.getNumEvents() % allMessages.data.size()).str());
 				midikraft::MidiController::instance()->getMidiOutput(location->midiOutput())->sendBlockOfMessagesNow(allMessages);
