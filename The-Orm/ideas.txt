@@ -31,7 +31,7 @@ MKS80
 
 Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
-* Make regular backups of Database
+* Manage Backup diskspace
 
 Generic Module
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
@@ -50,7 +50,8 @@ Macro page
 * Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
 
 Librarian
-* Make page number clickable to switch to that page
+* Type switch is missing "all" setup
+* Make page number clickable to switch to that page, show less page numbers if these are really many
 * Allow multi-select of banks to import (with all feature)
 * Allow recursive directory traversal during import
 * Could accept synth-initiated dumps at any time
