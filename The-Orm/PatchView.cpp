@@ -65,7 +65,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(currentPatchDisplay_.get());
 
 	addAndMakeVisible(categoryFilters_);
-	addAndMakeVisible(synthFilters_);
+
+	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", &synthFilters_, false);
+	addAndMakeVisible(*advancedSearch_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "retrieveActiveSynthPatches",{ 0, "Import patches from synth", [this]() {
@@ -246,12 +248,16 @@ void PatchView::resized()
 	useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));
 	nameSearchText_.setBounds(nameFilterRow);
 	auto filterRow = area.removeFromTop(80).reduced(8);
-	auto synthRow = area.removeFromTop(80).reduced(8);
+	
+	int advancedFilterHeight = advancedSearch_->isOpen() ? (32*2 + 32) : 32;
+	auto synthRow = area.removeFromTop(advancedFilterHeight).reduced(8);
+	advancedSearch_->setBounds(synthRow);
+	
 	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
-	synthFilters_.setBounds(synthRow);
+
 	dataTypeSelector_.setBounds(sourceRow.removeFromLeft(200));
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));

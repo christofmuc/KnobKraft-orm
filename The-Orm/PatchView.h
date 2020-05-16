@@ -20,6 +20,7 @@
 #include "PatchButtonPanel.h"
 #include "CategoryButtons.h"
 #include "CurrentPatchDisplay.h"
+#include "CollapsibleContainer.h"
 
 #include "PatchDatabase.h"
 #include "PatchHolder.h"
@@ -86,6 +87,7 @@ private:
 	ComboBox importList_;
 	ComboBox dataTypeSelector_;
 	CategoryButtons categoryFilters_;
+	std::unique_ptr<CollapsibleContainer> advancedSearch_;
 	CategoryButtons synthFilters_;
 	ToggleButton onlyFaves_;
 	ToggleButton showHidden_;
