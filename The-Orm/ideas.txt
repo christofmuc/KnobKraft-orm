@@ -13,9 +13,10 @@ Virus
 * Parameter set missing
 
 Rev2
-* Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
+* Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
+
 
 K3
 * Drawbar Organ Waveform Generator
@@ -42,13 +43,10 @@ Generic Module
 + Could add python editor with hot reload function
 
 Macro page
-* Select which MIDI input/Synth to use
-* Display size of master keyboard (or select lower and upper key)
-* Turn macros on/off on a global level (and show it on a global level)
+* Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
+* Show on global level if macros on/off on a global level
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
-* Masterkeyboard support (manualy setup lowest key, highest key), as well as 
-* Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
 
 Librarian
 * Type switch is missing "all" setup
@@ -84,9 +82,9 @@ Database schema
 * Should create indexes where needed 
 
 MIDI setup
+* With more synths, should split "select synth" and "configure synth" into two columns
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
 * MIDI log needs a "save log function"
-* With more synths, should split "select synth" and "configure synth" into two columns
 * Debounce is currently disabled - can I reenable it?
 
 UI Cleanup
@@ -99,6 +97,7 @@ Big things
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
 	  * Could use this for additional "filter by property" feature. E.g. show only patches with a particular synth feature
 	* Adding full BCR2000 support
+	* Implement PatchBook Visualization
 	* The automatic patch clusterer!
 	* Multiple synths in one grid
 	* Masterkeyboard control ("Follow the patch")
@@ -107,6 +106,7 @@ Big things
 	* Integrate with CTRLR? Can I host their panels? If yes, for what?
 	* Can I synchronize multiple devices via the LaserMammoth Backend?
 	* Should I use Amazon DynamoDB to synchronize multiple installations? Encryption?
+	* VST version? If yes, why?
 
 Alternate Tunings
 * https://forum.sequential.com/index.php/topic,3468.0.html
