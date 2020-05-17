@@ -1,0 +1,25 @@
+# I looked at https://github.com/microsoft/cpprestsdk/blob/master/azure-pipelines.yml
+
+jobs:
+  - template: azure-devops/build-windows.yml
+    parameters:
+      name: 'Windows_VS2017_x64'
+      targetPlatform: x64
+      image: 'vs2017-win2016'
+  - job: Windows_VS2019_UWP
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - script: git submodule update --init --recursive
+      displayName: Checking out submodules
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.6' 
+        addToPath: true 
+        architecture: 'x64' 
+    #- script: cinst innosetup
+    #  displayName: Installing Innosetup
+    - task: CMake@1
+      inputs:
+        workingDirectory: 'build'
+        #cmakeArgs: '-DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 ..'      
