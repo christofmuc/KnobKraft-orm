@@ -15,6 +15,12 @@ jobs:
     #- script: cinst innosetup
     #  displayName: Installing Innosetup
     - task: CMake@1
+      displayName: Configuring CMake
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-A x64 ' #-DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 ..'      
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE= C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+    - task: CMake@1
+      displayName: Running CMake build
+      inputs:
+        workingDirectory: 'build'
+        cmakeArgs: '--build . --config Debug'
