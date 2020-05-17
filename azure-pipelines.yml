@@ -19,7 +19,7 @@ jobs:
       displayName: Configuring CMake
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE= C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
     - task: CMake@1
       displayName: Running CMake build
       inputs:
