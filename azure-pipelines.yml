@@ -4,7 +4,6 @@ jobs:
   - job: Windows_VS2017_x64
     pool:
       vmImage: 'windows-latest'
-    targetPlatform: x64
     steps:
     - script: git submodule update --init --recursive
       displayName: Checking out submodules
