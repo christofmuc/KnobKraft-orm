@@ -1,0 +1,31 @@
+# I looked at https://github.com/microsoft/cpprestsdk/blob/master/azure-pipelines.yml
+# But this shows how to do this proper: https://github.com/surge-synthesizer/tuning-workbench-synth/blob/master/azure-pipelines.yml
+
+jobs:
+  - job: Windows_VS2017_x64
+    pool:
+      vmImage: 'vs2017-win2016'
+    steps:
+    # Disable automatic line ending conversion, which is enabled by default on
+    # Azure's Windows image. Having the conversion enabled caused cpplint of SQlite to fail on Windows
+    - bash: git config --global core.autocrlf false
+      displayName: "Disable git automatic line ending conversion"
+    - script: git submodule update --init --recursive
+      displayName: Checking out submodules
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.6' 
+        addToPath: true 
+        architecture: 'x64' 
+    #- script: cinst innosetup
+    #  displayName: Installing Innosetup
+    - task: CMake@1
+      displayName: Configuring CMake
+      inputs:
+        workingDirectory: 'build'
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+    - task: CMake@1
+      displayName: Running CMake build
+      inputs:
+        workingDirectory: 'build'
+        cmakeArgs: '--build . --config Debug'
