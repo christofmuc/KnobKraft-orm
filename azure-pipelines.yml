@@ -2,14 +2,31 @@
 # But this shows how to do this proper: https://github.com/surge-synthesizer/tuning-workbench-synth/blob/master/azure-pipelines.yml
 
 jobs:
-  - job: Windows_VS2017_x64
+  - job: Build
+    strategy:
+      matrix:
+        mac:
+          imageName: 'macos-10.14'
+          isMac: True
+        win:
+          imageName: 'vs2017-win2016'
+          isWindows: True
+        lin:
+          imageName: 'ubuntu-18.04'
+          isLinux: True
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: $(imageName)
     steps:
     # Disable automatic line ending conversion, which is enabled by default on
     # Azure's Windows image. Having the conversion enabled caused cpplint of SQlite to fail on Windows
     - bash: git config --global core.autocrlf false
       displayName: "Disable git automatic line ending conversion"
+    - bash: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev
+        apt list --installed
+      displayName: Prepare Linux Host
+      condition: variables.isLinux
     - script: git submodule update --init --recursive
       displayName: Checking out submodules
     - task: UsePythonVersion@0
@@ -19,13 +36,25 @@ jobs:
         architecture: 'x64' 
     #- script: cinst innosetup
     #  displayName: Installing Innosetup
+
+    # Windows runs CMake tasks
     - task: CMake@1
-      displayName: Configuring CMake
+      displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
         cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+      condition: variables.isWindows
     - task: CMake@1
-      displayName: Running CMake build
+      displayName: Running CMake build for Windows
       inputs:
         workingDirectory: 'build'
         cmakeArgs: '--build . --config Debug'
+      condition: variables.isWindows
+
+    # Linux uses bash to run CMake directly
+    - bash: |
+        cmake -Bbuild
+        cmake --build build --config Debug
+        cmake --build build --config Release
+      displayName: Build with CMake for Linux
+      condition: variables.isLinux
