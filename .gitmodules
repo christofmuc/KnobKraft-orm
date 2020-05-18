@@ -64,3 +64,7 @@
 [submodule "third_party/pybind11"]
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "synths/MidiKraft-BCR2000"]
+	path = synths/MidiKraft-BCR2000
+	url = https://github.com/christofmuc/MidiKraft-BCR2000.git
+	branch = master

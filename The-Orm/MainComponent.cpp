@@ -24,6 +24,7 @@
 #include "KawaiK3.h"
 #include "Matrix1000.h"
 #include "RefaceDX.h"
+#include "BCR2000.h"
 
 #include "GenericAdaption.h"
 
@@ -83,6 +84,7 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::BCR2000>(), buttonColour));
 
 	// Now adding all adaptions
 	auto adaptions = knobkraft::GenericAdaption::allAdaptions();

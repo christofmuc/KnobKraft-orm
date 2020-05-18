@@ -66,6 +66,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-librarian 
 		midikraft-database 
 		midikraft-access-virus
+		midikraft-behringer-bcr2000
 		midikraft-kawai-k3
 		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
