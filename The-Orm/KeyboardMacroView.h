@@ -27,6 +27,8 @@ private:
 	bool isMacroState(KeyboardMacro const &macro);
 	void refreshUI();
 
+	void turnOnMasterkeyboardInput();
+
 	void changeListenerCallback(ChangeBroadcaster* source) override; // This gets called when the synth is changed
 	void valueChanged(Value& value) override; // This gets called when the property editor is used
 

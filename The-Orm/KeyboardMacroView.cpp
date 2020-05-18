@@ -16,6 +16,7 @@
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
+const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kInputDevice = "MIDI Input Device";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
@@ -106,14 +107,31 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 	// Install keyboard handler to refresh midi keyboard display
 	midikraft::MidiController::instance()->addMessageHandler(handle_, [this](MidiInput *source, MidiMessage const &message) {
-		if (message.isNoteOnOrOff()) {
-			ignoreUnused(source);
-			state_.processNextMidiEvent(message);
+		if (source && source->getName().toStdString() == customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue()) {
+			if (customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue()) {
+				// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
+				auto currentPatch = UIModel::currentPatch();
+				if (currentPatch.patch() && currentPatch.synth()) {
+					auto location = dynamic_cast<midikraft::MidiLocationCapability *>(currentPatch.synth());
+					if (location) {
+						// Check if this is a channel message, and if yes, re-channel to the current synth
+						MidiMessage channelMessage = message;
+						if (message.getChannel() != 0) {
+							channelMessage.setChannel(location->channel().toOneBasedInt());
+						}
+						midikraft::MidiController::instance()->getMidiOutput(location->midiOutput())->sendMessageNow(channelMessage);
+					}
+				}
+			}
+			if (message.isNoteOnOrOff()) {
+				ignoreUnused(source);
+				state_.processNextMidiEvent(message);
 
-			// Check if this is a message we will transform into a macro
-			for (const auto& macro : macros_) {
-				if (isMacroState(macro.second)) {
-					executeMacro_(macro.first);
+				// Check if this is a message we will transform into a macro
+				for (const auto& macro : macros_) {
+					if (isMacroState(macro.second)) {
+						executeMacro_(macro.first);
+					}
 				}
 			}
 		}
@@ -136,6 +154,7 @@ void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.clear();
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127 ));
@@ -191,6 +210,8 @@ void KeyboardMacroView::loadFromSettings() {
 		int intValue = std::atoi(storedValue.c_str());
 		prop->value().setValue(intValue);
 	}
+
+	turnOnMasterkeyboardInput();
 }
 
 void KeyboardMacroView::saveSettings() {
@@ -251,6 +272,17 @@ void KeyboardMacroView::valueChanged(Value& value)
 		value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kHighestNote))) {
 		setupKeyboardControl();
 	}
+	else if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kInputDevice))) {
+		turnOnMasterkeyboardInput();
+	}
+}
+
+void KeyboardMacroView::turnOnMasterkeyboardInput() {
+	if (customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue()) {
+		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
+		midikraft::MidiController::instance()->enableMidiInput(masterkeyboardDevice.toStdString());
+		SimpleLogger::instance()->postMessage("Opening master keyboard device " + masterkeyboardDevice + ", waiting for messages");
+	}
 }
 
 void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
@@ -284,7 +316,9 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 		}
 	}
 	else {
-		// Automatic is off - don't change the current master keyboard
+		// Automatic is off - don't change the current master keyboard. But the synth switch could mean that we were turned off during autodetection,
+		// so turn back on again
+		turnOnMasterkeyboardInput();
 	}
 }
 
