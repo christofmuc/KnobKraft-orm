@@ -1,6 +1,9 @@
 Completely unprioritised list of things to do
 =============================================
 
+BUGS
++ I think sending the K3 User wave doesn't send it correctly, but sends it as a patch?
+
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
@@ -76,7 +79,7 @@ Database schema
 MIDI setup
 * With more synths, should split "select synth" and "configure synth" into two columns
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
-* MIDI log needs a "save log function"
+* MIDI log needs a "save log function", and a "turn off" function
 * Debounce is currently disabled - can I reenable it?
 
 UI Cleanup
