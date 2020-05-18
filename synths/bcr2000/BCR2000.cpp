@@ -8,6 +8,7 @@
 
 #include "BCRDefinition.h"
 #include "MidiHelpers.h"
+#include "Sysex.h"
 
 #include <iostream>
 #include <fstream>
@@ -17,6 +18,7 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <map>
+#include <regex>
 
 namespace midikraft {
 
@@ -150,6 +152,23 @@ namespace midikraft {
 		}
 		jassert(false);
 		return "";
+	}
+
+	std::string BCR2000::findPresetName(std::vector<MidiMessage> const &messages) const {
+		// Find the first line which states ".name"
+		const std::regex base_regex(R"([[:space:]]*\.name[[:space:]]+'([^']*)')", std::regex_constants::extended| std::regex_constants::icase);
+		std::smatch base_match;
+		for (auto message : messages) {
+			auto line = convertSyxToText(message);
+			if (std::regex_match(line, base_match, base_regex)) {
+				// The second submatch is the expression, the first one the whole string that matches
+				if (base_match.size() == 2) {
+					std::ssub_match base_sub_match = base_match[1];
+					return base_sub_match.str();
+				}
+			}
+		}
+		return "Unknown Preset";
 	}
 
 	bool BCR2000::isSysexFromBCR2000(const MidiMessage& message)
@@ -448,6 +467,63 @@ namespace midikraft {
 			}
 		}
 		return false;
+	}
+
+	midikraft::TPatchVector BCR2000::loadStreamDump(std::vector<MidiMessage> const &streamDump) const
+	{
+		midikraft::TPatchVector result;
+
+		// Find the name
+		auto name = findPresetName(streamDump);
+
+		std::vector<uint8> patchData;
+		for (auto message : streamDump) {
+			std::copy(message.getRawData(), message.getRawData() + message.getRawDataSize(), std::back_inserter(patchData));
+		}
+		result.push_back(std::make_shared<BCR2000Preset>(name, patchData));
+		return result;
+	}
+
+	std::vector<juce::MidiMessage> BCR2000::dataFileToMessages(std::shared_ptr<DataFile> dataFile) const
+	{
+		return Sysex::vectorToMessages(dataFile->data());
+	}
+
+	int BCR2000::numberOfBanks() const
+	{
+		return 32;
+	}
+
+	int BCR2000::numberOfPatches() const
+	{
+		return 1;
+	}
+
+	std::string BCR2000::friendlyBankName(MidiBankNumber bankNo) const
+	{
+		return (boost::format("Preset #%d") % bankNo.toOneBased()).str();
+	}
+
+	std::shared_ptr<midikraft::DataFile> BCR2000::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
+	{
+		ignoreUnused(place);
+		auto allMessages = Sysex::vectorToMessages(data);
+		auto name = findPresetName(allMessages);
+		return std::make_shared<BCR2000Preset>(name, data);
+	}
+
+	bool BCR2000::isOwnSysex(MidiMessage const &message) const
+	{
+		return message.isSysEx() && isSysexFromBCR2000(message);
+	}
+
+	BCR2000Preset::BCR2000Preset(std::string const &name, Synth::PatchData const &data) : DataFile(0, data), name_(name)
+	{		
+	}
+
+	std::string BCR2000Preset::name() const
+	{
+		return name_;
 	}
 
 }

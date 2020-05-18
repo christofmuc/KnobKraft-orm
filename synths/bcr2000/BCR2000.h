@@ -12,6 +12,7 @@
 #include "MidiController.h"
 #include "MidiChannel.h"
 #include "StreamDumpCapability.h"
+#include "DataFileLoadCapability.h"
 
 #include "Logger.h"
 
@@ -22,7 +23,7 @@ namespace midikraft {
 
 	class BCRdefinition;
 
-	class BCR2000 : public SimpleDiscoverableDevice, public StreamDumpCapability {
+	class BCR2000 : public Synth, public SimpleDiscoverableDevice, public StreamDumpCapability, public DataFileSendCapability {
 	public:
 		struct BCRError {
 			uint8 errorCode;
@@ -35,6 +36,7 @@ namespace midikraft {
 		std::vector<MidiMessage> convertToSyx(std::string const &bcl, bool verbatim = false) const;
 
 		static std::string convertSyxToText(const MidiMessage &message);
+		std::string findPresetName(std::vector<MidiMessage> const &messages) const;
 		static bool isSysexFromBCR2000(const MidiMessage& message);
 
 		void sendSysExToBCR(std::shared_ptr<SafeMidiOutput> midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone);
@@ -68,6 +70,17 @@ namespace midikraft {
 		virtual MidiMessage requestDump(int number) const override;
 		virtual bool isPartOfDump(const MidiMessage& message) const override;
 		virtual bool isDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
+		virtual TPatchVector loadStreamDump(std::vector<MidiMessage> const &streamDump) const override;
+
+		// DataFileSendCapability
+		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+
+		// Synth
+		int numberOfBanks() const override;
+		int numberOfPatches() const override;
+		std::string friendlyBankName(MidiBankNumber bankNo) const override;
+		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
+		bool isOwnSysex(MidiMessage const &message) const override;
 
 	private:
 		uint8 sysexCommand(const MidiMessage &message) const;
@@ -83,4 +96,13 @@ namespace midikraft {
 		};
 	};
 
+	class BCR2000Preset : public DataFile {
+	public:
+		BCR2000Preset(std::string const &name, Synth::PatchData const &data);
+
+		std::string name() const override;
+
+	private:
+		std::string name_;
+	};
 }
