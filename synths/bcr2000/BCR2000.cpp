@@ -170,7 +170,7 @@ namespace midikraft {
 		return message.getSysExData()[5];
 	}
 
-	void BCR2000::sendSysExToBCR(SafeMidiOutput *midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone)
+	void BCR2000::sendSysExToBCR(std::shared_ptr<SafeMidiOutput> midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone)
 	{
 		errorsDuringUpload_.clear();
 		TransferCounters *receivedCounter = new TransferCounters;
@@ -259,9 +259,9 @@ namespace midikraft {
 		return "Behringer BCR2000";
 	}
 
-	juce::MidiMessage BCR2000::deviceDetect(int /* channel */) // The BCR can not detect on a specific channel, but will reply on all of them as it uses sysex
+	std::vector<juce::MidiMessage> BCR2000::deviceDetect(int /* channel */) // The BCR can not detect on a specific channel, but will reply on all of them as it uses sysex
 	{
-		return MidiHelpers::sysexMessage(createSysexCommandData(REQUEST_IDENTITY));
+		return { MidiHelpers::sysexMessage(createSysexCommandData(REQUEST_IDENTITY)) };
 	}
 
 	int BCR2000::deviceDetectSleepMS()

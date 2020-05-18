@@ -37,11 +37,11 @@ namespace midikraft {
 		static std::string convertSyxToText(const MidiMessage &message);
 		static bool isSysexFromBCR2000(const MidiMessage& message);
 
-		void sendSysExToBCR(SafeMidiOutput *midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone);
+		void sendSysExToBCR(std::shared_ptr<SafeMidiOutput> midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone);
 
 		// Implementation of DiscoverableDevice
 		virtual std::string getName() const override;
-		virtual MidiMessage deviceDetect(int channel) override;
+		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		virtual bool needsChannelSpecificDetection() override;
