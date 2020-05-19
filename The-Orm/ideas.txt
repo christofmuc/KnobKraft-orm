@@ -33,6 +33,13 @@ MKS80
 * how to deal with tones and patches
 * I guess just like the Wave in the K3?
 
+BCR2000
+* "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
+* Send to should block UI, as you really shouldn't click again while it is still sending
+* Need "cononical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
+* Could use bank list as preset list by querying bank names
+* DIN MIDI will be slow now, need second strategy to send
+
 Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 * Manage Backup diskspace

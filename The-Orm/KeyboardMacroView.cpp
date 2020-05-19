@@ -280,8 +280,10 @@ void KeyboardMacroView::valueChanged(Value& value)
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
 	if (customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue()) {
 		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
-		midikraft::MidiController::instance()->enableMidiInput(masterkeyboardDevice.toStdString());
-		SimpleLogger::instance()->postMessage("Opening master keyboard device " + masterkeyboardDevice + ", waiting for messages");
+		if (masterkeyboardDevice.isNotEmpty()) {
+			midikraft::MidiController::instance()->enableMidiInput(masterkeyboardDevice.toStdString());
+			SimpleLogger::instance()->postMessage("Opening master keyboard device " + masterkeyboardDevice + ", waiting for messages");
+		}
 	}
 }
 
