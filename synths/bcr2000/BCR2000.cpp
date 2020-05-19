@@ -195,7 +195,8 @@ namespace midikraft {
 		TransferCounters *receivedCounter = new TransferCounters;
 		// Determine what we will do with the answer...
 		auto handle = MidiController::makeOneHandle();
-		MidiController::instance()->addMessageHandler(handle, [this, messages, midiOutput, logger, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
+		std::vector<MidiMessage> localCopy = messages;
+		MidiController::instance()->addMessageHandler(handle, [this, localCopy, midiOutput, logger, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
 			if (source->getName().toStdString() != midiInput()) return;
 
 			// Check the answer from the BCR2000
@@ -210,7 +211,7 @@ namespace midikraft {
 
 						// Check for dropped messages...
 						int logicalLineNumber = receivedCounter->overflowCounter * (1 << 14) + lineNo;
-						if (logicalLineNumber != receivedCounter->receivedMessages) {
+						if (logicalLineNumber != receivedCounter->receivedMessages && receivedCounter->lastLine != -1) {
 							logger->postMessage("Seems to have a MIDI message drop");
 						}
 						if (lineNo < receivedCounter->lastLine && lineNo == 0) {
@@ -223,8 +224,8 @@ namespace midikraft {
 							if (errorNames.find(error) != errorNames.end()) {
 								errorText = errorNames[error];
 							}
-							if (logicalLineNumber >= 0 && logicalLineNumber < messages.size()) {
-								auto currentLine = convertSyxToText(messages[logicalLineNumber]);
+							if (logicalLineNumber >= 0 && logicalLineNumber < localCopy.size()) {
+								auto currentLine = convertSyxToText(localCopy[logicalLineNumber]);
 								errorsDuringUpload_.push_back({ error, errorText, logicalLineNumber + 1, currentLine });
 								logger->postMessage(errorsDuringUpload_.back().toDisplayString());
 							}
@@ -243,6 +244,7 @@ namespace midikraft {
 						}
 						else {
 							receivedCounter->lastLine = lineNo; // To detect the wrap around
+							midiOutput->sendMessageNow(localCopy[receivedCounter->lastLine + 1]);
 						}
 					}
 				}
@@ -252,17 +254,12 @@ namespace midikraft {
 
 		// Send all messages immediately
 		if (messages.size() > 0) {
-			MidiBuffer buffer;
-			int numMessages = 0;
-			for (auto message : messages) {
-				buffer.addEvent(message, numMessages++);
-			}
-			receivedCounter->numMessages = numMessages;
+			receivedCounter->numMessages = (int) messages.size();
 			receivedCounter->receivedMessages = 0;
 			receivedCounter->lastLine = -1;
 			receivedCounter->overflowCounter = 0;
 			if (midiOutput != nullptr) {
-				midiOutput->sendBlockOfMessagesNow(buffer);
+				midiOutput->sendMessageNow(messages[0]);
 			}
 			else {
 				logger->postMessage("No Midi Output known for BCR2000, not sending anything!");
@@ -527,10 +524,6 @@ namespace midikraft {
 						SimpleLogger::instance()->postMessage(error.toDisplayString());
 					}
 				}
-				else {
-					SimpleLogger::instance()->postMessage("Successfully sent to BCR2000");
-				}
-				
 			});
 		}
 	}
