@@ -141,7 +141,7 @@ namespace knobkraft {
 	juce::File GenericAdaption::getAdaptionDirectory()
 	{
 		// Should I make this configurable?
-		return File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/KnobKraft-Orm-adaptions");
+		return File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/KnobKraft-orm-adaptions");
 	}
 
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
