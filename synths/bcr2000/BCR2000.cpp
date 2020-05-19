@@ -196,7 +196,7 @@ namespace midikraft {
 		// Determine what we will do with the answer...
 		auto handle = MidiController::makeOneHandle();
 		MidiController::instance()->addMessageHandler(handle, [this, messages, midiOutput, logger, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
-			ignoreUnused(source);
+			if (source->getName().toStdString() != midiInput()) return;
 
 			// Check the answer from the BCR2000
 			if (isSysexFromBCR2000(answer)) {
@@ -225,8 +225,8 @@ namespace midikraft {
 							}
 							if (logicalLineNumber >= 0 && logicalLineNumber < messages.size()) {
 								auto currentLine = convertSyxToText(messages[logicalLineNumber]);
-								logger->postMessage((boost::format("Error %d (%s) in line %d: %s") % error % errorText % (logicalLineNumber + 1) % currentLine).str());
 								errorsDuringUpload_.push_back({ error, errorText, logicalLineNumber + 1, currentLine });
+								logger->postMessage(errorsDuringUpload_.back().toDisplayString());
 							}
 							else {
 								logger->postMessage((boost::format("Error %d (%s) in line %d") % error % errorText % (logicalLineNumber + 1)).str());
@@ -517,6 +517,24 @@ namespace midikraft {
 		return message.isSysEx() && isSysexFromBCR2000(message);
 	}
 
+	void BCR2000::sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile)
+	{
+		if (channel().isValid()) {
+			auto messages = Sysex::vectorToMessages(dataFile->data());
+			sendSysExToBCR(controller->getMidiOutput(midiOutput()), messages, logger, [](std::vector<BCRError> const &errors) {
+				if (!errors.empty()) {
+					for (const auto& error : errors) {
+						SimpleLogger::instance()->postMessage(error.toDisplayString());
+					}
+				}
+				else {
+					SimpleLogger::instance()->postMessage("Successfully sent to BCR2000");
+				}
+				
+			});
+		}
+	}
+
 	BCR2000Preset::BCR2000Preset(std::string const &name, Synth::PatchData const &data) : DataFile(0, data), name_(name)
 	{		
 	}
@@ -524,6 +542,11 @@ namespace midikraft {
 	std::string BCR2000Preset::name() const
 	{
 		return name_;
+	}
+
+	std::string BCR2000::BCRError::toDisplayString() const
+	{
+		return (boost::format("Error %d (%s) in line %d: %s") % errorCode % errorText % (lineNumber + 1) % lineText).str();
 	}
 
 }

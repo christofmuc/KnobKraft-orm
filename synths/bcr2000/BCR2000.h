@@ -30,6 +30,8 @@ namespace midikraft {
 			std::string errorText;
 			int lineNumber;
 			std::string lineText;
+
+			std::string toDisplayString() const;
 		};
 
 		void writeToFile(std::string const &filename, std::string const &bcl) const;
@@ -81,6 +83,9 @@ namespace midikraft {
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;
 		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		bool isOwnSysex(MidiMessage const &message) const override;
+
+		// Override the generic send handler so we can do the proper error handling for the BCR2000
+		virtual void sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) override;
 
 	private:
 		uint8 sysexCommand(const MidiMessage &message) const;
