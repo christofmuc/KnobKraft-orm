@@ -24,24 +24,13 @@ const char *kAllPatchesFilter = "All patches";
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
 	: database_(database), librarian_(synths), synths_(synths),
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
-	synthFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase();  }, false, true),
+	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
-	addAndMakeVisible(nameSearchText_);
-	nameSearchText_.addListener(this);
-	addAndMakeVisible(useNameSearch_);
-	useNameSearch_.setButtonText("search in name");
-	useNameSearch_.addListener(this);
-
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
 	importList_.addListener(this);
-
-	addAndMakeVisible(dataTypeSelector_);
-	dataTypeSelector_.setTextWhenNoChoicesAvailable("This synth does not support different data types");
-	dataTypeSelector_.setTextWhenNothingSelected("Click here to show only data of a specific type");
-	dataTypeSelector_.addListener(this);
 
 	onlyFaves_.setButtonText("Only Faves");
 	onlyFaves_.addListener(this);
@@ -66,7 +55,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 
 	addAndMakeVisible(categoryFilters_);
 
-	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", &synthFilters_, false);
+	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", &advancedFilters_, false);
 	addAndMakeVisible(*advancedSearch_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
@@ -119,7 +108,7 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
 		// Select only the newly selected synth in the synth filters
-		synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
+		advancedFilters_.synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
 
 		// Rebuild the other features
 		rebuildImportFilterBox();
@@ -140,7 +129,7 @@ void PatchView::rebuildSynthFilters() {
 	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
 		synthFilter.push_back(synthCategory(synth.get()));
 	}
-	synthFilters_.setCategories(synthFilter);
+	advancedFilters_.synthFilters_.setCategories(synthFilter);
 }
 
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
@@ -154,16 +143,16 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 
 void PatchView::textEditorTextChanged(TextEditor&)
 {
-	if (nameSearchText_.getText().isNotEmpty()) {
-		useNameSearch_.setToggleState(true, dontSendNotification);
+	if (advancedFilters_.nameSearchText_.getText().isNotEmpty()) {
+		advancedFilters_.useNameSearch_.setToggleState(true, dontSendNotification);
 	}
 	retrieveFirstPageFromDatabase();
 }
 
 void PatchView::textEditorEscapeKeyPressed(TextEditor&)
 {
-	nameSearchText_.setText("", true);
-	useNameSearch_.setToggleState(false, dontSendNotification);
+	advancedFilters_.nameSearchText_.setText("", true);
+	advancedFilters_.useNameSearch_.setToggleState(false, dontSendNotification);
 }
 
 midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
@@ -174,17 +163,17 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	}
 	bool typeSelected = false;
 	int filterType = 0;
-	if (dataTypeSelector_.getSelectedId() > 0) {
+	if (advancedFilters_.dataTypeSelector_.getSelectedId() > 0) {
 		typeSelected = true;
-		filterType = dataTypeSelector_.getSelectedId() - 1;
+		filterType = advancedFilters_.dataTypeSelector_.getSelectedId() - 1;
 	}
 	std::string nameFilter = "";
-	if (useNameSearch_.getToggleState()) {
-		nameFilter = nameSearchText_.getText().toStdString();
+	if (advancedFilters_.useNameSearch_.getToggleState()) {
+		nameFilter = advancedFilters_.nameSearchText_.getText().toStdString();
 	}
 	std::map<std::string, midikraft::Synth *> synthMap;
 	// Build synth list
-	for (auto s : synthFilters_.selectedCategories()) {
+	for (auto s : advancedFilters_.synthFilters_.selectedCategories()) {
 		midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(s.category);
 		if (synthFound.synth()) {
 			synthMap[synthFound.synth()->getName()] = synthFound.synth().get(); //TODO these non-shared-pointers make me nervous
@@ -243,29 +232,26 @@ void PatchView::resized()
 	auto topRow = area.removeFromTop(100);
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 	currentPatchDisplay_->setBounds(topRow);
-	auto sourceRow = area.removeFromTop(36).reduced(8);
-	auto nameFilterRow = area.removeFromTop(40).reduced(8);
-	useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));
-	nameSearchText_.setBounds(nameFilterRow);
-	auto filterRow = area.removeFromTop(80).reduced(8);
+
+	auto normalFilter = area.removeFromTop(32 * 2 + 24 + 3 * 8).reduced(8);
+	auto sourceRow = normalFilter.removeFromTop(24);
+	auto filterRow = normalFilter.withTrimmedTop(8); // 32 per row
 	
-	int advancedFilterHeight = advancedSearch_->isOpen() ? (32*2 + 32) : 32;
-	auto synthRow = area.removeFromTop(advancedFilterHeight).reduced(8);
-	advancedSearch_->setBounds(synthRow);
+	int advancedFilterHeight = advancedSearch_->isOpen() ? (24 + 24 + 2 * 32) : 24;
+	advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(8).withTrimmedRight(8));
 	
 	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
 
-	dataTypeSelector_.setBounds(sourceRow.removeFromLeft(200));
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
 }
 
 void PatchView::comboBoxChanged(ComboBox* box)
 {
-	if (box == &importList_ || box == &dataTypeSelector_) {
+	if (box == &importList_ || box == &advancedFilters_.dataTypeSelector_) {
 		// Same logic as if a new synth had been selected
 		retrieveFirstPageFromDatabase();
 	}
@@ -455,13 +441,13 @@ void PatchView::rebuildImportFilterBox() {
 }
 
 void PatchView::rebuildDataTypeFilterBox() {
-	dataTypeSelector_.clear();
+	advancedFilters_.dataTypeSelector_.clear();
 	auto dflc = dynamic_cast<midikraft::DataFileLoadCapability *>(UIModel::currentSynth());
 	if (dflc) {
 		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
 			auto typeName = dflc->dataTypeNames()[i];
 			if (typeName.canBeSent) {
-				dataTypeSelector_.addItem(typeName.name, (int) i + 1);
+				advancedFilters_.dataTypeSelector_.addItem(typeName.name, (int) i + 1);
 			}
 		}
 	}
@@ -526,4 +512,29 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 			}
 		}
 	}
+}
+
+PatchView::AdvancedFilterPanel::AdvancedFilterPanel(PatchView *patchView) :
+	synthFilters_({}, [patchView](CategoryButtons::Category) { patchView->retrieveFirstPageFromDatabase();  }, false, true)
+{
+	addAndMakeVisible(nameSearchText_);
+	nameSearchText_.addListener(patchView);
+	addAndMakeVisible(useNameSearch_);
+	useNameSearch_.setButtonText("search in name");
+	useNameSearch_.addListener(patchView);
+	addAndMakeVisible(synthFilters_);
+	addAndMakeVisible(dataTypeSelector_);
+	dataTypeSelector_.setTextWhenNoChoicesAvailable("This synth does not support different data types");
+	dataTypeSelector_.setTextWhenNothingSelected("Click here to show only data of a specific type");
+	dataTypeSelector_.addListener(patchView);
+}
+
+void PatchView::AdvancedFilterPanel::resized()
+{
+	auto area = getLocalBounds();
+	auto nameFilterRow = area.removeFromTop(24);
+	dataTypeSelector_.setBounds(nameFilterRow.removeFromLeft(200).withTrimmedRight(16));
+	useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));
+	nameSearchText_.setBounds(nameFilterRow);
+	synthFilters_.setBounds(area);
 }

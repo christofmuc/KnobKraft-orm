@@ -63,6 +63,16 @@ public:
 	void retrieveEditBuffer();
 
 private:
+	struct AdvancedFilterPanel : public Component {
+		AdvancedFilterPanel(PatchView *patchView);
+		virtual void resized() override;
+
+		ComboBox dataTypeSelector_;
+		TextEditor nameSearchText_;
+		ToggleButton useNameSearch_;
+		CategoryButtons synthFilters_;
+	};
+
 	static std::vector<CategoryButtons::Category> predefinedCategories();
 
 	virtual void textEditorTextChanged(TextEditor&) override;
@@ -82,13 +92,12 @@ private:
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 
-	TextEditor nameSearchText_; 
-	ToggleButton useNameSearch_;
+	
 	ComboBox importList_;
-	ComboBox dataTypeSelector_;
+	
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;
-	CategoryButtons synthFilters_;
+	AdvancedFilterPanel advancedFilters_;
 	ToggleButton onlyFaves_;
 	ToggleButton showHidden_;
 	ToggleButton onlyUntagged_;
