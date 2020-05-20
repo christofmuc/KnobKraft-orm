@@ -219,8 +219,13 @@ namespace midikraft {
 	}
 
 	std::shared_ptr<DataFile> KawaiK3::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
-		auto patch = std::make_shared<KawaiK3Patch>(place, data);
-		return patch;
+		if (data.size() == 34) {
+			return std::make_shared<KawaiK3Patch>(place, data);
+		}
+		else if (data.size() == 65) {
+			return std::make_shared<KawaiK3Wave>(data, place);
+		}
+		return {};
 	}
 
 	std::shared_ptr<Patch> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
@@ -533,7 +538,7 @@ namespace midikraft {
 		}
 
 		int start = 0;
-		int end = 34;
+		int end = programNo < 100 ? 34 : 65;
 		if (produceWaveInsteadOfPatch) {
 			start = 34;
 			end = 34 + 64;

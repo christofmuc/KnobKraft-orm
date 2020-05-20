@@ -153,11 +153,11 @@ namespace midikraft {
 		}
 	}
 
-	KawaiK3Wave::KawaiK3Wave(Synth::PatchData const &data, MidiProgramNumber programNo) : DataFile(KawaiK3::K3_WAVE, data), programNo_(programNo)
+	KawaiK3Wave::KawaiK3Wave(Synth::PatchData const &data, MidiProgramNumber programNo) : Patch(KawaiK3::K3_WAVE, data), programNo_(programNo)
 	{
 	}
 
-	KawaiK3Wave::KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo) : DataFile(KawaiK3::K3_WAVE), programNo_(programNo)
+	KawaiK3Wave::KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo) : Patch(KawaiK3::K3_WAVE), programNo_(programNo)
 	{
 		std::vector<uint8> harmonicArray(64);
 
@@ -183,6 +183,21 @@ namespace midikraft {
 	std::string KawaiK3Wave::name() const
 	{
 		return "User Wave";
+	}
+
+	std::shared_ptr<midikraft::PatchNumber> KawaiK3Wave::patchNumber() const
+	{
+		return std::make_shared <KawaiK3WaveNumber>(programNo_);
+	}
+
+	void KawaiK3Wave::setPatchNumber(MidiProgramNumber patchNumber)
+	{
+		programNo_ = patchNumber;
+	}
+
+	std::string KawaiK3WaveNumber::friendlyName() const
+	{
+		return programNumber_.toZeroBased() == 100 ? "Internal" : (programNumber_.toZeroBased() == 101 ? "Cartridge" : "Invalid");
 	}
 
 }

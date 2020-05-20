@@ -23,12 +23,21 @@ namespace midikraft {
 		virtual std::string friendlyName() const;
 	};
 
-	class KawaiK3Wave : public DataFile {
+	class KawaiK3WaveNumber : public PatchNumber {
+	public:
+		using PatchNumber::PatchNumber;
+		virtual std::string friendlyName() const;
+	};
+
+	class KawaiK3Wave : public Patch {
 	public:
 		KawaiK3Wave(Synth::PatchData const &data, MidiProgramNumber programNo);
 		KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo);
 
 		std::string name() const override;
+
+		std::shared_ptr<PatchNumber> patchNumber() const override;
+		void setPatchNumber(MidiProgramNumber patchNumber) override;
 
 	private:
 		MidiProgramNumber programNo_;
