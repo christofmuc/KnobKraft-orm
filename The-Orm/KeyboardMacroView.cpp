@@ -246,7 +246,7 @@ void KeyboardMacroView::resized()
 	int contentWidth = std::min(area.getWidth(), 600);
 
 	// On Top, the setup
-	customSetup_.setBounds(area.removeFromTop(220).withSizeKeepingCentre(contentWidth, 220).reduced(8));
+	customSetup_.setBounds(area.removeFromTop(260).withSizeKeepingCentre(contentWidth, 260).reduced(8));
 	// Then the keyboard	
 	auto keyboardArea = area.removeFromTop(166);
 	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
