@@ -26,6 +26,7 @@ public:
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);
 	void setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget = -1);
+	
 	void refresh(bool async, int autoSelectTarget = -1);
 
 	void resized() override;
@@ -39,6 +40,8 @@ public:
 	void selectNext();
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
+
+	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
 
 private:
 	int indexOfActive() const;

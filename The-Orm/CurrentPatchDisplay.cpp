@@ -7,7 +7,10 @@
 #include "CurrentPatchDisplay.h"
 
 #include "PatchNameDialog.h"
+#include "PatchButtonPanel.h"
 #include "DataFileLoadCapability.h"
+
+#include "ColourHelpers.h"
 
 //#include "SessionDatabase.h"
 
@@ -17,7 +20,12 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 		midikraft::Category cat({ categoryClicked.category, categoryClicked.color, categoryClicked.bitIndex });
 		categoryUpdated(cat);
 	}, false, false),
-	name_("No patch loaded"),
+	name_(0, false, [this](int) { 		
+		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent(), [this](midikraft::PatchHolder *result) {
+			setCurrentPatch(*result);
+			favoriteHandler_(*result);
+		}); 
+	}),
 	currentSession_("Current Session"), 
 	favorite_("Fav!"),
 	hide_("Hide"),
@@ -26,7 +34,6 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(patchType_);
 
-	name_.addListener(this);
 	addAndMakeVisible(&name_);
 
 	favorite_.setClickingTogglesState(true);
@@ -54,8 +61,10 @@ CurrentPatchDisplay::~CurrentPatchDisplay()
 
 void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 {
+	currentPatch_ = patch;
 	if (patch.patch()) {
 		name_.setButtonText(patch.name());
+		refreshNameButtonColour();
 		if (patch.sourceInfo()) {
 			import_.setText(patch.sourceInfo()->toDisplayString(patch.synth()), dontSendNotification);
 		}
@@ -95,7 +104,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 		hide_.setToggleState(false, dontSendNotification);
 		categories_.setActive({});
 	}
-	currentPatch_ = patch;
+
 }
 
 void CurrentPatchDisplay::reset()
@@ -108,7 +117,7 @@ void CurrentPatchDisplay::reset()
 
 void CurrentPatchDisplay::resized()
 {
-	Rectangle<int> area(getLocalBounds());
+	Rectangle<int> area(getLocalBounds().reduced(8)); // This is for the background colour to show more
 	auto topRow = area.removeFromTop(40);
 
 	// Split the top row in three parts, with the centered one taking 240 px (the patch name)
@@ -149,12 +158,6 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 			favoriteHandler_(currentPatch_);
 		}
 	}
-	else if (button == &name_) {
-		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent(), [this](midikraft::PatchHolder *result) {
-			setCurrentPatch(*result);
-			favoriteHandler_(*result);
-		});
-	}
 	else if (button == &currentSession_) {
 	/*	if (currentPatch_) {
 			Session session("1");
@@ -184,6 +187,20 @@ void CurrentPatchDisplay::toggleHide()
 	}
 }
 
+void CurrentPatchDisplay::refreshNameButtonColour() {
+	if (currentPatch_.patch()) {
+		name_.setColour(TextButton::ColourIds::buttonColourId, PatchButtonPanel::buttonColourForPatch(currentPatch_, this));
+	}
+	else {
+		name_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
+	}
+}
+
+void CurrentPatchDisplay::paint(Graphics& g)
+{
+	g.fillAll(getLookAndFeel().findColour(TextButton::buttonOnColourId));
+}
+
 void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
 	if (currentPatch_.patch()) {
 		currentPatch_.setUserDecision(clicked);
@@ -196,4 +213,5 @@ void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
 		}
 		favoriteHandler_(currentPatch_);
 	}
+	refreshNameButtonColour();
 }

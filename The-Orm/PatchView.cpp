@@ -242,7 +242,7 @@ void PatchView::resized()
 	Rectangle<int> area(getLocalBounds());
 	auto topRow = area.removeFromTop(100);
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
-	currentPatchDisplay_->setBounds(topRow.reduced(8));
+	currentPatchDisplay_->setBounds(topRow);
 	auto sourceRow = area.removeFromTop(36).reduced(8);
 	auto nameFilterRow = area.removeFromTop(40).reduced(8);
 	useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));

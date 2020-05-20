@@ -60,6 +60,16 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	}
 }
 
+Colour PatchButtonPanel::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
+	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
+	auto cats = patch.categories();
+	if (!cats.empty()) {
+		// Random in case the patch has multiple categories
+		color = cats.cbegin()->color.darker();
+	}
+	return color;
+}
+
 void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
@@ -77,12 +87,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 			Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 			if (i < patches_.size()) {
 				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].name());
-				auto cats = patches_[i].categories();
-				if (!cats.empty()) {
-					// Random in case the patch has multiple categories
-					color = cats.cbegin()->color.darker();
-				}
-				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color);
+				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(patches_[i], this));
 				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
 				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
 			}

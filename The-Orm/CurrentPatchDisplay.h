@@ -9,6 +9,7 @@
 #include "JuceHeader.h"
 
 #include "CategoryButtons.h"
+#include "PatchButton.h"
 
 #include "Patch.h"
 #include "PatchHolder.h"
@@ -34,12 +35,16 @@ public:
 	void toggleFavorite();
 	void toggleHide();
 
+	// Override to allow custom colour
+	virtual void paint(Graphics& g) override;
+
 private:
+	void refreshNameButtonColour();
 	void categoryUpdated(midikraft::Category clicked);
 
 	Label synthName_;
 	Label patchType_;
-	TextButton name_;
+	PatchButton name_;
 	Label import_;
 	TextButton currentSession_;
 	TextButton favorite_;
