@@ -1,6 +1,9 @@
 Completely unprioritised list of things to do
 =============================================
 
+Before next release
++ PatchButton should somehow show synth
+
 BUGS
 + I think sending the K3 User wave doesn't send it correctly, but sends it as a patch?
 
@@ -23,7 +26,6 @@ Rev2
 K3
 * Drawbar Organ Waveform Generator
 * BCR2000 template for editing the wave?
-* Need to display the patch type in the current patch display
 * Could render wave as Thumbnail
 * Allow dependencies between DataFiles (patch -> wave for K3)
 * Generic Oscillator shape optimizer? 
@@ -71,10 +73,13 @@ Librarian
 * Allow recursive directory traversal during import
 * Could have patch name autogenerator like LaserMammoth
 
-
 Global settings 
 * Need to change MIDI channel internally when using the settings editor to change it
 * Could show nice text instead of empty page
+
+Alternate Tunings
+* https://forum.sequential.com/index.php/topic,3468.0.html
+* have you managed to change the slot number
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
@@ -110,19 +115,14 @@ Big things
 	* Patch randomizer
 	* The automatic patch clusterer!
 	* Automatic patch optimizer
-	* Multiple synths in one grid
-	* Masterkeyboard control ("Follow the patch")
 	* MIDI routing (first only to and forth, then remapping channels, ...)
+	* Clock routing screen
 	* Interface into LaserMammoth devices? Can I execute Javascript?
 	* Integrate with CTRLR? Can I host their panels? If yes, for what?
 	* Can I synchronize multiple devices via the LaserMammoth Backend?
 	* Could have voice input for naming patches? General voice control?
 	* Should I use Amazon DynamoDB to synchronize multiple installations? Encryption?
 	* VST version? If yes, why?
-
-Alternate Tunings
-* https://forum.sequential.com/index.php/topic,3468.0.html
-* have you managed to change the slot number
 
 More synthesizers
 
@@ -136,6 +136,4 @@ Requested on Reddit
 
 Librarian for other stuff (should rather do with adaption?)
 
-	+ BCR2000
 	+ Meris pedal
-
