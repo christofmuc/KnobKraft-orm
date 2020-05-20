@@ -37,6 +37,8 @@ public:
 private:
 	void categoryUpdated(midikraft::Category clicked);
 
+	Label synthName_;
+	Label patchType_;
 	TextButton name_;
 	Label import_;
 	TextButton currentSession_;

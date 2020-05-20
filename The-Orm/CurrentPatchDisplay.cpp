@@ -7,6 +7,7 @@
 #include "CurrentPatchDisplay.h"
 
 #include "PatchNameDialog.h"
+#include "DataFileLoadCapability.h"
 
 //#include "SessionDatabase.h"
 
@@ -22,6 +23,9 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 	hide_("Hide"),
 	import_("IMPORT", "No import information")
 {
+	addAndMakeVisible(synthName_);
+	addAndMakeVisible(patchType_);
+
 	name_.addListener(this);
 	addAndMakeVisible(&name_);
 
@@ -66,9 +70,26 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 			buttonCategories.insert({ cat.category, cat.color, cat.bitIndex });
 		}
 		categories_.setActive(buttonCategories);
+
+		if (patch.synth()) {
+			synthName_.setText(patch.synth()->getName(), dontSendNotification);
+			auto dataFileCap = dynamic_cast<midikraft::DataFileLoadCapability *>(patch.synth());
+			if (dataFileCap) {
+				patchType_.setText(dataFileCap->dataTypeNames()[patch.patch()->dataTypeID()].name, dontSendNotification);
+			}
+			else {
+				patchType_.setText("Patch", dontSendNotification);
+			}
+		}
+		else {
+			synthName_.setText("Invalid synth", dontSendNotification);
+			patchType_.setText("Unknown", dontSendNotification);
+		}
 	}
 	else {
 		name_.setButtonText("No patch loaded");
+		synthName_.setText("", dontSendNotification);
+		patchType_.setText("", dontSendNotification);
 		import_.setText("", dontSendNotification);
 		favorite_.setToggleState(false, dontSendNotification);
 		hide_.setToggleState(false, dontSendNotification);
@@ -88,13 +109,28 @@ void CurrentPatchDisplay::reset()
 void CurrentPatchDisplay::resized()
 {
 	Rectangle<int> area(getLocalBounds());
-	auto topRow = area.removeFromTop(60).reduced(10);
-	hide_.setBounds(topRow.removeFromRight(100));
-	favorite_.setBounds(topRow.removeFromRight(100));
-	//currentSession_.setBounds(topRow.removeFromRight(100));
-	import_.setBounds(topRow.removeFromRight(300).withTrimmedRight(10));
-	name_.setBounds(topRow.withTrimmedRight(10));
-	auto bottomRow = area.removeFromTop(80).reduced(10);
+	auto topRow = area.removeFromTop(40);
+
+	// Split the top row in three parts, with the centered one taking 240 px (the patch name)
+	int side = (topRow.getWidth() - 240) / 2;
+	auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
+	auto leftCornerUpper = leftCorner.removeFromTop(20);
+	auto leftCornerLower = leftCorner;
+	auto rightCorner = topRow.removeFromRight(side).withTrimmedLeft(8);
+
+	// Right side - hide and favorite button
+	hide_.setBounds(rightCorner.removeFromRight(100));
+	favorite_.setBounds(rightCorner.removeFromRight(100));
+
+	// Left side - synth patch
+	synthName_.setBounds(leftCornerUpper.removeFromLeft(100));
+	patchType_.setBounds(leftCornerUpper.removeFromLeft(100).withTrimmedLeft(8));
+	import_.setBounds(leftCornerLower);
+
+	// Center - patch name
+	name_.setBounds(topRow);
+
+	auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
 	categories_.setBounds(bottomRow);
 	
 }
