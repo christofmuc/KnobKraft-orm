@@ -520,9 +520,7 @@ namespace midikraft {
 			auto messages = Sysex::vectorToMessages(dataFile->data());
 			sendSysExToBCR(controller->getMidiOutput(midiOutput()), messages, logger, [](std::vector<BCRError> const &errors) {
 				if (!errors.empty()) {
-					for (const auto& error : errors) {
-						SimpleLogger::instance()->postMessage(error.toDisplayString());
-					}
+					SimpleLogger::instance()->postMessage("Preset contains errors");
 				}
 			});
 		}
@@ -539,7 +537,9 @@ namespace midikraft {
 
 	std::string BCR2000::BCRError::toDisplayString() const
 	{
-		return (boost::format("Error %d (%s) in line %d: %s") % errorCode % errorText % (lineNumber + 1) % lineText).str();
+		std::string sanitizedLine = lineText;
+		sanitizedLine.erase(std::remove(sanitizedLine.begin(), sanitizedLine.end(), '\n'), sanitizedLine.end());
+		return (boost::format("Error %d (%s) in line %d: %s") % (int)errorCode % errorText % (lineNumber + 1) % sanitizedLine).str();
 	}
 
 }
