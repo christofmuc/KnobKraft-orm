@@ -2,10 +2,11 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-+ PatchButton should somehow show synth
+Harmonize "Advanced Filters"
 
 BUGS
 + I think sending the K3 User wave doesn't send it correctly, but sends it as a patch?
++ PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
@@ -25,7 +26,7 @@ Rev2
 
 K3
 * Drawbar Organ Waveform Generator
-* BCR2000 template for editing the wave?
+* BCR2000 template for editing the wave
 * Could render wave as Thumbnail
 * Allow dependencies between DataFiles (patch -> wave for K3)
 * Generic Oscillator shape optimizer? 
@@ -66,7 +67,6 @@ Librarian
 * Better display of bulk imports with real file source
 * Could accept synth-initiated dumps at any time
 * Could introduce collections/sessions/songs
-* Better display of bulk imports with real file source
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Make page number clickable to switch to that page, show less page numbers if these are really many
 * Allow multi-select of banks to import (with all feature)
