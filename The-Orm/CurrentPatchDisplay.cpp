@@ -48,12 +48,12 @@ CurrentPatchDisplay::~CurrentPatchDisplay()
 	PatchNameDialog::release();
 }
 
-void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch)
+void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 {
 	if (patch.patch()) {
 		name_.setButtonText(patch.name());
 		if (patch.sourceInfo()) {
-			import_.setText(patch.sourceInfo()->toDisplayString(synth), dontSendNotification);
+			import_.setText(patch.sourceInfo()->toDisplayString(patch.synth()), dontSendNotification);
 		}
 		else {
 			import_.setText("No import information", dontSendNotification);
@@ -75,7 +75,6 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 		categories_.setActive({});
 	}
 	currentPatch_ = patch;
-	currentSynth_ = synth;
 }
 
 void CurrentPatchDisplay::reset()
@@ -116,7 +115,7 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 	}
 	else if (button == &name_) {
 		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent(), [this](midikraft::PatchHolder *result) {
-			setCurrentPatch(currentSynth_, *result);
+			setCurrentPatch(*result);
 			favoriteHandler_(*result);
 		});
 	}

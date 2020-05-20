@@ -127,7 +127,7 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 		retrieveFirstPageFromDatabase();
 	}
 	else if (dynamic_cast<CurrentPatch *>(source)) {
-		currentPatchDisplay_->setCurrentPatch(UIModel::currentSynth(), UIModel::currentPatch());
+		currentPatchDisplay_->setCurrentPatch(UIModel::currentPatch());
 	}
 	else if (dynamic_cast<CurrentSynthList *>(source)) {
 		rebuildSynthFilters();

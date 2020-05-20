@@ -22,7 +22,7 @@ public:
 		std::function<void(midikraft::PatchHolder&)> sessionHandler);
 	virtual ~CurrentPatchDisplay();
 
-	void setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch);
+	void setCurrentPatch(midikraft::PatchHolder patch);
 	void reset();
 
 	void resized() override;
@@ -46,7 +46,6 @@ private:
 	std::function<void(midikraft::PatchHolder&)> favoriteHandler_;
 	std::function<void(midikraft::PatchHolder&)> sessionHandler_;
 	midikraft::PatchHolder currentPatch_;
-	midikraft::Synth *currentSynth_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)
 };
