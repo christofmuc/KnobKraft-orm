@@ -2,11 +2,13 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-Harmonize "Advanced Filters"
++
 
 BUGS
 + I think sending the K3 User wave doesn't send it correctly, but sends it as a patch?
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
+* Type switch is missing "all" setup
+* Global settings needs to change MIDI channel internally when using the settings editor to change it
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
@@ -28,9 +30,9 @@ K3
 * Drawbar Organ Waveform Generator
 * BCR2000 template for editing the wave
 * Could render wave as Thumbnail
-* Allow dependencies between DataFiles (patch -> wave for K3)
 * Generic Oscillator shape optimizer? 
 * Default name handling shaky
+* Allow dependencies between DataFiles (patch -> wave for K3)
 
 MKS80
 * how to deal with tones and patches
@@ -63,18 +65,16 @@ Macro page
 * Also allow sequences, not just chords
 
 Librarian
-* Type switch is missing "all" setup
+* Allow recursive directory traversal during import
 * Better display of bulk imports with real file source
 * Could accept synth-initiated dumps at any time
 * Could introduce collections/sessions/songs
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Make page number clickable to switch to that page, show less page numbers if these are really many
 * Allow multi-select of banks to import (with all feature)
-* Allow recursive directory traversal during import
 * Could have patch name autogenerator like LaserMammoth
 
 Global settings 
-* Need to change MIDI channel internally when using the settings editor to change it
 * Could show nice text instead of empty page
 
 Alternate Tunings

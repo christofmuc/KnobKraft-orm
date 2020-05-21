@@ -68,3 +68,7 @@
 	path = synths/MidiKraft-BCR2000
 	url = https://github.com/christofmuc/MidiKraft-BCR2000.git
 	branch = master
+[submodule "pytschirp"]
+	path = pytschirp
+	url = https://github.com/christofmuc/pytschirp.git
+	branch = master
