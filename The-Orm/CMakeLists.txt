@@ -74,6 +74,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-sequential-ob6  
 		midikraft-yamaha-refacedx
 		knobkraft-generic-adaption
+		pytschirp_embedded
 )
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})

@@ -12,6 +12,7 @@
 #include "UIModel.h"
 
 #include "GenericAdaption.h"
+#include "embedded_module.h"
 
 #include <memory>
 
@@ -39,6 +40,9 @@ public:
 
 		// Init python for GenericAdaption
 		knobkraft::GenericAdaption::startupGenericAdaption();
+
+		// Init python with the embedded pytschirp module
+		globalImportEmbeddedModules();
 
 		// Select colour scheme
 		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();

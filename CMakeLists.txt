@@ -85,6 +85,9 @@ add_subdirectory(synths/MidiKraft-yamaha-refacedx)
 # Add the generic adaptions module, that allows to define synths via Python
 add_subdirectory(adaptions)
 
+# Add the pytchirp module that exposes the synths to Python
+add_subdirectory(pytschirp)
+
 # Main module
 add_subdirectory(The-Orm)
 
