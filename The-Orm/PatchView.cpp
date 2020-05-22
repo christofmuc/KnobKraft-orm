@@ -16,6 +16,7 @@
 #include "UIModel.h"
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
+#include "ScriptedQuery.h"
 
 #include <boost/format.hpp>
 
@@ -169,14 +170,16 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	}
 	std::string nameFilter = "";
 	if (advancedFilters_.useNameSearch_.getToggleState()) {
-		nameFilter = advancedFilters_.nameSearchText_.getText().toStdString();
+		if (!advancedFilters_.nameSearchText_.getText().startsWith("!")) {
+			nameFilter = advancedFilters_.nameSearchText_.getText().toStdString();
+		}
 	}
-	std::map<std::string, midikraft::Synth *> synthMap;
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	// Build synth list
 	for (auto s : advancedFilters_.synthFilters_.selectedCategories()) {
 		midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(s.category);
 		if (synthFound.synth()) {
-			synthMap[synthFound.synth()->getName()] = synthFound.synth().get(); //TODO these non-shared-pointers make me nervous
+			synthMap[synthFound.synth()->getName()] = synthFound.synth(); 
 		}
 	}
 	return { synthMap, 
@@ -222,7 +225,19 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 	// Kick off loading from the database (could be Internet?)
 	database_.getPatchesAsync(buildFilter(), [this, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
 		// TODO - we might want to cancel a running query if the user clicks fast?
-		callback(newPatches);
+
+		// Check if a client-side filter is active (python based)
+		String advancedQuery = advancedFilters_.nameSearchText_.getText();
+		if (advancedQuery.startsWith("!")) {
+			// Bang start indicates python predicate to evaluate instead of just a name query!
+			ScriptedQuery query;
+			// Drop the first character (!)
+			auto filteredPatches = query.filterByPredicate(advancedQuery.substring(1).toStdString(), newPatches);
+			callback(filteredPatches);
+		}
+		else {
+			callback(newPatches);
+		}
 	}, skip, limit);
 }
 
@@ -297,11 +312,11 @@ void PatchView::saveCurrentPatchCategories() {
 }
 
 void PatchView::retrievePatches() {
-	midikraft::Synth *activeSynth = UIModel::currentSynth();
-	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(activeSynth);
+	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
+	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
 	if (activeSynth && midiLocation) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
-		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
+		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, activeSynth, midiLocation](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
 			librarian_.startDownloadingAllPatches(
 				midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
@@ -331,8 +346,8 @@ void PatchView::retrievePatches() {
 
 void PatchView::retrieveEditBuffer()
 {
-	midikraft::Synth *activeSynth = UIModel::currentSynth();
-	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(activeSynth);
+	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
+	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
 	if (activeSynth && midiLocation) {
 		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 			activeSynth,
@@ -411,7 +426,7 @@ private:
 
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
-		auto patches = librarian_.loadSysexPatchesFromDisk(*UIModel::currentSynth());
+		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth());
 		if (patches.size() > 0) {
 			mergeNewPatches(patches);
 		}

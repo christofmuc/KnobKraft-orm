@@ -6,7 +6,7 @@
 
 #include "UIModel.h"
 
-void CurrentSynth::changeCurrentSynth(midikraft::Synth *activeSynth)
+void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth)
 {
 	currentSynth_ = activeSynth;
 	sendChangeMessage();

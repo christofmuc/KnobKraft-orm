@@ -16,14 +16,18 @@
 
 class CurrentSynth : public ChangeBroadcaster {
 public:
-	void changeCurrentSynth(midikraft::Synth *activeSynth);
+	void changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth);
 
 	midikraft::Synth *synth() {
-		return currentSynth_;
+		return currentSynth_.expired() ? nullptr : currentSynth_.lock().get();
+	}
+
+	std::shared_ptr<midikraft::Synth> smartSynth() {
+		return currentSynth_.expired() ? nullptr : currentSynth_.lock();
 	}
 
 private:
-	midikraft::Synth *currentSynth_ = nullptr;
+	std::weak_ptr<midikraft::Synth> currentSynth_;
 };
 
 class CurrentSequencer : public ChangeBroadcaster {

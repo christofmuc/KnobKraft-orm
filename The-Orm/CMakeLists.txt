@@ -50,6 +50,7 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
+	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
