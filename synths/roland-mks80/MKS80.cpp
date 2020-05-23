@@ -44,9 +44,8 @@ namespace midikraft {
 		return bankNo.toZeroBased() == 0 ? "Bank A" : "Bank B";
 	}
 
-	std::shared_ptr<DataFile> MKS80::patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const
+	std::shared_ptr<DataFile> MKS80::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		ignoreUnused(name); // MKS80 patches have no name
 		return std::make_shared<MKS80_Patch>(place, data);
 	}
 
@@ -61,11 +60,11 @@ namespace midikraft {
 		return false;
 	}
 
-	juce::MidiMessage MKS80::deviceDetect(int channel)
+	std::vector<juce::MidiMessage> MKS80::deviceDetect(int channel)
 	{
 		//TODO Really?. I could send a WSF and it should reply with an ACK
 		// The MKS-80 cannot be actively detected, it has to send messages to be spotted on the network
-		return buildHandshakingMessage(MKS80_Operation_Code::WSF, MidiChannel::fromZeroBase(channel));
+		return { buildHandshakingMessage(MKS80_Operation_Code::WSF, MidiChannel::fromZeroBase(channel)) };
 	}
 
 	int MKS80::deviceDetectSleepMS()
