@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm)
+project(KnobKraftOrm VERSION 1.5.0)
 
 IF (WIN32)
 	# All setup for UI software on Windows
@@ -17,7 +17,9 @@ ELSEIF(UNIX)
 
 	# These calls create special `PkgConfig::<MODULE>` variables
 	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
 	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+	find_package(ICU REQUIRED data uc)
 ENDIF()
 
 find_package(JUCE REQUIRED 
@@ -33,6 +35,8 @@ find_package(JUCE REQUIRED
 		juce_cryptography # MD5
 )
 
+configure_file("version.cpp.in" "version.cpp")
+
 set(SOURCES
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
@@ -46,8 +50,11 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
+	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
+	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
+	version.cpp.in
 	setup.iss
 	ideas.txt
 	redist/agpl-3.0.txt
@@ -59,14 +66,21 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-base 
 		midikraft-librarian 
 		midikraft-database 
+		midikraft-access-virus
+		midikraft-behringer-bcr2000
+		midikraft-kawai-k3
+		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
+		midikraft-yamaha-refacedx
+		knobkraft-generic-adaption
+		pytschirp_embedded
 )
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})
-target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl")
+target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
@@ -78,7 +92,8 @@ ELSEIF(UNIX)
 		${JUCE_LIBRARIES} 
 		PkgConfig::WEBKIT 
 		PkgConfig::GTK 
-		PkgConfig::ICU
+		PkgConfig::GLEW 
+		ICU::data ICU::uc
 		Xext 
 		X11 
 		pthread 
@@ -86,6 +101,7 @@ ELSEIF(UNIX)
 		freetype 
 		curl 
 		${MIDIKRAFT_LIBRARIES}
+		asound
 		SQLiteCpp
 		sqlite3
 		)
@@ -111,9 +127,16 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc66.dll" "${icu_SOURCE_DIR}/bin64/icudt66.dll"
+					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll"
+					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
+	add_custom_command(
+			TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+					"${PYTHONPATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
+
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer

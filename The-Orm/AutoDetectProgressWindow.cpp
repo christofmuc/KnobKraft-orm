@@ -12,7 +12,9 @@ void AutoDetectProgressWindow::run()
 {
 	std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
 	for (auto s : synths_) {
-		synths.push_back(s.device());
+		if (UIModel::instance()->synthList_.isSynthActive(s.device())) {
+			synths.push_back(s.device());
+		}
 	}
 	autodetector_.autoconfigure(synths, this);
 	if (!shouldAbort()) {

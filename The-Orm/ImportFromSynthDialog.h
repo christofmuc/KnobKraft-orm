@@ -20,6 +20,7 @@ public:
 	typedef std::function<void(MidiBankNumber bankNo, midikraft::ProgressHandler *)> TBankLoadHandler;
 
 	ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadHandler onOk);
+	~ImportFromSynthDialog() {}
 
 	void resized() override;
 	void buttonClicked(Button*) override;
@@ -31,4 +32,23 @@ private:
 	TextButton ok_, cancel_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ImportFromSynthDialog)
+};
+
+class ImportFromSynthThread : public ThreadWithProgressWindow, public midikraft::ProgressHandler
+{
+public:
+	ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk);
+	~ImportFromSynthThread();;
+
+	void run() override;
+	void setBank(MidiBankNumber id);
+	bool shouldAbort() const override;
+	void setProgressPercentage(double zeroToOne) override;
+	void onSuccess() override;
+	void onCancel() override;
+
+private:
+	ImportFromSynthDialog::TBankLoadHandler onOk_;
+	bool stop_;
+	MidiBankNumber bank_;
 };

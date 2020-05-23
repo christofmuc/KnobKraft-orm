@@ -11,7 +11,13 @@
 #include "Settings.h"
 #include "UIModel.h"
 
+#include "GenericAdaption.h"
+#include "embedded_module.h"
+
 #include <memory>
+
+#include "version.cpp"
+
 
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication
@@ -32,7 +38,19 @@ public:
         // This method is where you should put your application's initialization code..
 		Settings::setSettingsID("KnobKraftOrm");
 
-        mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian"));
+		// Init python for GenericAdaption
+		knobkraft::GenericAdaption::startupGenericAdaption();
+
+		// Init python with the embedded pytschirp module
+		globalImportEmbeddedModules();
+
+		// Select colour scheme
+		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
+		auto v4 = dynamic_cast<LookAndFeel_V4 *>(lookAndFeel);
+		if (v4) {
+			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
+		}
+		mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion())); 
     }
 
     void shutdown() override

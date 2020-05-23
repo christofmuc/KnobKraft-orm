@@ -9,6 +9,7 @@
 #include "JuceHeader.h"
 
 #include "CategoryButtons.h"
+#include "PatchButton.h"
 
 #include "Patch.h"
 #include "PatchHolder.h"
@@ -22,7 +23,7 @@ public:
 		std::function<void(midikraft::PatchHolder&)> sessionHandler);
 	virtual ~CurrentPatchDisplay();
 
-	void setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch);
+	void setCurrentPatch(midikraft::PatchHolder patch);
 	void reset();
 
 	void resized() override;
@@ -34,10 +35,16 @@ public:
 	void toggleFavorite();
 	void toggleHide();
 
+	// Override to allow custom colour
+	virtual void paint(Graphics& g) override;
+
 private:
+	void refreshNameButtonColour();
 	void categoryUpdated(midikraft::Category clicked);
 
-	TextButton name_;
+	Label synthName_;
+	Label patchType_;
+	PatchButton name_;
 	Label import_;
 	TextButton currentSession_;
 	TextButton favorite_;
@@ -46,7 +53,6 @@ private:
 	std::function<void(midikraft::PatchHolder&)> favoriteHandler_;
 	std::function<void(midikraft::PatchHolder&)> sessionHandler_;
 	midikraft::PatchHolder currentPatch_;
-	midikraft::Synth *currentSynth_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)
 };

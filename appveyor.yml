@@ -1,0 +1,33 @@
+version: 1.0.{build}
+image:
+- Visual Studio 2017
+- Ubuntu1804
+install:
+- cmd: cinst innosetup
+- sh: >-    
+    sudo apt-get -y update && 
+    sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev && 
+    sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev
+- git submodule update --init --recursive
+environment:
+  matrix:
+  - {}
+build_script:
+- cmd: |
+    cmake -S . -B builds -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\Python36-x64\python.exe
+    cmake --build builds --config Debug
+    cmake --build builds --config Release
+- sh: >-
+    cmake -S . -B builds &&
+    cmake --build builds
+deploy:
+  release: knobkraft-orm-v${appveyor_build_version}
+  description: 'Release description'
+  provider: GitHub
+  auth_token:
+    secure: xIPND/jowVYubaRd6lsailrqsm+YttjrFJpECRVDc5wO2/TRmC0HORzphBBSvB1s
+  artifact: /**/knobkraft_orm_setup*.exe/
+  draft: true
+  prerelease: false
+  on:    
+    APPVEYOR_REPO_TAG: true        # deploy on tag push only

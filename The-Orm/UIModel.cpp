@@ -6,7 +6,7 @@
 
 #include "UIModel.h"
 
-void CurrentSynth::changeCurrentSynth(midikraft::Synth *activeSynth)
+void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth)
 {
 	currentSynth_ = activeSynth;
 	sendChangeMessage();
@@ -65,3 +65,68 @@ midikraft::PatchHolder  UIModel::currentPatch()
 }
 
 std::unique_ptr<UIModel> UIModel::instance_;
+
+void CurrentSynthList::setSynthList(std::vector<midikraft::SynthHolder> const &synths)
+{
+	synths_.clear();
+	for (auto synth : synths) {
+		synths_.emplace_back(synth, true);
+	}
+	sendChangeMessage();
+}
+
+void CurrentSynthList::setSynthActive(midikraft::SimpleDiscoverableDevice *synth, bool isActive)
+{
+	for (auto &s : synths_) {
+		if (!s.first.device()) continue;
+		if (s.first.device()->getName() == synth->getName()) {
+			s.second = isActive;
+			sendChangeMessage();
+			return;
+		}
+	}
+	jassert(false);
+}
+
+std::vector<midikraft::SynthHolder> CurrentSynthList::allSynths()
+{
+	std::vector<midikraft::SynthHolder> result;
+	for (auto synth : synths_) {
+		result.push_back(synth.first);
+	}
+	return result;
+}
+
+midikraft::SynthHolder CurrentSynthList::synthByName(std::string const &name)
+{
+	for (auto synth : synths_) {
+		if (synth.first.device() && synth.first.device()->getName() == name) {
+			return synth.first;
+		}
+		else if (synth.first.synth() && synth.first.synth()->getName() == name) {
+			return synth.first;
+		}
+	}
+	return midikraft::SynthHolder(nullptr);
+}
+
+std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthList::activeSynths()
+{
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
+	for (auto synth : synths_) {
+		if (!synth.second) continue;
+		if (!synth.first.device()) continue;
+		result.push_back(synth.first.device());
+	}
+	return result;
+}
+
+bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth)
+{
+	for (auto s : activeSynths()) {
+		if (s->getName() == synth->getName()) {
+			return true;
+		}
+	}
+	return false;
+}

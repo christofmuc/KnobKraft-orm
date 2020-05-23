@@ -23,23 +23,21 @@
 #include "PatchView.h"
 #include "SettingsView.h"
 #include "KeyboardMacroView.h"
-
-#include "Rev2.h"
-#include "OB6.h"
-#include "Matrix1000.h"
-#include "MKS80.h"
+#include "SetupView.h"
 
 class LogViewLogger;
 
 class MainComponent : public Component, private ChangeListener
 {
 public:
-    MainComponent();
+	MainComponent();
     ~MainComponent();
 
     virtual void resized() override;
 
 private:
+	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
+	void refreshSynthList();
 	File getAutoCategoryFile() const;
 	void aboutBox();
 
@@ -47,10 +45,6 @@ private:
 
 	midikraft::PatchDatabase database_;
 	midikraft::AutoDetection autodetector_;
-	std::shared_ptr<midikraft::Rev2> rev2_;
-	std::shared_ptr<midikraft::OB6> ob6_;
-	std::shared_ptr<midikraft::Matrix1000> matrix1000_;
-	std::shared_ptr<midikraft::MKS80> mks80_;
 
 	// The infrastructure for the menu and the short cut keys
 	std::unique_ptr<LambdaMenuModel> menuModel_;
@@ -68,6 +62,7 @@ private:
 	MidiLogView midiLogView_;
 	InsetBox midiLogArea_;
 	std::unique_ptr<SettingsView> settingsView_;
+	std::unique_ptr<SetupView> setupView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::vector<MidiMessage> currentDownload_;
 

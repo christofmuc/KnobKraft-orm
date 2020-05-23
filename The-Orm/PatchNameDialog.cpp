@@ -40,13 +40,13 @@ void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
 	if (layers) {
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
 			names_.push_back(Value(String(layers->layerName(i)).trim()));
-			TypedNamedValue v({ "Layer " + String(i), "Patch name", names_[i], ValueType::String, 0, 20, {}, true});
+			TypedNamedValue v("Layer " + String(i), "Patch name", names_[i].getValue(), 20);
 			props.push_back(std::make_shared<TypedNamedValue>(v));
 		}
 	}
 	else if (patch->patch()) {
-		names_.push_back(Value(String(patch->patch()->patchName()).trim()));
-		TypedNamedValue v({ "Patch name", "Patch name", names_[0], ValueType::String, 0, 20, {}, true });
+		TypedNamedValue v("Patch name", "Patch name", String(patch->name()).trim(), 20);
+		names_.push_back(v.value());
 		props.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 	propertyEditor_.setProperties(props);
@@ -112,8 +112,8 @@ void PatchNameDialog::buttonClicked(Button *button)
 		}
 		else {
 			String newName = names_[0].getValue().toString();
-			patch_->patch()->setName(newName.toStdString());
 			SimpleLogger::instance()->postMessage("Changed patch name to " + newName.toStdString());
+			patch_->setName(newName.toStdString());
 		}
 		sWindow_->exitModalState(true);
 	}
