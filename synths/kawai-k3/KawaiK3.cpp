@@ -593,8 +593,8 @@ namespace midikraft {
 				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
 				// We ignore the result of these sends, just hope for the best
 			}
-		});
-		logger->postMessage((boost::format("Writing K3 patch to program %s") % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
+		});		
+		logger->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
 		controller->enableMidiOutput(midiOutput());
 		controller->enableMidiInput(midiInput());
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
