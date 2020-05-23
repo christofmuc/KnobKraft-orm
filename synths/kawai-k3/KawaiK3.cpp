@@ -219,7 +219,7 @@ namespace midikraft {
 	}
 
 	std::shared_ptr<DataFile> KawaiK3::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
-		if (data.size() == 34) {
+		if (data.size() == 34 || data.size() == 99) {
 			return std::make_shared<KawaiK3Patch>(place, data);
 		}
 		else if (data.size() == 65) {
