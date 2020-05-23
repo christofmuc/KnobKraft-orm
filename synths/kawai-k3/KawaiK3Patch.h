@@ -61,6 +61,7 @@ namespace midikraft {
 
 		Additive::Harmonics harmonicsFromWave();
 
+		bool needsUserWave() const;
 		void addWaveIfOscillatorUsesIt(std::shared_ptr<DataFile> wave);
 
 	private:

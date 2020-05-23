@@ -381,20 +381,29 @@ namespace midikraft {
 	midikraft::TPatchVector KawaiK3::loadSysex(std::vector<MidiMessage> const &sysexMessages)
 	{
 		midikraft::TPatchVector result;
-		std::shared_ptr<DataFile> currentWave;
+		std::vector<std::shared_ptr<KawaiK3Patch>> unresolvedUserWave;
 		for (auto const &message : sysexMessages) {
 			if (isWaveBufferDump(message)) {
-				// A new wave, make it current (relevant for future patches) and do store it itself in the result vector
-				currentWave = waveFromSysex(message);
+				// A new wave, store it itself in the result vector
+				auto currentWave = waveFromSysex(message);
 				result.push_back(currentWave);
+
+				// And if we have unresolved patches, add this wave to them (the convention seems to be patches first, at the very end the user wave)
+				// Though I only found one factory bank on the Kawai US website that has the user wave stored (K3GINT.SYX)
+				for (auto patch : unresolvedUserWave) {
+					patch->addWaveIfOscillatorUsesIt(currentWave);
+				}
+				unresolvedUserWave.clear();
 			}
 			else if (isBankDumpAndNotWaveDump(message)) {
 				auto newPatches = patchesFromSysexBank(message);
 				for (auto n : newPatches) {
 					auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(n);
-					if (newPatch) {
-						newPatch->addWaveIfOscillatorUsesIt(currentWave);
+					if (newPatch) {				
 						result.push_back(newPatch);
+						if (newPatch->needsUserWave()) {
+							unresolvedUserWave.push_back(newPatch);
+						}
 					}
 					else {
 						jassertfalse;
@@ -404,12 +413,19 @@ namespace midikraft {
 			else if (isSingleProgramDump(message)) {
 				auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(patchFromProgramDumpSysex(message));
 				if (newPatch) {
-					newPatch->addWaveIfOscillatorUsesIt(currentWave);
 					result.push_back(newPatch);
+					if (newPatch->needsUserWave()) {
+						unresolvedUserWave.push_back(newPatch);
+					}
 				}
 				else {
 					jassertfalse;
 				}
+			}
+		}
+		if (!unresolvedUserWave.empty()) {
+			for (auto patch : unresolvedUserWave) {
+				SimpleLogger::instance()->postMessage((boost::format("No user wave recorded for programmable oscillator of patch '%s', sound can not be reproduced") % patch->name()).str());
 			}
 		}
 		return result;

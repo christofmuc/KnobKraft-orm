@@ -119,7 +119,7 @@ namespace midikraft {
 		return harmonics;
 	}
 
-	void KawaiK3Patch::addWaveIfOscillatorUsesIt(std::shared_ptr<DataFile> wave)
+	bool KawaiK3Patch::needsUserWave() const
 	{
 		// Determine if one of our two oscillators uses the "user" waveform!
 		bool usesUserWave = false;
@@ -139,17 +139,20 @@ namespace midikraft {
 		else {
 			jassertfalse;
 		}
+		return usesUserWave;
+	}
 
-		if (usesUserWave) {
+	void KawaiK3Patch::addWaveIfOscillatorUsesIt(std::shared_ptr<DataFile> wave)
+	{
+		jassert(wave);
+		if (needsUserWave()) {
 			// We want to append the user wave data to this patch's data, so the user wave is stored where it is needed
 			if (wave) {
 				auto patchData = data();
 				std::copy(wave->data().cbegin(), wave->data().cend(), std::back_inserter(patchData));
 				setData(patchData);
 			}
-			else {
-				SimpleLogger::instance()->postMessage("No user wave recorded for programmable oscillator, sound can not be reproduced");
-			}
+				
 		}
 	}
 
