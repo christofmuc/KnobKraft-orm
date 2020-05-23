@@ -111,8 +111,15 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 			if (customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue()) {
 				// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
 				auto currentPatch = UIModel::currentPatch();
-				if (currentPatch.patch() && currentPatch.synth()) {
-					auto location = dynamic_cast<midikraft::MidiLocationCapability *>(currentPatch.synth());
+				midikraft::Synth *toWhichSynthToForward = nullptr;
+				if (currentPatch.patch()) {
+					toWhichSynthToForward = currentPatch.synth();
+				}
+				if (!toWhichSynthToForward) {
+					toWhichSynthToForward = UIModel::currentSynth();
+				}
+				if (toWhichSynthToForward) {
+					auto location = dynamic_cast<midikraft::MidiLocationCapability *>(toWhichSynthToForward);
 					if (location) {
 						// Check if this is a channel message, and if yes, re-channel to the current synth
 						MidiMessage channelMessage = message;
