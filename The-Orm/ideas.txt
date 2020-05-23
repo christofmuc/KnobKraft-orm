@@ -9,6 +9,7 @@ BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Type switch is missing "all" setup
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
+* When turning on a synth in the setup and it becomes active, the advanced filter dialog is wrong
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
@@ -46,6 +47,7 @@ BCR2000
 * DIN MIDI will be slow now, need second strategy to send
 
 Archiving
+* Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 * Manage Backup diskspace
 
@@ -64,6 +66,10 @@ Macro page
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
 
+Patch display
+* Allow "show patch" button as the simplified version of the patch diff dialog
+* Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
+
 Librarian
 * Allow recursive directory traversal during import
 * Better display of bulk imports with real file source
@@ -76,9 +82,10 @@ Librarian
 
 Advanced Queries
 * Needs better operators for comparing a PyTschirp attribute with int, bool so you don't have to type the get()
+* Could hide the "p[]" by automatically adding it, could also automatically add the get()
 * Should display syntax error in red under line
 * Should fill page (fetching more pages until the page is full) - but how to do second page? This is always the problem with client side filtering. Simplest solution - fetch all from database and only then filter.
-* Could add autocomplete?
+* Could add autocomplete? With drop down?
 * Could use advanced query builder, where you select properties and enter them (that was called QBE at some point)
 
 Global settings 
@@ -110,8 +117,9 @@ Big things
 	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
-	  * Could use this for additional "filter by property" feature. E.g. show only patches with a particular synth feature
+	* could sort by patch similarity
 	* Adding full BCR2000 support
+	* Adding spectrogram display, this needs to keep the current patch above the tab row!
 	* Could add page for Synth "SuperPowers", i.e. features or UI that is Synth specific. 
 	* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 	* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
@@ -144,3 +152,4 @@ Requested on Reddit
 Librarian for other stuff (should rather do with adaption?)
 
 	+ Meris pedal
+
