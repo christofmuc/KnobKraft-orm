@@ -491,7 +491,7 @@ namespace midikraft {
 		switch (dataFile->dataTypeID())
 		{
 		case K3_PATCH:
-			return { patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), false), patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), true) };
+			return { patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), false), patchToSysex(dataFile->data(), static_cast<int>(WaveType::USER_WAVE), true) };
 		case K3_WAVE:
 			return { patchToSysex(dataFile->data(), 100, false) };
 		default:
