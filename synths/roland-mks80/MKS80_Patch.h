@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "MidiProgramNumber.h"
+#include "DetailedParametersCapability.h"
 
 namespace midikraft {
 
@@ -19,7 +20,7 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class MKS80_Patch : public Patch {
+	class MKS80_Patch : public Patch, public DetailedParametersCapability {
 	public:
 		enum DataFileType {
 			DF_MKS80_PATCH = 0
@@ -34,8 +35,7 @@ namespace midikraft {
 		MKS80_Patch(std::shared_ptr<MKS80_PatchNumber> patchNumber, std::map<APR_Section, std::vector<uint8>> const &data);
 		MKS80_Patch(MidiProgramNumber patchNumber, Synth::PatchData const &data);
 
-		virtual std::string patchName() const override;
-		virtual void setName(std::string const &name) override;
+		virtual std::string name() const override;
 
 		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
 		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
@@ -43,7 +43,7 @@ namespace midikraft {
 		int value(SynthParameterDefinition const &param) const;
 		SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const;
 
-		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() override;
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
 		// Support APR format creation
 		MidiMessage buildAPRMessage(APR_Section section, MidiChannel channel) const;

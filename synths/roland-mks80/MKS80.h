@@ -13,6 +13,7 @@
 #include "HandshakeLoadingCapability.h"
 #include "SoundExpanderCapability.h"
 #include "LegacyLoaderCapability.h"
+#include "SimpleDiscoverableDevice.h"
 //#include "SupportedByBCR2000.h"
 
 #include "MKS80_Parameter.h"
@@ -20,6 +21,7 @@
 namespace midikraft {
 
 	class MKS80 : public Synth, public EditBufferCapability, public HandshakeLoadingCapability,
+		public SimpleDiscoverableDevice,
 		public LegacyLoaderCapability, public SoundExpanderCapability /*, public SupportedByBCR2000 */ {
 	public:
 		MKS80();
@@ -28,11 +30,11 @@ namespace midikraft {
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, std::string const &name, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
 
-		virtual MidiMessage deviceDetect(int channel) override;
+		virtual std::vector<MidiMessage> deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		virtual bool needsChannelSpecificDetection() override;

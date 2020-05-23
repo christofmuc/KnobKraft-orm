@@ -59,15 +59,9 @@ namespace midikraft {
 		patchNumber_ = std::make_shared<MKS80_PatchNumber>(patchNumber);
 	}
 
-	std::string MKS80_Patch::patchName() const
+	std::string MKS80_Patch::name() const
 	{
 		return patchNumber_ ? patchNumber_->friendlyName() : "unnamed";
-	}
-
-	void MKS80_Patch::setName(std::string const &name)
-	{
-		ignoreUnused(name);
-		throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	std::shared_ptr<PatchNumber> MKS80_Patch::patchNumber() const
@@ -92,7 +86,7 @@ namespace midikraft {
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	std::vector<std::shared_ptr<SynthParameterDefinition>> MKS80_Patch::allParameterDefinitions()
+	std::vector<std::shared_ptr<SynthParameterDefinition>> MKS80_Patch::allParameterDefinitions() const
 	{
 		return MKS80_Parameter::allParameterDefinitions;
 	}
