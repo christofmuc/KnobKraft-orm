@@ -609,8 +609,14 @@ namespace midikraft {
 				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
 				// We ignore the result of these sends, just hope for the best
 			}
-		});		
-		logger->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
+		});
+		auto wave = std::dynamic_pointer_cast<KawaiK3Wave>(dataFile);
+		if (wave) {
+			logger->postMessage("Writing K3 user wave to the internal wave memory");
+		}
+		else {
+			logger->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
+		}
 		controller->enableMidiOutput(midiOutput());
 		controller->enableMidiInput(midiInput());
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
