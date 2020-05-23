@@ -217,8 +217,6 @@ void KeyboardMacroView::loadFromSettings() {
 		int intValue = std::atoi(storedValue.c_str());
 		prop->value().setValue(intValue);
 	}
-
-	turnOnMasterkeyboardInput();
 }
 
 void KeyboardMacroView::saveSettings() {
