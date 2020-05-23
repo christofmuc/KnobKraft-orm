@@ -23,7 +23,7 @@ jobs:
       displayName: "Disable git automatic line ending conversion"
     - bash: |
         sudo apt-get update
-        sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev libfreetype6-dev
+        sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev
         apt list --installed
       displayName: Prepare Linux Host
       condition: variables.isLinux
