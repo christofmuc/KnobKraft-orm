@@ -5,9 +5,7 @@ Before next release
 +
 
 BUGS
-+ I think sending the K3 User wave doesn't send it correctly, but sends it as a patch?
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
-* Type switch is missing "all" setup
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 * When turning on a synth in the setup and it becomes active, the advanced filter dialog is wrong
 

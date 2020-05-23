@@ -21,6 +21,7 @@
 #include <boost/format.hpp>
 
 const char *kAllPatchesFilter = "All patches";
+const char *kAllDataTypesFilter = "All types";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
 	: database_(database), librarian_(synths), synths_(synths),
@@ -164,9 +165,9 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	}
 	bool typeSelected = false;
 	int filterType = 0;
-	if (advancedFilters_.dataTypeSelector_.getSelectedId() > 0) {
+	if (advancedFilters_.dataTypeSelector_.getSelectedId() > 1) { // 0 is empty drop down, and 1 is "All data types"
 		typeSelected = true;
-		filterType = advancedFilters_.dataTypeSelector_.getSelectedId() - 1;
+		filterType = advancedFilters_.dataTypeSelector_.getSelectedId() - 2;
 	}
 	std::string nameFilter = "";
 	if (advancedFilters_.useNameSearch_.getToggleState()) {
@@ -459,14 +460,16 @@ void PatchView::rebuildDataTypeFilterBox() {
 	advancedFilters_.dataTypeSelector_.clear();
 	auto dflc = dynamic_cast<midikraft::DataFileLoadCapability *>(UIModel::currentSynth());
 	if (dflc) {
+		StringArray typeNameList;
+		typeNameList.add(kAllDataTypesFilter);
 		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
 			auto typeName = dflc->dataTypeNames()[i];
 			if (typeName.canBeSent) {
-				advancedFilters_.dataTypeSelector_.addItem(typeName.name, (int) i + 1);
+				typeNameList.add(typeName.name);
 			}
 		}
+		advancedFilters_.dataTypeSelector_.addItemList(typeNameList, 1);
 	}
-	
 }
 
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
