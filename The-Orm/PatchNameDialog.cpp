@@ -45,8 +45,8 @@ void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
 		}
 	}
 	else if (patch->patch()) {
-		names_.push_back(Value(String(patch->name()).trim()));
-		TypedNamedValue v("Patch name", "Patch name", names_[0].getValue(), 20);
+		TypedNamedValue v("Patch name", "Patch name", String(patch->name()).trim(), 20);
+		names_.push_back(v.value());
 		props.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 	propertyEditor_.setProperties(props);
