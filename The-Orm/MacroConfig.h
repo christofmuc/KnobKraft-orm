@@ -18,7 +18,7 @@ enum class KeyboardMacroEvent {
 	PreviousPatch,
 	NextPatch,
 	ImportEditBuffer,
-	Unknown
+	Unknown	
 };
 
 extern std::vector<KeyboardMacroEvent> kAllKeyboardMacroEvents;

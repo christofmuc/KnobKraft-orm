@@ -1,6 +1,16 @@
 Completely unprioritised list of things to do
 =============================================
 
+Before next release
++
+
+BUGS
++ I think sending the K3 User wave doesn't send it correctly, but sends it as a patch?
++ PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
+* Type switch is missing "all" setup
+* Global settings needs to change MIDI channel internally when using the settings editor to change it
+* When turning on a synth in the setup and it becomes active, the advanced filter dialog is wrong
+
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
@@ -13,66 +23,77 @@ Virus
 * Parameter set missing
 
 Rev2
-* Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
+* Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
 
 K3
 * Drawbar Organ Waveform Generator
-* BCR2000 template for editing the wave?
-* Need to display the patch type in the current patch display
+* BCR2000 template for editing the wave
 * Could render wave as Thumbnail
-* Allow dependencies between DataFiles (patch -> wave for K3)
 * Generic Oscillator shape optimizer? 
+* Default name handling shaky
+* Allow dependencies between DataFiles (patch -> wave for K3)
 
 MKS80
 * how to deal with tones and patches
 * I guess just like the Wave in the K3?
 
+BCR2000
+* "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
+* Send to should block UI, as you really shouldn't click again while it is still sending
+* Need "cononical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
+* Could use bank list as preset list by querying bank names
+* DIN MIDI will be slow now, need second strategy to send
+
 Archiving
+* Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
-* Make regular backups of Database
+* Manage Backup diskspace
 
 Generic Module
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
++ Could show which Flavours are implemented for each adaption (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Provide "orm" python package with denibble, DSI packing etc.
 + Could watch files and hot reload module when changed on disk (for easier development)
++ Could add "create new module" with skeleton file
 + Could add python editor with hot reload function
 
 Macro page
-* Select which MIDI input/Synth to use
-* Display size of master keyboard (or select lower and upper key)
-* Turn macros on/off on a global level (and show it on a global level)
+* Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
+* Show on global level if macros on/off on a global level
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
-* Masterkeyboard support (manualy setup lowest key, highest key), as well as 
-* Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
+
+Patch display
+* Allow "show patch" button as the simplified version of the patch diff dialog
+* Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
 
 Librarian
-* Make page number clickable to switch to that page
-* Allow multi-select of banks to import (with all feature)
 * Allow recursive directory traversal during import
-* Could accept synth-initiated dumps at any time
 * Better display of bulk imports with real file source
-* UI - could hide / fold "advanced search"
+* Could accept synth-initiated dumps at any time
+* Could introduce collections/sessions/songs
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
+* Make page number clickable to switch to that page, show less page numbers if these are really many
+* Allow multi-select of banks to import (with all feature)
+* Could have patch name autogenerator like LaserMammoth
+
+Advanced Queries
+* Needs better operators for comparing a PyTschirp attribute with int, bool so you don't have to type the get()
+* Could hide the "p[]" by automatically adding it, could also automatically add the get()
+* Should display syntax error in red under line
+* Should fill page (fetching more pages until the page is full) - but how to do second page? This is always the problem with client side filtering. Simplest solution - fetch all from database and only then filter.
+* Could add autocomplete? With drop down?
+* Could use advanced query builder, where you select properties and enter them (that was called QBE at some point)
 
 Global settings 
-* Need to change MIDI channel internally when using the settings editor to change it
 * Could show nice text instead of empty page
 
-Future work
-* Could add page for Synth "SuperPowers", i.e. features or UI that is Synth specific. 
-* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
-  * Record notes played (duration) a specific patch
-  * Allow to sort by playing time
-* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
-* I could display which categories were set by the user, and which ones were autodetected
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
-* Could have patch name autogenerator like LaserMammoth
-* Could have voice input for naming patches? General voice control?
-* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
-* Synth_v2 class/interface more following the generic adaption design than the original Synth class
+Alternate Tunings
+* https://forum.sequential.com/index.php/topic,3468.0.html
+* have you managed to change the slot number
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
@@ -82,9 +103,9 @@ Database schema
 * Should create indexes where needed 
 
 MIDI setup
-* Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
-* MIDI log needs a "save log function"
 * With more synths, should split "select synth" and "configure synth" into two columns
+* Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
+* MIDI log needs a "save log function", and a "turn off" function
 * Debounce is currently disabled - can I reenable it?
 
 UI Cleanup
@@ -93,22 +114,30 @@ UI Cleanup
 * Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things
+	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
-	  * Could use this for additional "filter by property" feature. E.g. show only patches with a particular synth feature
+	* could sort by patch similarity
 	* Adding full BCR2000 support
+	* Adding spectrogram display, this needs to keep the current patch above the tab row!
+	* Could add page for Synth "SuperPowers", i.e. features or UI that is Synth specific. 
+	* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
+	* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
+	  * Record notes played (duration) a specific patch
+	  * Allow to sort by playing time
+	* Synth_v2 class/interface more following the generic adaption design than the original Synth class	
+	* Implement PatchBook Visualization
+	* Patch randomizer
 	* The automatic patch clusterer!
-	* Multiple synths in one grid
-	* Masterkeyboard control ("Follow the patch")
+	* Automatic patch optimizer
 	* MIDI routing (first only to and forth, then remapping channels, ...)
+	* Clock routing screen
 	* Interface into LaserMammoth devices? Can I execute Javascript?
 	* Integrate with CTRLR? Can I host their panels? If yes, for what?
 	* Can I synchronize multiple devices via the LaserMammoth Backend?
+	* Could have voice input for naming patches? General voice control?
 	* Should I use Amazon DynamoDB to synchronize multiple installations? Encryption?
-
-Alternate Tunings
-* https://forum.sequential.com/index.php/topic,3468.0.html
-* have you managed to change the slot number
+	* VST version? If yes, why?
 
 More synthesizers
 
@@ -122,6 +151,5 @@ Requested on Reddit
 
 Librarian for other stuff (should rather do with adaption?)
 
-	+ BCR2000
 	+ Meris pedal
 

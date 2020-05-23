@@ -24,6 +24,7 @@
 #include "KawaiK3.h"
 #include "Matrix1000.h"
 #include "RefaceDX.h"
+#include "BCR2000.h"
 
 #include "GenericAdaption.h"
 
@@ -83,6 +84,7 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::BCR2000>(), buttonColour));
 
 	// Now adding all adaptions
 	auto adaptions = knobkraft::GenericAdaption::allAdaptions();
@@ -209,7 +211,7 @@ MainComponent::MainComponent() :
 	if (UIModel::instance()->synthList_.activeSynths().size() > 0) {
 		auto activeSynth = std::dynamic_pointer_cast<midikraft::Synth>(UIModel::instance()->synthList_.activeSynths()[0]);
 		if (activeSynth) {
-			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth.get());
+			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth);
 		}
 	}
 
@@ -273,7 +275,7 @@ void MainComponent::refreshSynthList() {
 	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
 		if (activeSynth) {
-			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth().get());
+			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());
 		}
 		else {
 			// What did you put into the list?

@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.4.0)
+project(KnobKraftOrm VERSION 1.5.0)
 
 IF (WIN32)
 	# All setup for UI software on Windows
@@ -50,6 +50,7 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
+	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
@@ -66,6 +67,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-librarian 
 		midikraft-database 
 		midikraft-access-virus
+		midikraft-behringer-bcr2000
 		midikraft-kawai-k3
 		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
@@ -73,6 +75,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-sequential-ob6  
 		midikraft-yamaha-refacedx
 		knobkraft-generic-adaption
+		pytschirp_embedded
 )
 
 add_executable(KnobKraftOrm WIN32 ${SOURCES})

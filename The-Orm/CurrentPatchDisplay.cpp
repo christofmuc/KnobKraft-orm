@@ -7,6 +7,10 @@
 #include "CurrentPatchDisplay.h"
 
 #include "PatchNameDialog.h"
+#include "PatchButtonPanel.h"
+#include "DataFileLoadCapability.h"
+
+#include "ColourHelpers.h"
 
 //#include "SessionDatabase.h"
 
@@ -16,13 +20,20 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 		midikraft::Category cat({ categoryClicked.category, categoryClicked.color, categoryClicked.bitIndex });
 		categoryUpdated(cat);
 	}, false, false),
-	name_("No patch loaded"),
+	name_(0, false, [this](int) { 		
+		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent(), [this](midikraft::PatchHolder *result) {
+			setCurrentPatch(*result);
+			favoriteHandler_(*result);
+		}); 
+	}),
 	currentSession_("Current Session"), 
 	favorite_("Fav!"),
 	hide_("Hide"),
 	import_("IMPORT", "No import information")
 {
-	name_.addListener(this);
+	addAndMakeVisible(synthName_);
+	addAndMakeVisible(patchType_);
+
 	addAndMakeVisible(&name_);
 
 	favorite_.setClickingTogglesState(true);
@@ -48,12 +59,14 @@ CurrentPatchDisplay::~CurrentPatchDisplay()
 	PatchNameDialog::release();
 }
 
-void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::PatchHolder patch)
+void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 {
+	currentPatch_ = patch;
 	if (patch.patch()) {
 		name_.setButtonText(patch.name());
+		refreshNameButtonColour();
 		if (patch.sourceInfo()) {
-			import_.setText(patch.sourceInfo()->toDisplayString(synth), dontSendNotification);
+			import_.setText(patch.sourceInfo()->toDisplayString(patch.synth()), dontSendNotification);
 		}
 		else {
 			import_.setText("No import information", dontSendNotification);
@@ -66,16 +79,32 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::Synth *synth, midikraft::Pa
 			buttonCategories.insert({ cat.category, cat.color, cat.bitIndex });
 		}
 		categories_.setActive(buttonCategories);
+
+		if (patch.synth()) {
+			synthName_.setText(patch.synth()->getName(), dontSendNotification);
+			auto dataFileCap = dynamic_cast<midikraft::DataFileLoadCapability *>(patch.synth());
+			if (dataFileCap) {
+				patchType_.setText(dataFileCap->dataTypeNames()[patch.patch()->dataTypeID()].name, dontSendNotification);
+			}
+			else {
+				patchType_.setText("Patch", dontSendNotification);
+			}
+		}
+		else {
+			synthName_.setText("Invalid synth", dontSendNotification);
+			patchType_.setText("Unknown", dontSendNotification);
+		}
 	}
 	else {
 		name_.setButtonText("No patch loaded");
+		synthName_.setText("", dontSendNotification);
+		patchType_.setText("", dontSendNotification);
 		import_.setText("", dontSendNotification);
 		favorite_.setToggleState(false, dontSendNotification);
 		hide_.setToggleState(false, dontSendNotification);
 		categories_.setActive({});
 	}
-	currentPatch_ = patch;
-	currentSynth_ = synth;
+
 }
 
 void CurrentPatchDisplay::reset()
@@ -88,14 +117,29 @@ void CurrentPatchDisplay::reset()
 
 void CurrentPatchDisplay::resized()
 {
-	Rectangle<int> area(getLocalBounds());
-	auto topRow = area.removeFromTop(60).reduced(10);
-	hide_.setBounds(topRow.removeFromRight(100));
-	favorite_.setBounds(topRow.removeFromRight(100));
-	//currentSession_.setBounds(topRow.removeFromRight(100));
-	import_.setBounds(topRow.removeFromRight(300).withTrimmedRight(10));
-	name_.setBounds(topRow.withTrimmedRight(10));
-	auto bottomRow = area.removeFromTop(80).reduced(10);
+	Rectangle<int> area(getLocalBounds().reduced(8)); // This is for the background colour to show more
+	auto topRow = area.removeFromTop(40);
+
+	// Split the top row in three parts, with the centered one taking 240 px (the patch name)
+	int side = (topRow.getWidth() - 240) / 2;
+	auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
+	auto leftCornerUpper = leftCorner.removeFromTop(20);
+	auto leftCornerLower = leftCorner;
+	auto rightCorner = topRow.removeFromRight(side).withTrimmedLeft(8);
+
+	// Right side - hide and favorite button
+	hide_.setBounds(rightCorner.removeFromRight(100));
+	favorite_.setBounds(rightCorner.removeFromRight(100));
+
+	// Left side - synth patch
+	synthName_.setBounds(leftCornerUpper.removeFromLeft(100));
+	patchType_.setBounds(leftCornerUpper.removeFromLeft(100).withTrimmedLeft(8));
+	import_.setBounds(leftCornerLower);
+
+	// Center - patch name
+	name_.setBounds(topRow);
+
+	auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
 	categories_.setBounds(bottomRow);
 	
 }
@@ -113,12 +157,6 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 			currentPatch_.setHidden(hide_.getToggleState());
 			favoriteHandler_(currentPatch_);
 		}
-	}
-	else if (button == &name_) {
-		PatchNameDialog::showPatchNameDialog(&currentPatch_, getTopLevelComponent(), [this](midikraft::PatchHolder *result) {
-			setCurrentPatch(currentSynth_, *result);
-			favoriteHandler_(*result);
-		});
 	}
 	else if (button == &currentSession_) {
 	/*	if (currentPatch_) {
@@ -149,6 +187,20 @@ void CurrentPatchDisplay::toggleHide()
 	}
 }
 
+void CurrentPatchDisplay::refreshNameButtonColour() {
+	if (currentPatch_.patch()) {
+		name_.setColour(TextButton::ColourIds::buttonColourId, PatchButtonPanel::buttonColourForPatch(currentPatch_, this));
+	}
+	else {
+		name_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
+	}
+}
+
+void CurrentPatchDisplay::paint(Graphics& g)
+{
+	g.fillAll(getLookAndFeel().findColour(TextButton::buttonOnColourId));
+}
+
 void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
 	if (currentPatch_.patch()) {
 		currentPatch_.setUserDecision(clicked);
@@ -161,4 +213,5 @@ void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
 		}
 		favoriteHandler_(currentPatch_);
 	}
+	refreshNameButtonColour();
 }

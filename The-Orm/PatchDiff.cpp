@@ -270,7 +270,7 @@ std::vector<Range<int>> PatchDiff::diffFromData(std::shared_ptr<midikraft::DataF
 	std::vector<uint8> const &doc1 = activeSynth_->filterVoiceRelevantData(patch1);
 	std::vector<uint8> const &doc2 = activeSynth_->filterVoiceRelevantData(patch2);
 
-	for (int i = 0; i < (int) doc1.size(); i++) {
+	for (int i = 0; i < (int) std::min(doc1.size(), doc2.size()); i++) {
 		if (doc1[i] != doc2[i]) {
 			if (!diff) {
 				diff = true;
@@ -317,7 +317,7 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 					auto multiLayerParam = std::dynamic_pointer_cast<midikraft::SynthMultiLayerParameterCapability>(param);
 					jassert(multiLayerParam);
 					if (multiLayerParam) {
-						multiLayerParam->setTargetLayer(layer);
+						multiLayerParam->setSourceLayer(layer);
 					}
 				}
 				auto activeCheck = std::dynamic_pointer_cast<midikraft::SynthParameterActiveDetectionCapability>(param);
