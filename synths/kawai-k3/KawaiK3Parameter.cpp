@@ -105,13 +105,13 @@ namespace midikraft {
 		return name_;
 	}
 
-	std::string KawaiK3Parameter::valueInPatchToText(Patch const &patch) const
+	std::string KawaiK3Parameter::valueInPatchToText(DataFile const &patch) const
 	{
 		int value;
 		if (valueInPatch(patch, value)) {
 			return valueAsText(value);
 		}
-		return "invalie";
+		return "invalid";
 	}
 
 	std::string KawaiK3Parameter::valueAsText(int value) const
@@ -154,7 +154,7 @@ namespace midikraft {
 		return minValue_;
 	}
 
-	bool KawaiK3Parameter::valueInPatch(Patch const &patch, int &outValue) const
+	bool KawaiK3Parameter::valueInPatch(DataFile const &patch, int &outValue) const
 	{
 		//TODO This is redundant with the KawaiK3Patch::value function
 		int result = (patch.at(sysexIndex() - 1) >> shift()) & bitMask();
@@ -168,7 +168,7 @@ namespace midikraft {
 		return true;
 	}
 
-	void KawaiK3Parameter::setInPatch(Patch &patch, int value) const
+	void KawaiK3Parameter::setInPatch(DataFile &patch, int value) const
 	{
 		//TODO This is redundant with the KawaiK3Patch::setValue function - I think I should only keep this one
 		//TODO - range checking for the parameter, we might specify values out of range?

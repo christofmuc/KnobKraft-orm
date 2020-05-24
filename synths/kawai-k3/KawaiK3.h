@@ -12,7 +12,7 @@
 #include "Patch.h"
 #include "Additive.h"
 #include "DrawbarOrgan.h"
-//#include "SupportedByBCR2000.h"
+#include "SupportedByBCR2000.h"
 
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
@@ -20,6 +20,8 @@
 #include "AdditiveCapability.h"
 #include "HybridWaveCapability.h"
 #include "DataFileLoadCapability.h"
+
+#include "SupportedByBCR2000.h"
 
 #include <set>
 
@@ -30,7 +32,7 @@ namespace midikraft {
 	class KawaiK3Control;
 	class SynthView;
 
-	class KawaiK3 : public Synth, /* public SupportedByBCR2000, */ public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
+	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
 		public DataFileLoadCapability, public DataFileSendCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
@@ -95,11 +97,11 @@ namespace midikraft {
 		virtual std::string waveName(int waveNo) override;
 
 		// Implementation of BCR2000 sync
-		/*virtual std::vector<std::string> presetNames() override;
-		virtual void setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-		virtual void syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-		virtual void setupBCR2000View(BCR2000_Component &view) override;
-		virtual void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;*/
+		virtual std::vector<std::string> presetNames() override;
+		virtual void setupBCR2000(BCR2000 &bcr) override;
+		virtual void syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) override;
+		virtual void setupBCR2000View(BCR2000Proxy *view) override;
+		virtual void setupBCR2000Values(BCR2000Proxy *view, std::shared_ptr<DataFile> patch) override;
 
 		// This needs to be overridden to handle the wave dumps together with the patch dumps
 		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;

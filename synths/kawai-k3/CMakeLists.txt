@@ -38,7 +38,7 @@ set(Sources
 	BinaryResources.h
 	KawaiK3.cpp KawaiK3.h           
 	KawaiK3Control.cpp KawaiK3Control.h        
-	#KawaiK3_BCR2000.cpp KawaiK3_BCR2000.h    
+	KawaiK3_BCR2000.cpp KawaiK3_BCR2000.h    
 	KawaiK3_Reverse.cpp KawaiK3_Reverse.h     
 	KawaiK3Parameter.cpp KawaiK3Parameter.h  
 	KawaiK3Patch.cpp KawaiK3Patch.h                
@@ -58,7 +58,7 @@ target_include_directories(midikraft-kawai-k3 PUBLIC ${CMAKE_CURRENT_LIST_DIR} P
 if(WIN32)
 	target_link_directories(midikraft-kawai-k3 PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(midikraft-kawai-k3 juce-utils midikraft-base)
+target_link_libraries(midikraft-kawai-k3 juce-utils midikraft-base midikraft-behringer-bcr2000)
 
 # Pedantic about warnings
 if (MSVC)

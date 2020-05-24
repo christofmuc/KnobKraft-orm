@@ -10,7 +10,7 @@
 
 namespace midikraft {
 
-	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability {
+	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, SynthLookupParameterCapability {
 	public:
 		enum Parameter {
 			OSC1_WAVE_SELECT = 1,
@@ -67,16 +67,17 @@ namespace midikraft {
 		virtual ParamType type() const override;
 		virtual std::string name() const override;
 		virtual std::string description() const override;
-		virtual std::string valueInPatchToText(Patch const &patch) const override;
+		virtual std::string valueInPatchToText(DataFile const &patch) const override;
 
 		// SynthIntParameterCapability
 		virtual int maxValue() const override;
 		virtual int minValue() const override;
 		virtual int sysexIndex() const override;
-		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
-		virtual void setInPatch(Patch &patch, int value) const override;
+		virtual bool valueInPatch(DataFile const &patch, int &outValue) const override;
+		virtual void setInPatch(DataFile &patch, int value) const override;
 		
-		std::string valueAsText(int value) const;
+		// SynthLookupParameterCapability
+		virtual std::string valueAsText(int value) const override;
 
 		Parameter paramNo() const;
 		int shift() const;
