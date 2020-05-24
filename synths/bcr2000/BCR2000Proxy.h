@@ -6,14 +6,13 @@
 
 #pragma once
 
-#include "SynthParameterDefinition.h"
+#include "TypedNamedValue.h"
 
 namespace midikraft {
 
 	class BCR2000Proxy {
 	public:
-		virtual void setRotaryParam(int knobNumber, SynthParameterDefinition *param) = 0;
-		virtual void setRotaryParamValue(int encoder, int value) = 0;
+		virtual void setRotaryParam(int knobNumber, TypedNamedValue *param) = 0;
 		virtual void setButtonParam(int knobNumber, std::string const &name) = 0;
 	};
 

@@ -19,7 +19,7 @@ namespace midikraft {
 		virtual void setupBCR2000(BCR2000 &bcr) = 0;
 		virtual void syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) = 0;
 		virtual void setupBCR2000View(BCR2000Proxy *view) = 0;
-		virtual void setupBCR2000Values(BCR2000Proxy *view, std::shared_ptr<DataFile> patch) = 0;
+		virtual void setupBCR2000Values(std::shared_ptr<DataFile> patch) = 0;
 	};
 
 }
