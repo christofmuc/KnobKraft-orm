@@ -75,6 +75,7 @@ IF(WIN32)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
+		${LINUX_JUCE_LINK_LIBRARIES}
 		ICU::data ICU::uc
 		${MIDIKRAFT_LIBRARIES}
 		SQLiteCpp
