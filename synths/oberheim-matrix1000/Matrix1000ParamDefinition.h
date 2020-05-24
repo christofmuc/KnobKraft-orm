@@ -12,7 +12,7 @@
 
 namespace midikraft {
 
-	typedef std::function<bool(Patch const &data)> TActivePredicate;
+	typedef std::function<bool(DataFile const &data)> TActivePredicate;
 	typedef std::map<int, std::string> TValueLookup;
 
 	enum Matrix1000Param {
@@ -214,17 +214,17 @@ namespace midikraft {
 		virtual std::string name() const override;
 		
 		virtual std::string description() const override;
-		std::string valueInPatchToText(Patch const &patch) const override;
+		std::string valueInPatchToText(DataFile const &patch) const override;
 
 		// SynthIntParameterCapability
 		
-		void setInPatch(Patch &patch, int value) const override;
+		void setInPatch(DataFile &patch, int value) const override;
 		virtual int minValue() const override;
 		virtual int maxValue() const override;
 		virtual int sysexIndex() const override;
-		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
+		virtual bool valueInPatch(DataFile const &patch, int &outValue) const override;
 
-		virtual bool isActive(Patch const *patch) const override;
+		virtual bool isActive(DataFile const *patch) const override;
 
 		static SynthParameterDefinition const &param(Matrix1000Param id);
 

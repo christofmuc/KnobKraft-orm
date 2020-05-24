@@ -70,7 +70,7 @@ namespace midikraft {
 		return controllerNumber == controller_;
 	}*/
 
-	bool Matrix1000ParamDefinition::isActive(Patch const *patch) const
+	bool Matrix1000ParamDefinition::isActive(DataFile const *patch) const
 	{
 		// The simplest mechanism to test if a parameter is active is this:
 		if (activeIfNonNull_) {
@@ -92,7 +92,7 @@ namespace midikraft {
 		return true;
 	}
 
-	bool Matrix1000ParamDefinition::valueInPatch(Patch const &patch, int &outValue) const
+	bool Matrix1000ParamDefinition::valueInPatch(DataFile const &patch, int &outValue) const
 	{
 		// For this to work, this parameter must have a sysex definition
 		if (sysexIndex_ == -1 || sysexIndex_ >= patch.data().size()) {
@@ -129,7 +129,7 @@ namespace midikraft {
 		return SynthParameterDefinition::ParamType::INT;
 	}
 
-	std::string Matrix1000ParamDefinition::valueInPatchToText(Patch const &patch) const
+	std::string Matrix1000ParamDefinition::valueInPatchToText(DataFile const &patch) const
 	{
 		int value;
 		if (valueInPatch(patch, value)) {
@@ -138,7 +138,7 @@ namespace midikraft {
 		return "illegal value";
 	}
 
-	void Matrix1000ParamDefinition::setInPatch(Patch &patch, int value) const
+	void Matrix1000ParamDefinition::setInPatch(DataFile &patch, int value) const
 	{
 		patch.setAt(sysexIndex_, (uint8) value);
 	}
@@ -226,16 +226,16 @@ namespace midikraft {
 	};
 
 
-	TActivePredicate cPortamentoEnabled = [](Patch const &patch) { return (patch.at(29) & 0x1) != 0; };
+	TActivePredicate cPortamentoEnabled = [](DataFile const &patch) { return (patch.at(29) & 0x1) != 0; };
 
 	std::vector<int> modSourceIndexes = { 104, 107, 110, 113, 116, 119, 122, 125, 128, 131 };
 
-	TActivePredicate cTrackingUsed = [](Patch const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 11; }); };
-	TActivePredicate cRamp1Used = [](Patch const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 7; }); };
-	TActivePredicate cRamp2Used = [](Patch const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 8; }); };
+	TActivePredicate cTrackingUsed = [](DataFile const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 11; }); };
+	TActivePredicate cRamp1Used = [](DataFile const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 7; }); };
+	TActivePredicate cRamp2Used = [](DataFile const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 8; }); };
 
 	// Helper function required while refactoring to midikraft code
-	int valueBySysexIndex(Patch const &patch, int sysexIndex) {
+	int valueBySysexIndex(DataFile const &patch, int sysexIndex) {
 		auto matrix1000Patch = dynamic_cast<Matrix1000Patch const *>(&patch);
 		if (matrix1000Patch) {
 			return matrix1000Patch->value(matrix1000Patch->paramBySysexIndex(sysexIndex));
@@ -248,28 +248,28 @@ namespace midikraft {
 	std::vector<std::shared_ptr<SynthParameterDefinition>> Matrix1000ParamDefinition::allDefinitions = {
 		std::make_shared<Matrix1000ParamDefinition>(Matrix1000ParamDefinition(Keyboard_mode,8, 	48, 	2,	"Keyboard mode",{ { 0 , "Reassign" },{ 1 , "Rotate" },{ 2 , "Unison" },{ 3 , "Reassign w / Rob" } })),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Initial_Frequency_LSB,9, 	00, 	6, 	"DCO 1 Initial Frequency  LSB = 1 Semitone"),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Initial_Waveshape_0,10, 	05, 	6, 	"DCO 1 Initial Waveshape  0 = Sawtooth  31 = Triangle", [](Patch const &patch) { return (patch.at(13) & 0x2) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Initial_Pulse_width,11, 	03, 	6, 	"DCO 1 Initial Pulse width", [](Patch const &patch) { return (patch.at(13) & 0x1) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Initial_Waveshape_0,10, 	05, 	6, 	"DCO 1 Initial Waveshape  0 = Sawtooth  31 = Triangle", [](DataFile const &patch) { return (patch.at(13) & 0x2) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Initial_Pulse_width,11, 	03, 	6, 	"DCO 1 Initial Pulse width", [](DataFile const &patch) { return (patch.at(13) & 0x1) != 0; }),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Fixed_Modulations_PitchBend,12 ,	07, 	2, 	0, "DCO 1 Fixed Modulations  Bit0 = Lever 1", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Fixed_Modulations_Vibrato,12 ,	07, 	2, 	1, "DCO 1 Fixed Modulations  Bit1 = Vibrato", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Waveform_Enable_Pulse,13, 	06, 	2, 	0, "DCO 1 Waveform Enable  Bit0 = Pulse", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Waveform_Enable_Saw,13, 	06, 	2, 	1, "DCO 1 Waveform Enable  Bit1 = Wave", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Initial_Frequency_LSB,14, 	10, 	6, 	"DCO 2 Initial Frequency  LSB = 1 Semitone"),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Initial_Waveshape_0,15, 	15, 	6, 	"DCO 2 Initial Waveshape  0 = Sawtooth  31 = Triangle", [](Patch const &patch) { return (patch.at(18) & 0x2) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Initial_Pulse_width,16, 	13, 	6, 	"DCO 2 Initial Pulse width", [](Patch const &patch) { return (patch.at(18) & 0x1) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Initial_Waveshape_0,15, 	15, 	6, 	"DCO 2 Initial Waveshape  0 = Sawtooth  31 = Triangle", [](DataFile const &patch) { return (patch.at(18) & 0x2) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Initial_Pulse_width,16, 	13, 	6, 	"DCO 2 Initial Pulse width", [](DataFile const &patch) { return (patch.at(18) & 0x1) != 0; }),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Fixed_Modulations_PitchBend,17, 	17, 	2,  0, "DCO 2 Fixed Modulations  Bit0 = Lever 1", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Fixed_Modulations_Vibrato,17, 	17, 	2, 	1, "DCO 2 Fixed Modulations  Bit1 = Vibrato", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Waveform_Enable_Pulse,18, 	16, 	3, 	0, "DCO 2 Waveform Enable  Bit0 = Pulse", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Waveform_Enable_Saw,18, 	16, 	3, 	1, "DCO 2 Waveform Enable  Bit1 = Wave", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Waveform_Enable_Noise,18, 	16, 	3, 	2, "DCO 2 Waveform Enable  Bit2 = Noise", true),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Detune,19, 	12, 	-6 /* (signed) */, "DCO 2 Detune", [](Patch const &patch) { return (patch.at(18) & 0x3) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Detune,19, 	12, 	-6 /* (signed) */, "DCO 2 Detune", [](DataFile const &patch) { return (patch.at(18) & 0x3) != 0; }),
 		std::make_shared<Matrix1000ParamDefinition>(MIX,20, 	20, 	6, 	"Mix"),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Fixed_Modulations_Portamento,21,	 8,	/*2*/ 1, 0, "DCO 1 Fixed Modulations  Bit0 = Portamento  (Bit1 = Not used)", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Click,22,	 9,	1, 0, "DCO 1 Click", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Fixed_Modulations_Portamento,23,	18,	2, 0, "DCO 2 Fixed Modulations  Bit0 = Portamento", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Fixed_Modulations_KeyboardTracking,23,	18,	2, 1, "DCO 2 Fixed Modulations  Bit1 = Keyboard Tracking enable", true),
 		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Click,24,	19,	1, 0, "DCO 2 Click", true),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix1000ParamDefinition(DCO_Sync_Mode,25,	02,	2,"DCO Sync mode",{ { 0, "NO" },{ 1,"SOFT" },{ 2, "MEDIUM" },{ 3, "HARD" } }, [](Patch const &patch) { return patch.at(25) != 0; })),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix1000ParamDefinition(DCO_Sync_Mode,25,	02,	2,"DCO Sync mode",{ { 0, "NO" },{ 1,"SOFT" },{ 2, "MEDIUM" },{ 3, "HARD" } }, [](DataFile const &patch) { return patch.at(25) != 0; })),
 		std::make_shared<Matrix1000ParamDefinition>(VCF_Initial_Frequency_LSB,26,	21,	7,"VCF Initial Frequency  LSB = 1 Semitone"),
 		std::make_shared<Matrix1000ParamDefinition>(VCF_Initial_Resonance,27,	24,	6,"VCF Initial Resonance"),
 		std::make_shared<Matrix1000ParamDefinition>(VCF_Fixed_Modulations_Lever1,28,	25,	2, 0, "VCF Fixed Modulations  Bit0 = Lever 1", true),
@@ -344,54 +344,54 @@ namespace midikraft {
 		std::make_shared<Matrix1000ParamDefinition>(Matrix1000ParamDefinition(Ramp1_Mode,83,	41,	2,	"Ramp 1 Mode",{ { 0, "Single Trigger" },{ 1, "Multi Trigger" },{ 2, "External Trigger" },{ 3, "External Gated" } }, cRamp1Used)),
 		std::make_shared<Matrix1000ParamDefinition>(Ramp2_Rate,84,	42,	6,	"Ramp 2 Rate", cRamp2Used),
 		std::make_shared<Matrix1000ParamDefinition>(Matrix1000ParamDefinition(Ramp2_Mode,85,	43,	2,	"Ramp 2 Mode",{ { 0, "Single Trigger" },{ 1, "Multi Trigger" },{ 2, "External Trigger" },{ 3, "External Gated" } }, cRamp2Used)),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Freq_by_LFO_1_Amount,86,	01,	-7, "DCO 1 Freq.by LFO 1 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 86) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_1_PW_by_LFO_2_Amount,87,	04,	-7, "DCO 1 PW by LFO 2 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 87) != 0 && (valueBySysexIndex(patch, 13) & 0x02); }),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Freq_by_LFO_1_Amount,88,	11,	-7, "DCO 2 Freq.by LFO 1 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 88) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(DCO_2_PW_by_LFO_2_Amount,	89,	14,	-7, "DCO 2 PW by LFO 2 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 89) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(VCF_Freq_by_Env_1_Amount,90,	22,	-7, "VCF Freq.by Env 1 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 90) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(VCF_Freq_by_Pressure_Amount,91,	23,	-7, "VCF Freq.by Pressure Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 91) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(VCA_1_by_Velocity_Amount,	92,	28,	-7, "VCA 1 by Velocity Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 92) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(VCA_2_by_Env_2_Amount,93,	29,	-7, "VCA 2 by Env 2 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 3) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(Env_1_Amplitude_by_Velocity_Amount,94,	56,	-7, "Env 1 Amplitude by Velocity Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 94) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(Env_2_Amplitude_by_Velocity_Amount,95,	66,	-7, "Env 2 Amplitude by Velocity Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 95) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(Env_3_Amplitude_by_Velocity_Amount,96,	76,	-7, "Env 3 Amplitude by Velocity Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 96) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(LFO_1_Amp_by_Ramp_1_Amount,97,	85,	-7, "LFO 1 Amp.by Ramp 1 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 97) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(LFO_2_Amp_by_Ramp_2_Amount,98,	95,	-7, "LFO 2 Amp.by Ramp 2 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 98) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_1_Freq_by_LFO_1_Amount,86,	01,	-7, "DCO 1 Freq.by LFO 1 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 86) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_1_PW_by_LFO_2_Amount,87,	04,	-7, "DCO 1 PW by LFO 2 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 87) != 0 && (valueBySysexIndex(patch, 13) & 0x02); }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_2_Freq_by_LFO_1_Amount,88,	11,	-7, "DCO 2 Freq.by LFO 1 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 88) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(DCO_2_PW_by_LFO_2_Amount,	89,	14,	-7, "DCO 2 PW by LFO 2 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 89) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(VCF_Freq_by_Env_1_Amount,90,	22,	-7, "VCF Freq.by Env 1 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 90) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(VCF_Freq_by_Pressure_Amount,91,	23,	-7, "VCF Freq.by Pressure Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 91) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(VCA_1_by_Velocity_Amount,	92,	28,	-7, "VCA 1 by Velocity Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 92) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(VCA_2_by_Env_2_Amount,93,	29,	-7, "VCA 2 by Env 2 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 3) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(Env_1_Amplitude_by_Velocity_Amount,94,	56,	-7, "Env 1 Amplitude by Velocity Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 94) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(Env_2_Amplitude_by_Velocity_Amount,95,	66,	-7, "Env 2 Amplitude by Velocity Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 95) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(Env_3_Amplitude_by_Velocity_Amount,96,	76,	-7, "Env 3 Amplitude by Velocity Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 96) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(LFO_1_Amp_by_Ramp_1_Amount,97,	85,	-7, "LFO 1 Amp.by Ramp 1 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 97) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(LFO_2_Amp_by_Ramp_2_Amount,98,	95,	-7, "LFO 2 Amp.by Ramp 2 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 98) != 0; }),
 		std::make_shared<Matrix1000ParamDefinition>(Portamento_rate_by_Velocity_Amount,99,	45,	-7, "Portamento rate by Velocity Amount", cPortamentoEnabled),
-		std::make_shared<Matrix1000ParamDefinition>(VCF_FM_Amount_by_Env_3_Amount,100,	31,	-7, "VCF FM Amount by Env 3 Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 100) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(VCF_FM_Amount_by_Pressure_Amount,101,	32,	-7, "VCF FM Amount by Pressure Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 101) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(LFO_1_Speed_by_Pressure_Amount,102,	81,	-7, "LFO 1 Speed by Pressure Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 102) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(LFO_2_Speed_by_Keyboard_Amount,103,	91,	-7, "LFO 2 Speed by Keyboard Amount", [](Patch const &patch) { return valueBySysexIndex(patch, 103) != 0; }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_0_Source_Code,104,	  	5,	"Matrix Modulation Bus 0 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(104) != 0 && data.at(106) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_0_Amount,105, -7, "M Bus 0 Amount", [](Patch const &data) { return data.at(104) != 0 && data.at(106) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_0_Destination_Code,106,	  	5,	"MM Bus 0 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(104) != 0 && data.at(106) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_1_Source_Code,107,	  	5,	"Matrix Modulation Bus 1 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(107) != 0 && data.at(109) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_1_Amount,108,	  	-7, "M Bus 1 Amount", [](Patch const &data) { return data.at(107) != 0 && data.at(109) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_1_Destination_Code,109,	  	5,	"MM Bus 1 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(107) != 0 && data.at(109) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_2_Source_Code,110,	  	5,	"Matrix Modulation Bus 2 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(110) != 0 && data.at(112) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_2_Amount,111,	  	-7, "M Bus 2 Amount", [](Patch const &data) { return data.at(110) != 0 && data.at(112) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_2_Destination_Code,112,	  	5,	"MM Bus 2 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(110) != 0 && data.at(112) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_3_Source_Code,113,	  	5,	"Matrix Modulation Bus 3 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(113) != 0 && data.at(115) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_3_Amount,114,	  	-7, "M Bus 3 Amount", [](Patch const &data) { return data.at(113) != 0 && data.at(115) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_3_Destination_Code,115,	  	5,	"MM Bus 3 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(113) != 0 && data.at(115) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_4_Source_Code,116,	  	5,	"Matrix Modulation Bus 4 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(116) != 0 && data.at(118) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_4_Amount,117,	  	-7, "M Bus 4 Amount", [](Patch const &data) { return data.at(116) != 0 && data.at(118) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_4_Destination_Code,118,	  	5,	"MM Bus 4 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(116) != 0 && data.at(118) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_5_Source_Code,119,	  	5,	"Matrix Modulation Bus 5 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(119) != 0 && data.at(121) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_5_Amount,120,	  	-7, "M Bus 5 Amount", [](Patch const &data) { return data.at(119) != 0 && data.at(121) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_5_Destination_Code,121,	  	5,	"MM Bus 5 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(119) != 0 && data.at(121) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_6_Source_Code,122,	  	5,	"Matrix Modulation Bus 6 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(122) != 0 && data.at(124) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_6_Amount,123,	  	-7, "M Bus 6 Amount", [](Patch const &data) { return data.at(122) != 0 && data.at(124) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_6_Destination_Code,124,	  	5,	"MM Bus 6 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(122) != 0 && data.at(124) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_7_Source_Code,125,	  	5,	"Matrix Modulation Bus 7 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(125) != 0 && data.at(127) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_7_Amount,126,	  	-7, "M Bus 7 Amount", [](Patch const &data) { return data.at(125) != 0 && data.at(127) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_7_Destination_Code,127,	  	5,	"MM Bus 7 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(125) != 0 && data.at(127) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_8_Source_Code,128,	  	5,	"Matrix Modulation Bus 8 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(128) != 0 && data.at(130) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_8_Amount,129,	  	-7, "M Bus 8 Amount", [](Patch const &data) { return data.at(128) != 0 && data.at(130) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_8_Destination_Code,130,	  	5,	"MM Bus 8 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(128) != 0 && data.at(130) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_9_Source_Code,131,	  	5,	"Matrix Modulation Bus 9 Source Code", modulationSourceCodes, [](Patch const &data) { return data.at(131) != 0 && data.at(133) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(M_Bus_9_Amount,132,	  	-7, "M Bus 9 Amount", [](Patch const &data) { return data.at(131) != 0 && data.at(133) != 0;  }),
-		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_9_Destination_Code, 133,	  	5,	"MM Bus 9 Destination Code", modulationDestinationCodes, [](Patch const &data) { return data.at(131) != 0 && data.at(133) != 0;  })
+		std::make_shared<Matrix1000ParamDefinition>(VCF_FM_Amount_by_Env_3_Amount,100,	31,	-7, "VCF FM Amount by Env 3 Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 100) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(VCF_FM_Amount_by_Pressure_Amount,101,	32,	-7, "VCF FM Amount by Pressure Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 101) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(LFO_1_Speed_by_Pressure_Amount,102,	81,	-7, "LFO 1 Speed by Pressure Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 102) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(LFO_2_Speed_by_Keyboard_Amount,103,	91,	-7, "LFO 2 Speed by Keyboard Amount", [](DataFile const &patch) { return valueBySysexIndex(patch, 103) != 0; }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_0_Source_Code,104,	  	5,	"Matrix Modulation Bus 0 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(104) != 0 && data.at(106) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_0_Amount,105, -7, "M Bus 0 Amount", [](DataFile const &data) { return data.at(104) != 0 && data.at(106) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_0_Destination_Code,106,	  	5,	"MM Bus 0 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(104) != 0 && data.at(106) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_1_Source_Code,107,	  	5,	"Matrix Modulation Bus 1 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(107) != 0 && data.at(109) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_1_Amount,108,	  	-7, "M Bus 1 Amount", [](DataFile const &data) { return data.at(107) != 0 && data.at(109) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_1_Destination_Code,109,	  	5,	"MM Bus 1 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(107) != 0 && data.at(109) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_2_Source_Code,110,	  	5,	"Matrix Modulation Bus 2 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(110) != 0 && data.at(112) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_2_Amount,111,	  	-7, "M Bus 2 Amount", [](DataFile const &data) { return data.at(110) != 0 && data.at(112) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_2_Destination_Code,112,	  	5,	"MM Bus 2 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(110) != 0 && data.at(112) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_3_Source_Code,113,	  	5,	"Matrix Modulation Bus 3 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(113) != 0 && data.at(115) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_3_Amount,114,	  	-7, "M Bus 3 Amount", [](DataFile const &data) { return data.at(113) != 0 && data.at(115) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_3_Destination_Code,115,	  	5,	"MM Bus 3 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(113) != 0 && data.at(115) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_4_Source_Code,116,	  	5,	"Matrix Modulation Bus 4 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(116) != 0 && data.at(118) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_4_Amount,117,	  	-7, "M Bus 4 Amount", [](DataFile const &data) { return data.at(116) != 0 && data.at(118) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_4_Destination_Code,118,	  	5,	"MM Bus 4 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(116) != 0 && data.at(118) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_5_Source_Code,119,	  	5,	"Matrix Modulation Bus 5 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(119) != 0 && data.at(121) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_5_Amount,120,	  	-7, "M Bus 5 Amount", [](DataFile const &data) { return data.at(119) != 0 && data.at(121) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_5_Destination_Code,121,	  	5,	"MM Bus 5 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(119) != 0 && data.at(121) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_6_Source_Code,122,	  	5,	"Matrix Modulation Bus 6 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(122) != 0 && data.at(124) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_6_Amount,123,	  	-7, "M Bus 6 Amount", [](DataFile const &data) { return data.at(122) != 0 && data.at(124) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_6_Destination_Code,124,	  	5,	"MM Bus 6 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(122) != 0 && data.at(124) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_7_Source_Code,125,	  	5,	"Matrix Modulation Bus 7 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(125) != 0 && data.at(127) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_7_Amount,126,	  	-7, "M Bus 7 Amount", [](DataFile const &data) { return data.at(125) != 0 && data.at(127) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_7_Destination_Code,127,	  	5,	"MM Bus 7 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(125) != 0 && data.at(127) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_8_Source_Code,128,	  	5,	"Matrix Modulation Bus 8 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(128) != 0 && data.at(130) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_8_Amount,129,	  	-7, "M Bus 8 Amount", [](DataFile const &data) { return data.at(128) != 0 && data.at(130) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_8_Destination_Code,130,	  	5,	"MM Bus 8 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(128) != 0 && data.at(130) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(Matrix_Modulation_Bus_9_Source_Code,131,	  	5,	"Matrix Modulation Bus 9 Source Code", modulationSourceCodes, [](DataFile const &data) { return data.at(131) != 0 && data.at(133) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(M_Bus_9_Amount,132,	  	-7, "M Bus 9 Amount", [](DataFile const &data) { return data.at(131) != 0 && data.at(133) != 0;  }),
+		std::make_shared<Matrix1000ParamDefinition>(MM_Bus_9_Destination_Code, 133,	  	5,	"MM Bus 9 Destination Code", modulationDestinationCodes, [](DataFile const &data) { return data.at(131) != 0 && data.at(133) != 0;  })
 	};
 
 	// Unison detune can be controlled via MIDI CC #94
