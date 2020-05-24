@@ -38,6 +38,16 @@ IF (WIN32)
 		URL https://www.python.org/ftp/python/3.6.8/python-3.6.8-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
+ELSEIF(UNIX)
+	# Include useful scripts for CMake
+	find_package(PkgConfig REQUIRED) 
+	find_package(OpenGL)
+
+	# These calls create special `PkgConfig::<MODULE>` variables
+	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
+	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+	find_package(ICU REQUIRED data uc)
 ENDIF()
 
 # We need a little bit support for the JUCE library, and also want to put our own CMake helpers on the module path
@@ -51,9 +61,9 @@ IF(WIN32)
 	IF(DEFINED ENV{APPVEYOR})
 		# Fixed path in Appveyor Windows build machine
 		set(PYTHON_EXECUTABLE "C:/Python36-x64/python.exe")
-	ELSE()
+	ELSE()		
 		IF(NOT DEFINED PYTHON_EXECUTABLE)
-			set(PYTHON_EXECUTABLE "	c:/python/python36/python.exe")
+			set(PYTHON_EXECUTABLE "c:/python/python36/python.exe")
 		ENDIF()
 		message("USING PYTHON ${PYTHON_EXECUTABLE} at ${PYTHON_VERSION_MAJOR} and ${PYTHON_VERSION_MINOR}")		
 	ENDIF()
@@ -62,6 +72,24 @@ ELSE()
 ENDIF()
 set(PYBIND11_PYTHON_VERSION 3.6)
 add_subdirectory("third_party/pybind11")
+
+# Define the list of link libraries required on Linux linking with JUCE, this must be used by any executable / module to run standalone
+IF(UNIX)
+	set(LINUX_JUCE_LINK_LIBRARIES
+		PkgConfig::WEBKIT 
+		PkgConfig::GTK 
+		PkgConfig::GLEW 
+		Xext 
+		X11 
+		pthread 
+		${CMAKE_DL_LIBS} 
+		freetype 
+		curl 
+		asound)
+
+	# Also, as we will be building a shared module for Python, make sure GCC generates relocatable code suited for inclusion in a shared library
+	add_definitions(-fPIC)
+ENDIF()
 
 # Include the SQLite wrapper for MidiKraft-database
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp)

@@ -9,6 +9,9 @@ BUGS
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 * When turning on a synth in the setup and it becomes active, the advanced filter dialog is wrong
 
+STARTED FEATURES TO BE FINISHED AND ANNOUNCED
+* Scripted Query
+
 OB-6
 + Implement parameter set of OB-6 for patch diff
 

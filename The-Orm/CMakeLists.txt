@@ -8,20 +8,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(KnobKraftOrm VERSION 1.5.0)
 
-IF (WIN32)
-	# All setup for UI software on Windows
-ELSEIF(UNIX)
-	# Include useful scripts for CMake
-	find_package(PkgConfig REQUIRED) 
-	find_package(OpenGL)
-
-	# These calls create special `PkgConfig::<MODULE>` variables
-	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
-	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
-	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
-	find_package(ICU REQUIRED data uc)
-ENDIF()
-
 find_package(JUCE REQUIRED 
 	COMPONENTS 
 		juce_core		
@@ -89,18 +75,8 @@ IF(WIN32)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
-		PkgConfig::WEBKIT 
-		PkgConfig::GTK 
-		PkgConfig::GLEW 
 		ICU::data ICU::uc
-		Xext 
-		X11 
-		pthread 
-		${CMAKE_DL_LIBS} 
-		freetype 
-		curl 
 		${MIDIKRAFT_LIBRARIES}
-		asound
 		SQLiteCpp
 		sqlite3
 		)
