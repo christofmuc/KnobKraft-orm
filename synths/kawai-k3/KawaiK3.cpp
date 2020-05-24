@@ -726,12 +726,19 @@ namespace midikraft {
 	}
 
 	void KawaiK3::setupBCR2000View(BCR2000Proxy *view) {
-		KawaiK3BCR2000::setupBCR2000View(view);
+		currentPatchValues_ = KawaiK3BCR2000::setupBCR2000View(view);
 	}
 
-	void KawaiK3::setupBCR2000Values(BCR2000Proxy *view, std::shared_ptr<DataFile> patch)
+	void KawaiK3::setupBCR2000Values(std::shared_ptr<DataFile> patch)
 	{
-		KawaiK3BCR2000::setupBCR2000Values(view, patch);
+		for (auto param : KawaiK3Parameter::allParameters) {
+			int value;
+			if (param->valueInPatch(*patch, value)) {
+				if (currentPatchValues_.hasValue(param->name())) {
+					currentPatchValues_.valueByName(param->name()).setValue(value);
+				}
+			}
+		}
 	}
 
 }

@@ -10,7 +10,7 @@
 
 namespace midikraft {
 
-	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, SynthLookupParameterCapability {
+	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, public SynthLookupParameterCapability {
 	public:
 		enum Parameter {
 			OSC1_WAVE_SELECT = 1,

@@ -189,15 +189,36 @@ namespace midikraft {
 		return encoder;
 	}
 
-	void KawaiK3BCR2000::setupBCR2000View(BCR2000Proxy *view)
+	TypedNamedValueSet KawaiK3BCR2000::setupBCR2000View(BCR2000Proxy *view)
 	{
+		TypedNamedValueSet result;
 		// Iterate over our definition and set the labels on the view to show the layout
 		for (auto def : k3Setup) {
 			auto k3def = dynamic_cast<KawaiK3BCR2000Definition *>(def);
 			if (k3def) {
 				auto param = KawaiK3Parameter::findParameter(k3def->param());
-				int encoder = encoderNumber(k3def);
-				if (encoder != -1) view->setRotaryParam(encoder, param);
+				if (param) {
+					switch (param->type()) {
+					case SynthParameterDefinition::ParamType::INT:
+						result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, param->minValue(), param->maxValue()));
+						break;
+					case SynthParameterDefinition::ParamType::LOOKUP: {
+						std::map<int, std::string> lookup;
+						for (int i = param->minValue(); i < param->maxValue(); i++) {
+							lookup.emplace(i, param->valueAsText(i));
+						}
+						result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
+						break;
+					}
+					default:
+						jassertfalse;
+					}
+					int encoder = encoderNumber(k3def);
+					if (encoder != -1) view->setRotaryParam(encoder, result.back().get());
+				}
+				else {
+					jassertfalse;
+				}
 			}
 			else {
 				auto simpleDef = dynamic_cast<BCRStandardDefinitionWithName *>(def);
@@ -207,24 +228,7 @@ namespace midikraft {
 				}
 			}
 		}
-	}
-
-	void KawaiK3BCR2000::setupBCR2000Values(BCR2000Proxy *view, std::shared_ptr<DataFile> patch)
-	{
-		// Iterate over our definition and set the labels on the view to show the layout
-		for (auto def : k3Setup) {
-			auto k3def = dynamic_cast<KawaiK3BCR2000Definition *>(def);
-			if (k3def) {
-				KawaiK3Parameter *k3param = KawaiK3Parameter::findParameter(k3def->param());
-				if (k3param) {
-					int value;
-					if (k3param->valueInPatch(*patch, value)) {
-						int encoder = encoderNumber(k3def);
-						if (encoder != -1) view->setRotaryParamValue(encoder, value);
-					}
-				}
-			}
-		}
+		return result;
 	}
 
 }

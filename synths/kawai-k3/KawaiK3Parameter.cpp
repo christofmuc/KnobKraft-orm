@@ -97,6 +97,9 @@ namespace midikraft {
 
 	SynthParameterDefinition::ParamType KawaiK3Parameter::type() const
 	{
+		//TODO - this is fairly retro, needs to be refactored
+		if (paramNo_ == OSC1_WAVE_SELECT || paramNo_ == OSC2_WAVE_SELECT || paramNo_ == OSC1_RANGE || paramNo_ == LFO_SHAPE || paramNo_ == CHORUS)
+			return SynthParameterDefinition::ParamType::LOOKUP;
 		return SynthParameterDefinition::ParamType::INT;
 	}
 

@@ -46,8 +46,7 @@ namespace midikraft {
 		// As the BCR2000 is not really powerful enough to set a sign bit, it will only work properly with the KawaiK3 while the KnobKraft software is running
 		static std::string generateBCL(std::string const &presetName, MidiChannel knobkraftChannel, MidiChannel k3Channel);
 		static juce::MidiMessage createMessageforParam(KawaiK3Parameter *paramDef, KawaiK3Patch const &patch, MidiChannel k3Channel);
-		static void setupBCR2000View(BCR2000Proxy *view);
-		static void setupBCR2000Values(BCR2000Proxy *view, std::shared_ptr<DataFile> patch);
+		static TypedNamedValueSet setupBCR2000View(BCR2000Proxy *view);
 	};
 
 }
