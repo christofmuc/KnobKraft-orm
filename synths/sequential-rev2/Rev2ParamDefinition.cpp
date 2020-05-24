@@ -100,13 +100,13 @@ namespace midikraft {
 		return max_;
 	}
 
-	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, int &outValue) const
+	bool Rev2ParamDefinition::valueInPatch(DataFile const &patch, int &outValue) const
 	{
 		outValue = patch.at(readSysexIndex());
 		return true;
 	}
 
-	bool Rev2ParamDefinition::valueInPatch(Patch const &patch, std::vector<int> &outValue) const
+	bool Rev2ParamDefinition::valueInPatch(DataFile const &patch, std::vector<int> &outValue) const
 	{
 		// If this is not an array type, that won't work
 		if (type() != SynthParameterDefinition::ParamType::INT_ARRAY && type() != SynthParameterDefinition::ParamType::LOOKUP_ARRAY) {
@@ -121,7 +121,7 @@ namespace midikraft {
 		return true;
 	}
 
-	MidiBuffer Rev2ParamDefinition::setValueMessages(Patch const &patch, Synth const *synth) const
+	MidiBuffer Rev2ParamDefinition::setValueMessages(DataFile const &patch, Synth const *synth) const
 	{
 		auto midiLocation = dynamic_cast<MidiLocationCapability const *>(synth);
 		if (midiLocation) {
@@ -177,7 +177,7 @@ namespace midikraft {
 		return sourceLayer_;
 	}
 
-	std::string Rev2ParamDefinition::valueInPatchToText(Patch const &patch) const
+	std::string Rev2ParamDefinition::valueInPatchToText(DataFile const &patch) const
 	{
 		switch (type()) {
 		case SynthParameterDefinition::ParamType::INT: {
@@ -218,13 +218,13 @@ namespace midikraft {
 		return "invalid param type";
 	}
 
-	void Rev2ParamDefinition::setInPatch(Patch &patch, int value) const
+	void Rev2ParamDefinition::setInPatch(DataFile &patch, int value) const
 	{
 		jassert(type() == SynthParameterDefinition::ParamType::INT);
 		patch.setAt(sysexIndex(), (uint8)value);
 	}
 
-	void Rev2ParamDefinition::setInPatch(Patch &patch, std::vector<int> value) const
+	void Rev2ParamDefinition::setInPatch(DataFile &patch, std::vector<int> value) const
 	{
 		int read = 0;
 		for (int i = sysexIndex(); i <= endSysexIndex(); i++) {
