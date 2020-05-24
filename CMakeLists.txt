@@ -89,6 +89,9 @@ IF(UNIX)
 		freetype 
 		curl 
 		asound)
+
+	# Also, as we will be building a shared module for Python, make sure GCC generates relocatable code suited for inclusion in a shared library
+	add_definitions(-fPIC)
 ENDIF()
 
 # Include the SQLite wrapper for MidiKraft-database
