@@ -65,7 +65,7 @@ namespace midikraft {
 		return name();
 	}
 
-	std::string KorgDW8000Parameter::valueInPatchToText(Patch const &patch) const
+	std::string KorgDW8000Parameter::valueInPatchToText(DataFile const &patch) const
 	{
 		int value;
 		if (valueInPatch(patch, value)) {
@@ -74,7 +74,7 @@ namespace midikraft {
 		return "invalid";
 	}
 
-	bool KorgDW8000Parameter::valueInPatch(Patch const &patch, int &outValue) const
+	bool KorgDW8000Parameter::valueInPatch(DataFile const &patch, int &outValue) const
 	{
 		if (paramIndex_ >= patch.data().size()) {
 			return false;
@@ -90,7 +90,7 @@ namespace midikraft {
 		return true;
 	}
 
-	void KorgDW8000Parameter::setInPatch(Patch &patch, int value) const
+	void KorgDW8000Parameter::setInPatch(DataFile &patch, int value) const
 	{
 		patch.setAt(sysexIndex(), (uint8) value);
 	}
