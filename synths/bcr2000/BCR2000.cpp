@@ -189,14 +189,14 @@ namespace midikraft {
 		return message.getSysExData()[5];
 	}
 
-	void BCR2000::sendSysExToBCR(std::shared_ptr<SafeMidiOutput> midiOutput, std::vector<MidiMessage> const &messages, SimpleLogger *logger, std::function<void(std::vector<BCRError> const &errors)> const whenDone)
+	void BCR2000::sendSysExToBCR(std::shared_ptr<SafeMidiOutput> midiOutput, std::vector<MidiMessage> const &messages, std::function<void(std::vector<BCRError> const &errors)> const whenDone)
 	{
 		errorsDuringUpload_.clear();
 		TransferCounters *receivedCounter = new TransferCounters;
 		// Determine what we will do with the answer...
 		auto handle = MidiController::makeOneHandle();
 		std::vector<MidiMessage> localCopy = messages;
-		MidiController::instance()->addMessageHandler(handle, [this, localCopy, midiOutput, logger, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
+		MidiController::instance()->addMessageHandler(handle, [this, localCopy, midiOutput, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
 			if (source->getName().toStdString() != midiInput()) return;
 
 			// Check the answer from the BCR2000
@@ -212,7 +212,7 @@ namespace midikraft {
 						// Check for dropped messages...
 						int logicalLineNumber = receivedCounter->overflowCounter * (1 << 14) + lineNo;
 						if (logicalLineNumber != receivedCounter->receivedMessages && receivedCounter->lastLine != -1) {
-							logger->postMessage("Seems to have a MIDI message drop");
+							SimpleLogger::instance()->postMessage("Seems to have a MIDI message drop");
 						}
 						if (lineNo < receivedCounter->lastLine && lineNo == 0) {
 							// That was a wrap around
@@ -227,10 +227,10 @@ namespace midikraft {
 							if (logicalLineNumber >= 0 && logicalLineNumber < localCopy.size()) {
 								auto currentLine = convertSyxToText(localCopy[logicalLineNumber]);
 								errorsDuringUpload_.push_back({ error, errorText, logicalLineNumber + 1, currentLine });
-								logger->postMessage(errorsDuringUpload_.back().toDisplayString());
+								SimpleLogger::instance()->postMessage(errorsDuringUpload_.back().toDisplayString());
 							}
 							else {
-								logger->postMessage((boost::format("Error %d (%s) in line %d") % error % errorText % (logicalLineNumber + 1)).str());
+								SimpleLogger::instance()->postMessage((boost::format("Error %d (%s) in line %d") % error % errorText % (logicalLineNumber + 1)).str());
 							}
 						}
 
@@ -239,7 +239,7 @@ namespace midikraft {
 						if (receivedCounter->receivedMessages == receivedCounter->numMessages - 1) {
 							delete receivedCounter;
 							MidiController::instance()->removeMessageHandler(handle);
-							logger->postMessage("All messages received by BCR2000");
+							SimpleLogger::instance()->postMessage("All messages received by BCR2000");
 							whenDone(errorsDuringUpload_);
 						}
 						else {
@@ -262,7 +262,7 @@ namespace midikraft {
 				midiOutput->sendMessageNow(messages[0]);
 			}
 			else {
-				logger->postMessage("No Midi Output known for BCR2000, not sending anything!");
+				SimpleLogger::instance()->postMessage("No Midi Output known for BCR2000, not sending anything!");
 			}
 		}
 		else {
@@ -516,9 +516,10 @@ namespace midikraft {
 
 	void BCR2000::sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile)
 	{
+		ignoreUnused(logger); //TODO that argument can go away
 		if (channel().isValid()) {
 			auto messages = Sysex::vectorToMessages(dataFile->data());
-			sendSysExToBCR(controller->getMidiOutput(midiOutput()), messages, logger, [](std::vector<BCRError> const &errors) {
+			sendSysExToBCR(controller->getMidiOutput(midiOutput()), messages, [](std::vector<BCRError> const &errors) {
 				if (!errors.empty()) {
 					SimpleLogger::instance()->postMessage("Preset contains errors");
 				}

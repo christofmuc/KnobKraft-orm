@@ -24,7 +24,10 @@ ENDIF()
 # Define the sources for the static library
 set(Sources
 	BCR2000.cpp BCR2000.h
+	BCR2000Proxy.h
 	BCRDefinition.cpp BCRDefinition.h
+	CCBCRDefinition.cpp CCBCRDefinition.h
+	SupportedByBCR2000.h
 	README.md
 	LICENSE.md
 )
