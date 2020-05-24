@@ -26,6 +26,7 @@ configure_file("version.cpp.in" "version.cpp")
 set(SOURCES
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
+	BCR2000_Component.cpp BCR2000_Component.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
@@ -36,6 +37,7 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
+	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h

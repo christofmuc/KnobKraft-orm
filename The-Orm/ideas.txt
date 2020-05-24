@@ -12,6 +12,14 @@ BUGS
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Scripted Query
 
+KawaiK3 - supported by BCR2000
++ Moving the sliders by hand should already update the K3 - and the BCR2000. Now I can do that by installing a value listener inside the Kawai K3 on the set of patchv alues
+     I think this patch updater needs its own... name
++ need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
++ warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
++ Moving the BCR2000 should update both UI and patch
++ BCR2000 needs to be synchronized with current patch
+
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
