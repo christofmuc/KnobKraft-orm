@@ -90,18 +90,9 @@ IF(WIN32)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
-		PkgConfig::WEBKIT 
-		PkgConfig::GTK 
-		PkgConfig::GLEW 
+		${LINUX_JUCE_LINK_LIBRARIES}
 		ICU::data ICU::uc
-		Xext 
-		X11 
-		pthread 
-		${CMAKE_DL_LIBS} 
-		freetype 
-		curl 
 		${MIDIKRAFT_LIBRARIES}
-		asound
 		SQLiteCpp
 		sqlite3
 		)

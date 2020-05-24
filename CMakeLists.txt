@@ -51,9 +51,12 @@ IF(WIN32)
 	IF(DEFINED ENV{APPVEYOR})
 		# Fixed path in Appveyor Windows build machine
 		set(PYTHON_EXECUTABLE "C:/Python36-x64/python.exe")
-	ELSE()
+	ELSE()		
+		#if (not(${PYTHON_VERSION_MAJOR} STREQUAL "3" and ${PYTHON_VERSION_MINOR} STREQUAL "6"))
+			set(PYTHON_EXECUTABLE "c:/python/python36/python.exe")
+		#ENDIF()
 		IF(NOT DEFINED PYTHON_EXECUTABLE)
-			set(PYTHON_EXECUTABLE "	c:/python/python36/python.exe")
+			set(PYTHON_EXECUTABLE "c:/python/python36/python.exe")
 		ENDIF()
 		message("USING PYTHON ${PYTHON_EXECUTABLE} at ${PYTHON_VERSION_MAJOR} and ${PYTHON_VERSION_MINOR}")		
 	ENDIF()
@@ -62,6 +65,21 @@ ELSE()
 ENDIF()
 set(PYBIND11_PYTHON_VERSION 3.6)
 add_subdirectory("third_party/pybind11")
+
+# Define the list of link libraries required on Linux linking with JUCE, this must be used by any executable / module to run standalone
+IF(UNIX)
+	set(LINUX_JUCE_LINK_LIBRARIES
+		PkgConfig::WEBKIT 
+		PkgConfig::GTK 
+		PkgConfig::GLEW 
+		Xext 
+		X11 
+		pthread 
+		${CMAKE_DL_LIBS} 
+		freetype 
+		curl 
+		asound)
+ENDIF()
 
 # Include the SQLite wrapper for MidiKraft-database
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp)
