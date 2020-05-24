@@ -38,6 +38,16 @@ IF (WIN32)
 		URL https://www.python.org/ftp/python/3.6.8/python-3.6.8-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
+ELSEIF(UNIX)
+	# Include useful scripts for CMake
+	find_package(PkgConfig REQUIRED) 
+	find_package(OpenGL)
+
+	# These calls create special `PkgConfig::<MODULE>` variables
+	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
+	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+	find_package(ICU REQUIRED data uc)
 ENDIF()
 
 # We need a little bit support for the JUCE library, and also want to put our own CMake helpers on the module path
