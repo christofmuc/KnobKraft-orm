@@ -136,7 +136,7 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 			bcr2000_->refreshListOfPresets(setupBCR);
 
 			// The view we can always setup already
-			uiModel_ = supported->createParameterModel();
+			uiModel_ = createParameterModel();
 			// Add all Values of the uiModel_ into a ValueTree
 			uiValueTree_ = ValueTree("UIMODEL");
 			for (auto param : uiModel_) {
@@ -154,6 +154,46 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 	else if (dynamic_cast<CurrentPatch *>(source) || source == &UIModel::instance()->currentPatchValues_) {
 		updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch().patch());
 	}
+}
+
+TypedNamedValueSet BCR2000_Component::createParameterModel() {
+	midikraft::DetailedParametersCapability *detailedParameters = nullptr;
+	if (!UIModel::currentPatch().patch()) {
+		// Hope that the current synth has the capability of detailed parameters
+		detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability *>(UIModel::currentSynth());
+	}
+	else {
+		detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentPatch().synth());
+	}
+
+	TypedNamedValueSet result;
+	if (detailedParameters) {
+		for (auto param : detailedParameters->allParameterDefinitions()) {
+			auto intParam = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
+			if (intParam) {
+				switch (param->type()) {
+				case midikraft::SynthParameterDefinition::ParamType::INT:
+					result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, intParam->minValue(), intParam->maxValue()));
+					break;
+				case midikraft::SynthParameterDefinition::ParamType::LOOKUP: {
+					std::map<int, std::string> lookup;
+					auto lookupCap = std::dynamic_pointer_cast<midikraft::SynthLookupParameterCapability>(param);
+					for (int i = intParam->minValue(); i < intParam->maxValue(); i++) {
+						lookup.emplace(i, lookupCap->valueAsText(i));
+					}
+					result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
+					break;
+				}
+				default:
+					jassertfalse;
+				}
+			}
+			else {
+				jassertfalse;
+			}
+		}
+	}
+	return result;
 }
 
 void BCR2000_Component::resized()
@@ -247,9 +287,8 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::DataFile> newPatch)
 {
 	SimpleLogger::instance()->postMessage("Updating UI model from new patch");
-	auto supported = dynamic_cast<midikraft::SupportedByBCR2000*>(UIModel::currentSynth());
 	auto detailedParameters = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(newPatch);
-	if (supported && detailedParameters) {
+	if (detailedParameters) {
 		for (auto param : detailedParameters->allParameterDefinitions()) {
 			auto intParam = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
 			if (intParam) {

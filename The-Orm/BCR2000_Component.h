@@ -69,6 +69,8 @@ private:
 		BCR2000_Component* papa_;
 	};
 
+	TypedNamedValueSet createParameterModel();
+
 	TypedNamedValueSet synthModel_;
 	TypedNamedValueSet uiModel_;
 	ValueTree uiValueTree_;

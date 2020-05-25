@@ -19,6 +19,10 @@ KawaiK3 - supported by BCR2000
 + warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
 + Moving the BCR2000 should update both UI and patch
 + BCR2000 needs to be synchronized with current patch
++ Split view? Left patches, right editor
+
+Generic Editor
++ Could allow any mapping, to use e.g. the Rev2 to setup the OB6
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
