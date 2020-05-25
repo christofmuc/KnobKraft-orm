@@ -16,6 +16,7 @@
 #include "SynthParameterDefinition.h"
 #include "Settings.h"
 #include "Sysex.h"
+#include "DetailedParametersCapability.h"
 
 const char *kLastPathBCL = "lastPathBCL";
 
@@ -26,7 +27,7 @@ std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
-BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr)
+BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this)
 {
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -135,19 +136,23 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 			bcr2000_->refreshListOfPresets(setupBCR);
 
 			// The view we can always setup already
-			supported->setupBCR2000View(this);
+			uiModel_ = supported->createParameterModel();
+			// Add all Values of the uiModel_ into a ValueTree
+			uiValueTree_ = ValueTree("UIMODEL");
+			for (auto param : uiModel_) {
+				uiValueTree_.setProperty(param->name(), param->value().getValue(), nullptr);
+				auto v = uiValueTree_.getPropertyAsValue(Identifier(param->name()), nullptr, false);
+				param->value().referTo(v);
+			}
+
+			supported->setupBCR2000View(this, uiModel_, uiValueTree_);
+
+			// Now attach a sysex generating listener to the values of the ValueTree
+			uiValueTree_.addListener(&updateSynthListener_);
 		}
 	}
 	else if (dynamic_cast<CurrentPatch *>(source) || source == &UIModel::instance()->currentPatchValues_) {
-		updateKnobValues();
-	}
-}
-
-void BCR2000_Component::updateKnobValues()
-{
-	auto supported = dynamic_cast<midikraft::SupportedByBCR2000 *>(UIModel::currentSynth());
-	if (supported && UIModel::currentPatch().patch()) {
-		supported->setupBCR2000Values(UIModel::currentPatch().patch());
+		updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch().patch());
 	}
 }
 
@@ -234,3 +239,28 @@ void BCR2000_Component::setButtonParam(int knobNumber, std::string const &name)
 	}
 }
 
+void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
+{
+	SimpleLogger::instance()->postMessage("Will send sysex to update property " + property + " to " + treeWhosePropertyHasChanged.getProperty(property));
+}
+
+void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::DataFile> newPatch)
+{
+	SimpleLogger::instance()->postMessage("Updating UI model from new patch");
+	auto supported = dynamic_cast<midikraft::SupportedByBCR2000*>(UIModel::currentSynth());
+	auto detailedParameters = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(newPatch);
+	if (supported && detailedParameters) {
+		for (auto param : detailedParameters->allParameterDefinitions()) {
+			auto intParam = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
+			if (intParam) {
+				int value;
+				if (intParam->valueInPatch(*newPatch, value)) {
+					if (papa_->uiValueTree_.hasProperty(Identifier(param->name()))) {
+						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param->name()), value, nullptr);
+					}
+				}
+			}
+		}
+	}
+
+}
