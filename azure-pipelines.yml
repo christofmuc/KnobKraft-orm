@@ -10,9 +10,11 @@ jobs:
           isMac: True
         win17:
           imageName: 'vs2017-win2016'
+          isWindows17: True
           isWindows: True
         win19:
           imageName: 'windows-2019'
+          isWindows2019: True
           isWindows: True
         linux:
           imageName: 'ubuntu-18.04'
@@ -46,7 +48,13 @@ jobs:
       inputs:
         workingDirectory: 'build'
         cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
-      condition: variables.isWindows
+      condition: variables.isWindows17
+    - task: CMake@1
+      displayName: Configuring CMake for Windows
+      inputs:
+        workingDirectory: 'build'
+        cmakeArgs: '-S .. -G "Visual Studio 16 2019 -A x64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+      condition: variables.isWindows19
     - task: CMake@1
       displayName: Running CMake build for Windows
       inputs:
