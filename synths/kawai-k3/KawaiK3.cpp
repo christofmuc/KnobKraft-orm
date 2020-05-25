@@ -727,13 +727,30 @@ namespace midikraft {
 
 	TypedNamedValueSet KawaiK3::createParameterModel()
 	{
-		//TODO inline this
-		return KawaiK3BCR2000::createParameterModel();
+		TypedNamedValueSet result;
+		for (auto param : KawaiK3Parameter::allParameters) {
+			switch (param->type()) {
+			case SynthParameterDefinition::ParamType::INT:
+				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, param->minValue(), param->maxValue()));
+				break;
+			case SynthParameterDefinition::ParamType::LOOKUP: {
+				std::map<int, std::string> lookup;
+				for (int i = param->minValue(); i < param->maxValue(); i++) {
+					lookup.emplace(i, param->valueAsText(i));
+				}
+				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
+				break;
+			}
+			default:
+				jassertfalse;
+			}
+		}
+		return result;
 	}
 
 	void KawaiK3::setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree)
 	{
-		//TODO inline this
+		// This needs the specific controller layout for putting the 39 parameters onto the 32 knobs of the BCR2000
 		KawaiK3BCR2000::setupBCR2000View(view, parameterModel, valueTree);
 	}
 

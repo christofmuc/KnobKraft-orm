@@ -189,29 +189,6 @@ namespace midikraft {
 		return encoder;
 	}
 
-	TypedNamedValueSet KawaiK3BCR2000::createParameterModel() {
-		TypedNamedValueSet result;
-		for (auto param : KawaiK3Parameter::allParameters) {
-			switch (param->type()) {
-			case SynthParameterDefinition::ParamType::INT:
-				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, param->minValue(), param->maxValue()));
-				break;
-			case SynthParameterDefinition::ParamType::LOOKUP: {
-				std::map<int, std::string> lookup;
-				for (int i = param->minValue(); i < param->maxValue(); i++) {
-					lookup.emplace(i, param->valueAsText(i));
-				}
-				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
-				break;
-			}
-			default:
-				jassertfalse;
-			}
-		}
-		return result;
-
-	}
-
 	void KawaiK3BCR2000::setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet &parameterModel, ValueTree& valueTree)
 	{
 		ignoreUnused(valueTree);
