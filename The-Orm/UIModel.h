@@ -89,6 +89,7 @@ public:
 	static void shutdown();
 
 	static midikraft::Synth *currentSynth();
+	static midikraft::Synth* currentSynthOfPatch();
 	static midikraft::StepSequencer *currentSequencer();
 	static midikraft::PatchHolder currentPatch();
 

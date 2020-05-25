@@ -157,16 +157,9 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 }
 
 TypedNamedValueSet BCR2000_Component::createParameterModel() {
-	midikraft::DetailedParametersCapability *detailedParameters = nullptr;
-	if (!UIModel::currentPatch().patch()) {
-		// Hope that the current synth has the capability of detailed parameters
-		detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability *>(UIModel::currentSynth());
-	}
-	else {
-		detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentPatch().synth());
-	}
-
 	TypedNamedValueSet result;
+
+	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
 	if (detailedParameters) {
 		for (auto param : detailedParameters->allParameterDefinitions()) {
 			auto intParam = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
@@ -281,11 +274,61 @@ void BCR2000_Component::setButtonParam(int knobNumber, std::string const &name)
 
 void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 {
-	SimpleLogger::instance()->postMessage("Will send sysex to update property " + property + " to " + treeWhosePropertyHasChanged.getProperty(property));
+	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
+	if (detailedParameters) {
+		std::string paramName = property.toString().toStdString();
+		for (auto param : detailedParameters->allParameterDefinitions()) {
+			if (param->name() == paramName) {
+				// First thing - update our internal patch model with the new value. This only works for int capabilities
+				auto intValueCap = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
+				if (intValueCap) {
+					if (patch_) {
+						intValueCap->setInPatch(*patch_, treeWhosePropertyHasChanged.getProperty(property));
+					}
+					else {
+						// I need some kind of init patch per synth, else it is unclear what the editor should send
+					}
+				}
+				else {
+					jassertfalse;
+				}
+
+				auto liveUpdater = std::dynamic_pointer_cast<midikraft::SynthParameterLiveEditCapability>(param);
+				if (liveUpdater) {
+					if (patch_) {
+						MidiBuffer messages = liveUpdater->setValueMessages(*patch_, UIModel::currentSynthOfPatch());
+						SimpleLogger::instance()->postMessage("Sending messages to synth");
+
+						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
+						if (location) {
+							midikraft::MidiController::instance()->getMidiOutput(location->midiOutput())->sendBlockOfMessagesNow(messages);
+						}
+						else {
+							SimpleLogger::instance()->postMessage("Error: Synth does not provide location information, can't send data to it");
+						}
+					}
+					else {
+						SimpleLogger::instance()->postMessage("Error: No patch loaded, can't calculate update messages");
+					}
+					return;
+				}
+				else {
+					SimpleLogger::instance()->postMessage("Error: Parameter does not implement SynthParameterLiveEditCapability, can't update synth");
+					return;
+				}
+			}
+		}
+		SimpleLogger::instance()->postMessage("Error, failed to find parameter definition for property " + property.toString());
+	}
+	else {
+		SimpleLogger::instance()->postMessage("Can't update, Synth does not support DetailedParamtersCapability");
+	}
 }
 
 void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::DataFile> newPatch)
 {
+	patch_ = newPatch;
+
 	SimpleLogger::instance()->postMessage("Updating UI model from new patch");
 	auto detailedParameters = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(newPatch);
 	if (detailedParameters) {

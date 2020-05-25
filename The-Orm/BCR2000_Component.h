@@ -66,6 +66,7 @@ private:
 		void updateAllKnobsFromPatch(std::shared_ptr<midikraft::DataFile> newPatch);
 
 	private:
+		std::shared_ptr<midikraft::DataFile> patch_;
 		BCR2000_Component* papa_;
 	};
 
