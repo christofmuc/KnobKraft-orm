@@ -100,8 +100,8 @@ namespace midikraft {
 		virtual std::vector<std::string> presetNames() override;
 		virtual void setupBCR2000(BCR2000 &bcr) override;
 		virtual void syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) override;
-		virtual void setupBCR2000View(BCR2000Proxy *view) override;
-		virtual void setupBCR2000Values(std::shared_ptr<DataFile> patch) override;
+		virtual TypedNamedValueSet createParameterModel() override;
+		virtual void setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree) override;
 
 		// This needs to be overridden to handle the wave dumps together with the patch dumps
 		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
@@ -159,7 +159,6 @@ namespace midikraft {
 		SysexFunction sysexFunction(juce::MidiMessage const &message) const;
 		uint8 sysexSubcommand(juce::MidiMessage const &message) const;
 
-		TypedNamedValueSet currentPatchValues_;
 		MidiController::HandlerHandle k3BCRSyncHandler_ = MidiController::makeNoneHandle();
 	};
 

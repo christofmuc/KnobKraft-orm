@@ -44,7 +44,7 @@ namespace midikraft {
 	// Press Encoder 4, 6, 7, 8 to reset to middle value
 	// Add missing MONO (UNISON) switch. That's only possible to patch via syx I fear.
 
-	std::vector<BCRStandardDefinition *> k3Setup = {
+	std::vector<BCRStandardDefinition*> k3Setup = {
 		new KawaiK3BCR2000Definition(ENCODER, 1, KawaiK3Parameter::OSC1_WAVE_SELECT, ONE_DOT_OFF),
 		new KawaiK3BCR2000Definition(ENCODER, 2, KawaiK3Parameter::OSC1_RANGE),
 		new KawaiK3BCR2000Definition(ENCODER, 3, KawaiK3Parameter::PORTAMENTO_SPEED, BAR),
@@ -140,17 +140,17 @@ namespace midikraft {
 		}
 	}
 
-	std::string KawaiK3BCR2000::generateBCL(std::string const &presetName, MidiChannel knobkraftChannel, MidiChannel  k3Channel)
+	std::string KawaiK3BCR2000::generateBCL(std::string const& presetName, MidiChannel knobkraftChannel, MidiChannel  k3Channel)
 	{
 		std::string result;
 		result = BCR2000::generateBCRHeader();
 		result += BCR2000::generatePresetHeader(presetName);
 		// Loop over all parameters, and write out a proper encoder definition
-		std::vector<std::pair<BCRdefinition *, std::string>> all_entries;
+		std::vector<std::pair<BCRdefinition*, std::string>> all_entries;
 		for (auto controller : k3Setup) {
 			int channelToUse = knobkraftChannel.toZeroBasedInt();
 			// Exception: For the Syx code to set the init patch, use the real k3 channel because we do not need to translate that, as well as for the CC Portamento switch
-			if (dynamic_cast<KawaiK3BCR2000Definition *>(controller) == nullptr) {
+			if (dynamic_cast<KawaiK3BCR2000Definition*>(controller) == nullptr) {
 				channelToUse = k3Channel.toZeroBasedInt();
 			}
 			all_entries.push_back(std::make_pair(controller, controller->generateBCR(channelToUse)));
@@ -161,7 +161,7 @@ namespace midikraft {
 		return result;
 	}
 
-	juce::MidiMessage KawaiK3BCR2000::createMessageforParam(KawaiK3Parameter *paramDef, KawaiK3Patch const &patch, MidiChannel k3Channel)
+	juce::MidiMessage KawaiK3BCR2000::createMessageforParam(KawaiK3Parameter* paramDef, KawaiK3Patch const& patch, MidiChannel k3Channel)
 	{
 		// As the K3 has only 39 parameters, we use CC 1..39 to map these. Simple enough
 		int value = patch.value(*paramDef);
@@ -173,7 +173,7 @@ namespace midikraft {
 		return MidiMessage::controllerEvent(k3Channel.toOneBasedInt(), controller, value);
 	}
 
-	int encoderNumber(KawaiK3BCR2000Definition *def) {
+	int encoderNumber(KawaiK3BCR2000Definition* def) {
 		int encoder = -1;
 		if (def->type() == ENCODER) {
 			return def->encoderNumber();
@@ -181,7 +181,7 @@ namespace midikraft {
 		return encoder;
 	}
 
-	int buttonNumber(BCRStandardDefinition *def) {
+	int buttonNumber(BCRStandardDefinition* def) {
 		int encoder = -1;
 		if (def->type() == BUTTON) {
 			return def->encoderNumber();
@@ -189,46 +189,58 @@ namespace midikraft {
 		return encoder;
 	}
 
-	TypedNamedValueSet KawaiK3BCR2000::setupBCR2000View(BCR2000Proxy *view)
+	TypedNamedValueSet KawaiK3BCR2000::createParameterModel() {
+		TypedNamedValueSet result;
+		for (auto param : KawaiK3Parameter::allParameters) {
+			switch (param->type()) {
+			case SynthParameterDefinition::ParamType::INT:
+				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, param->minValue(), param->maxValue()));
+				break;
+			case SynthParameterDefinition::ParamType::LOOKUP: {
+				std::map<int, std::string> lookup;
+				for (int i = param->minValue(); i < param->maxValue(); i++) {
+					lookup.emplace(i, param->valueAsText(i));
+				}
+				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
+				break;
+			}
+			default:
+				jassertfalse;
+			}
+		}
+		return result;
+
+	}
+
+	void KawaiK3BCR2000::setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet &parameterModel, ValueTree& valueTree)
 	{
+		ignoreUnused(valueTree);
 		TypedNamedValueSet result;
 		// Iterate over our definition and set the labels on the view to show the layout
 		for (auto def : k3Setup) {
-			auto k3def = dynamic_cast<KawaiK3BCR2000Definition *>(def);
+			auto k3def = dynamic_cast<KawaiK3BCR2000Definition*>(def);
 			if (k3def) {
 				auto param = KawaiK3Parameter::findParameter(k3def->param());
 				if (param) {
-					switch (param->type()) {
-					case SynthParameterDefinition::ParamType::INT:
-						result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, param->minValue(), param->maxValue()));
-						break;
-					case SynthParameterDefinition::ParamType::LOOKUP: {
-						std::map<int, std::string> lookup;
-						for (int i = param->minValue(); i < param->maxValue(); i++) {
-							lookup.emplace(i, param->valueAsText(i));
-						}
-						result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
-						break;
-					}
-					default:
-						jassertfalse;
-					}
 					int encoder = encoderNumber(k3def);
-					if (encoder != -1) view->setRotaryParam(encoder, result.back().get());
+					if (encoder != -1 && parameterModel.hasValue(param->name())) {
+						view->setRotaryParam(encoder, parameterModel.typedNamedValueByName(param->name()).get());
+					}
 				}
 				else {
 					jassertfalse;
 				}
 			}
 			else {
-				auto simpleDef = dynamic_cast<BCRStandardDefinitionWithName *>(def);
+				auto simpleDef = dynamic_cast<BCRStandardDefinitionWithName*>(def);
 				if (simpleDef) {
 					int button = buttonNumber(simpleDef);
-					if (button != -1) view->setButtonParam(button, simpleDef->name());
+					if (button != -1) {
+						view->setButtonParam(button, simpleDef->name());
+					}
 				}
 			}
 		}
-		return result;
 	}
 
 }

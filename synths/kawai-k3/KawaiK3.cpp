@@ -725,20 +725,16 @@ namespace midikraft {
 		MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(requestBuffer);
 	}
 
-	void KawaiK3::setupBCR2000View(BCR2000Proxy *view) {
-		currentPatchValues_ = KawaiK3BCR2000::setupBCR2000View(view);
+	TypedNamedValueSet KawaiK3::createParameterModel()
+	{
+		//TODO inline this
+		return KawaiK3BCR2000::createParameterModel();
 	}
 
-	void KawaiK3::setupBCR2000Values(std::shared_ptr<DataFile> patch)
+	void KawaiK3::setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree)
 	{
-		for (auto param : KawaiK3Parameter::allParameters) {
-			int value;
-			if (param->valueInPatch(*patch, value)) {
-				if (currentPatchValues_.hasValue(param->name())) {
-					currentPatchValues_.valueByName(param->name()).setValue(value);
-				}
-			}
-		}
+		//TODO inline this
+		KawaiK3BCR2000::setupBCR2000View(view, parameterModel, valueTree);
 	}
 
 }
