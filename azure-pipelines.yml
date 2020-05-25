@@ -8,13 +8,13 @@ jobs:
         mac:
           imageName: 'macos-10.14'
           isMac: True
-        win:
+        win17:
           imageName: 'vs2017-win2016'
           isWindows: True
-        win:
+        win19:
           imageName: 'windows-2019'
           isWindows: True
-        lin:
+        linux:
           imageName: 'ubuntu-18.04'
           isLinux: True
     pool:
