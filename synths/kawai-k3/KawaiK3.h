@@ -20,6 +20,7 @@
 #include "AdditiveCapability.h"
 #include "HybridWaveCapability.h"
 #include "DataFileLoadCapability.h"
+#include "DetailedParametersCapability.h"
 
 #include "SupportedByBCR2000.h"
 
@@ -33,7 +34,7 @@ namespace midikraft {
 	class SynthView;
 
 	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
-		public DataFileLoadCapability, public DataFileSendCapability,
+		public DataFileLoadCapability, public DataFileSendCapability, public DetailedParametersCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
 		static const MidiProgramNumber kFakeEditBuffer;
@@ -100,7 +101,6 @@ namespace midikraft {
 		virtual std::vector<std::string> presetNames() override;
 		virtual void setupBCR2000(BCR2000 &bcr) override;
 		virtual void syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) override;
-		virtual TypedNamedValueSet createParameterModel() override;
 		virtual void setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree) override;
 
 		// This needs to be overridden to handle the wave dumps together with the patch dumps
@@ -134,7 +134,10 @@ namespace midikraft {
 		// DataFileSendCapability
 		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
 
-	private:
+		// DetailedParametersCapability
+		std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
+
+		private:
 		friend class KawaiK3Control;
 
 		// See Manual p. 49 for the sysex "commands"

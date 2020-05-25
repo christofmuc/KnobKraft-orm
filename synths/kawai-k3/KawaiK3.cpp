@@ -515,6 +515,13 @@ namespace midikraft {
 		return result;
 	}
 
+	std::vector<std::shared_ptr<midikraft::SynthParameterDefinition>> KawaiK3::allParameterDefinitions() const
+	{
+		Synth::PatchData data;
+		KawaiK3Patch fake(MidiProgramNumber::fromZeroBase(0), data);
+		return fake.allParameterDefinitions();
+	}
+
 	std::vector<std::string> KawaiK3::presetNames()
 	{
 		return { (boost::format("Knobkraft %s %d") % getName() % channel().toOneBasedInt()).str() };
@@ -723,29 +730,6 @@ namespace midikraft {
 		MidiController::instance()->enableMidiInput(midiInput());
 		MidiBuffer requestBuffer = MidiHelpers::bufferFromMessages(requestPatch(programNumber.toZeroBased()));
 		MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(requestBuffer);
-	}
-
-	TypedNamedValueSet KawaiK3::createParameterModel()
-	{
-		TypedNamedValueSet result;
-		for (auto param : KawaiK3Parameter::allParameters) {
-			switch (param->type()) {
-			case SynthParameterDefinition::ParamType::INT:
-				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, param->minValue(), param->maxValue()));
-				break;
-			case SynthParameterDefinition::ParamType::LOOKUP: {
-				std::map<int, std::string> lookup;
-				for (int i = param->minValue(); i < param->maxValue(); i++) {
-					lookup.emplace(i, param->valueAsText(i));
-				}
-				result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
-				break;
-			}
-			default:
-				jassertfalse;
-			}
-		}
-		return result;
 	}
 
 	void KawaiK3::setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree)
