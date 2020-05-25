@@ -10,7 +10,11 @@
 
 namespace midikraft {
 
-	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, public SynthLookupParameterCapability {
+	class KawaiK3;
+
+	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, public SynthLookupParameterCapability,
+		public SynthParameterLiveEditCapability
+	{
 	public:
 		enum Parameter {
 			OSC1_WAVE_SELECT = 1,
@@ -85,7 +89,12 @@ namespace midikraft {
 		int bitMask() const;
 		int shiftedBitMask() const;
 
+		// SynthLookupParameterCapability
+		virtual MidiBuffer setValueMessages(DataFile const& patch, Synth const* synth) const override;
+
 	private:
+		MidiBuffer setValueMessages(KawaiK3 const* synth, int newValue) const;
+
 		std::string name_;
 		Parameter paramNo_;
 		int sysexIndex_;

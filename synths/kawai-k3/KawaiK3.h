@@ -139,6 +139,7 @@ namespace midikraft {
 
 		private:
 		friend class KawaiK3Control;
+		friend class KawaiK3Parameter;
 
 		// See Manual p. 49 for the sysex "commands"
 		enum SysexFunction {

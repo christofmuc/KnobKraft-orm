@@ -6,7 +6,10 @@
 
 #include "KawaiK3Parameter.h"
 
+#include "KawaiK3.h"
 #include "Patch.h"
+
+#include "MidiHelpers.h"
 
 #include <boost/format.hpp>
 
@@ -219,6 +222,52 @@ namespace midikraft {
 	int KawaiK3Parameter::shiftedBitMask() const
 	{
 		return (((uint16)((1 << sysexBits_) - 1)) << sysexShift_) & 0xff;
+	}
+
+	juce::MidiBuffer KawaiK3Parameter::setValueMessages(DataFile const& patch, Synth const* synth) const
+	{
+		auto k3 = dynamic_cast<KawaiK3 const*>(synth);
+		jassert(k3);
+
+		int paramValue;
+		if (valueInPatch(patch, paramValue)) {
+			return setValueMessages(k3, paramValue);
+		}
+		jassertfalse;
+		return MidiBuffer();
+	}
+
+	juce::MidiBuffer KawaiK3Parameter::setValueMessages(KawaiK3 const* k3, int paramValue) const
+	{
+		//TODO - this contains the BCR specific offset, that should not be here!
+		uint8 highNibble, lowNibble;
+		if (minValue() < 0) {
+			// For parameters with negative values, we have offset the values by -minValue(), so we need to add minValue() again
+			int correctedValue = paramValue + minValue(); // minValue is negative, so this will subtract actually something resulting in a negative number...
+			int clampedValue = std::min(std::max(correctedValue, minValue()), maxValue());
+
+			// Now, the K3 unfortunately uses a sign bit for the negative values, which makes it completely impossible to be used directly with the BCR2000
+			if (clampedValue < 0) {
+				highNibble = (((-clampedValue) & 0xFF) | 0x80) >> 4;
+				lowNibble = (-clampedValue) & 0x0F;
+			}
+			else {
+				highNibble = (clampedValue & 0xF0) >> 4;
+				lowNibble = (clampedValue & 0x0F);
+			}
+		}
+		else {
+			// Just clamp to the min max range
+			int correctedValue = std::min(std::max(paramValue, minValue()), maxValue());
+			highNibble = (correctedValue & 0xF0) >> 4;
+			lowNibble = (correctedValue & 0x0F);
+		}
+
+		// Now build the sysex message (p. 48 of the K3 manual)
+		auto dataBlock = k3->buildSysexFunction(KawaiK3::PARAMETER_SEND, (uint8)paramNo());
+		dataBlock.push_back(highNibble);
+		dataBlock.push_back(lowNibble);
+		return MidiHelpers::bufferFromMessages({ MidiMessage::createSysExMessage(&dataBlock[0], static_cast<int>(dataBlock.size())) });
 	}
 
 	int KawaiK3Parameter::findWave(std::string shapename)
