@@ -18,7 +18,6 @@ namespace midikraft {
 		virtual std::vector<std::string> presetNames() = 0;
 		virtual void setupBCR2000(BCR2000 &bcr) = 0;
 		virtual void syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) = 0;
-		virtual TypedNamedValueSet createParameterModel() = 0;
 		virtual void setupBCR2000View(BCR2000Proxy *view, TypedNamedValueSet &parameterModel, ValueTree &valueTree) = 0;
 	};
 
