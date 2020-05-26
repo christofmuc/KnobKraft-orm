@@ -21,8 +21,9 @@
 #include "HybridWaveCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DetailedParametersCapability.h"
+#include "BidirectionalSyncCapability.h"
 
-#include "SupportedByBCR2000.h"
+#include "SupportedByBCR2000.h" // Should be moved into the bidirectionalsync?
 
 #include <set>
 
@@ -34,7 +35,7 @@ namespace midikraft {
 	class SynthView;
 
 	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
-		public DataFileLoadCapability, public DataFileSendCapability, public DetailedParametersCapability,
+		public DataFileLoadCapability, public DataFileSendCapability, public DetailedParametersCapability, public BidirectionalSyncCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
 		static const MidiProgramNumber kFakeEditBuffer;
@@ -137,7 +138,10 @@ namespace midikraft {
 		// DetailedParametersCapability
 		std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
-		private:
+		// BidirectionalSyncCapability
+		virtual bool determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, SynthParameterDefinition **outParam, int &outValue) override;
+
+	private:
 		friend class KawaiK3Control;
 		friend class KawaiK3Parameter;
 

@@ -93,7 +93,7 @@ namespace midikraft {
 		virtual MidiBuffer setValueMessages(DataFile const& patch, Synth const* synth) const override;
 
 		// SynthParameterControllerMapping
-		virtual bool messagesMatchParameter(std::vector<juce::MidiMessage> const& messages) const override;
+		virtual bool messagesMatchParameter(std::vector<juce::MidiMessage> const& messages, int& outNewValue) const override;
 		virtual std::vector<juce::MidiMessage> createParameterMessages(int newValue, MidiChannel channel) const override;
 
 

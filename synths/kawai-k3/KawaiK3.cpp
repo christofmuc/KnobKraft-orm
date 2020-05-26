@@ -522,6 +522,40 @@ namespace midikraft {
 		return fake.allParameterDefinitions();
 	}
 
+	bool KawaiK3::determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, SynthParameterDefinition** outParam, int& outValue)
+	{
+		for (auto message : messages) {
+			if (isOwnSysex(message)) {
+				if (sysexFunction(message) == KawaiK3::PARAMETER_SEND) {
+					// Yep, that's us. Find the parameter definition and calculate the new value of that parameter
+					auto paramNo = sysexSubcommand(message);
+					if (paramNo >= 1 && paramNo <= 39) {
+						auto paramFound = KawaiK3Parameter::findParameter(static_cast<KawaiK3Parameter::Parameter>(paramNo));
+						if (paramFound) {
+							if (message.getSysExDataSize() > 7) {
+								uint8 highNibble = message.getSysExData()[6];
+								uint8 lowNibble = message.getSysExData()[7];
+								int value = (highNibble << 4) | lowNibble;
+								if (paramFound->minValue() < 0) {
+									// Special handling for sign bit in K3
+									if ((value & 0x80) == 0x80) {
+										value = -(value & 0x7f);
+									}
+								}
+
+								// Only now we do set our output variables
+								*outParam = paramFound;
+								outValue = value;
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	std::vector<std::string> KawaiK3::presetNames()
 	{
 		return { (boost::format("Knobkraft %s %d") % getName() % channel().toOneBasedInt()).str() };

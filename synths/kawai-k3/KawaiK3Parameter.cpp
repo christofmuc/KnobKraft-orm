@@ -270,9 +270,21 @@ namespace midikraft {
 		return MidiHelpers::bufferFromMessages({ MidiMessage::createSysExMessage(&dataBlock[0], static_cast<int>(dataBlock.size())) });
 	}
 
-	bool KawaiK3Parameter::messagesMatchParameter(std::vector<juce::MidiMessage> const& messages) const
+	bool KawaiK3Parameter::messagesMatchParameter(std::vector<juce::MidiMessage> const& messages, int& outNewValue) const
 	{
-		ignoreUnused(messages);
+		for (auto message : messages) {
+			if (message.isController()) {
+				if (message.getControllerNumber() == paramNo_) {
+					// Ah, that's us
+					int value = message.getControllerValue();
+					if (minValue_ < 0) {
+						value = value - minValue_;
+					}
+					outNewValue = value;
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
