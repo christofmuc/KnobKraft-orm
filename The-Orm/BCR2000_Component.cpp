@@ -18,6 +18,8 @@
 #include "Sysex.h"
 #include "DetailedParametersCapability.h"
 
+#include "MidiHelpers.h"
+
 const char *kLastPathBCL = "lastPathBCL";
 
 // See https://www.sequencer.de/synth/index.php/B-Control-Tokenreferenz for the button layout info
@@ -27,7 +29,7 @@ std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
-BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this)
+BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this), updateControllerListener_(this)
 {
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -149,6 +151,7 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 
 			// Now attach a sysex generating listener to the values of the ValueTree
 			uiValueTree_.addListener(&updateSynthListener_);
+			uiValueTree_.addListener(&updateControllerListener_);
 		}
 	}
 	else if (dynamic_cast<CurrentPatch *>(source) || source == &UIModel::instance()->currentPatchValues_) {
@@ -329,7 +332,6 @@ void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared
 {
 	patch_ = newPatch;
 
-	SimpleLogger::instance()->postMessage("Updating UI model from new patch");
 	auto detailedParameters = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(newPatch);
 	if (detailedParameters) {
 		for (auto param : detailedParameters->allParameterDefinitions()) {
@@ -345,4 +347,30 @@ void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared
 		}
 	}
 
+}
+
+void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
+{
+	// This will be hit when the UI is changed, either by a new patch or sysex data from the synth, or from moving the UI slider itself
+	// In any case, we will create controller update messages and send them to the controller
+	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
+	if (detailedParameters) {
+		int newValue = treeWhosePropertyHasChanged.getProperty(property);
+		std::string paramName = property.toString().toStdString();
+		for (auto param : detailedParameters->allParameterDefinitions()) {
+			if (param->name() == paramName) {
+				// Now we need to find the CC mapping, and send it to the controller!
+				auto controllerSync = std::dynamic_pointer_cast<midikraft::SynthParameterControllerMapping>(param);
+				if (controllerSync) {
+					if (papa_->bcr2000_->channel().isValid()) {
+						auto updateMessage = controllerSync->createParameterMessages(newValue, papa_->bcr2000_->channel());
+						midikraft::MidiController::instance()->getMidiOutput(papa_->bcr2000_->midiOutput())->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(updateMessage));
+					}
+					SimpleLogger::instance()->postMessage("Updating controller with message");
+					return;
+				}
+			}
+		}
+		jassertfalse;
+	}
 }

@@ -70,6 +70,16 @@ private:
 		BCR2000_Component* papa_;
 	};
 
+	class UpdateControllerListener : public ValueTree::Listener {
+	public:
+		UpdateControllerListener(BCR2000_Component* papa) : papa_(papa) {}
+
+		void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
+
+	private:
+		BCR2000_Component* papa_;
+	};
+
 	TypedNamedValueSet createParameterModel();
 
 	TypedNamedValueSet synthModel_;
@@ -78,6 +88,7 @@ private:
 	TypedNamedValueSet controllerModel_;
 
 	UpdateSynthListener updateSynthListener_;
+	UpdateControllerListener updateControllerListener_;
 
 	OwnedArray<RotaryWithLabel> rotaryKnobs;
 	OwnedArray<ToggleButton> pressKnobs;
