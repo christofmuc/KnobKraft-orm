@@ -17,6 +17,7 @@
 #include "Settings.h"
 #include "Sysex.h"
 #include "DetailedParametersCapability.h"
+#include "BidirectionalSyncCapability.h"
 
 #include "MidiHelpers.h"
 
@@ -275,6 +276,18 @@ void BCR2000_Component::setButtonParam(int knobNumber, std::string const &name)
 	}
 }
 
+BCR2000_Component::UpdateSynthListener::UpdateSynthListener(BCR2000_Component* papa) : papa_(papa)
+{
+	midikraft::MidiController::instance()->addMessageHandler(midiHandler_, [this](MidiInput* source, MidiMessage const& message) {
+		listenForMidiMessages(source, message);
+	});
+}
+
+BCR2000_Component::UpdateSynthListener::~UpdateSynthListener()
+{
+	midikraft::MidiController::instance()->removeMessageHandler(midiHandler_);
+}
+
 void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 {
 	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
@@ -328,6 +341,22 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 	}
 }
 
+void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* source, MidiMessage message)
+{
+	auto synth = UIModel::currentSynthOfPatch();
+	auto location = dynamic_cast<midikraft::MidiLocationCapability *>(synth);
+	if (!location || location->midiInput() == source->getName().toStdString()) {
+		auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
+		if (syncCap) {
+			int outValue;
+			midikraft::SynthParameterDefinition* param;
+			if (syncCap->determineParameterChangeFromSysex({ message }, &param, outValue)) {
+				papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param->name()), outValue, nullptr);
+			}
+		}
+	}
+}
+
 void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::DataFile> newPatch)
 {
 	patch_ = newPatch;
@@ -347,6 +376,35 @@ void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared
 		}
 	}
 
+}
+
+BCR2000_Component::UpdateControllerListener::UpdateControllerListener(BCR2000_Component* papa) : papa_(papa)
+{
+	midikraft::MidiController::instance()->addMessageHandler(midiHandler_, [this](MidiInput* source, MidiMessage const& message) {
+		listenForMidiMessages(source, message);
+	});
+}
+
+BCR2000_Component::UpdateControllerListener::~UpdateControllerListener()
+{
+	midikraft::MidiController::instance()->removeMessageHandler(midiHandler_);
+}
+
+void BCR2000_Component::UpdateControllerListener::listenForMidiMessages(MidiInput *source, MidiMessage message) {
+	// Check if that is a message we need to take seriously
+	if (source->getName().toStdString() == papa_->bcr2000_->midiInput()) {
+		// This at least is a message from our controller
+		auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
+		for (auto param : detailedParameters->allParameterDefinitions()) {
+			auto controllerSync = std::dynamic_pointer_cast<midikraft::SynthParameterControllerMapping>(param);
+			if (controllerSync) {
+				int newValue;
+				if (controllerSync->messagesMatchParameter({ message }, newValue)) {
+					papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param->name()), newValue, nullptr);
+				}
+			}
+		}
+	}
 }
 
 void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)

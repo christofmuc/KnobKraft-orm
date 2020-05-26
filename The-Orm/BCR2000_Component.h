@@ -60,23 +60,29 @@ private:
 	*/
 	class UpdateSynthListener : public ValueTree::Listener {
 	public:
-		UpdateSynthListener(BCR2000_Component* papa) : papa_(papa) {};
+		UpdateSynthListener(BCR2000_Component* papa);
+		~UpdateSynthListener();
 
 		void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
+		void listenForMidiMessages(MidiInput* source, MidiMessage message);
 		void updateAllKnobsFromPatch(std::shared_ptr<midikraft::DataFile> newPatch);
 
 	private:
+		midikraft::MidiController::HandlerHandle midiHandler_ = midikraft::MidiController::makeOneHandle();
 		std::shared_ptr<midikraft::DataFile> patch_;
 		BCR2000_Component* papa_;
 	};
 
 	class UpdateControllerListener : public ValueTree::Listener {
 	public:
-		UpdateControllerListener(BCR2000_Component* papa) : papa_(papa) {}
+		UpdateControllerListener(BCR2000_Component* papa);
+		~UpdateControllerListener();
 
+		void listenForMidiMessages(MidiInput* source, MidiMessage message);
 		void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
 
 	private:
+		midikraft::MidiController::HandlerHandle midiHandler_ = midikraft::MidiController::makeOneHandle();
 		BCR2000_Component* papa_;
 	};
 
