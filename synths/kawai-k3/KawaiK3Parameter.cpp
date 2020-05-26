@@ -35,7 +35,7 @@ namespace midikraft {
 		"Tremolo (fast, deep shift)", "Chorus IV (ambiance 1)", "Chorus V (ambiance 2)", "Delay (short 40-60 ms)"
 	};
 
-	std::vector<KawaiK3Parameter *> KawaiK3Parameter::allParameters = {
+	std::vector<KawaiK3Parameter*> KawaiK3Parameter::allParameters = {
 		new KawaiK3Parameter("Osc1 Wave", OSC1_WAVE_SELECT, 1, 6, 0, 33),
 		new KawaiK3Parameter("Osc1 Range", OSC1_RANGE, 1, 2, 6, 0, 2),
 		new KawaiK3Parameter("Portamento Speed", PORTAMENTO_SPEED, 2, 7, 0, 99),
@@ -78,7 +78,7 @@ namespace midikraft {
 		new KawaiK3Parameter("Default Parameter", DEFAULT_PARAMETER, 34, 6, 0, 39)
 	};
 
-	KawaiK3Parameter *KawaiK3Parameter::findParameter(Parameter param)
+	KawaiK3Parameter* KawaiK3Parameter::findParameter(Parameter param)
 	{
 		for (auto p : allParameters) {
 			if (p->paramNo_ == param) {
@@ -88,12 +88,12 @@ namespace midikraft {
 		return nullptr;
 	}
 
-	KawaiK3Parameter::KawaiK3Parameter(std::string const &name, Parameter param, int sysexIndex, int bits, int minValue, int maxValue) :
+	KawaiK3Parameter::KawaiK3Parameter(std::string const& name, Parameter param, int sysexIndex, int bits, int minValue, int maxValue) :
 		name_(name), paramNo_(param), sysexIndex_(sysexIndex), sysexShift_(0), sysexBits_(bits), minValue_(minValue), maxValue_(maxValue)
 	{
 	}
 
-	KawaiK3Parameter::KawaiK3Parameter(std::string const &name, Parameter param, int sysexIndex, int bits, int shift, int minValue, int maxValue) :
+	KawaiK3Parameter::KawaiK3Parameter(std::string const& name, Parameter param, int sysexIndex, int bits, int shift, int minValue, int maxValue) :
 		name_(name), paramNo_(param), sysexIndex_(sysexIndex), sysexShift_(shift), sysexBits_(bits), minValue_(minValue), maxValue_(maxValue)
 	{
 	}
@@ -111,7 +111,7 @@ namespace midikraft {
 		return name_;
 	}
 
-	std::string KawaiK3Parameter::valueInPatchToText(DataFile const &patch) const
+	std::string KawaiK3Parameter::valueInPatchToText(DataFile const& patch) const
 	{
 		int value;
 		if (valueInPatch(patch, value)) {
@@ -160,7 +160,7 @@ namespace midikraft {
 		return minValue_;
 	}
 
-	bool KawaiK3Parameter::valueInPatch(DataFile const &patch, int &outValue) const
+	bool KawaiK3Parameter::valueInPatch(DataFile const& patch, int& outValue) const
 	{
 		//TODO This is redundant with the KawaiK3Patch::value function
 		int result = (patch.at(sysexIndex() - 1) >> shift()) & bitMask();
@@ -174,7 +174,7 @@ namespace midikraft {
 		return true;
 	}
 
-	void KawaiK3Parameter::setInPatch(DataFile &patch, int value) const
+	void KawaiK3Parameter::setInPatch(DataFile& patch, int value) const
 	{
 		//TODO This is redundant with the KawaiK3Patch::setValue function - I think I should only keep this one
 		//TODO - range checking for the parameter, we might specify values out of range?
@@ -268,6 +268,22 @@ namespace midikraft {
 		dataBlock.push_back(highNibble);
 		dataBlock.push_back(lowNibble);
 		return MidiHelpers::bufferFromMessages({ MidiMessage::createSysExMessage(&dataBlock[0], static_cast<int>(dataBlock.size())) });
+	}
+
+	bool KawaiK3Parameter::messagesMatchParameter(std::vector<juce::MidiMessage> const& messages) const
+	{
+		ignoreUnused(messages);
+		return false;
+	}
+
+	std::vector<juce::MidiMessage> KawaiK3Parameter::createParameterMessages(int newValue, MidiChannel channel) const
+	{
+		// For params with negative values, we offset!
+		if (minValue() < 0) {
+			newValue = newValue - minValue();
+		}
+		// As the K3 has only 39 parameters, we use CC 1..39 to map these. Simple enough
+		return { MidiMessage::controllerEvent(channel.toOneBasedInt(), paramNo_, newValue) };
 	}
 
 	int KawaiK3Parameter::findWave(std::string shapename)
