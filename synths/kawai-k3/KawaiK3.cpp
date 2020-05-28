@@ -723,7 +723,7 @@ namespace midikraft {
 		if (!channel().isValid()) return;
 
 		// Use MIDI channel 16 to not interfere with any other MIDI hardware accidentally taking the CC messages for real
-		auto bcl = KawaiK3BCR2000::generateBCL(presetNames()[0], MidiChannel::fromOneBase(16), channel());
+		auto bcl = KawaiK3BCR2000::generateBCL(presetNames()[0], bcr.channel(), channel());
 		auto syx = bcr.convertToSyx(bcl);
 		MidiController::instance()->enableMidiInput(bcr.midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
 		bcr.sendSysExToBCR(MidiController::instance()->getMidiOutput(bcr.midiOutput()), syx, [](std::vector<BCR2000::BCRError> errors) {

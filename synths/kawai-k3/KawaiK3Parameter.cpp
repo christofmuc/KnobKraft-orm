@@ -239,12 +239,9 @@ namespace midikraft {
 
 	juce::MidiBuffer KawaiK3Parameter::setValueMessages(KawaiK3 const* k3, int paramValue) const
 	{
-		//TODO - this contains the BCR specific offset, that should not be here!
 		uint8 highNibble, lowNibble;
 		if (minValue() < 0) {
-			// For parameters with negative values, we have offset the values by -minValue(), so we need to add minValue() again
-			int correctedValue = paramValue + minValue(); // minValue is negative, so this will subtract actually something resulting in a negative number...
-			int clampedValue = std::min(std::max(correctedValue, minValue()), maxValue());
+			int clampedValue = std::min(std::max(paramValue, minValue()), maxValue());
 
 			// Now, the K3 unfortunately uses a sign bit for the negative values, which makes it completely impossible to be used directly with the BCR2000
 			if (clampedValue < 0) {
@@ -278,7 +275,7 @@ namespace midikraft {
 					// Ah, that's us
 					int value = message.getControllerValue();
 					if (minValue_ < 0) {
-						value = value - minValue_;
+						value = value + minValue_;
 					}
 					outNewValue = value;
 					return true;
