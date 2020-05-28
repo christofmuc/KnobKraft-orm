@@ -44,7 +44,7 @@ namespace midikraft {
 		MACHINE_ID_ACKNOWLEDE
 	};
 
-	KawaiK3::KawaiK3()
+	KawaiK3::KawaiK3() : programNo_(kFakeEditBuffer)
 	{
 	}
 
@@ -554,6 +554,16 @@ namespace midikraft {
 			}
 		}
 		return false;
+	}
+
+	void KawaiK3::gotProgramChange(MidiProgramNumber newNumber)
+	{
+		programNo_ = newNumber;
+	}
+
+	MidiProgramNumber KawaiK3::lastProgramChange() const
+	{
+		return programNo_;
 	}
 
 	std::vector<std::string> KawaiK3::presetNames()

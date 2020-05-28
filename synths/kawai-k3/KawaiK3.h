@@ -22,8 +22,9 @@
 #include "DataFileLoadCapability.h"
 #include "DetailedParametersCapability.h"
 #include "BidirectionalSyncCapability.h"
+#include "SendsProgramChangeCapability.h"
 
-#include "SupportedByBCR2000.h" // Should be moved into the bidirectionalsync?
+#include "SupportedByBCR2000.h" // Should be moved into the bidirectional sync?
 
 #include <set>
 
@@ -36,6 +37,7 @@ namespace midikraft {
 
 	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
 		public DataFileLoadCapability, public DataFileSendCapability, public DetailedParametersCapability, public BidirectionalSyncCapability,
+		public SendsProgramChangeCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
 		static const MidiProgramNumber kFakeEditBuffer;
@@ -141,6 +143,10 @@ namespace midikraft {
 		// BidirectionalSyncCapability
 		virtual bool determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, SynthParameterDefinition **outParam, int &outValue) override;
 
+		// SendsProgramChangeCapability
+		void gotProgramChange(MidiProgramNumber newNumber) override;
+		MidiProgramNumber lastProgramChange() const override;
+
 	private:
 		friend class KawaiK3Control;
 		friend class KawaiK3Parameter;
@@ -168,6 +174,8 @@ namespace midikraft {
 		uint8 sysexSubcommand(juce::MidiMessage const &message) const;
 
 		MidiController::HandlerHandle k3BCRSyncHandler_ = MidiController::makeNoneHandle();
+
+		MidiProgramNumber programNo_;
 	};
 
 }
