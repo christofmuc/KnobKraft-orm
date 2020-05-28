@@ -100,7 +100,16 @@ namespace midikraft {
 		std::vector<std::shared_ptr<SynthParameterDefinition>> result;
 		//TODO This loop should be necessary
 		for (auto param : KawaiK3Parameter::allParameters) {
-			result.push_back(std::make_shared<KawaiK3Parameter>(*param));
+			auto k3param = dynamic_cast<KawaiK3Parameter*>(param);
+			if (k3param) {
+				result.push_back(std::make_shared<KawaiK3Parameter>(*k3param));
+			}
+			else {
+				auto k3drawbar = dynamic_cast<KawaiK3DrawbarParameters*>(param);
+				if (k3drawbar) {
+					result.push_back(std::make_shared<KawaiK3DrawbarParameters>(*k3drawbar));
+				}
+			}
 		}
 		return result;
 	}

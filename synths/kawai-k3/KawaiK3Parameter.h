@@ -8,6 +8,8 @@
 
 #include "SynthParameterDefinition.h"
 
+#include "DrawbarOrgan.h"
+
 namespace midikraft {
 
 	class KawaiK3;
@@ -59,7 +61,7 @@ namespace midikraft {
 			DEFAULT_PARAMETER = -2, // Part of sysex, but doesn't make sense as sysex
 		};
 
-		static std::vector<KawaiK3Parameter *> allParameters;
+		static std::vector<SynthParameterDefinition*> allParameters;
 		static KawaiK3Parameter *findParameter(Parameter param);
 		static int findWave(std::string shapename);
 		static std::string waveName(int waveNo);
@@ -107,6 +109,27 @@ namespace midikraft {
 		int sysexBits_;
 		int minValue_;
 		int maxValue_;
+	};
+
+	class KawaiK3DrawbarParameters : public SynthParameterDefinition, public SynthIntParameterCapability {
+	public:
+		KawaiK3DrawbarParameters(Drawbar& drawbar) : drawbar_(drawbar) {}
+
+		// SynthParameterDefinition
+		ParamType type() const override;
+		std::string name() const override;
+		std::string description() const override;
+		std::string valueInPatchToText(DataFile const& patch) const override;
+
+		// SynthIntParameterCapability
+		virtual int maxValue() const override;
+		virtual int minValue() const override;
+		virtual int sysexIndex() const override;
+		virtual bool valueInPatch(DataFile const& patch, int& outValue) const override;
+		virtual void setInPatch(DataFile& patch, int value) const override;
+
+	private:
+		Drawbar drawbar_;
 	};
 
 }

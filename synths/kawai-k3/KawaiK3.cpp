@@ -753,11 +753,11 @@ namespace midikraft {
 					if (currentPatch) {
 						// Loop over all parameters in patch and send out the appropriate CCs, if they are within the BCR2000 definition...
 						std::vector<MidiMessage> updates;
-						for (auto paramDef : KawaiK3Parameter::allParameters) {
+						/*for (auto paramDef : KawaiK3Parameter::allParameters) {
 							SimpleLogger::instance()->postMessage((boost::format("Setting %s [%d] to %d") % paramDef->name() % paramDef->paramNo() % currentPatch->value(*paramDef)).str());
 							auto ccMessage = KawaiK3BCR2000::createMessageforParam(paramDef, *currentPatch, MidiChannel::fromOneBase(16));
 							updates.push_back(ccMessage);
-						}
+						}*/
 						MidiBuffer updateBuffer = MidiHelpers::bufferFromMessages(updates);
 						// Send this to BCR
 						if (bcr.channel().isValid() && MidiController::instance()->getMidiOutput(bcr.midiOutput())) {

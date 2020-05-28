@@ -7,7 +7,7 @@
 #include "KawaiK3Parameter.h"
 
 #include "KawaiK3.h"
-#include "Patch.h"
+#include "KawaiK3Patch.h"
 
 #include "MidiHelpers.h"
 
@@ -35,7 +35,7 @@ namespace midikraft {
 		"Tremolo (fast, deep shift)", "Chorus IV (ambiance 1)", "Chorus V (ambiance 2)", "Delay (short 40-60 ms)"
 	};
 
-	std::vector<KawaiK3Parameter*> KawaiK3Parameter::allParameters = {
+	std::vector<SynthParameterDefinition*> KawaiK3Parameter::allParameters = {
 		new KawaiK3Parameter("Osc1 Wave", OSC1_WAVE_SELECT, 1, 6, 0, 33),
 		new KawaiK3Parameter("Osc1 Range", OSC1_RANGE, 1, 2, 6, 0, 2),
 		new KawaiK3Parameter("Portamento Speed", PORTAMENTO_SPEED, 2, 7, 0, 99),
@@ -75,14 +75,26 @@ namespace midikraft {
 		new KawaiK3Parameter("Keytracking to VCF", KCV_VCF, 31, 4, -15, 15),
 		new KawaiK3Parameter("Keytracking to VCA", KCV_VCA, 32, 4, -15, 15),
 		new KawaiK3Parameter("Chorus", CHORUS, 33, 3, 0, 7),
-		new KawaiK3Parameter("Default Parameter", DEFAULT_PARAMETER, 34, 6, 0, 39)
+		new KawaiK3Parameter("Default Parameter", DEFAULT_PARAMETER, 34, 6, 0, 39),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[0]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[1]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[2]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[3]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[4]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[5]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[6]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[7]),
+		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[8]),
 	};
 
 	KawaiK3Parameter* KawaiK3Parameter::findParameter(Parameter param)
 	{
 		for (auto p : allParameters) {
-			if (p->paramNo_ == param) {
-				return p;
+			auto k3param = dynamic_cast<KawaiK3Parameter*>(p);
+			if (k3param) {
+				if (k3param->paramNo_ == param) {
+					return k3param;
+				}
 			}
 		}
 		return nullptr;
@@ -310,6 +322,94 @@ namespace midikraft {
 			return kWaveFormNames[waveNo];
 		}
 		return "invalid wave no";
+	}
+
+	midikraft::SynthParameterDefinition::ParamType KawaiK3DrawbarParameters::type() const
+	{
+		return midikraft::SynthParameterDefinition::ParamType::INT;
+	}
+
+	std::string KawaiK3DrawbarParameters::name() const
+	{
+		return drawbar_.name_;
+	}
+
+	std::string KawaiK3DrawbarParameters::description() const
+	{
+		return name();
+	}
+
+	std::string KawaiK3DrawbarParameters::valueInPatchToText(DataFile const& patch) const
+	{
+		int outValue;
+		if (valueInPatch(patch, outValue)) {
+			return (boost::format("Drawbar %s at %d") % drawbar_.name_ % outValue).str();
+		}
+		return "invalid";
+	}
+
+	int KawaiK3DrawbarParameters::maxValue() const
+	{
+		return 31;
+	}
+
+	int KawaiK3DrawbarParameters::minValue() const
+	{
+		return 0;
+	}
+
+	int KawaiK3DrawbarParameters::sysexIndex() const
+	{
+		jassertfalse;
+		return drawbar_.harmonic_number_;
+	}
+
+	bool KawaiK3DrawbarParameters::valueInPatch(DataFile const& patch, int& outValue) const
+	{
+		switch (patch.dataTypeID()) {
+		case KawaiK3::K3_PATCH: {
+			if (patch.data().size() != 99) return false;
+			for (int i = 34; i < 64 + 34; i += 2) {
+				int harmonic = patch.data()[i];
+				if (harmonic == drawbar_.harmonic_number_) {
+					outValue = patch.data()[i] + 1;
+					return true;
+				}
+			}
+			return false;
+		}
+		case KawaiK3::K3_WAVE:
+			jassert(patch.data().size() == 64);
+			for (int i = 0; i < 64; i += 2) {
+				int harmonic = patch.data()[i];
+				if (harmonic == drawbar_.harmonic_number_) {
+					outValue = patch.data()[i] + 1;
+					return true;
+				}
+			}
+			return false;
+		default:
+			jassertfalse;
+			return false;
+		}
+	}
+
+	void KawaiK3DrawbarParameters::setInPatch(DataFile& patch, int value) const
+	{
+		auto k3wave = dynamic_cast<KawaiK3Wave const*>(&patch);
+		if (k3wave) {
+			for (int i = 0; i < 64; i += 2) {
+				int harmonic = patch.data()[i];
+				if (harmonic == drawbar_.harmonic_number_) {
+					// Already there, set a value
+					patch.setAt(i + 1, (uint8) value);
+					return;
+				}
+			}
+		}
+		else {
+			jassertfalse;
+		}
 	}
 
 }
