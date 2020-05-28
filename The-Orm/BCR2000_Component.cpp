@@ -22,12 +22,12 @@
 
 #include "MidiHelpers.h"
 
-const char *kLastPathBCL = "lastPathBCL";
+const char* kLastPathBCL = "lastPathBCL";
 
 // See https://www.sequencer.de/synth/index.php/B-Control-Tokenreferenz for the button layout info
 std::map<int, std::string> defaultLabels = {
 	{ 57, "Group 1"}, { 58, "Group 2"}, { 59, "Group 3"}, { 60, "Group 4"},
-	{ 53, "STORE"}, { 54, "LEARN"}, { 55, "EDIT"}, { 56, "EXIT"}, 
+	{ 53, "STORE"}, { 54, "LEARN"}, { 55, "EDIT"}, { 56, "EXIT"},
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
@@ -35,7 +35,7 @@ BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : 
 {
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
-		RotaryWithLabel *knob;
+		RotaryWithLabel* knob;
 		if (i < 32) {
 			knob = new RotaryWithLabelAndButtonFunction();
 		}
@@ -56,34 +56,34 @@ BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : 
 	// Extra function buttons
 	LambdaButtonStrip::TButtonMap buttons = {
 		/*{ "loadBCR",{ 0, "Debug: Load BCL file from computer into BCR2000", [this]() {
-		std::string lastPath = Settings::instance().get(kLastPathBCL, File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString());
-		FileChooser bclChooser("Please select the BCL file you want to send to the BCR2000...", File(lastPath), "*.txt;*.bcr;*.bcl");
-		if (bclChooser.browseForFileToOpen())
-		{
-			File bclFile(bclChooser.getResult());
-			Settings::instance().set(kLastPathBCL, bclFile.getParentDirectory().getFullPathName().toStdString());
-			String content = bclFile.loadFileAsString();
-			midikraft::MidiController::instance()->enableMidiInput(bcr2000_->midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
-			bcr2000_->sendSysExToBCR(midikraft::MidiController::instance()->getMidiOutput(bcr2000_->midiOutput()), bcr2000_->convertToSyx(content.toStdString()), [](std::vector<midikraft::BCR2000::BCRError> const &errors) {
-				ignoreUnused(errors); //TODO
-			});
-			bcr2000_->invalidateListOfPresets();
-		}
-	} } },
-	{ "loadSYX",{ 1, "Debug: Load sysex file from computer into BCR2000", [this]() {
-		std::string lastPath = Settings::instance().get(kLastPathBCL, File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString());
-		FileChooser syxChooser("Please select the sysex you want to send to the BCR2000...", File(lastPath), "*.syx");
-		if (syxChooser.browseForFileToOpen())
-		{
-			File syxFile(syxChooser.getResult());
-			Settings::instance().set(kLastPathBCL, syxFile.getParentDirectory().getFullPathName().toStdString());
-			std::vector<MidiMessage> sysex = Sysex::loadSysex(syxChooser.getResult().getFullPathName().toStdString());
-			midikraft::MidiController::instance()->enableMidiInput(bcr2000_->midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
-			bcr2000_->sendSysExToBCR(midikraft::MidiController::instance()->getMidiOutput(bcr2000_->midiOutput()), sysex, [](std::vector<midikraft::BCR2000::BCRError> const &errors) {
-				ignoreUnused(errors); //TODO
-			});
-			bcr2000_->invalidateListOfPresets();
-		}
+			std::string lastPath = Settings::instance().get(kLastPathBCL, File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString());
+			FileChooser bclChooser("Please select the BCL file you want to send to the BCR2000...", File(lastPath), "*.txt;*.bcr;*.bcl");
+			if (bclChooser.browseForFileToOpen())
+			{
+				File bclFile(bclChooser.getResult());
+				Settings::instance().set(kLastPathBCL, bclFile.getParentDirectory().getFullPathName().toStdString());
+				String content = bclFile.loadFileAsString();
+				midikraft::MidiController::instance()->enableMidiInput(bcr2000_->midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
+				bcr2000_->sendSysExToBCR(midikraft::MidiController::instance()->getMidiOutput(bcr2000_->midiOutput()), bcr2000_->convertToSyx(content.toStdString()), [](std::vector<midikraft::BCR2000::BCRError> const &errors) {
+					ignoreUnused(errors); //TODO
+				});
+				bcr2000_->invalidateListOfPresets();
+			}
+		} } },
+		{ "loadSYX",{ 1, "Debug: Load sysex file from computer into BCR2000", [this]() {
+			std::string lastPath = Settings::instance().get(kLastPathBCL, File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString());
+			FileChooser syxChooser("Please select the sysex you want to send to the BCR2000...", File(lastPath), "*.syx");
+			if (syxChooser.browseForFileToOpen())
+			{
+				File syxFile(syxChooser.getResult());
+				Settings::instance().set(kLastPathBCL, syxFile.getParentDirectory().getFullPathName().toStdString());
+				std::vector<MidiMessage> sysex = Sysex::loadSysex(syxChooser.getResult().getFullPathName().toStdString());
+				midikraft::MidiController::instance()->enableMidiInput(bcr2000_->midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
+				bcr2000_->sendSysExToBCR(midikraft::MidiController::instance()->getMidiOutput(bcr2000_->midiOutput()), sysex, [](std::vector<midikraft::BCR2000::BCRError> const &errors) {
+					ignoreUnused(errors); //TODO
+				});
+				bcr2000_->invalidateListOfPresets();
+			}
 		} } },*/
 	};
 	buttons_ = std::make_unique<LambdaButtonStrip>(505, LambdaButtonStrip::Direction::Horizontal);
@@ -104,34 +104,34 @@ BCR2000_Component::~BCR2000_Component()
 }
 
 void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
-	CurrentSynth *current = dynamic_cast<CurrentSynth *>(source);
+	CurrentSynth* current = dynamic_cast<CurrentSynth*>(source);
 	if (current) {
 		for (auto knob : rotaryKnobs) {
 			knob->setUnused();
 		}
-		auto supported = dynamic_cast<midikraft::SupportedByBCR2000 *>(current->synth());
+		auto supported = dynamic_cast<midikraft::SupportedByBCR2000*>(current->synth());
 		if (supported) {
 			// Code to setup the BCR2000
 			auto setupBCR = [this, supported]() {
-			/*	bool allFound = true;
-				int firstIndex = -1;
-				for (auto preset : supported->presetNames()) {
-					// Check if we already have the preset stored somewhere in the BCR
-					int index = bcr2000_.indexOfPreset(preset);
-					if (index == -1) {
-						allFound = false;
-					}
-					else {
-						if (firstIndex == -1) {
-							firstIndex = index;
+				/*	bool allFound = true;
+					int firstIndex = -1;
+					for (auto preset : supported->presetNames()) {
+						// Check if we already have the preset stored somewhere in the BCR
+						int index = bcr2000_.indexOfPreset(preset);
+						if (index == -1) {
+							allFound = false;
+						}
+						else {
+							if (firstIndex == -1) {
+								firstIndex = index;
+							}
 						}
 					}
-				}
-				if (allFound) {
-					// All of them are already there, all we need to do is to select the first found index!
-					bcr2000_.selectPreset(midikraft::MidiController::instance(), firstIndex);
-				}
-				else*/ {
+					if (allFound) {
+						// All of them are already there, all we need to do is to select the first found index!
+						bcr2000_.selectPreset(midikraft::MidiController::instance(), firstIndex);
+					}
+					else*/ {
 					// At least one is missing, resend the whole stuff
 					supported->setupBCR2000(*bcr2000_);
 					bcr2000_->invalidateListOfPresets();
@@ -156,7 +156,7 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 			uiValueTree_.addListener(&updateControllerListener_);
 		}
 	}
-	else if (dynamic_cast<CurrentPatch *>(source) || source == &UIModel::instance()->currentPatchValues_) {
+	else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_) {
 		updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch().patch());
 	}
 }
@@ -176,7 +176,7 @@ TypedNamedValueSet BCR2000_Component::createParameterModel() {
 				case midikraft::SynthParameterDefinition::ParamType::LOOKUP: {
 					std::map<int, std::string> lookup;
 					auto lookupCap = std::dynamic_pointer_cast<midikraft::SynthLookupParameterCapability>(param);
-					for (int i = intParam->minValue(); i < intParam->maxValue(); i++) {
+					for (int i = intParam->minValue(); i <= intParam->maxValue(); i++) {
 						lookup.emplace(i, lookupCap->valueAsText(i));
 					}
 					result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
@@ -207,7 +207,7 @@ void BCR2000_Component::resized()
 	for (int i = 0; i < 9; i++) grid.templateRows.add(Track(1_fr));
 	for (int i = 0; i < 10; i++) grid.templateColumns.add(Track(1_fr));
 	// Funny mixed layout matching the hardware BCR2000
-	int knob = 0; 
+	int knob = 0;
 	int press = 0;
 	int groupButtons = 56;
 	int storeButtons = 52;
@@ -252,7 +252,7 @@ void BCR2000_Component::resized()
 	grid.performLayout(area);
 }
 
-void BCR2000_Component::setRotaryParam(int knobNumber, TypedNamedValue *param)
+void BCR2000_Component::setRotaryParam(int knobNumber, TypedNamedValue* param)
 {
 	jassert(knobNumber > 0 && knobNumber <= rotaryKnobs.size());
 	jassert(param != nullptr);
@@ -260,12 +260,12 @@ void BCR2000_Component::setRotaryParam(int knobNumber, TypedNamedValue *param)
 	rotaryKnobs[knobNumber - 1]->setSynthParameter(param);
 }
 
-void BCR2000_Component::setButtonParam(int knobNumber, std::string const &name)
+void BCR2000_Component::setButtonParam(int knobNumber, std::string const& name)
 {
 	jassert(knobNumber > 0 && knobNumber <= 48 + 14);
 	if (knobNumber < 32) {
 		// Button as part of Encoder
-		auto withButton = dynamic_cast<RotaryWithLabelAndButtonFunction *>(rotaryKnobs[knobNumber - 1]);
+		auto withButton = dynamic_cast<RotaryWithLabelAndButtonFunction*>(rotaryKnobs[knobNumber - 1]);
 		jassert(withButton);
 		if (withButton) {
 			withButton->setButtonSynthParameter(name);
@@ -345,7 +345,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* source, MidiMessage message)
 {
 	auto synth = UIModel::currentSynthOfPatch();
-	auto location = dynamic_cast<midikraft::MidiLocationCapability *>(synth);
+	auto location = dynamic_cast<midikraft::MidiLocationCapability*>(synth);
 	if (!location || location->midiInput() == source->getName().toStdString()) {
 		auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
 		if (syncCap) {
@@ -406,7 +406,7 @@ BCR2000_Component::UpdateControllerListener::~UpdateControllerListener()
 	midikraft::MidiController::instance()->removeMessageHandler(midiHandler_);
 }
 
-void BCR2000_Component::UpdateControllerListener::listenForMidiMessages(MidiInput *source, MidiMessage message) {
+void BCR2000_Component::UpdateControllerListener::listenForMidiMessages(MidiInput* source, MidiMessage message) {
 	// Check if that is a message we need to take seriously
 	if (source->getName().toStdString() == papa_->bcr2000_->midiInput()) {
 		// This at least is a message from our controller
