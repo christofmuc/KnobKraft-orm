@@ -298,7 +298,8 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else {
 		// The active synth has been switched, make sure to refresh the tab name properly
-		mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
+		//TODO - we need a smarter idea than just index 3
+		mainTabs_.setTabName(3, UIModel::currentSynth()->getName() + " settings");
 	}
 }
 

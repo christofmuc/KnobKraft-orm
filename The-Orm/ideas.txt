@@ -15,8 +15,6 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 KawaiK3 - supported by BCR2000
 + need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
 + warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
-+ Moving the BCR2000 should update both UI and patch
-+ BCR2000 needs to be synchronized with current patch
 + Split view? Left patches, right editor
 
 Generic Editor

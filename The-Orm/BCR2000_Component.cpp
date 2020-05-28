@@ -18,6 +18,7 @@
 #include "Sysex.h"
 #include "DetailedParametersCapability.h"
 #include "BidirectionalSyncCapability.h"
+#include "SendsProgramChangeCapability.h"
 
 #include "MidiHelpers.h"
 
@@ -30,7 +31,7 @@ std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
-BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this), updateControllerListener_(this)
+BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this), updateControllerListener_(this), librarian_({})
 {
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -352,6 +353,21 @@ void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* so
 			midikraft::SynthParameterDefinition* param;
 			if (syncCap->determineParameterChangeFromSysex({ message }, &param, outValue)) {
 				papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param->name()), outValue, nullptr);
+			}
+		}
+		if (message.isProgramChange() && (!location || location->channel().toOneBasedInt() == message.getChannel())) {
+			auto programChangeCap = dynamic_cast<midikraft::SendsProgramChangeCapability*>(synth);
+			if (programChangeCap) {
+				programChangeCap->gotProgramChange(MidiProgramNumber::fromZeroBase(message.getProgramChangeNumber()));
+				if (location) {
+					papa_->librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()), 
+						UIModel::currentSynthOfPatchSmart(), nullptr, [this](std::vector<midikraft::PatchHolder> patch) {
+						if (patch.size() > 0 && patch[0].patch()) {
+							updateAllKnobsFromPatch(patch[0].patch());
+						}
+					});
+
+				}
 			}
 		}
 	}

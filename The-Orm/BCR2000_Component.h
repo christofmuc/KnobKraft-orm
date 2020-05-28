@@ -12,6 +12,7 @@
 
 #include "BCR2000.h"
 #include "LambdaButtonStrip.h"
+#include "Librarian.h"
 
 class RotaryWithLabel;
 class SynthParameterDefinition;
@@ -100,5 +101,7 @@ private:
 	OwnedArray<ToggleButton> pressKnobs;
 	std::unique_ptr<LambdaButtonStrip> buttons_;
 	std::shared_ptr<midikraft::BCR2000> bcr2000_;
+
+	midikraft::Librarian librarian_;
 };
 
