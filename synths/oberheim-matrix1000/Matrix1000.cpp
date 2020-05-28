@@ -260,10 +260,10 @@ namespace midikraft {
 		std::vector<MidiMessage> result;
 		jassert(programNumber >= 0 && programNumber < 1000);
 		uint8 bank = (uint8)(programNumber / 100);
-		//uint8 num = (uint8)(programNumber % 100);
+		uint8 num = (uint8)(programNumber % 100);
 		result.push_back(createBankSelect(MidiBankNumber::fromZeroBase(bank)));
 		result.push_back(createBankUnlock());
-		result.push_back(createRequest(SINGLE_PATCH, (uint8) programNumber));
+		result.push_back(createRequest(SINGLE_PATCH, num));
 		return result;
 	}
 
