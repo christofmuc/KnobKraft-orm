@@ -16,7 +16,7 @@
 namespace midikraft {
 
 	std::vector<std::string> kWaveFormNames = {
-		"", "grand piano I", "bell", "strings", "e.bass", "oboe", "e.piano I", "organ", "brass I", "digital bell", "slap bass",
+		"off", "grand piano I", "bell", "strings", "e.bass", "oboe", "e.piano I", "organ", "brass I", "digital bell", "slap bass",
 		"plucked string", "classic guitar", "hammered tine", "metallic wave", "vox humana", "sharp wave", "digital harmonics",
 		"pipe organ", "wood bass", "resonant strings", "E.piano II", "jazz organ", "glocken", "oriental bell", "harpsichord",
 		"trumpet", "sax", "grand piano II", "square", "sawtooth", "sine", "programmable", "white noise"
