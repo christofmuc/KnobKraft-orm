@@ -55,7 +55,7 @@ BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : 
 
 	// Extra function buttons
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "loadBCR",{ 0, "Debug: Load BCL file from computer into BCR2000", [this]() {
+		/*{ "loadBCR",{ 0, "Debug: Load BCL file from computer into BCR2000", [this]() {
 		std::string lastPath = Settings::instance().get(kLastPathBCL, File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString());
 		FileChooser bclChooser("Please select the BCL file you want to send to the BCR2000...", File(lastPath), "*.txt;*.bcr;*.bcl");
 		if (bclChooser.browseForFileToOpen())
@@ -84,7 +84,7 @@ BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : 
 			});
 			bcr2000_->invalidateListOfPresets();
 		}
-	} } },
+		} } },*/
 	};
 	buttons_ = std::make_unique<LambdaButtonStrip>(505, LambdaButtonStrip::Direction::Horizontal);
 	buttons_->setButtonDefinitions(buttons);
