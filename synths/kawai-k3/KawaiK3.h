@@ -97,7 +97,6 @@ namespace midikraft {
 		virtual std::string waveName(int waveNo) override;
 
 		// Implementation of BCR2000 sync
-		virtual std::vector<std::string> presetNames() override;
 		virtual void setupBCR2000(BCR2000 &bcr) override;
 		virtual void setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree) override;
 

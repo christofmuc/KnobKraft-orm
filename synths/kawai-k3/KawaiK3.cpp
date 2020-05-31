@@ -561,12 +561,6 @@ namespace midikraft {
 		return programNo_;
 	}
 
-	std::vector<std::string> KawaiK3::presetNames()
-	{
-		return { (boost::format("Knobkraft %s %d") % getName() % channel().toOneBasedInt()).str() };
-	}
-
-
 	MidiChannel KawaiK3::getInputChannel() const
 	{
 		return channel();
@@ -648,53 +642,19 @@ namespace midikraft {
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
 	}
 
-
 	void KawaiK3::setupBCR2000(BCR2000 &bcr) {
 		if (!bcr.channel().isValid()) return;
 		if (!channel().isValid()) return;
 
 		// Use MIDI channel 16 to not interfere with any other MIDI hardware accidentally taking the CC messages for real
-		auto bcl = KawaiK3BCR2000::generateBCL(presetNames()[0], bcr.channel(), channel());
+		std::string presetName = (boost::format("Knobkraft %s %d") % getName() % channel().toOneBasedInt()).str();
+		auto bcl = KawaiK3BCR2000::generateBCL(presetName, bcr.channel(), channel());
 		auto syx = bcr.convertToSyx(bcl);
 		MidiController::instance()->enableMidiInput(bcr.midiInput()); // Make sure we listen to the answers from the BCR2000 that we detected!
 		bcr.sendSysExToBCR(MidiController::instance()->getMidiOutput(bcr.midiOutput()), syx, [](std::vector<BCR2000::BCRError> errors) {
 			//TODO
 			ignoreUnused(errors);
 		});
-	}
-
-	void KawaiK3::syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) {
-		if (k3BCRSyncHandler_.isNull()) {
-			k3BCRSyncHandler_ = MidiController::makeOneHandle();
-			MidiController::instance()->addMessageHandler(k3BCRSyncHandler_, [this, &bcr](MidiInput *source, MidiMessage const &message) {
-				ignoreUnused(source);
-				if (isSingleProgramDump(message)) {
-					SimpleLogger::instance()->postMessage("Got Edit Buffer from K3 and now updating the BCR2000");
-					auto currentPatch = std::dynamic_pointer_cast<KawaiK3Patch>(patchFromProgramDumpSysex(message));
-					if (currentPatch) {
-						// Loop over all parameters in patch and send out the appropriate CCs, if they are within the BCR2000 definition...
-						std::vector<MidiMessage> updates;
-						/*for (auto paramDef : KawaiK3Parameter::allParameters) {
-							SimpleLogger::instance()->postMessage((boost::format("Setting %s [%d] to %d") % paramDef->name() % paramDef->paramNo() % currentPatch->value(*paramDef)).str());
-							auto ccMessage = KawaiK3BCR2000::createMessageforParam(paramDef, *currentPatch, MidiChannel::fromOneBase(16));
-							updates.push_back(ccMessage);
-						}*/
-						MidiBuffer updateBuffer = MidiHelpers::bufferFromMessages(updates);
-						// Send this to BCR
-						if (bcr.channel().isValid() && MidiController::instance()->getMidiOutput(bcr.midiOutput())) {
-							MidiController::instance()->getMidiOutput(bcr.midiOutput())->sendBlockOfMessagesNow(updateBuffer);
-						}
-					}
-					else {
-						SimpleLogger::instance()->postMessage("Failure reading sysex stream");
-					}
-				}
-			});
-		}
-		// We want to talk to the Synth now
-		MidiController::instance()->enableMidiInput(midiInput());
-		MidiBuffer requestBuffer = MidiHelpers::bufferFromMessages(requestPatch(programNumber.toZeroBased()));
-		MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(requestBuffer);
 	}
 
 	void KawaiK3::setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree)
