@@ -164,13 +164,19 @@ namespace midikraft {
 	juce::MidiMessage KawaiK3BCR2000::createMessageforParam(KawaiK3Parameter* paramDef, KawaiK3Patch const& patch, MidiChannel k3Channel)
 	{
 		// As the K3 has only 39 parameters, we use CC 1..39 to map these. Simple enough
-		int value = patch.value(*paramDef);
-		// For params with negative values, we offset!
-		if (paramDef->minValue() < 0) {
-			value = value - paramDef->minValue();
+		int value;
+		if (paramDef->valueInPatch(patch, value)) {
+			// For params with negative values, we offset!
+			if (paramDef->minValue() < 0) {
+				value = value - paramDef->minValue();
+			}
+			int controller = paramDef->paramNo();
+			return MidiMessage::controllerEvent(k3Channel.toOneBasedInt(), controller, value);
 		}
-		int controller = paramDef->paramNo();
-		return MidiMessage::controllerEvent(k3Channel.toOneBasedInt(), controller, value);
+		else {
+			jassertfalse;
+			return MidiMessage();
+		}
 	}
 
 	int encoderNumber(KawaiK3BCR2000Definition* def) {

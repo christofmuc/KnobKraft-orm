@@ -61,8 +61,8 @@ namespace midikraft {
 			DEFAULT_PARAMETER = -2, // Part of sysex, but doesn't make sense as sysex
 		};
 
-		static std::vector<SynthParameterDefinition*> allParameters;
-		static KawaiK3Parameter *findParameter(Parameter param);
+		static std::vector<std::shared_ptr<SynthParameterDefinition>> allParameters;
+		static std::shared_ptr<KawaiK3Parameter> findParameter(Parameter param);
 		static int findWave(std::string shapename);
 		static std::string waveName(int waveNo);
 
@@ -109,6 +109,19 @@ namespace midikraft {
 		int sysexBits_;
 		int minValue_;
 		int maxValue_;
+	};
+
+	class KawaiK3HarmonicsParameters : public SynthParameterDefinition {
+	public:
+		// SynthParameterDefinition
+		virtual ParamType type() const override;
+		virtual std::string name() const override;
+		virtual std::string description() const override;
+		virtual std::string valueInPatchToText(DataFile const& patch) const override;
+
+		// K3 specific
+		static Additive::Harmonics toHarmonics(DataFile const& patch);
+		static void fromHarmonics(const Additive::Harmonics& harmonics, DataFile& patch);
 	};
 
 	class KawaiK3DrawbarParameters : public SynthParameterDefinition, public SynthIntParameterCapability {

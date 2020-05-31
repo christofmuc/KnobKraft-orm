@@ -35,62 +35,63 @@ namespace midikraft {
 		"Tremolo (fast, deep shift)", "Chorus IV (ambiance 1)", "Chorus V (ambiance 2)", "Delay (short 40-60 ms)"
 	};
 
-	std::vector<SynthParameterDefinition*> KawaiK3Parameter::allParameters = {
-		new KawaiK3Parameter("Osc1 Wave", OSC1_WAVE_SELECT, 1, 6, 0, 33),
-		new KawaiK3Parameter("Osc1 Range", OSC1_RANGE, 1, 2, 6, 0, 2),
-		new KawaiK3Parameter("Portamento Speed", PORTAMENTO_SPEED, 2, 7, 0, 99),
-		new KawaiK3Parameter("Portamento Switch", PORTAMENTO_SWITCH, 2, 1, 7, 0, 1),
-		new KawaiK3Parameter("Osc2 Wave", OSC2_WAVE_SELECT, 3, 6, 0, 33),
-		new KawaiK3Parameter("Osc2 Coarse", OSC2_COARSE, 4, 5, -24, 24),
-		new KawaiK3Parameter("Osc2 Fine", OSC2_FINE, 5, 4, -10, 10),
-		new KawaiK3Parameter("Osc Balance", OSC_BALANCE, 6, 4, -15, 15),
-		new KawaiK3Parameter("Auto Bend", OSC_AUTO_BEND, 7, 5, -31, 31),
-		new KawaiK3Parameter("Mono", MONO, 8, 1, 7, 0, 1),
-		new KawaiK3Parameter("Pitch Bend", PITCH_BEND, 8, 3, 0, 7),
-		new KawaiK3Parameter("Cutoff", CUTOFF, 9, 7, 0, 99),
-		new KawaiK3Parameter("Resonance", RESONANCE, 10, 5, 0, 31),
-		new KawaiK3Parameter("VCF Env", VCF_ENV, 11, 5, 0, 31),
-		new KawaiK3Parameter("VCF Attack", VCF_ATTACK, 12, 5, 0, 31),
-		new KawaiK3Parameter("VCF Decay", VCF_DECAY, 13, 5, 0, 31),
-		new KawaiK3Parameter("Low Cut", LOW_CUT, 19, 5, 0, 31), // Manual says sysex position 14
-		new KawaiK3Parameter("VCF Sustain", VCF_SUSTAIN, 14, 5, 0, 31), // Manual says sysex position 15
-		new KawaiK3Parameter("VCF Release", VCF_RELEASE, 15, 5, 0, 31), // Manual says sysex position 16
-		new KawaiK3Parameter("VCA Level", VCA_LEVEL, 16, 5, 0, 31), // Manual says sysex position 17
-		new KawaiK3Parameter("VCA Attack", VCA_ATTACK, 17, 5, 0, 31), // Manual says sysex position 18
-		new KawaiK3Parameter("VCA Decay", VCA_DECAY, 18, 5, 0, 31), // Manual says sysex position 19
-		new KawaiK3Parameter("VCA Sustain", VCA_SUSTAIN, 20, 5, 0, 31),
-		new KawaiK3Parameter("VCA Release", VCA_RELEASE, 21, 5, 0, 31),
-		new KawaiK3Parameter("LFO Shape", LFO_SHAPE, 22, 3, 0, 6), // Manual says range 1 to 7
-		new KawaiK3Parameter("LFO Speed", LFO_SPEED, 23, 7, 0, 99),
-		new KawaiK3Parameter("LFO Delay", LFO_DELAY, 24, 5, 0, 31),
-		new KawaiK3Parameter("LFO to Osc", LFO_OSC, 25, 5, 0, 31),
-		new KawaiK3Parameter("LFO to VCF", LFO_VCF, 26, 5, 0, 31),
-		new KawaiK3Parameter("LFO to VCA", LFO_VCA, 27, 5, 0, 31),
-		new KawaiK3Parameter("Velocity to VCA", VELOCITY_VCA, 28, 4, 4, 0, 15), // upper nibble in sysex
-		new KawaiK3Parameter("Velocity to VCF", VELOCITY_VCF, 28, 4, 0, 0, 15), // lower nibble in sysex
-		new KawaiK3Parameter("Pressure to VCF", PRESSURE_VCF, 29, 4, 4, 0, 15), // upper nibble in sysex
-		new KawaiK3Parameter("Pressure to Osc Balance", PRESSURE_OSC_BALANCE, 29, 4, 0, 0, 15), // lower nibble in sysex
-		new KawaiK3Parameter("Pressure to LFO to Osc", PRESSURE_LFO_OSC, 30, 4, 4, 0, 15), // upper nibble in sysex
-		new KawaiK3Parameter("Pressure to VCA", PRESSURE_VCA, 30, 4, 0, 0, 15), // lower nibble in sysex
-		new KawaiK3Parameter("Keytracking to VCF", KCV_VCF, 31, 4, -15, 15),
-		new KawaiK3Parameter("Keytracking to VCA", KCV_VCA, 32, 4, -15, 15),
-		new KawaiK3Parameter("Chorus", CHORUS, 33, 3, 0, 7),
-		new KawaiK3Parameter("Default Parameter", DEFAULT_PARAMETER, 34, 6, 0, 39),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[0]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[1]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[2]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[3]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[4]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[5]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[6]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[7]),
-		new KawaiK3DrawbarParameters(DrawbarOrgan::hammondDrawbars()[8]),
+	std::vector<std::shared_ptr<SynthParameterDefinition>> KawaiK3Parameter::allParameters = {
+		std::make_shared<KawaiK3Parameter>("Osc1 Wave", OSC1_WAVE_SELECT, 1, 6, 0, 33),
+		std::make_shared<KawaiK3Parameter>("Osc1 Range", OSC1_RANGE, 1, 2, 6, 0, 2),
+		std::make_shared<KawaiK3Parameter>("Portamento Speed", PORTAMENTO_SPEED, 2, 7, 0, 99),
+		std::make_shared<KawaiK3Parameter>("Portamento Switch", PORTAMENTO_SWITCH, 2, 1, 7, 0, 1),
+		std::make_shared<KawaiK3Parameter>("Osc2 Wave", OSC2_WAVE_SELECT, 3, 6, 0, 33),
+		std::make_shared<KawaiK3Parameter>("Osc2 Coarse", OSC2_COARSE, 4, 5, -24, 24),
+		std::make_shared<KawaiK3Parameter>("Osc2 Fine", OSC2_FINE, 5, 4, -10, 10),
+		std::make_shared<KawaiK3Parameter>("Osc Balance", OSC_BALANCE, 6, 4, -15, 15),
+		std::make_shared<KawaiK3Parameter>("Auto Bend", OSC_AUTO_BEND, 7, 5, -31, 31),
+		std::make_shared<KawaiK3Parameter>("Mono", MONO, 8, 1, 7, 0, 1),
+		std::make_shared<KawaiK3Parameter>("Pitch Bend", PITCH_BEND, 8, 3, 0, 7),
+		std::make_shared<KawaiK3Parameter>("Cutoff", CUTOFF, 9, 7, 0, 99),
+		std::make_shared<KawaiK3Parameter>("Resonance", RESONANCE, 10, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("VCF Env", VCF_ENV, 11, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("VCF Attack", VCF_ATTACK, 12, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("VCF Decay", VCF_DECAY, 13, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("Low Cut", LOW_CUT, 19, 5, 0, 31), // Manual says sysex position 14
+		std::make_shared<KawaiK3Parameter>("VCF Sustain", VCF_SUSTAIN, 14, 5, 0, 31), // Manual says sysex position 15
+		std::make_shared<KawaiK3Parameter>("VCF Release", VCF_RELEASE, 15, 5, 0, 31), // Manual says sysex position 16
+		std::make_shared<KawaiK3Parameter>("VCA Level", VCA_LEVEL, 16, 5, 0, 31), // Manual says sysex position 17
+		std::make_shared<KawaiK3Parameter>("VCA Attack", VCA_ATTACK, 17, 5, 0, 31), // Manual says sysex position 18
+		std::make_shared<KawaiK3Parameter>("VCA Decay", VCA_DECAY, 18, 5, 0, 31), // Manual says sysex position 19
+		std::make_shared<KawaiK3Parameter>("VCA Sustain", VCA_SUSTAIN, 20, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("VCA Release", VCA_RELEASE, 21, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("LFO Shape", LFO_SHAPE, 22, 3, 0, 6), // Manual says range 1 to 7
+		std::make_shared<KawaiK3Parameter>("LFO Speed", LFO_SPEED, 23, 7, 0, 99),
+		std::make_shared<KawaiK3Parameter>("LFO Delay", LFO_DELAY, 24, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("LFO to Osc", LFO_OSC, 25, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("LFO to VCF", LFO_VCF, 26, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("LFO to VCA", LFO_VCA, 27, 5, 0, 31),
+		std::make_shared<KawaiK3Parameter>("Velocity to VCA", VELOCITY_VCA, 28, 4, 4, 0, 15), // upper nibble in sysex
+		std::make_shared<KawaiK3Parameter>("Velocity to VCF", VELOCITY_VCF, 28, 4, 0, 0, 15), // lower nibble in sysex
+		std::make_shared<KawaiK3Parameter>("Pressure to VCF", PRESSURE_VCF, 29, 4, 4, 0, 15), // upper nibble in sysex
+		std::make_shared<KawaiK3Parameter>("Pressure to Osc Balance", PRESSURE_OSC_BALANCE, 29, 4, 0, 0, 15), // lower nibble in sysex
+		std::make_shared<KawaiK3Parameter>("Pressure to LFO to Osc", PRESSURE_LFO_OSC, 30, 4, 4, 0, 15), // upper nibble in sysex
+		std::make_shared<KawaiK3Parameter>("Pressure to VCA", PRESSURE_VCA, 30, 4, 0, 0, 15), // lower nibble in sysex
+		std::make_shared<KawaiK3Parameter>("Keytracking to VCF", KCV_VCF, 31, 4, -15, 15),
+		std::make_shared<KawaiK3Parameter>("Keytracking to VCA", KCV_VCA, 32, 4, -15, 15),
+		std::make_shared<KawaiK3Parameter>("Chorus", CHORUS, 33, 3, 0, 7),
+		std::make_shared<KawaiK3Parameter>("Default Parameter", DEFAULT_PARAMETER, 34, 6, 0, 39),
+		std::make_shared<KawaiK3HarmonicsParameters>(),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[0]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[1]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[2]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[3]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[4]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[5]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[6]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[7]),
+		std::make_shared<KawaiK3DrawbarParameters>(DrawbarOrgan::hammondDrawbars()[8]),
 	};
 
-	KawaiK3Parameter* KawaiK3Parameter::findParameter(Parameter param)
+	std::shared_ptr<KawaiK3Parameter> KawaiK3Parameter::findParameter(Parameter param)
 	{
 		for (auto p : allParameters) {
-			auto k3param = dynamic_cast<KawaiK3Parameter*>(p);
+			auto k3param = std::dynamic_pointer_cast<KawaiK3Parameter>(p);
 			if (k3param) {
 				if (k3param->paramNo_ == param) {
 					return k3param;
@@ -174,7 +175,6 @@ namespace midikraft {
 
 	bool KawaiK3Parameter::valueInPatch(DataFile const& patch, int& outValue) const
 	{
-		//TODO This is redundant with the KawaiK3Patch::value function
 		int result = (patch.at(sysexIndex() - 1) >> shift()) & bitMask();
 		if (minValue() < 0) {
 			// This has a sign bit in bit 8
@@ -188,7 +188,6 @@ namespace midikraft {
 
 	void KawaiK3Parameter::setInPatch(DataFile& patch, int value) const
 	{
-		//TODO This is redundant with the KawaiK3Patch::setValue function - I think I should only keep this one
 		//TODO - range checking for the parameter, we might specify values out of range?
 		int currentValue = patch.at(sysexIndex() - 1);
 		if (minValue() < 0) {
@@ -396,20 +395,114 @@ namespace midikraft {
 
 	void KawaiK3DrawbarParameters::setInPatch(DataFile& patch, int value) const
 	{
-		auto k3wave = dynamic_cast<KawaiK3Wave const*>(&patch);
-		if (k3wave) {
+		switch (patch.dataTypeID()) {
+		case KawaiK3::K3_PATCH:
+		case KawaiK3::K3_WAVE: {
 			for (int i = 0; i < 64; i += 2) {
 				int harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
 					// Already there, set a value
-					patch.setAt(i + 1, (uint8) value);
+					patch.setAt(i + 1, (uint8)value);
 					return;
 				}
 			}
 		}
-		else {
+		default:
 			jassertfalse;
 		}
+	}
+
+	midikraft::SynthParameterDefinition::ParamType KawaiK3HarmonicsParameters::type() const
+	{
+		return SynthParameterDefinition::ParamType::INT_ARRAY;
+	}
+
+	std::string KawaiK3HarmonicsParameters::name() const
+	{
+		return "Wave Harmonics";
+	}
+
+	std::string KawaiK3HarmonicsParameters::description() const
+	{
+		return "Wave Harmonics";
+	}
+
+	std::string KawaiK3HarmonicsParameters::valueInPatchToText(DataFile const& patch) const
+	{
+		auto harmonics = toHarmonics(patch);
+		if (harmonics.size() > 0) {
+			std::string result;
+			for (auto harmonic : harmonics) {
+				result += (boost::format("#%d %d ") % harmonic.first % harmonic.second).str();
+			}
+			return result;
+		}
+		else {
+			return "no user wave data";
+		}
+	}
+
+	Additive::Harmonics KawaiK3HarmonicsParameters::toHarmonics(DataFile const& patch)
+	{
+		Additive::Harmonics result;
+		int startIndex = 0;
+		switch (patch.dataTypeID()) {
+		case KawaiK3::K3_PATCH:
+			if (patch.data().size() == 99) {
+				startIndex = 34;
+			}
+			else {
+				// This patch has no data
+				return result;
+			}
+			// Fall through
+		case KawaiK3::K3_WAVE:
+			for (int i = startIndex; i < startIndex + 64; i += 2) {
+				result.emplace_back(patch.at(i), patch.at(i + 1) / 31.0f);
+				if (patch.at(i) == 0) {
+					// It seems a 0 entry stopped the series
+					break;
+				}
+			}
+			return result;
+		default:
+			jassertfalse;
+		}
+		return result;
+	}
+
+	void KawaiK3HarmonicsParameters::fromHarmonics(const Additive::Harmonics& harmonics, DataFile& patch) {
+		size_t writeIndex = 0;
+		Synth::PatchData data = patch.data();
+		switch (patch.dataTypeID()) {
+		case KawaiK3::K3_PATCH:
+			writeIndex = 34;
+			if (data.size() == 34) {
+				// This was a patch without user wave data, it's data area needs to be enlarged
+				//TODO there is better ways to do this
+				while (data.size() < 99) data.push_back(0);
+			}
+			break;
+		case KawaiK3::K3_WAVE:
+			data = std::vector<uint8>(64);
+		}
+
+		// Fill the harmonic array appropriately
+		for (auto harmonic : harmonics) {
+			// Ignore zero harmonic definitions - that's the default, and would make the K3 stop looking at the following harmonics
+			uint8 harmonicAmp = (uint8)roundToInt(harmonic.second * 31.0f);
+			if (harmonicAmp > 0) {
+				if (harmonic.first >= 1 && harmonic.first <= 128) {
+					data[writeIndex] = (uint8)harmonic.first;
+					data[writeIndex + 1] = harmonicAmp;
+					writeIndex += 2;
+				}
+				else {
+					jassertfalse;
+				}
+			}
+		}
+		patch.setData(data);
 	}
 
 }

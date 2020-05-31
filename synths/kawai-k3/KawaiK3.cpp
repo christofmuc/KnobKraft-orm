@@ -8,6 +8,7 @@
 
 #include "KawaiK3Parameter.h"
 #include "KawaiK3Patch.h"
+#include "KawaiK3Wave.h"
 #include "KawaiK3_BCR2000.h"
 
 //#include "BCR2000.h"
@@ -304,7 +305,7 @@ namespace midikraft {
 		return result;
 	}
 
-	std::shared_ptr<DataFile> KawaiK3::waveFromSysex(const MidiMessage& message) const {
+	std::shared_ptr<KawaiK3Wave> KawaiK3::waveFromSysex(const MidiMessage& message) const {
 		// Parse the sysex and build a patch class that allows access to the individual params in that patch
 		if (isWaveBufferDump(message)) {
 			// Build the wave data from the nibbles
@@ -522,7 +523,7 @@ namespace midikraft {
 		return fake.allParameterDefinitions();
 	}
 
-	bool KawaiK3::determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, SynthParameterDefinition** outParam, int& outValue)
+	bool KawaiK3::determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, std::shared_ptr<SynthParameterDefinition>* outParam, int& outValue)
 	{
 		for (auto message : messages) {
 			if (isOwnSysex(message)) {

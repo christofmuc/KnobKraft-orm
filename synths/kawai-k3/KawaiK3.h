@@ -64,7 +64,7 @@ namespace midikraft {
 
 		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 
-		// Special Synth implementation
+		// Special Synth implementation override, because the K3 sends actually write confirmation emails in 1985. Awesome engineers!
 		virtual void sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) override;
 
 		// Discoverable Device
@@ -74,7 +74,6 @@ namespace midikraft {
 		virtual bool needsChannelSpecificDetection() override;
 
 		juce::MidiMessage createSetParameterMessage(KawaiK3Parameter *param, int paramValue);
-		void determineParameterChangeFromSysex(juce::MidiMessage const &message, KawaiK3Parameter **param, int *paramValue);
 		juce::MidiMessage mapCCtoSysex(juce::MidiMessage const &ccMessage);
 
 		// Program Dump Capability
@@ -122,7 +121,7 @@ namespace midikraft {
 		MidiMessage requestWaveBufferDump(WaveType waveType) const;
 		bool isWaveBufferDump(const MidiMessage& message) const;
 		bool isBankDumpAndNotWaveDump(const MidiMessage& message) const;
-		std::shared_ptr<DataFile> waveFromSysex(const MidiMessage& message) const;
+		std::shared_ptr<KawaiK3Wave> waveFromSysex(const MidiMessage& message) const;
 		MidiMessage waveToSysex(std::shared_ptr<KawaiK3Wave> wave);
 
 		bool isWriteConfirmation(MidiMessage const &message);
@@ -141,7 +140,7 @@ namespace midikraft {
 		std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
 		// BidirectionalSyncCapability
-		virtual bool determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, SynthParameterDefinition **outParam, int &outValue) override;
+		virtual bool determineParameterChangeFromSysex(std::vector<juce::MidiMessage> const& messages, std::shared_ptr<SynthParameterDefinition> *outParam, int &outValue) override;
 
 		// SendsProgramChangeCapability
 		void gotProgramChange(MidiProgramNumber newNumber) override;

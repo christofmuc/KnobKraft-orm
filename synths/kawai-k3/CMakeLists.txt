@@ -37,11 +37,11 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/BinaryResources.h
 set(Sources
 	BinaryResources.h
 	KawaiK3.cpp KawaiK3.h           
-	KawaiK3Control.cpp KawaiK3Control.h        
 	KawaiK3_BCR2000.cpp KawaiK3_BCR2000.h    
 	#KawaiK3_Reverse.cpp KawaiK3_Reverse.h     
 	KawaiK3Parameter.cpp KawaiK3Parameter.h  
 	KawaiK3Patch.cpp KawaiK3Patch.h                
+	KawaiK3Wave.cpp KawaiK3Wave.h
 	${RESOURCE_FILES}
 	README.md
 	LICENSE.md
