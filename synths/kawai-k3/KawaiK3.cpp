@@ -213,12 +213,21 @@ namespace midikraft {
 	}
 
 	std::shared_ptr<DataFile> KawaiK3::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
-		if (data.size() == 34 || data.size() == 99) {
+
+		if (data.size() == 34 || data.size() == 98) {
 			return std::make_shared<KawaiK3Patch>(place, data);
 		}
-		else if (data.size() == 65) {
+		else if (data.size() == 64) {
 			return std::make_shared<KawaiK3Wave>(data, place);
 		}
+
+		// TODO this is migration for data from a buggy version
+		if (data.size() == 65) {
+			// Migration of old data from version 1.3.0 had an extra byte
+			return std::make_shared<KawaiK3Wave>(std::vector<uint8>(data.begin(), data.begin() + 64), place);
+		}
+
+		jassertfalse;
 		return {};
 	}
 
@@ -266,6 +275,7 @@ namespace midikraft {
 				}
 				if (data[34] == (sum & 0xff)) {
 					// CRC check successful
+					jassert(toneData.size() == 34);
 					return std::make_shared<KawaiK3Patch>(programIndex, toneData);
 				}
 				else {
@@ -327,7 +337,8 @@ namespace midikraft {
 				if (data[64] == (sum & 0xff)) {
 					// CRC check successful
 					uint8 waveNo = sysexSubcommand(message);
-					return std::make_shared<KawaiK3Wave>(data, MidiProgramNumber::fromZeroBase(waveNo));
+					jassert(waveData.size() == 64);
+					return std::make_shared<KawaiK3Wave>(waveData, MidiProgramNumber::fromZeroBase(waveNo));
 				}
 				else {
 					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 wave. Expected %02X but got %02X") % data[64] % (sum & 0xff)).str());
@@ -574,8 +585,8 @@ namespace midikraft {
 		}
 
 		int start = 0;
-		int end = programNo < 100 ? 34 : 65;
-		if (produceWaveInsteadOfPatch) {
+		int end = programNo < 100 ? 34 : 64;
+		if (produceWaveInsteadOfPatch && patch.size() == 98) {
 			start = 34;
 			end = 34 + 64;
 		}
