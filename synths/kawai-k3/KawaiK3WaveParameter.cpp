@@ -9,9 +9,23 @@
 #include "Patch.h"
 #include "KawaiK3.h"
 
+#include "MidiHelpers.h"
+
 #include <boost/format.hpp>
 
 namespace midikraft {
+
+	KawaiK3DrawbarParameters::KawaiK3DrawbarParameters(int harmonic) : drawbar_(Drawbar(DrawbarOrgan::hammondDrawbars()[0]))
+	{
+		// Let's see if we find it in the Hammond definition
+		for (auto hammond : DrawbarOrgan::hammondDrawbars()) {
+			if (hammond.harmonic_number_ == harmonic) {
+				drawbar_ = hammond;
+				return;
+			}
+		}
+		jassertfalse;
+	}
 
 	midikraft::SynthParameterDefinition::ParamType KawaiK3DrawbarParameters::type() const
 	{
@@ -85,20 +99,26 @@ namespace midikraft {
 
 	void KawaiK3DrawbarParameters::setInPatch(DataFile& patch, int value) const
 	{
-		switch (patch.dataTypeID()) {
-		case KawaiK3::K3_PATCH:
-		case KawaiK3::K3_WAVE: {
-			for (int i = 0; i < 64; i += 2) {
-				int harmonic = patch.data()[i];
-				if (harmonic == drawbar_.harmonic_number_) {
-					// Already there, set a value
-					patch.setAt(i + 1, (uint8)value);
-					return;
-				}
-			}
+		auto harmonics = KawaiK3HarmonicsParameters::toHarmonics(patch);
+		harmonics.setHarmonic(drawbar_.harmonic_number_, value / 31.0f);
+		KawaiK3HarmonicsParameters::fromHarmonics(harmonics, patch);
+	}
+
+	std::shared_ptr<TypedNamedValue> KawaiK3DrawbarParameters::makeTypedNamedValue()
+	{
+		return std::make_shared<TypedNamedValue>(name(), "KawaiK3", 0, 0, 31);
+	}
+
+	juce::MidiBuffer KawaiK3DrawbarParameters::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const
+	{		
+		auto k3 = dynamic_cast<KawaiK3 const *>(synth);
+		if (k3) {
+			auto message = k3->dataFileToMessages(patch);
+			return MidiHelpers::bufferFromMessages({ message });
 		}
-		default:
+		else {
 			jassertfalse;
+			return {};
 		}
 	}
 
@@ -120,9 +140,9 @@ namespace midikraft {
 	std::string KawaiK3HarmonicsParameters::valueInPatchToText(DataFile const& patch) const
 	{
 		auto harmonics = toHarmonics(patch);
-		if (harmonics.size() > 0) {
+		if (harmonics.harmonics().size() > 0) {
 			std::string result;
-			for (auto harmonic : harmonics) {
+			for (auto harmonic : harmonics.harmonics()) {
 				result += (boost::format("#%d %d ") % harmonic.first % harmonic.second).str();
 			}
 			return result;
@@ -148,7 +168,7 @@ namespace midikraft {
 			// Fall through
 		case KawaiK3::K3_WAVE:
 			for (int i = startIndex; i < startIndex + 64; i += 2) {
-				result.emplace_back(patch.at(i), patch.at(i + 1) / 31.0f);
+				result.setHarmonic(patch.at(i), patch.at(i + 1) / 31.0f);
 				if (patch.at(i) == 0) {
 					// It seems a 0 entry stopped the series
 					break;
@@ -170,7 +190,7 @@ namespace midikraft {
 			if (data.size() == 34) {
 				// This was a patch without user wave data, it's data area needs to be enlarged
 				//TODO there is better ways to do this
-				while (data.size() < 99) data.push_back(0);
+				while (data.size() < 98) data.push_back(0);
 			}
 			break;
 		case KawaiK3::K3_WAVE:
@@ -178,7 +198,7 @@ namespace midikraft {
 		}
 
 		// Fill the harmonic array appropriately
-		for (auto harmonic : harmonics) {
+		for (auto harmonic : harmonics.harmonics()) {
 			// Ignore zero harmonic definitions - that's the default, and would make the K3 stop looking at the following harmonics
 			uint8 harmonicAmp = (uint8)roundToInt(harmonic.second * 31.0f);
 			if (harmonicAmp > 0) {

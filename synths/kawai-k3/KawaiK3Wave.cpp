@@ -13,6 +13,7 @@ namespace midikraft {
 
 	KawaiK3Wave::KawaiK3Wave(Synth::PatchData const& data, MidiProgramNumber programNo) : Patch(KawaiK3::K3_WAVE, data), programNo_(programNo)
 	{
+		jassert(data.size() == 64);
 	}
 
 	KawaiK3Wave::KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo) : Patch(KawaiK3::K3_WAVE), programNo_(programNo)

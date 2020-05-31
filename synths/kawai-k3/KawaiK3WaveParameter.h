@@ -27,9 +27,12 @@ namespace midikraft {
 
 	};
 
-	class KawaiK3DrawbarParameters : public SynthParameterDefinition, public SynthIntParameterCapability {
+	class KawaiK3DrawbarParameters : public SynthParameterDefinition, public SynthIntParameterCapability,
+		public SynthParameterEditorCapability, public SynthParameterLiveEditCapability
+	{
 	public:
 		KawaiK3DrawbarParameters(Drawbar& drawbar) : drawbar_(drawbar) {}
+		KawaiK3DrawbarParameters(int harmonic);
 
 		// SynthParameterDefinition
 		ParamType type() const override;
@@ -43,6 +46,12 @@ namespace midikraft {
 		virtual int sysexIndex() const override;
 		virtual bool valueInPatch(DataFile const& patch, int& outValue) const override;
 		virtual void setInPatch(DataFile& patch, int value) const override;
+
+		// SynthParameterEditorCapability
+		std::shared_ptr<TypedNamedValue> makeTypedNamedValue() override;
+
+		// SynthParameterLiveEditCapability
+		MidiBuffer setValueMessages(std::shared_ptr<DataFile>, Synth const* synth) const override;
 
 	private:
 		Drawbar drawbar_;

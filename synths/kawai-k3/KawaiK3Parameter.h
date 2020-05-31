@@ -13,7 +13,7 @@ namespace midikraft {
 	class KawaiK3;
 
 	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, public SynthLookupParameterCapability,
-		public SynthParameterLiveEditCapability, public SynthParameterControllerMapping
+		public SynthParameterLiveEditCapability, public SynthParameterControllerMapping, public SynthParameterEditorCapability
 	{
 	public:
 		enum Parameter {
@@ -83,6 +83,8 @@ namespace midikraft {
 		// SynthLookupParameterCapability
 		virtual std::string valueAsText(int value) const override;
 
+		virtual std::shared_ptr<TypedNamedValue> makeTypedNamedValue() override;
+
 		Parameter paramNo() const;
 		int shift() const;
 		int bits() const;
@@ -90,7 +92,7 @@ namespace midikraft {
 		int shiftedBitMask() const;
 
 		// SynthParameterLiveEditCapability
-		virtual MidiBuffer setValueMessages(DataFile const& patch, Synth const* synth) const override;
+		virtual MidiBuffer setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const override;
 
 		// SynthParameterControllerMapping
 		virtual bool messagesMatchParameter(std::vector<juce::MidiMessage> const& messages, int& outNewValue) const override;

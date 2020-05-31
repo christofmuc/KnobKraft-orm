@@ -154,6 +154,24 @@ namespace midikraft {
 		return "invalid";
 	}
 
+	std::shared_ptr<TypedNamedValue> KawaiK3Parameter::makeTypedNamedValue()
+	{
+		switch (type()) {
+		case midikraft::SynthParameterDefinition::ParamType::INT:
+			return std::make_shared<TypedNamedValue>(name(), "KawaiK3", 0, minValue(), maxValue());
+		case midikraft::SynthParameterDefinition::ParamType::LOOKUP: {
+			std::map<int, std::string> lookup;
+			for (int i = minValue(); i <= maxValue(); i++) {
+				lookup.emplace(i, valueAsText(i));
+			}
+			return std::make_shared<TypedNamedValue>(name(), "KawaiK3", 0, lookup);
+		}
+		default:
+			jassertfalse;
+		}
+		return nullptr;
+	}
+
 	int KawaiK3Parameter::sysexIndex() const
 	{
 		return sysexIndex_;
@@ -236,13 +254,13 @@ namespace midikraft {
 		return (((uint16)((1 << sysexBits_) - 1)) << sysexShift_) & 0xff;
 	}
 
-	juce::MidiBuffer KawaiK3Parameter::setValueMessages(DataFile const& patch, Synth const* synth) const
+	juce::MidiBuffer KawaiK3Parameter::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const
 	{
 		auto k3 = dynamic_cast<KawaiK3 const*>(synth);
 		jassert(k3);
 
 		int paramValue;
-		if (valueInPatch(patch, paramValue)) {
+		if (valueInPatch(*patch, paramValue)) {
 			return setValueMessages(k3, paramValue);
 		}
 		jassertfalse;

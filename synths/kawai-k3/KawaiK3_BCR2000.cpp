@@ -3,6 +3,8 @@
 #include "KawaiK3.h"
 #include "BCR2000.h"
 
+#include "KawaiK3WaveParameter.h"
+
 #include <boost/format.hpp>
 
 namespace midikraft {
@@ -18,9 +20,9 @@ namespace midikraft {
 		return impl.generateBCR(channel);
 	}
 
-	class K3InitPatchDefinition : public BCRStandardDefinitionWithName {
+	class K3InitPatchDefinition : public BCRStandardDefinition, public BCRNamedParameterCapability {
 	public:
-		K3InitPatchDefinition(BCRtype type, int number) : BCRStandardDefinitionWithName(type, number, "Init Patch") {}
+		K3InitPatchDefinition(BCRtype type, int number) : BCRStandardDefinition(type, number) {}
 
 		virtual std::string generateBCR(int channel) const override {
 			KawaiK3 k3;
@@ -35,6 +37,12 @@ namespace midikraft {
 				"  .mode down\n"
 				"  .showvalue off\n") % number_ % BCR2000::syxToBCRString(syx) % channel).str();
 		}
+
+		std::string name() override
+		{
+			return "Init Patch";
+		}
+
 	};
 
 	//
@@ -43,7 +51,6 @@ namespace midikraft {
 	// Button 51 + 52 for Undo Redo? Maybe a button to press to store undo point?
 	// Press Encoder 4, 6, 7, 8 to reset to middle value
 	// Add missing MONO (UNISON) switch. That's only possible to patch via syx I fear.
-
 	std::vector<BCRStandardDefinition*> k3Setup = {
 		new KawaiK3BCR2000Definition(ENCODER, 1, KawaiK3Parameter::OSC1_WAVE_SELECT, ONE_DOT_OFF),
 		new KawaiK3BCR2000Definition(ENCODER, 2, KawaiK3Parameter::OSC1_RANGE),
@@ -61,6 +68,15 @@ namespace midikraft {
 		new KawaiK3BCR2000Definition(ENCODER, 13, KawaiK3Parameter::PRESSURE_OSC_BALANCE, BAR),
 
 		new KawaiK3BCR2000Definition(ENCODER, 19, KawaiK3Parameter::PITCH_BEND, BAR), // Duplicate for compatibility with Royce's layout
+
+		new KawaiK3BCRWaveDefinition(25, DrawbarOrgan::hammondDrawbars()[0].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(26, DrawbarOrgan::hammondDrawbars()[1].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(27, DrawbarOrgan::hammondDrawbars()[2].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(28, DrawbarOrgan::hammondDrawbars()[3].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(29, DrawbarOrgan::hammondDrawbars()[4].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(30, DrawbarOrgan::hammondDrawbars()[5].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(31, DrawbarOrgan::hammondDrawbars()[6].harmonic_number_),
+		new KawaiK3BCRWaveDefinition(32, DrawbarOrgan::hammondDrawbars()[7].harmonic_number_),
 
 		new KawaiK3BCRCCDefinition(BUTTON,  3, KawaiK3Parameter::PORTAMENTO_SWITCH, 65, 0, 1), // Controller 65 is the portamento switch. Use it on the Portamento speed controller but also on the button below that
 		new KawaiK3BCRCCDefinition(BUTTON, 35, KawaiK3Parameter::PORTAMENTO_SWITCH, 65, 0, 1), // Controller 65 is the portamento switch
@@ -140,6 +156,11 @@ namespace midikraft {
 		}
 	}
 
+	std::shared_ptr<midikraft::SynthParameterDefinition> KawaiK3BCR2000Definition::parameter()
+	{
+		return KawaiK3Parameter::findParameter(param_);
+	}
+
 	std::string KawaiK3BCR2000::generateBCL(std::string const& presetName, MidiChannel knobkraftChannel, MidiChannel  k3Channel)
 	{
 		std::string result;
@@ -201,13 +222,12 @@ namespace midikraft {
 		TypedNamedValueSet result;
 		// Iterate over our definition and set the labels on the view to show the layout
 		for (auto def : k3Setup) {
-			auto k3def = dynamic_cast<KawaiK3BCR2000Definition*>(def);
-			if (k3def) {
-				auto param = KawaiK3Parameter::findParameter(k3def->param());
+			auto bcrdef = dynamic_cast<BCRGetParameterCapability*>(def);
+			if (bcrdef) {
+				auto param = bcrdef->parameter();
 				if (param) {
-					int encoder = encoderNumber(k3def);
-					if (encoder != -1 && parameterModel.hasValue(param->name())) {
-						view->setRotaryParam(encoder, parameterModel.typedNamedValueByName(param->name()).get());
+					if (parameterModel.hasValue(param->name())) {
+						view->setRotaryParam(def->encoderNumber(), parameterModel.typedNamedValueByName(param->name()).get());
 					}
 				}
 				else {
@@ -215,15 +235,29 @@ namespace midikraft {
 				}
 			}
 			else {
-				auto simpleDef = dynamic_cast<BCRStandardDefinitionWithName*>(def);
+				auto simpleDef = dynamic_cast<BCRNamedParameterCapability*>(def);
 				if (simpleDef) {
-					int button = buttonNumber(simpleDef);
+					int button = buttonNumber(def);
 					if (button != -1) {
 						view->setButtonParam(button, simpleDef->name());
 					}
 				}
 			}
 		}
+	}
+
+	KawaiK3BCRWaveDefinition::KawaiK3BCRWaveDefinition(int encoderNumber, int harmonicNumber) : CCBCRdefinition(BCRtype::ENCODER, encoderNumber, 40 + harmonicNumber, 0, 31), harmonic_(harmonicNumber)
+	{
+	}
+
+	std::string KawaiK3BCRWaveDefinition::name()
+	{
+		return (boost::format("Harmonic #%d") % harmonic_).str();
+	}
+
+	std::shared_ptr<midikraft::SynthParameterDefinition> KawaiK3BCRWaveDefinition::parameter()
+	{
+		return std::make_shared<KawaiK3DrawbarParameters>(harmonic_);
 	}
 
 }

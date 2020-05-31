@@ -573,7 +573,7 @@ namespace midikraft {
 	}
 
 	MidiChannel KawaiK3::getInputChannel() const
-	{
+	{	
 		return channel();
 	}
 
@@ -653,7 +653,34 @@ namespace midikraft {
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
 	}
 
-	void KawaiK3::setupBCR2000(BCR2000 &bcr) {
+	void KawaiK3::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
+	{
+		// We need to inspect if in there are any patch dumps are wave dump messages
+		MidiBuffer::Iterator it(buffer);
+		MidiMessage message;
+		int position;
+		auto midiOut = MidiController::instance()->getMidiOutput(midiOutput);
+		bool needsProgramChange = false;
+		while (it.getNextEvent(message, position)) {
+			// Suppress empty sysex messages, they seem to confuse vintage hardware (the Kawai K3 in particular)
+			if (message.isSysEx() && message.getSysExDataSize() == 0) continue;
+
+			// Special handling required for patch dumps and wave dumps!
+			if (isSingleProgramDump(message) || isWaveBufferDump(message)) {
+				needsProgramChange = true;
+			}
+		}
+		// Send the stuff
+		MidiBuffer messages;
+		if (needsProgramChange) {
+			messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), 1), 1); // Any program can be used
+			messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBased()), 2);
+		}
+		midiOut->sendBlockOfMessagesNow(buffer);
+		midiOut->sendBlockOfMessagesNow(messages);
+	}
+
+	void KawaiK3::setupBCR2000(BCR2000& bcr) {
 		if (!bcr.channel().isValid()) return;
 		if (!channel().isValid()) return;
 

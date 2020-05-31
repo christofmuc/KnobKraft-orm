@@ -16,7 +16,7 @@
 
 namespace midikraft {
 
-	class KawaiK3BCR2000Definition : public BCRStandardDefinition {
+	class KawaiK3BCR2000Definition : public BCRStandardDefinition, public BCRGetParameterCapability {
 	public:
 		KawaiK3BCR2000Definition(BCRtype type, int number, KawaiK3Parameter::Parameter param, BCRledMode ledMode = ONE_DOT) :
 			BCRStandardDefinition(type, number), param_(param), ledMode_(ledMode) {}
@@ -24,6 +24,8 @@ namespace midikraft {
 		virtual std::string generateBCR(int channel) const;
 
 		KawaiK3Parameter::Parameter param() const { return param_; }
+
+		std::shared_ptr<SynthParameterDefinition> parameter() override;
 
 	protected:
 		KawaiK3Parameter::Parameter param_;
@@ -38,6 +40,18 @@ namespace midikraft {
 
 	private:
 		CCBCRdefinition impl;
+	};
+
+	class KawaiK3BCRWaveDefinition : public CCBCRdefinition, public BCRNamedParameterCapability, public BCRGetParameterCapability {
+	public:
+		KawaiK3BCRWaveDefinition(int encoderNumber, int harmonicNumber);
+
+		virtual std::string name() override;
+
+		std::shared_ptr<SynthParameterDefinition> parameter() override;
+
+	private:
+		int harmonic_;
 	};
 
 
