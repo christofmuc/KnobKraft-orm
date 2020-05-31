@@ -37,11 +37,11 @@ Rev2
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
 
 K3
-* Drawbar Organ Waveform Generator
+* Drawbar Organ Waveform Generator - could use BCR2000!
 * BCR2000 template for editing the wave
 * Could render wave as Thumbnail
-* Generic Oscillator shape optimizer? 
 * Default name handling shaky
+* Generic Oscillator shape optimizer? Actually, this could be calculated via FFT
 * Allow dependencies between DataFiles (patch -> wave for K3)
 
 MKS80
@@ -49,6 +49,7 @@ MKS80
 * I guess just like the Wave in the K3?
 
 BCR2000
+* Should allow to load BCL files 
 * "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
 * Send to should block UI, as you really shouldn't click again while it is still sending
 * Need "cononical setup" for BCR2000 so it does not need to be reprogrammed when switching synths

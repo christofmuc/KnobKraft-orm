@@ -187,7 +187,8 @@ TypedNamedValueSet BCR2000_Component::createParameterModel() {
 				}
 			}
 			else {
-				jassertfalse;
+				//TODO What do we do with vector parameters?
+				//jassertfalse;
 			}
 		}
 	}
@@ -350,7 +351,7 @@ void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* so
 		auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
 		if (syncCap) {
 			int outValue;
-			midikraft::SynthParameterDefinition* param;
+			std::shared_ptr<midikraft::SynthParameterDefinition> param;
 			if (syncCap->determineParameterChangeFromSysex({ message }, &param, outValue)) {
 				papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param->name()), outValue, nullptr);
 			}
@@ -445,6 +446,7 @@ void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(Value
 				}
 			}
 		}
-		jassertfalse;
+		//TODO If you come here, that's not really an error but rather an unmapped parameter?
+		//jassertfalse;
 	}
 }
