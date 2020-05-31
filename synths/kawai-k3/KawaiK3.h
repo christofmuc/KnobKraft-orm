@@ -73,9 +73,6 @@ namespace midikraft {
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		virtual bool needsChannelSpecificDetection() override;
 
-		juce::MidiMessage createSetParameterMessage(KawaiK3Parameter *param, int paramValue);
-		juce::MidiMessage mapCCtoSysex(juce::MidiMessage const &ccMessage);
-
 		// Program Dump Capability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
@@ -102,7 +99,6 @@ namespace midikraft {
 		// Implementation of BCR2000 sync
 		virtual std::vector<std::string> presetNames() override;
 		virtual void setupBCR2000(BCR2000 &bcr) override;
-		virtual void syncDumpToBCR(MidiProgramNumber programNumber, BCR2000 &bcr) override;
 		virtual void setupBCR2000View(BCR2000Proxy* view, TypedNamedValueSet& parameterModel, ValueTree& valueTree) override;
 
 		// This needs to be overridden to handle the wave dumps together with the patch dumps

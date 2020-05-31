@@ -11,13 +11,10 @@
 #include "KawaiK3Wave.h"
 #include "KawaiK3_BCR2000.h"
 
-//#include "BCR2000.h"
-
 #include "Sysex.h"
 
 #include "Logger.h"
 #include "MidiController.h"
-//#include "SynthView.h"
 
 #include "MidiHelpers.h"
 #include "MidiProgramNumber.h"
@@ -209,12 +206,9 @@ namespace midikraft {
 	std::string KawaiK3::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		switch (bankNo.toZeroBased()) {
-		case 0:
-			return "Internal Bank";
-		case 1:
-			return "Cartridge";
-		default:
-			return "Invalid bank number";
+		case 0: return "Internal Bank";
+		case 1: return "Cartridge";
+		default: return "Invalid bank number";
 		}
 	}
 
@@ -573,25 +567,6 @@ namespace midikraft {
 	}
 
 
-	/*int getP(KawaiK3Parameter::Parameter param, Patch const &patch) {
-		auto synthParam = KawaiK3Parameter::findParameter(param);
-		if (synthParam != nullptr) {
-			return patch.value(*synthParam);
-		}
-		jassert(false);
-		return 0;
-	}
-
-	std::string getPasText(KawaiK3Parameter::Parameter param, Patch const &patch) {
-		auto synthParam = KawaiK3Parameter::findParameter(param);
-		if (synthParam != nullptr) {
-			auto value = patch.value(*synthParam);
-			return synthParam->valueAsText(value);
-		}
-		jassert(false);
-		return "error";
-	}*/
-
 	MidiChannel KawaiK3::getInputChannel() const
 	{
 		return channel();
@@ -672,61 +647,6 @@ namespace midikraft {
 		controller->enableMidiInput(midiInput());
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
 	}
-
-	/*void KawaiK3::retrieveWave(MidiController *controller, EditBufferHandler *handler, SimpleLogger *logger, SynthView *synthView) {
-		controller->enableMidiInput(midiInput());
-		auto handle = EditBufferHandler::makeOne();
-		KawaiK3::WaveType waveType = KawaiK3::WaveType::USER_WAVE;
-		handler->setNextEditBufferHandler(handle, [handler, handle, logger, controller, synthView, this](const juce::MidiMessage &message) {
-			if (isWaveBufferDump(message)) {
-				auto wave = waveFromSysex(message);
-				KawaiK3::WaveType type = static_cast<KawaiK3::WaveType>(message.getSysExData()[5]);
-				logger->postMessage((boost::format("Received %s from K3") % waveName(type)).str());
-
-				auto samples = Additive::createSamplesFromHarmonics(wave);
-
-				if (type == KawaiK3::WaveType::USER_WAVE_CARTRIDGE) {
-					synthView->displaySampledWave(1, samples);
-					// Done
-					handler->removeEditBufferHandler(handle);
-				}
-				else {
-					synthView->displaySampledWave(0, samples);
-
-					// Request next wave
-					type = static_cast<KawaiK3::WaveType>(((int)type) + 1);
-					logger->postMessage((boost::format("Requesting %s from K3") % waveName(type)).str());
-					auto requestMessage = requestWaveBufferDump(type);
-					controller->getMidiOutput(midiOutput())->sendMessageNow(requestMessage);
-				}
-			}
-		});
-		// Send request for user wave to K3
-		logger->postMessage((boost::format("Requesting %s from K3") % waveName(waveType)).str());
-		auto requestMessage = requestWaveBufferDump(waveType);
-		controller->getMidiOutput(midiOutput())->sendMessageNow(requestMessage);
-	}
-
-	void KawaiK3::sendK3Wave(MidiController *controller, EditBufferHandler *handler, SimpleLogger *logger, Patch *currentPatch, MidiMessage const &userWave)
-	{
-		auto handle = EditBufferHandler::makeOne();
-		handler->setNextEditBufferHandler(handle, [this, handle, controller, handler, logger, currentPatch](MidiMessage const &message) {
-			// Is this the write confirmation we are waiting for?
-			if (isWriteConfirmation(message)) {
-				handler->removeEditBufferHandler(handle);
-				logger->postMessage("Got wave write confirmation from K3");
-				if (dynamic_cast<KawaiK3Patch *>(currentPatch) != nullptr) {
-					// Interesting, the patch is a KawaiK3 patch - send it to the K3!
-					// Now... if the current patch is known and uses at least one user waveform oscillator, we want to make sure it is stored
-					// in the K3 and then issue a program change so the new user wave gets picked up!
-					//TODO - optimize and don't send when no oscillator uses user wave
-					sendPatchToSynth(controller, handler, logger, *currentPatch);
-				}
-			}
-		});
-		controller->enableMidiInput(midiInput());
-		controller->getMidiOutput(midiOutput())->sendMessageNow(userWave);
-	}*/
 
 
 	void KawaiK3::setupBCR2000(BCR2000 &bcr) {
