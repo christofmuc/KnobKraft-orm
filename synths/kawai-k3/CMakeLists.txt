@@ -42,6 +42,7 @@ set(Sources
 	KawaiK3Parameter.cpp KawaiK3Parameter.h  
 	KawaiK3Patch.cpp KawaiK3Patch.h                
 	KawaiK3Wave.cpp KawaiK3Wave.h
+	KawaiK3WaveParameter.cpp KawaiK3WaveParameter.h  
 	${RESOURCE_FILES}
 	README.md
 	LICENSE.md

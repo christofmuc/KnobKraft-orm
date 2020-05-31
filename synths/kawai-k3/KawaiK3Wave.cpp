@@ -7,7 +7,7 @@
 #include "KawaiK3Wave.h"
 
 #include "KawaiK3.h"
-#include "KawaiK3Parameter.h"
+#include "KawaiK3WaveParameter.h"
 
 namespace midikraft {
 
