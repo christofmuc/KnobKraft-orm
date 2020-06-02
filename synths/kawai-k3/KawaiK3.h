@@ -108,10 +108,6 @@ namespace midikraft {
 		std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const;
 		MidiMessage patchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const;
 
-		void retrieveWave();
-		void sendK3Wave(Patch *patch, MidiMessage const &userWave);
-
-		// Kawai K3 specifics
 		typedef std::vector<uint8> WaveData;
 
 		MidiMessage requestWaveBufferDump(WaveType waveType) const;
