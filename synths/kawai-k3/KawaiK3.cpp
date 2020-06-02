@@ -631,8 +631,19 @@ namespace midikraft {
 		//sendK3Wave(MidiController::instance(), MidiController::instance(), SimpleLogger::instance(), currentPatch, userWave);
 	}
 
-	void KawaiK3::sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) {
+	void KawaiK3::sendPatchToSynth(MidiController* controller, SimpleLogger* logger, std::shared_ptr<DataFile> dataFile) {
+		auto wave = std::dynamic_pointer_cast<KawaiK3Wave>(dataFile);
+		if (wave) {
+			logger->postMessage("Writing K3 user wave to the internal wave memory");
+		}
+		else {
+			logger->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
+		}
 		MidiBuffer messages = MidiHelpers::bufferFromMessages(dataFileToMessages(dataFile));
+		sendPatchToSynth(controller, logger, messages);
+	}
+
+	void KawaiK3::sendPatchToSynth(MidiController * controller, SimpleLogger * logger, MidiBuffer const &messages) {
 		auto secondHandler = MidiController::makeOneHandle();
 		MidiController::instance()->addMessageHandler(secondHandler, [this, logger, controller, secondHandler](MidiInput *source, MidiMessage const &message) {
 			ignoreUnused(source);
@@ -646,13 +657,6 @@ namespace midikraft {
 				// We ignore the result of these sends, just hope for the best
 			}
 		});
-		auto wave = std::dynamic_pointer_cast<KawaiK3Wave>(dataFile);
-		if (wave) {
-			logger->postMessage("Writing K3 user wave to the internal wave memory");
-		}
-		else {
-			logger->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
-		}
 		controller->enableMidiOutput(midiOutput());
 		controller->enableMidiInput(midiInput());
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
@@ -665,24 +669,32 @@ namespace midikraft {
 		MidiMessage message;
 		int position;
 		auto midiOut = MidiController::instance()->getMidiOutput(midiOutput);
-		bool needsProgramChange = false;
+		std::vector<MidiMessage> filtered;
+		std::shared_ptr<MidiMessage> patchToSend;
+		std::shared_ptr<MidiMessage> waveToSend;
 		while (it.getNextEvent(message, position)) {
 			// Suppress empty sysex messages, they seem to confuse vintage hardware (the Kawai K3 in particular)
 			if (message.isSysEx() && message.getSysExDataSize() == 0) continue;
 
 			// Special handling required for patch dumps and wave dumps!
-			if (isSingleProgramDump(message) || isWaveBufferDump(message)) {
-				needsProgramChange = true;
+			if (isSingleProgramDump(message)) {
+				patchToSend = std::make_shared<MidiMessage>(message);
+			}
+			else if (isWaveBufferDump(message)) {
+				waveToSend = std::make_shared<MidiMessage>(message);
+			}
+			else {
+				filtered.push_back(message);
 			}
 		}
-		// Send the stuff
-		MidiBuffer messages;
-		if (needsProgramChange) {
-			messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), 1), 1); // Any program can be used
-			messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBased()), 2);
+		// Send the filtered stuff
+		midiOut->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(filtered));
+		if (patchToSend) {
+			sendPatchToSynth(MidiController::instance(), SimpleLogger::instance(), MidiHelpers::bufferFromMessages({ *patchToSend }));
 		}
-		midiOut->sendBlockOfMessagesNow(buffer);
-		midiOut->sendBlockOfMessagesNow(messages);
+		if (waveToSend) {
+			sendPatchToSynth(MidiController::instance(), SimpleLogger::instance(), MidiHelpers::bufferFromMessages({ *waveToSend}));
+		}
 	}
 
 	void KawaiK3::setupBCR2000(BCR2000& bcr) {
