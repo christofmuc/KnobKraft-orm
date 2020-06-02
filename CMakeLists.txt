@@ -69,6 +69,9 @@ IF(WIN32)
 	ENDIF()
 ELSE()
 	set(PYTHON_EXECUTABLE "python3")
+	# Pybind11 has the tendency to enable link time optimization (LTO) when it runs on Linux, but sadly I have run into multiple compiler crashes
+	# both on gcc 8.5.0 and gcc 9.2.1. The hard core way to disable this is LDFLAGS=--disable-lto, but after looking at the CMakefiles from pybind11 this does archive-iterators:
+	set(PYBIND11_LTO_CXX_FLAGS "")
 ENDIF()
 set(PYBIND11_PYTHON_VERSION 3.6)
 add_subdirectory("third_party/pybind11")
