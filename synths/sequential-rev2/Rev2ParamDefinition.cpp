@@ -121,7 +121,7 @@ namespace midikraft {
 		return true;
 	}
 
-	MidiBuffer Rev2ParamDefinition::setValueMessages(DataFile const &patch, Synth const *synth) const
+	MidiBuffer Rev2ParamDefinition::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const
 	{
 		auto midiLocation = dynamic_cast<MidiLocationCapability const *>(synth);
 		if (midiLocation) {
@@ -131,7 +131,7 @@ namespace midikraft {
 				// Fall through
 			case SynthParameterDefinition::ParamType::INT: {
 				int value;
-				if (valueInPatch(patch, value)) {
+				if (valueInPatch(*patch, value)) {
 					return MidiRPNGenerator::generate(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse, value, true);
 				}
 			}
@@ -140,7 +140,7 @@ namespace midikraft {
 			case SynthParameterDefinition::ParamType::INT_ARRAY: {
 				MidiBuffer result;
 				std::vector<int> values;
-				if (valueInPatch(patch, values)) {
+				if (valueInPatch(*patch, values)) {
 					int idx = 0;
 					for (auto value : values) {
 						auto buffer = MidiRPNGenerator::generate(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse + idx, value, true);

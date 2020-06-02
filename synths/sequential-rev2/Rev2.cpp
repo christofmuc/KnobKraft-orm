@@ -327,7 +327,7 @@ namespace midikraft {
 					rev2param->setTargetLayer(targetLayer);
 					auto p = std::dynamic_pointer_cast<Patch>(patch);
 					if (p) {
-						allMessages.addEvents(rev2param->setValueMessages(*p, this), 0, -1, deltaTimeInSamples);
+						allMessages.addEvents(rev2param->setValueMessages(p, this), 0, -1, deltaTimeInSamples);
 						deltaTimeInSamples += 10;
 					}
 				}
