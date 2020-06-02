@@ -174,7 +174,12 @@ namespace midikraft {
 			if (dynamic_cast<KawaiK3BCR2000Definition*>(controller) == nullptr) {
 				channelToUse = k3Channel.toZeroBasedInt();
 			}
-			all_entries.push_back(std::make_pair(controller, controller->generateBCR(channelToUse)));
+			if (controller) {
+				all_entries.push_back(std::make_pair(controller, controller->generateBCR(channelToUse)));
+			}
+			else {
+				jassertfalse;
+			}
 		}
 		result += BCR2000::generateAllEncoders(all_entries);
 		result += BCR2000::generateBCRFooter(-1); //TODO - or should it go into a defined position? BCR2000_Preset_Positions::KAWAIK3);
