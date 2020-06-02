@@ -19,6 +19,7 @@
 #include "DetailedParametersCapability.h"
 #include "BidirectionalSyncCapability.h"
 #include "SendsProgramChangeCapability.h"
+#include "CreateInitPatchDataCapability.h"
 
 #include "MidiHelpers.h"
 
@@ -154,6 +155,18 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 			// Now attach a sysex generating listener to the values of the ValueTree
 			uiValueTree_.addListener(&updateSynthListener_);
 			uiValueTree_.addListener(&updateControllerListener_);
+
+			// This is a new synth - if a patch is loaded, we need to reset it
+			auto initPatch = dynamic_cast<midikraft::CreateInitPatchDataCapability*>(current->synth());
+			if (initPatch) {
+				// This synth comes equipped with an init patch, how useful. let's use that.
+				auto newPatch = current->synth()->patchFromPatchData(initPatch->createInitPatch(), MidiProgramNumber::fromZeroBase(0));
+				updateSynthListener_.updateAllKnobsFromPatch(newPatch);
+			}
+			else {
+				// No init patch defined for this synth, reset the previous patch in the listener should there be one
+				updateSynthListener_.updateAllKnobsFromPatch(nullptr);
+			}
 		}
 	}
 	else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_) {
@@ -163,32 +176,20 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 
 TypedNamedValueSet BCR2000_Component::createParameterModel() {
 	TypedNamedValueSet result;
-
 	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
 	if (detailedParameters) {
 		for (auto param : detailedParameters->allParameterDefinitions()) {
-			auto intParam = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
-			if (intParam) {
-				switch (param->type()) {
-				case midikraft::SynthParameterDefinition::ParamType::INT:
-					result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, intParam->minValue(), intParam->maxValue()));
-					break;
-				case midikraft::SynthParameterDefinition::ParamType::LOOKUP: {
-					std::map<int, std::string> lookup;
-					auto lookupCap = std::dynamic_pointer_cast<midikraft::SynthLookupParameterCapability>(param);
-					for (int i = intParam->minValue(); i <= intParam->maxValue(); i++) {
-						lookup.emplace(i, lookupCap->valueAsText(i));
-					}
-					result.push_back(std::make_shared<TypedNamedValue>(param->name(), "KawaiK3", 0, lookup));
-					break;
+			auto editorParam = std::dynamic_pointer_cast<midikraft::SynthParameterEditorCapability>(param);
+			if (editorParam) {
+				auto tnv = editorParam->makeTypedNamedValue();
+				if (tnv) {
+					tnv->value().setValue(tnv->maxValue() + 1); // Deliberately set an invalid value here to force the subsequent update to really refresh all listeners
+					// else, the caching of the ValueTree will not update null-valued properties leaving the UI in an inconsistent state.
+					result.push_back(tnv);
 				}
-				default:
+				else {
 					jassertfalse;
 				}
-			}
-			else {
-				//TODO What do we do with vector parameters?
-				//jassertfalse;
 			}
 		}
 	}
@@ -314,12 +315,12 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 				auto liveUpdater = std::dynamic_pointer_cast<midikraft::SynthParameterLiveEditCapability>(param);
 				if (liveUpdater) {
 					if (patch_) {
-						MidiBuffer messages = liveUpdater->setValueMessages(*patch_, UIModel::currentSynthOfPatch());
+						MidiBuffer messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
 						SimpleLogger::instance()->postMessage("Sending messages to synth");
 
 						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
 						if (location) {
-							midikraft::MidiController::instance()->getMidiOutput(location->midiOutput())->sendBlockOfMessagesNow(messages);
+							UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
 						}
 						else {
 							SimpleLogger::instance()->postMessage("Error: Synth does not provide location information, can't send data to it");
