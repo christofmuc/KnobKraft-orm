@@ -572,6 +572,11 @@ namespace midikraft {
 		return programNo_;
 	}
 
+	midikraft::Synth::PatchData KawaiK3::createInitPatch()
+	{
+		return KawaiK3Patch::createInitPatch()->data();
+	}
+
 	MidiChannel KawaiK3::getInputChannel() const
 	{	
 		return channel();

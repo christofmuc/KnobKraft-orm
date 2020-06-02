@@ -23,6 +23,7 @@
 #include "DetailedParametersCapability.h"
 #include "BidirectionalSyncCapability.h"
 #include "SendsProgramChangeCapability.h"
+#include "CreateInitPatchDataCapability.h"
 
 #include "SupportedByBCR2000.h" // Should be moved into the bidirectional sync?
 
@@ -37,7 +38,7 @@ namespace midikraft {
 
 	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
 		public DataFileLoadCapability, public DataFileSendCapability, public DetailedParametersCapability, public BidirectionalSyncCapability,
-		public SendsProgramChangeCapability,
+		public SendsProgramChangeCapability, public CreateInitPatchDataCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
 	public:
 		static const MidiProgramNumber kFakeEditBuffer;
@@ -138,7 +139,12 @@ namespace midikraft {
 		void gotProgramChange(MidiProgramNumber newNumber) override;
 		MidiProgramNumber lastProgramChange() const override;
 
+		// CreateInitPatchDataCapability
+		virtual Synth::PatchData createInitPatch() override;
+
 	private:
+		void sendPatchToSynth(MidiController* controller, SimpleLogger* logger, MidiBuffer const& messages);
+
 		friend class KawaiK3Control;
 		friend class KawaiK3Parameter;
 
