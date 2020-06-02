@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <string>
+#include "SynthParameterDefinition.h"
 
 namespace midikraft {
 
@@ -38,14 +38,14 @@ namespace midikraft {
 		virtual std::string generateBCR(int channel) const = 0;
 	};
 
-	class BCRStandardDefinitionWithName : public BCRStandardDefinition {
+	class BCRNamedParameterCapability {
 	public:
-		BCRStandardDefinitionWithName(BCRtype type, int encoderNumber, std::string const &name) : BCRStandardDefinition(type, encoderNumber), name_(name) {};
+		virtual std::string name() = 0;
+	};
 
-		virtual std::string name() { return name_; }
-
-	private:
-		std::string name_;
+	class BCRGetParameterCapability {
+	public:
+		virtual std::shared_ptr<SynthParameterDefinition> parameter() = 0;
 	};
 
 }
