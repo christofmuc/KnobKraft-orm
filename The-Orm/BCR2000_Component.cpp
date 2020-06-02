@@ -23,6 +23,8 @@
 
 #include "MidiHelpers.h"
 
+#include <boost/format.hpp>
+
 const char* kLastPathBCL = "lastPathBCL";
 
 // See https://www.sequencer.de/synth/index.php/B-Control-Tokenreferenz for the button layout info
@@ -316,10 +318,10 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 				if (liveUpdater) {
 					if (patch_) {
 						MidiBuffer messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
-						SimpleLogger::instance()->postMessage("Sending messages to synth");
-
 						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
 						if (location) {
+							SimpleLogger::instance()->postMessage((boost::format("Sending message to %s to update %s to new value %s")
+								% UIModel::currentSynthOfPatch()->getName() % param->name() % param->valueInPatchToText(*patch_)).str());
 							UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
 						}
 						else {
@@ -442,12 +444,9 @@ void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(Value
 						auto updateMessage = controllerSync->createParameterMessages(newValue, papa_->bcr2000_->channel());
 						midikraft::MidiController::instance()->getMidiOutput(papa_->bcr2000_->midiOutput())->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(updateMessage));
 					}
-					SimpleLogger::instance()->postMessage("Updating controller with message");
 					return;
 				}
 			}
 		}
-		//TODO If you come here, that's not really an error but rather an unmapped parameter?
-		//jassertfalse;
 	}
 }
