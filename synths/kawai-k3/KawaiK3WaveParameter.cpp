@@ -75,7 +75,7 @@ namespace midikraft {
 			for (int i = 34; i < 64 + 34; i += 2) {
 				int harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
-					outValue = patch.data()[i] + 1;
+					outValue = patch.data()[i + 1];
 					return true;
 				}
 			}
@@ -86,7 +86,7 @@ namespace midikraft {
 			for (int i = 0; i < 64; i += 2) {
 				int harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
-					outValue = patch.data()[i] + 1;
+					outValue = patch.data()[i + 1];
 					return true;
 				}
 			}
