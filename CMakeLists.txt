@@ -48,6 +48,7 @@ IF (WIN32)
 	FetchContent_MakeAvailable(pythonembedded)
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
+	find_package(ICU REQUIRED data uc)
 	SET(APPLE_BOOST Boost::boost)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
