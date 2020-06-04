@@ -35,7 +35,7 @@ target_include_directories(midikraft-access-virus PUBLIC ${CMAKE_CURRENT_LIST_DI
 if(WIN32)
 	target_link_directories(midikraft-access-virus PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(midikraft-access-virus juce-utils midikraft-base)
+target_link_libraries(midikraft-access-virus juce-utils midikraft-base ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)
