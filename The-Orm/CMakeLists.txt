@@ -72,6 +72,12 @@ IF(WIN32)
 		SQLiteCpp
 		sqlite3
 		)
+ELSEIF(APPLE)
+	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+		icuuc
+		SQLiteCpp
+		sqlite3
+		)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
