@@ -8,6 +8,14 @@ cmake_minimum_required(VERSION 3.14)
 
 project(KnobKraft_Orm)
 
+# Since we also build MacOS, we need C++ 17. Which is not a bad thing.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+
+# To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
+option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
+
 # On Windows, we need to download external dependencies
 IF (WIN32)
 	# Include useful scripts for CMake    
@@ -38,6 +46,12 @@ IF (WIN32)
 		URL https://www.python.org/ftp/python/3.6.8/python-3.6.8-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
+ELSEIF(APPLE)
+	# Supress a warning from juce_TargetPlatform by letting it know the build type
+	# NOTE that NDEBUG is set automatically in Release
+	if (NOT CMAKE_BUILD_TYPE MATCHES Release)
+		add_compile_definitions(DEBUG)
+	endif()	
 ELSEIF(UNIX)
 	# Include useful scripts for CMake
 	find_package(PkgConfig REQUIRED) 

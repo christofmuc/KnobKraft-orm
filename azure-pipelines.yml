@@ -58,3 +58,9 @@ jobs:
         cmake --build build --config Release
       displayName: Build with CMake for Linux
       condition: variables.isLinux
+      
+    # Mac build uses bash as well
+    - bash: |
+        brew install cmake gtk+3 glew
+        cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+        cmake --build builds/release -j8
