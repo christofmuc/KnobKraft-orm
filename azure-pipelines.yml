@@ -61,6 +61,9 @@ jobs:
       
     # Mac build uses bash as well
     - bash: |
-        brew install cmake gtk+3 glew
+        brew install gtk+3 glew boost
         cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
         cmake --build builds/release -j8
+      displayName: Build with CMake for Mac
+      condition: variables.isMac
+        
