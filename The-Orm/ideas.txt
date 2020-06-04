@@ -1,6 +1,11 @@
 Completely unprioritised list of things to do
 =============================================
 
+
+Mac
++ Get it to compile in Azure
+
+
 Before next release
 +
 
@@ -153,6 +158,7 @@ More synthesizers
 
 	+ Behringer RD 8
 	+ Novation Circuit
+	+ Korg DW6000 just because it is nearly identical to the DW8000 (different ID, and less bytes per patch)
 
 Requested on Reddit
 
