@@ -39,7 +39,7 @@ if(WIN32)
 	target_link_directories(midikraft-oberheim-matrix1000 PUBLIC "${icu_SOURCE_DIR}/lib64")
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base)
 ELSE()
-	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base icudata icuuc)
+	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base icudata icuuc ${APPLE_BOOST})
 ENDIF()
 
 # Pedantic about warnings
