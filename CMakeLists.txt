@@ -47,6 +47,9 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 ELSEIF(APPLE)
+	find_package(Boost REQUIRED)
+	SET(APPLE_BOOST Boost::boost)
+
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
 	# NOTE that NDEBUG is set automatically in Release
 	if (NOT CMAKE_BUILD_TYPE MATCHES Release)

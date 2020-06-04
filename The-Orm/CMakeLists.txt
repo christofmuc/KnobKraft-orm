@@ -77,6 +77,7 @@ ELSEIF(APPLE)
 		icuuc
 		SQLiteCpp
 		sqlite3
+		${APPLE_BOOST}
 		)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
