@@ -74,7 +74,7 @@ IF(WIN32)
 		)
 ELSEIF(APPLE)
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
-		icuuc
+		ICU::data ICU::uc
 		SQLiteCpp
 		sqlite3
 		${APPLE_BOOST}
