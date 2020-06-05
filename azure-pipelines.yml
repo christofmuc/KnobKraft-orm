@@ -62,9 +62,14 @@ jobs:
     # Mac build uses bash as well
     # No need to brew icu4c cmake as they are already present on Azure mac
     - bash: |
-        brew install gtk+3 glew boost 
+        brew install gtk+3 glew boost create-dmg
         cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
         cmake --build builds/release -j8
+        create-dmg --volname "KnobKraft Orm Installer" --hdiutil-verbose KnobKraft-orm.dmg builds/release
       displayName: Build with CMake for Mac
+      condition: variables.isMac
+    - publish:$(System.DefaultWorkingDirectory)/KnobKraft-orm.dmg
+      displayName: Publish Mac Installer
+      artifact: MacInstaller
       condition: variables.isMac
         
