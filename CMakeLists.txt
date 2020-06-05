@@ -48,6 +48,8 @@ IF (WIN32)
 	FetchContent_MakeAvailable(pythonembedded)
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
+
+	list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/icu4c")	
 	find_package(ICU REQUIRED data uc)
 	SET(APPLE_BOOST Boost::boost)
 
