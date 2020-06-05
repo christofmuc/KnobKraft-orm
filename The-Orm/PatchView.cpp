@@ -383,7 +383,7 @@ public:
 		database_(database), patchesLoaded_(patchesLoaded), finished_(successHandler) {
 	}
 
-	void run() {
+	virtual void run() override {
 		std::vector<midikraft::PatchHolder> outNewPatches;
 		if (patchesLoaded_.size() == 0) {
 			SimpleLogger::instance()->postMessage("No patches contained in data, nothing to upload.");

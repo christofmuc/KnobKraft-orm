@@ -184,6 +184,9 @@ MainComponent::MainComponent() :
 		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
 		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
 		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
+		default:
+			SimpleLogger::instance()->postMessage("Error - invalid keyboard macro event detected");
+			return;
 		}
 		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
 	});
