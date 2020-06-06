@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.5.0)
+project(KnobKraftOrm VERSION 1.6.0)
 
 find_package(JUCE REQUIRED 
 	COMPONENTS 
@@ -40,6 +40,7 @@ set(SOURCES
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
+	win_resources.rc
 	version.cpp.in
 	setup.iss
 	ideas.txt
