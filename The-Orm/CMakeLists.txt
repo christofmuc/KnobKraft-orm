@@ -64,7 +64,7 @@ set(MIDIKRAFT_LIBRARIES
 		pytschirp_embedded
 )
 
-add_executable(KnobKraftOrm WIN32 ${SOURCES})
+add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${SOURCES})
 target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
@@ -78,6 +78,10 @@ ELSEIF(APPLE)
 		SQLiteCpp
 		sqlite3
 		${APPLE_BOOST}
+		)
+	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft-Orm-${KnobKraftOrm_VERSION}"
+		#MACOSX_BUNDLE_ICON_FILE resources/
+		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
 		)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
