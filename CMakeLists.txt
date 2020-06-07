@@ -57,7 +57,11 @@ ELSEIF(APPLE)
 	# NOTE that NDEBUG is set automatically in Release
 	if (NOT CMAKE_BUILD_TYPE MATCHES Release)
 		add_compile_definitions(DEBUG)
-	endif()	
+	endif()
+ 
+    
+    # The JUCE font rendering is really fat on macOS, let us try to disable this flag
+    add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
 	# Include useful scripts for CMake
 	find_package(PkgConfig REQUIRED) 
