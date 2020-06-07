@@ -33,9 +33,10 @@ public:
 	MainComponent();
     ~MainComponent();
 
-    virtual void resized() override;
+	virtual void resized() override;
 
 private:
+	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
 	File getAutoCategoryFile() const;
