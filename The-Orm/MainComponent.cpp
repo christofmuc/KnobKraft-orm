@@ -268,7 +268,7 @@ void MainComponent::setAcceptableGlobalScaleFactor() {
 	auto availableHeight = Desktop::getInstance().getDisplays().getMainDisplay().userArea.getHeight();
 	float goodScale = 1.0f;
 	for (auto scale : scales) {
-		if (availableHeight * scale < 1024) {
+		if (availableHeight > 1024*scale) {
 			goodScale = scale;
 		}
 	}
