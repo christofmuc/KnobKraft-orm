@@ -157,14 +157,14 @@ IF(APPLE)
     # This is supposed to build a relocatable macOS DMG installer when you specify the
     # --target package
     SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
-    SET(APPS "${MY_RELEASE_DIR}/KnobKraftOrm.app")
+    SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
+    SET(DIRS ${CMAKE_BINARY_DIR})
     INSTALL(TARGETS KnobKraftOrm
-        BUNDLE DESTINATION ${MY_RELEASE_DIR} COMPONENT Runtime
+        BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
         )
     
-    INSTALL(CODE "
-    include(BundleUtilities)
+    INSTALL(CODE "include(BundleUtilities)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
     " COMPONENT Runtime)
     
