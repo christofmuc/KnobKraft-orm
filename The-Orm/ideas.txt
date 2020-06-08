@@ -2,7 +2,7 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-+
++ Fix adaptions location
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -11,6 +11,19 @@ BUGS
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Scripted Query
+* Editor
+* Audio prehear
+
+Stability
++ Add minidump library to get crashes. Or even internet based feedback?
++ Crash reporting? https://partner.microsoft.com/en-us/dashboard/desktop/overview https://docs.microsoft.com/en-us/windows/win32/appxpkg/windows-desktop-application-program
+  - https://support.backtrace.io/hc/en-us/articles/360040516131-Crashpad-Integration-Guide
+  - https://partner.microsoft.com/en-US/dashboard/Account/CertificateUpload?accountprogram=win32&callbackUri=/en-US/dashboard/desktop/overview
+  - https://drdump.com/crash-reporting-system
+  - https://appcenter.ms/apps/create
++ Code signing
+  - https://shop.globalsign.com/de-de/code-signing
+  - https://secure.ssl.com/orders/new
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
@@ -46,6 +59,9 @@ BCR2000
 * Need "cononical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
+
+Pro 3
++ Has 8 banks of 128 patches each, called U1-U4 and F1-F4, not 10 times 100 like the Pro 8 
 
 Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
@@ -90,6 +106,7 @@ Advanced Queries
 * Could use advanced query builder, where you select properties and enter them (that was called QBE at some point)
 
 Global settings 
+* Settings still sends out too many updates - should adapt dual listener strategy like in Editor
 * Could show nice text instead of empty page
 
 Alternate Tunings
@@ -154,3 +171,7 @@ Librarian for other stuff (should rather do with adaption?)
 
 	+ Meris pedal
 
+MacOS X installer
+  + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
+  + Helpful: https://github.com/ionyshch/cmake-bundle-macos/blob/master/CMakeLists.txt https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Configuration
+  + or should i go the pkg route: https://medium.com/swlh/the-easiest-way-to-build-macos-installer-for-your-application-34a11dd08744

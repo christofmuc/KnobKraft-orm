@@ -58,3 +58,18 @@ jobs:
         cmake --build build --config Release
       displayName: Build with CMake for Linux
       condition: variables.isLinux
+      
+    # Mac build uses bash as well
+    # No need to brew icu4c cmake as they are already present on Azure mac
+    - bash: |
+        brew install gtk+3 glew boost
+        cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+        cmake --build builds/release --target package -j8        
+      displayName: Build with CMake for Mac
+      condition: variables.isMac
+      
+    - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.6.0-Darwin.dmg
+      displayName: Publish Mac Installer
+      artifact: MacInstaller
+      condition: variables.isMac
+        
