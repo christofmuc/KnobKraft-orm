@@ -165,6 +165,7 @@ IF(APPLE)
         )
     
     INSTALL(CODE "include(BundleUtilities)
+	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
     " COMPONENT Runtime)
     
