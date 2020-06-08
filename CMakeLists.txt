@@ -118,8 +118,9 @@ IF(UNIX)
 	add_definitions(-fPIC)
 ENDIF()
 
-# Include the SQLite wrapper for MidiKraft-database
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp)
+# Include the SQLite wrapper for MidiKraft-database. The EXCLUDE_FROM_ALL is to prevent it from adding to the
+# CPack installer on macOS.
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_ALL)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
