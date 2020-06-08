@@ -62,7 +62,7 @@ jobs:
     # Mac build uses bash as well
     # No need to brew icu4c cmake as they are already present on Azure mac
     - bash: |
-        brew install gtk+3 glew boost create-dmg
+        brew install gtk+3 glew boost
         cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
         cmake --build builds/release --target package -j8        
       displayName: Build with CMake for Mac
