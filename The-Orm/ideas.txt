@@ -2,7 +2,7 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-+
++ Fix adaptions location
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -171,3 +171,7 @@ Librarian for other stuff (should rather do with adaption?)
 
 	+ Meris pedal
 
+MacOS X installer
+  + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
+  + Helpful: https://github.com/ionyshch/cmake-bundle-macos/blob/master/CMakeLists.txt https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Configuration
+  + or should i go the pkg route: https://medium.com/swlh/the-easiest-way-to-build-macos-installer-for-your-application-34a11dd08744
