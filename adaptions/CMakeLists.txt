@@ -18,6 +18,7 @@ IF(NOT DEFINED JUCE_LIBRARIES)
 			juce_audio_basics
 			juce_audio_devices
 			juce_data_structures
+			juce_gui_basics
 	)
 ENDIF()
 
@@ -32,7 +33,9 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
 
 # Define the sources for the static library
 set(Sources
+	BundledAdaption.cpp BundledAdaption.h
 	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	CreateNewAdaptionDialog.cpp CreateNewAdaptionDialog.h
 	GenericAdaption.cpp GenericAdaption.h
 	PythonUtils.cpp PythonUtils.h
 	${adaption_files}

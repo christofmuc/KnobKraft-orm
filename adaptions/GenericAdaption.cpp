@@ -12,7 +12,7 @@
 
 #include "PythonUtils.h"
 #include "Settings.h"
-#include "CompiledAdaptions.h"
+#include "BundledAdaption.h"
 
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
@@ -138,7 +138,7 @@ namespace knobkraft {
 		adaption_module = adaptionModule;
 	}
 
-	std::shared_ptr<GenericAdaption> GenericAdaption::fromBinaryCode(std::string const &moduleName, const char *adaptionCode)
+	std::shared_ptr<GenericAdaption> GenericAdaption::fromBinaryCode(std::string const &moduleName, std::string const &adaptionCode)
 	{
 		try {
 			ScopedLock lock(GenericAdaption::multiThreadGuard);
@@ -199,7 +199,7 @@ namespace knobkraft {
 		Settings::instance().set(kUserAdaptionsFolderSettingsKey, directory);
 	}
 
-	bool GenericAdaption::createCompiledAdaptionModule(const char *pythonModuleName, const char *adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+	bool GenericAdaption::createCompiledAdaptionModule(std::string const &pythonModuleName, std::string const &adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
 		auto newAdaption = GenericAdaption::fromBinaryCode(pythonModuleName, adaptionCode);
 		if (newAdaption) {
 			// Now we need to check the name of the compiled adaption just created, and if it is already present. If yes, don't add it but rather issue a warning
@@ -235,15 +235,9 @@ namespace knobkraft {
 		}
 
 		// Then, iterate over the list of built-in adaptions and add those which are not present in the directory
-		createCompiledAdaptionModule("DSI_Pro_2", (const char*)DSI_Pro_2_py, result);
-		createCompiledAdaptionModule("DSI_Prophet_08", (const char*)DSI_Prophet_08_py, result);
-		createCompiledAdaptionModule("DSI_Prophet_12", (const char*)DSI_Prophet_12_py, result);
-		createCompiledAdaptionModule("Matrix_6", (const char*)Matrix_6_py, result);
-		createCompiledAdaptionModule("Matrix_1000", (const char*)Matrix1000_py, result);
-		createCompiledAdaptionModule("Pioneer_Toraiz_AS1", (const char*)PioneerToraiz_AS1_py, result);
-		createCompiledAdaptionModule("Roland_JX_8P", (const char*)Roland_JX_8P_py, result);
-		createCompiledAdaptionModule("Sequential_Pro_3", (const char*)Sequential_Pro_3_py, result);
-		createCompiledAdaptionModule("Sequential_Prophet_6", (const char*)Sequential_Prophet_6_py, result);
+		for (auto const &b : gBundledAdaptions()) {
+			createCompiledAdaptionModule(b.pythonModuleName, b.adaptionSourceCode, result);
+		}
 		return result;
 	}
 

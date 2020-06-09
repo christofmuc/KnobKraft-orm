@@ -14,12 +14,11 @@
 
 namespace knobkraft {
 
-
 	class GenericAdaption : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, public midikraft::EditBufferCapability, public midikraft::ProgramDumpCabability {
 	public:
 		GenericAdaption(std::string const &pythonModuleFilePath);
 		GenericAdaption(pybind11::module adaption_module);
-		static std::shared_ptr<GenericAdaption> fromBinaryCode(std::string const &moduleName, const char *adaptionCode);
+		static std::shared_ptr<GenericAdaption> fromBinaryCode(std::string const &moduleName, std::string const &adaptionCode);
 
 		// This needs to be implemented, and never changed, as the result is used as a primary key in the database to store the patches
 		std::string getName() const override;
@@ -69,7 +68,7 @@ namespace knobkraft {
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;
 
 		// Helper function for adding the built-in adaptions
-		static bool createCompiledAdaptionModule(const char *pythonModuleName, const char *adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
+		static bool createCompiledAdaptionModule(std::string const &pythonModuleName, std::string const &adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
