@@ -11,7 +11,7 @@
 #include "Sysex.h"
 
 #include "PythonUtils.h"
-
+#include "Settings.h"
 #include "CompiledAdaptions.h"
 
 #include <pybind11/stl.h>
@@ -23,6 +23,8 @@ namespace py = pybind11;
 #include <boost/format.hpp>
 
 namespace knobkraft {
+
+	const char *kUserAdaptionsFolderSettingsKey = "user_adaptions_folder";
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptionPythonEmbeddedGuard;
 	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptionPyOutputRedirect;
@@ -180,8 +182,21 @@ namespace knobkraft {
 
 	juce::File GenericAdaption::getAdaptionDirectory()
 	{
-		// Should I make this configurable?
-		return File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/KnobKraft-orm-adaptions");
+		// Calculate default location - as Linux does not guarantee to provide a Documents folder, rather use the user's home directory
+		File adaptionsDefault = File(File::getSpecialLocation(File::userHomeDirectory)).getChildFile("KnobKraft-Adaptions");
+		auto adaptionsDirectory = Settings::instance().get(kUserAdaptionsFolderSettingsKey, adaptionsDefault.getFullPathName().toStdString());
+
+		File adaptionsDir(adaptionsDirectory);
+		if (!adaptionsDir.exists()) {
+			adaptionsDir.createDirectory();
+		}
+		return  adaptionsDir;
+	}
+
+	void GenericAdaption::setAdaptionDirectoy(std::string const &directory)
+	{
+		// This will only become active after a restart of the application, as I don't know how to properly clean the Python runtime.
+		Settings::instance().set(kUserAdaptionsFolderSettingsKey, directory);
 	}
 
 	bool GenericAdaption::createCompiledAdaptionModule(const char *pythonModuleName, const char *adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {

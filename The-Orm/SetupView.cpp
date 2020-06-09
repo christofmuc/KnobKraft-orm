@@ -12,6 +12,7 @@
 #include "Logger.h"
 #include "AutoDetection.h"
 #include "Settings.h"
+#include "GenericAdaption.h"
 
 #include "UIModel.h"
 
@@ -50,6 +51,14 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 			{
 			"synthDetection", {0, "Re-check connectivity", [this]() {
 				quickConfigure();
+			} } },
+			{
+			"selectAdaptionDirectory", {1, "Set User Adaption Dir", [this]() {
+				FileChooser directoryChooser("Please select the directory to store your user adaptions...", File(knobkraft::GenericAdaption::getAdaptionDirectory()));
+				if (directoryChooser.browseForDirectory()) {
+					knobkraft::GenericAdaption::setAdaptionDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
+					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptions directory will only be used after a restart of the application!");
+				}
 			} } }
 		});
 	addAndMakeVisible(functionButtons_);

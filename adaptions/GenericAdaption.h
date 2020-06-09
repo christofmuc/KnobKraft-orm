@@ -54,8 +54,13 @@ namespace knobkraft {
 		bool isOwnSysex(MidiMessage const &message) const override;
 
 		// Internal workings of the Generic Adaption module
+
+		// Call this once before using any other function
 		static void startupGenericAdaption();
+		// Get the current adaption directory, this is a configurable property with default
 		static File getAdaptionDirectory();
+		// Configure the adaption directory
+		static void setAdaptionDirectoy(std::string const &directory);
 		
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptions();
 		static CriticalSection multiThreadGuard;
