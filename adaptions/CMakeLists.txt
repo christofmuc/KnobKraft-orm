@@ -21,26 +21,26 @@ IF(NOT DEFINED JUCE_LIBRARIES)
 	)
 ENDIF()
 
-# Define the shipped adaptions
-set(Adaptions		
-	 "Matrix1000.py"
-	 "Matrix 6.py"
-	 "PioneerToraiz-AS1.py"
-	 "Roland JX-8P.py"
-	 "DSI Pro 2.py"
-	 "Sequential Pro 3.py"
-	 "DSI Prophet 08.py"
-	 "DSI Prophet 12.py"
-	 "Sequential Prophet 6.py"
-)
-
 file(GLOB adaption_files "${CMAKE_CURRENT_LIST_DIR}/*.py")
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
+	DEPENDS ${adaption_files}
+	COMMENT "Compiling binary resources"
+	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+)
 
 # Define the sources for the static library
 set(Sources
+	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
 	GenericAdaption.cpp GenericAdaption.h
 	PythonUtils.cpp PythonUtils.h
-	${Adaptions}
+	${adaption_files}
+)
+
+set_source_files_properties(
+	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	PROPERTIES GENERATED TRUE
 )
 
 # Setup library
@@ -59,17 +59,3 @@ else()
     # lots of warnings and all warnings as errors
     #target_compile_options(knobkraft-generic-adaption PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
-
-# Copy to documents directory, because this is where the exectuable after installation wants them to load from
-if (WIN32)
-	set(ADAPTION_DIRECTORY_PROD $ENV{USERPROFILE}/Documents/KnobKraft-orm-adaptions)
-else()
-	set(ADAPTION_DIRECTORY_PROD $ENV{HOME}/KnobKraft-orm-adaptions)
-endif()
-foreach (globalFile ${adaption_files})
-	get_filename_component(file ${globalFile} NAME)	
-	add_custom_command(
-		OUTPUT ${ADAPTION_DIRECTORY_PROD}/${file}
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${ADAPTION_DIRECTORY_PROD}/${file}
-		MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${file})
-endforeach()
