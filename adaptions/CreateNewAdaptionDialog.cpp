@@ -7,6 +7,7 @@
 #include "CreateNewAdaptionDialog.h"
 
 #include "BundledAdaption.h"
+#include "GenericAdaption.h"
 
 namespace knobkraft {
 
@@ -60,9 +61,41 @@ namespace knobkraft {
 		ignoreUnused(window);
 	}
 
+	bool CreateNewAdaptionDialog::createNewAdaption() {
+		int selected = template_.getSelectedItemIndex();
+		if (selected == -1) {
+			jassertfalse;
+			return false;
+		}
+
+		auto adaption = gBundledAdaptions()[selected];
+
+		auto dir = GenericAdaption::getAdaptionDirectory();
+
+		// Copy out source code
+		File target = dir.getChildFile(adaption.pythonModuleName + ".py");
+		if (target.exists()) {
+			juce::AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "File exists", "There is already a file for this adaption, which we will not overwrite.");
+			return false;
+		}
+		
+		FileOutputStream out(target);
+#if WIN32
+		out.writeText(adaption.adaptionSourceCode, false, false, "\r\n");
+#else
+		out.writeText(adaption.adaptionSourceCode, false, false, "\n");
+#endif
+		return true;
+	}
+
 	void CreateNewAdaptionDialog::buttonClicked(Button* button)
 	{
 		if (button == &ok_) {
+
+			if (!createNewAdaption()) {
+				return;
+			}
+
 			if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
 				dw->exitModalState(1);
 			}

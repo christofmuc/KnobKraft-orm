@@ -20,6 +20,7 @@ namespace knobkraft {
 
 	private:
 		void buttonClicked(Button*) override;
+		bool createNewAdaption();
 
 		ComboBox template_;
 		Label text_;
