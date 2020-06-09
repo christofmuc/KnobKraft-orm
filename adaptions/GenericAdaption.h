@@ -56,11 +56,15 @@ namespace knobkraft {
 		// Internal workings of the Generic Adaption module
 		static void startupGenericAdaption();
 		static File getAdaptionDirectory();
+		
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptions();
 		static CriticalSection multiThreadGuard;
 
 	private:
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;
+
+		// Helper function for adding the built-in adaptions
+		static bool createCompiledAdaptionModule(const char *pythonModuleName, const char *adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
 		static std::vector<int> messageToVector(MidiMessage const &message);

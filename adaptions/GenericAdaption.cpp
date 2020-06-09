@@ -144,11 +144,10 @@ namespace knobkraft {
 			checkForPythonOutputAndLog();
 			auto adaption_module = types.attr("ModuleType")(moduleName); // Create an empty module with the right name
 			checkForPythonOutputAndLog();
-			py::dict definitions;
 			py::exec(adaptionCode, py::globals(), adaption_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
 			checkForPythonOutputAndLog();
 			auto newAdaption = std::make_shared<GenericAdaption>(py::cast<py::module>(adaption_module));
-			if (newAdaption) newAdaption->logNamespace();
+			//if (newAdaption) newAdaption->logNamespace();
 			return newAdaption;
 		}
 		catch (py::error_already_set &ex) {
@@ -166,7 +165,7 @@ namespace knobkraft {
 			}
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure inspecting python modul: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure inspecting python module: %s") % ex.what()).str());
 		}
 	}
 
@@ -185,6 +184,29 @@ namespace knobkraft {
 		return File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/KnobKraft-orm-adaptions");
 	}
 
+	bool GenericAdaption::createCompiledAdaptionModule(const char *pythonModuleName, const char *adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+		auto newAdaption = GenericAdaption::fromBinaryCode(pythonModuleName, adaptionCode);
+		if (newAdaption) {
+			// Now we need to check the name of the compiled adaption just created, and if it is already present. If yes, don't add it but rather issue a warning
+			auto newAdaptionName = newAdaption->getName();
+			if (newAdaptionName != "invalid") {
+				for (auto existing : outAddToThis) {
+					if (existing->getName() == newAdaptionName) {
+						SimpleLogger::instance()->postMessage((boost::format("Overriding built-in adaption %s (found in user directory %s)")
+							% newAdaptionName % getAdaptionDirectory().getFullPathName().toStdString()).str());
+						return false;
+					}
+				}
+				outAddToThis.push_back(newAdaption);
+			}
+			else {
+				jassertfalse;
+				SimpleLogger::instance()->postMessage("Program error: built-in adaption " + std::string(pythonModuleName) + " failed to report name");
+			}
+		}
+		return false;
+	}
+
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
 	{
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
@@ -198,7 +220,15 @@ namespace knobkraft {
 		}
 
 		// Then, iterate over the list of built-in adaptions and add those which are not present in the directory
-		result.push_back(GenericAdaption::fromBinaryCode("DSI_Pro_2", (const char*)DSI_Pro_2_py));
+		createCompiledAdaptionModule("DSI_Pro_2", (const char*)DSI_Pro_2_py, result);
+		createCompiledAdaptionModule("DSI_Prophet_08", (const char*)DSI_Prophet_08_py, result);
+		createCompiledAdaptionModule("DSI_Prophet_12", (const char*)DSI_Prophet_12_py, result);
+		createCompiledAdaptionModule("Matrix_6", (const char*)Matrix_6_py, result);
+		createCompiledAdaptionModule("Matrix_1000", (const char*)Matrix1000_py, result);
+		createCompiledAdaptionModule("Pioneer_Toraiz_AS1", (const char*)PioneerToraiz_AS1_py, result);
+		createCompiledAdaptionModule("Roland_JX_8P", (const char*)Roland_JX_8P_py, result);
+		createCompiledAdaptionModule("Sequential_Pro_3", (const char*)Sequential_Pro_3_py, result);
+		createCompiledAdaptionModule("Sequential_Prophet_6", (const char*)Sequential_Prophet_6_py, result);
 		return result;
 	}
 
