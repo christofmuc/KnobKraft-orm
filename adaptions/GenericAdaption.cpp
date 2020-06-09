@@ -12,6 +12,8 @@
 
 #include "PythonUtils.h"
 
+#include "CompiledAdaptions.h"
+
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
 #include <memory>
@@ -129,6 +131,45 @@ namespace knobkraft {
 		}
 	}
 
+	GenericAdaption::GenericAdaption(pybind11::module adaptionModule)
+	{
+		adaption_module = adaptionModule;
+	}
+
+	std::shared_ptr<GenericAdaption> GenericAdaption::fromBinaryCode(std::string const &moduleName, const char *adaptionCode)
+	{
+		try {
+			ScopedLock lock(GenericAdaption::multiThreadGuard);
+			auto types = py::module::import("types");
+			checkForPythonOutputAndLog();
+			auto adaption_module = types.attr("ModuleType")(moduleName); // Create an empty module with the right name
+			checkForPythonOutputAndLog();
+			py::dict definitions;
+			py::exec(adaptionCode, py::globals(), adaption_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
+			checkForPythonOutputAndLog();
+			auto newAdaption = std::make_shared<GenericAdaption>(py::cast<py::module>(adaption_module));
+			if (newAdaption) newAdaption->logNamespace();
+			return newAdaption;
+		}
+		catch (py::error_already_set &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure loading python module %s: %s") % moduleName % ex.what()).str());
+		}
+		return nullptr;
+	}
+
+	void GenericAdaption::logNamespace() {
+		try {
+			auto name = py::cast<std::string>(adaption_module.attr("__name__"));
+			auto moduleDict = adaption_module.attr("__dict__");
+			for (auto a : moduleDict) {
+				SimpleLogger::instance()->postMessage("Found in " + name + " attribute " + py::cast<std::string>(a));
+			}
+		}
+		catch (py::error_already_set &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure inspecting python modul: %s") % ex.what()).str());
+		}
+	}
+
 	void GenericAdaption::startupGenericAdaption()
 	{
 		sGenericAdaptionPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
@@ -147,12 +188,17 @@ namespace knobkraft {
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
 	{
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
+
+		// First, load user defined adaptions from the directory
 		File adaptionDirectory = getAdaptionDirectory();
 		if (adaptionDirectory.exists()) {
 			for (auto f : adaptionDirectory.findChildFiles(File::findFiles, false, "*.py")) {
 				result.push_back(std::make_shared<GenericAdaption>(f.getFileNameWithoutExtension().toStdString()));
 			}
 		}
+
+		// Then, iterate over the list of built-in adaptions and add those which are not present in the directory
+		result.push_back(GenericAdaption::fromBinaryCode("DSI_Pro_2", (const char*)DSI_Pro_2_py));
 		return result;
 	}
 
@@ -344,7 +390,7 @@ namespace knobkraft {
 	std::vector<juce::MidiMessage> GenericAdaption::patchToProgramDumpSysex(const midikraft::Patch &patch) const
 	{
 		// For the Generic Adaption, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-		return { MidiMessage(patch.data().data(), (int) patch.data().size()) };
+		return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
 	}
 
 	std::string GenericAdaption::getName() const
