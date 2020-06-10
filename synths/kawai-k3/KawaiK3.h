@@ -20,6 +20,7 @@
 #include "AdditiveCapability.h"
 #include "HybridWaveCapability.h"
 #include "DataFileLoadCapability.h"
+#include "DataFileSendCapability.h"
 
 #include <set>
 
