@@ -186,11 +186,11 @@ namespace knobkraft {
 				return;
 			}
 			else {
-				Py_SetPythonHome(python38_macHome.toWideCharPointer());
+				Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
 			}
 		}
 		else {
-			Py_SetPythonHome(python37_macHome.toWideCharPointer());
+			Py_SetPythonHome(const_cast<wchar_t*>(python37_macHome.toWideCharPointer()));
 		}
 #endif
 		sGenericAdaptionPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
