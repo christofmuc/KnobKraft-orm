@@ -10,7 +10,7 @@
 
 namespace knobkraft {
 
-	std::vector<knobkraft::BundledAdaption> knobkraft::gBundledAdaptions()
+	std::vector<knobkraft::BundledAdaption> gBundledAdaptions()
 	{
 		return {
 			{ "DSI Pro 2", "DSI_Pro_2", std::string(DSI_Pro_2_py, DSI_Pro_2_py + DSI_Pro_2_py_size) },
