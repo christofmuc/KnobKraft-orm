@@ -56,6 +56,8 @@ namespace knobkraft {
 
 		// Call this once before using any other function
 		static void startupGenericAdaption();
+		// Check if the python runtime is available
+		static bool hasPython();
 		// Get the current adaption directory, this is a configurable property with default
 		static File getAdaptionDirectory();
 		// Configure the adaption directory

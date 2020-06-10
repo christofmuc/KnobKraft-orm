@@ -18,6 +18,8 @@
 #include "DataFileLoadCapability.h"
 #include "ScriptedQuery.h"
 
+#include "GenericAdaption.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaption
+
 #include <boost/format.hpp>
 
 const char *kAllPatchesFilter = "All patches";
@@ -229,7 +231,7 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 
 		// Check if a client-side filter is active (python based)
 		String advancedQuery = advancedFilters_.nameSearchText_.getText();
-		if (advancedQuery.startsWith("!")) {
+		if (advancedQuery.startsWith("!") && knobkraft::GenericAdaption::hasPython()) {
 			// Bang start indicates python predicate to evaluate instead of just a name query!
 			ScriptedQuery query;
 			// Drop the first character (!)

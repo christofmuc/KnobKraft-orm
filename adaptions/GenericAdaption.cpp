@@ -173,11 +173,34 @@ namespace knobkraft {
 
 	void GenericAdaption::startupGenericAdaption()
 	{
+#ifdef __APPLE__
+		// The Apple might not have a Python 3.7 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it
+		String python37_macHome = "/Library/Frameworks/Python.framework/Versions/3.7";
+		File python37(python37_macHome);
+		if (!python37.exists()) {
+			String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.8";
+			File python38(python38_macHome);
+			if (!python38.exists()) {
+				return;
+			}
+			else {
+				Py_SetPythonHome(python38_macHome.toWideCharPointer());
+			}
+		}
+		else {
+			Py_SetPythonHome(python37_macHome.toWideCharPointer());
+		}
+#endif
 		sGenericAdaptionPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptionPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptionDirectory().getFullPathName().toStdString() + "\")\n";
 		py::exec(command);
 		checkForPythonOutputAndLog();
+	}
+
+	bool GenericAdaption::hasPython()
+	{
+		return sGenericAdaptionPythonEmbeddedGuard != nullptr;
 	}
 
 	juce::File GenericAdaption::getAdaptionDirectory()
@@ -225,6 +248,10 @@ namespace knobkraft {
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
 	{
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
+		if (!hasPython()) {
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install using 'brew install python3'. Turning off all adaptions.");
+			return result;
+		}
 
 		// First, load user defined adaptions from the directory
 		File adaptionDirectory = getAdaptionDirectory();

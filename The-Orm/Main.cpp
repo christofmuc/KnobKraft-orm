@@ -41,8 +41,10 @@ public:
 		// Init python for GenericAdaption
 		knobkraft::GenericAdaption::startupGenericAdaption();
 
-		// Init python with the embedded pytschirp module
-		globalImportEmbeddedModules();
+		// Init python with the embedded pytschirp module, if the Python init was successful
+		if (knobkraft::GenericAdaption::hasPython()) {
+			globalImportEmbeddedModules();
+		}
 
 		// Select colour scheme
 		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
