@@ -33,20 +33,24 @@ namespace midikraft {
 		);
 	}
 
-	juce::MidiMessage RefaceDX::requestEditBufferDump()
+	std::vector<MidiMessage> RefaceDX::requestStreamElement(int elemNo, StreamType streamType) 
 	{
-		return buildRequest(0x0e, 0x0f, 0x00 /* Address of bulk header */);
+		switch (streamType) {
+		case StreamLoadCapability::StreamType::BANK_DUMP:
+			// Need to start at program 0
+			return { MidiMessage::programChange(channel().toOneBasedInt(), elemNo), buildRequest(0x0e, 0x0f, 0x00 /* Address of bulk header */) };
+		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			// Just download the current program
+			return { buildRequest(0x0e, 0x0f, 0x00 /* Address of bulk header */) };
+		default:
+			jassertfalse;
+			return {};
+		}
 	}
 
-	juce::MidiMessage RefaceDX::saveEditBufferToProgram(int programNumber)
+	bool RefaceDX::isMessagePartOfStream(MidiMessage const &message, StreamType streamType)
 	{
-		ignoreUnused(programNumber);
-		// That's not supported by the RefaceDX, you need to press the Write key?
-		return MidiMessage();
-	}
-
-	bool RefaceDX::isMessagePartOfStream(MidiMessage const &message)
-	{
+		ignoreUnused(streamType); // Both stream types consist of the same message types
 		if (isOwnSysex(message)) {
 			TDataBlock block;
 			if (dataBlockFromDump(message, block)) {
@@ -59,7 +63,7 @@ namespace midikraft {
 		return false;
 	}
 
-	bool RefaceDX::isStreamComplete(std::vector<MidiMessage> const &messages) {
+	bool RefaceDX::isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) {
 		int headers, footers, common, operators;
 		headers = footers = common = operators = 0;
 		for (auto message : messages) {
@@ -74,10 +78,18 @@ namespace midikraft {
 				jassert(false);
 			}
 		}
-		return headers == 32 && footers == 32 && common == 32 && operators == (32 * 4);
+		switch (streamType) {
+		case StreamLoadCapability::StreamType::BANK_DUMP:
+			return headers == 32 && footers == 32 && common == 32 && operators == (32 * 4);
+		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			return headers == 1 && footers == 1 && common == 1 && operators == (1 * 4);
+		default:
+			jassertfalse;
+			return false;
+		}
 	}
 
-	bool RefaceDX::shouldStreamAdvance(std::vector<MidiMessage> const &messages)
+	bool RefaceDX::shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType)
 	{
 		int headers, footers;
 		headers = footers = 0;
@@ -91,8 +103,7 @@ namespace midikraft {
 				jassert(false);
 			}
 		}
-		return headers == footers;
-
+		return (headers == footers) && (streamType == StreamLoadCapability::StreamType::BANK_DUMP); // The Edit buffer dump would be finished, and does not need to advance
 	}
 
 	void RefaceDX::changeOutputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> finished)
@@ -219,18 +230,6 @@ namespace midikraft {
 		return MidiHelpers::sysexMessage(bulkDump);
 	}
 
-	bool RefaceDX::isEditBufferDump(const MidiMessage& message) const
-	{
-		if (message.isSysEx()) {
-			TDataBlock block;
-			if (dataBlockFromDump(message, block)) {
-				// We agree if this is the bulk header
-				return block.addressHigh == 0x0e && block.addressMid == 0x0f && block.addressLow == 0x00;
-			}
-		}
-		return false;
-	}
-
 	std::string RefaceDX::getName() const
 	{
 		return "Yamaha Reface DX";
@@ -253,12 +252,6 @@ namespace midikraft {
 	Synth::PatchData RefaceDX::filterVoiceRelevantData(PatchData const &unfilteredData) const
 	{
 		return Patch::blankOut(kRefaceDXBlankOutZones, unfilteredData);
-	}
-
-	std::shared_ptr<Patch> RefaceDX::patchFromSysex(const MidiMessage& message) const
-	{
-		ignoreUnused(message);
-		throw std::logic_error("The method or operation is not implemented.");
 	}
 
 	std::shared_ptr<DataFile> RefaceDX::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
@@ -383,6 +376,18 @@ namespace midikraft {
 			result.push_back(std::make_shared<RefaceDXPatch>(aggregated));
 		}
 		return result;
+	}
+
+	std::vector<juce::MidiMessage> RefaceDX::dataFileToMessages(std::shared_ptr<DataFile> dataFile) const
+	{
+		auto refacePatch = std::dynamic_pointer_cast<RefaceDXPatch>(dataFile);
+		if (refacePatch) {
+			return patchToSysex(*refacePatch);
+		}
+		else {
+			jassertfalse;
+			return {};
+		}
 	}
 
 	int RefaceDX::numberOfBanks() const

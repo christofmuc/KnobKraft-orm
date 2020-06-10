@@ -8,14 +8,14 @@
 
 #include "Synth.h"
 #include "RefaceDXDiscovery.h"
-#include "EditBufferCapability.h"
 #include "StreamLoadCapability.h"
+#include "DataFileSendCapability.h"
 #include "MasterkeyboardCapability.h"
 #include "SoundExpanderCapability.h"
 
 namespace midikraft {
 
-	class RefaceDX : public Synth, public RefaceDXDiscovery, public EditBufferCapability, public StreamLoadCapability, public SoundExpanderCapability, public MasterkeyboardCapability {
+	class RefaceDX : public Synth, public RefaceDXDiscovery, public StreamLoadCapability, public DataFileSendCapability, public SoundExpanderCapability, public MasterkeyboardCapability {
 	public:
 		virtual std::string getName() const override;
 
@@ -27,17 +27,11 @@ namespace midikraft {
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 		Synth::PatchData filterVoiceRelevantData(Synth::PatchData const &unfilteredData) const;
 
-		// Edit Buffer Capability
-		virtual MidiMessage requestEditBufferDump() override;
-		virtual bool isEditBufferDump(const MidiMessage& message) const override;
-		virtual std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message) const override;
-		virtual std::vector<MidiMessage> patchToSysex(const Patch &patch) const override;
-		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
-
 		// StreamLoadCapability
-		virtual bool isMessagePartOfStream(MidiMessage const &message) override;
-		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages) override;
-		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages) override;
+		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) override;
+		virtual bool isMessagePartOfStream(MidiMessage const &message, StreamType streamType) override;
+		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) override;
+		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) override;
 
 		// Masterkeyboard Capability
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> finished) override;
@@ -60,6 +54,12 @@ namespace midikraft {
 
 		// This needs to be overridden because the base implementation assumes a patch fits into a single MidiMessage, which is not true for the Reface DX
 		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
+
+		// DataFileSendCapability
+		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+
+		// Internal
+		std::vector<MidiMessage> patchToSysex(const Patch &patch) const;
 
 	private:
 		struct TDataBlock {
