@@ -13,6 +13,7 @@
 #include "MidiChannel.h"
 #include "StreamDumpCapability.h"
 #include "DataFileLoadCapability.h"
+#include "DataFileSendCapability.h"
 
 #include "Logger.h"
 
