@@ -315,7 +315,7 @@ void PatchView::saveCurrentPatchCategories() {
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
-	if (activeSynth && midiLocation) {
+	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, activeSynth, midiLocation](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
@@ -340,7 +340,6 @@ void PatchView::retrievePatches() {
 	}
 	else {
 		// Button shouldn't be enabled
-		jassert(false);
 	}
 }
 
