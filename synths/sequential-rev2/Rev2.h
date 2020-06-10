@@ -11,6 +11,7 @@
 #include "DSI.h"
 #include "LayerCapability.h"
 #include "DataFileLoadCapability.h"
+#include "DataFileSendCapability.h"
 #include "GlobalSettingsCapability.h"
 
 namespace midikraft {
