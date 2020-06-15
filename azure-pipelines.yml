@@ -38,6 +38,13 @@ jobs:
     #  displayName: Installing Innosetup
 
     # Windows runs CMake tasks
+    - task: NuGetCommand@2
+      displayName: Installing Innosetup
+      inputs:
+        command: restore
+        restoreSolution: $(System.DefaultWorkingDirectory) # This is where the packages.config XML is
+        restoreDirectory: third_party
+      condition: variables.isWindows
     - task: CMake@1
       displayName: Configuring CMake for Windows
       inputs:
@@ -48,7 +55,7 @@ jobs:
       displayName: Running CMake build for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '--build . --config Debug'
+        cmakeArgs: '--build . --config Release'
       condition: variables.isWindows
 
     - publish: $(System.DefaultWorkingDirectory)/builds/The-Orm/knobkraft_orm_setup_1.6.1.exe
