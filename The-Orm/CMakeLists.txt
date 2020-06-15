@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.6.0)
+project(KnobKraftOrm VERSION 1.6.1)
 
 find_package(JUCE REQUIRED 
 	COMPONENTS 
