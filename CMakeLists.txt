@@ -43,7 +43,7 @@ IF (WIN32)
 
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/3.6.8/python-3.6.8-embed-amd64.zip
+		URL https://www.python.org/ftp/python/3.7.7/python-3.7.7-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 ELSEIF(APPLE)
@@ -84,10 +84,10 @@ set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include
 IF(WIN32)
 	IF(DEFINED ENV{APPVEYOR})
 		# Fixed path in Appveyor Windows build machine
-		set(PYTHON_EXECUTABLE "C:/Python36-x64/python.exe")
+		set(PYTHON_EXECUTABLE "C:/Python37-x64/python.exe")
 	ELSE()		
 		IF(NOT DEFINED PYTHON_EXECUTABLE)
-			set(PYTHON_EXECUTABLE "c:/python/python36/python.exe")
+			set(PYTHON_EXECUTABLE "c:/python/python37/python.exe")
 		ENDIF()
 		message("USING PYTHON ${PYTHON_EXECUTABLE} at ${PYTHON_VERSION_MAJOR} and ${PYTHON_VERSION_MINOR}")		
 	ENDIF()
@@ -97,7 +97,7 @@ ELSE()
 	# both on gcc 8.5.0 and gcc 9.2.1. The hard core way to disable this is LDFLAGS=--disable-lto, but after looking at the CMakefiles from pybind11 this does archive-iterators:
 	set(PYBIND11_LTO_CXX_FLAGS "")
 ENDIF()
-set(PYBIND11_PYTHON_VERSION 3.6)
+set(PYBIND11_PYTHON_VERSION 3.7)
 add_subdirectory("third_party/pybind11")
 
 # Define the list of link libraries required on Linux linking with JUCE, this must be used by any executable / module to run standalone
