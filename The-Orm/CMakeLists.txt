@@ -137,7 +137,7 @@ ENDIF()
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
-	find_program(INNOSETUP NAMES iscc ISCC HINTS "c:/program files (x86)/Inno Setup 6")
+	find_program(INNOSETUP NAMES iscc ISCC HINTS "${CMAKE_CURRENT_LIST_DIR}/../third_party/Tools.InnoSetup.6.0.5/tools" "c:/program files (x86)/Inno Setup 6")
 	if (INNOSETUP)
 	else()
 		message(WARNING "Didn't find InnoSetup 6 installation, skipping creation of Client installer '")
