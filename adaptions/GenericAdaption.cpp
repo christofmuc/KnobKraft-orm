@@ -175,18 +175,26 @@ namespace knobkraft {
 
 	void GenericAdaption::startupGenericAdaption()
 	{
+		if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
+			// This is the hard coded way to turn off python integration, just set the ORM_NO_PYTHON environment variable to anything (except NOTSET)
+			return;
+		}
+
 #ifdef __APPLE__
-		// The Apple might not have a Python 3.7 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it
+		// The Apple might not have a Python 3.7 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
+		// First, check the location where the Python 3.7 Mac installer will put it (taken from python.org/downloads)
 		String python37_macHome = "/Library/Frameworks/Python.framework/Versions/3.7";
 		File python37(python37_macHome);
 		if (!python37.exists()) {
-			String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.8";
-			File python38(python38_macHome);
-			if (!python38.exists()) {
+			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
+			python37_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.7";
+			File python37_alternative(python37_macHome);
+			if (!python37_alternative.exists()) {
+				// No Python3.7 found, don't set path
 				return;
 			}
 			else {
-				Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
+				Py_SetPythonHome(const_cast<wchar_t*>(python37_macHome.toWideCharPointer()));
 			}
 		}
 		else {
