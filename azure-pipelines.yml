@@ -31,7 +31,7 @@ jobs:
       displayName: Checking out submodules
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: '3.6' 
+        versionSpec: '3.7' 
         addToPath: true 
         architecture: 'x64' 
     #- script: cinst innosetup
@@ -42,7 +42,7 @@ jobs:
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" 
       condition: variables.isWindows
     - task: CMake@1
       displayName: Running CMake build for Windows
