@@ -42,7 +42,7 @@ jobs:
       displayName: Installing Innosetup
       inputs:
         command: restore
-        restoreSolution: $(System.DefaultWorkingDirectory) # This is where the packages.config XML is
+        restoreSolution: $(System.DefaultWorkingDirectory)/packages.config
         restoreDirectory: third_party
       condition: variables.isWindows
     - task: CMake@1
