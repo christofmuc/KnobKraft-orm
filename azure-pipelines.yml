@@ -58,7 +58,7 @@ jobs:
         cmakeArgs: '--build . --config Release'
       condition: variables.isWindows
 
-    - publish: $(System.DefaultWorkingDirectory)/builds/The-Orm/knobkraft_orm_setup_1.6.1.exe
+    - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.6.1.exe
       displayName: Publish Windows Installer
       artifact: WindowsInstaller
       condition: variables.isWindows
