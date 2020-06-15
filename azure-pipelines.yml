@@ -51,6 +51,11 @@ jobs:
         cmakeArgs: '--build . --config Debug'
       condition: variables.isWindows
 
+    - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.6.0-Darwin.dmg
+      displayName: Publish Windows Installer
+      artifact: WindowsInstaller
+      condition: variables.isWindows
+
     # Linux uses bash to run CMake directly
     - bash: |
         cmake -Bbuild
