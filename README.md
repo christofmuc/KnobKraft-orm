@@ -20,6 +20,7 @@ Currently natively supported and tested synths as of version 1.4.0:
 As adaption currently available and tested
 
 * Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
+* Sequential Pro 3 
 
  Already implemented adaptions, which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
 
@@ -28,7 +29,6 @@ As adaption currently available and tested
 * DSI Prophet 12 (untested)
 * Pioneer Toraiz AS-1 (untested)
 * Roland JX-8P (untested)
-* Sequential Pro 3 (untested)
 * Sequential Prophet 6 (untested)
 
 The adaptions are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices! They might not be as powerful or fully integrated as the natively supported synths, but they are done really quickly!
@@ -45,17 +45,17 @@ I made a video to show you the software and the most basic functionality, checko
 
 # Downloading the software
 
-I provide installer builds for Windows, they are hosted here in github. To install, just grab the latest installer executable from the following page and run it:
+I provide installer builds for Windows and disk images for macOS, they are hosted here in github. To install, just grab the latest installer executable or DMG file from the following page and run it. The Mac version needs to be installed (drag into application folder after opening the DMG) and then run with the CTRL-Click Open command (to ignore unknown source warning, as I do not sign the installers with a certificate).
 
 [https://github.com/christofmuc/KnobKraft-orm/releases](https://github.com/christofmuc/KnobKraft-orm/releases)
 
-Releases for the other platforms macOS and Linux could be provided, but as I don't have either I would be looking for help in getting these to work and uploading them here. Linux builds and runs in a virtual Debian 10, I tried that, but I haven't tested the software itself.
+Linux is reported to build and run as well, but due to the multitude of possible installations I suggest you follow the build instructions below, it shouldn't be too hard.
 
 You can always use the source to build it yourself, please read on for more instructions.
 
 ## Supported platforms
 
-Tested currently only on Windows 10, but all technology used is cross platform. Linux builds are part of the regular continuous integration builds, even if there is no prebuilt binary provided. Mac OS is still a future topic, looking for help!
+This software is build and run on Windows 10, macOS 10.15, and several Linux distributions. Note that this is not a commercial project, and as I am using Windows mostly expect some hiccups. But I will get back to you if you report a bug and try to resolve it!
 
 # Building the software
 
@@ -99,6 +99,20 @@ and then can use CMake just like on Windows to compile the software:
 
 This will produce a single executable `builds/The-Orm/KnobKraftOrm` that you can run.
 
+## Building on macOS
+
+If you are inclined to build on Mac, you know what you're doing. I'd recommend to install the build requisites via homebrew like this
+
+    brew install gtk+3 glew boost python3
+
+and then run CMake to build the software
+
+    cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    cmake --build builds/release 
+
+which will produce a launchable application in a folder called `KnobKraftOrm.app`.
+    
+
 ## Licensing
 
 As some substantial work has gone into the development of this, I decided to offer a dual license - AGPL, see the LICENSE.md file for the details, for everybody interested in how this works and willing to spend some time her- or himself on this, and a commercial MIT license available from me on request. Thus I can help the OpenSource community without blocking possible commercial applications.
@@ -112,6 +126,10 @@ All pull requests and issues welcome, I will try to get back to you as soon as I
 Really big thanks to everybody who contributes and comments on YouTube, here on Github, or any of the other forums out in the Internet to motivate me to continue this work!
 
 Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaption to work with restless tests and trials!
+
+The app icon is courtesy of W07 at the Sequential forums, thanks for your contribution!
+
+Thanks also go to @gnidorah for reporting bugs with the RefaceDX implementation, which were fixed!
 
 ## About the author
 
