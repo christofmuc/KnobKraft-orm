@@ -73,6 +73,7 @@ MainComponent::MainComponent() :
 	buttons_(301)
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
+	database_ = std::make_unique<midikraft::PatchDatabase>();
 
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
@@ -146,13 +147,13 @@ MainComponent::MainComponent() :
 	} } },
 	{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
 		auto currentFilter = patchView_->buildFilter();
-		int affected = database_.getPatchesCount(currentFilter);
+		int affected = database_->getPatchesCount(currentFilter);
 		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
 			"This makes sense if you changed the auto category search strings!\n\n"
 			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
 			)) {
-			AutoCategorizeWindow window(&database_, getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
+			AutoCategorizeWindow window(database_.get(), getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
 				patchView_->retrieveFirstPageFromDatabase();
 			});
 			window.runThread();
@@ -182,7 +183,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(database_, synths);
+	patchView_ = std::make_unique<PatchView>(*database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
 
@@ -291,6 +292,12 @@ void MainComponent::resized()
 	stretchableManager_.layOutComponents(comps, 3,
 		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
 		true, true);
+}
+
+void MainComponent::shutdown()
+{
+	// Shutdown database, which will make a backup
+	database_.reset();
 }
 
 void MainComponent::refreshSynthList() {
