@@ -146,11 +146,14 @@ namespace knobkraft {
 	{
 		try {
 			ScopedLock lock(GenericAdaption::multiThreadGuard);
-			auto types = py::module::import("types");
+			auto importlib = py::module::import("importlib.util");
 			checkForPythonOutputAndLog();
-			auto adaption_module = types.attr("ModuleType")(moduleName); // Create an empty module with the right name
+			auto spec = importlib.attr("spec_from_loader")(moduleName, py::none()); // Create an empty module with the right name
+			auto adaption_module = importlib.attr("module_from_spec")(spec);
+			auto builtins = py::module::import("builtins");
+			adaption_module.attr("__builtins__") = builtins; // That seems to be implementation depend... https://docs.python.org/3/library/builtins.html
 			checkForPythonOutputAndLog();
-			py::exec(adaptionCode, py::globals(), adaption_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
+			py::exec(adaptionCode, adaption_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
 			checkForPythonOutputAndLog();
 			auto newAdaption = std::make_shared<GenericAdaption>(py::cast<py::module>(adaption_module));
 			//if (newAdaption) newAdaption->logNamespace();
