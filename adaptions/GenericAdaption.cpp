@@ -140,7 +140,7 @@ namespace knobkraft {
 		adaption_module = adaptionModule;
 	}
 
-	std::shared_ptr<GenericAdaption> GenericAdaption::fromBinaryCode(std::string const &moduleName, std::string const &adaptionCode)
+	std::shared_ptr<GenericAdaption> GenericAdaption::fromBinaryCode(std::string moduleName, std::string adaptionCode)
 	{
 		try {
 			ScopedLock lock(GenericAdaption::multiThreadGuard);
@@ -272,7 +272,8 @@ namespace knobkraft {
 		}
 
 		// Then, iterate over the list of built-in adaptions and add those which are not present in the directory
-		for (auto const &b : gBundledAdaptions()) {
+		auto adaptions = gBundledAdaptions();
+		for (auto const &b : adaptions) {
 			createCompiledAdaptionModule(b.pythonModuleName, b.adaptionSourceCode, result);
 		}
 		return result;

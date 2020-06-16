@@ -18,7 +18,7 @@ namespace knobkraft {
 	public:
 		GenericAdaption(std::string const &pythonModuleFilePath);
 		GenericAdaption(pybind11::module adaption_module);
-		static std::shared_ptr<GenericAdaption> fromBinaryCode(std::string const &moduleName, std::string const &adaptionCode);
+		static std::shared_ptr<GenericAdaption> fromBinaryCode(std::string moduleName, std::string adaptionCode);
 
 		// This needs to be implemented, and never changed, as the result is used as a primary key in the database to store the patches
 		std::string getName() const override;
