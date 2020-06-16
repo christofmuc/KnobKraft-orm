@@ -96,8 +96,9 @@ namespace knobkraft {
 				checkForPythonOutputAndLog();
 				return result.cast<std::string>();
 			}
-			catch (std::exception &ex) {
+			catch (py::error_already_set &ex) {
 				std::string errorMessage = (boost::format("Error calling nameFromDump: %s") % ex.what()).str();
+				ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
 				SimpleLogger::instance()->postMessage(errorMessage);
 			}
 			catch (...) {
@@ -132,6 +133,7 @@ namespace knobkraft {
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure loading python module: %s") % ex.what()).str());
+			ex.restore();
 		}
 	}
 
@@ -156,6 +158,7 @@ namespace knobkraft {
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure loading python module %s: %s") % moduleName % ex.what()).str());
+			ex.restore();
 		}
 		return nullptr;
 	}
@@ -170,6 +173,7 @@ namespace knobkraft {
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure inspecting python module: %s") % ex.what()).str());
+			ex.restore();
 		}
 	}
 
@@ -304,8 +308,9 @@ namespace knobkraft {
 			// These should be only one midi message...
 			return { vectorToMessage(result.cast<std::vector<int>>()) };
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createEditBufferRequest: %s") % ex.what()).str());
+			ex.restore();
 			return {};
 		}
 	}
@@ -317,8 +322,9 @@ namespace knobkraft {
 			py::object result = callMethod("isEditBufferDump", vectorForm);
 			return result.cast<bool>();
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling isEditBufferDump: %s") % ex.what()).str());
+			ex.restore();
 			return false;
 		}
 	}
@@ -359,8 +365,9 @@ namespace knobkraft {
 			py::object result = callMethod("numberOfBanks");
 			return result.cast<int>();
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling numberOfBanks: %s") % ex.what()).str());
+			ex.restore();
 			return 1;
 		}
 	}
@@ -371,8 +378,9 @@ namespace knobkraft {
 			py::object result = callMethod("numberOfPatchesPerBank");
 			return result.cast<int>();
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling numberOfPatchesPerBank: %s") % ex.what()).str());
+			ex.restore();
 			return 0;
 		}
 	}
@@ -405,8 +413,9 @@ namespace knobkraft {
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createDeviceDetectMessage: %s") % ex.what()).str());
+			ex.restore();
 			return {};
 		}
 	}
@@ -419,8 +428,9 @@ namespace knobkraft {
 			return result.cast<int>();
 
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling deviceDetectSleepMS: %s") % ex.what()).str());
+			ex.restore();
 			return 100;
 		}
 	}
