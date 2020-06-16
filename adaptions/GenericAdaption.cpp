@@ -89,8 +89,8 @@ namespace knobkraft {
 
 		std::string name() const override
 		{
-			ScopedLock lock(GenericAdaption::multiThreadGuard);
 			try {
+				ScopedLock lock(GenericAdaption::multiThreadGuard);
 				auto message = data();
 				auto result = adaption_.attr("nameFromDump")(message);
 				checkForPythonOutputAndLog();
