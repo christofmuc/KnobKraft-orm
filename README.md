@@ -1,6 +1,6 @@
 # A free MIDI Sysex Librarian - The KnobKraft Orm
 
-[![Build status](https://ci.appveyor.com/api/projects/status/f9xfonpyp07lb9cp/branch/master?svg=true)](https://ci.appveyor.com/project/christofmuc/knobkraft-orm/branch/master)
+[![Build Status](https://dev.azure.com/christof0759/KnobKraft/_apis/build/status/christofmuc.KnobKraft-orm?branchName=master)](https://dev.azure.com/christof0759/KnobKraft/_build/latest?definitionId=1&branchName=master)
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
