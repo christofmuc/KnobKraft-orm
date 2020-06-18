@@ -11,16 +11,22 @@
 #include "Sysex.h"
 
 #include "PythonUtils.h"
+#include "Settings.h"
+#include "BundledAdaption.h"
 
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
 #include <memory>
+
+#include "Python.h"
 
 namespace py = pybind11;
 
 #include <boost/format.hpp>
 
 namespace knobkraft {
+
+	const char *kUserAdaptionsFolderSettingsKey = "user_adaptions_folder";
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptionPythonEmbeddedGuard;
 	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptionPyOutputRedirect;
@@ -83,15 +89,16 @@ namespace knobkraft {
 
 		std::string name() const override
 		{
-			ScopedLock lock(GenericAdaption::multiThreadGuard);
 			try {
+				ScopedLock lock(GenericAdaption::multiThreadGuard);
 				auto message = data();
 				auto result = adaption_.attr("nameFromDump")(message);
 				checkForPythonOutputAndLog();
 				return result.cast<std::string>();
 			}
-			catch (std::exception &ex) {
+			catch (py::error_already_set &ex) {
 				std::string errorMessage = (boost::format("Error calling nameFromDump: %s") % ex.what()).str();
+				ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
 				SimpleLogger::instance()->postMessage(errorMessage);
 			}
 			catch (...) {
@@ -126,11 +133,81 @@ namespace knobkraft {
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure loading python module: %s") % ex.what()).str());
+			ex.restore();
+		}
+	}
+
+	GenericAdaption::GenericAdaption(pybind11::module adaptionModule)
+	{
+		adaption_module = adaptionModule;
+	}
+
+	std::shared_ptr<GenericAdaption> GenericAdaption::fromBinaryCode(std::string moduleName, std::string adaptionCode)
+	{
+		try {
+			ScopedLock lock(GenericAdaption::multiThreadGuard);
+			auto importlib = py::module::import("importlib.util");
+			checkForPythonOutputAndLog();
+			auto spec = importlib.attr("spec_from_loader")(moduleName, py::none()); // Create an empty module with the right name
+			auto adaption_module = importlib.attr("module_from_spec")(spec);
+			auto builtins = py::module::import("builtins");
+			adaption_module.attr("__builtins__") = builtins; // That seems to be implementation depend... https://docs.python.org/3/library/builtins.html
+			checkForPythonOutputAndLog();
+			py::exec(adaptionCode, adaption_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
+			checkForPythonOutputAndLog();
+			auto newAdaption = std::make_shared<GenericAdaption>(py::cast<py::module>(adaption_module));
+			//if (newAdaption) newAdaption->logNamespace();
+			return newAdaption;
+		}
+		catch (py::error_already_set &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure loading python module %s: %s") % moduleName % ex.what()).str());
+			ex.restore();
+		}
+		return nullptr;
+	}
+
+	void GenericAdaption::logNamespace() {
+		try {
+			auto name = py::cast<std::string>(adaption_module.attr("__name__"));
+			auto moduleDict = adaption_module.attr("__dict__");
+			for (auto a : moduleDict) {
+				SimpleLogger::instance()->postMessage("Found in " + name + " attribute " + py::cast<std::string>(a));
+			}
+		}
+		catch (py::error_already_set &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaption: Failure inspecting python module: %s") % ex.what()).str());
+			ex.restore();
 		}
 	}
 
 	void GenericAdaption::startupGenericAdaption()
 	{
+		if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
+			// This is the hard coded way to turn off python integration, just set the ORM_NO_PYTHON environment variable to anything (except NOTSET)
+			return;
+		}
+
+#ifdef __APPLE__
+		// The Apple might not have a Python 3.7 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
+		// First, check the location where the Python 3.7 Mac installer will put it (taken from python.org/downloads)
+		String python37_macHome = "/Library/Frameworks/Python.framework/Versions/3.7";
+		File python37(python37_macHome);
+		if (!python37.exists()) {
+			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
+			python37_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.7";
+			File python37_alternative(python37_macHome);
+			if (!python37_alternative.exists()) {
+				// No Python3.7 found, don't set path
+				return;
+			}
+			else {
+				Py_SetPythonHome(const_cast<wchar_t*>(python37_macHome.toWideCharPointer()));
+			}
+		}
+		else {
+			Py_SetPythonHome(const_cast<wchar_t*>(python37_macHome.toWideCharPointer()));
+		}
+#endif
 		sGenericAdaptionPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptionPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptionDirectory().getFullPathName().toStdString() + "\")\n";
@@ -138,20 +215,73 @@ namespace knobkraft {
 		checkForPythonOutputAndLog();
 	}
 
+	bool GenericAdaption::hasPython()
+	{
+		return sGenericAdaptionPythonEmbeddedGuard != nullptr;
+	}
+
 	juce::File GenericAdaption::getAdaptionDirectory()
 	{
-		// Should I make this configurable?
-		return File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/KnobKraft-orm-adaptions");
+		// Calculate default location - as Linux does not guarantee to provide a Documents folder, rather use the user's home directory
+		File adaptionsDefault = File(File::getSpecialLocation(File::userHomeDirectory)).getChildFile("KnobKraft-Adaptions");
+		auto adaptionsDirectory = Settings::instance().get(kUserAdaptionsFolderSettingsKey, adaptionsDefault.getFullPathName().toStdString());
+
+		File adaptionsDir(adaptionsDirectory);
+		if (!adaptionsDir.exists()) {
+			adaptionsDir.createDirectory();
+		}
+		return  adaptionsDir;
+	}
+
+	void GenericAdaption::setAdaptionDirectoy(std::string const &directory)
+	{
+		// This will only become active after a restart of the application, as I don't know how to properly clean the Python runtime.
+		Settings::instance().set(kUserAdaptionsFolderSettingsKey, directory);
+	}
+
+	bool GenericAdaption::createCompiledAdaptionModule(std::string const &pythonModuleName, std::string const &adaptionCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+		auto newAdaption = GenericAdaption::fromBinaryCode(pythonModuleName, adaptionCode);
+		if (newAdaption) {
+			// Now we need to check the name of the compiled adaption just created, and if it is already present. If yes, don't add it but rather issue a warning
+			auto newAdaptionName = newAdaption->getName();
+			if (newAdaptionName != "invalid") {
+				for (auto existing : outAddToThis) {
+					if (existing->getName() == newAdaptionName) {
+						SimpleLogger::instance()->postMessage((boost::format("Overriding built-in adaption %s (found in user directory %s)")
+							% newAdaptionName % getAdaptionDirectory().getFullPathName().toStdString()).str());
+						return false;
+					}
+				}
+				outAddToThis.push_back(newAdaption);
+			}
+			else {
+				jassertfalse;
+				SimpleLogger::instance()->postMessage("Program error: built-in adaption " + std::string(pythonModuleName) + " failed to report name");
+			}
+		}
+		return false;
 	}
 
 	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> GenericAdaption::allAdaptions()
 	{
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
+		if (!hasPython()) {
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install using 'brew install python3'. Turning off all adaptions.");
+			return result;
+		}
+
+		// First, load user defined adaptions from the directory
 		File adaptionDirectory = getAdaptionDirectory();
 		if (adaptionDirectory.exists()) {
 			for (auto f : adaptionDirectory.findChildFiles(File::findFiles, false, "*.py")) {
 				result.push_back(std::make_shared<GenericAdaption>(f.getFileNameWithoutExtension().toStdString()));
 			}
+		}
+
+		// Then, iterate over the list of built-in adaptions and add those which are not present in the directory
+		auto adaptions = gBundledAdaptions();
+		for (auto const &b : adaptions) {
+			createCompiledAdaptionModule(b.pythonModuleName, b.adaptionSourceCode, result);
 		}
 		return result;
 	}
@@ -181,8 +311,9 @@ namespace knobkraft {
 			// These should be only one midi message...
 			return { vectorToMessage(result.cast<std::vector<int>>()) };
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createEditBufferRequest: %s") % ex.what()).str());
+			ex.restore();
 			return {};
 		}
 	}
@@ -194,8 +325,9 @@ namespace knobkraft {
 			py::object result = callMethod("isEditBufferDump", vectorForm);
 			return result.cast<bool>();
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling isEditBufferDump: %s") % ex.what()).str());
+			ex.restore();
 			return false;
 		}
 	}
@@ -236,8 +368,9 @@ namespace knobkraft {
 			py::object result = callMethod("numberOfBanks");
 			return result.cast<int>();
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling numberOfBanks: %s") % ex.what()).str());
+			ex.restore();
 			return 1;
 		}
 	}
@@ -248,8 +381,9 @@ namespace knobkraft {
 			py::object result = callMethod("numberOfPatchesPerBank");
 			return result.cast<int>();
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling numberOfPatchesPerBank: %s") % ex.what()).str());
+			ex.restore();
 			return 0;
 		}
 	}
@@ -282,8 +416,9 @@ namespace knobkraft {
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling createDeviceDetectMessage: %s") % ex.what()).str());
+			ex.restore();
 			return {};
 		}
 	}
@@ -296,8 +431,9 @@ namespace knobkraft {
 			return result.cast<int>();
 
 		}
-		catch (std::exception &ex) {
+		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaption: Error calling deviceDetectSleepMS: %s") % ex.what()).str());
+			ex.restore();
 			return 100;
 		}
 	}
@@ -344,7 +480,7 @@ namespace knobkraft {
 	std::vector<juce::MidiMessage> GenericAdaption::patchToProgramDumpSysex(const midikraft::Patch &patch) const
 	{
 		// For the Generic Adaption, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-		return { MidiMessage(patch.data().data(), (int) patch.data().size()) };
+		return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
 	}
 
 	std::string GenericAdaption::getName() const

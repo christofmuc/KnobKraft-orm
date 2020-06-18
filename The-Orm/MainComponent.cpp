@@ -74,6 +74,7 @@ MainComponent::MainComponent() :
 	buttons_(301)
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
+	database_ = std::make_unique<midikraft::PatchDatabase>();
 
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
@@ -118,15 +119,20 @@ MainComponent::MainComponent() :
 		}
 
 	refreshSynthList();
-	
+
 	autodetector_.addChangeListener(&synthList_);
+
+	// Prepare for resizing the UI to fit on the screen
+	auto globalScaling = (float)Desktop::getInstance().getDisplays().getMainDisplay().scale;
+	setAcceptableGlobalScaleFactor();
 
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
 		{0, { "File", { "Quit" } } },
 		{1, { "MIDI", { "Auto-detect synths" } } },
 		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
-		{3, { "Help", { "About" } } }
+		{3, { "View", { "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
+		{4, { "Help", { "About" } } }
 	};
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
@@ -143,13 +149,13 @@ MainComponent::MainComponent() :
 	} } },
 	{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
 		auto currentFilter = patchView_->buildFilter();
-		int affected = database_.getPatchesCount(currentFilter);
+		int affected = database_->getPatchesCount(currentFilter);
 		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
 			"This makes sense if you changed the auto category search strings!\n\n"
 			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
 			)) {
-			AutoCategorizeWindow window(&database_, getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
+			AutoCategorizeWindow window(database_.get(), getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
 				patchView_->retrieveFirstPageFromDatabase();
 			});
 			window.runThread();
@@ -160,8 +166,13 @@ MainComponent::MainComponent() :
 	}}},
 	{ "Quit", { 4, "Quit", [this]() {
 		JUCEApplicationBase::quit();
-	}}}
+	}}},
 	//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+	{ "Scale 100%", { 5, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
+	{ "Scale 125%", { 6, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
+	{ "Scale 150%", { 7, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
+	{ "Scale 175%", { 8, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
+	{ "Scale 200%", { 9, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
 	};
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
@@ -174,7 +185,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(database_, synths);
+	patchView_ = std::make_unique<PatchView>(*database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
 
@@ -186,6 +197,9 @@ MainComponent::MainComponent() :
 		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
 		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
 		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
+		default:
+			SimpleLogger::instance()->postMessage("Error - invalid keyboard macro event detected");
+			return;
 		}
 		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
 	});
@@ -248,6 +262,22 @@ MainComponent::~MainComponent()
 	Logger::setCurrentLogger(nullptr);
 }
 
+void MainComponent::setAcceptableGlobalScaleFactor() {
+	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
+	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
+	float globalScaling = (float)Desktop::getInstance().getDisplays().getMainDisplay().scale;
+	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
+	std::vector<float> scales = { 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
+	auto availableHeight = Desktop::getInstance().getDisplays().getMainDisplay().userArea.getHeight();
+	float goodScale = 1.0f;
+	for (auto scale : scales) {
+		if (availableHeight > 1024*scale) {
+			goodScale = scale;
+		}
+	}
+	Desktop::getInstance().setGlobalScaleFactor(goodScale);
+}
+
 void MainComponent::resized()
 {
 	auto area = getLocalBounds();
@@ -264,6 +294,12 @@ void MainComponent::resized()
 	stretchableManager_.layOutComponents(comps, 3,
 		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
 		true, true);
+}
+
+void MainComponent::shutdown()
+{
+	// Shutdown database, which will make a backup
+	database_.reset();
 }
 
 void MainComponent::refreshSynthList() {

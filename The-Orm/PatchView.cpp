@@ -18,6 +18,8 @@
 #include "DataFileLoadCapability.h"
 #include "ScriptedQuery.h"
 
+#include "GenericAdaption.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaption
+
 #include <boost/format.hpp>
 
 const char *kAllPatchesFilter = "All patches";
@@ -229,7 +231,7 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 
 		// Check if a client-side filter is active (python based)
 		String advancedQuery = advancedFilters_.nameSearchText_.getText();
-		if (advancedQuery.startsWith("!")) {
+		if (advancedQuery.startsWith("!") && knobkraft::GenericAdaption::hasPython()) {
 			// Bang start indicates python predicate to evaluate instead of just a name query!
 			ScriptedQuery query;
 			// Drop the first character (!)
@@ -315,7 +317,7 @@ void PatchView::saveCurrentPatchCategories() {
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
-	if (activeSynth && midiLocation) {
+	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, activeSynth, midiLocation](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
@@ -340,7 +342,6 @@ void PatchView::retrievePatches() {
 	}
 	else {
 		// Button shouldn't be enabled
-		jassert(false);
 	}
 }
 
@@ -383,7 +384,7 @@ public:
 		database_(database), patchesLoaded_(patchesLoaded), finished_(successHandler) {
 	}
 
-	void run() {
+	virtual void run() override {
 		std::vector<midikraft::PatchHolder> outNewPatches;
 		if (patchesLoaded_.size() == 0) {
 			SimpleLogger::instance()->postMessage("No patches contained in data, nothing to upload.");

@@ -6,7 +6,11 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.5.0)
+project(KnobKraftOrm VERSION 1.6.1)
+
+# Export this variable to be use by the Azure pipeline to know how the installers are called
+SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
+
 
 find_package(JUCE REQUIRED 
 	COMPONENTS 
@@ -40,11 +44,18 @@ set(SOURCES
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
+	win_resources.rc
 	version.cpp.in
 	setup.iss
 	ideas.txt
 	redist/agpl-3.0.txt
 )
+
+# Mac Icon Magic
+if(APPLE)
+set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
+set_source_files_properties(resources/icon_orm.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+ENDIF()
 
 set(MIDIKRAFT_LIBRARIES
 		juce-utils 
@@ -65,13 +76,24 @@ set(MIDIKRAFT_LIBRARIES
 		pytschirp_embedded
 )
 
-add_executable(KnobKraftOrm WIN32 ${SOURCES})
+add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
 		sqlite3
+		)
+ELSEIF(APPLE)
+	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+		ICU::data ICU::uc
+		SQLiteCpp
+		sqlite3
+		${APPLE_BOOST}
+		)
+	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
+		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
+		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
 		)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
@@ -117,7 +139,7 @@ ENDIF()
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
-	find_program(INNOSETUP NAMES iscc ISCC HINTS "c:/program files (x86)/Inno Setup 6")
+	find_program(INNOSETUP NAMES iscc ISCC HINTS "${CMAKE_CURRENT_LIST_DIR}/../third_party/Tools.InnoSetup.6.0.5/tools" "c:/program files (x86)/Inno Setup 6")
 	if (INNOSETUP)
 	else()
 		message(WARNING "Didn't find InnoSetup 6 installation, skipping creation of Client installer '")
@@ -134,4 +156,33 @@ IF(WIN32)
 		COMMAND  "${CMAKE_COMMAND}" -E $<${no_copy}:echo> $<${no_copy}:"Not building Installer with "> chdir . ${INNOSETUP} "${CMAKE_CURRENT_BINARY_DIR}/setup.iss"
 		DEPENDS setup.iss 
 	)
+ENDIF()
+
+IF(APPLE)
+    # This is supposed to build a relocatable macOS DMG installer when you specify the
+    # --target package
+    SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
+    SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
+    SET(DIRS ${CMAKE_BINARY_DIR})
+    INSTALL(TARGETS KnobKraftOrm
+        BUNDLE DESTINATION . COMPONENT Runtime
+        RUNTIME DESTINATION bin COMPONENT Runtime
+        )
+    
+    INSTALL(CODE "include(BundleUtilities)
+	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
+    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+    " COMPONENT Runtime)
+    
+    # Setup CPack variables
+    set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png)
+    set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
+    set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt)
+    
+    # Select only the dmg generator for now
+    SET(CPACK_BINARY_DRAGNDROP ON)
+    SET(CPACK_BINARY_TGZ OFF)
+    SET(CPACK_BINARY_STGZ OFF)
+    INCLUDE(CPack)
 ENDIF()

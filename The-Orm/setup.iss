@@ -42,7 +42,6 @@ Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
 Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; 
 Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icuuc67.dll"; DestDir: "{app}";
 Source: "${CMAKE_CURRENT_BINARY_DIR}\Release\icudt67.dll"; DestDir: "{app}";
-Source: "${CMAKE_CURRENT_LIST_DIR}\..\adaptions\*.py"; DestDir: "{userdocs}\KnobKraft-Orm-adaptions";
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
 

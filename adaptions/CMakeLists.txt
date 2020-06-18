@@ -18,29 +18,32 @@ IF(NOT DEFINED JUCE_LIBRARIES)
 			juce_audio_basics
 			juce_audio_devices
 			juce_data_structures
+			juce_gui_basics
 	)
 ENDIF()
 
-# Define the shipped adaptions
-set(Adaptions		
-	 "Matrix1000.py"
-	 "Matrix 6.py"
-	 "PioneerToraiz-AS1.py"
-	 "Roland JX-8P.py"
-	 "DSI Pro 2.py"
-	 "Sequential Pro 3.py"
-	 "DSI Prophet 08.py"
-	 "DSI Prophet 12.py"
-	 "Sequential Prophet 6.py"
-)
-
 file(GLOB adaption_files "${CMAKE_CURRENT_LIST_DIR}/*.py")
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
+	DEPENDS ${adaption_files}
+	COMMENT "Compiling binary resources"
+	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+)
 
 # Define the sources for the static library
 set(Sources
+	BundledAdaption.cpp BundledAdaption.h
+	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	CreateNewAdaptionDialog.cpp CreateNewAdaptionDialog.h
 	GenericAdaption.cpp GenericAdaption.h
 	PythonUtils.cpp PythonUtils.h
-	${Adaptions}
+	${adaption_files}
+)
+
+set_source_files_properties(
+	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	PROPERTIES GENERATED TRUE
 )
 
 # Setup library
@@ -49,7 +52,7 @@ target_include_directories(knobkraft-generic-adaption PUBLIC ${CMAKE_CURRENT_LIS
 if(WIN32)
 	target_link_directories(knobkraft-generic-adaption PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(knobkraft-generic-adaption pybind11::embed juce-utils midikraft-base)
+target_link_libraries(knobkraft-generic-adaption pybind11::embed juce-utils midikraft-base ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)
@@ -59,17 +62,3 @@ else()
     # lots of warnings and all warnings as errors
     #target_compile_options(knobkraft-generic-adaption PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
-
-# Copy to documents directory, because this is where the exectuable after installation wants them to load from
-if (WIN32)
-	set(ADAPTION_DIRECTORY_PROD $ENV{USERPROFILE}/Documents/KnobKraft-orm-adaptions)
-else()
-	set(ADAPTION_DIRECTORY_PROD $ENV{HOME}/KnobKraft-orm-adaptions)
-endif()
-foreach (globalFile ${adaption_files})
-	get_filename_component(file ${globalFile} NAME)	
-	add_custom_command(
-		OUTPUT ${ADAPTION_DIRECTORY_PROD}/${file}
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${ADAPTION_DIRECTORY_PROD}/${file}
-		MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${file})
-endforeach()

@@ -41,8 +41,10 @@ public:
 		// Init python for GenericAdaption
 		knobkraft::GenericAdaption::startupGenericAdaption();
 
-		// Init python with the embedded pytschirp module
-		globalImportEmbeddedModules();
+		// Init python with the embedded pytschirp module, if the Python init was successful
+		if (knobkraft::GenericAdaption::hasPython()) {
+			globalImportEmbeddedModules();
+		}
 
 		// Select colour scheme
 		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
@@ -56,7 +58,7 @@ public:
     void shutdown() override
     {
         // Add your application's shutdown code here..
-
+		
         mainWindow = nullptr; // (deletes our window)
 
 		// The UI is gone, we don't need the UIModel anymore
@@ -73,7 +75,16 @@ public:
     //==============================================================================
     void systemRequestedQuit() override
     {
-        // This is called when the app is being asked to quit: you can ignore this
+		// Shut down database (that makes a backup)
+		// Do this before calling quit
+		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
+		if (mainComp) {
+			// Give it a chance to complete the Database backup
+			//TODO - should ask user or at least show progress dialog?
+			mainComp->shutdown();
+		}
+		
+		// This is called when the app is being asked to quit: you can ignore this
         // request and let the app carry on running, or call quit() to allow the app to close.
         quit();
     }

@@ -19,7 +19,7 @@ public:
 	}
 
 	// Implement ThreadWithProgressWindow
-	void run();
+	virtual void run() override;
 
 	// Implement ProgressHandler interface
 	virtual bool shouldAbort() const override;
