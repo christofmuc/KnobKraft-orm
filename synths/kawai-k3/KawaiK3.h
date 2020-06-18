@@ -23,6 +23,7 @@
 #include "DetailedParametersCapability.h"
 #include "BidirectionalSyncCapability.h"
 #include "SendsProgramChangeCapability.h"
+#include "DataFileSendCapability.h"
 
 #include "SupportedByBCR2000.h" // Should be moved into the bidirectional sync?
 
