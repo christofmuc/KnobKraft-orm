@@ -38,8 +38,10 @@ target_include_directories(midikraft-oberheim-matrix1000 PUBLIC ${CMAKE_CURRENT_
 if(WIN32)
 	target_link_directories(midikraft-oberheim-matrix1000 PUBLIC "${icu_SOURCE_DIR}/lib64")
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base)
+ELSEIF(APPLE)
+	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base ICU::data ICU::uc ${APPLE_BOOST})
 ELSE()
-	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base icudata icuuc)
+	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base icudata icuuc ${APPLE_BOOST})
 ENDIF()
 
 # Pedantic about warnings
