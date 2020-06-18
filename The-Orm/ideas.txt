@@ -7,7 +7,7 @@ Mac
 
 
 Before next release
-+
++ Fix adaptions location
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -16,6 +16,20 @@ BUGS
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Scripted Query
+* Editor
+* Audio prehear
+* MKS-80
+
+Stability
++ Add minidump library to get crashes. Or even internet based feedback?
++ Crash reporting? https://partner.microsoft.com/en-us/dashboard/desktop/overview https://docs.microsoft.com/en-us/windows/win32/appxpkg/windows-desktop-application-program
+  - https://support.backtrace.io/hc/en-us/articles/360040516131-Crashpad-Integration-Guide
+  - https://partner.microsoft.com/en-US/dashboard/Account/CertificateUpload?accountprogram=win32&callbackUri=/en-US/dashboard/desktop/overview
+  - https://drdump.com/crash-reporting-system
+  - https://appcenter.ms/apps/create
++ Code signing
+  - https://shop.globalsign.com/de-de/code-signing
+  - https://secure.ssl.com/orders/new
 
 KawaiK3 - supported by BCR2000
 + need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
@@ -40,6 +54,7 @@ Rev2
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
+* Softswitch of Patch
 
 K3
 * Drawbar Organ Waveform Generator - could use BCR2000!
@@ -57,7 +72,7 @@ BCR2000
 * Should allow to load BCL files 
 * "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
 * Send to should block UI, as you really shouldn't click again while it is still sending
-* Need "cononical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
+* Need "canonical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
 
@@ -66,13 +81,15 @@ Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 * Manage Backup diskspace
 
-Generic Module
+Generic Module/Adaptions
++ Missing - MD5 cleaning to avoid duplicates
++ Missing - better patch names for synths without patch names
++ Pretty bank names?
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could show which Flavours are implemented for each adaption (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Provide "orm" python package with denibble, DSI packing etc.
 + Could watch files and hot reload module when changed on disk (for easier development)
-+ Could add "create new module" with skeleton file
 + Could add python editor with hot reload function
 
 Macro page
@@ -104,6 +121,7 @@ Advanced Queries
 * Could use advanced query builder, where you select properties and enter them (that was called QBE at some point)
 
 Global settings 
+* Settings still sends out too many updates - should adapt dual listener strategy like in Editor
 * Could show nice text instead of empty page
 
 Alternate Tunings
@@ -169,3 +187,7 @@ Librarian for other stuff (should rather do with adaption?)
 
 	+ Meris pedal
 
+MacOS X installer
+  + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
+  + Helpful: https://github.com/ionyshch/cmake-bundle-macos/blob/master/CMakeLists.txt https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Configuration
+  + or should i go the pkg route: https://medium.com/swlh/the-easiest-way-to-build-macos-installer-for-your-application-34a11dd08744

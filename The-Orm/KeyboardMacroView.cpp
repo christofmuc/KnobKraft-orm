@@ -137,7 +137,9 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 				// Check if this is a message we will transform into a macro
 				for (const auto& macro : macros_) {
 					if (isMacroState(macro.second)) {
-						executeMacro_(macro.first);
+						MessageManager::callAsync([this, macro]() {
+							executeMacro_(macro.first);
+						});
 					}
 				}
 			}

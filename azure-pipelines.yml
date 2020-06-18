@@ -36,18 +36,25 @@ jobs:
       displayName: Checking out submodules
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: '3.6' 
+        versionSpec: '3.7' 
         addToPath: true 
         architecture: 'x64' 
     #- script: cinst innosetup
     #  displayName: Installing Innosetup
 
     # Windows runs CMake tasks
+    - task: NuGetCommand@2
+      displayName: Installing Innosetup
+      inputs:
+        command: restore
+        restoreSolution: $(System.DefaultWorkingDirectory)/packages.config
+        restoreDirectory: third_party
+      condition: variables.isWindows
     - task: CMake@1
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.6.8\x64\python.exe'
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.7.7\x64\python.exe'
       condition: variables.isWindows2017
     - task: CMake@1
       displayName: Configuring CMake for Windows
@@ -59,7 +66,12 @@ jobs:
       displayName: Running CMake build for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '--build . --config Debug'
+        cmakeArgs: '--build . --config Release'
+      condition: variables.isWindows
+
+    - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.6.1.exe
+      displayName: Publish Windows Installer
+      artifact: WindowsInstaller
       condition: variables.isWindows
 
     # Linux uses bash to run CMake directly
@@ -69,3 +81,18 @@ jobs:
         cmake --build build --config Release
       displayName: Build with CMake for Linux
       condition: variables.isLinux
+      
+    # Mac build uses bash as well
+    # No need to brew icu4c cmake as they are already present on Azure mac
+    - bash: |
+        brew install gtk+3 glew boost
+        cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+        cmake --build builds/release --target package -j8        
+      displayName: Build with CMake for Mac
+      condition: variables.isMac
+      
+    - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.6.1-Darwin.dmg
+      displayName: Publish Mac Installer
+      artifact: MacInstaller
+      condition: variables.isMac
+        

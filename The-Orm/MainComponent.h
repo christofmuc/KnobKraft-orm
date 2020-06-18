@@ -34,9 +34,12 @@ public:
 	MainComponent();
     ~MainComponent();
 
-    virtual void resized() override;
+	virtual void resized() override;
+
+	void shutdown();
 
 private:
+	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
 	File getAutoCategoryFile() const;
@@ -44,7 +47,7 @@ private:
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
-	midikraft::PatchDatabase database_;
+	std::unique_ptr<midikraft::PatchDatabase> database_;
 	midikraft::AutoDetection autodetector_;
 
 	// The infrastructure for the menu and the short cut keys
