@@ -9,6 +9,8 @@
 #include "Patch.h"
 #include "UIModel.h"
 
+#include "ColourHelpers.h"
+
 #include <boost/format.hpp>
 #include <algorithm>
 
@@ -26,7 +28,7 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
 	addAndMakeVisible(pageNumbers_);
-	pageNumbers_.setJustificationType(Justification::centred);	
+	pageNumbers_.setJustificationType(Justification::centred);
 
 	UIModel::instance()->thumbnails_.addChangeListener(this);
 }
@@ -99,6 +101,16 @@ void PatchButtonPanel::refreshThumbnail(int i) {
 	}
 }
 
+Colour PatchButtonPanel::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
+	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
+	auto cats = patch.categories();
+	if (!cats.empty()) {
+		// Random in case the patch has multiple categories
+		color = cats.cbegin()->color.darker();
+	}
+	return color;
+}
+
 void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
@@ -108,30 +120,37 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 		return;
 	}
 
+	// Check if we have a multi-synth grid, then we turn on subtitles
+	std::set<std::string> synths;
+	for (int i = 0; i < (int)std::min(patchButtons_->size(), patches_.size()); i++) {
+		if (patches_[i].synth())
+			synths.insert(patches_[i].synth()->getName());
+	}
+	bool showSubtitles = synths.size() > 1;
+
 	// Now set the button text and colors
 	int active = indexOfActive();
 	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
+			auto button = patchButtons_->buttonWithIndex(i);
 			patchButtons_->buttonWithIndex(i)->setActive(i == active);
+			Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 			if (i < patches_.size()) {
-				patchButtons_->buttonWithIndex(i)->setButtonText(patches_[i].patch()->patchName());
-				Colour color = Colours::slategrey;
-				auto cats = patches_[i].categories();
-				if (!cats.empty()) {
-					// Random in case the patch has multiple categories
-					color = cats.cbegin()->color;
-				}
-				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, color.darker());
-				patchButtons_->buttonWithIndex(i)->setFavorite(patches_[i].isFavorite());
-				patchButtons_->buttonWithIndex(i)->setHidden(patches_[i].isHidden());
+				button->setButtonText(patches_[i].name());
+				button->setSubtitle((showSubtitles && patches_[i].synth()) ? patches_[i].synth()->getName() :  "");
+				button->setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(patches_[i], this));
+				button->setFavorite(patches_[i].isFavorite());
+				button->setHidden(patches_[i].isHidden());
 				refreshThumbnail(i);
-			}
+				}
 			else {
-				patchButtons_->buttonWithIndex(i)->setButtonText("");
-				patchButtons_->buttonWithIndex(i)->setColour(TextButton::ColourIds::buttonColourId, Colours::black);
-				patchButtons_->buttonWithIndex(i)->setFavorite(false);
-				patchButtons_->buttonWithIndex(i)->setHidden(false);
-				patchButtons_->buttonWithIndex(i)->clearThumbnailFile();
+				button->setButtonText("");
+				button->setSubtitle("");
+				button->setColour(TextButton::ColourIds::buttonColourId, color);
+				button->setFavorite(false);
+				button->setHidden(false);
+				button->setHidden(false);
+				button->clearThumbnailFile();
 			}
 		}
 	}

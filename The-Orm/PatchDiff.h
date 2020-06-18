@@ -17,6 +17,7 @@ class CoupledScrollCodeEditor;
 class PatchDiff : public Component, private Button::Listener {
 public:
 	PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2);
+	~PatchDiff();
 
 	void resized() override;
 	void buttonClicked(Button*) override;
@@ -29,6 +30,7 @@ private:
 	String makeTextDocument(midikraft::PatchHolder *patch);
 	std::vector<Range<int>> diffFromText(String &doc1, String &doc2);
 	std::vector<Range<int>> diffFromData(std::shared_ptr<midikraft::DataFile> patch1, std::shared_ptr<midikraft::DataFile> patch2);
+	std::string patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive);
 
 	midikraft::Synth *activeSynth_;
 	midikraft::PatchHolder p1_, p2_;

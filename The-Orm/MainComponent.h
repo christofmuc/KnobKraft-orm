@@ -26,32 +26,29 @@
 #include "SetupView.h"
 #include "RecordingView.h"
 
-#include "Rev2.h"
-#include "OB6.h"
-#include "Matrix1000.h"
-
 class LogViewLogger;
 
 class MainComponent : public Component, private ChangeListener
 {
 public:
-    MainComponent();
+	MainComponent();
     ~MainComponent();
 
-    virtual void resized() override;
+	virtual void resized() override;
+
+	void shutdown();
 
 private:
+	void setAcceptableGlobalScaleFactor();
+	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
 	File getAutoCategoryFile() const;
 	void aboutBox();
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
-	midikraft::PatchDatabase database_;
+	std::unique_ptr<midikraft::PatchDatabase> database_;
 	midikraft::AutoDetection autodetector_;
-	std::shared_ptr<midikraft::Rev2> rev2_;
-	std::shared_ptr<midikraft::OB6> ob6_;
-	std::shared_ptr<midikraft::Matrix1000> matrix1000_;
 
 	// The infrastructure for the menu and the short cut keys
 	std::unique_ptr<LambdaMenuModel> menuModel_;

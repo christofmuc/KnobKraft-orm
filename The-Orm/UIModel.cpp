@@ -8,7 +8,7 @@
 
 #include "FileHelpers.h"
 
-void CurrentSynth::changeCurrentSynth(midikraft::Synth *activeSynth)
+void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth)
 {
 	currentSynth_ = activeSynth;
 	sendChangeMessage();
@@ -109,6 +109,19 @@ std::vector<midikraft::SynthHolder> CurrentSynthList::allSynths()
 		result.push_back(synth.first);
 	}
 	return result;
+}
+
+midikraft::SynthHolder CurrentSynthList::synthByName(std::string const &name)
+{
+	for (auto synth : synths_) {
+		if (synth.first.device() && synth.first.device()->getName() == name) {
+			return synth.first;
+		}
+		else if (synth.first.synth() && synth.first.synth()->getName() == name) {
+			return synth.first;
+		}
+	}
+	return midikraft::SynthHolder(nullptr);
 }
 
 std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthList::activeSynths()
