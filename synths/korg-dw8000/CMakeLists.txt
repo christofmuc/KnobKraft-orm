@@ -37,7 +37,7 @@ target_include_directories(midikraft-korg-dw8000 PUBLIC ${CMAKE_CURRENT_LIST_DIR
 if(WIN32)
 	target_link_directories(midikraft-korg-dw8000 PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(midikraft-korg-dw8000 juce-utils midikraft-base)
+target_link_libraries(midikraft-korg-dw8000 juce-utils midikraft-base ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)
