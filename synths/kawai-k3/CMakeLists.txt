@@ -59,7 +59,7 @@ target_include_directories(midikraft-kawai-k3 PUBLIC ${CMAKE_CURRENT_LIST_DIR} P
 if(WIN32)
 	target_link_directories(midikraft-kawai-k3 PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(midikraft-kawai-k3 juce-utils midikraft-base midikraft-behringer-bcr2000)
+target_link_libraries(midikraft-kawai-k3 juce-utils midikraft-base midikraft-behringer-bcr2000 ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)
