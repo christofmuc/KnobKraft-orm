@@ -54,11 +54,11 @@ def isEditBufferDump(message):
 
 
 def numberOfBanks():
-    return 10
+    return 8
 
 
 def numberOfPatchesPerBank():
-    return 100
+    return 128
 
 
 def createProgramDumpRequest(channel, patchNo):
