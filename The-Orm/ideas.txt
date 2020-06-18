@@ -13,6 +13,7 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Scripted Query
 * Editor
 * Audio prehear
+* MKS-80
 
 Stability
 + Add minidump library to get crashes. Or even internet based feedback?
@@ -40,6 +41,7 @@ Rev2
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
+* Softswitch of Patch
 
 K3
 * Drawbar Organ Waveform Generator
@@ -56,25 +58,24 @@ MKS80
 BCR2000
 * "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
 * Send to should block UI, as you really shouldn't click again while it is still sending
-* Need "cononical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
+* Need "canonical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
-
-Pro 3
-+ Has 8 banks of 128 patches each, called U1-U4 and F1-F4, not 10 times 100 like the Pro 8 
 
 Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
 * Manage Backup diskspace
 
-Generic Module
+Generic Module/Adaptions
++ Missing - MD5 cleaning to avoid duplicates
++ Missing - better patch names for synths without patch names
++ Pretty bank names?
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could show which Flavours are implemented for each adaption (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Provide "orm" python package with denibble, DSI packing etc.
 + Could watch files and hot reload module when changed on disk (for easier development)
-+ Could add "create new module" with skeleton file
 + Could add python editor with hot reload function
 
 Macro page
