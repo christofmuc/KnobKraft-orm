@@ -76,6 +76,8 @@ MainComponent::MainComponent() :
 	logger_ = std::make_unique<LogViewLogger>(logView_);
 	database_ = std::make_unique<midikraft::PatchDatabase>();
 
+	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
+
 	// Create the list of all synthesizers!
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
@@ -87,7 +89,7 @@ MainComponent::MainComponent() :
 	//synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::BCR2000>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptions
 	auto adaptions = knobkraft::GenericAdaption::allAdaptions();
@@ -205,9 +207,13 @@ MainComponent::MainComponent() :
 		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
 	});
 
+	// Create the BCR2000 view, the predecessor to the generic editor view
+	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
+
 	addAndMakeVisible(synthList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
-	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
+	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);	
+	mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
 	mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
@@ -332,7 +338,8 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else {
 		// The active synth has been switched, make sure to refresh the tab name properly
-		mainTabs_.setTabName(3, UIModel::currentSynth()->getName() + " settings");
+		//TODO - we need a smarter idea than just index 4
+		mainTabs_.setTabName(4, UIModel::currentSynth()->getName() + " settings");
 	}
 }
 

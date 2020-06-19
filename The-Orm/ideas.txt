@@ -1,6 +1,11 @@
 Completely unprioritised list of things to do
 =============================================
 
+
+Mac
++ Get it to compile in Azure
+
+
 Before next release
 + Fix adaptions location
 
@@ -26,6 +31,14 @@ Stability
   - https://shop.globalsign.com/de-de/code-signing
   - https://secure.ssl.com/orders/new
 
+KawaiK3 - supported by BCR2000
++ need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
++ warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
++ Split view? Left patches, right editor
+
+Generic Editor
++ Could allow any mapping, to use e.g. the Rev2 to setup the OB6
+
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
@@ -44,11 +57,11 @@ Rev2
 * Softswitch of Patch
 
 K3
-* Drawbar Organ Waveform Generator
+* Drawbar Organ Waveform Generator - could use BCR2000!
 * BCR2000 template for editing the wave
 * Could render wave as Thumbnail
-* Generic Oscillator shape optimizer? 
 * Default name handling shaky
+* Generic Oscillator shape optimizer? Actually, this could be calculated via FFT
 * Allow dependencies between DataFiles (patch -> wave for K3)
 
 MKS80
@@ -56,6 +69,7 @@ MKS80
 * I guess just like the Wave in the K3?
 
 BCR2000
+* Should allow to load BCL files 
 * "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
 * Send to should block UI, as you really shouldn't click again while it is still sending
 * Need "canonical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
@@ -174,6 +188,7 @@ More synthesizers
 
 	+ Behringer RD 8
 	+ Novation Circuit
+	+ Korg DW6000 just because it is nearly identical to the DW8000 (different ID, and less bytes per patch)
 
 Requested on Reddit
 

@@ -25,6 +25,7 @@
 #include "KeyboardMacroView.h"
 #include "SetupView.h"
 #include "RecordingView.h"
+#include "BCR2000_Component.h"
 
 class LogViewLogger;
 
@@ -69,6 +70,7 @@ private:
 	std::unique_ptr<SetupView> setupView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::unique_ptr<RecordingView> recordingView_;
+	std::unique_ptr<BCR2000_Component>	bcr2000View_;
 	std::vector<MidiMessage> currentDownload_;
 
 	InsetBox logArea_;

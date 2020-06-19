@@ -31,6 +31,7 @@ set(SOURCES
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
 	AutoThumbnailingDialog.cpp AutoThumbnailingDialog.h
+	BCR2000_Component.cpp BCR2000_Component.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
@@ -42,6 +43,7 @@ set(SOURCES
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchView.cpp PatchView.h
 	RecordingView.cpp RecordingView.h
+	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h

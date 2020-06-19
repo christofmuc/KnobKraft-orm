@@ -56,6 +56,22 @@ midikraft::Synth * UIModel::currentSynth()
 	return instance_->currentSynth_.synth();
 }
 
+midikraft::Synth* UIModel::currentSynthOfPatch()
+{
+	if (instance_->currentPatch_.patch().patch()) {
+		return instance_->currentPatch().synth();
+	}
+	return currentSynth();
+}
+
+std::shared_ptr<midikraft::Synth> UIModel::currentSynthOfPatchSmart()
+{
+	if (instance_->currentPatch_.patch().patch()) {
+		return instance_->currentPatch().smartSynth();
+	}
+	return instance_->currentSynth_.smartSynth();
+}
+
 midikraft::StepSequencer * UIModel::currentSequencer()
 {
 	return instance_->currentSequencer_.sequencer();
