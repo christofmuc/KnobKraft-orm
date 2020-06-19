@@ -11,6 +11,7 @@ project(KnobKraftOrm VERSION 1.6.1)
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
 
+
 find_package(JUCE REQUIRED 
 	COMPONENTS 
 		juce_core		
@@ -67,6 +68,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-kawai-k3
 		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
+		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
 		midikraft-yamaha-refacedx

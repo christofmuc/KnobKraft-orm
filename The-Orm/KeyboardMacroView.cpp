@@ -55,7 +55,7 @@ public:
 			}
 		}
 		if (keyPressed == 0) {
-			done_ = true;
+			done_ = true; 
 		}
 	}
 
@@ -79,14 +79,14 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	for (auto config : kAllKeyboardMacroEvents) {
 		auto configComponent = new MacroConfig(config,
 			[this](KeyboardMacroEvent event) {
-			RecordProgress recorder(state_);
-			if (recorder.runThread()) {
-				KeyboardMacro newMacro = { event, recorder.notesSelected() };
-				macros_[event] = newMacro;
-				saveSettings();
-				refreshUI();
-			}
-		},
+				RecordProgress recorder(state_);
+				if (recorder.runThread()) {
+					KeyboardMacro newMacro = { event, recorder.notesSelected() };
+					macros_[event] = newMacro;
+					saveSettings();
+					refreshUI();
+				}
+			},
 			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
 				for (auto key : macros_[event].midiNotes) {
@@ -130,19 +130,20 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 					}
 				}
 			}
-			if (message.isNoteOnOrOff()) {
-				ignoreUnused(source);
-				state_.processNextMidiEvent(message);
+		if (message.isNoteOnOrOff()) {
+			ignoreUnused(source);
+			state_.processNextMidiEvent(message);
 
-				// Check if this is a message we will transform into a macro
-				for (const auto& macro : macros_) {
-					if (isMacroState(macro.second)) {
-						MessageManager::callAsync([this, macro]() {
-							executeMacro_(macro.first);
-						});
-					}
+			// Check if this is a message we will transform into a macro
+			for (const auto& macro : macros_) {
+				if (isMacroState(macro.second)) {
+					auto code = macro.first;
+					MessageManager::callAsync([this, code]() {
+						executeMacro_(code);
+					});
 				}
 			}
+		}
 		}
 	});
 
@@ -223,7 +224,7 @@ void KeyboardMacroView::loadFromSettings() {
 
 void KeyboardMacroView::saveSettings() {
 	var result;
-
+	
 	for (auto macro : macros_) {
 		var notes;
 		for (auto note : macro.second.midiNotes) {
@@ -235,7 +236,7 @@ void KeyboardMacroView::saveSettings() {
 		result.append(def);
 	}
 	String json = JSON::toString(result);
-	Settings::instance().set("MacroDefinitions", json.toStdString());
+	Settings::instance().set("MacroDefinitions", json.toStdString());	
 
 	for (auto &prop : customMasterkeyboardSetup_) {
 		Settings::instance().set(prop->name().toStdString(), prop->value().toString().toStdString());
@@ -256,7 +257,7 @@ void KeyboardMacroView::resized()
 	customSetup_.setBounds(area.removeFromTop(260).withSizeKeepingCentre(contentWidth, 260).reduced(8));
 	// Then the keyboard	
 	auto keyboardArea = area.removeFromTop(166);
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int) keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
 
 	// Set up table
 	for (auto c : configs_) {

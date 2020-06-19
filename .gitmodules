@@ -45,6 +45,10 @@
 	path = synths/MidiKraft-oberheim-matrix1000
 	url = https://github.com/christofmuc/MidiKraft-oberheim-matrix1000.git
 	branch = master
+[submodule "synths/MidiKraft-roland-mks80"]
+	path = synths/MidiKraft-roland-mks80
+	url = https://github.com/christofmuc/MidiKraft-roland-mks80.git
+	branch = master
 [submodule "synths/MidiKraft-korg-dw8000"]
 	path = synths/MidiKraft-korg-dw8000
 	url = https://github.com/christofmuc/MidiKraft-korg-dw8000.git

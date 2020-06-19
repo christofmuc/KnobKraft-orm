@@ -25,6 +25,7 @@
 #include "Matrix1000.h"
 #include "RefaceDX.h"
 #include "BCR2000.h"
+#include "MKS80.h"
 
 #include "GenericAdaption.h"
 
@@ -83,6 +84,7 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::BCR2000>(), buttonColour));
@@ -114,7 +116,7 @@ MainComponent::MainComponent() :
 			}
 		}
 		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
-	}
+		}
 
 	refreshSynthList();
 
@@ -328,8 +330,8 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else {
 		// The active synth has been switched, make sure to refresh the tab name properly
-		mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
-	}
+	mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
+}
 }
 
 File MainComponent::getAutoCategoryFile() const {
