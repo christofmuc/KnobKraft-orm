@@ -72,7 +72,7 @@ jobs:
     - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.6.1.exe
       displayName: Publish Windows Installer
       artifact: WindowsInstaller
-      condition: variables.isWindows
+      condition: variables.isWindows2019
 
     # Linux uses bash to run CMake directly
     - bash: |
