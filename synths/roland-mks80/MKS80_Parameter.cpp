@@ -103,7 +103,7 @@ namespace midikraft {
 		return SynthParameterDefinition::ParamType::INT;
 	}
 
-	std::string MKS80_Parameter::valueInPatchToText(Patch const &patch) const
+	std::string MKS80_Parameter::valueInPatchToText(DataFile const &patch) const
 	{
 		int value;
 		if (valueInPatch(patch, value)) {
@@ -112,7 +112,7 @@ namespace midikraft {
 		return "illegal value";
 	}
 
-	void MKS80_Parameter::setInPatch(Patch &patch, int value) const
+	void MKS80_Parameter::setInPatch(DataFile &patch, int value) const
 	{
 		ignoreUnused(patch, value);
 		throw std::logic_error("The method or operation is not implemented.");
@@ -162,7 +162,7 @@ namespace midikraft {
 		return max_;
 	}
 
-	bool MKS80_Parameter::valueInPatch(Patch const &patch, int &outValue) const
+	bool MKS80_Parameter::valueInPatch(DataFile const &patch, int &outValue) const
 	{
 		if (paramType_ == TONE) {
 			outValue = patch.data()[paramIndex_];

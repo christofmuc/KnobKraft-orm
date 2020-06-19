@@ -114,15 +114,15 @@ namespace midikraft {
 		ParamType type() const override;
 		virtual std::string name() const override;
 		
-		std::string valueInPatchToText(Patch const &patch) const override;
+		std::string valueInPatchToText(DataFile const &patch) const override;
 		virtual std::string description() const override;
 
 		// SynthIntParameterCapability
 		virtual int sysexIndex() const override;
 		virtual int minValue() const override;
 		virtual int maxValue() const override;
-		virtual bool valueInPatch(Patch const &patch, int &outValue) const override;
-		virtual void setInPatch(Patch &patch, int value) const override;
+		virtual bool valueInPatch(DataFile const &patch, int &outValue) const override;
+		virtual void setInPatch(DataFile &patch, int value) const override;
 
 		void setSection(SynthSection section);
 
