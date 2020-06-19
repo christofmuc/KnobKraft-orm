@@ -96,6 +96,8 @@ Librarian
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Make page number clickable to switch to that page, show less page numbers if these are really many
 * Allow multi-select of banks to import (with all feature)
+* Advanced filter editor to allow to filter for specific patch settings (e.g. sync sounds only)
+* Allow patch name override when loading banks with non-default names for existing patches (M1000)
 * Could have patch name autogenerator like LaserMammoth
 
 Advanced Queries
@@ -120,6 +122,16 @@ Database schema
 * Should have non-null everywhere
 * Should think about naming convention
 * Should create indexes where needed 
+
+Autosampler (the lazy synthesist)
+* Need preview mode that will play it to synth (when synth is not turned on?)
+* Should have autosample dialog in front of patch grid so you can see where it is
+* Cancel should send all notes off!
+* Could offer to sample only patches which have no thumbnail yet
+* Could allow to record "played" previews with typical midi file per patch type (e.g. bassline/leadline)
+* Could add different preview - "oscilloscope" to show only one cycle
+* Could add FFT preview as well
+* How to decide this is a drone and will not stop (endless release?)
 
 MIDI setup
 * With more synths, should split "select synth" and "configure synth" into two columns

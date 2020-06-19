@@ -62,6 +62,10 @@ public:
 	void selectNextPatch();
 	void retrieveEditBuffer();
 
+	// Additional functions for the auto thumbnailer
+	int totalNumberOfPatches();
+	void selectFirstPatch();
+
 private:
 	struct AdvancedFilterPanel : public Component {
 		AdvancedFilterPanel(PatchView *patchView);

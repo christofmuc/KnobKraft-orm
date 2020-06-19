@@ -188,6 +188,7 @@ MainComponent::MainComponent() :
 	patchView_ = std::make_unique<PatchView>(*database_, synths);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
+	recordingView_ = std::make_unique<RecordingView>(*patchView_);
 
 	// Create Macro Definition view
 	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
@@ -207,6 +208,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(synthList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
+	mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
 	mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
@@ -330,8 +332,8 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else {
 		// The active synth has been switched, make sure to refresh the tab name properly
-	mainTabs_.setTabName(2, UIModel::currentSynth()->getName() + " settings");
-}
+		mainTabs_.setTabName(3, UIModel::currentSynth()->getName() + " settings");
+	}
 }
 
 File MainComponent::getAutoCategoryFile() const {

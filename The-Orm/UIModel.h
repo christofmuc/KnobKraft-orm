@@ -83,6 +83,9 @@ private:
 	std::vector<std::pair<midikraft::SynthHolder, bool>> synths_;	
 };
 
+class ThumbnailChanges : public ChangeBroadcaster {
+};
+
 class UIModel {
 public:
 	static UIModel *instance();
@@ -92,15 +95,19 @@ public:
 	static midikraft::StepSequencer *currentSequencer();
 	static midikraft::PatchHolder currentPatch();
 
+	static File getPrehearDirectory();
+	static File getThumbnailDirectory();
+
 	CurrentSynth currentSynth_; // Listen to this to get updated when the active synth is switched
 	CurrentSequencer currentSequencer_;
 	CurrentPatch currentPatch_; // Listen to this to get updated when the current patch changes
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified
 	CurrentSession currentSession_; // Listen to this to find out if the current session was modified
 	CurrentSynthList synthList_;
+	ThumbnailChanges thumbnails_;
 
 private:
-	UIModel() {};
+	UIModel() = default;
 
 	static std::unique_ptr<UIModel> instance_;
 };

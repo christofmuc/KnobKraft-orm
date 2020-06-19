@@ -7,6 +7,7 @@
 #include "PatchButtonPanel.h"
 
 #include "Patch.h"
+#include "UIModel.h"
 
 #include "ColourHelpers.h"
 
@@ -28,9 +29,12 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	pageDown_.addListener(this);
 	addAndMakeVisible(pageNumbers_);
 	pageNumbers_.setJustificationType(Justification::centred);
+
+	UIModel::instance()->thumbnails_.addChangeListener(this);
 }
 
 PatchButtonPanel::~PatchButtonPanel() {
+	UIModel::instance()->thumbnails_.removeChangeListener(this);
 	midikraft::MidiController::instance()->removeMessageHandler(callback_);
 	callback_ = midikraft::MidiController::makeNoneHandle();
 }
@@ -57,6 +61,43 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 		else if (autoSelectTarget == 1) {
 			buttonClicked(((int) patches_.size()) - 1);
 		}
+	}
+}
+
+String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {
+	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
+	File thumbnailCache = UIModel::getThumbnailDirectory().getChildFile(md5 + ".kkc");
+	return thumbnailCache.getFullPathName();
+}
+
+File PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
+	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
+
+	// First check the cache
+	File thumbnailCache(createNameOfThubnailCacheFile(patch));
+	if (thumbnailCache.existsAsFile()) {
+		return thumbnailCache;
+	}
+
+	File prehear = UIModel::getPrehearDirectory().getChildFile(md5 + ".wav");
+	if (prehear.existsAsFile()) {
+		return prehear;
+	}
+	return File();
+}
+
+void PatchButtonPanel::refreshThumbnail(int i) {
+	File thumbnail = findPrehearFile(patches_[i]);
+	if (thumbnail.existsAsFile()) {
+		if (thumbnail.getFileExtension() == ".wav") {
+			patchButtons_->buttonWithIndex(i)->setThumbnailFile(thumbnail.getFullPathName().toStdString(), createNameOfThubnailCacheFile(patches_[i]).toStdString());
+		}
+		else {
+			patchButtons_->buttonWithIndex(i)->setThumbnailFromCache(Thumbnail::loadCacheInfo(thumbnail));
+		}
+	}
+	else {
+		patchButtons_->buttonWithIndex(i)->clearThumbnailFile();
 	}
 }
 
@@ -100,7 +141,8 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 				button->setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(patches_[i], this));
 				button->setFavorite(patches_[i].isFavorite());
 				button->setHidden(patches_[i].isHidden());
-			}
+				refreshThumbnail(i);
+				}
 			else {
 				button->setButtonText("");
 				button->setSubtitle("");
@@ -108,6 +150,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 				button->setFavorite(false);
 				button->setHidden(false);
 				button->setHidden(false);
+				button->clearThumbnailFile();
 			}
 		}
 	}
@@ -186,6 +229,15 @@ void PatchButtonPanel::pageDown(bool selectLast) {
 	}
 }
 
+void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+	// Some Thumbnail has changed, most likely it is visible...
+	for (int i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
+		refreshThumbnail(i);
+	}
+}
+
 void PatchButtonPanel::selectPrevious()
 {
 	int active = indexOfActive();
@@ -212,6 +264,13 @@ void PatchButtonPanel::selectNext()
 			pageUp(true);
 		}
 	}
+}
+
+void PatchButtonPanel::selectFirst()
+{
+	pageBase_ = 0;
+	pageNumber_ = 0;
+	refresh(true, 0);
 }
 
 int PatchButtonPanel::indexOfActive() const

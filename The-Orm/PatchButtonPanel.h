@@ -15,7 +15,7 @@
 #include "Synth.h"
 
 class PatchButtonPanel : public Component,
-	private Button::Listener
+	private Button::Listener, private ChangeListener
 {
 public:
 	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
@@ -32,18 +32,23 @@ public:
 	void resized() override;
 
 	void buttonClicked(Button* button) override;
-
 	void buttonClicked(int buttonIndex);
 
 	// Remote control
 	void selectPrevious();
 	void selectNext();
+	void selectFirst();
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 
 	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
 
 private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
+
+	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
+	File findPrehearFile(midikraft::PatchHolder const &patch);
+	void refreshThumbnail(int i);
 	int indexOfActive() const;
 
 	midikraft::MidiController::HandlerHandle callback_  = midikraft::MidiController::makeOneHandle();

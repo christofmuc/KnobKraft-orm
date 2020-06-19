@@ -8,10 +8,15 @@ jobs:
         mac:
           imageName: 'macos-10.14'
           isMac: True
-        win:
+        win2017:
           imageName: 'vs2017-win2016'
+          isWindows2017: True
           isWindows: True
-        lin:
+        win2019:
+          imageName: 'windows-2019'
+          isWindows2019: True
+          isWindows: True
+        linux:
           imageName: 'ubuntu-18.04'
           isLinux: True
     pool:
@@ -50,7 +55,13 @@ jobs:
       inputs:
         workingDirectory: 'build'
         cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.7.7\x64\python.exe'
-      condition: variables.isWindows
+      condition: variables.isWindows2017
+    - task: CMake@1
+      displayName: Configuring CMake for Windows
+      inputs:
+        workingDirectory: 'build'
+        cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.7.7\x64\python.exe'
+      condition: variables.isWindows2019
     - task: CMake@1
       displayName: Running CMake build for Windows
       inputs:
@@ -61,7 +72,7 @@ jobs:
     - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.6.1.exe
       displayName: Publish Windows Installer
       artifact: WindowsInstaller
-      condition: variables.isWindows
+      condition: variables.isWindows2019
 
     # Linux uses bash to run CMake directly
     - bash: |
