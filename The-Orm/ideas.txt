@@ -1,24 +1,20 @@
 Completely unprioritised list of things to do
 =============================================
 
-
-Mac
-+ Get it to compile in Azure
-
-
 Before next release
-+ Fix adaptions location
+* Manage Backup diskspace
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 * When turning on a synth in the setup and it becomes active, the advanced filter dialog is wrong
+* When plugging in a USB synth after launch, it does not get detected (github #1)
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
-* Scripted Query
-* Editor
 * Audio prehear
 * MKS-80
+* Scripted Query
+* Editor
 
 Stability
 + Add minidump library to get crashes. Or even internet based feedback?
@@ -27,7 +23,7 @@ Stability
   - https://partner.microsoft.com/en-US/dashboard/Account/CertificateUpload?accountprogram=win32&callbackUri=/en-US/dashboard/desktop/overview
   - https://drdump.com/crash-reporting-system
   - https://appcenter.ms/apps/create
-+ Code signing
++ Code signing (well, if you don't use MS, you can spare the money)
   - https://shop.globalsign.com/de-de/code-signing
   - https://secure.ssl.com/orders/new
 
@@ -38,6 +34,10 @@ KawaiK3 - supported by BCR2000
 
 Generic Editor
 + Could allow any mapping, to use e.g. the Rev2 to setup the OB6
++ Could "learn"?
++ Could allow any other layout - that would make the current one rather the BCR2000 cheat sheet
++ Could allow vector display and editor
++ Could allow envelope display and editor (instead of knobs for the env)
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
@@ -62,7 +62,6 @@ K3
 * Could render wave as Thumbnail
 * Default name handling shaky
 * Generic Oscillator shape optimizer? Actually, this could be calculated via FFT
-* Allow dependencies between DataFiles (patch -> wave for K3)
 
 MKS80
 * how to deal with tones and patches
@@ -79,13 +78,13 @@ BCR2000
 Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth
-* Manage Backup diskspace
 
 Generic Module/Adaptions
 + Missing - MD5 cleaning to avoid duplicates
 + Missing - better patch names for synths without patch names
 + Pretty bank names?
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
++ Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
 + Could show which Flavours are implemented for each adaption (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Provide "orm" python package with denibble, DSI packing etc.
@@ -94,7 +93,7 @@ Generic Module/Adaptions
 
 Macro page
 * Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
-* Show on global level if macros on/off on a global level
+* Show on global level if macros on/off 
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
 
@@ -106,13 +105,15 @@ Librarian
 * Allow recursive directory traversal during import
 * Better display of bulk imports with real file source
 * Could accept synth-initiated dumps at any time
-* Could introduce collections/sessions/songs
+* Could introduce collections/sessions/songs  = lists
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Make page number clickable to switch to that page, show less page numbers if these are really many
-* Allow multi-select of banks to import (with all feature)
-* Advanced filter editor to allow to filter for specific patch settings (e.g. sync sounds only)
-* Allow patch name override when loading banks with non-default names for existing patches (M1000)
+* Allow multi-select of banks to import (with all feature) (github #8)
+* Bank management (github #9)
 * Could have patch name autogenerator like LaserMammoth
+
+Patch Diff
+* Could be trimmed down to show only the delta parameters (doesn't make sense in Hex mode)
 
 Advanced Queries
 * Needs better operators for comparing a PyTschirp attribute with int, bool so you don't have to type the get()
@@ -121,6 +122,7 @@ Advanced Queries
 * Should fill page (fetching more pages until the page is full) - but how to do second page? This is always the problem with client side filtering. Simplest solution - fetch all from database and only then filter.
 * Could add autocomplete? With drop down?
 * Could use advanced query builder, where you select properties and enter them (that was called QBE at some point)
+* could use SQL queries instead of the python hack, needs to explode patches into parameters table, and then construct dynamic SQL
 
 Global settings 
 * Settings still sends out too many updates - should adapt dual listener strategy like in Editor
@@ -188,7 +190,6 @@ More synthesizers
 
 	+ Behringer RD 8
 	+ Novation Circuit
-	+ Korg DW6000 just because it is nearly identical to the DW8000 (different ID, and less bytes per patch)
 
 Requested on Reddit
 
