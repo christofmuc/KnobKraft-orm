@@ -14,8 +14,8 @@
 #include "GlobalSettingsCapability.h"
 
 
-SettingsView::SettingsView(std::vector<midikraft::SynthHolder> const &synths) : synths_(synths), librarian_(synths), 
-	buttonStrip_(3001, LambdaButtonStrip::Direction::Horizontal)
+SettingsView::SettingsView(std::vector<midikraft::SynthHolder> const &synths) : synths_(synths), librarian_(synths),
+buttonStrip_(3001, LambdaButtonStrip::Direction::Horizontal)
 {
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "loadGlobals", { 0, "Load Globals", [this]() {
@@ -25,6 +25,7 @@ SettingsView::SettingsView(std::vector<midikraft::SynthHolder> const &synths) : 
 	buttonStrip_.setButtonDefinitions(buttons);
 	addAndMakeVisible(buttonStrip_);
 	addAndMakeVisible(propertyEditor_);
+	addAndMakeVisible(errorMessageInstead_);
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 }
@@ -39,7 +40,18 @@ void SettingsView::resized()
 	auto area = getLocalBounds();
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 	auto editorArea = area.reduced(10);
-	propertyEditor_.setBounds(editorArea.withSizeKeepingCentre(std::min(500, editorArea.getWidth()), editorArea.getHeight()));
+	if (errorMessageInstead_.getText().isNotEmpty()) {
+		int width = std::min(area.getWidth(), 600);
+		errorMessageInstead_.setBounds(area.removeFromTop(100).withSizeKeepingCentre(width, 100).reduced(8));
+		errorMessageInstead_.setVisible(true);
+		propertyEditor_.setVisible(false);
+	}
+	else {
+		// No error, show the property editor
+		errorMessageInstead_.setVisible(false);
+		propertyEditor_.setVisible(true);
+		propertyEditor_.setBounds(editorArea.withSizeKeepingCentre(std::min(500, editorArea.getWidth()), editorArea.getHeight()));
+	}
 }
 
 void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
@@ -48,9 +60,13 @@ void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
 	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(UIModel::currentSynth());
 	if (gsc) {
 		propertyEditor_.setProperties(gsc->getGlobalSettings());
+		errorMessageInstead_.setText("", dontSendNotification);
+		resized();
 	}
 	else {
 		propertyEditor_.clear();
+		errorMessageInstead_.setText("The " + String(UIModel::currentSynth()->getName()) + " implementation does not support editing the global settings of the synth, sorry!", dontSendNotification);
+		resized();
 	}
 }
 
@@ -58,7 +74,8 @@ void SettingsView::loadGlobals() {
 	auto synth = UIModel::currentSynth();
 	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(synth);
 	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(synth);
-	if (midiLocation && gsc) {
+	if (gsc && midiLocation) {
+		errorMessageInstead_.setText("", dontSendNotification);
 		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), nullptr,
 			[this, gsc](std::vector<std::shared_ptr<midikraft::DataFile>> dataLoaded) {
 			gsc->setGlobalSettingsFromDataFile(dataLoaded[0]);
@@ -66,6 +83,7 @@ void SettingsView::loadGlobals() {
 				// Kick off an update so the property editor can refresh itself
 				auto settings = gsc->getGlobalSettings();
 				propertyEditor_.setProperties(settings);
+				resized();
 			});
 		});
 	}

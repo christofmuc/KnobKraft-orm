@@ -37,10 +37,6 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 		for (auto prop : properties_) prop->value().addListener(this);
 	}
 	refreshData();
-	header_.setMultiLine(true);
-	header_.setReadOnly(true);
-	header_.setColour(TextEditor::ColourIds::outlineColourId, ColourHelpers::getUIColour(&header_, LookAndFeel_V4::ColourScheme::windowBackground));
-	header_.setColour(TextEditor::ColourIds::backgroundColourId, ColourHelpers::getUIColour(&header_, LookAndFeel_V4::ColourScheme::windowBackground));
 	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
 		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
 	addAndMakeVisible(header_);

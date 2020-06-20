@@ -10,6 +10,7 @@
 
 //#include "HueLightControl.h"
 #include "PropertyEditor.h"
+#include "InfoText.h"
 #include "LambdaButtonStrip.h"
 #include "DebounceTimer.h"
 
@@ -35,7 +36,7 @@ private:
 
 	std::vector<std::shared_ptr<TypedNamedValue>> properties_;
 	midikraft::AutoDetection *autoDetection_;
-	TextEditor header_;
+	InfoText header_;
 	//HueLightControl * lights_;
 	LambdaButtonStrip functionButtons_;
 	PropertyEditor propertyEditor_;

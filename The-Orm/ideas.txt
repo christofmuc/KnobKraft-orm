@@ -126,7 +126,6 @@ Advanced Queries
 
 Global settings 
 * Settings still sends out too many updates - should adapt dual listener strategy like in Editor
-* Could show nice text instead of empty page
 
 Alternate Tunings
 * https://forum.sequential.com/index.php/topic,3468.0.html

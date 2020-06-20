@@ -10,6 +10,8 @@
 
 #include "LambdaButtonStrip.h"
 #include "PropertyEditor.h"
+#include "InfoText.h"
+
 #include "SynthHolder.h"
 #include "Librarian.h"
 
@@ -31,6 +33,7 @@ private:
 	midikraft::Librarian librarian_;
 
 	PropertyEditor propertyEditor_;
+	InfoText errorMessageInstead_;
 	LambdaButtonStrip buttonStrip_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SettingsView)
