@@ -26,8 +26,7 @@ namespace midikraft {
 	class Matrix1000 : public Synth, /* public SupportedByBCR2000, */
 		public SimpleDiscoverableDevice,
 		public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, // pretty complete MIDI implementation of the Matrix1000
-		public SoundExpanderCapability, public GlobalSettingsCapability,
-		private Value::Listener
+		public SoundExpanderCapability, public GlobalSettingsCapability
 	{
 	public:
 		Matrix1000();
@@ -112,11 +111,25 @@ namespace midikraft {
 
 		MidiController::HandlerHandle matrixBCRSyncHandler_ = MidiController::makeNoneHandle();
 
-		void initGlobalSettings(); 
-		virtual void valueChanged(Value& value) override; // This is called when somebody edited a global setting value
+		// This listener implements sending update messages via NRPN when any of the global settings is changed via the UI
+		class GlobalSettingsListener : public ValueTree::Listener {
+		public:
+			GlobalSettingsListener(Matrix1000 *synth) : synth_(synth) {}
+			void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
+
+			std::vector<uint8> globalSettingsData_; // The global settings data as last retrieved from the synth
+
+		private:
+			Matrix1000 *synth_;
+		};
+
+		void initGlobalSettings();
+
 		Matrix1000_GlobalSettings_Loader *globalSettingsLoader_; // Sort of a pimpl pattern
-		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
-		std::vector<uint8> globalSettingsData_; // The global settings data as last retrieved from the synth
+		TypedNamedValueSet globalSettings_;
+		ValueTree globalSettingsTree_;
+		GlobalSettingsListener updateSynthWithGlobalSettingsListener_;
+		
 	};
 
 }

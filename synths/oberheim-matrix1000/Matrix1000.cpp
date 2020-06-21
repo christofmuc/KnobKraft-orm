@@ -124,19 +124,21 @@ namespace midikraft {
 		for (auto & matrix1000GlobalSetting : kMatrix1000GlobalSettings) {
 			auto setting = std::make_shared<TypedNamedValue>(matrix1000GlobalSetting.typedNamedValue);
 			globalSettings_.push_back(setting);
-			setting->value().addListener(this);
 		}
+		globalSettingsTree_ = ValueTree("M1000SETTINGS");
+		globalSettings_.addToValueTree(globalSettingsTree_);
+		globalSettingsTree_.addListener(&updateSynthWithGlobalSettingsListener_);
 	}
 
-	void Matrix1000::valueChanged(Value& value)
+	void Matrix1000::GlobalSettingsListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 	{
 		// No matter which value changed, we need to create a new global settings sysex message and queue it for sending debounced
-		ignoreUnused(value);
+		ignoreUnused(treeWhosePropertyHasChanged, property);
 				
-		if (!globalSettingsData_.empty() && channel().isValid()) {
+		if (!globalSettingsData_.empty() && synth_->channel().isValid()) {
 			auto newMessage = globalSettingsData_;
 			// Poke all values from the globalSettings array into the data
-			for (auto & setting : globalSettings_) {
+			for (auto & setting : synth_->globalSettings_) {
 				//TODO Need to find definition for this setting now, suboptimal data structures
 				for (auto const &def : kMatrix1000GlobalSettings) {
 					if (def.typedNamedValue.name() == setting->name()) {
@@ -153,9 +155,9 @@ namespace midikraft {
 
 			// Done, now create a new global sysex dump message
 			std::vector<uint8> globalSettingsData({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, REQUEST_TYPE::MASTER, MIDI_ID.MATRIX1000_VERSION });
-			auto patchdata = escapeSysex(newMessage);
+			auto patchdata = synth_->escapeSysex(newMessage);
 			std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(globalSettingsData));
-			MidiController::instance()->getMidiOutput(midiOutput())->sendMessageDebounced(MidiHelpers::sysexMessage(globalSettingsData), 800);
+			MidiController::instance()->getMidiOutput(synth_->midiOutput())->sendMessageDebounced(MidiHelpers::sysexMessage(globalSettingsData), 800);
 		}
 	}
 
@@ -379,7 +381,7 @@ namespace midikraft {
 	{
 		auto settingsArray = unescapeSysex(dataFile->data().data(), (int) dataFile->data().size());
 		if (settingsArray.size() == 172) {
-			globalSettingsData_ = settingsArray;
+			updateSynthWithGlobalSettingsListener_.globalSettingsData_ = settingsArray;
 			for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
 				if (i < settingsArray.size()) {
 					int intValue = settingsArray[kMatrix1000GlobalSettings[i].sysexIndex] + kMatrix1000GlobalSettings[i].displayOffset;
@@ -423,7 +425,7 @@ namespace midikraft {
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(editBufferDump) });
 	}
 
-	Matrix1000::Matrix1000()
+	Matrix1000::Matrix1000() : updateSynthWithGlobalSettingsListener_(this)
 	{
 		globalSettingsLoader_ = new Matrix1000_GlobalSettings_Loader(this);
 		initGlobalSettings();
