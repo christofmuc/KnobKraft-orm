@@ -12,12 +12,10 @@
 #include "LayerCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DataFileSendCapability.h"
-#include "GlobalSettingsCapability.h"
 
 namespace midikraft {
 
-	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability, public GlobalSettingsCapability,
-		private Value::Listener
+	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability
 	{
 	public:
 		// Data Item Types
@@ -76,24 +74,21 @@ namespace midikraft {
 		// DataFileSendCapability
 		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
 
-		// GlobalSettingsCapability
-		virtual void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) override;
-		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
+		//TODO These should go into the DSISynth class
 		virtual DataFileLoadCapability *loader() override;
 		virtual int settingsDataFileType() const override;
+
+		// Implement generic DSISynth global settings capability
+		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() const;
 
 	private:
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
 		MidiMessage filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace);
 
 		void initGlobalSettings();
-		
-		void valueChanged(Value& value) override; // Value::Listener that gets called when someone changes a global setting value
 
 		// That's not very Rev2 specific
 		static uint8 clamp(int value, uint8 min = 0, uint8 max = 127);
-
-		std::vector<std::shared_ptr<TypedNamedValue>> globalSettings_;
 	};
 
 }

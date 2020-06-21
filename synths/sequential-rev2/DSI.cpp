@@ -35,7 +35,7 @@ namespace midikraft {
 		return sAlternateTunings;
 	}
 
-	DSISynth::DSISynth(uint8 midiModelID) : midiModelID_(midiModelID), localControl_(true), midiControl_(true)
+	DSISynth::DSISynth(uint8 midiModelID) : midiModelID_(midiModelID), localControl_(true), midiControl_(true), updateSynthWithGlobalSettingsListener_(this)
 	{
 	}
 
@@ -195,7 +195,7 @@ namespace midikraft {
 			}
 		}
 		// This is do work around a bug in the Rev2 firmware 1.1 that made the program edit buffer dump sent 3 bytes short, which is  bytes less after unescaping
-		while (result.size() < (size_t) expectedLength) {
+		while (result.size() < (size_t)expectedLength) {
 			result.push_back(0);
 		}
 		return result;
@@ -226,4 +226,59 @@ namespace midikraft {
 		return result;
 	}
 
+	std::vector<std::shared_ptr<TypedNamedValue>> DSISynth::getGlobalSettings()
+	{
+		return globalSettings_;
+	}
+
+	void DSISynth::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile)
+	{
+		if (dataFile && dataFile->dataTypeID() == settingsDataFileType()) {
+			auto message = MidiMessage::createSysExMessage(dataFile->data().data(), (int)dataFile->data().size());
+			std::vector<uint8> globalParameterData(&message.getSysExData()[3], message.getSysExData() + message.getSysExDataSize());
+			// Loop over it and fill out the GlobalSettings Properties
+			for (size_t i = 0; i < dsiGlobalSettings().size(); i++) {
+				if (i < globalParameterData.size()) {
+					// As this is coming from a datafile, we assume this is coming from the synth (we don't store the global settings data files on the computer)
+					// Therefore, don't notify the update synth listener, because that would send out the same data back to the synth where it is coming from
+					globalSettingsTree_.setPropertyExcludingListener(&updateSynthWithGlobalSettingsListener_,
+						Identifier(dsiGlobalSettings()[i].typedNamedValue.name()),
+						var(globalParameterData[dsiGlobalSettings()[i].sysexIndex] + dsiGlobalSettings()[i].displayOffset),
+						nullptr);
+				}
+			}
+		}
+	}
+
+	void DSISynth::GlobalSettingsListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
+	{
+		if (!synth_->channel().isValid()) return;
+
+		Value value = treeWhosePropertyHasChanged.getPropertyAsValue(property, nullptr, false);
+		// Need to find definition for this setting now, suboptimal data structures
+		for (const auto& def : synth_->dsiGlobalSettings()) {
+			if (def.typedNamedValue.name() == property.getCharPointer()) {
+				int newMidiValue = ((int)value.getValue()) - def.displayOffset;
+				auto messages = synth_->createNRPN(def.nrpn, newMidiValue);
+				String valueText;
+				switch (def.typedNamedValue.valueType()) {
+				case ValueType::Integer:
+					valueText = String(int(value.getValue())); break;
+				case ValueType::Bool:
+					valueText = bool(value.getValue()) ? "On" : "Off"; break;
+				case ValueType::Lookup:
+					valueText = def.typedNamedValue.lookup()[int(value.getValue())]; break;
+				default:
+					//TODO not implemented yet
+					jassert(false);
+				}
+				SimpleLogger::instance()->postMessage("Setting " + def.typedNamedValue.name() + " to " + valueText);
+				MidiController::instance()->getMidiOutput(synth_->midiOutput())->sendBlockOfMessagesNow(messages);
+				return;
+			}
+		}
+	}
+
 }
+
+

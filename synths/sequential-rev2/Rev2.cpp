@@ -418,14 +418,7 @@ namespace midikraft {
 		return false;
 	}
 
-	struct Rev2GlobalSettingDefinition {
-		int sysexIndex;
-		int nrpn;
-		TypedNamedValue typedNamedValue;
-		int displayOffset = 0;
-	};
-
-	std::vector<Rev2GlobalSettingDefinition> kRev2GlobalSettings = {
+	std::vector<DSIGlobalSettingDefinition> kRev2GlobalSettings = {
 		{ 0, 4097, { "Master Coarse Tune", "Tuning", 12, -12, 12 }, -12 }, // Default 12, displayed as 0
 		{ 1, 4096, { "Master Fine Tune", "Tuning", 25, -50, 50 }, -50 }, // Default 50, displayed as 0
 		{ 2, 4098, { "MIDI Channel", "MIDI", 0, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } }, 
@@ -458,26 +451,16 @@ namespace midikraft {
 
 	void Rev2::initGlobalSettings()
 	{
+		//TODO could this go into the DSISynth class as well?
 		// Loop over it and fill out the GlobalSettings Properties
 		globalSettings_.clear();
 		for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
 			auto setting = std::make_shared<TypedNamedValue>(kRev2GlobalSettings[i].typedNamedValue);
 			globalSettings_.push_back(setting);
-			setting->value().addListener(this);
 		}
-	}
-
-	void Rev2::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) {
-		auto m = MidiMessage::createSysExMessage(dataFile->data().data(), (int) dataFile->data().size());
-		// This is the global message parameter dump
-		std::vector<uint8> globalParameterData(&m.getSysExData()[3], m.getSysExData() + m.getSysExDataSize());
-
-		// Loop over it and fill out the GlobalSettings Properties
-		for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
-			if (i < globalParameterData.size()) {
-				globalSettings_[i]->value().setValue(var(globalParameterData[kRev2GlobalSettings[i].sysexIndex] + kRev2GlobalSettings[i].displayOffset));
-			}
-		}
+		globalSettingsTree_ = ValueTree("REV2SETTINGS");
+		globalSettings_.addToValueTree(globalSettingsTree_);
+		globalSettingsTree_.addListener(&updateSynthWithGlobalSettingsListener_);
 	}
 
 	std::vector<std::shared_ptr<DataFile>> Rev2::loadData(std::vector<MidiMessage> messages, int dataTypeID) const
@@ -544,46 +527,9 @@ namespace midikraft {
 		return {};
 	}
 
-	std::vector<std::shared_ptr<TypedNamedValue>> Rev2::getGlobalSettings()
-	{
-		return globalSettings_;
-	}
-
 	midikraft::DataFileLoadCapability * Rev2::loader()
 	{
 		return this;
-	}
-
-	void Rev2::valueChanged(Value& value)
-	{
-		// Find the global settings object
-		for (auto setting : globalSettings_) {
-			if (setting->value().refersToSameSourceAs(value)) {
-				// Need to find definition for this setting now, suboptimal data structures
-				for (auto def : kRev2GlobalSettings) {
-					if (def.typedNamedValue.name() == setting->name()) {
-						int newMidiValue = ((int)value.getValue()) - def.displayOffset;
-						auto messages = createNRPN(def.nrpn, newMidiValue);
-						String valueText;
-						switch (setting->valueType()) {
-						case ValueType::Integer:
-							valueText = String(int(value.getValue())); break;
-						case ValueType::Bool:
-							valueText = bool(value.getValue()) ? "On" : "Off"; break;
-						case ValueType::Lookup:
-							valueText = setting->lookupValue(); break;
-						default:
-							//TODO not implemented yet
-							jassert(false);
-						}
-						SimpleLogger::instance()->postMessage("Setting " + setting->name() + " to " + valueText);
-						MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
-						return;
-					}
-				}
-				return;
-			}
-		}
 	}
 
 	void Rev2::setLocalControl(MidiController *controller, bool localControlOn)
@@ -635,6 +581,11 @@ namespace midikraft {
 	int Rev2::settingsDataFileType() const
 	{
 		return GLOBAL_SETTINGS;
+	}
+
+	std::vector<midikraft::DSIGlobalSettingDefinition> Rev2::dsiGlobalSettings() const
+	{
+		return kRev2GlobalSettings;
 	}
 
 }

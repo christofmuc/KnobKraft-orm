@@ -12,14 +12,24 @@
 #include "ProgramDumpCapability.h"
 #include "SoundExpanderCapability.h"
 #include "MasterkeyboardCapability.h"
+#include "GlobalSettingsCapability.h"
+
+#include "TypedNamedValue.h"
 
 namespace midikraft {
 
 	// Global constants
 	extern std::map<int, std::string> kDSIAlternateTunings();
 
-	class DSISynth : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability, 
-		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability {
+	struct DSIGlobalSettingDefinition {
+		int sysexIndex;
+		int nrpn;
+		TypedNamedValue typedNamedValue;
+		int displayOffset = 0;
+	};
+
+	class DSISynth : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability,
+		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability, public GlobalSettingsCapability {
 	public:
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
@@ -53,6 +63,13 @@ namespace midikraft {
 		virtual bool hasMidiControl() const override;
 		virtual bool isMidiControlOn() const override;
 
+		// GlobalSettingsCapability
+		virtual void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) override;
+		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
+
+		// Implement this to get the common global settings implementation working
+		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() const = 0;
+
 	protected:
 		DSISynth(uint8 midiModelID);
 
@@ -64,6 +81,19 @@ namespace midikraft {
 		std::string versionString_;
 		bool localControl_;
 		bool midiControl_;
+
+		// This listener implements sending update messages via NRPN when any of the global settings is changed via the UI
+		class GlobalSettingsListener : public ValueTree::Listener {
+		public:
+			GlobalSettingsListener(DSISynth *synth) : synth_(synth) {}
+			void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
+		private:
+			DSISynth *synth_;
+		};
+		
+		TypedNamedValueSet globalSettings_;
+		ValueTree globalSettingsTree_;
+		GlobalSettingsListener updateSynthWithGlobalSettingsListener_;
 	};
 
 }
