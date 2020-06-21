@@ -144,6 +144,7 @@ add_subdirectory(MidiKraft-database)
 # Import the synths currently supported
 add_subdirectory(synths/MidiKraft-access-virus)
 add_subdirectory(synths/MidiKraft-BCR2000)
+add_subdirectory(synths/MidiKraft-behringer-rd8)
 add_subdirectory(synths/MidiKraft-kawai-k3)
 add_subdirectory(synths/MidiKraft-korg-dw8000)
 add_subdirectory(synths/MidiKraft-oberheim-matrix1000)

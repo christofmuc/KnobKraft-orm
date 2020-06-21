@@ -42,6 +42,9 @@ Generic Editor
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
+Behringer RD-8
+
+
 RefaceDX
 * Patch renaming
 * Parameter set missing
@@ -157,6 +160,8 @@ UI Cleanup
 * Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
 
 Big things
+    * Masterkeyboard setup screen to select which keyboard plays which synth
+	* Clocksetup screen to determine which device is master clock, can be combined with MIDI routing
 	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
@@ -184,9 +189,6 @@ Big things
 
 More synthesizers
 
-	+ Behringer RD 8
-	+ Novation Circuit
-
 Requested on Reddit
 
 	* Yamaha TX802
@@ -195,6 +197,7 @@ Requested on Reddit
 Librarian for other stuff (should rather do with adaption?)
 
 	+ Meris pedal
+	+ Novation Circuit
 
 MacOS X installer
   + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi

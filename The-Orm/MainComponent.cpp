@@ -26,6 +26,7 @@
 #include "RefaceDX.h"
 #include "BCR2000.h"
 #include "MKS80.h"
+#include "RD8.h"
 
 #include "GenericAdaption.h"
 
@@ -89,6 +90,7 @@ MainComponent::MainComponent() :
 	//synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::BehringerRD8>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptions
@@ -338,15 +340,15 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else {
 		// The active synth has been switched, make sure to refresh the tab name properly
-		StringArray tabnames = mainTabs_.getTabNames();
-		for (int i = 0; i < mainTabs_.getNumTabs(); i++) {
-			if (tabnames[i].endsWithIgnoreCase("settings")) {
-				mainTabs_.setTabName(i, UIModel::currentSynth()->getName() + " settings");
-				break;
+			StringArray tabnames = mainTabs_.getTabNames();
+			for (int i = 0; i < mainTabs_.getNumTabs(); i++) {
+				if (tabnames[i].endsWithIgnoreCase("settings")) {
+					mainTabs_.setTabName(i, UIModel::currentSynth()->getName() + " settings");
+					break;
+				}
 			}
 		}
 	}
-}
 
 File MainComponent::getAutoCategoryFile() const {
 	File appData = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("KnobKraft");
