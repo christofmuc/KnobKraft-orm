@@ -124,9 +124,6 @@ Advanced Queries
 * Could use advanced query builder, where you select properties and enter them (that was called QBE at some point)
 * could use SQL queries instead of the python hack, needs to explode patches into parameters table, and then construct dynamic SQL
 
-Global settings 
-* Settings still sends out too many updates - should adapt dual listener strategy like in Editor
-
 Alternate Tunings
 * https://forum.sequential.com/index.php/topic,3468.0.html
 * have you managed to change the slot number
