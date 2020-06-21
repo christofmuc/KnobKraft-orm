@@ -76,3 +76,7 @@
 	path = pytschirp
 	url = https://github.com/christofmuc/pytschirp.git
 	branch = master
+[submodule "synths/MidiKraft-behringer-rd8"]
+	path = synths/MidiKraft-behringer-rd8
+	url = https://github.com/christofmuc/MidiKraft-behringer-rd8.git
+	branch = master
