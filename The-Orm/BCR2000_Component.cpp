@@ -146,12 +146,8 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 			uiModel_ = createParameterModel();
 			// Add all Values of the uiModel_ into a ValueTree
 			uiValueTree_ = ValueTree("UIMODEL");
-			for (auto param : uiModel_) {
-				uiValueTree_.setProperty(param->name(), param->value().getValue(), nullptr);
-				auto v = uiValueTree_.getPropertyAsValue(Identifier(param->name()), nullptr, false);
-				param->value().referTo(v);
-			}
-
+			uiModel_.addToValueTree(uiValueTree_);
+		
 			supported->setupBCR2000View(this, uiModel_, uiValueTree_);
 
 			// Now attach a sysex generating listener to the values of the ValueTree
