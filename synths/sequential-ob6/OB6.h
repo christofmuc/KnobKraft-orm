@@ -11,7 +11,7 @@
 
 namespace midikraft {
 
-	class OB6 : public DSISynth, public DataFileLoadCapability, public GlobalSettingsCapability		
+	class OB6 : public DSISynth, public DataFileLoadCapability
 	{
 	public:
 		enum DataType {
@@ -60,28 +60,19 @@ namespace midikraft {
 		virtual std::vector<std::shared_ptr<DataFile>> loadData(std::vector<MidiMessage> messages, int dataTypeID) const override;
 		virtual std::vector<DataFileDescription> dataTypeNames() const override;
 
-		// GlobaSettingsCapability
-		virtual void setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile) override;
-		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
+		//TODO - these should become part of the DSISynth class
 		virtual DataFileLoadCapability *loader() override;
 		virtual int settingsDataFileType() const override;
+
+		// Enable the DSISynth implementation of the GlobalSettingsCapability
+		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() const;
 
 	private:
 		void initGlobalSettings();
 		MidiMessage requestGlobalSettingsDump() const;
 		bool isGlobalSettingsDump(MidiMessage const &message) const;
 
-		class GlobalSettingsListener : public ValueTree::Listener {
-		public:
-			GlobalSettingsListener(OB6 *ob6) : ob6_(ob6) {}
-			void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
-		private:
-			OB6 *ob6_;
-		};
-
-		TypedNamedValueSet globalSettings_;
-		ValueTree globalSettingsTree_;
-		GlobalSettingsListener updateSynthWithGlobalSettingsListener_;
+		
 	};
 
 }

@@ -40,13 +40,6 @@ namespace midikraft {
 		ARP_BEAT_SYNC
 	};
 
-	struct OB6GlobalSettingDefinition {
-		int sysexIndex;
-		int nrpn;
-		TypedNamedValue typedNamedValue;
-		int displayOffset = 0;
-	};
-
 	// Warnings for the user
 	// 
 	// The panel will only work when the parameter "MIDI Param Rcv" is set to NRPN. And if you switch it away, it will stop working.
@@ -74,7 +67,7 @@ namespace midikraft {
 	// ARP_BEAT_SYNC 1036 is not documented. Doesn't help, because you can only switch it off, due to the bug above you can't switch it on
 	// Manual states wrongly on page 77 that MIDI Param Receive is ignored when received, but that is not entirely true 
 
-	std::vector<OB6GlobalSettingDefinition> kOB6GlobalSettings = {
+	std::vector<DSIGlobalSettingDefinition> kOB6GlobalSettings = {
 		{ TRANSPOSE, 1025, { "Transpose", "Tuning", 12, -12, 12 },  -12 }, // Default 12, displayed as 0
 		{ MASTER_TUNE, 1024, { "Master Tune", "Tuning", 25, -50, 50 }, -50 }, // Default 50, displayed as 0
 		{ MIDI_CHANNEL, 1026, { "MIDI Channel", "MIDI", 1, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } },
@@ -111,7 +104,7 @@ namespace midikraft {
 	};
 
 
-	OB6::OB6() : DSISynth(0b00101110 /* OB-6 ID */), updateSynthWithGlobalSettingsListener_(this)
+	OB6::OB6() : DSISynth(0b00101110 /* OB-6 ID */)
 	{
 		initGlobalSettings();
 	}
@@ -335,62 +328,6 @@ namespace midikraft {
 		return isOwnSysex(message) && message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0x0f /* main parameter data */;
 	}
 
-	void OB6::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile)
-	{
-		if (dataFile && dataFile->dataTypeID() == GLOBAL_SETTINGS) {
-			auto message = MidiMessage::createSysExMessage(dataFile->data().data(), (int)dataFile->data().size());
-			if (isGlobalSettingsDump(message)) {
-				std::vector<uint8> globalParameterData(&message.getSysExData()[3], message.getSysExData() + message.getSysExDataSize());
-				if (globalParameterData.size() == 19) {
-					// Loop over it and fill out the GlobalSettings Properties
-					for (size_t i = 0; i < kOB6GlobalSettings.size(); i++) {
-						if (i < globalParameterData.size()) {
-							// As this is coming from a datafile, we assume this is coming from the synth (we don't store the global settings data files on the computer)
-							// Therefore, don't notify the update synth listener, because that would send out the same data back to the synth where it is coming from
-							globalSettingsTree_.setPropertyExcludingListener(&updateSynthWithGlobalSettingsListener_,
-								Identifier(kOB6GlobalSettings[i].typedNamedValue.name()),
-								var(globalParameterData[kOB6GlobalSettings[i].sysexIndex] + kOB6GlobalSettings[i].displayOffset),
-								nullptr);
-						}
-					}
-				}
-				else {
-					SimpleLogger::instance()->postMessage("Invalid size of global settings data - maybe an old OS version? Update the OB6 to 1.5.8!");
-				}
-			}
-		}
-	}
-
-	//TODO needs to be merged with Rev2 code
-	void OB6::GlobalSettingsListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
-	{
-		if (!ob6_->channel().isValid()) return;
-
-		Value value = treeWhosePropertyHasChanged.getPropertyAsValue(property, nullptr, false);
-		// Need to find definition for this setting now, suboptimal data structures
-		for (const auto& def : kOB6GlobalSettings) {
-			if (def.typedNamedValue.name() == property.getCharPointer()) {
-				int newMidiValue = ((int)value.getValue()) - def.displayOffset;
-				auto messages = ob6_->createNRPN(def.nrpn, newMidiValue);
-				String valueText;
-				switch (def.typedNamedValue.valueType()) {
-				case ValueType::Integer:
-					valueText = String(int(value.getValue())); break;
-				case ValueType::Bool:
-					valueText = bool(value.getValue()) ? "On" : "Off"; break;
-				case ValueType::Lookup:
-					valueText = def.typedNamedValue.lookup()[int(value.getValue())]; break;
-				default:
-					//TODO not implemented yet
-					jassert(false);
-				}
-				SimpleLogger::instance()->postMessage("Setting " + def.typedNamedValue.name() + " to " + valueText);
-				MidiController::instance()->getMidiOutput(ob6_->midiOutput())->sendBlockOfMessagesNow(messages);
-				return;
-			}
-		}
-	}
-
 	void OB6::initGlobalSettings()
 	{
 		// Loop over it and fill out the GlobalSettings Properties
@@ -404,19 +341,21 @@ namespace midikraft {
 		globalSettingsTree_.addListener(&updateSynthWithGlobalSettingsListener_);
 	}
 
-	std::vector<std::shared_ptr<TypedNamedValue>> OB6::getGlobalSettings()
-	{
-		return globalSettings_;
-	}
-
 	midikraft::DataFileLoadCapability * OB6::loader()
 	{
+		//TODO this could be standard for all DSISynths
 		return this;
 	}
 
 	int OB6::settingsDataFileType() const
 	{
+		//TODO this could be standard for all DSISynths
 		return GLOBAL_SETTINGS;
+	}
+
+	std::vector<midikraft::DSIGlobalSettingDefinition> OB6::dsiGlobalSettings() const
+	{
+		return kOB6GlobalSettings;
 	}
 
 	std::shared_ptr<Patch> OB6::patchFromProgramDumpSysex(const MidiMessage& message) const
