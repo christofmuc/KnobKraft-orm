@@ -111,7 +111,7 @@ namespace midikraft {
 	};
 
 
-	OB6::OB6() : DSISynth(0b00101110 /* OB-6 ID */)
+	OB6::OB6() : DSISynth(0b00101110 /* OB-6 ID */), updateSynthWithGlobalSettingsListener_(this)
 	{
 		initGlobalSettings();
 	}
@@ -251,7 +251,7 @@ namespace midikraft {
 		case PATCH:
 			return { requestEditBufferDump() }; // Interpreting this as the edit buffer
 		case GLOBAL_SETTINGS:
-			return { requestGlobalSettingsDump() }; 
+			return { requestGlobalSettingsDump() };
 		case ALTERNATE_TUNING:
 			return { MidiTuning::createTuningDumpRequest(0x01, MidiProgramNumber::fromZeroBase(itemNo)) };
 		default:
@@ -345,7 +345,12 @@ namespace midikraft {
 					// Loop over it and fill out the GlobalSettings Properties
 					for (size_t i = 0; i < kOB6GlobalSettings.size(); i++) {
 						if (i < globalParameterData.size()) {
-							globalSettings_[i]->value().setValue(var(globalParameterData[kOB6GlobalSettings[i].sysexIndex] + kOB6GlobalSettings[i].displayOffset));
+							// As this is coming from a datafile, we assume this is coming from the synth (we don't store the global settings data files on the computer)
+							// Therefore, don't notify the update synth listener, because that would send out the same data back to the synth where it is coming from
+							globalSettingsTree_.setPropertyExcludingListener(&updateSynthWithGlobalSettingsListener_,
+								Identifier(kOB6GlobalSettings[i].typedNamedValue.name()),
+								var(globalParameterData[kOB6GlobalSettings[i].sysexIndex] + kOB6GlobalSettings[i].displayOffset),
+								nullptr);
 						}
 					}
 				}
@@ -357,35 +362,30 @@ namespace midikraft {
 	}
 
 	//TODO needs to be merged with Rev2 code
-	void OB6::valueChanged(Value& value)
+	void OB6::GlobalSettingsListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 	{
-		if (!channel().isValid()) return;
+		if (!ob6_->channel().isValid()) return;
 
-		// Find the global settings object
-		for (auto setting : globalSettings_) {
-			if (setting->value().refersToSameSourceAs(value)) {
-				// Need to find definition for this setting now, suboptimal data structures
-				for (auto def : kOB6GlobalSettings) {
-					if (def.typedNamedValue.name() == setting->name()) {
-						int newMidiValue = ((int)value.getValue()) - def.displayOffset;
-						auto messages = createNRPN(def.nrpn, newMidiValue);
-						String valueText;
-						switch (setting->valueType()) {
-						case ValueType::Integer:
-							valueText = String(int(value.getValue())); break;
-						case ValueType::Bool:
-							valueText = bool(value.getValue()) ? "On" : "Off"; break;
-						case ValueType::Lookup:
-							valueText = setting->lookup()[int(value.getValue())]; break;
-						default:
-							//TODO not implemented yet
-							jassert(false);
-						}
-						SimpleLogger::instance()->postMessage("Setting " + setting->name() + " to " + valueText);
-						MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
-						return;
-					}
+		Value value = treeWhosePropertyHasChanged.getPropertyAsValue(property, nullptr, false);
+		// Need to find definition for this setting now, suboptimal data structures
+		for (const auto& def : kOB6GlobalSettings) {
+			if (def.typedNamedValue.name() == property.getCharPointer()) {
+				int newMidiValue = ((int)value.getValue()) - def.displayOffset;
+				auto messages = ob6_->createNRPN(def.nrpn, newMidiValue);
+				String valueText;
+				switch (def.typedNamedValue.valueType()) {
+				case ValueType::Integer:
+					valueText = String(int(value.getValue())); break;
+				case ValueType::Bool:
+					valueText = bool(value.getValue()) ? "On" : "Off"; break;
+				case ValueType::Lookup:
+					valueText = def.typedNamedValue.lookup()[int(value.getValue())]; break;
+				default:
+					//TODO not implemented yet
+					jassert(false);
 				}
+				SimpleLogger::instance()->postMessage("Setting " + def.typedNamedValue.name() + " to " + valueText);
+				MidiController::instance()->getMidiOutput(ob6_->midiOutput())->sendBlockOfMessagesNow(messages);
 				return;
 			}
 		}
@@ -398,8 +398,10 @@ namespace midikraft {
 		for (size_t i = 0; i < kOB6GlobalSettings.size(); i++) {
 			auto setting = std::make_shared<TypedNamedValue>(kOB6GlobalSettings[i].typedNamedValue);
 			globalSettings_.push_back(setting);
-			setting->value().addListener(this);
 		}
+		globalSettingsTree_ = ValueTree("OB6SETTINGS");
+		globalSettings_.addToValueTree(globalSettingsTree_);
+		globalSettingsTree_.addListener(&updateSynthWithGlobalSettingsListener_);
 	}
 
 	std::vector<std::shared_ptr<TypedNamedValue>> OB6::getGlobalSettings()
