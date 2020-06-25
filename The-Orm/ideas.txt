@@ -2,7 +2,7 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-* Manage Backup diskspace
+
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
