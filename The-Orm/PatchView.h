@@ -87,6 +87,7 @@ private:
 	void retrievePatches();
 	
 	void loadPatches();
+	void exportPatches();
 	std::string currentlySelectedSourceUUID();
 	void rebuildSynthFilters();
 	void rebuildImportFilterBox();
