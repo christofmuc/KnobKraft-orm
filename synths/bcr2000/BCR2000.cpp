@@ -514,11 +514,16 @@ namespace midikraft {
 		return message.isSysEx() && isSysexFromBCR2000(message);
 	}
 
+	std::vector<juce::MidiMessage> BCR2000::patchToSysex(std::shared_ptr<DataFile> dataFile)
+	{
+		return Sysex::vectorToMessages(dataFile->data());
+	}
+
 	void BCR2000::sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile)
 	{
 		ignoreUnused(logger); //TODO that argument can go away
 		if (channel().isValid()) {
-			auto messages = Sysex::vectorToMessages(dataFile->data());
+			auto messages = patchToSysex(dataFile);
 			sendSysExToBCR(controller->getMidiOutput(midiOutput()), messages, [](std::vector<BCRError> const &errors) {
 				if (!errors.empty()) {
 					SimpleLogger::instance()->postMessage("Preset contains errors");

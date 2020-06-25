@@ -85,6 +85,8 @@ namespace midikraft {
 		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		bool isOwnSysex(MidiMessage const &message) const override;
 
+		// Override generic message generation hander because we have our own way to store the data
+		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> dataFile) override;
 		// Override the generic send handler so we can do the proper error handling for the BCR2000
 		virtual void sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) override;
 
