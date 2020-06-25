@@ -41,8 +41,11 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 	addAndMakeVisible(propertyPanel_);
 	addAndMakeVisible(cancel_);
 	addAndMakeVisible(ok_);
-	ok_.setButtonText("OK");
+	addAndMakeVisible(all_);
+	ok_.setButtonText("Import selected");
 	ok_.addListener(this);
+	all_.setButtonText("Import all");
+	all_.addListener(this);
 	cancel_.setButtonText("Cancel");
 	cancel_.addListener(this);
 
@@ -54,8 +57,7 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 		choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
 		choiceValues.add(i);
 	}
-	choices.add("All"); choiceValues.add(numBanks_);
-	bankValue_ = Array<var>(0); // Only the first entry is selected by default
+	bankValue_ = Array<var>();
 	banks_ = new MultiChoicePropertyComponent(bankValue_, "Banks", choices, choiceValues);
 	banks_->setExpanded(true);
 	propertyPanel_.addProperties({ banks_});
@@ -67,7 +69,9 @@ void ImportFromSynthDialog::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 	auto bottom = area.removeFromBottom(40).reduced(8);
-	ok_.setBounds(bottom.removeFromLeft(bottom.getWidth() / 2));
+	int width = bottom.getWidth() / 3;
+	ok_.setBounds(bottom.removeFromLeft(width).withTrimmedRight(8));
+	all_.setBounds(bottom.removeFromLeft(width).withTrimmedRight(8));
 	cancel_.setBounds(bottom);
 	propertyPanel_.setBounds(area.reduced(8));
 }
@@ -91,6 +95,14 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 			}
 		}
 
+		onOk_(result);
+	}
+	else if (button == &all_) {
+		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
+			dw->exitModalState(1);
+		}
+		std::vector<MidiBankNumber> result;
+		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i));
 		onOk_(result);
 	}
 	else if (button == &cancel_) {

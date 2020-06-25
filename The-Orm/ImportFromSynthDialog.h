@@ -29,7 +29,7 @@ private:
 	TSuccessHandler onOk_;
 	MultiChoicePropertyComponent  *banks_;
 	PropertyPanel propertyPanel_;
-	TextButton ok_, cancel_;
+	TextButton ok_, all_, cancel_;
 
 	Value bankValue_;
 	int numBanks_; 
@@ -37,6 +37,7 @@ private:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ImportFromSynthDialog)
 };
 
+//TODO - this has turned into a pure progress handler, and has nothing to do with the importfromsynth anymore. I should put this into juce-widgets?
 class ImportFromSynthThread : public ThreadWithProgressWindow, public midikraft::ProgressHandler
 {
 public:
