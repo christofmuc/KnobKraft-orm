@@ -72,7 +72,10 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "showDiff", { 3, "Show patch comparison", [this]() {
+	{ "exportSysex", { 3, "Export into sysex files", [this]() {
+		exportPatches();
+	} } },
+	{ "showDiff", { 4, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
 	};
@@ -443,6 +446,13 @@ void PatchView::loadPatches() {
 			mergeNewPatches(patches);
 		}
 	}
+}
+
+void PatchView::exportPatches()
+{
+	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+		librarian_.saveSysexPatchesToDisk(patches);
+	});
 }
 
 std::string PatchView::currentlySelectedSourceUUID() {
