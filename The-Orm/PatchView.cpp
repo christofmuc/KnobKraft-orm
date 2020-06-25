@@ -320,15 +320,18 @@ void PatchView::saveCurrentPatchCategories() {
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
+	std::shared_ptr<ImportFromSynthThread> progressWindow = std::make_shared<ImportFromSynthThread>();
 	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
-			[this, activeSynth, midiLocation](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
+			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
+			progressWindow->launchThread();
 			librarian_.startDownloadingAllPatches(
 				midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 				activeSynth,
 				bankNo,
-				progressHandler, [this](std::vector<midikraft::PatchHolder> patchesLoaded) {
+				progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+				progressWindow->signalThreadShouldExit();
 				MessageManager::callAsync([this, patchesLoaded]() {
 					mergeNewPatches(patchesLoaded);
 				});
