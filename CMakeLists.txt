@@ -6,6 +6,9 @@
 
 cmake_minimum_required(VERSION 3.14)
 
+# Target a specific MacOS version (High Sierra here)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+
 project(KnobKraft_Orm)
 
 # Since we also build MacOS, we need C++ 17. Which is not a bad thing.
