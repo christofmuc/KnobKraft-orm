@@ -153,6 +153,7 @@ MIDI setup
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
 * MIDI log needs a "save log function", and a "turn off" function
 * Debounce is currently disabled - can I reenable it?
+* Could directly support the MidiExpress XT routing, muting, etc.
 
 Big things
     * Masterkeyboard setup screen to select which keyboard plays which synth
@@ -198,3 +199,11 @@ MacOS X installer
   + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
   + Helpful: https://github.com/ionyshch/cmake-bundle-macos/blob/master/CMakeLists.txt https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Configuration
   + or should i go the pkg route: https://medium.com/swlh/the-easiest-way-to-build-macos-installer-for-your-application-34a11dd08744
+
+Sampling, Resynthesis, Fairlight
+http://www.nattvard.com/iix/database.php
+https://sonicbloom.net/de/kostenlose-sb-fairlight-cmi-samples/
+https://www.virtual-music.at/en/zone-faqs/
+http://www.nattvard.com/iix/utilities.php
+https://adamstrange.itch.io/qasarbeach
+https://antonus-synths.com/en/antonus-2600/

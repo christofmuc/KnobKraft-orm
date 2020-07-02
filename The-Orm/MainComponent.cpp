@@ -30,6 +30,8 @@
 
 #include "GenericAdaption.h"
 
+#include "MasterkeyboardsView.h"
+
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
@@ -216,6 +218,7 @@ MainComponent::MainComponent() :
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);	
 	mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
+	mainTabs_.addTab("Routing", tabColour, new MasterkeyboardsView(), false);
 	mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
