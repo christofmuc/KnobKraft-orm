@@ -25,12 +25,13 @@ private:
 };
 
 
-MasterkeyboardsView::MasterkeyboardsView()
+MasterkeyboardsView::MasterkeyboardsView(midikraft::AutoDetection &autoDetection)
 {
 	recreate();
 
 	// Subscribe to updates 
 	UIModel::instance()->synthList_.addChangeListener(this);
+	autoDetection.addChangeListener(this);
 }
 
 

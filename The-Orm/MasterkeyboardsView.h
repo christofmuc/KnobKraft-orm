@@ -7,6 +7,8 @@
 #include "SynthHolder.h"
 #include "MidiChannelEntry.h"
 
+#include "AutoDetection.h"
+
 #include <map>
 
 class MidiController;
@@ -15,7 +17,7 @@ class MasterkeyboardsView : public Component,
 	public ChangeListener
 {
 public:
-	MasterkeyboardsView();
+	MasterkeyboardsView(midikraft::AutoDetection &autoDetection);
 	~MasterkeyboardsView();
 
 	virtual void resized() override;
