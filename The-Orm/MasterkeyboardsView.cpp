@@ -10,12 +10,12 @@
 
 class ButtonClickLambda : public Button::Listener {
 public:
-	ButtonClickLambda::ButtonClickLambda(std::function<void(Button *)> clickHandler)
+	ButtonClickLambda(std::function<void(Button *)> clickHandler)
 		: clickHandler_(clickHandler)
 	{
 	}
 
-	void ButtonClickLambda::buttonClicked(Button *button)
+	void buttonClicked(Button *button)
 	{
 		clickHandler_(button);
 	}
@@ -23,7 +23,6 @@ public:
 private:
 	std::function<void(Button *)> clickHandler_;
 };
-
 
 MasterkeyboardsView::MasterkeyboardsView(midikraft::AutoDetection &autoDetection)
 {
