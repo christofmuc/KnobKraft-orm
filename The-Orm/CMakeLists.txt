@@ -38,7 +38,7 @@ set(SOURCES
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
-	MasterKeyboardsView.cpp MasterKeyboardsView.h
+	MasterkeyboardsView.cpp MasterkeyboardsView.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
 	PatchNameDialog.cpp PatchNameDialog.h
