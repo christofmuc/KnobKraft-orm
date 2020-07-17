@@ -79,7 +79,7 @@ namespace midikraft {
 		virtual int settingsDataFileType() const override;
 
 		// Implement generic DSISynth global settings capability
-		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() override const;
+		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() const override;
 
 	private:
 		MidiMessage buildSysexFromEditBuffer(std::vector<uint8> editBuffer);
