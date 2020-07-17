@@ -6,8 +6,8 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-# Target a specific MacOS version (High Sierra here)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+# Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
 
 project(KnobKraft_Orm)
 
