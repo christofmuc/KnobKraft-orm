@@ -55,7 +55,7 @@ IF (WIN32)
 
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/3.7.7/python-3.7.7-embed-amd64.zip
+		URL https://www.python.org/ftp/python/3.7.8/python-3.7.8-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 ELSEIF(APPLE)
