@@ -14,7 +14,7 @@
 
 namespace midikraft {
 
-	class Virus : public Synth, public SimpleDiscoverableDevice, EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, public SoundExpanderCapability {
+	class Virus : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, public SoundExpanderCapability {
 	public:
 		Virus();
 
