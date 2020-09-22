@@ -7,6 +7,7 @@
 #include "UIModel.h"
 
 #include <boost/format.hpp>
+#include "MidiClockCapability.h"
 
 class ButtonClickLambda : public Button::Listener {
 public:
@@ -39,6 +40,32 @@ MasterkeyboardsView::~MasterkeyboardsView()
 	UIModel::instance()->synthList_.removeChangeListener(this);
 }
 
+Component *addClockTypes(std::shared_ptr<midikraft::MidiClockCapability> clocks) {
+	
+	StringArray choices;
+	Array<var> values;
+	for (midikraft::MidiClockCapability::ClockMode v : clocks->getSupportedClockModes()) {
+		switch (v) {
+		case midikraft::MidiClockCapability::ClockMode::OFF:
+			choices.add("Off"); values.add(static_cast<int>(v));
+			break;
+		case midikraft::MidiClockCapability::ClockMode::MASTER:
+			choices.add("Master"); values.add(static_cast<int>(v));
+			break;
+		case midikraft::MidiClockCapability::ClockMode::SLAVE:
+			choices.add("Slave"); values.add(static_cast<int>(v));
+			break;
+		case midikraft::MidiClockCapability::ClockMode::SLAVE_NO_START_STOP:
+			choices.add("Slave no start/stop"); values.add(static_cast<int>(v));
+			break;
+		case midikraft::MidiClockCapability::ClockMode::SLAVE_THROUGH:
+			choices.add("Slave through"); values.add(static_cast<int>(v));
+			break;
+		}
+	}
+	return new ChoicePropertyComponent(clocks->getMidiClockModeValue(), "Clock", choices, values);
+}
+
 void MasterkeyboardsView::recreate() {
 	auto synths = UIModel::instance()->synthList_.activeSynths();
 
@@ -46,6 +73,7 @@ void MasterkeyboardsView::recreate() {
 	// Remove previous UI
 	keyboards_.clear();
 	keyboardChannels_.clear();
+	expanderClockMode_.clear();
 	keyboadLocalButtons_.clear();
 	expanders_.clear();
 	expanderChannels_.clear();
@@ -109,6 +137,17 @@ void MasterkeyboardsView::recreate() {
 	// Now add checkmarks for each expander that will show which master keyboard controls it
 	for (auto expander : expanders_) {
 		auto expanderCap = expanderWithName(expander->getText().toStdString());
+
+		auto midiClockCap = std::dynamic_pointer_cast<midikraft::MidiClockCapability>(expanderCap);
+		if (midiClockCap) {
+			auto clocks = addClockTypes(midiClockCap);
+			expanderClockMode_.add(clocks);
+			addAndMakeVisible(clocks);
+		}
+		else {
+			expanderClockMode_.add(new Label());
+		}
+
 		buttonsForExpander_[expander->getText().toStdString()] = std::vector<ToggleButton *>();
 		for (auto keyboard : keyboards_) {
 			ignoreUnused(keyboard);
@@ -153,10 +192,11 @@ void MasterkeyboardsView::resized()
 	grid.setGap(20_px);
 	using Track = juce::Grid::TrackInfo;
 	for (int i = 0; i < expanders_.size() + 3; i++) grid.templateRows.add(Track(1_fr));
-	for (int i = 0; i < keyboards_.size() + 3; i++) grid.templateColumns.add(Track(1_fr));
+	for (int i = 0; i < keyboards_.size() + 4; i++) grid.templateColumns.add(Track(1_fr));
 
 	// Create header row
 	grid.items.add(juce::GridItem(header));
+	grid.items.add(GridItem());
 	grid.items.add(GridItem());
 	for (auto keyboard : keyboards_) {
 		grid.items.add(juce::GridItem(keyboard));
@@ -164,6 +204,7 @@ void MasterkeyboardsView::resized()
 	grid.items.add(juce::GridItem());
 
 	// Row with keyboard channels
+	grid.items.add(GridItem());
 	grid.items.add(GridItem());
 	grid.items.add(GridItem());
 	for (auto keyboard : keyboardChannels_) {
@@ -174,6 +215,7 @@ void MasterkeyboardsView::resized()
 	// Row with MIDI local control switches
 	grid.items.add(GridItem());
 	grid.items.add(GridItem());
+	grid.items.add(GridItem());
 	for (auto keyboard : keyboadLocalButtons_) {
 		grid.items.add(juce::GridItem(keyboard));
 	}
@@ -182,6 +224,7 @@ void MasterkeyboardsView::resized()
 	// Create one row per synth expander/sound-producing module
 	for (int e = 0; e < expanders_.size(); e++) {
 		grid.items.add(juce::GridItem(expanders_[e]));
+		grid.items.add(juce::GridItem(expanderClockMode_[e]));
 		grid.items.add(GridItem(expanderChannels_[e]));
 		for (int i = 0; i < keyboards_.size() + 1; i++) {
 			auto button = buttonsForExpander_[expanders_[e]->getText().toStdString()][i];
@@ -209,6 +252,11 @@ void MasterkeyboardsView::refreshCheckmarks() {
 		auto e = expanderWithName(expanderName);
 		expanderChannels_[row]->setValue(e->getInputChannel());
 		expanderChannels_[row]->setEnabled(e->getInputChannel().isValid() && e->canChangeInputChannel());
+		expanderClockMode_[row]->setEnabled(e->getInputChannel().isValid());
+		auto mc = std::dynamic_pointer_cast<midikraft::MidiClockCapability>(e);
+		if (mc) {
+			((ChoicePropertyComponent *)expanderClockMode_[row])->setIndex(static_cast<int>(mc->getMidiClockMode()));
+		}
 		for (int col = 0; col < keyboards_.size(); col++) {
 			auto keyboardName = keyboards_[col]->getText().toStdString();
 			auto keyboard = keyboardWithName(keyboardName);

@@ -35,6 +35,7 @@ private:
 	OwnedArray<ToggleButton> keyboadLocalButtons_;
 	OwnedArray<Label> expanders_;
 	OwnedArray<MidiChannelEntry> expanderChannels_;
+	OwnedArray<Component> expanderClockMode_;
 	OwnedArray<Button::Listener> listeners_;
 	std::map<std::string, std::vector<ToggleButton *>> buttonsForExpander_;
 };
