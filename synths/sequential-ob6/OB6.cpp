@@ -20,24 +20,24 @@ namespace midikraft {
 	// The values are  indexes into the global parameter dump
 	enum OB6_GLOBAL_PARAMS {
 		TRANSPOSE = 0,
-		MASTER_TUNE,
-		MIDI_CHANNEL,
-		MIDI_CLOCK,
-		CLOCK_PORT,
-		PARAM_TRANSMIT,
-		PARAM_RECEIVE,
-		MIDI_CONTROL,
-		MIDI_SYSEX,
-		MIDI_OUT,
-		LOCAL_CONTROL,
-		SEQ_JACK,
-		POT_MODE,
-		SUSTAIN_POLARITY,
-		ALT_TUNING,
-		VELOCITY_RESPONSE,
-		AFTERTOUCH_RESPONSE,
-		STEREO_MONO,
-		ARP_BEAT_SYNC
+		MASTER_TUNE = 1,
+		MIDI_CHANNEL = 2,
+		MIDI_CLOCK = 3,
+		CLOCK_PORT = 4,
+		PARAM_TRANSMIT = 5,
+		PARAM_RECEIVE = 6,
+		MIDI_CONTROL = 7,
+		MIDI_SYSEX = 8,
+		MIDI_OUT = 9,
+		LOCAL_CONTROL = 10,
+		SEQ_JACK = 11,
+		POT_MODE = 12,
+		SUSTAIN_POLARITY = 13,
+		ALT_TUNING =14 ,
+		VELOCITY_RESPONSE = 15,
+		AFTERTOUCH_RESPONSE = 16,
+		STEREO_MONO = 17,
+		ARP_BEAT_SYNC = 18 // Sadly this is not stored in the byte 18 of the sysex data package
 	};
 
 	// Warnings for the user
@@ -47,6 +47,7 @@ namespace midikraft {
 	// Also, the MIDI sysex switch must be set to USB if we talk to the synth via USB
 
 	// Bugs in the OB6 Sysex implementation (V 1.5.8):
+	// I documented those here https://forum.sequential.com/index.php/topic,4497.0.html
 	//
 	// Clock Mode has 5 values, but value "4" cannot be set via NRPN (nSS), only via front panel. It is reported correctly back via global settings dump, though.
 	// MIDI Param Xmit has 5 values, but the last value "4" cannot be set via NRPN ("nAS" - NRPN and sequencer)
