@@ -6,6 +6,9 @@
 
 cmake_minimum_required(VERSION 3.14)
 
+# Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
+
 project(KnobKraft_Orm)
 
 #set(USE_ASIO true)
@@ -55,7 +58,7 @@ IF (WIN32)
 
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/3.7.7/python-3.7.7-embed-amd64.zip
+		URL https://www.python.org/ftp/python/3.7.8/python-3.7.8-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 ELSEIF(APPLE)
