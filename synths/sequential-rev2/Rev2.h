@@ -72,7 +72,7 @@ namespace midikraft {
 		std::vector<DataFileDescription> dataTypeNames() const override;
 
 		// DataFileSendCapability
-		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
 
 		//TODO These should go into the DSISynth class
 		virtual DataFileLoadCapability *loader() override;

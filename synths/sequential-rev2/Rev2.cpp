@@ -500,8 +500,9 @@ namespace midikraft {
 		return { { "Patch", true, true}, { "Global Settings", true, false}, { "Alternate Tuning", false, true } };
 	}
 
-	std::vector<juce::MidiMessage> Rev2::dataFileToMessages(std::shared_ptr<DataFile> dataFile) const
+	std::vector<juce::MidiMessage> Rev2::dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const
 	{
+		ignoreUnused(target);
 		switch (dataFile->dataTypeID()) {
 		case PATCH:
 			// You should not come here?
