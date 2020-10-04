@@ -76,7 +76,7 @@ namespace midikraft {
 		virtual TPatchVector loadStreamDump(std::vector<MidiMessage> const &streamDump) const override;
 
 		// DataFileSendCapability
-		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
 
 		// Synth
 		int numberOfBanks() const override;
@@ -86,9 +86,9 @@ namespace midikraft {
 		bool isOwnSysex(MidiMessage const &message) const override;
 
 		// Override generic message generation hander because we have our own way to store the data
-		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> dataFile) override;
+		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
 		// Override the generic send handler so we can do the proper error handling for the BCR2000
-		virtual void sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) override;
+		virtual void sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
 
 	private:
 		uint8 sysexCommand(const MidiMessage &message) const;
