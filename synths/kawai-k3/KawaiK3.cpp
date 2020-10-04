@@ -506,8 +506,9 @@ namespace midikraft {
 		return { { "Patch", true, true}, { "User Wave", true, true} };
 	}
 
-	std::vector<juce::MidiMessage> KawaiK3::dataFileToMessages(std::shared_ptr<DataFile> dataFile) const
+	std::vector<juce::MidiMessage> KawaiK3::dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const
 	{
+		ignoreUnused(target);
 		std::vector<juce::MidiMessage> result;
 		switch (dataFile->dataTypeID())
 		{
@@ -631,16 +632,17 @@ namespace midikraft {
 		//sendK3Wave(MidiController::instance(), MidiController::instance(), SimpleLogger::instance(), currentPatch, userWave);
 	}
 
-	void KawaiK3::sendPatchToSynth(MidiController* controller, SimpleLogger* logger, std::shared_ptr<DataFile> dataFile) {
+	void KawaiK3::sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) {
+		ignoreUnused(target);
 		auto wave = std::dynamic_pointer_cast<KawaiK3Wave>(dataFile);
 		if (wave) {
-			logger->postMessage("Writing K3 user wave to the internal wave memory");
+			SimpleLogger::instance()->postMessage("Writing K3 user wave to the internal wave memory");
 		}
 		else {
-			logger->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
+			SimpleLogger::instance()->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
 		}
-		MidiBuffer messages = MidiHelpers::bufferFromMessages(dataFileToMessages(dataFile));
-		sendPatchToSynth(controller, logger, messages);
+		MidiBuffer messages = MidiHelpers::bufferFromMessages(dataFileToMessages(dataFile, target));
+		sendPatchToSynth(MidiController::instance(), SimpleLogger::instance(), messages);
 	}
 
 	void KawaiK3::sendPatchToSynth(MidiController * controller, SimpleLogger * logger, MidiBuffer const &messages) {

@@ -66,8 +66,8 @@ namespace midikraft {
 
 		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 
-		// Special Synth implementation override, because the K3 sends actually write confirmation emails in 1985. Awesome engineers!
-		virtual void sendPatchToSynth(MidiController *controller, SimpleLogger *logger, std::shared_ptr<DataFile> dataFile) override;
+		// Special Synth implementation override, because the K3 sends actually write confirmation messages in 1985. Awesome engineers!
+		virtual void sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
 		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer) override;
 
 		// Discoverable Device
@@ -128,7 +128,7 @@ namespace midikraft {
 		virtual std::vector<DataFileDescription> dataTypeNames() const override;
 
 		// DataFileSendCapability
-		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
 
 		// DetailedParametersCapability
 		std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
