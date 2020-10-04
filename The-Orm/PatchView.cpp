@@ -21,6 +21,7 @@
 #include "GenericAdaption.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaption
 
 #include <boost/format.hpp>
+#include "DataFileSendCapability.h"
 
 const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
@@ -31,6 +32,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
+	addAndMakeVisible(targetList_);
+	targetList_.setTextWhenNoChoicesAvailable("Edit buffer");
+	targetList_.addListener(this);
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
@@ -121,6 +125,7 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 		rebuildImportFilterBox();
 		rebuildDataTypeFilterBox();
 		retrieveFirstPageFromDatabase();
+		rebuildSendTargetBox();
 	}
 	else if (dynamic_cast<CurrentPatch *>(source)) {
 		currentPatchDisplay_->setCurrentPatch(UIModel::currentPatch());
@@ -267,6 +272,7 @@ void PatchView::resized()
 	categoryFilters_.setBounds(filterRow);
 
 	importList_.setBounds(sourceRow);
+	targetList_.setBounds(area.removeFromTop(24).withTrimmedLeft(8).withTrimmedRight(8));
 	patchButtons_->setBounds(area.reduced(10));
 }
 
@@ -496,6 +502,20 @@ void PatchView::rebuildDataTypeFilterBox() {
 	}
 }
 
+void PatchView::rebuildSendTargetBox()
+{
+	targetList_.clear(dontSendNotification);
+	auto mstc= dynamic_cast<midikraft::MultipleSendTargetCapability *>(UIModel::currentSynth());
+	if (mstc) {
+		auto targets = mstc->getSendTargetNameList();
+		int i = 1;
+		for (auto target : targets) {
+			targetList_.addItem(target->name(), i++);
+		}
+	}
+	targetList_.setSelectedId(1);
+}
+
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
 	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
 		// Back to UI thread
@@ -523,15 +543,25 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
 	// It could be that we clicked on the patch that is already loaded?
-	if (patch.patch() != UIModel::currentPatch().patch()) {
+	if (true) {
 		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
 		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
 
 		UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
 		currentLayer_ = 0;
 
+		std::shared_ptr<midikraft::SendTarget> targetToSendTo;
+		if (!targetList_.getNumItems() == 0) {
+			int selected = targetList_.getSelectedId() - 1;
+			auto mstc = dynamic_cast<midikraft::MultipleSendTargetCapability *>(UIModel::currentSynth());
+			if (mstc) {
+				auto targets = mstc->getSendTargetNameList();
+				targetToSendTo = targets[selected];
+			}
+		}
+
 		// Send out to Synth
-		patch.synth()->sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), patch.patch());
+		patch.synth()->sendDataFileToSynth(patch.patch(), targetToSendTo);
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...

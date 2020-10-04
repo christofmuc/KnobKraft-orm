@@ -207,3 +207,10 @@ https://www.virtual-music.at/en/zone-faqs/
 http://www.nattvard.com/iix/utilities.php
 https://adamstrange.itch.io/qasarbeach
 https://antonus-synths.com/en/antonus-2600/
+
+RTP MIDI
+https://blog.digitaltundra.com/?p=24 -> Don't.
+
+Analysis
+https://en.wikipedia.org/wiki/Envelope_detector#/media/File:Analytic.svg
+https://en.wikipedia.org/wiki/Dynamic_time_warping

@@ -92,12 +92,13 @@ private:
 	void rebuildSynthFilters();
 	void rebuildImportFilterBox();
 	void rebuildDataTypeFilterBox();
+	void rebuildSendTargetBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 
-	
+	ComboBox targetList_;
 	ComboBox importList_;
 	
 	CategoryButtons categoryFilters_;
