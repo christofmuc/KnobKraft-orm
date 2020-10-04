@@ -56,7 +56,7 @@ namespace midikraft {
 		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
 
 		// DataFileSendCapability
-		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile) const override;
+		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
 
 		// Internal
 		std::vector<MidiMessage> patchToSysex(const Patch &patch) const;
