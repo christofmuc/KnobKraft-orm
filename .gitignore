@@ -3,3 +3,4 @@ builds/
 .idea/
 adaptions/CompiledAdaptions.h
 third_party/Tools.InnoSetup.6.0.5/
+builds6/
