@@ -174,7 +174,7 @@ IF(WIN32)
 	 # Parse Inno Setup config file
 	configure_file("${CMAKE_CURRENT_LIST_DIR}/setup.iss"
 				   "${CMAKE_CURRENT_BINARY_DIR}/setup.iss")
-	set(no_copy $<NOT:$<CONFIG:Release>>)
+	set(no_copy $<NOT:$<CONFIG:RelWithDebInfo>>)
 	add_custom_command(
 		TARGET KnobKraftOrm POST_BUILD
 		COMMAND  "${CMAKE_COMMAND}" -E $<${no_copy}:echo> $<${no_copy}:"Not building Installer with "> chdir . ${INNOSETUP} "${CMAKE_CURRENT_BINARY_DIR}/setup.iss"
