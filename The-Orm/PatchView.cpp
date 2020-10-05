@@ -531,7 +531,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 		currentLayer_ = 0;
 
 		// Send out to Synth
-		patch.synth()->sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), patch.patch());
+		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...
