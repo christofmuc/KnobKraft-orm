@@ -31,7 +31,8 @@ def channelIfValidDeviceResponse(message):
             and message[3] == 0x06  # Device request
             and message[4] == 0x02  # Device request reply
             and message[5] == 0x01  # Sequential / Dave Smith Instruments
-            and message[6] == prophet12_ID
+            and (message[6] == prophet12_ID or message[6] == 0x2b)  # The Pro12 Desktop module calls itself 0x2b,
+                                                                    # but all sysex messages still contain 0x2a as ID
             and message[7] == 0x01  # Family MS is 1
             and message[8] == 0x00  # Family member
             and message[9] == 0x00):  # Family member
