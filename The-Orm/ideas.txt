@@ -2,7 +2,7 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-* Manage Backup diskspace
+
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -13,6 +13,7 @@ BUGS
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
 * MKS-80
+* Behringer RD-8
 * Scripted Query
 * Editor
 
@@ -41,6 +42,9 @@ Generic Editor
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
+
+Behringer RD-8
++ Need support for Patterns and Songs with display of content?
 
 RefaceDX
 * Patch renaming
@@ -77,7 +81,7 @@ BCR2000
 
 Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
-+ Durability - also write all patches on the disk as individual patch files ready to send back to synth
++ Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
 
 Generic Module/Adaptions
 + Missing - MD5 cleaning to avoid duplicates
@@ -100,15 +104,14 @@ Macro page
 Patch display
 * Allow "show patch" button as the simplified version of the patch diff dialog
 * Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
+* Should show waveform/oscillator/FFT of preview
 
 Librarian
 * Allow recursive directory traversal during import
-* Better display of bulk imports with real file source
 * Could accept synth-initiated dumps at any time
 * Could introduce collections/sessions/songs  = lists
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Make page number clickable to switch to that page, show less page numbers if these are really many
-* Allow multi-select of banks to import (with all feature) (github #8)
 * Bank management (github #9)
 * Could have patch name autogenerator like LaserMammoth
 
@@ -151,12 +154,9 @@ MIDI setup
 * MIDI log needs a "save log function", and a "turn off" function
 * Debounce is currently disabled - can I reenable it?
 
-UI Cleanup
-* Could add "patch diff" button to top row, always already reading "Compare with ..name of previous patch.."
-* Could move LambdaButtonStrip to the very top (like a toolbar?)
-* Synth selector goes below main tabs, as the MIDI log is global to all synths, and some future functions will be as well (Clock routing, master keyboard setup)
-
 Big things
+    * Masterkeyboard setup screen to select which keyboard plays which synth
+	* Clock setup screen to determine which device is master clock, can be combined with MIDI routing
 	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
 	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter

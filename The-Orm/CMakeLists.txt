@@ -11,6 +11,8 @@ project(KnobKraftOrm VERSION 1.7.0)
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
 
+OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
+set(SENTRY_DSN "Sentry DSN URL" CACHE STRING "https://yyyyyy.ingest.sentry.io/api/xxxxxxx/minidump/?sentry_key=lllllll")
 
 find_package(JUCE REQUIRED 
 	COMPONENTS 
@@ -26,6 +28,14 @@ find_package(JUCE REQUIRED
 )
 
 configure_file("version.cpp.in" "version.cpp")
+
+IF(CRASH_REPORTING)
+	message("Internet-based crash reporting is turned on, using Sentry endpoint authorization from SENTRY_DSN CMake variable")
+	configure_file("${CMAKE_CURRENT_LIST_DIR}/sentry-config.h.in" "${CMAKE_CURRENT_LIST_DIR}/sentry-config.h")
+	SET(SENTRY_INSTALL_PATH "${CMAKE_CURRENT_LIST_DIR}/../third_party/sentry-native/install")
+	SET(SENTRY_CONFIG_HEADER sentry-config.h.in)
+	SET(SENTRY_DISTRIBUTION_FILES "${SENTRY_INSTALL_PATH}/bin/sentry.dll" "${SENTRY_INSTALL_PATH}/bin/crashpad_handler.exe")
+ENDIF()
 
 set(SOURCES
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
@@ -52,6 +62,7 @@ set(SOURCES
 	version.cpp.in
 	setup.iss
 	ideas.txt
+	${SENTRY_CONFIG_HEADER}
 	redist/agpl-3.0.txt
 )
 
@@ -81,12 +92,20 @@ set(MIDIKRAFT_LIBRARIES
 )
 
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
-target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
+target_include_directories(KnobKraftOrm 
+	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
+	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
+	IF(CRASH_REPORTING)
+		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY)
+		set(SENTRY_LIB sentry)
+	ENDIF()
+	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib")
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
 		sqlite3
+		${SENTRY_LIB}
 		)
 ELSEIF(APPLE)
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
@@ -130,7 +149,8 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll"
+					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
+					${SENTRY_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(
@@ -154,7 +174,7 @@ IF(WIN32)
 	 # Parse Inno Setup config file
 	configure_file("${CMAKE_CURRENT_LIST_DIR}/setup.iss"
 				   "${CMAKE_CURRENT_BINARY_DIR}/setup.iss")
-	set(no_copy $<NOT:$<CONFIG:Release>>)
+	set(no_copy $<NOT:$<CONFIG:RelWithDebInfo>>)
 	add_custom_command(
 		TARGET KnobKraftOrm POST_BUILD
 		COMMAND  "${CMAKE_COMMAND}" -E $<${no_copy}:echo> $<${no_copy}:"Not building Installer with "> chdir . ${INNOSETUP} "${CMAKE_CURRENT_BINARY_DIR}/setup.iss"

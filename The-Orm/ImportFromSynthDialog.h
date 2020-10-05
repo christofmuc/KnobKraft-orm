@@ -17,38 +17,36 @@ class ImportFromSynthThread;
 class ImportFromSynthDialog : public Component, private Button::Listener
 {
 public:
-	typedef std::function<void(MidiBankNumber bankNo, midikraft::ProgressHandler *)> TBankLoadHandler;
+	typedef std::function<void(std::vector<MidiBankNumber> bankNo)> TSuccessHandler;
 
-	ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadHandler onOk);
-	~ImportFromSynthDialog() {}
+	ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk);
+	virtual ~ImportFromSynthDialog() = default;
 
 	void resized() override;
 	void buttonClicked(Button*) override;
 
 private:
-	TBankLoadHandler onOk_;
-	std::unique_ptr<ImportFromSynthThread> thread_;
-	ComboBox bank_;
-	TextButton ok_, cancel_;
+	TSuccessHandler onOk_;
+	MultiChoicePropertyComponent  *banks_;
+	PropertyPanel propertyPanel_;
+	TextButton ok_, all_, cancel_;
+
+	Value bankValue_;
+	int numBanks_; 
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ImportFromSynthDialog)
 };
 
+//TODO - this has turned into a pure progress handler, and has nothing to do with the importfromsynth anymore. I should put this into juce-widgets?
 class ImportFromSynthThread : public ThreadWithProgressWindow, public midikraft::ProgressHandler
 {
 public:
-	ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk);
-	~ImportFromSynthThread();;
+	ImportFromSynthThread();
 
 	void run() override;
-	void setBank(MidiBankNumber id);
+
 	bool shouldAbort() const override;
 	void setProgressPercentage(double zeroToOne) override;
 	void onSuccess() override;
 	void onCancel() override;
-
-private:
-	ImportFromSynthDialog::TBankLoadHandler onOk_;
-	bool stop_;
-	MidiBankNumber bank_;
 };

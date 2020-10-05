@@ -76,3 +76,7 @@
 	path = pytschirp
 	url = https://github.com/christofmuc/pytschirp.git
 	branch = master
+[submodule "third_party/sentry-native"]
+	path = third_party/sentry-native
+	url = https://github.com/getsentry/sentry-native.git
+	branch = master

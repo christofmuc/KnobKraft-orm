@@ -66,7 +66,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 		name_.setButtonText(patch.name());
 		refreshNameButtonColour();
 		if (patch.sourceInfo()) {
-			import_.setText(patch.sourceInfo()->toDisplayString(patch.synth()), dontSendNotification);
+			import_.setText(patch.sourceInfo()->toDisplayString(patch.synth(), false), dontSendNotification);
 		}
 		else {
 			import_.setText("No import information", dontSendNotification);

@@ -6,26 +6,15 @@
 
 #include "ImportFromSynthDialog.h"
 
-ImportFromSynthThread::ImportFromSynthThread(ImportFromSynthDialog::TBankLoadHandler onOk) : ThreadWithProgressWindow("Importing...", true, true), onOk_(onOk), bank_(MidiBankNumber::fromZeroBase(0))
-{
-}
-
-ImportFromSynthThread::~ImportFromSynthThread()
+ImportFromSynthThread::ImportFromSynthThread() : ThreadWithProgressWindow("Importing...", true, true)
 {
 }
 
 void ImportFromSynthThread::run()
 {
-	stop_ = false;
-	onOk_(bank_, this);
-	while (!stop_ && !threadShouldExit()) {
+	while (!threadShouldExit()) {
 		Thread::sleep(100);
 	}
-}
-
-void ImportFromSynthThread::setBank(MidiBankNumber id)
-{
-	bank_ = id;
 }
 
 bool ImportFromSynthThread::shouldAbort() const
@@ -40,41 +29,51 @@ void ImportFromSynthThread::setProgressPercentage(double zeroToOne)
 
 void ImportFromSynthThread::onSuccess()
 {
-	stop_ = true;
 }
 
 void ImportFromSynthThread::onCancel()
 {
-	stop_ = true;
+	signalThreadShouldExit();
 }
 
-ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TBankLoadHandler onOk) : onOk_(onOk)
+ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : onOk_(onOk)
 {
-	thread_ = std::make_unique<ImportFromSynthThread>(onOk);
-	setBounds(0, 0, 400, 100);
-	addAndMakeVisible(&bank_);
-	addAndMakeVisible(&cancel_);
-	addAndMakeVisible(&ok_);
-	ok_.setButtonText("OK");
+	addAndMakeVisible(propertyPanel_);
+	addAndMakeVisible(cancel_);
+	addAndMakeVisible(ok_);
+	addAndMakeVisible(all_);
+	ok_.setButtonText("Import selected");
 	ok_.addListener(this);
+	all_.setButtonText("Import all");
+	all_.addListener(this);
 	cancel_.setButtonText("Cancel");
 	cancel_.addListener(this);
 
 	// Populate the bank selector
-	int numBanks = synth->numberOfBanks();
-	for (int i = 0; i < numBanks; i++) {
-		bank_.addItem(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)), i + 1);
+	numBanks_ = synth->numberOfBanks();
+	StringArray choices;
+	Array<var> choiceValues;
+	for (int i = 0; i < numBanks_; i++) {
+		choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
+		choiceValues.add(i);
 	}
-	bank_.setSelectedItemIndex(0, dontSendNotification);
+	bankValue_ = Array<var>();
+	banks_ = new MultiChoicePropertyComponent(bankValue_, "Banks", choices, choiceValues);
+	banks_->setExpanded(true);
+	propertyPanel_.addProperties({ banks_});
+
+	setBounds(0, 0, 400, 400);
 }
 
 void ImportFromSynthDialog::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 	auto bottom = area.removeFromBottom(40).reduced(8);
-	ok_.setBounds(bottom.removeFromLeft(bottom.getWidth() / 2));
+	int width = bottom.getWidth() / 3;
+	ok_.setBounds(bottom.removeFromLeft(width).withTrimmedRight(8));
+	all_.setBounds(bottom.removeFromLeft(width).withTrimmedRight(8));
 	cancel_.setBounds(bottom);
-	bank_.setBounds(area.reduced(8));
+	propertyPanel_.setBounds(area.reduced(8));
 }
 
 void ImportFromSynthDialog::buttonClicked(Button *button)
@@ -84,8 +83,27 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
 			dw->exitModalState(1);
 		}
-		thread_->setBank(MidiBankNumber::fromOneBase(bank_.getSelectedId()));
-		thread_->runThread();
+		std::vector<MidiBankNumber> result;
+		var selected = bankValue_.getValue();
+		for (auto bank : *selected.getArray()) {
+			if ((int)bank < numBanks_) {
+				result.push_back(MidiBankNumber::fromZeroBase((int)bank));
+			}
+			else {
+				// All selected, just add all banks into the array
+				jassertfalse;
+			}
+		}
+
+		onOk_(result);
+	}
+	else if (button == &all_) {
+		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
+			dw->exitModalState(1);
+		}
+		std::vector<MidiBankNumber> result;
+		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i));
+		onOk_(result);
 	}
 	else if (button == &cancel_) {
 		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {

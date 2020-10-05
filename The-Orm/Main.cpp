@@ -18,6 +18,11 @@
 
 #include "version.cpp"
 
+#ifdef USE_SENTRY
+#include "sentry.h"
+#include "sentry-config.h"
+#endif
+
 
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication
@@ -34,6 +39,14 @@ public:
     void initialise (const String& commandLine) override
     {
 		ignoreUnused(commandLine);
+
+#ifdef USE_SENTRY
+		// Initialize sentry for error crash reporting
+		sentry_options_t *options = sentry_options_new();
+		sentry_options_set_dsn(options, getSentryDSN());
+	                                     
+		sentry_init(options);
+#endif
 
         // This method is where you should put your application's initialization code..
 		Settings::setSettingsID("KnobKraftOrm");
@@ -53,6 +66,14 @@ public:
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
 		mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion())); 
+
+#ifdef USE_SENTRY
+		sentry_capture_event(sentry_value_new_message_event(
+			/*   level */ SENTRY_LEVEL_INFO,
+			/*  logger */ "custom",
+			/* message */ (std::string("Launching KnobKraft Orm Version ") + getOrmVersion()).c_str()
+		));
+#endif
     }
 
     void shutdown() override
@@ -70,6 +91,11 @@ public:
 		// Shutdown settings subsystem
 		Settings::instance().saveAndClose();
 		Settings::shutdown();
+
+#ifdef USE_SENTRY
+		// Sentry shutdown
+		sentry_shutdown();
+#endif
     }
 
     //==============================================================================

@@ -72,7 +72,10 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "showDiff", { 3, "Show patch comparison", [this]() {
+	{ "exportSysex", { 3, "Export into sysex files", [this]() {
+		exportPatches();
+	} } },
+	{ "showDiff", { 4, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
 	};
@@ -317,15 +320,18 @@ void PatchView::saveCurrentPatchCategories() {
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
+	std::shared_ptr<ImportFromSynthThread> progressWindow = std::make_shared<ImportFromSynthThread>();
 	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
-			[this, activeSynth, midiLocation](MidiBankNumber bankNo, midikraft::ProgressHandler *progressHandler) {
+			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
+			progressWindow->launchThread();
 			librarian_.startDownloadingAllPatches(
 				midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 				activeSynth,
 				bankNo,
-				progressHandler, [this](std::vector<midikraft::PatchHolder> patchesLoaded) {
+				progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+				progressWindow->signalThreadShouldExit();
 				MessageManager::callAsync([this, patchesLoaded]() {
 					mergeNewPatches(patchesLoaded);
 				});
@@ -445,6 +451,13 @@ void PatchView::loadPatches() {
 	}
 }
 
+void PatchView::exportPatches()
+{
+	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+		librarian_.saveSysexPatchesToDisk(patches);
+	});
+}
+
 std::string PatchView::currentlySelectedSourceUUID() {
 	if (importList_.getSelectedItemIndex() > 0) {
 		return imports_[importList_.getSelectedItemIndex() - 1].id;
@@ -492,7 +505,7 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 			auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
 			if (info) {
 				for (int i = 0; i < (int) imports_.size(); i++) {
-					if ((imports_[i].name == info->toDisplayString(UIModel::currentSynth())) 
+					if ((imports_[i].name == info->toDisplayString(UIModel::currentSynth(), false)) 
 						|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
 					{
 							importList_.setSelectedItemIndex(i + 1, dontSendNotification);
@@ -518,7 +531,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 		currentLayer_ = 0;
 
 		// Send out to Synth
-		patch.synth()->sendPatchToSynth(midikraft::MidiController::instance(), SimpleLogger::instance(), patch.patch());
+		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...
