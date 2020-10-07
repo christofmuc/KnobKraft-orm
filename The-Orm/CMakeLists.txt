@@ -12,7 +12,9 @@ project(KnobKraftOrm VERSION 1.7.0)
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
 
 OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
-set(SENTRY_DSN "Sentry DSN URL" CACHE STRING "https://yyyyyy.ingest.sentry.io/api/xxxxxxx/minidump/?sentry_key=lllllll")
+OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
+set(SENTRY_DSN "Sentry DSN URL" CACHE STRING "https://YYYYYYYYYYYYYYYYYY@ZZZZZ.ingest.sentry.io/XXXX")
+set(D_LOG_SENTRY "")
 
 find_package(JUCE REQUIRED 
 	COMPONENTS 
@@ -97,7 +99,10 @@ target_include_directories(KnobKraftOrm
 	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
-		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY)
+		IF(SENTRY_LOGGING)
+			set(D_LOG_SENTRY "-DLOG_SENTRY")
+		ENDIF()
+		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY ${D_LOG_SENTRY})
 		set(SENTRY_LIB sentry)
 	ENDIF()
 	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib")

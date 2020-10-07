@@ -21,8 +21,24 @@
 #ifdef USE_SENTRY
 #include "sentry.h"
 #include "sentry-config.h"
-#endif
 
+static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
+{
+	(void)unused_state;
+	size_t size_out = 0;
+	char *s = sentry_envelope_serialize(envelope, &size_out);
+	SimpleLogger::instance()->postMessage("Sentry: " + std::string(s));
+	sentry_free(s);
+	sentry_envelope_free(envelope);
+}
+
+static void sentryLogger(sentry_level_t level, const char *message, va_list args, void *userdata) {
+	ignoreUnused(level, args, userdata);
+	char buffer[2048];
+	vsnprintf_s(buffer, 2048, message, args);
+	SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
+}
+#endif
 
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication
@@ -40,16 +56,9 @@ public:
     {
 		ignoreUnused(commandLine);
 
-#ifdef USE_SENTRY
-		// Initialize sentry for error crash reporting
-		sentry_options_t *options = sentry_options_new();
-		sentry_options_set_dsn(options, getSentryDSN());
-	                                     
-		sentry_init(options);
-#endif
-
-        // This method is where you should put your application's initialization code..
-		Settings::setSettingsID("KnobKraftOrm");
+		// This method is where you should put your application's initialization code..
+		char *applicationDataDirName = "KnobKraftOrm";
+		Settings::setSettingsID(applicationDataDirName);
 
 		// Init python for GenericAdaption
 		knobkraft::GenericAdaption::startupGenericAdaption();
@@ -68,11 +77,23 @@ public:
 		mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion())); 
 
 #ifdef USE_SENTRY
-		sentry_capture_event(sentry_value_new_message_event(
-			/*   level */ SENTRY_LEVEL_INFO,
-			/*  logger */ "custom",
-			/* message */ (std::string("Launching KnobKraft Orm Version ") + getOrmVersion()).c_str()
-		));
+		// Initialize sentry for error crash reporting
+		sentry_options_t *options = sentry_options_new();
+		std::string dsn = getSentryDSN();
+		sentry_options_set_dsn(options, dsn.c_str());
+		auto sentryDir = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile(applicationDataDirName).getChildFile("sentry");
+		sentry_options_set_database_path(options, sentryDir.getFullPathName().toStdString().c_str());
+		std::string releaseName = std::string("KnobKraft Orm Version ") + getOrmVersion();
+		sentry_options_set_release(options, releaseName.c_str());
+		sentry_options_set_logger(options, sentryLogger, nullptr);
+#ifdef LOG_SENTRY
+		sentry_options_set_debug(options, 1);
+		sentry_options_set_transport(options, sentry_transport_new(print_envelope));
+#endif
+		sentry_init(options);
+
+		// Fire a test event to see if Sentry actually works
+		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
 #endif
     }
 
