@@ -134,7 +134,7 @@ MainComponent::MainComponent() :
 		{1, { "MIDI", { "Auto-detect synths" } } },
 		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
 		{3, { "View", { "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
-		{4, { "Help", { "About" } } }
+		{4, { "Help", { "Test Crash", "About" } } }
 	};
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
@@ -175,6 +175,9 @@ MainComponent::MainComponent() :
 	{ "Scale 150%", { 7, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
 	{ "Scale 175%", { 8, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
 	{ "Scale 200%", { 9, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+	{ "Test Crash", { 10, "Test Crash", [this]() {
+		*((char *)(0)) = 1;
+	}}},
 	};
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
