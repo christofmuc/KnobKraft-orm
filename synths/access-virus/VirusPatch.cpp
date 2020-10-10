@@ -53,7 +53,7 @@ namespace midikraft {
 				result = result + utf32_to_utf8(virus_codepage[charIndex - 32]); // Could be more than one character
 			}
 			else {
-				jassert(false);
+				// This does happen when you e.g. import an uninitialized bank like I did after I fixed the capacitor in mine, and the RAM content is gone
 				result.push_back('?');
 			}
 		}
