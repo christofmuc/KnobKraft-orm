@@ -27,7 +27,10 @@ static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
 	(void)unused_state;
 	size_t size_out = 0;
 	char *s = sentry_envelope_serialize(envelope, &size_out);
-	SimpleLogger::instance()->postMessage("Sentry: " + std::string(s));
+	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
+	if (SimpleLogger::instance()) {
+		SimpleLogger::instance()->postMessage("Sentry: " + std::string(s));
+	}
 	sentry_free(s);
 	sentry_envelope_free(envelope);
 }
@@ -36,7 +39,10 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 	ignoreUnused(level, args, userdata);
 	char buffer[2048];
 	vsnprintf_s(buffer, 2048, message, args);
-	SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
+	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
+	if (SimpleLogger::instance()) {
+		SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
+	}
 }
 #endif
 
@@ -100,6 +106,7 @@ public:
     void shutdown() override
     {
         // Add your application's shutdown code here..
+		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
         mainWindow = nullptr; // (deletes our window)
 
