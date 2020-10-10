@@ -25,16 +25,6 @@ void AutoDetectProgressWindow::run()
 	}
 }
 
-bool AutoDetectProgressWindow::shouldAbort() const
-{
-	return threadShouldExit();
-}
-
-void AutoDetectProgressWindow::setProgressPercentage(double zeroToOne)
-{
-	setProgress(zeroToOne);
-}
-
 void AutoDetectProgressWindow::onSuccess()
 {
 	// The detection state could be different, fire an update message
@@ -43,4 +33,5 @@ void AutoDetectProgressWindow::onSuccess()
 
 void AutoDetectProgressWindow::onCancel()
 {
+	//Forgot why, but we should not signal the thread to exit as in the default implementation of ProgressHandlerWindow
 }

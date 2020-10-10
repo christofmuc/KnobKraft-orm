@@ -17,6 +17,7 @@
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
 #include "ScriptedQuery.h"
+#include "ProgressHandlerWindow.h"
 
 #include "GenericAdaption.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaption
 
@@ -320,22 +321,24 @@ void PatchView::saveCurrentPatchCategories() {
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
-	std::shared_ptr<ImportFromSynthThread> progressWindow = std::make_shared<ImportFromSynthThread>();
+	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<ProgressHandlerWindow>("Import patches from Synth", "...");
 	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
-			progressWindow->launchThread();
-			librarian_.startDownloadingAllPatches(
-				midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
-				activeSynth,
-				bankNo,
-				progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
-				progressWindow->signalThreadShouldExit();
-				MessageManager::callAsync([this, patchesLoaded]() {
-					mergeNewPatches(patchesLoaded);
+			if (!bankNo.empty()) {
+				progressWindow->launchThread();
+				librarian_.startDownloadingAllPatches(
+					midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
+					activeSynth,
+					bankNo,
+					progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+					progressWindow->signalThreadShouldExit();
+					MessageManager::callAsync([this, patchesLoaded]() {
+						mergeNewPatches(patchesLoaded);
+					});
 				});
-			});
+			}
 		}
 		);
 		DialogWindow::LaunchOptions launcher;
@@ -393,10 +396,10 @@ void PatchView::selectFirstPatch()
 	patchButtons_->selectFirst();
 }
 
-class MergeManyPatchFiles: public ThreadWithProgressWindow, public midikraft::ProgressHandler {
+class MergeManyPatchFiles: public ProgressHandlerWindow {
 public:
 	MergeManyPatchFiles(midikraft::PatchDatabase &database, std::vector<midikraft::PatchHolder> &patchesLoaded, std::function<void(std::vector<midikraft::PatchHolder>)> successHandler) :
-		ThreadWithProgressWindow("Uploading...", true, true),
+		ProgressHandlerWindow("Storing in database", "Merging new patches into database..."),
 		database_(database), patchesLoaded_(patchesLoaded), finished_(successHandler) {
 	}
 
@@ -417,22 +420,9 @@ public:
 		}
 	}
 
-	virtual bool shouldAbort() const override
-	{
-		return threadShouldExit();
-	}
-
-	virtual void setProgressPercentage(double zeroToOne) override
-	{
-		setProgress(zeroToOne);
-	}
-
-	virtual void onSuccess() override
-	{
-	}
-
 	virtual void onCancel() override
 	{
+		//Forgot why, but we should not signal the thread to exit as in the default implementation of ProgressHandlerWindow
 	}
 
 

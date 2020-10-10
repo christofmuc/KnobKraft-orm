@@ -8,22 +8,20 @@
 
 #include "JuceHeader.h"
 
-#include "ProgressHandler.h"
+#include "ProgressHandlerWindow.h"
 #include "SynthHolder.h"
 #include "AutoDetection.h"
 
-class AutoDetectProgressWindow : public ThreadWithProgressWindow, public midikraft::ProgressHandler {
+class AutoDetectProgressWindow : public ProgressHandlerWindow {
 public:
 	AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths) :
-		ThreadWithProgressWindow("Detecting synth...", true, true), synths_(synths) {
+		ProgressHandlerWindow("Running auto-detection", "Detecting synth..."), synths_(synths) {
 	}
 
 	// Implement ThreadWithProgressWindow
 	virtual void run() override;
 
 	// Implement ProgressHandler interface
-	virtual bool shouldAbort() const override;
-	virtual void setProgressPercentage(double zeroToOne) override;
 	virtual void onSuccess() override;
 	virtual void onCancel() override;
 

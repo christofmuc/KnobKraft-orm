@@ -12,8 +12,6 @@
 #include "MidiBankNumber.h"
 #include "ProgressHandler.h"
 
-class ImportFromSynthThread;
-
 class ImportFromSynthDialog : public Component, private Button::Listener
 {
 public:
@@ -37,16 +35,3 @@ private:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ImportFromSynthDialog)
 };
 
-//TODO - this has turned into a pure progress handler, and has nothing to do with the importfromsynth anymore. I should put this into juce-widgets?
-class ImportFromSynthThread : public ThreadWithProgressWindow, public midikraft::ProgressHandler
-{
-public:
-	ImportFromSynthThread();
-
-	void run() override;
-
-	bool shouldAbort() const override;
-	void setProgressPercentage(double zeroToOne) override;
-	void onSuccess() override;
-	void onCancel() override;
-};

@@ -6,35 +6,6 @@
 
 #include "ImportFromSynthDialog.h"
 
-ImportFromSynthThread::ImportFromSynthThread() : ThreadWithProgressWindow("Importing...", true, true)
-{
-}
-
-void ImportFromSynthThread::run()
-{
-	while (!threadShouldExit()) {
-		Thread::sleep(100);
-	}
-}
-
-bool ImportFromSynthThread::shouldAbort() const
-{
-	return threadShouldExit();
-}
-
-void ImportFromSynthThread::setProgressPercentage(double zeroToOne)
-{
-	setProgress(zeroToOne);
-}
-
-void ImportFromSynthThread::onSuccess()
-{
-}
-
-void ImportFromSynthThread::onCancel()
-{
-	signalThreadShouldExit();
-}
 
 ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : onOk_(onOk)
 {
