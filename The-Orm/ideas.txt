@@ -16,14 +16,10 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Behringer RD-8
 * Scripted Query
 * Editor
+* Clock Mode Setup
+* Masterkeyboard Screen
 
 Stability
-+ Add minidump library to get crashes. Or even internet based feedback?
-+ Crash reporting? https://partner.microsoft.com/en-us/dashboard/desktop/overview https://docs.microsoft.com/en-us/windows/win32/appxpkg/windows-desktop-application-program
-  - https://support.backtrace.io/hc/en-us/articles/360040516131-Crashpad-Integration-Guide
-  - https://partner.microsoft.com/en-US/dashboard/Account/CertificateUpload?accountprogram=win32&callbackUri=/en-US/dashboard/desktop/overview
-  - https://drdump.com/crash-reporting-system
-  - https://appcenter.ms/apps/create
 + Code signing (well, if you don't use MS, you can spare the money)
   - https://shop.globalsign.com/de-de/code-signing
   - https://secure.ssl.com/orders/new
@@ -39,6 +35,13 @@ Generic Editor
 + Could allow any other layout - that would make the current one rather the BCR2000 cheat sheet
 + Could allow vector display and editor
 + Could allow envelope display and editor (instead of knobs for the env)
+
+Patch display
+* Allow "show patch" button as the simplified version of the patch diff dialog
+* Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
+* Should show waveform/oscillator/FFT of preview
+
+
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
@@ -72,7 +75,7 @@ MKS80
 * I guess just like the Wave in the K3?
 
 BCR2000
-* Should allow to load BCL files 
+* Should allow to load BCL files. I think it works but the BCR and BCL extensions are not added to the open dialog
 * "Send to" is currently not send to edit buffer, as it will use whatever store command is in the BCL
 * Send to should block UI, as you really shouldn't click again while it is still sending
 * Need "canonical setup" for BCR2000 so it does not need to be reprogrammed when switching synths
@@ -101,11 +104,6 @@ Macro page
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
 
-Patch display
-* Allow "show patch" button as the simplified version of the patch diff dialog
-* Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
-* Should show waveform/oscillator/FFT of preview
-
 Librarian
 * Allow recursive directory traversal during import
 * Could accept synth-initiated dumps at any time
@@ -129,7 +127,7 @@ Advanced Queries
 
 Alternate Tunings
 * https://forum.sequential.com/index.php/topic,3468.0.html
-* have you managed to change the slot number
+* have you managed to change the slot number -> this could be implemented with the MultiSendStrategy now
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
@@ -200,3 +198,10 @@ MacOS X installer
   + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
   + Helpful: https://github.com/ionyshch/cmake-bundle-macos/blob/master/CMakeLists.txt https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Configuration
   + or should i go the pkg route: https://medium.com/swlh/the-easiest-way-to-build-macos-installer-for-your-application-34a11dd08744
+
+Other crash reporting tools not considered:
++ Crash reporting? https://partner.microsoft.com/en-us/dashboard/desktop/overview https://docs.microsoft.com/en-us/windows/win32/appxpkg/windows-desktop-application-program
+  - https://support.backtrace.io/hc/en-us/articles/360040516131-Crashpad-Integration-Guide
+  - https://partner.microsoft.com/en-US/dashboard/Account/CertificateUpload?accountprogram=win32&callbackUri=/en-US/dashboard/desktop/overview
+  - https://drdump.com/crash-reporting-system
+  - https://appcenter.ms/apps/create
