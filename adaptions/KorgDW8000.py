@@ -43,7 +43,7 @@ def isEditBufferDump(message):
     return (len(message) > 4
             and message[0] == 0xf0
             and message[1] == 0x42  # Korg
-            and (message[2] & 0xf0)  == 0x30  # Format
+            and (message[2] & 0xf0) == 0x30  # Format, ignore MIDI Channel in lower 4 bits
             and message[3] == 0x03  # DW-8000
             and message[4] == 0x40  # Data Dump
             )
@@ -75,5 +75,5 @@ def nameFromDump(message):
 
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
-        return message
+        return message[0:2] + [0x30 | channel] + message[3:]
     raise Exception("This is not an edit buffer - can't be converted")
