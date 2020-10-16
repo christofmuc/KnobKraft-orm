@@ -22,6 +22,7 @@
 #include "sentry.h"
 #include "sentry-config.h"
 
+#ifdef LOG_SENTRY
 static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
 {
 	(void)unused_state;
@@ -34,6 +35,7 @@ static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
 	sentry_free(s);
 	sentry_envelope_free(envelope);
 }
+#endif
 
 static void sentryLogger(sentry_level_t level, const char *message, va_list args, void *userdata) {
 	ignoreUnused(level, args, userdata);
