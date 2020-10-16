@@ -133,7 +133,7 @@ MainComponent::MainComponent() :
 		{0, { "File", { "Quit" } } },
 		{1, { "MIDI", { "Auto-detect synths" } } },
 		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
-		{3, { "View", { "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
+		{3, { "View", { "Scale 75%", "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
 		{4, { "Help", { "Test Crash", "About" } } }
 	};
 
@@ -170,12 +170,13 @@ MainComponent::MainComponent() :
 		JUCEApplicationBase::quit();
 	}}},
 	//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-	{ "Scale 100%", { 5, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-	{ "Scale 125%", { 6, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-	{ "Scale 150%", { 7, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-	{ "Scale 175%", { 8, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-	{ "Scale 200%", { 9, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-	{ "Test Crash", { 10, "Test Crash", [this]() {
+	{ "Scale 75%", { 5, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
+	{ "Scale 100%", { 6, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
+	{ "Scale 125%", { 7, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
+	{ "Scale 150%", { 8, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
+	{ "Scale 175%", { 9, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
+	{ "Scale 200%", { 10, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+	{ "Test Crash", { 11, "Test Crash", [this]() {
 		*((char *)(0)) = 1;
 	}}},
 	};
@@ -262,7 +263,13 @@ MainComponent::MainComponent() :
 
 	// Make sure you set the size of the component after
 	// you add any child components.
-	setSize(1536/2, 2048 / 2);
+	Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+	if (mainScreenSize.getHeight() >= 1024) {
+		setSize(1536 / 2, 2048 / 2);
+	}
+	else {
+		setSize(1536 / 2, mainScreenSize.getHeight());
+	}
 }
 
 MainComponent::~MainComponent()
@@ -278,9 +285,9 @@ void MainComponent::setAcceptableGlobalScaleFactor() {
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
 	float globalScaling = (float)Desktop::getInstance().getDisplays().getMainDisplay().scale;
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
-	std::vector<float> scales = { 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
 	auto availableHeight = Desktop::getInstance().getDisplays().getMainDisplay().userArea.getHeight();
-	float goodScale = 1.0f;
+	std::vector<float> scales = { 0.75f / globalScaling, 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
+	float goodScale = 0.75f / globalScaling;
 	for (auto scale : scales) {
 		if (availableHeight > 1024*scale) {
 			goodScale = scale;
