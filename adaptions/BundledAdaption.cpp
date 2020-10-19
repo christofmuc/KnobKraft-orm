@@ -22,6 +22,8 @@ namespace knobkraft {
 			{ "Roland JX-8P", "Roland_JX_8P", std::string(Roland_JX_8P_py, Roland_JX_8P_py + Roland_JX_8P_py_size) },
 			{ "Sequential Pro 3", "Sequential_Pro_3", std::string(Sequential_Pro_3_py, Sequential_Pro_3_py + Sequential_Pro_3_py_size) },
 			{ "Sequential Prophet 6", "Sequential_Prophet_6", std::string(Sequential_Prophet_6_py, Sequential_Prophet_6_py + Sequential_Prophet_6_py_size) },
+			//{ "Korg DW-8000 Adaption", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size ) },
+			{ "Korg DW-6000", "Korg_DW_6000", std::string(KorgDW6000_py, KorgDW6000_py + KorgDW6000_py_size ) },
 		};
 	}
 
