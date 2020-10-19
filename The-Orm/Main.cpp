@@ -101,7 +101,7 @@ public:
 		sentry_init(options);
 
 		// Fire a test event to see if Sentry actually works
-		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
+		//sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
 #endif
     }
 
