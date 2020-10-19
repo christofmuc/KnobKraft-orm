@@ -318,10 +318,27 @@ void PatchView::saveCurrentPatchCategories() {
 	}
 }
 
+class LibrarianProgressWindow : public ProgressHandlerWindow {
+public:
+	LibrarianProgressWindow(midikraft::Librarian &librarian) : ProgressHandlerWindow("Import patches from Synth", "..."), librarian_(librarian) {
+	}
+
+	// Override this from the ThreadWithProgressWindow to understand closing with cancel button!
+	virtual void threadComplete(bool userPressedCancel) override {
+		if (userPressedCancel) {
+			// Make sure to destroy any stray MIDI callback handlers, else we'll get into trouble when we retry the operation
+			librarian_.clearHandlers();
+		}
+	}
+
+private:
+	midikraft::Librarian &librarian_;
+};
+
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
-	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<ProgressHandlerWindow>("Import patches from Synth", "...");
+	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
 	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
