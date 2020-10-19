@@ -12,6 +12,7 @@ Currently natively supported and tested synths as of version 1.4.0:
 
 * Access Virus B
 * Kawai K3/K3M
+* Korg DW-8000
 * Oberheim Matrix 1000
 * Sequential/Dave Smith Instruments OB-6
 * Sequential/Dave Smith Instruments Prophet Rev2
@@ -24,6 +25,7 @@ As adaption currently available and tested
 
  Already implemented adaptions, which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
 
+* Korg DW-6000 (untested)
 * DSI Pro 2 (untested)
 * DSI Prophet 08 (untested)
 * DSI Prophet 12 (untested)
@@ -36,7 +38,6 @@ The adaptions are python scripts for a generic module that let's you hook up oth
 Next up for development are:
 
 * Behringer RD-8
-* Korg DW8000
 * Roland MKS-80
 
 I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well:
