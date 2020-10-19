@@ -85,7 +85,10 @@ def nameFromDump(message):
         dataBlock = message[4:-1]
     if len(dataBlock) > 0:
         patchData = unescapeSysex(dataBlock)
-        return ''.join([chr(x) for x in patchData[914:931]])
+        layer_a_name = ''.join([chr(x) for x in patchData[914-512:931-512]]).strip() # each layer needs 512 bytes
+        return layer_a_name
+        # layer_b_name = ''.join([chr(x) for x in patchData[914:931]]).strip()  # This is layer B name found first
+        # return layer_a_name if layer_a_name == layer_b_name else layer_a_name + "|" + layer_b_name
     return "Invalid"
 
 
