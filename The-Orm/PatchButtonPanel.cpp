@@ -35,8 +35,6 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 
 PatchButtonPanel::~PatchButtonPanel() {
 	UIModel::instance()->thumbnails_.removeChangeListener(this);
-	midikraft::MidiController::instance()->removeMessageHandler(callback_);
-	callback_ = midikraft::MidiController::makeNoneHandle();
 }
 
 void PatchButtonPanel::setPatchLoader(TPageLoader pageGetter)

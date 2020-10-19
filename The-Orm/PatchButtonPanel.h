@@ -51,7 +51,6 @@ private:
 	void refreshThumbnail(int i);
 	int indexOfActive() const;
 
-	midikraft::MidiController::HandlerHandle callback_  = midikraft::MidiController::makeOneHandle();
 	std::vector<midikraft::PatchHolder> patches_;
 	std::unique_ptr<PatchButtonGrid> patchButtons_;
 	std::function<void(midikraft::PatchHolder &)> handler_;
