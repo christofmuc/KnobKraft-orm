@@ -37,7 +37,8 @@ def channelIfValidDeviceResponse(message):
             and message[8] == 0x00  # Family member
             and message[9] == 0x00):  # Family member
         # Extract the current MIDI channel from index 2 of the message
-        return message[2]
+        # If the device is set to OMNI it will return 0x7f as MIDI channel - we use 1 for now which will work
+        return message[2] if message[2] != 0x7f else 1
     return -1
 
 
