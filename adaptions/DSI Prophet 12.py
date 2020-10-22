@@ -60,7 +60,7 @@ def numberOfBanks():
 
 
 def numberOfPatchesPerBank():
-    return 128
+    return 99
 
 
 def createProgramDumpRequest(channel, patchNo):
