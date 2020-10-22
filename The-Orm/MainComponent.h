@@ -39,7 +39,12 @@ public:
 
 	void shutdown();
 
+	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
+
 private:
+	void createNewDatabase();
+	void openDatabase();
+
 	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();

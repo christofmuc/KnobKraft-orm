@@ -86,6 +86,9 @@ private:
 class ThumbnailChanges : public ChangeBroadcaster {
 };
 
+class WindowTitleChanges : public ChangeBroadcaster {
+};
+
 class UIModel {
 public:
 	static UIModel *instance();
@@ -107,6 +110,7 @@ public:
 	CurrentSession currentSession_; // Listen to this to find out if the current session was modified
 	CurrentSynthList synthList_;
 	ThumbnailChanges thumbnails_;
+	WindowTitleChanges windowTitle_;
 
 private:
 	UIModel() = default;
