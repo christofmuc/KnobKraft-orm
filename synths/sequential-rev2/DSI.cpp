@@ -105,8 +105,8 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> DSISynth::requestPatch(int patchNo) const
 	{
-		uint8 bank = (uint8)(patchNo / 100);
-		uint8 program = patchNo % 100;
+		uint8 bank = (uint8)((patchNo / numberOfPatches()) % numberOfBanks());
+		uint8 program = (uint8) (patchNo % numberOfPatches());
 		return std::vector<juce::MidiMessage>({ MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00000101 /* Request program dump */, bank, program }) });
 	}
 
