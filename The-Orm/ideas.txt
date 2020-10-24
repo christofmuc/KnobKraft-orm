@@ -10,7 +10,6 @@ Before next release
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
-* When turning on a synth in the setup and it becomes active, the advanced filter dialog is wrong
 * When plugging in a USB synth after launch, it does not get detected (github #1)
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED

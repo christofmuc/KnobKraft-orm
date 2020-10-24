@@ -138,6 +138,9 @@ void PatchView::rebuildSynthFilters() {
 		synthFilter.push_back(synthCategory(synth.get()));
 	}
 	advancedFilters_.synthFilters_.setCategories(synthFilter);
+	if (UIModel::currentSynth()) {
+		advancedFilters_.synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
+	}
 }
 
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
