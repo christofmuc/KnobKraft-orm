@@ -2,7 +2,10 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-
+* Add user consent functionality to Sentry
+* Add File New File Open branch
+* Finish better SetupScreen
+* Finish Rev2 Layer functionality
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -14,15 +17,11 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
 * MKS-80
 * Behringer RD-8
+* File New, File Open
 * Scripted Query
 * Editor
 * Clock Mode Setup
 * Masterkeyboard Screen
-
-Stability
-+ Code signing (well, if you don't use MS, you can spare the money)
-  - https://shop.globalsign.com/de-de/code-signing
-  - https://secure.ssl.com/orders/new
 
 KawaiK3 - supported by BCR2000
 + need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
@@ -92,7 +91,7 @@ Generic Module/Adaptions
 + Pretty bank names?
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
-+ Could show which Flavours are implemented for each adaption (checkbox list)
++ Could show which Flavours/Profiles are implemented for each adaption (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Provide "orm" python package with denibble, DSI packing etc.
 + Could watch files and hot reload module when changed on disk (for easier development)
@@ -112,6 +111,7 @@ Librarian
 * Make page number clickable to switch to that page, show less page numbers if these are really many
 * Bank management (github #9)
 * Could have patch name autogenerator like LaserMammoth
+* Could have patch interchange format - basically a JSON format with sysex, plus metadata. Serializing the PatchHolder I think should be good enough
 
 Patch Diff
 * Could be trimmed down to show only the delta parameters (doesn't make sense in Hex mode)
@@ -149,10 +149,11 @@ Autosampler (the lazy synthesist)
 MIDI setup
 * With more synths, should split "select synth" and "configure synth" into two columns
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
-* MIDI log needs a "save log function", and a "turn off" function
+* MIDI log needs a "turn off" function [Why?]
 * Debounce is currently disabled - can I reenable it?
 
 Big things
+    * VST build of Orm for Daws
     * Masterkeyboard setup screen to select which keyboard plays which synth
 	* Clock setup screen to determine which device is master clock, can be combined with MIDI routing
 	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
@@ -205,3 +206,8 @@ Other crash reporting tools not considered:
   - https://partner.microsoft.com/en-US/dashboard/Account/CertificateUpload?accountprogram=win32&callbackUri=/en-US/dashboard/desktop/overview
   - https://drdump.com/crash-reporting-system
   - https://appcenter.ms/apps/create
+
+  Stability
++ Code signing (well, if you don't use MS, you can spare the money)
+  - https://shop.globalsign.com/de-de/code-signing
+  - https://secure.ssl.com/orders/new
