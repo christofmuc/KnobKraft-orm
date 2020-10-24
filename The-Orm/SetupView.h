@@ -26,20 +26,23 @@ public:
 	virtual void resized() override;
 	
 	void refreshData();
-
+	
 private:
 	virtual void valueChanged(Value& value) override;
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	void setValueWithoutListeners(Value &value, int newValue);
+	std::shared_ptr<midikraft::SimpleDiscoverableDevice> findSynthForName(juce::String const &synthName) const;
 
 	void quickConfigure();
 
+	std::vector<std::shared_ptr<TypedNamedValue>> synths_;
 	std::vector<std::shared_ptr<TypedNamedValue>> properties_;
 	midikraft::AutoDetection *autoDetection_;
 	InfoText header_;
 	//HueLightControl * lights_;
 	LambdaButtonStrip functionButtons_;
-	PropertyEditor propertyEditor_;
+	PropertyEditor synthSelection_;
+	PropertyEditor synthSetup_;
 
 	DebounceTimer timedAction_;
 };

@@ -25,23 +25,33 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	autoDetection_(autoDetection)/*, lights_(lights) */,
 	functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
 {
+	// We have two lists: One is the list of synths, where you just activate and deactivate them, and the second is the detail list which shows the
+	// individual synths setup
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		auto sectionName = synth.device()->getName();
 
-		// For each synth, we need 4 properties, and we need to listen to changes: 
-		properties_.push_back(std::make_shared<TypedNamedValue>("Activated", sectionName, true));
+		// In the first list we have the activate button
+		synths_.push_back(std::make_shared<TypedNamedValue>(sectionName, "Activate support for synth", true));
+
+		// For each synth, we need 3 properties, and we need to listen to changes: 
 		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
 		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
 		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
-		for (auto prop : properties_) prop->value().addListener(this);
 	}
+
+	// We need to know if any of these are clicked
+	for (auto prop : synths_) prop->value().addListener(this);
+	for (auto prop : properties_) prop->value().addListener(this);
+
 	refreshData();
 	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
 		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
 	addAndMakeVisible(header_);
-	addAndMakeVisible(propertyEditor_);
-	propertyEditor_.setProperties(properties_);
+	addAndMakeVisible(synthSelection_);
+	synthSelection_.setProperties(synths_);
+	addAndMakeVisible(synthSetup_);
+	synthSetup_.setProperties(properties_);
 
 	// Define function buttons
 	functionButtons_.setButtonDefinitions({
@@ -57,7 +67,7 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 				}
 			} } },
 			{"createNewAdaption", {2, "Create new adaption", [this]() {
-				knobkraft::CreateNewAdaptionDialog::showDialog(&propertyEditor_);
+				knobkraft::CreateNewAdaptionDialog::showDialog(&synthSetup_);
 			} } }
 		});
 	addAndMakeVisible(functionButtons_);
@@ -73,10 +83,13 @@ void SetupView::resized() {
 	Rectangle<int> area(getLocalBounds());
 
 	int width = std::min(area.getWidth(), 600);
-
 	functionButtons_.setBounds(area.removeFromBottom(40).reduced(8));
 	header_.setBounds(area.removeFromTop(100).withSizeKeepingCentre(width, 100).reduced(8));
-	propertyEditor_.setBounds(area.withSizeKeepingCentre(width, area.getHeight()).reduced(8));
+
+	// Two column setup, don't go to wide, I don't need more than 1000 pixels
+	int setupWidth = std::min(area.getWidth(), 1000);
+	synthSelection_.setBounds(area.removeFromLeft(area.getWidth() / 2).removeFromRight(setupWidth/2).reduced(8));
+	synthSetup_.setBounds(area.removeFromLeft(setupWidth/2));
 }
 
 void SetupView::setValueWithoutListeners(Value &value, int newValue) {
@@ -87,10 +100,11 @@ void SetupView::setValueWithoutListeners(Value &value, int newValue) {
 
 void SetupView::refreshData() {
 	int prop = 0;
+	int synthCount = 0;
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		// Skip the active prop
-		setValueWithoutListeners(properties_[prop++]->value(), UIModel::instance()->synthList_.isSynthActive(synth.device()));
+		setValueWithoutListeners(synths_[synthCount++]->value(), UIModel::instance()->synthList_.isSynthActive(synth.device()));
 		// Set output, input, and channel
 		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput()));
 		prop++;
@@ -108,18 +122,37 @@ void SetupView::refreshData() {
 	}
 }
 
+std::shared_ptr<midikraft::SimpleDiscoverableDevice> SetupView::findSynthForName(juce::String const &synthName) const {
+	for (auto synth : UIModel::instance()->synthList_.allSynths()) {
+		if (synth.device() && synth.device()->getName() == synthName) {
+			return synth.device();
+		}
+	}
+	return {};
+}
+
+
 void SetupView::valueChanged(Value& value)
 {
-	// Determine the property that was changed
+	// Determine the property that was changed, first search in the synth activation properties, and then in the synth setup properties
+	for (auto prop : synths_) {
+		if (prop->value().refersToSameSourceAs(value)) {
+			auto synthFound = findSynthForName(prop->name());
+			if (synthFound) {
+				UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
+				auto activeKey = String(synthFound->getName()) + String("-activated");
+				Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
+				autoDetection_->persistSetting(synthFound.get());
+				return;
+			}
+			else {
+				jassertfalse;
+			}
+		}
+	}
 	for (auto prop : properties_) {
 		if (prop->value().refersToSameSourceAs(value)) {
-			std::shared_ptr<midikraft::SimpleDiscoverableDevice> synthFound;
-			for (auto synth : UIModel::instance()->synthList_.allSynths()) {
-				if (synth.device() && synth.device()->getName() == prop->sectionName()) {
-					synthFound = synth.device();
-				}
-			}
-
+			auto synthFound = findSynthForName(prop->sectionName());
 			if (synthFound) {
 				if (prop->name() == "Sent to device") {
 					synthFound->setOutput(prop->lookup()[value.getValue()]);
@@ -135,13 +168,18 @@ void SetupView::valueChanged(Value& value)
 					auto activeKey = String(synthFound->getName()) + String("-activated");
 					Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
 				}
+				else {
+					// New property? Implement handler here
+					jassertfalse;
+				}
 				autoDetection_->persistSetting(synthFound.get());
 				/*timedAction_.callDebounced([this]() {
 					quickConfigure();
 				}, 1000);*/
+				return;
 			}
 			else {
-				jassert(false);
+				jassertfalse;
 			}
 		}
 	}
