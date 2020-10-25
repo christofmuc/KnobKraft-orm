@@ -25,12 +25,15 @@ public:
 
 	virtual void resized() override;
 	
-	void refreshData();
-	
 private:
+	void refreshSynthActiveness();
+	void refreshData();
+	void rebuildSetupColumn();
+
 	virtual void valueChanged(Value& value) override;
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	void setValueWithoutListeners(Value &value, int newValue);
+	
 	std::shared_ptr<midikraft::SimpleDiscoverableDevice> findSynthForName(juce::String const &synthName) const;
 
 	void quickConfigure();

@@ -29,22 +29,13 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	// individual synths setup
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
-		auto sectionName = synth.device()->getName();
-
-		// In the first list we have the activate button
-		synths_.push_back(std::make_shared<TypedNamedValue>(sectionName, "Activate support for synth", true));
-
-		// For each synth, we need 3 properties, and we need to listen to changes: 
-		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
-		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
-		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
+		synths_.push_back(std::make_shared<TypedNamedValue>(synth.device()->getName(), "Activate support for synth", true));
 	}
 
 	// We need to know if any of these are clicked
 	for (auto prop : synths_) prop->value().addListener(this);
-	for (auto prop : properties_) prop->value().addListener(this);
-
-	refreshData();
+	rebuildSetupColumn();
+	refreshSynthActiveness();
 	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
 		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
 	addAndMakeVisible(header_);
@@ -98,13 +89,43 @@ void SetupView::setValueWithoutListeners(Value &value, int newValue) {
 	value.addListener(this);
 }
 
-void SetupView::refreshData() {
-	int prop = 0;
+void SetupView::rebuildSetupColumn() {
+	// Cleanup
+	for (auto prop : properties_) prop->value().removeListener(this);
+	properties_.clear();
+
+	// Rebuild
+	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
+		if (!synth.device()) continue;
+		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
+		auto sectionName = synth.device()->getName();
+		// For each synth, we need 3 properties, and we need to listen to changes: 
+		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
+		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
+		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
+	}
+	// We need to know if any of these are clicked
+	for (auto prop : properties_) prop->value().addListener(this);
+
+	synthSetup_.setProperties(properties_);
+	refreshData();
+}
+
+void SetupView::refreshSynthActiveness() {
 	int synthCount = 0;
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		// Skip the active prop
 		setValueWithoutListeners(synths_[synthCount++]->value(), UIModel::instance()->synthList_.isSynthActive(synth.device()));
+	}
+}
+
+void SetupView::refreshData() {
+	int prop = 0;
+	
+	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
+		if (!synth.device()) continue;
+		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
 		// Set output, input, and channel
 		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput()));
 		prop++;
@@ -131,7 +152,6 @@ std::shared_ptr<midikraft::SimpleDiscoverableDevice> SetupView::findSynthForName
 	return {};
 }
 
-
 void SetupView::valueChanged(Value& value)
 {
 	// Determine the property that was changed, first search in the synth activation properties, and then in the synth setup properties
@@ -143,6 +163,7 @@ void SetupView::valueChanged(Value& value)
 				auto activeKey = String(synthFound->getName()) + String("-activated");
 				Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
 				autoDetection_->persistSetting(synthFound.get());
+				rebuildSetupColumn();
 				return;
 			}
 			else {
@@ -188,6 +209,7 @@ void SetupView::valueChanged(Value& value)
 void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	ignoreUnused(source);
+	refreshSynthActiveness();
 	refreshData();
 	/*// Find out which of the color selectors sent this message
 	for (int i = 0; i < colours_.size(); i++) {
