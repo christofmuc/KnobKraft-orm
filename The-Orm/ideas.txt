@@ -12,6 +12,12 @@ BUGS
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 * When plugging in a USB synth after launch, it does not get detected (github #1)
 
+UI/UX
+* The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
+* Better responsiveness for the patch grid - if not enough vertical space, use less rows instead of shrinking the buttons
+* Page buttons should be clickable?
+* Better responsiveness for the page buttons - should abbreviate
+
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
 * MKS-80
@@ -21,11 +27,6 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Editor
 * Clock Mode Setup
 * Masterkeyboard Screen
-
-KawaiK3 - supported by BCR2000
-+ need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
-+ warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
-+ Split view? Left patches, right editor
 
 Generic Editor
 + Could allow any mapping, to use e.g. the Rev2 to setup the OB6
@@ -39,7 +40,10 @@ Patch display
 * Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
 * Should show waveform/oscillator/FFT of preview
 
-
+KawaiK3 - supported by BCR2000
++ need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
++ warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
++ Split view? Left patches, right editor
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
