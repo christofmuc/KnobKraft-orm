@@ -8,15 +8,24 @@
 
 #include "UIModel.h"
 
-void AutoDetectProgressWindow::run()
+AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths) :
+	ProgressHandlerWindow("Running auto-detection", "Detecting synth...")
 {
-	std::vector < std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
-	for (auto s : synths_) {
+	for (auto s : synths) {
 		if (UIModel::instance()->synthList_.isSynthActive(s.device())) {
-			synths.push_back(s.device());
+			synths_.push_back(s.device());
 		}
 	}
-	autodetector_.autoconfigure(synths, this);
+}
+
+AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths) :
+	ProgressHandlerWindow("Running auto-detection", "Detecting synth..."), synths_(synths)
+{
+}
+
+void AutoDetectProgressWindow::run()
+{
+	autodetector_.autoconfigure(synths_, this);
 	if (!shouldAbort()) {
 		onSuccess();
 	}

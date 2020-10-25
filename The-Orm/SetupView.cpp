@@ -14,6 +14,8 @@
 #include "Settings.h"
 #include "GenericAdaption.h"
 #include "CreateNewAdaptionDialog.h"
+#include "AutoDetectProgressWindow.h"
+
 
 #include "UIModel.h"
 
@@ -46,18 +48,20 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 
 	// Define function buttons
 	functionButtons_.setButtonDefinitions({
-			{
-			"synthDetection", {0, "Re-check connectivity", [this]() {
+			{ "autoDetect", {0, "Auto-Configure", [this]() {
+				autoDetect();
+			} } },
+			{ "synthDetection", {1, "Quick check connectivity", [this]() {
 				quickConfigure();
 			} } },
-			{"selectAdaptionDirectory", {1, "Set User Adaption Dir", [this]() {
+			{"selectAdaptionDirectory", {2, "Set User Adaption Dir", [this]() {
 				FileChooser directoryChooser("Please select the directory to store your user adaptions...", File(knobkraft::GenericAdaption::getAdaptionDirectory()));
 				if (directoryChooser.browseForDirectory()) {
 					knobkraft::GenericAdaption::setAdaptionDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
 					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptions directory will only be used after a restart of the application!");
 				}
 			} } },
-			{"createNewAdaption", {2, "Create new adaption", [this]() {
+			{"createNewAdaption", {3, "Create new adaption", [this]() {
 				knobkraft::CreateNewAdaptionDialog::showDialog(&synthSetup_);
 			} } }
 		});
@@ -230,4 +234,10 @@ void SetupView::quickConfigure()
 	refreshData();
 }
 
-
+void SetupView::autoDetect() {
+	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
+	AutoDetectProgressWindow window(currentSynths);
+	if (window.runThread()) {
+		refreshData();
+	}
+}
