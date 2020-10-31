@@ -88,8 +88,9 @@ namespace midikraft {
 
 	int KawaiK3::deviceDetectSleepMS()
 	{
-		// The Kawai K3 seems to be fast, just 40 ms wait time.
-		return 40;
+		// The Kawai K3 seems to be fast, just 40 ms wait time. But if the MIDI network is loaded, e.g. because the MKS80 repeats many messages, 
+		// we should rather be a bit cautious
+		return 200;
 	}
 
 	MidiChannel KawaiK3::channelIfValidDeviceResponse(const MidiMessage &message)
