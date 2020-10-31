@@ -135,7 +135,7 @@ namespace midikraft {
 		// No matter which value changed, we need to create a new global settings sysex message and queue it for sending debounced
 		ignoreUnused(treeWhosePropertyHasChanged, property);
 				
-		if (!globalSettingsData_.empty() && synth_->channel().isValid()) {
+		if (!globalSettingsData_.empty() && synth_->wasDetected()) {
 			auto newMessage = globalSettingsData_;
 			// Poke all values from the globalSettings array into the data
 			for (auto & setting : synth_->globalSettings_) {
@@ -482,7 +482,7 @@ namespace midikraft {
 	}
 
 	/*void Matrix1000::setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) {
-		if (bcr.channel().isValid() && channel().isValid()) {
+		if (bcr.wasDetected() && wasDetected()) {
 			// Make sure to bake the current channel of the Matrix into the setup for the BCR
 			Matrix1000BCR sysex_bcr(channel().toZeroBasedInt());
 			Matrix1000BCR nrpn_bcr(channel().toZeroBasedInt(), false);
