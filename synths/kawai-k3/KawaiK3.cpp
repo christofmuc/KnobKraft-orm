@@ -704,7 +704,7 @@ namespace midikraft {
 	}
 
 	void KawaiK3::setupBCR2000(BCR2000& bcr) {
-		if (!bcr.channel().isValid()) return;
+		if (!bcr.wasDetected()) return;
 		if (!channel().isValid()) return;
 
 		// Use MIDI channel 16 to not interfere with any other MIDI hardware accidentally taking the CC messages for real
