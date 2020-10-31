@@ -299,7 +299,7 @@ namespace midikraft {
 
 	void Rev2::switchToLayer(int layerNo)
 	{
-		if (channel().isValid()) {
+		if (wasDetected()) {
 			// The Rev2 has only two layers, A and B
 			// Which of the layers is played is not part of the patch data, but is a global setting/parameter. Luckily, this can be switched via an NRPN message
 			// The DSI synths like MSB before LSB

@@ -252,7 +252,7 @@ namespace midikraft {
 
 	void DSISynth::GlobalSettingsListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 	{
-		if (!synth_->channel().isValid()) return;
+		if (!synth_->wasDetected()) return;
 
 		Value value = treeWhosePropertyHasChanged.getPropertyAsValue(property, nullptr, false);
 		// Need to find definition for this setting now, suboptimal data structures
