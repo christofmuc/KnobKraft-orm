@@ -340,9 +340,10 @@ private:
 
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
 	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
 	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
-	if (activeSynth && midiLocation && midiLocation->channel().isValid()) {
+	if (activeSynth && device->wasDetected()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {

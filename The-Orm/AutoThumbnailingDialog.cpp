@@ -101,8 +101,8 @@ void AutoThumbnailingDialog::run()
 		return; 
 	}
 
-	auto location = dynamic_cast<midikraft::MidiLocationCapability *>(UIModel::currentSynth());
-	if (!location || !location->channel().isValid()) {
+	auto location = dynamic_cast<midikraft::DiscoverableDevice*>(UIModel::currentSynth());
+	if (!location || !location->wasDetected()) {
 		SimpleLogger::instance()->postMessage("Cannot record patches when the " + synth->getName() + " hasn't been detected!");
 		return;
 	}

@@ -436,7 +436,7 @@ void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(Value
 				// Now we need to find the CC mapping, and send it to the controller!
 				auto controllerSync = std::dynamic_pointer_cast<midikraft::SynthParameterControllerMapping>(param);
 				if (controllerSync) {
-					if (papa_->bcr2000_->channel().isValid()) {
+					if (papa_->bcr2000_->wasDetected()) {
 						auto updateMessage = controllerSync->createParameterMessages(newValue, papa_->bcr2000_->channel());
 						midikraft::MidiController::instance()->getMidiOutput(papa_->bcr2000_->midiOutput())->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(updateMessage));
 					}

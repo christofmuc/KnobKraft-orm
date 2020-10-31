@@ -96,8 +96,9 @@ void RecordingView::sampleNote() {
 		UIModel::instance()->thumbnails_.sendChangeMessage();
 	});
 
-	auto location = dynamic_cast<midikraft::MidiLocationCapability *>(UIModel::currentSynth());
-	if (location && location->channel().isValid()) {
+	auto device = dynamic_cast<midikraft::DiscoverableDevice *>(UIModel::currentSynth());
+	if (device->wasDetected()) {
+		auto location = dynamic_cast<midikraft::MidiLocationCapability *>(UIModel::currentSynth());
 		auto noteNumber = MidiNote(440.0).noteNumber();
 		auto noteOn = MidiMessage::noteOn(location->channel().toOneBasedInt(), noteNumber, (uint8) 127);
 		auto noteOff = MidiMessage::noteOff(location->channel().toOneBasedInt(), noteNumber);

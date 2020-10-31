@@ -43,7 +43,7 @@ public:
 
 	bool isActive() override
 	{
-		return device() ? device()->channel().isValid() : false;
+		return device() ? device()->wasDetected() : false;
 	}
 
 
@@ -257,9 +257,12 @@ MainComponent::MainComponent() :
 	// Do a quickconfigure
 	auto list = UIModel::instance()->synthList_.activeSynths();
 	autodetector_.quickconfigure(list);
+	// Refresh Setup View with the result of this
+	UIModel::instance()->currentSynth_.sendChangeMessage();
 
 	// Feel free to request the globals page from the Rev2
 	settingsView_->loadGlobals();
+
 
 	// Make sure you set the size of the component after
 	// you add any child components.

@@ -130,6 +130,8 @@ void SetupView::refreshData() {
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
 		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
+		// Load
+		midikraft::AutoDetection::loadSettings(synth.device().get());
 		// Set output, input, and channel
 		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput()));
 		prop++;
