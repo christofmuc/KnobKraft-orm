@@ -397,7 +397,7 @@ namespace midikraft {
 
 	void BCR2000::refreshListOfPresets(std::function<void()> callback)
 	{
-		if (channel().isValid()) {
+		if (wasDetected()) {
 			if (bcrPresets_.empty()) {
 				auto myhandle = MidiController::makeOneHandle();
 				MidiController::instance()->addMessageHandler(myhandle, [this, myhandle, callback](MidiInput *source, MidiMessage const &message) {
@@ -523,7 +523,7 @@ namespace midikraft {
 
 	void BCR2000::sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target)
 	{
-		if (channel().isValid()) {
+		if (wasDetected()) {
 			auto messages = patchToSysex(dataFile, target);
 			sendSysExToBCR(MidiController::instance()->getMidiOutput(midiOutput()), messages, [](std::vector<BCRError> const &errors) {
 				if (!errors.empty()) {
