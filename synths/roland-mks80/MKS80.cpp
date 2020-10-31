@@ -488,7 +488,7 @@ namespace midikraft {
 
 	void MKS80::setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger)
 	{
-		if (bcr.channel().isValid() && channel().isValid()) {
+		if (bcr.wasDetected() && wasDetected() && channel().isValid()) {
 			// Make sure to bake the current channel of the synth into the setup for the BCR
 			auto bcl = MKS80_BCR2000::generateBCL(presetName(), channel().toZeroBasedInt(), MKS80_LOWER, MKS80_LOWER);
 			auto syx = bcr.convertToSyx(bcl);
