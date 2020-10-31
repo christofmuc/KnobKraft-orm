@@ -15,6 +15,7 @@
 #include "GenericAdaption.h"
 #include "CreateNewAdaptionDialog.h"
 #include "AutoDetectProgressWindow.h"
+#include "LoopDetection.h"
 
 
 #include "UIModel.h"
@@ -54,14 +55,17 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 			{ "synthDetection", {1, "Quick check connectivity", [this]() {
 				quickConfigure();
 			} } },
-			{"selectAdaptionDirectory", {2, "Set User Adaption Dir", [this]() {
+			{ "loopDetection", {2, "Check for MIDI loops", [this]() {
+				loopDetection();
+			} } },
+			{"selectAdaptionDirectory", {3, "Set User Adaption Dir", [this]() {
 				FileChooser directoryChooser("Please select the directory to store your user adaptions...", File(knobkraft::GenericAdaption::getAdaptionDirectory()));
 				if (directoryChooser.browseForDirectory()) {
 					knobkraft::GenericAdaption::setAdaptionDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
 					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptions directory will only be used after a restart of the application!");
 				}
 			} } },
-			{"createNewAdaption", {3, "Create new adaption", [this]() {
+			{"createNewAdaption", {4, "Create new adaption", [this]() {
 				knobkraft::CreateNewAdaptionDialog::showDialog(&synthSetup_);
 			} } }
 		});
@@ -234,6 +238,36 @@ void SetupView::quickConfigure()
 	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
 	autoDetection_->quickconfigure(currentSynths); // This rather should be synchronous!
 	refreshData();
+}
+
+class LoopDetectorWindow : public ProgressHandlerWindow, public std::enable_shared_from_this<LoopDetectorWindow> {
+public:
+	LoopDetectorWindow() : ProgressHandlerWindow("Checking for MIDI loops...", "Sending test messages to all MIDI outputs to detect if we have a loop in the configuration") {
+	}
+
+	virtual void run() override {
+		// Call the method that will block
+		loops = midikraft::LoopDetection::detectLoops(shared_from_this());
+	}
+
+	std::vector<midikraft::MidiLoop> loops;
+};
+
+void SetupView::loopDetection()
+{
+	std::shared_ptr<LoopDetectorWindow> modalWindow = std::make_shared<LoopDetectorWindow>();
+	modalWindow->runThread();
+	for (auto loop : modalWindow->loops) {
+		std::string typeName;
+		switch (loop.type) {
+		case midikraft::MidiLoopType::Note: typeName = "MIDI Note"; break;
+		case midikraft::MidiLoopType::Sysex: typeName = "Sysex"; break;
+		}
+		SimpleLogger::instance()->postMessage((boost::format("Warning: %s loop detected. Sending sysex to %s is returned on %s") % typeName % loop.midiOutput % loop.midiInput).str());
+	}
+	if (modalWindow->loops.empty()) {
+		SimpleLogger::instance()->postMessage("All clear, no MIDI loops detected when sending to all available MIDI outputs");
+	}
 }
 
 void SetupView::autoDetect() {

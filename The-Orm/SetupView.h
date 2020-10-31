@@ -37,6 +37,7 @@ private:
 	std::shared_ptr<midikraft::SimpleDiscoverableDevice> findSynthForName(juce::String const &synthName) const;
 
 	void quickConfigure();
+	void loopDetection();
 	void autoDetect();
 
 	std::vector<std::shared_ptr<TypedNamedValue>> synths_;
