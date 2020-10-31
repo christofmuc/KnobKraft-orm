@@ -232,7 +232,7 @@ namespace midikraft {
 	}
 
 	void KorgDW8000::setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) {
-		if (!bcr.channel().isValid()) return;
+		if (!bcr.wasDetected()) return;
 		if (!channel().isValid()) return;
 
 		auto bcl = KorgDW8000BCR2000::generateBCL(channel().toZeroBasedInt());
