@@ -59,7 +59,9 @@ namespace midikraft {
 	}
 
 	std::vector<uint8> KawaiK3::buildSysexFunction(SysexFunction function, uint8 subcommand) const {
-		return { 0x40 /* Kawai */, uint8(0x00 | channel().toZeroBasedInt()), (uint8)function, 0x00 /* Group No */, 0x01 /* Kawai K3 */,  subcommand };
+		// We cannot write sysex to an invalid or OMNI channel, so in this case use channel 1
+		uint8 c = channel().isValid() ? (channel().toZeroBasedInt() & 0x0f) : 0;
+		return { 0x40 /* Kawai */, uint8(0x00 | c), (uint8)function, 0x00 /* Group No */, 0x01 /* Kawai K3 */,  subcommand };
 	}
 
 	juce::MidiMessage KawaiK3::buildSysexFunctionMessage(SysexFunction function, uint8 subcommand) const {
