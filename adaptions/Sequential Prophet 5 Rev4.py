@@ -8,6 +8,8 @@
 sequential_prophet_5_device_id = 0b00110010  # This is the ID used in the factory programs available from the website
 sequential_prophet_10_device_id = 0b00110001  # Guesswork - this is the ID that is listed in the prophet 5 manual
 
+counter = 0
+
 
 def name():
     return "Prophet-5 Rev4"
@@ -75,12 +77,22 @@ def isSingleProgramDump(message):
             and message[1] == 0x01  # Sequential
             and message[2] == sequential_prophet_5_device_id
             and message[3] == 0b00000010  # Program Data
+            ) or (
+            len(message) > 3
+            and message[0] == 0xf0
+            and message[1] == 0x01 # Sequential
+            and message[2] == 0x01 # Prophet 5 Rev 3
             )
 
 
 def nameFromDump(message):
     dataBlock = []
     if isSingleProgramDump(message):
+        # Support for the old Prophet 5 Rev 3 factory sysex files - they have no name in them!
+        if len(message) == 0x34:
+            global counter
+            counter += 1
+            return "Prophet 5 Rev3 #" + str(counter)
         dataBlock = message[6:-1]
     elif isEditBufferDump(message):
         dataBlock = message[4:-1]
