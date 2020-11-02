@@ -8,7 +8,7 @@ Questions / help with implementing new synths wanted, I am trying to get us acro
 
 [![Gitter](https://badges.gitter.im/knobkraft/community.svg)](https://gitter.im/knobkraft/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-Currently natively supported and tested synths as of version 1.4.0:
+Currently natively supported and tested synths as of version 1.8.0:
 
 * Access Virus B
 * Kawai K3/K3M
@@ -22,15 +22,16 @@ As adaption currently available and tested
 
 * Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
 * Sequential Pro 3 
+* Sequential/Dave Smith Instruments Prophet 12
 
  Already implemented adaptions, which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
 
 * Korg DW-6000 (untested)
 * DSI Pro 2 (untested)
 * DSI Prophet 08 (untested)
-* DSI Prophet 12 (untested)
 * Pioneer Toraiz AS-1 (untested)
 * Roland JX-8P (untested)
+* Sequential Prophet 5 Rev 4 (untested)
 * Sequential Prophet 6 (untested)
 
 The adaptions are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices! They might not be as powerful or fully integrated as the natively supported synths, but they are done really quickly!
@@ -129,6 +130,8 @@ Really big thanks to everybody who contributes and comments on YouTube, here on 
 Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaption to work with restless tests and trials!
 
 The app icon is courtesy of W07 at the Sequential forums, thanks for your contribution!
+
+For the restless Prophet 12 testing thanks and a medal for most comments on a ticket go to @Andy2No!
 
 Thanks also go to @gnidorah for reporting bugs with the RefaceDX implementation, which were fixed!
 

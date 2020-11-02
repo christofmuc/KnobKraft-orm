@@ -43,6 +43,7 @@ set(Sources
 
 set_source_files_properties(
 	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptions.h
+	DEPENDS ${adaption_files}
 	PROPERTIES GENERATED TRUE
 )
 
