@@ -2,10 +2,9 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-* Add user consent functionality to Sentry
-* Add File New File Open branch
-* Finish better SetupScreen
 * Finish Rev2 Layer functionality
+* https://docs.juce.com/master/classSharedResourcePointer.html#details
+* Test USB connectivity with Rev2
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -22,11 +21,15 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
 * MKS-80
 * Behringer RD-8
-* File New, File Open
 * Scripted Query
 * Editor
 * Clock Mode Setup
 * Masterkeyboard Screen
+
+Patch display
+* Allow "show patch" button as the simplified version of the patch diff dialog
+* Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
+* Should show waveform/oscillator/FFT of preview
 
 Generic Editor
 + Could allow any mapping, to use e.g. the Rev2 to setup the OB6
@@ -35,10 +38,7 @@ Generic Editor
 + Could allow vector display and editor
 + Could allow envelope display and editor (instead of knobs for the env)
 
-Patch display
-* Allow "show patch" button as the simplified version of the patch diff dialog
-* Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
-* Should show waveform/oscillator/FFT of preview
+
 
 KawaiK3 - supported by BCR2000
 + need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
@@ -84,6 +84,7 @@ BCR2000
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
 
+
 Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
@@ -109,6 +110,7 @@ Macro page
 Librarian
 * Allow recursive directory traversal during import
 * Could accept synth-initiated dumps at any time
+* Could sniff synth out of sysex file opened
 * Could introduce collections/sessions/songs  = lists
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Make page number clickable to switch to that page, show less page numbers if these are really many
@@ -150,9 +152,10 @@ Autosampler (the lazy synthesist)
 * How to decide this is a drone and will not stop (endless release?)
 
 MIDI setup
-* With more synths, should split "select synth" and "configure synth" into two columns
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
 * MIDI log needs a "turn off" function [Why?]
+
+Global Parameter Editing
 * Debounce is currently disabled - can I reenable it?
 
 Big things
