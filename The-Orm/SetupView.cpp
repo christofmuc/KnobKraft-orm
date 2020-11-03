@@ -23,6 +23,7 @@
 #include "ColourHelpers.h"
 
 #include <boost/format.hpp>
+#include <algorithm>
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
 	autoDetection_(autoDetection)/*, lights_(lights) */,
@@ -30,9 +31,15 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 {
 	// We have two lists: One is the list of synths, where you just activate and deactivate them, and the second is the detail list which shows the
 	// individual synths setup
+	std::vector<std::string> sortedList;
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
-		synths_.push_back(std::make_shared<TypedNamedValue>(synth.device()->getName(), "Activate support for synth", true));
+		sortedList.push_back(synth.device()->getName());
+	}
+	std::sort(sortedList.begin(), sortedList.end());
+
+	for (auto &synth : sortedList) {
+		synths_.push_back(std::make_shared<TypedNamedValue>(synth, "Activate support for synth", true));
 	}
 
 	// We need to know if any of these are clicked
