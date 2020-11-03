@@ -29,6 +29,10 @@
 
 #include "GenericAdaption.h"
 
+#ifdef USE_SENTRY
+#include "sentry.h"
+#endif
+
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
@@ -142,7 +146,11 @@ MainComponent::MainComponent() :
 		{1, { "MIDI", { "Auto-detect synths" } } },
 		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
 		{3, { "View", { "Scale 75%", "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
-		{4, { "Help", { "Test Crash", "About" } } }
+		{4, { "Help", { 
+#ifdef USE_SENTRY
+			"Crash reporting consent", 
+#endif
+			"About" } } }
 	};
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
@@ -184,15 +192,17 @@ MainComponent::MainComponent() :
 	{ "Scale 150%", { 8, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
 	{ "Scale 175%", { 9, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
 	{ "Scale 200%", { 10, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-	{ "Test Crash", { 11, "Test Crash", [this]() {
-		*((char *)(0)) = 1;
-	}}},
-	{ "New database...", { 12, "New database...", [this] { 
+	{ "New database...", { 11, "New database...", [this] { 
 		createNewDatabase();
 	}}},
-	{ "Open database...", { 13, "Open database...", [this] {
+	{ "Open database...", { 12, "Open database...", [this] {
 		openDatabase();
 	}}},
+#ifdef USE_SENTRY
+	{ "Crash reporting consent...", { 13, "Crash reporting consent", [this] {
+		checkUserConsent();
+	}}},
+#endif
 	};
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
@@ -280,7 +290,7 @@ MainComponent::MainComponent() :
 
 	// Make sure you set the size of the component after
 	// you add any child components.
-	Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+	juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
 	if (mainScreenSize.getHeight() >= 1024) {
 		setSize(1536 / 2, 2048 / 2);
 	}
@@ -292,6 +302,21 @@ MainComponent::MainComponent() :
 	MessageManager::callAsync([]() {
 		UIModel::instance()->windowTitle_.sendChangeMessage();
 	});
+
+#ifdef USE_SENTRY
+	auto consentAlreadyGiven = Settings::instance().get("SentryConsent", "unknown");
+	if (consentAlreadyGiven == "unknown") {
+		checkUserConsent();
+	}
+	else {
+		if (consentAlreadyGiven == "0") {
+			sentry_user_consent_revoke();
+		}
+		else if (consentAlreadyGiven == "1") {
+			sentry_user_consent_give();
+		}
+	}
+#endif
 }
 
 MainComponent::~MainComponent()
@@ -345,6 +370,28 @@ void MainComponent::openDatabase()
 		}
 	}
 }
+
+#ifdef USE_SENTRY
+void MainComponent::checkUserConsent()
+{
+	auto userChoice = AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Asking for user consent",
+		"This free software is developed in my spare time, which makes looking for potential problems a not so interesting part of this hobby.\n\n"
+		"To shorten the time spent hunting for crashes, this software contains the capability to upload a minidump to the Internet for me to look at should the software crash (and only then).\n\n"
+		"Press <Yes> to allow this helping me, or <No> to turn off crash reporting", "Yes", "No");
+	if (!userChoice) {
+		sentry_user_consent_revoke();
+		Settings::instance().set("SentryConsent", "0");
+		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "No consent confirmation",
+			"Thank you, I do understand and share your concern for privacy and information security.\n\nShould you change your mind, you find this box in the help menu!");
+	}
+	else {
+		sentry_user_consent_give();
+		Settings::instance().set("SentryConsent", "1");
+		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Consent confirmation",
+			"Thank you, I appreciate that!");
+	}
+}
+#endif
 
 void MainComponent::setAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%

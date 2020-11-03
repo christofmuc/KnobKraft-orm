@@ -94,6 +94,7 @@ public:
 		std::string releaseName = std::string("KnobKraft Orm Version ") + getOrmVersion();
 		sentry_options_set_release(options, releaseName.c_str());
 		sentry_options_set_logger(options, sentryLogger, nullptr);
+		sentry_options_set_require_user_consent(options, 1);
 #ifdef LOG_SENTRY
 		sentry_options_set_debug(options, 1);
 		sentry_options_set_transport(options, sentry_transport_new(print_envelope));

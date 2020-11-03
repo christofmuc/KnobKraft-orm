@@ -44,6 +44,9 @@ public:
 private:
 	void createNewDatabase();
 	void openDatabase();
+#ifdef USE_SENTRY
+	void checkUserConsent();
+#endif
 
 	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
