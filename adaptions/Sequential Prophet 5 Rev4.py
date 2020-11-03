@@ -11,7 +11,7 @@ counter = 0
 
 
 def name():
-    return "Prophet-5 Rev4"
+    return "Sequential Prophet-5"
 
 
 def createDeviceDetectMessage(channel):

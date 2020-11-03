@@ -6,7 +6,7 @@
 
 
 def name():
-    return "DSI Prophet 08"
+    return "DSI Prophet 08"  # DSI product name is Prophet '08 (for the year introduced)
 
 
 def createDeviceDetectMessage(channel):

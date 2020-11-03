@@ -6,7 +6,7 @@
 
 
 def name():
-    return "Sequential Prophet 6"
+    return "Sequential Prophet 6"  # Sequential product name is Prophet-6
 
 
 def createDeviceDetectMessage(channel):
