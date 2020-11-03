@@ -130,7 +130,7 @@ MainComponent::MainComponent() :
 
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
-		{0, { "File", { "Quit" } } },
+		{0, { "File", { "New database...", "Open database...", "Quit" } } },
 		{1, { "MIDI", { "Auto-detect synths" } } },
 		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
 		{3, { "View", { "Scale 75%", "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
@@ -178,6 +178,12 @@ MainComponent::MainComponent() :
 	{ "Scale 200%", { 10, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
 	{ "Test Crash", { 11, "Test Crash", [this]() {
 		*((char *)(0)) = 1;
+	}}},
+	{ "New database...", { 12, "New database...", [this] { 
+		createNewDatabase();
+	}}},
+	{ "Open database...", { 13, "Open database...", [this] {
+		openDatabase();
 	}}},
 	};
 	buttons_.setButtonDefinitions(buttons);
@@ -273,6 +279,11 @@ MainComponent::MainComponent() :
 	else {
 		setSize(1536 / 2, mainScreenSize.getHeight());
 	}
+
+	// Refresh Window title
+	MessageManager::callAsync([]() {
+		UIModel::instance()->windowTitle_.sendChangeMessage();
+	});
 }
 
 MainComponent::~MainComponent()
@@ -281,6 +292,48 @@ MainComponent::~MainComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
+}
+
+void MainComponent::createNewDatabase()
+{
+	FileChooser databaseChooser("Please enter the name of the database file to create...", File(""), "*.db3");
+	if (databaseChooser.browseForFileToSave(true)) {
+		File databaseFile(databaseChooser.getResult());
+		if (databaseFile.existsAsFile()) {
+			if (!AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "File already exists", "The file will be overwritten and all contents will be lost! Do you want to proceed?")) {
+				return;
+			}
+			databaseFile.deleteFile();
+		}
+		database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString());
+		// That worked, new database file is in use!
+		Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+		// Refresh UI
+		UIModel::instance()->currentSynth_.sendChangeMessage();
+		UIModel::instance()->windowTitle_.sendChangeMessage();
+	}
+}
+
+void MainComponent::openDatabase()
+{
+	std::string lastPath = Settings::instance().get("LastDatabasePath", "");
+	if (lastPath.empty()) {
+		lastPath = File(midikraft::PatchDatabase::generateDefaultDatabaseLocation()).getParentDirectory().getFullPathName().toStdString();
+	}
+	File lastDirectory(lastPath);
+	FileChooser databaseChooser("Please select a KnobKraft Orm SQlite database file...", lastDirectory, "*.db3");
+	if (databaseChooser.browseForFileToOpen()) {
+		File databaseFile = databaseChooser.getResult();
+		if (databaseFile.existsAsFile()) {
+			if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+				// That worked, new database file is in use!
+				Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+				// Refresh UI
+				UIModel::instance()->currentSynth_.sendChangeMessage();
+				UIModel::instance()->windowTitle_.sendChangeMessage();
+			}
+		}
+	}
 }
 
 void MainComponent::setAcceptableGlobalScaleFactor() {
@@ -321,6 +374,11 @@ void MainComponent::shutdown()
 {
 	// Shutdown database, which will make a backup
 	database_.reset();
+}
+
+std::string MainComponent::getDatabaseFileName() const
+{
+	return database_->getCurrentDatabaseFileName();
 }
 
 void MainComponent::refreshSynthList() {

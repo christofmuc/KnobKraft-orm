@@ -49,7 +49,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 #endif
 
 //==============================================================================
-class TheOrmApplication  : public JUCEApplication
+class TheOrmApplication  : public JUCEApplication, private ChangeListener
 {
 public:
     //==============================================================================
@@ -82,7 +82,7 @@ public:
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
-		mainWindow = std::make_unique<MainWindow> (getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion())); 
+		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
 
 #ifdef USE_SENTRY
 		// Initialize sentry for error crash reporting
@@ -103,10 +103,31 @@ public:
 		// Fire a test event to see if Sentry actually works
 		//sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
 #endif
+
+		// Window Title Refresher
+		UIModel::instance()->windowTitle_.addChangeListener(this);
     }
+
+	String getWindowTitle() {
+		return getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion());
+	}
+
+	void changeListenerCallback(ChangeBroadcaster* source) override
+	{
+		ignoreUnused(source);
+		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
+		if (mainComp) {
+			// This is only called when the window title needs to be changed!
+			File currentDatabase(mainComp->getDatabaseFileName());
+			mainWindow->setName(getWindowTitle() + " (" + currentDatabase.getFileName() + ")");
+		}
+	}
 
     void shutdown() override
     {
+		// Unregister
+		UIModel::instance()->windowTitle_.removeChangeListener(this);
+
         // Add your application's shutdown code here..
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
@@ -197,6 +218,7 @@ public:
     private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
+
 
 private:
     std::unique_ptr<MainWindow> mainWindow;
