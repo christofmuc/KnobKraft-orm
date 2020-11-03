@@ -6,7 +6,6 @@
 
 
 sequential_prophet_5_device_id = 0b00110010  # This is the ID used in the factory programs available from the website
-sequential_prophet_10_device_id = 0b00110001  # Guesswork - this is the ID that is listed in the prophet 5 manual
 
 counter = 0
 
@@ -35,7 +34,7 @@ def channelIfValidDeviceResponse(message):
             and message[3] == 0x06  # Device request
             and message[4] == 0x02  # Device request reply
             and message[5] == 0x01  # Sequential / Dave Smith Instruments
-            and (message[6] == sequential_prophet_5_device_id or message[6] == sequential_prophet_10_device_id)
+            and message[6] == sequential_prophet_5_device_id
             and message[7] == 0x01  # Family MS
             and message[8] == 0x00  # Family
             and message[9] == 0x00):  # Family
