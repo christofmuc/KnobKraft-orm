@@ -74,7 +74,15 @@ MainComponent::MainComponent() :
 	buttons_(301)
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
-	database_ = std::make_unique<midikraft::PatchDatabase>();
+
+	auto customDatabase = Settings::instance().get("LastDatabase");
+	File databaseFile(customDatabase);
+	if (databaseFile.existsAsFile()) {
+		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase);
+	}
+	else {
+		database_ = std::make_unique<midikraft::PatchDatabase>();
+	}
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
@@ -308,6 +316,7 @@ void MainComponent::createNewDatabase()
 		database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString());
 		// That worked, new database file is in use!
 		Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+		Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
 		// Refresh UI
 		UIModel::instance()->currentSynth_.sendChangeMessage();
 		UIModel::instance()->windowTitle_.sendChangeMessage();
@@ -328,6 +337,7 @@ void MainComponent::openDatabase()
 			if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
 				// That worked, new database file is in use!
 				Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+				Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
 				// Refresh UI
 				UIModel::instance()->currentSynth_.sendChangeMessage();
 				UIModel::instance()->windowTitle_.sendChangeMessage();
