@@ -52,7 +52,9 @@ set(SOURCES
 	Main.cpp
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
+	PatchHolderButton.cpp PatchHolderButton.h
 	PatchNameDialog.cpp PatchNameDialog.h
+	PatchPerSynthList.cpp PatchPerSynthList.h
 	PatchView.cpp PatchView.h
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h

@@ -18,7 +18,7 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	handler_(handler), pageBase_(0), pageNumber_(0), pageSize_(64), totalSize_(0)
 {
 	// We want 64 patch buttons
-	patchButtons_ = std::make_unique<PatchButtonGrid>(8, 8, [this](int index) { buttonClicked(index); });
+	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(8, 8, [this](int index) { buttonClicked(index); });
 	addAndMakeVisible(patchButtons_.get());
 
 	addAndMakeVisible(pageUp_); 
@@ -69,6 +69,10 @@ String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder co
 }
 
 File PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
+	// Check we are not too early or there is no patch to lookup
+	if (!UIModel::currentSynth()) return File();
+	if (!patch.patch()) return File();
+
 	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
 
 	// First check the cache
@@ -99,16 +103,6 @@ void PatchButtonPanel::refreshThumbnail(int i) {
 	}
 }
 
-Colour PatchButtonPanel::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
-	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
-	auto cats = patch.categories();
-	if (!cats.empty()) {
-		// Random in case the patch has multiple categories
-		color = cats.cbegin()->color.darker();
-	}
-	return color;
-}
-
 void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	if (pageLoader_ && async) {
 		// If a page loader was set, we will query the current page
@@ -131,23 +125,12 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
 			auto button = patchButtons_->buttonWithIndex(i);
-			patchButtons_->buttonWithIndex(i)->setActive(i == active);
-			Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 			if (i < patches_.size()) {
-				button->setButtonText(patches_[i].name());
-				button->setSubtitle((showSubtitles && patches_[i].synth()) ? patches_[i].synth()->getName() :  "");
-				button->setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(patches_[i], this));
-				button->setFavorite(patches_[i].isFavorite());
-				button->setHidden(patches_[i].isHidden());
+				button->setPatchHolder(&patches_[i], i == active, showSubtitles);
 				refreshThumbnail(i);
-				}
+			}
 			else {
-				button->setButtonText("");
-				button->setSubtitle("");
-				button->setColour(TextButton::ColourIds::buttonColourId, color);
-				button->setFavorite(false);
-				button->setHidden(false);
-				button->setHidden(false);
+				button->setPatchHolder(nullptr, false, showSubtitles);
 				button->clearThumbnailFile();
 			}
 		}

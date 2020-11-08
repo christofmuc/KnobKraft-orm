@@ -19,6 +19,7 @@
 #include "SynthList.h"
 #include "LambdaMenuModel.h"
 #include "LambdaButtonStrip.h"
+#include "PatchPerSynthList.h"
 
 #include "PatchView.h"
 #include "SettingsView.h"
@@ -66,6 +67,7 @@ private:
 	MenuBarComponent menuBar_;
 
 	SynthList synthList_;
+	PatchPerSynthList patchList_;
 	TabbedComponent mainTabs_;
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;

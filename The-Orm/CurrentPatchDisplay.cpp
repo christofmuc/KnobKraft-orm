@@ -8,6 +8,7 @@
 
 #include "PatchNameDialog.h"
 #include "PatchButtonPanel.h"
+#include "PatchHolderButton.h"
 #include "DataFileLoadCapability.h"
 
 #include "ColourHelpers.h"
@@ -189,7 +190,7 @@ void CurrentPatchDisplay::toggleHide()
 
 void CurrentPatchDisplay::refreshNameButtonColour() {
 	if (currentPatch_.patch()) {
-		name_.setColour(TextButton::ColourIds::buttonColourId, PatchButtonPanel::buttonColourForPatch(currentPatch_, this));
+		name_.setColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(currentPatch_, this));
 	}
 	else {
 		name_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));

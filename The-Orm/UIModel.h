@@ -50,8 +50,11 @@ public:
 		return currentPatch_;
 	}
 
+	std::map<std::string, midikraft::PatchHolder> allCurrentPatches() const;
+
 private:
 	midikraft::PatchHolder currentPatch_;
+	std::map<std::string, midikraft::PatchHolder> currentPatchBySynth_;
 };
 
 class CurrentPatchValues : public ChangeBroadcaster {

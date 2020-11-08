@@ -8,7 +8,7 @@
 
 #include "JuceHeader.h"
 
-#include "PatchHolder.h"
+#include "PatchHolderButton.h"
 #include "PatchButtonGrid.h"
 
 #include "MidiController.h"
@@ -41,8 +41,6 @@ public:
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 
-	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
-
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
@@ -52,7 +50,7 @@ private:
 	int indexOfActive() const;
 
 	std::vector<midikraft::PatchHolder> patches_;
-	std::unique_ptr<PatchButtonGrid> patchButtons_;
+	std::unique_ptr<PatchButtonGrid<PatchHolderButton>> patchButtons_;
 	std::function<void(midikraft::PatchHolder &)> handler_;
 	TPageLoader pageLoader_;
 

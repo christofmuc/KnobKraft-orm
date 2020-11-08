@@ -239,6 +239,7 @@ MainComponent::MainComponent() :
 	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
 
 	addAndMakeVisible(synthList_);
+	addAndMakeVisible(patchList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);	
 	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
@@ -413,8 +414,10 @@ void MainComponent::resized()
 {
 	auto area = getLocalBounds();
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
-	auto topRow = area.removeFromTop(60).reduced(8);
-	synthList_.setBounds(topRow);
+	auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
+	patchList_.setBounds(topRow);
+	auto secondTopRow = area.removeFromTop(60).reduced(8);
+	synthList_.setBounds(secondTopRow);
 	//menuBar_.setBounds(area.removeFromTop(30));
 
 	// make a list of two of our child components that we want to reposition
@@ -440,9 +443,17 @@ std::string MainComponent::getDatabaseFileName() const
 
 void MainComponent::refreshSynthList() {
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
+	std::vector<midikraft::PatchHolder> patchList;
+	auto currentPatches = UIModel::instance()->currentPatch_.allCurrentPatches();
 	for (auto s : UIModel::instance()->synthList_.allSynths()) {
 		if (UIModel::instance()->synthList_.isSynthActive(s.device())) {
 			listItems.push_back(std::make_shared<ActiveSynthHolder>(s.device(), s.color()));
+			if (currentPatches.find(s.device()->getName()) != currentPatches.end()) {
+				patchList.push_back(currentPatches[s.device()->getName()]);
+			}
+			else {
+				patchList.push_back(midikraft::PatchHolder(s.synth(), std::make_shared<midikraft::FromSynthSource>(Time()), nullptr, false));
+			}
 		}
 	}
 
@@ -456,6 +467,8 @@ void MainComponent::refreshSynthList() {
 			jassert(false);
 		}
 	});
+
+	patchList_.setPatches(patchList);
 }
 
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)

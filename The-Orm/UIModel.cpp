@@ -25,7 +25,13 @@ void CurrentSequencer::changeCurrentSequencer(midikraft::StepSequencer *activeSe
 void CurrentPatch::changeCurrentPatch(midikraft::PatchHolder const &currentPatch)
 {
 	currentPatch_ = currentPatch;
+	currentPatchBySynth_[currentPatch.synth()->getName()] = currentPatch;
 	sendChangeMessage();
+}
+
+std::map<std::string, midikraft::PatchHolder> CurrentPatch::allCurrentPatches() const
+{
+	return currentPatchBySynth_;
 }
 
 void CurrentPatchValues::changedPatch()
