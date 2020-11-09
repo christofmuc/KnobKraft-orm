@@ -34,12 +34,13 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	std::vector<std::string> sortedList;
 	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
 		if (!synth.device()) continue;
-		sortedList.push_back(synth.device()->getName());
+		sortedList.push_back(synth.getName());
 	}
 	std::sort(sortedList.begin(), sortedList.end());
 
 	for (auto &synth : sortedList) {
-		synths_.push_back(std::make_shared<TypedNamedValue>(synth, "Activate support for synth", true));
+		sortedSynthList_.push_back(UIModel::instance()->synthList_.synthByName(synth));
+		synths_.push_back(std::make_shared<TypedNamedValue>(sortedSynthList_.back().getName(), "Activate support for synth", true));
 	}
 
 	// We need to know if any of these are clicked
@@ -110,10 +111,9 @@ void SetupView::rebuildSetupColumn() {
 	properties_.clear();
 
 	// Rebuild
-	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
-		if (!synth.device()) continue;
+	for (auto &synth: sortedSynthList_) {
 		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
-		auto sectionName = synth.device()->getName();
+		auto sectionName = synth.getName();
 		// For each synth, we need 3 properties, and we need to listen to changes: 
 		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
 		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
@@ -128,8 +128,7 @@ void SetupView::rebuildSetupColumn() {
 
 void SetupView::refreshSynthActiveness() {
 	int synthCount = 0;
-	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
-		if (!synth.device()) continue;
+	for (auto &synth : sortedSynthList_) {
 		// Skip the active prop
 		setValueWithoutListeners(synths_[synthCount++]->value(), UIModel::instance()->synthList_.isSynthActive(synth.device()));
 	}
@@ -160,26 +159,17 @@ void SetupView::refreshData() {
 	}
 }
 
-std::shared_ptr<midikraft::SimpleDiscoverableDevice> SetupView::findSynthForName(juce::String const &synthName) const {
-	for (auto synth : UIModel::instance()->synthList_.allSynths()) {
-		if (synth.device() && synth.device()->getName() == synthName) {
-			return synth.device();
-		}
-	}
-	return {};
-}
-
 void SetupView::valueChanged(Value& value)
 {
 	// Determine the property that was changed, first search in the synth activation properties, and then in the synth setup properties
 	for (auto prop : synths_) {
 		if (prop->value().refersToSameSourceAs(value)) {
-			auto synthFound = findSynthForName(prop->name());
-			if (synthFound) {
-				UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
-				auto activeKey = String(synthFound->getName()) + String("-activated");
+			auto synthFound = UIModel::instance()->synthList_.synthByName(prop->name().toStdString());
+			if (synthFound.device()) {
+				UIModel::instance()->synthList_.setSynthActive(synthFound.device().get(), value.getValue());
+				auto activeKey = String(synthFound.getName()) + String("-activated");
 				Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
-				autoDetection_->persistSetting(synthFound.get());
+				autoDetection_->persistSetting(synthFound.device().get());
 				rebuildSetupColumn();
 				return;
 			}
@@ -190,27 +180,27 @@ void SetupView::valueChanged(Value& value)
 	}
 	for (auto prop : properties_) {
 		if (prop->value().refersToSameSourceAs(value)) {
-			auto synthFound = findSynthForName(prop->sectionName());
-			if (synthFound) {
+			auto synthFound = UIModel::instance()->synthList_.synthByName(prop->sectionName().toStdString());
+			if (synthFound.device()) {
 				if (prop->name() == "Sent to device") {
-					synthFound->setOutput(prop->lookup()[value.getValue()]);
+					synthFound.device()->setOutput(prop->lookup()[value.getValue()]);
 				}
 				else if (prop->name() == "Receive from device") {
-					synthFound->setInput(prop->lookup()[value.getValue()]);
+					synthFound.device()->setInput(prop->lookup()[value.getValue()]);
 				}
 				else if (prop->name() == "MIDI channel") {
-					synthFound->setChannel(MidiChannel::fromOneBase(value.getValue()));
+					synthFound.device()->setChannel(MidiChannel::fromOneBase(value.getValue()));
 				}
 				else if (prop->name() == "Activated") {
-					UIModel::instance()->synthList_.setSynthActive(synthFound.get(), value.getValue());
-					auto activeKey = String(synthFound->getName()) + String("-activated");
+					UIModel::instance()->synthList_.setSynthActive(synthFound.device().get(), value.getValue());
+					auto activeKey = String(synthFound.getName()) + String("-activated");
 					Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
 				}
 				else {
 					// New property? Implement handler here
 					jassertfalse;
 				}
-				autoDetection_->persistSetting(synthFound.get());
+				autoDetection_->persistSetting(synthFound.device().get());
 				/*timedAction_.callDebounced([this]() {
 					quickConfigure();
 				}, 1000);*/

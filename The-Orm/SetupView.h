@@ -15,6 +15,7 @@
 #include "DebounceTimer.h"
 
 #include "AutoDetection.h"
+#include "SynthHolder.h"
 
 class SetupView : public Component,
 	private ChangeListener, private Value::Listener
@@ -40,6 +41,7 @@ private:
 	void loopDetection();
 	void autoDetect();
 
+	std::vector<midikraft::SynthHolder> sortedSynthList_;
 	std::vector<std::shared_ptr<TypedNamedValue>> synths_;
 	std::vector<std::shared_ptr<TypedNamedValue>> properties_;
 	midikraft::AutoDetection *autoDetection_;
