@@ -338,7 +338,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 		SimpleLogger::instance()->postMessage("Error, failed to find parameter definition for property " + property.toString());
 	}
 	else {
-		SimpleLogger::instance()->postMessage("Can't update, Synth does not support DetailedParamtersCapability");
+		//SimpleLogger::instance()->postMessage("Can't update, Synth does not support DetailedParamtersCapability");
 	}
 }
 
