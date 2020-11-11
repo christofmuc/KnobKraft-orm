@@ -27,7 +27,7 @@
 #include "BCR2000.h"
 #include "MKS80.h"
 
-#include "GenericAdaption.h"
+#include "GenericAdaptation.h"
 
 #ifdef USE_SENTRY
 #include "sentry.h"
@@ -103,10 +103,10 @@ MainComponent::MainComponent() :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
-	// Now adding all adaptions
-	auto adaptions = knobkraft::GenericAdaption::allAdaptions();
-	for (auto adaption : adaptions) {
-		synths.push_back(midikraft::SynthHolder(adaption, buttonColour));
+	// Now adding all adaptations
+	auto adaptations = knobkraft::GenericAdaptation::allAdaptations();
+	for (auto adaptation : adaptations) {
+		synths.push_back(midikraft::SynthHolder(adaptation, buttonColour));
 	}
 
 	UIModel::instance()->synthList_.setSynthList(synths);
@@ -123,7 +123,7 @@ MainComponent::MainComponent() :
 		else {
 			// No user decision on active or not
 			if (synth.device()->getName() != "Matrix 1000 Adaption") {
-				// All synths except the example Matrix 1000 Adaption or turned on by default.
+				// All synths except the example Matrix 1000 Adaptation or turned on by default.
 				// That one is turned off by default because there is a C++ implementation for the Matrix 1000 as well
 				// and having both might confuse a first time user.
 				active = true;

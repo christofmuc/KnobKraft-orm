@@ -10,9 +10,9 @@
 
 namespace knobkraft {
 
-	class CreateNewAdaptionDialog : public Component, private TextButton::Listener {
+	class CreateNewAdaptationDialog : public Component, private TextButton::Listener {
 	public:
-		CreateNewAdaptionDialog();
+		CreateNewAdaptationDialog();
 
 		virtual void resized() override;
 
@@ -20,16 +20,16 @@ namespace knobkraft {
 
 	private:
 		void buttonClicked(Button*) override;
-		bool createNewAdaption();
+		bool createNewAdaptation();
 
 		ComboBox template_;
 		Label text_;
 		Label basedOn_;
 		TextButton ok_, cancel_;
 
-		static std::unique_ptr<CreateNewAdaptionDialog> dialog_;
+		static std::unique_ptr<CreateNewAdaptationDialog> dialog_;
 
-		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CreateNewAdaptionDialog)
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CreateNewAdaptationDialog)
 	};
 
 }

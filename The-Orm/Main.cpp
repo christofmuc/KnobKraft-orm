@@ -11,7 +11,7 @@
 #include "Settings.h"
 #include "UIModel.h"
 
-#include "GenericAdaption.h"
+#include "GenericAdaptation.h"
 #include "embedded_module.h"
 
 #include <memory>
@@ -68,11 +68,11 @@ public:
 		char *applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
 
-		// Init python for GenericAdaption
-		knobkraft::GenericAdaption::startupGenericAdaption();
+		// Init python for GenericAdaptation
+		knobkraft::GenericAdaptation::startupGenericAdaptation();
 
 		// Init python with the embedded pytschirp module, if the Python init was successful
-		if (knobkraft::GenericAdaption::hasPython()) {
+		if (knobkraft::GenericAdaptation::hasPython()) {
 			globalImportEmbeddedModules();
 		}
 

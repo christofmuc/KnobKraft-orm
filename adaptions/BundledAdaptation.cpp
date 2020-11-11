@@ -4,13 +4,13 @@
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
 
-#include "BundledAdaption.h"
+#include "BundledAdaptation.h"
 
-#include "CompiledAdaptions.h"
+#include "CompiledAdaptations.h"
 
 namespace knobkraft {
 
-	std::vector<knobkraft::BundledAdaption> gBundledAdaptions()
+	std::vector<knobkraft::BundledAdaptation> gBundledAdaptations()
 	{
 		return {
 			{ "DSI Pro 2", "DSI_Pro_2", std::string(DSI_Pro_2_py, DSI_Pro_2_py + DSI_Pro_2_py_size) },

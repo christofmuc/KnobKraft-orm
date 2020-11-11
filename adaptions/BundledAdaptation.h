@@ -10,13 +10,13 @@
 
 namespace knobkraft {
 
-	struct BundledAdaption {
+	struct BundledAdaptation {
 		std::string synthName;
 		std::string pythonModuleName;
-		std::string adaptionSourceCode;
+		std::string adaptationSourceCode;
 	};
 
-	extern std::vector<BundledAdaption> gBundledAdaptions();
+	extern std::vector<BundledAdaptation> gBundledAdaptations();
 
 }
 

@@ -4,16 +4,16 @@
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
 
-#include "CreateNewAdaptionDialog.h"
+#include "CreateNewAdaptationDialog.h"
 
-#include "BundledAdaption.h"
-#include "GenericAdaption.h"
+#include "BundledAdaptation.h"
+#include "GenericAdaptation.h"
 
 namespace knobkraft {
 
-	std::unique_ptr<CreateNewAdaptionDialog> CreateNewAdaptionDialog::dialog_;
+	std::unique_ptr<CreateNewAdaptationDialog> CreateNewAdaptationDialog::dialog_;
 
-	CreateNewAdaptionDialog::CreateNewAdaptionDialog() : ok_("Ok"), cancel_("Cancel")
+	CreateNewAdaptationDialog::CreateNewAdaptationDialog() : ok_("Ok"), cancel_("Cancel")
 	{
 		addAndMakeVisible(template_);
 		addAndMakeVisible(ok_);
@@ -21,14 +21,14 @@ namespace knobkraft {
 		addAndMakeVisible(text_);
 		addAndMakeVisible(basedOn_);
 		basedOn_.setText("Based on", dontSendNotification);
-		text_.setText("Please select a build-in adaption as a template. This will be copied into your user adaptions folder for you to modify", dontSendNotification);
+		text_.setText("Please select a build-in adaptation as a template. This will be copied into your user adaptations folder for you to modify", dontSendNotification);
 		text_.setColour(Label::textColourId, getLookAndFeel().findColour(Label::ColourIds::textWhenEditingColourId));
 
 		ok_.addListener(this);
 		cancel_.addListener(this);
 
 		StringArray templateList;
-		for (auto const &a : gBundledAdaptions()) {
+		for (auto const &a : gBundledAdaptations()) {
 			templateList.add(a.synthName);
 		}
 						
@@ -37,7 +37,7 @@ namespace knobkraft {
 		setSize(400, 200);
 	}
 
-	void CreateNewAdaptionDialog::resized()
+	void CreateNewAdaptationDialog::resized()
 	{
 		auto area = getLocalBounds();
 		text_.setBounds(area.removeFromTop(60).reduced(8));
@@ -48,51 +48,51 @@ namespace knobkraft {
 		template_.setBounds(area.withSizeKeepingCentre(200, 30));
 	}
 
-	void CreateNewAdaptionDialog::showDialog(Component *center)
+	void CreateNewAdaptationDialog::showDialog(Component *center)
 	{
-		dialog_ = std::make_unique<CreateNewAdaptionDialog>();
+		dialog_ = std::make_unique<CreateNewAdaptationDialog>();
 
 		DialogWindow::LaunchOptions launcher;
 		launcher.content.set(dialog_.get(), false);
 		launcher.componentToCentreAround = center;
-		launcher.dialogTitle = "Create new Adaption";
+		launcher.dialogTitle = "Create new Adaptation";
 		launcher.useNativeTitleBar = false;
 		auto window = launcher.launchAsync();
 		ignoreUnused(window);
 	}
 
-	bool CreateNewAdaptionDialog::createNewAdaption() {
+	bool CreateNewAdaptationDialog::createNewAdaptation() {
 		int selected = template_.getSelectedItemIndex();
 		if (selected == -1) {
 			jassertfalse;
 			return false;
 		}
 
-		auto adaption = gBundledAdaptions()[selected];
+		auto adaptation = gBundledAdaptations()[selected];
 
-		auto dir = GenericAdaption::getAdaptionDirectory();
+		auto dir = GenericAdaptation::getAdaptationDirectory();
 
 		// Copy out source code
-		File target = dir.getChildFile(adaption.pythonModuleName + ".py");
+		File target = dir.getChildFile(adaptation.pythonModuleName + ".py");
 		if (target.exists()) {
-			juce::AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "File exists", "There is already a file for this adaption, which we will not overwrite.");
+			juce::AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "File exists", "There is already a file for this adaptation, which we will not overwrite.");
 			return false;
 		}
 		
 		FileOutputStream out(target);
 #if WIN32
-		out.writeText(adaption.adaptionSourceCode, false, false, "\r\n");
+		out.writeText(adaptation.adaptationSourceCode, false, false, "\r\n");
 #else
-		out.writeText(adaption.adaptionSourceCode, false, false, "\n");
+		out.writeText(adaptation.adaptationSourceCode, false, false, "\n");
 #endif
 		return true;
 	}
 
-	void CreateNewAdaptionDialog::buttonClicked(Button* button)
+	void CreateNewAdaptationDialog::buttonClicked(Button* button)
 	{
 		if (button == &ok_) {
 
-			if (!createNewAdaption()) {
+			if (!createNewAdaptation()) {
 				return;
 			}
 

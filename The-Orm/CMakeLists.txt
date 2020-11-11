@@ -91,7 +91,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
 		midikraft-yamaha-refacedx
-		knobkraft-generic-adaption
+		knobkraft-generic-adaptation
 		pytschirp_embedded
 )
 

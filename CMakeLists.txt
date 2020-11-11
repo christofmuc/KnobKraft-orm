@@ -155,7 +155,7 @@ add_subdirectory(synths/MidiKraft-sequential-rev2)
 add_subdirectory(synths/MidiKraft-sequential-ob6)
 add_subdirectory(synths/MidiKraft-yamaha-refacedx)
 
-# Add the generic adaptions module, that allows to define synths via Python
+# Add the generic adaptations module, that allows to define synths via Python
 add_subdirectory(adaptions)
 
 # Add the pytchirp module that exposes the synths to Python

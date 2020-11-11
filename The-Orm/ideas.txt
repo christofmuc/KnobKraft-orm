@@ -12,6 +12,9 @@ BUGS
 * When plugging in a USB synth after launch, it does not get detected (github #1)
 
 UI/UX
+* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+* The current patch per synth could be hidable
+* The current patch should go to the right of the screen
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
 * Better responsiveness for the patch grid - if not enough vertical space, use less rows instead of shrinking the buttons
 * Page buttons should be clickable?
@@ -89,13 +92,13 @@ Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
 
-Generic Module/Adaptions
+Generic Module/Adaptations
 + Missing - MD5 cleaning to avoid duplicates
 + Missing - better patch names for synths without patch names
 + Pretty bank names?
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
-+ Could show which Flavours/Profiles are implemented for each adaption (checkbox list)
++ Could show which Flavours/Profiles are implemented for each adaptation (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Provide "orm" python package with denibble, DSI packing etc.
 + Could watch files and hot reload module when changed on disk (for easier development)
@@ -173,7 +176,7 @@ Big things
 	* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
 	  * Record notes played (duration) a specific patch
 	  * Allow to sort by playing time
-	* Synth_v2 class/interface more following the generic adaption design than the original Synth class	
+	* Synth_v2 class/interface more following the generic adaptation design than the original Synth class	
 	* Implement PatchBook Visualization
 	* Patch randomizer
 	* The automatic patch clusterer!
@@ -197,7 +200,7 @@ Requested on Reddit
 	* Yamaha TX802
 	* Yamaha AN1X
 
-Librarian for other stuff (should rather do with adaption?)
+Librarian for other stuff (should rather do with adaptation?)
 
 	+ Meris pedal
 

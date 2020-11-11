@@ -12,8 +12,8 @@
 #include "Logger.h"
 #include "AutoDetection.h"
 #include "Settings.h"
-#include "GenericAdaption.h"
-#include "CreateNewAdaptionDialog.h"
+#include "GenericAdaptation.h"
+#include "CreateNewAdaptationDialog.h"
 #include "AutoDetectProgressWindow.h"
 #include "LoopDetection.h"
 
@@ -66,15 +66,15 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 			{ "loopDetection", {2, "Check for MIDI loops", [this]() {
 				loopDetection();
 			} } },
-			{"selectAdaptionDirectory", {3, "Set User Adaption Dir", [this]() {
-				FileChooser directoryChooser("Please select the directory to store your user adaptions...", File(knobkraft::GenericAdaption::getAdaptionDirectory()));
+			{"selectAdaptationDirectory", {3, "Set User Adaptation Dir", [this]() {
+				FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
 				if (directoryChooser.browseForDirectory()) {
-					knobkraft::GenericAdaption::setAdaptionDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
-					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptions directory will only be used after a restart of the application!");
+					knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
+					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
 				}
 			} } },
-			{"createNewAdaption", {4, "Create new adaption", [this]() {
-				knobkraft::CreateNewAdaptionDialog::showDialog(&synthSetup_);
+			{"createNewAdaptation", {4, "Create new adaptation", [this]() {
+				knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
 			} } }
 		});
 	addAndMakeVisible(functionButtons_);
