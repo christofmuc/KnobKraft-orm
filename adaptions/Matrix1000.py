@@ -37,7 +37,7 @@ def channelIfValidDeviceResponse(message):
             and message[7] == 0x00
             and message[8] == 0x02  # Family member Matrix 1000
             and message[9] == 0x00):
-        # Extrat the current MIDI channel from index 2 of the message
+        # Extract the current MIDI channel from index 2 of the message
         return message[2]
     return -1
 
@@ -59,10 +59,17 @@ def numberOfPatchesPerBank():
     return 100
 
 
+def bankAndProgramFromPatchNumber(patchNo):
+    return patchNo // numberOfPatchesPerBank(), patchNo % numberOfPatchesPerBank()
+
+
+def createBankSelect(bank):
+    return [0xf0, 0x10, 0x06, 0x0a, bank, 0xf7]
+
+
 def createProgramDumpRequest(channel, patchNo):
-    bank = patchNo // numberOfPatchesPerBank()
-    program = patchNo % numberOfPatchesPerBank()
-    return [0xf0, 0x10, 0x06, 0x0a, bank, 0xf7] + [0xf0, 0x10, 0x06, 0x04, 1, program, 0xf7]
+    bank, program = bankAndProgramFromPatchNumber(patchNo)
+    return createBankSelect(bank) + [0xf0, 0x10, 0x06, 0x04, 1, program, 0xf7]
 
 
 def isSingleProgramDump(message):
@@ -75,13 +82,50 @@ def isSingleProgramDump(message):
 
 def nameFromDump(message):
     if isSingleProgramDump(message):
-        # To extract the name from the Matrix 1000 program dump, we need to correctly de-nibble and then force the first 8 bytes into ASCII
-        patchData = [message[x] | (message[x + 1] << 4) for x in range(5, len(message) - 2, 2)]
+        # To extract the name from the Matrix 1000 program dump, we
+        # need to correctly de-nibble and then force the first 8 bytes into ASCII
+        patchData = denibble(message, 5, len(message) - 2)
+        # The Matrix 6 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
         return ''.join([chr(x if x >= 32 else x + 0x40) for x in patchData[0:8]])
 
 
+def renamePatch(message, new_name):
+    if isSingleProgramDump(message):
+        # The Matrix 6 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
+        valid_name = [ord(x) if ord(x) < 0x60 else (ord(x) - 0x20) for x in new_name]
+        new_name_nibbles = nibble([(valid_name[i] & 0x3f) if i < len(new_name) else 0x20 for i in range(8)])
+        return rebuildChecksum(message[0:5] + new_name_nibbles + message[21:])
+    raise Exception("Neither edit buffer nor program dump can't be converted")
+
+
 def convertToEditBuffer(channel, message):
-    if isSingleProgramDump(message) or isEditBufferDump(message):
+    if isSingleProgramDump(message):
         # Both are "single patch data", but must be converted to "single patch data to edit buffer"
         return message[0:3] + [0x0d] + [0x00] + message[5:]
     raise Exception("Neither edit buffer nor program dump can't be converted")
+
+
+def rebuildChecksum(message):
+    if isSingleProgramDump(message):
+        data = denibble(message, 5, len(message) - 2)
+        checksum = sum(data) & 0x7f
+        return message[:-2] + [checksum, 0xf7]
+    raise Exception("rebuildChecksum only implemented for single patch data yet")
+
+
+def denibble(message, start, stop):
+    return [message[x] | (message[x + 1] << 4) for x in range(start, stop, 2)]
+
+
+def nibble(message):
+    result = []
+    for b in message:
+        result.append(b & 0x0f)
+        result.append((b & 0xf0) >> 4)
+    return result
+
+
+# Testing patch renaming
+# message = [0xf0, 0x10, 0x06, 0x01, 99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+# renamed = renamePatch(message, "test")
+# print(nameFromDump(renamed))

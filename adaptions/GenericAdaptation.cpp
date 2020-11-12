@@ -50,7 +50,7 @@ namespace knobkraft {
 		MidiProgramNumber programNumber_;
 	};
 
-	class GenericPatch : public midikraft::Patch {
+	class GenericPatch : public midikraft::Patch, public midikraft::StoredPatchNameCapability {
 	public:
 		enum DataType {
 			PROGRAM_DUMP = 0,
@@ -117,6 +117,24 @@ namespace knobkraft {
 		{
 			patchNumber_ = std::make_shared<GenericPatchNumber>(patchNumber);
 		}
+
+		void setName(std::string const &name) override {
+			try {
+				py::object result = callMethod("renamePatch", data(), name);
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+				setData(byteData);
+			}
+			catch (py::error_already_set &ex) {
+				std::string errorMessage = (boost::format("Error calling renamePatch: %s") % ex.what()).str();
+				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+		}
+
+		virtual bool isDefaultName() const override {
+			// Not implemented yet
+			return false;
+		}
+
 
 	private:
 		pybind11::module &adaptation_;
