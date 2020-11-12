@@ -66,16 +66,16 @@ namespace knobkraft {
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptations();
 		static CriticalSection multiThreadGuard;
 
+		static std::vector<int> messageToVector(MidiMessage const &message);
+		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
+		static MidiMessage vectorToMessage(std::vector<int> const &data);
+
 	private:
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;
 
 		// Helper function for adding the built-in adaptations
 		static bool createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
-
-		static std::vector<int> messageToVector(MidiMessage const &message);
-		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
-		static MidiMessage vectorToMessage(std::vector<int> const &data);
 
 		pybind11::module adaptation_module;
 		std::string filepath_;
