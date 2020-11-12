@@ -105,6 +105,16 @@ def convertToEditBuffer(channel, message):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
+def convertToProgramDump(channel, message, patchNo):
+    if isSingleProgramDump(message):
+        bank, program = bankAndProgramFromPatchNumber(patchNo)
+        # Variant 1: Send the edit buffer and then a store edit buffer message
+        return convertToEditBuffer(channel, message) + [0xf0, 0x10, 0x06, 0x0e, bank, program, 0, 0xf7]
+        # Variant 2: Send a bank select and then a SinglePatchData package
+        # return createBankSelect(bank) + message[0:4] + [program] + message[5:]
+    raise Exception("Neither edit buffer nor program dump can't be converted")
+
+
 def rebuildChecksum(message):
     if isSingleProgramDump(message):
         data = denibble(message, 5, len(message) - 2)

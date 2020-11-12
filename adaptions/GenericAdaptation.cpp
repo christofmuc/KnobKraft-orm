@@ -497,8 +497,20 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericAdaptation::patchToProgramDumpSysex(const midikraft::Patch &patch) const
 	{
-		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-		return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
+		try
+		{
+			auto data = patch.data();
+			int c = channel().toZeroBasedInt();
+			int programNo = patch.patchNumber()->midiProgramNumber().toZeroBased();
+			py::object result = callMethod("convertToProgramDump", c, data, programNo);
+			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToProgramDump: %s") % ex.what()).str());
+			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
+			return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
+		}
 	}
 
 	std::string GenericAdaptation::getName() const

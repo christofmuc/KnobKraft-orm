@@ -6,7 +6,6 @@
 
 device_ID = 0b00101100  # See Page 134 of the Pro 2 manual
 
-
 def name():
     return "DSI Pro 2"
 
@@ -61,9 +60,12 @@ def numberOfPatchesPerBank():
     return 99
 
 
+def bankAndProgramFromPatchNumber(patchNo):
+    return patchNo // numberOfPatchesPerBank(), patchNo % numberOfPatchesPerBank()
+
+
 def createProgramDumpRequest(channel, patchNo):
-    bank = patchNo // numberOfPatchesPerBank()
-    program = patchNo % numberOfPatchesPerBank()
+    bank, program = bankAndProgramFromPatchNumber(patchNo)
     return [0xf0, 0x01, device_ID, 0b00000101, bank, program, 0xf7]
 
 
@@ -94,6 +96,15 @@ def convertToEditBuffer(channel, message):
     elif isSingleProgramDump(message):
         # Have to strip out bank and program, and set command to edit buffer dump
         return message[0:3] + [0b00000011] + message[6:]
+    raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
+def convertToProgramDump(channel, message, patchNo):
+    bank, program = bankAndProgramFromPatchNumber(patchNo)
+    if isEditBufferDump(message):
+        return message[0:3] + [0b00000010, bank, program] + message[4:]
+    if isSingleProgramDump(message):
+        return message[0:4] + [bank, program] + message[6:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
 
 
