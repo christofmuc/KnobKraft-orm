@@ -2,9 +2,12 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
+* Finish PatchInterchangeFormat
+* Test USB connectivity with Rev2
+
+Before next next release
 * Finish Rev2 Layer functionality
 * https://docs.juce.com/master/classSharedResourcePointer.html#details
-* Test USB connectivity with Rev2
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
@@ -12,6 +15,7 @@ BUGS
 * When plugging in a USB synth after launch, it does not get detected (github #1)
 
 UI/UX
+* Would expect to choose sort order of patches in grid
 * The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
 * The current patch per synth could be hidable
 * The current patch should go to the right of the screen
