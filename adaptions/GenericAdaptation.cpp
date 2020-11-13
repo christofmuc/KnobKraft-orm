@@ -91,8 +91,8 @@ namespace knobkraft {
 		{
 			try {
 				ScopedLock lock(GenericAdaptation::multiThreadGuard);
-				auto message = data();
-				auto result = adaptation_.attr("nameFromDump")(message);
+				std::vector<int> v(data().data(), data().data() + data().size());
+				auto result = adaptation_.attr("nameFromDump")(v);
 				checkForPythonOutputAndLog();
 				return result.cast<std::string>();
 			}
@@ -102,7 +102,7 @@ namespace knobkraft {
 				SimpleLogger::instance()->postMessage(errorMessage);
 			}
 			catch (...) {
-				SimpleLogger::instance()->postMessage("Uncaught exception");
+				SimpleLogger::instance()->postMessage("Uncaught exception in name() of Patch of GenericAdaptation");
 			}
 			return "invalid";
 		}
@@ -120,13 +120,19 @@ namespace knobkraft {
 
 		void setName(std::string const &name) override {
 			try {
-				py::object result = callMethod("renamePatch", data(), name);
-				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+				ScopedLock lock(GenericAdaptation::multiThreadGuard);
+				std::vector<int> v(data().data(), data().data() + data().size());
+				py::object result = callMethod("renamePatch", v, name);
+				auto intVector = result.cast<std::vector<int>>();
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
 				setData(byteData);
 			}
 			catch (py::error_already_set &ex) {
 				std::string errorMessage = (boost::format("Error calling renamePatch: %s") % ex.what()).str();
 				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+			catch (...) {
+				SimpleLogger::instance()->postMessage("Uncaught exception in setName of Patch of GenericAdaptation");
 			}
 		}
 
