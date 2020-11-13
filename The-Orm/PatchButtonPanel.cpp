@@ -63,8 +63,7 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 }
 
 String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {
-	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
-	File thumbnailCache = UIModel::getThumbnailDirectory().getChildFile(md5 + ".kkc");
+	File thumbnailCache = UIModel::getThumbnailDirectory().getChildFile(patch.md5() + ".kkc");
 	return thumbnailCache.getFullPathName();
 }
 
@@ -73,15 +72,13 @@ File PatchButtonPanel::findPrehearFile(midikraft::PatchHolder const &patch) {
 	if (!UIModel::currentSynth()) return File();
 	if (!patch.patch()) return File();
 
-	auto md5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), patch.patch());
-
 	// First check the cache
 	File thumbnailCache(createNameOfThubnailCacheFile(patch));
 	if (thumbnailCache.existsAsFile()) {
 		return thumbnailCache;
 	}
 
-	File prehear = UIModel::getPrehearDirectory().getChildFile(md5 + ".wav");
+	File prehear = UIModel::getPrehearDirectory().getChildFile(patch.md5() + ".wav");
 	if (prehear.existsAsFile()) {
 		return prehear;
 	}

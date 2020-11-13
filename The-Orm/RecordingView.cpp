@@ -82,7 +82,7 @@ void RecordingView::resized()
 void RecordingView::sampleNote() {
 	if (!UIModel::currentPatch().patch()) return;
 
-	auto patchMD5 = midikraft::PatchHolder::calcMd5(UIModel::currentSynth(), UIModel::currentPatch().patch());
+	auto patchMD5 = UIModel::currentPatch().md5();
 
 	std::string filename = UIModel::getPrehearDirectory().getChildFile(patchMD5 + ".wav").getFullPathName().toStdString();
 
