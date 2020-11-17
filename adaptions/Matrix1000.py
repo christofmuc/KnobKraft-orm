@@ -47,8 +47,11 @@ def createEditBufferRequest(channel):
 
 
 def isEditBufferDump(message):
-    # The Matrix1000 sends the edit buffer in the same format as a single program
-    return isSingleProgramDump(message)
+    return (len(message) > 3
+            and message[0] == 0xf0
+            and message[1] == 0x10  # Oberheim
+            and message[2] == 0x06  # Matrix
+            and message[3] == 0x0d)  # Single Program to Edit Buffer message
 
 
 def numberOfBanks():
@@ -81,16 +84,17 @@ def isSingleProgramDump(message):
 
 
 def nameFromDump(message):
-    if isSingleProgramDump(message):
+    if isSingleProgramDump(message) or isEditBufferDump(message):
         # To extract the name from the Matrix 1000 program dump, we
         # need to correctly de-nibble and then force the first 8 bytes into ASCII
         patchData = denibble(message, 5, len(message) - 2)
         # The Matrix 6 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
         return ''.join([chr(x if x >= 32 else x + 0x40) for x in patchData[0:8]])
+    raise Exception("Neither edit buffer nor program dump")
 
 
 def renamePatch(message, new_name):
-    if isSingleProgramDump(message):
+    if isSingleProgramDump(message) or isEditBufferDump(message):
         # The Matrix 6 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
         valid_name = [ord(x) if ord(x) < 0x60 else (ord(x) - 0x20) for x in new_name]
         new_name_nibbles = nibble([(valid_name[i] & 0x3f) if i < len(new_name) else 0x20 for i in range(8)])
@@ -99,6 +103,8 @@ def renamePatch(message, new_name):
 
 
 def convertToEditBuffer(channel, message):
+    if isEditBufferDump(message):
+        return message
     if isSingleProgramDump(message):
         # Both are "single patch data", but must be converted to "single patch data to edit buffer"
         return message[0:3] + [0x0d] + [0x00] + message[5:]
@@ -106,7 +112,7 @@ def convertToEditBuffer(channel, message):
 
 
 def convertToProgramDump(channel, message, patchNo):
-    if isSingleProgramDump(message):
+    if isSingleProgramDump(message) or isEditBufferDump(message):
         bank, program = bankAndProgramFromPatchNumber(patchNo)
         # Variant 1: Send the edit buffer and then a store edit buffer message
         return convertToEditBuffer(channel, message) + [0xf0, 0x10, 0x06, 0x0e, bank, program, 0, 0xf7]
@@ -116,7 +122,7 @@ def convertToProgramDump(channel, message, patchNo):
 
 
 def rebuildChecksum(message):
-    if isSingleProgramDump(message):
+    if isSingleProgramDump(message) or isEditBufferDump(message):
         data = denibble(message, 5, len(message) - 2)
         checksum = sum(data) & 0x7f
         return message[:-2] + [checksum, 0xf7]
