@@ -88,6 +88,9 @@ MainComponent::MainComponent() :
 		database_ = std::make_unique<midikraft::PatchDatabase>();
 	}
 	recentFiles_.setMaxNumberOfItems(10);
+	if (Settings::instance().keyIsSet("RecentFiles")) {
+		recentFiles_.restoreFromString(Settings::instance().get("RecentFiles"));
+	}
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
@@ -346,13 +349,15 @@ void MainComponent::createNewDatabase()
 			databaseFile.deleteFile();
 		}
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString());
-		// That worked, new database file is in use!
-		Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
-		Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
-		// Refresh UI
-		UIModel::instance()->currentSynth_.sendChangeMessage();
-		UIModel::instance()->windowTitle_.sendChangeMessage();
+		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+			persistRecentFileList();
+			// That worked, new database file is in use!
+			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
+			// Refresh UI
+			UIModel::instance()->currentSynth_.sendChangeMessage();
+			UIModel::instance()->windowTitle_.sendChangeMessage();
+		}
 	}
 }
 
@@ -376,6 +381,7 @@ void MainComponent::openDatabase(File &databaseFile)
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
 		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
 			recentFiles_.removeFile(databaseFile);
+			persistRecentFileList();
 			// That worked, new database file is in use!
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
 			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
@@ -401,7 +407,13 @@ void MainComponent::recentFileSelected(int selected)
 	else {
 		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "File not found", "That file no longer exists, cannot open!");
 		recentFiles_.removeFile(databaseFile);
+		persistRecentFileList();
 	}
+}
+
+void MainComponent::persistRecentFileList()
+{
+	Settings::instance().set("RecentFiles", recentFiles_.toString().toStdString());
 }
 
 #ifdef USE_SENTRY

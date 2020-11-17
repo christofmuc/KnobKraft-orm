@@ -48,6 +48,7 @@ private:
 	void openDatabase(File &databaseFile);
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
+	void persistRecentFileList();
 #ifdef USE_SENTRY
 	void checkUserConsent();
 #endif
