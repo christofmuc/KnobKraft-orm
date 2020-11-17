@@ -134,7 +134,7 @@ MainComponent::MainComponent() :
 			}
 		}
 		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
-		}
+	}
 
 	refreshSynthList();
 
@@ -154,7 +154,7 @@ MainComponent::MainComponent() :
 		{1, { "MIDI", { { "Auto-detect synths" } } } },
 		{2, { "Categories", { { "Edit auto-categories" }, { "Rerun auto categorize" } } } },
 		{3, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
-		{4, { "Help", { 
+		{4, { "Help", {
 #ifdef USE_SENTRY
 			{ "Crash reporting consent" },
 #endif
@@ -167,50 +167,50 @@ MainComponent::MainComponent() :
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
 	} } },
-	//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
-	{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
-		if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-			getAutoCategoryFile().revealToUser();
-		}
-	} } },
-	{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
-		auto currentFilter = patchView_->buildFilter();
-		int affected = database_->getPatchesCount(currentFilter);
-		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
-			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
-			"This makes sense if you changed the auto category search strings!\n\n"
-			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
-			)) {
-			AutoCategorizeWindow window(database_.get(), getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
-				patchView_->retrieveFirstPageFromDatabase();
-			});
-			window.runThread();
-		}
-	} } },
-	{ "About", { 3, "About", [this]() {
-		aboutBox();
-	}}},
-	{ "Quit", { 4, "Quit", [this]() {
-		JUCEApplicationBase::quit();
-	}}},
-	//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-	{ "Scale 75%", { 5, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-	{ "Scale 100%", { 6, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-	{ "Scale 125%", { 7, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-	{ "Scale 150%", { 8, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-	{ "Scale 175%", { 9, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-	{ "Scale 200%", { 10, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-	{ "New database...", { 11, "New database...", [this] { 
-		createNewDatabase();
-	}}},
-	{ "Open database...", { 12, "Open database...", [this] {
-		openDatabase();
-	}}},
-#ifdef USE_SENTRY
-	{ "Crash reporting consent...", { 13, "Crash reporting consent", [this] {
-		checkUserConsent();
-	}}},
-#endif
+		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
+		{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
+			if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+				getAutoCategoryFile().revealToUser();
+			}
+		} } },
+		{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
+			auto currentFilter = patchView_->buildFilter();
+			int affected = database_->getPatchesCount(currentFilter);
+			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
+				"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
+				"This makes sense if you changed the auto category search strings!\n\n"
+				"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
+				)) {
+				AutoCategorizeWindow window(database_.get(), getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
+					patchView_->retrieveFirstPageFromDatabase();
+				});
+				window.runThread();
+			}
+		} } },
+		{ "About", { 3, "About", [this]() {
+			aboutBox();
+		}}},
+		{ "Quit", { 4, "Quit", [this]() {
+			JUCEApplicationBase::quit();
+		}}},
+			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+			{ "Scale 75%", { 5, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
+			{ "Scale 100%", { 6, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
+			{ "Scale 125%", { 7, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
+			{ "Scale 150%", { 8, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
+			{ "Scale 175%", { 9, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
+			{ "Scale 200%", { 10, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+			{ "New database...", { 11, "New database...", [this] {
+				createNewDatabase();
+			}}},
+			{ "Open database...", { 12, "Open database...", [this] {
+				openDatabase();
+			}}},
+		#ifdef USE_SENTRY
+			{ "Crash reporting consent...", { 13, "Crash reporting consent", [this] {
+				checkUserConsent();
+			}}},
+		#endif
 	};
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
@@ -249,7 +249,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(synthList_);
 	addAndMakeVisible(patchList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
-	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);	
+	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
 	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
 	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
@@ -259,7 +259,7 @@ MainComponent::MainComponent() :
 
 	addAndMakeVisible(mainTabs_);
 
-	
+
 	addAndMakeVisible(menuBar_);
 	addAndMakeVisible(resizerBar_);
 	addAndMakeVisible(logArea_);
@@ -268,11 +268,20 @@ MainComponent::MainComponent() :
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
 
-	// If at least one synth is enabled, use the first one!
-	if (UIModel::instance()->synthList_.activeSynths().size() > 0) {
-		auto activeSynth = std::dynamic_pointer_cast<midikraft::Synth>(UIModel::instance()->synthList_.activeSynths()[0]);
-		if (activeSynth) {
-			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth);
+	// Is the active Synth persisted and active?
+	std::string activeSynthName = Settings::instance().get("CurrentSynth", "");
+	auto persistedSynth = UIModel::instance()->synthList_.synthByName(activeSynthName);
+	if (persistedSynth.device() && UIModel::instance()->synthList_.isSynthActive(persistedSynth.device())) {
+		UIModel::instance()->currentSynth_.changeCurrentSynth(persistedSynth.synth());
+		synthList_.setActiveListItem(activeSynthName);
+	}
+	else {
+		// If at least one synth is enabled, use the first one!
+		if (UIModel::instance()->synthList_.activeSynths().size() > 0) {
+			auto activeSynth = std::dynamic_pointer_cast<midikraft::Synth>(UIModel::instance()->synthList_.activeSynths()[0]);
+			if (activeSynth) {
+				UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth);
+			}
 		}
 	}
 
@@ -522,6 +531,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		refreshSynthList();
 	}
 	else {
+		Settings::instance().set("CurrentSynth", UIModel::currentSynth()->getName());
 		// The active synth has been switched, make sure to refresh the tab name properly
 		StringArray tabnames = mainTabs_.getTabNames();
 		for (int i = 0; i < mainTabs_.getNumTabs(); i++) {

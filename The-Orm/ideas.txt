@@ -2,6 +2,7 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
+* What about the last patch display?
 * Finish PatchInterchangeFormat
 * Test USB connectivity with Rev2
 
@@ -16,9 +17,7 @@ BUGS
 + Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
 
 UI/UX
-* Keep recent files list in menu
 * Store filter per synth!
-* Should remember last synth
 * Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
 * The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
