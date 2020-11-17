@@ -13,8 +13,12 @@ BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 * When plugging in a USB synth after launch, it does not get detected (github #1)
++ Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
 
 UI/UX
+* Store filter per synth!
+* Should remember last synth
+* Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
 * The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
 * The current patch per synth could be hidable
@@ -91,6 +95,8 @@ BCR2000
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
 
+DW8000
+* Doesn't properly support the default naming thing
 
 Archiving
 * Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
