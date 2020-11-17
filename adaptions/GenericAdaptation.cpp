@@ -590,6 +590,19 @@ namespace knobkraft {
 		}
 	}
 
+	std::string GenericAdaptation::calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const
+	{
+		try {
+			std::vector<int> data(patch->data().data(), patch->data().data() + patch->data().size());
+			py::object result = callMethod("calculateFingerprint", data);
+			return result.cast<std::string>();
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling calculateFingerprint: %s") % ex.what()).str());
+			return {};
+		}
+	}
+
 	std::vector<juce::MidiMessage> GenericAdaptation::requestPatch(int patchNo) const
 	{
 		try {

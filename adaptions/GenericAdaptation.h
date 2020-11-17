@@ -23,6 +23,9 @@ namespace knobkraft {
 		// This needs to be implemented, and never changed, as the result is used as a primary key in the database to store the patches
 		std::string getName() const override;
 
+		// Allow the Adaptation to implement a different fingerprint logic
+		virtual std::string calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const override;
+
 		// Implement hints for the UI of the Librarian
 		int numberOfBanks() const override;
 		int numberOfPatches() const override;
