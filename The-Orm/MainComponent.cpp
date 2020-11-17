@@ -330,7 +330,8 @@ MainComponent::~MainComponent()
 
 void MainComponent::createNewDatabase()
 {
-	FileChooser databaseChooser("Please enter the name of the database file to create...", File(""), "*.db3");
+	std::string databasePath = Settings::instance().get("LastDatabasePath");
+	FileChooser databaseChooser("Please enter the name of the database file to create...", File(databasePath), "*.db3");
 	if (databaseChooser.browseForFileToSave(true)) {
 		File databaseFile(databaseChooser.getResult());
 		if (databaseFile.existsAsFile()) {
