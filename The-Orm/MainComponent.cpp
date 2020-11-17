@@ -87,6 +87,7 @@ MainComponent::MainComponent() :
 	else {
 		database_ = std::make_unique<midikraft::PatchDatabase>();
 	}
+	recentFiles_.setMaxNumberOfItems(10);
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
@@ -142,15 +143,19 @@ MainComponent::MainComponent() :
 
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
-		{0, { "File", { "New database...", "Open database...", "Quit" } } },
-		{1, { "MIDI", { "Auto-detect synths" } } },
-		{2, { "Categories", { "Edit auto-categories", "Rerun auto categorize" } } },
-		{3, { "View", { "Scale 75%", "Scale 100%", "Scale 125%", "Scale 150%", "Scale 175%", "Scale 200%" }}},
+		{0, { "File", {
+				{ "New database..." },
+				{ "Open database..." },
+				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
+				{ "Quit" } } } },
+		{1, { "MIDI", { { "Auto-detect synths" } } } },
+		{2, { "Categories", { { "Edit auto-categories" }, { "Rerun auto categorize" } } } },
+		{3, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{4, { "Help", { 
 #ifdef USE_SENTRY
-			"Crash reporting consent", 
+			{ "Crash reporting consent" },
 #endif
-			"About" } } }
+			{ "About" } } } }
 	};
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
@@ -340,6 +345,7 @@ void MainComponent::createNewDatabase()
 			}
 			databaseFile.deleteFile();
 		}
+		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
 		database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString());
 		// That worked, new database file is in use!
 		Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
@@ -360,16 +366,41 @@ void MainComponent::openDatabase()
 	FileChooser databaseChooser("Please select a KnobKraft Orm SQlite database file...", lastDirectory, "*.db3");
 	if (databaseChooser.browseForFileToOpen()) {
 		File databaseFile = databaseChooser.getResult();
-		if (databaseFile.existsAsFile()) {
-			if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
-				// That worked, new database file is in use!
-				Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
-				Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
-				// Refresh UI
-				UIModel::instance()->currentSynth_.sendChangeMessage();
-				UIModel::instance()->windowTitle_.sendChangeMessage();
-			}
+		openDatabase(databaseFile);
+	}
+}
+
+void MainComponent::openDatabase(File &databaseFile) 
+{
+	if (databaseFile.existsAsFile()) {
+		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
+		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+			recentFiles_.removeFile(databaseFile);
+			// That worked, new database file is in use!
+			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
+			// Refresh UI
+			UIModel::instance()->currentSynth_.sendChangeMessage();
+			UIModel::instance()->windowTitle_.sendChangeMessage();
 		}
+	}
+}
+
+PopupMenu MainComponent::recentFileMenu() {
+	PopupMenu menu;
+	recentFiles_.createPopupMenuItems(menu, 3333, true, false);
+	return menu;
+}
+
+void MainComponent::recentFileSelected(int selected)
+{
+	File databaseFile = recentFiles_.getFile(selected);
+	if (databaseFile.existsAsFile()) {
+		openDatabase(databaseFile);
+	}
+	else {
+		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "File not found", "That file no longer exists, cannot open!");
+		recentFiles_.removeFile(databaseFile);
 	}
 }
 

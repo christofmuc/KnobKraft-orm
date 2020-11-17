@@ -45,6 +45,9 @@ public:
 private:
 	void createNewDatabase();
 	void openDatabase();
+	void openDatabase(File &databaseFile);
+	PopupMenu recentFileMenu();
+	void recentFileSelected(int selected);
 #ifdef USE_SENTRY
 	void checkUserConsent();
 #endif
@@ -58,6 +61,7 @@ private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;
+	RecentlyOpenedFilesList recentFiles_;
 	midikraft::AutoDetection autodetector_;
 
 	// The infrastructure for the menu and the short cut keys

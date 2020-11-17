@@ -16,6 +16,7 @@ BUGS
 + Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
 
 UI/UX
+* Keep recent files list in menu
 * Store filter per synth!
 * Should remember last synth
 * Edit field should be focused of Change Patch Name box
