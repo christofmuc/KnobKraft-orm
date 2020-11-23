@@ -8,19 +8,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(MidiKraft-Sequential-OB6)
 
-# Find JUCE, and add the components we need
-IF(NOT DEFINED JUCE_LIBRARIES)
-	SET(JUCE_DIR_HINT "${CMAKE_CURRENT_LIST_DIR}/../third_party")
-	find_package(JUCE REQUIRED 
-		COMPONENTS 
-			juce_core		
-			juce_events
-			juce_audio_basics
-			juce_audio_devices
-			juce_data_structures
-	)
-ENDIF()
-
 # Define the sources for the static library
 set(Sources
 	OB6.cpp OB6.h
