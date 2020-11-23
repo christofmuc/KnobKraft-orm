@@ -16,19 +16,6 @@ OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
 set(SENTRY_DSN "Sentry DSN URL" CACHE STRING "https://YYYYYYYYYYYYYYYYYY@ZZZZZ.ingest.sentry.io/XXXX")
 set(D_LOG_SENTRY "")
 
-find_package(JUCE REQUIRED 
-	COMPONENTS 
-		juce_core		
-		juce_events
-		juce_audio_basics
-		juce_audio_devices
-		juce_data_structures
-		juce_audio_utils # AudioAppComponent
-		juce_dsp
-		juce_opengl
-		juce_cryptography # MD5
-)
-
 configure_file("version.cpp.in" "version.cpp")
 
 IF(CRASH_REPORTING)

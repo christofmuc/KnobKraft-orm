@@ -2,6 +2,7 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
+* Want to delete / multi-delete. Really remove stuff from the database. github item #18
 * What about the last patch display?
 * Finish PatchInterchangeFormat
 * Test USB connectivity with Rev2

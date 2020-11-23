@@ -55,8 +55,8 @@ public:
     //==============================================================================
 	TheOrmApplication() = default;
 
-    const String getApplicationName() override       { return ProjectInfo::projectName; }
-    const String getApplicationVersion() override    { return ProjectInfo::versionString; }
+    const String getApplicationName() override       { return "KnobKraft Orm"; }
+	const String getApplicationVersion() override    { return getOrmVersion(); }
     bool moreThanOneInstanceAllowed() override       { return true; }
 
     //==============================================================================

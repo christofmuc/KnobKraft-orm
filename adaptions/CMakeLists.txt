@@ -8,20 +8,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(KnobKraft-Generic-Adaptation)
 
-# Find JUCE, and add the components we need
-IF(NOT DEFINED JUCE_LIBRARIES)
-	SET(JUCE_DIR_HINT "${CMAKE_CURRENT_LIST_DIR}/../third_party")
-	find_package(JUCE REQUIRED 
-		COMPONENTS 
-			juce_core		
-			juce_events
-			juce_audio_basics
-			juce_audio_devices
-			juce_data_structures
-			juce_gui_basics
-	)
-ENDIF()
-
 file(GLOB adaptation_files "${CMAKE_CURRENT_LIST_DIR}/*.py")
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h

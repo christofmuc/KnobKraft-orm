@@ -137,6 +137,51 @@ ENDIF()
 # CPack installer on macOS.
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_ALL)
 
+# Adding JUCE 6.0
+add_subdirectory("third_party/JUCE")
+
+# Build a static library from juce 
+add_library(juce-static STATIC)
+target_link_libraries(juce-static
+	PRIVATE
+	    juce::juce_audio_basics juce::juce_audio_devices juce::juce_audio_formats
+	    juce::juce_audio_processors juce::juce_audio_utils juce::juce_core
+	    juce::juce_cryptography juce::juce_data_structures juce::juce_dsp
+	    juce::juce_events juce::juce_graphics juce::juce_gui_basics
+	    juce::juce_gui_extra juce::juce_opengl juce::juce_video
+	PUBLIC
+		juce::juce_recommended_config_flags
+		juce::juce_recommended_lto_flags
+		juce::juce_recommended_warning_flags)
+
+target_compile_definitions(juce-static
+	PUBLIC
+		JUCE_PLUGINHOST_VST=0
+		JUCE_PLUGINHOST_AU=0
+		DONT_SET_USING_JUCE_NAMESPACE=1
+		JUCE_DISPLAY_SPLASH_SCREEN=0
+		JUCE_REPORT_APP_USAGE=0
+		JUCE_CHECK_MEMORY_LEAKS=0
+		JUCE_QUICKTIME=0
+		JUCE_USE_DIRECTWRITE=1
+		JUCE_CATCH_UNHANDLED_EXCEPTIONS=0
+		JUCE_COREGRAPHICS_DRAW_ASYNC=1
+		JUCE_WIN_PER_MONITOR_DPI_AWARE=1
+		JUCE_USE_FLAC=1
+	INTERFACE
+		$<TARGET_PROPERTY:juce-static,COMPILE_DEFINITIONS>)
+
+target_include_directories(juce-static
+	INTERFACE
+		$<TARGET_PROPERTY:juce-static,INCLUDE_DIRECTORIES>)
+
+set_target_properties(juce-static PROPERTIES
+	POSITION_INDEPENDENT_CODE TRUE
+	VISIBILITY_INLINES_HIDDEN TRUE
+	C_VISIBILITY_PRESET hidden
+	CXX_VISIBILITY_PRESET hidden)
+
+
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
