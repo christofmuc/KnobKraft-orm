@@ -8,19 +8,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(MidiKraft-Sequential-Prophet-Rev2)
 
-# Find JUCE, and add the components we need
-IF(NOT DEFINED JUCE_LIBRARIES)
-	SET(JUCE_DIR_HINT "${CMAKE_CURRENT_LIST_DIR}/../third_party")
-	find_package(JUCE REQUIRED 
-		COMPONENTS 
-			juce_core		
-			juce_events
-			juce_audio_basics
-			juce_audio_devices
-			juce_data_structures
-	)
-ENDIF()
-
 set(PATCH_FILES
 	resources/Rev2_InitPatch.syx
 )
@@ -53,7 +40,7 @@ set_source_files_properties(
 
 # Setup library
 add_library(midikraft-sequential-rev2 ${Sources})
-target_include_directories(midikraft-sequential-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
+target_include_directories(midikraft-sequential-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR})
 target_link_libraries(midikraft-sequential-rev2 juce-utils midikraft-base ${APPLE_BOOST})
 
 # Pedantic about warnings
