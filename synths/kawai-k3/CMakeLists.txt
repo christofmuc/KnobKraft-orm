@@ -8,19 +8,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(MidiKraft-Kawai-K3)
 
-# Find JUCE, and add the components we need
-IF(NOT DEFINED JUCE_LIBRARIES)
-	SET(JUCE_DIR_HINT "${CMAKE_CURRENT_LIST_DIR}/../third_party")
-	find_package(JUCE REQUIRED 
-		COMPONENTS 
-			juce_core		
-			juce_events
-			juce_audio_basics
-			juce_audio_devices
-			juce_data_structures
-	)
-ENDIF()
-
 set(RESOURCE_FILES 
 	"resources/R6P-09 27c256.BIN"
 )
@@ -55,7 +42,7 @@ set_source_files_properties(
 
 # Setup library
 add_library(midikraft-kawai-k3 ${Sources})
-target_include_directories(midikraft-kawai-k3 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
+target_include_directories(midikraft-kawai-k3 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(midikraft-kawai-k3 PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
