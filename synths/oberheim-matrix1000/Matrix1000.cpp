@@ -54,35 +54,44 @@ namespace midikraft {
 	};
 
 	// Table of global settings. What I left out was the "group enabled" array for one bit per patch to specify if it is deemed to be group-worthy.
-	std::vector<Matrix1000GlobalSettingDefinition> kMatrix1000GlobalSettings = {
-		{ 34, { "Master Transpose", "Tuning", 0, -24, 24 }, true },
-		{ 8, { "Master Tune", "Tuning", 0, -32, 32 }, true },
-		{ 11, { "MIDI Basic Channel", "MIDI", 1, 1, 16 }, false, 1 /* Make it one based */},
-		{ 12, { "MIDI OMNI Mode Enable", "MIDI", false } },
-		{ 13, { "MIDI Controllers enable", "MIDI", true} },
-		{ 14, { "MIDI Patch Changes Enable", "MIDI", true } },
-		{ 17, { "MIDI Pedal 1 Controller", "MIDI", 0, 0, 121 } }, //TODO - could make a lookup of CC controller names? 121 is from the manual
-		{ 18, { "MIDI Pedal 2 Controller", "MIDI", 0, 0, 121 } },
-		{ 19, { "MIDI Pedal 3 Controller", "MIDI", 0, 0, 121 } },
-		{ 20, { "MIDI Pedal 4 Controller", "MIDI", 0, 0, 121 } },
-		{ 32, { "MIDI Echo Enable", "MIDI", false } },
-		{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", false } },
-		{ 165, { "Bank Lock Enable", "MIDI", false} }, // (In MSB only)
-		{ 4, { "Vibrato Waveform", "Global Vibrato", 0, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
-		{ 1, { "Vibrato Speed", "Global Vibrato", 0, 0, 63 } },
-		{ 5, { "Vibrato Amplitude", "Global Vibrato", 0, 0, 63 } },		
-		{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
-		{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", 0, 0, 63 } },
-		{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
-		{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", 0, 0, 63 } },
-		{ 164, { "Bend Range", "Controls", 2, 1, 24 } },		
-		{ 166, { "Number of Units", "Group Mode", 1, 1, 6 } }, 
-		{ 167, { "Current Unit Number", "Group Mode", 0, 0, 7 } }, // (In MSB only)
-		{ 168, { "Group Mode Enable", "Group Mode", false } }, // (In MSB only)
-		{ 169, { "Unison Enable", "General", false } }, 
-		{ 170, { "Volume Invert Enable", "General", false } }, 
-		{ 171, { "Memory Protect Enable", "General", false } }, 
+	struct Matrix1000GlobalSettings {
+		std::vector<Matrix1000GlobalSettingDefinition> definitions = {
+			{ 34, { "Master Transpose", "Tuning", 0, -24, 24 }, true },
+			{ 8, { "Master Tune", "Tuning", 0, -32, 32 }, true },
+			{ 11, { "MIDI Basic Channel", "MIDI", 1, 1, 16 }, false, 1 /* Make it one based */},
+			{ 12, { "MIDI OMNI Mode Enable", "MIDI", false } },
+			{ 13, { "MIDI Controllers enable", "MIDI", true} },
+			{ 14, { "MIDI Patch Changes Enable", "MIDI", true } },
+			{ 17, { "MIDI Pedal 1 Controller", "MIDI", 0, 0, 121 } }, //TODO - could make a lookup of CC controller names? 121 is from the manual
+			{ 18, { "MIDI Pedal 2 Controller", "MIDI", 0, 0, 121 } },
+			{ 19, { "MIDI Pedal 3 Controller", "MIDI", 0, 0, 121 } },
+			{ 20, { "MIDI Pedal 4 Controller", "MIDI", 0, 0, 121 } },
+			{ 32, { "MIDI Echo Enable", "MIDI", false } },
+			{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", false } },
+			{ 165, { "Bank Lock Enable", "MIDI", false} }, // (In MSB only)
+			{ 4, { "Vibrato Waveform", "Global Vibrato", 0, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
+			{ 1, { "Vibrato Speed", "Global Vibrato", 0, 0, 63 } },
+			{ 5, { "Vibrato Amplitude", "Global Vibrato", 0, 0, 63 } },
+			{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
+			{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", 0, 0, 63 } },
+			{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
+			{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", 0, 0, 63 } },
+			{ 164, { "Bend Range", "Controls", 2, 1, 24 } },
+			{ 166, { "Number of Units", "Group Mode", 1, 1, 6 } },
+			{ 167, { "Current Unit Number", "Group Mode", 0, 0, 7 } }, // (In MSB only)
+			{ 168, { "Group Mode Enable", "Group Mode", false } }, // (In MSB only)
+			{ 169, { "Unison Enable", "General", false } },
+			{ 170, { "Volume Invert Enable", "General", false } },
+			{ 171, { "Memory Protect Enable", "General", false } },
+		};
 	};
+	std::shared_ptr<Matrix1000GlobalSettings> gMatrix1000GlobalSettings;
+	std::shared_ptr<Matrix1000GlobalSettings> sMatrix1000GlobalSettings() {
+		if (!gMatrix1000GlobalSettings) {
+			gMatrix1000GlobalSettings = std::make_shared<Matrix1000GlobalSettings>();
+		}
+		return gMatrix1000GlobalSettings;
+	}
 
 	juce::MidiMessage Matrix1000::requestEditBufferDump()
 	{
@@ -121,7 +130,7 @@ namespace midikraft {
 	{
 		// Loop over it and fill out the GlobalSettings Properties
 		globalSettings_.clear();
-		for (auto & matrix1000GlobalSetting : kMatrix1000GlobalSettings) {
+		for (auto & matrix1000GlobalSetting : sMatrix1000GlobalSettings()->definitions) {
 			auto setting = std::make_shared<TypedNamedValue>(matrix1000GlobalSetting.typedNamedValue);
 			globalSettings_.push_back(setting);
 		}
@@ -140,7 +149,7 @@ namespace midikraft {
 			// Poke all values from the globalSettings array into the data
 			for (auto & setting : synth_->globalSettings_) {
 				//TODO Need to find definition for this setting now, suboptimal data structures
-				for (auto const &def : kMatrix1000GlobalSettings) {
+				for (auto const &def : sMatrix1000GlobalSettings()->definitions) {
 					if (def.typedNamedValue.name() == setting->name()) {
 						int newMidiValue = ((int)setting->value().getValue()) - def.displayOffset;
 						if (def.isTwosComplement) {
@@ -382,10 +391,10 @@ namespace midikraft {
 		auto settingsArray = unescapeSysex(dataFile->data().data(), (int) dataFile->data().size());
 		if (settingsArray.size() == 172) {
 			updateSynthWithGlobalSettingsListener_.globalSettingsData_ = settingsArray;
-			for (size_t i = 0; i < kMatrix1000GlobalSettings.size(); i++) {
+			for (size_t i = 0; i < sMatrix1000GlobalSettings()->definitions.size(); i++) {
 				if (i < settingsArray.size()) {
-					int intValue = settingsArray[kMatrix1000GlobalSettings[i].sysexIndex] + kMatrix1000GlobalSettings[i].displayOffset;
-					if (kMatrix1000GlobalSettings[i].isTwosComplement) {
+					int intValue = settingsArray[sMatrix1000GlobalSettings()->definitions[i].sysexIndex] + sMatrix1000GlobalSettings()->definitions[i].displayOffset;
+					if (sMatrix1000GlobalSettings()->definitions[i].isTwosComplement) {
 						// Very special code that only works because there are just two fields in the global settings that need it
 						// Master transpose and Master tuning
 						if (intValue > 127) {
