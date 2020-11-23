@@ -418,44 +418,53 @@ namespace midikraft {
 		return false;
 	}
 
-	std::vector<DSIGlobalSettingDefinition> kRev2GlobalSettings = {
-		{ 0, 4097, { "Master Coarse Tune", "Tuning", 12, -12, 12 }, -12 }, // Default 12, displayed as 0
-		{ 1, 4096, { "Master Fine Tune", "Tuning", 25, -50, 50 }, -50 }, // Default 50, displayed as 0
-		{ 2, 4098, { "MIDI Channel", "MIDI", 0, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } }, 
-		{ 3, 4099, { "MIDI Clock Mode", "MIDI", 1, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
-		{ 4, 4100, { "MIDI Clock Cable", "MIDI", 0, { {0, "MIDI"}, { 1, "USB" } } } },
-		{ 5, 4101, { "MIDI Param Send", "MIDI", 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
-		{ 6, 4102, { "MIDI Param Receive", "MIDI", 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
-		{ 7, 4103, { "MIDI Control Enable", "MIDI", true } },
-		//{ 8, { "UNKNOWN", "MIDI", Value(), ValueType::Integer, 0, 100 } },
-		{ 22, 4118, { "MIDI Prog Enable", "MIDI", true } },
-		{ 26, 4125, { "MIDI Prog Send", "MIDI", true } },
-		{ 10, 4104, { "MIDI Sysex Cable", "MIDI", 0, { {0, "MIDI"}, { 1, "USB" } } } },
-		{ 9, 4105, { "MIDI Out Select", "MIDI", 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" } } } },
-		{ 11, 4123, { "MIDI Arp+Seq", "MIDI", true } },
-		{ 25, 4124, { "Arp Beat Sync", "MIDI", 0, { {0, "Off"}, { 1, "Quantize" } } } },
-		{ 21, 4119, { "MIDI MultiMode Enabled", "MIDI", true } },
-		{ 12, 4107, { "Local Control Enabled", "MIDI", true } },
-		{ 17, 4113, { "Velocity Curve", "Keyboard", 0, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }, {4, "Curve 5" }, {5, "Curve 6" }, {6, "Curve 7" }, {7, "Curve 8" } } } }, 
-		{ 18, 4114, { "Pressure Curve", "Keyboard", 0, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
-		{ 19, 4115, { "Stereo or Mono", "Audio Setup", 0, { {0, "Stereo" }, { 1, "Mono" } } } },
-		{ 14, 4109, { "Pot Mode", "Front controls", 0, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
-		{ 16, 4116, { "Alternative Tuning", "Scales", 0, kDSIAlternateTunings() } },
-		{ 20, 4120, { "Screen Saver Enabled", "General", true } },
-		{ 13, 4111, { "Seq Pedal Mode", "Controls", 0, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
-		{ 24, 4122, { "Foot Assign", "Controls", 0, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
-		{ 15, 4112, { "Sustain polarity", "Controls", 0, { {0, "Normal"}, { 1, "Reversed" } } } },
-		{ 23, 4121, { "Sustain Arp", "Controls", 0, { {0, "Arp Hold"}, { 1, "Sustain" }, { 2, "Arp Hold Mom" } } } },
-		{ 27, 4126, { "Save Edit B Enabled", "Controls", true } },
+	struct Rev2GlobalSettings {
+		std::vector<DSIGlobalSettingDefinition> definitions = {
+			{ 0, 4097, { "Master Coarse Tune", "Tuning", 12, -12, 12 }, -12 }, // Default 12, displayed as 0
+			{ 1, 4096, { "Master Fine Tune", "Tuning", 25, -50, 50 }, -50 }, // Default 50, displayed as 0
+			{ 2, 4098, { "MIDI Channel", "MIDI", 0, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } },
+			{ 3, 4099, { "MIDI Clock Mode", "MIDI", 1, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
+			{ 4, 4100, { "MIDI Clock Cable", "MIDI", 0, { {0, "MIDI"}, { 1, "USB" } } } },
+			{ 5, 4101, { "MIDI Param Send", "MIDI", 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
+			{ 6, 4102, { "MIDI Param Receive", "MIDI", 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"} } } },
+			{ 7, 4103, { "MIDI Control Enable", "MIDI", true } },
+			//{ 8, { "UNKNOWN", "MIDI", Value(), ValueType::Integer, 0, 100 } },
+			{ 22, 4118, { "MIDI Prog Enable", "MIDI", true } },
+			{ 26, 4125, { "MIDI Prog Send", "MIDI", true } },
+			{ 10, 4104, { "MIDI Sysex Cable", "MIDI", 0, { {0, "MIDI"}, { 1, "USB" } } } },
+			{ 9, 4105, { "MIDI Out Select", "MIDI", 2, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" } } } },
+			{ 11, 4123, { "MIDI Arp+Seq", "MIDI", true } },
+			{ 25, 4124, { "Arp Beat Sync", "MIDI", 0, { {0, "Off"}, { 1, "Quantize" } } } },
+			{ 21, 4119, { "MIDI MultiMode Enabled", "MIDI", true } },
+			{ 12, 4107, { "Local Control Enabled", "MIDI", true } },
+			{ 17, 4113, { "Velocity Curve", "Keyboard", 0, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }, {4, "Curve 5" }, {5, "Curve 6" }, {6, "Curve 7" }, {7, "Curve 8" } } } },
+			{ 18, 4114, { "Pressure Curve", "Keyboard", 0, { {0, "Curve 1" }, {1, "Curve 2" }, {2, "Curve 3" }, {3, "Curve 4" }  } } },
+			{ 19, 4115, { "Stereo or Mono", "Audio Setup", 0, { {0, "Stereo" }, { 1, "Mono" } } } },
+			{ 14, 4109, { "Pot Mode", "Front controls", 0, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
+			{ 16, 4116, { "Alternative Tuning", "Scales", 0, kDSIAlternateTunings() } },
+			{ 20, 4120, { "Screen Saver Enabled", "General", true } },
+			{ 13, 4111, { "Seq Pedal Mode", "Controls", 0, { {0, "Normal"}, { 1, "Trigger" }, { 2, "Gate" }, { 3, "Trigger+Gate" } } } },
+			{ 24, 4122, { "Foot Assign", "Controls", 0, { { 0, "Breath CC2" }, { 1, "Foot CC4" }, { 2, "Exp CC11" }, { 3, "Volume" }, { 4, "LPF Full" }, { 5, "LPF Half" } } } },
+			{ 15, 4112, { "Sustain polarity", "Controls", 0, { {0, "Normal"}, { 1, "Reversed" } } } },
+			{ 23, 4121, { "Sustain Arp", "Controls", 0, { {0, "Arp Hold"}, { 1, "Sustain" }, { 2, "Arp Hold Mom" } } } },
+			{ 27, 4126, { "Save Edit B Enabled", "Controls", true } },
+		};
 	};
+	std::shared_ptr<Rev2GlobalSettings> sRev2GlobalSettings;
+	std::vector<DSIGlobalSettingDefinition> &gRev2GlobalSettings() {
+		if (!sRev2GlobalSettings) {
+			sRev2GlobalSettings = std::make_shared<Rev2GlobalSettings>();
+		}
+		return sRev2GlobalSettings->definitions;
+	}
 
 	void Rev2::initGlobalSettings()
 	{
 		//TODO could this go into the DSISynth class as well?
 		// Loop over it and fill out the GlobalSettings Properties
 		globalSettings_.clear();
-		for (size_t i = 0; i < kRev2GlobalSettings.size(); i++) {
-			auto setting = std::make_shared<TypedNamedValue>(kRev2GlobalSettings[i].typedNamedValue);
+		for (size_t i = 0; i < gRev2GlobalSettings().size(); i++) {
+			auto setting = std::make_shared<TypedNamedValue>(gRev2GlobalSettings()[i].typedNamedValue);
 			globalSettings_.push_back(setting);
 		}
 		globalSettingsTree_ = ValueTree("REV2SETTINGS");
@@ -586,7 +595,7 @@ namespace midikraft {
 
 	std::vector<midikraft::DSIGlobalSettingDefinition> Rev2::dsiGlobalSettings() const
 	{
-		return kRev2GlobalSettings;
+		return gRev2GlobalSettings(); //TODO expensive copy constructor of everything
 	}
 
 }
