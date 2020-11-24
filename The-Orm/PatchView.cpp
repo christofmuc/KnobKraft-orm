@@ -408,6 +408,21 @@ void PatchView::retrieveEditBuffer()
 	}
 }
 
+void PatchView::deletePatches()
+{
+	int totalAffected = totalNumberOfPatches();
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Delete all %d patches matching current filter") % totalAffected).str(),
+		(boost::format("Warning, there is no undo operation. Do you really want to delete the %d patches matching the current filter?\n\n"
+			"They will be gone forever, unless you use a backup!") % totalAffected).str())) {
+		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
+			"Are you sure?", "Yes", "No")) {
+			int deleted = database_.deletePatches(buildFilter());
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
+			retrieveFirstPageFromDatabase();
+		}
+	}
+}
+
 int PatchView::totalNumberOfPatches() 
 {
 	return database_.getPatchesCount(buildFilter());

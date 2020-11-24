@@ -146,10 +146,11 @@ MainComponent::MainComponent() :
 				{ "Open database..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
 				{ "Quit" } } } },
-		{1, { "MIDI", { { "Auto-detect synths" } } } },
-		{2, { "Categories", { { "Edit auto-categories" }, { "Rerun auto categorize" } } } },
-		{3, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
-		{4, { "Help", {
+		{1, { "Edit", { { "Delete patches..." } } } },
+		{2, { "MIDI", { { "Auto-detect synths" } } } },
+		{3, { "Categories", { { "Edit auto-categories" }, { "Rerun auto categorize" } } } },
+		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{5, { "Help", {
 #ifdef USE_SENTRY
 			{ "Crash reporting consent" },
 #endif
@@ -201,8 +202,11 @@ MainComponent::MainComponent() :
 			{ "Open database...", { 12, "Open database...", [this] {
 				openDatabase();
 			}}},
+			{ "Delete patches...", { 13, "Delete patches...", [this] {
+				patchView_->deletePatches();
+			}}},
 		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { 13, "Crash reporting consent", [this] {
+			{ "Crash reporting consent...", { 14, "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
 		#endif
