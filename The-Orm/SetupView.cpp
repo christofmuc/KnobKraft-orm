@@ -137,7 +137,7 @@ void SetupView::refreshSynthActiveness() {
 void SetupView::refreshData() {
 	int prop = 0;
 	
-	for (auto &synth : UIModel::instance()->synthList_.allSynths()) {
+	for (auto &synth : sortedSynthList_) {
 		if (!synth.device()) continue;
 		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
 		// Load
