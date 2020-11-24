@@ -48,6 +48,7 @@ private:
 	InfoText header_;
 	//HueLightControl * lights_;
 	LambdaButtonStrip functionButtons_;
+	TextButton autoConfigureButton_;
 	PropertyEditor synthSelection_;
 	PropertyEditor synthSetup_;
 

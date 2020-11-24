@@ -25,6 +25,12 @@
 #include <boost/format.hpp>
 #include <algorithm>
 
+
+const char *kSetupHint1 = "In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
+	"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.";
+const char *kSetupHint2 = "First please select at least one synth to use, then turn it on and press auto-configure to detect if a working bi-directional connection can be made.\n\n";
+
+
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
 	autoDetection_(autoDetection)/*, lights_(lights) */,
 	functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
@@ -47,8 +53,6 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	for (auto prop : synths_) prop->value().addListener(this);
 	rebuildSetupColumn();
 	refreshSynthActiveness();
-	header_.setText("In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
-		"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.");
 	addAndMakeVisible(header_);
 	addAndMakeVisible(synthSelection_);
 	synthSelection_.setProperties(synths_);
@@ -57,27 +61,31 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 
 	// Define function buttons
 	functionButtons_.setButtonDefinitions({
-			{ "autoDetect", {0, "Auto-Configure", [this]() {
-				autoDetect();
-			} } },
-			{ "synthDetection", {1, "Quick check connectivity", [this]() {
+			{ "synthDetection", {0, "Quick check connectivity", [this]() {
 				quickConfigure();
 			} } },
-			{ "loopDetection", {2, "Check for MIDI loops", [this]() {
+			{ "loopDetection", {1, "Check for MIDI loops", [this]() {
 				loopDetection();
 			} } },
-			{"selectAdaptationDirectory", {3, "Set User Adaptation Dir", [this]() {
+			{"selectAdaptationDirectory", {2, "Set User Adaptation Dir", [this]() {
 				FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
 				if (directoryChooser.browseForDirectory()) {
 					knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
 					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
 				}
 			} } },
-			{"createNewAdaptation", {4, "Create new adaptation", [this]() {
+			{"createNewAdaptation", {3, "Create new adaptation", [this]() {
 				knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
 			} } }
 		});
 	addAndMakeVisible(functionButtons_);
+
+	// I want one very prominent button for auto-configure, because that should normally the first one to press
+	addAndMakeVisible(autoConfigureButton_);
+	autoConfigureButton_.onClick = [this]() {
+		autoDetect();
+	};
+	autoConfigureButton_.setButtonText("Auto-Configure");
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 }
@@ -96,7 +104,9 @@ void SetupView::resized() {
 	// Two column setup, don't go to wide, I don't need more than 1000 pixels
 	int setupWidth = std::min(area.getWidth(), 1000);
 	synthSelection_.setBounds(area.removeFromLeft(area.getWidth() / 2).removeFromRight(setupWidth/2).reduced(8));
-	synthSetup_.setBounds(area.removeFromLeft(setupWidth/2));
+	auto rightColumn = area.removeFromLeft(setupWidth / 2);
+	autoConfigureButton_.setBounds(rightColumn.removeFromTop(40).withSizeKeepingCentre(120, 30));
+	synthSetup_.setBounds(rightColumn);
 }
 
 void SetupView::setValueWithoutListeners(Value &value, int newValue) {
@@ -124,6 +134,9 @@ void SetupView::rebuildSetupColumn() {
 
 	synthSetup_.setProperties(properties_);
 	refreshData();
+
+	// Display a helpful text
+	header_.setText(properties_.empty() ? kSetupHint2 : kSetupHint1);
 }
 
 void SetupView::refreshSynthActiveness() {

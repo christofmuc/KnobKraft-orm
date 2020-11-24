@@ -125,13 +125,8 @@ MainComponent::MainComponent() :
 			active = var(String(Settings::instance().get(activeKey.toStdString(), "1")));
 		}
 		else {
-			// No user decision on active or not
-			if (synth.device()->getName() != "Matrix 1000 Adaption") {
-				// All synths except the example Matrix 1000 Adaptation or turned on by default.
-				// That one is turned off by default because there is a C++ implementation for the Matrix 1000 as well
-				// and having both might confuse a first time user.
-				active = true;
-			}
+			// No user decision on active or not - default is inactive now, else you end up with 20 synths which looks ugly
+			active = false;
 		}
 		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
 	}
@@ -513,6 +508,23 @@ void MainComponent::refreshSynthList() {
 		}
 	}
 
+	// If the list of active synths was changed, it could be that the current synth no longer is an active synth. We need to do something about that!
+	auto current = UIModel::currentSynth();
+	if ((!current || (current && !UIModel::instance()->synthList_.isSynthActive(UIModel::instance()->synthList_.synthByName(current->getName()).device())))
+		&& listItems.size() > 0) {
+		// Current synth is no longer active
+		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(listItems[0]);
+		UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());
+	}
+	else {
+		if (listItems.empty()) {
+			// No current synth anymore - turn off current synth
+			UIModel::instance()->currentSynth_.changeCurrentSynth({});
+		}
+		else {
+		}
+	}
+
 	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
 		if (activeSynth) {
@@ -524,6 +536,10 @@ void MainComponent::refreshSynthList() {
 		}
 	});
 
+	// Need to make sure the correct button is pressed
+	if (UIModel::currentSynth()) {
+		synthList_.setActiveListItem(UIModel::currentSynth()->getName());
+	}
 	patchList_.setPatches(patchList);
 }
 
@@ -533,20 +549,19 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
 	}
-	else {
-		// The active synth has been switched, make sure to refresh the tab name properly
-		int index = findIndexOfTabWithNameEnding(&mainTabs_, " settings");
-		if (index != -1) {
-			auto synth = UIModel::currentSynth();
-			if (synth) {
-				// Persist current synth for next launch
-				Settings::instance().set("CurrentSynth", synth->getName());
-				// Rename tab to show settings of this synth
-				mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
-			}
-			else {
-				mainTabs_.setTabName(index, "...");
-			}
+
+	// The active synth has been switched, make sure to refresh the tab name properly
+	int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+	if (index != -1) {
+		auto synth = UIModel::currentSynth();
+		if (synth) {
+			// Persist current synth for next launch
+			Settings::instance().set("CurrentSynth", synth->getName());
+			// Rename tab to show settings of this synth
+			mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
+		}
+		else {
+			mainTabs_.setTabName(index, "Settings");
 		}
 	}
 }
