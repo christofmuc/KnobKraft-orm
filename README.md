@@ -4,28 +4,27 @@
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
-Questions / help with implementing new synths wanted, I am trying to get us across many forums in the Internet into one common place, and have created a room on Gitter for that to reach me. If you have found a bug, also feel free to report directly here on Github. 
+Questions help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github. 
 
-[![Gitter](https://badges.gitter.im/knobkraft/community.svg)](https://gitter.im/knobkraft/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
-Currently natively supported and tested synths as of version 1.8.0:
+Currently natively supported and tested synths as of version 1.8.0 [Those I own or haved owned, so they are likely to work well]:
 
 * Access Virus B
 * Kawai K3/K3M
-* Korg DW-8000
+* Korg DW-8000/EX-8000
 * Oberheim Matrix 1000
 * Sequential/Dave Smith Instruments OB-6
 * Sequential/Dave Smith Instruments Prophet Rev2
 * Yamaha Reface DX
 
-As adaption currently available and tested
+As adaptation currently available and reported to work by the community:
 
 * Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
 * Sequential Pro 3 
-* Sequential/Dave Smith Instruments Prophet 12
+* Sequential/Dave Smith Instruments Prophet 12 - thanks to @Andy2No!
 
- Already implemented adaptions, which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
+ Already implemented adaptations which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
 
+* Behringer Deepmind 12 (untested)
 * Korg DW-6000 (untested)
 * DSI Pro 2 (untested)
 * DSI Prophet 08 (untested)
@@ -33,10 +32,13 @@ As adaption currently available and tested
 * Roland JX-8P (untested)
 * Sequential Prophet 5 Rev 4 (untested)
 * Sequential Prophet 6 (untested)
+* Waldorf Blofeld (untested)
 
-The adaptions are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptions - at least, scripting the MIDI. No custom UI currently is possible or planned. So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptions for more devices! They might not be as powerful or fully integrated as the natively supported synths, but they are done really quickly!
+The adaptations are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptations - at least, scripting the MIDI. No custom UI currently is possible or planned as of now.
 
-Next up for development are:
+So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptations for more devices!
+
+Next up for development by myself are:
 
 * Behringer RD-8
 * Roland MKS-80
@@ -63,7 +65,7 @@ This software is build and run on Windows 10, macOS 10.15, and several Linux dis
 
 ## Prerequisites
 
-We use [CMake 3.14](https://cmake.org/). Make sure to have a recent version of cmake installed. 
+We use [CMake 3.18](https://cmake.org/). Make sure to have a recent version of cmake installed, the build process fails if it is too old (normally it will say so).
 
 ## Downloading
 
@@ -74,8 +76,8 @@ Clone with submodules from github
 The recursive clone with  submodules is required to retrieve the following additional modules already into the right spot inside the source tree:
 
 1. We use the magnificent [JUCE library](https://juce.com/) to immensly reduce the amount of work we have to do. 
-6. [juce-cmake](https://github.com/remymuller/juce-cmake) to allow us to use JUCE and CMake together.
-4. The configure step will download (on Windows) the allmighty [boost](https://www.boost.org/) library, sorry for the bloat but I simply had no time to remove the dependency yet. All my professional projects of course rely on boost, so it is a natural to incorporate it here as well.
+
+4. The configure step will download (on Windows) the almighty [boost](https://www.boost.org/) library, sorry for the bloat but I simply had no time to remove the dependency yet. All my professional projects of course rely on boost, so it is a natural to incorporate it here as well.
 
 ## Building on Windows
 
@@ -91,7 +93,7 @@ This will produce the executable in the path `builds\The-Orm\Release`, namely a 
 
 ## Building on Linux
 
-See the appveyor.yml file for some hints how the Ubuntu server is doing it. Mainly, you need to install a long list of prerequisites and development libraries:
+See the azure-pipelines.yml file for some hints how the Ubuntu server is doing it. Mainly, you need to install a long list of prerequisites and development libraries:
 
     sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev
 
@@ -133,7 +135,7 @@ The app icon is courtesy of W07 at the Sequential forums, thanks for your contri
 
 For the restless Prophet 12 testing thanks and a medal for most comments on a ticket go to @Andy2No!
 
-Thanks also go to @gnidorah for reporting bugs with the RefaceDX implementation, which were fixed!
+Thanks also go to @gnidorah for reporting bugs with the RefaceDX implementation, which were fixed! Thanks to @GriffReborn for bug reports with the Virus B implementation!
 
 ## About the author
 
