@@ -116,7 +116,7 @@ set(PYBIND11_PYTHON_VERSION 3.7)
 add_subdirectory("third_party/pybind11")
 
 # Define the list of link libraries required on Linux linking with JUCE, this must be used by any executable / module to run standalone
-IF(UNIX)
+if(UNIX AND NOT APPLE)
 	set(LINUX_JUCE_LINK_LIBRARIES
 		PkgConfig::WEBKIT 
 		PkgConfig::GTK 
