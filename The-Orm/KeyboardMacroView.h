@@ -12,6 +12,9 @@
 #include "PropertyEditor.h"
 #include "MacroConfig.h"
 
+#include "MidiChannelPropertyEditor.h"
+
+
 class KeyboardMacroView : public Component, private ChangeListener, private Value::Listener {
 public:
 	KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback);
@@ -35,6 +38,7 @@ private:
 	PropertyEditor customSetup_;
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
+	std::shared_ptr<MidiDevicePropertyEditor> midiDeviceList_; // Listen to this to get notified of newly available devices!
 
 	OwnedArray<MacroConfig> configs_;
 

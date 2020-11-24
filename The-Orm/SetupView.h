@@ -17,6 +17,9 @@
 #include "AutoDetection.h"
 #include "SynthHolder.h"
 
+#include "MidiChannelPropertyEditor.h"
+
+
 class SetupView : public Component,
 	private ChangeListener, private Value::Listener
 {
@@ -51,6 +54,8 @@ private:
 	TextButton autoConfigureButton_;
 	PropertyEditor synthSelection_;
 	PropertyEditor synthSetup_;
+	std::shared_ptr<MidiDevicePropertyEditor> inputDeviceList_; // Listen to this to get notified of newly available devices!
+	std::shared_ptr<MidiDevicePropertyEditor> outputDeviceList_; // Listen to this to get notified of newly available devices!
 
 	DebounceTimer timedAction_;
 };

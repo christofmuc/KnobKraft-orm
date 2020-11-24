@@ -10,7 +10,6 @@
 
 #include "Logger.h"
 #include "Settings.h"
-#include "MidiChannelPropertyEditor.h"
 #include "UIModel.h"
 
 // Standardize text
@@ -161,11 +160,15 @@ KeyboardMacroView::~KeyboardMacroView()
 }
 
 void KeyboardMacroView::setupPropertyEditor() {
+	// Midi Device Selector can broadcast a change message when a new device is detected or removed
+	midiDeviceList_ = std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true, true);
+	midiDeviceList_->addChangeListener(this);
+
 	customMasterkeyboardSetup_.clear();
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", false));
-	customMasterkeyboardSetup_.push_back(std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true));
+	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127 ));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kHighestNote, "Setup Masterkeyboard", 0x60, 0, 127 ));
@@ -297,9 +300,10 @@ void KeyboardMacroView::turnOnMasterkeyboardInput() {
 
 void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-
-	if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
+	if (source == midiDeviceList_.get()) {
+		// The list of MIDI devices changed, need to refresh the property editor
+		customSetup_.setProperties(customMasterkeyboardSetup_);
+	} else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
 		// Mode 1 - follow current synth, use that as master keyboard
 		auto currentSynth = UIModel::currentSynth();
 		auto masterKeyboard = dynamic_cast<midikraft::MasterkeyboardCapability *>(currentSynth);
