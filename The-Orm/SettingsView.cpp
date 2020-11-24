@@ -65,7 +65,12 @@ void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else {
 		propertyEditor_.clear();
-		errorMessageInstead_.setText("The " + String(UIModel::currentSynth()->getName()) + " implementation does not support editing the global settings of the synth, sorry!", dontSendNotification);
+		if (UIModel::currentSynth()) {
+			errorMessageInstead_.setText("The " + String(UIModel::currentSynth()->getName()) + " implementation does not support editing the global settings of the synth, sorry!", dontSendNotification);
+		}
+		else {
+			errorMessageInstead_.setText("No Synth is selected. Please use the Setup tab to configure at least one synth");
+		}
 		resized();
 	}
 }

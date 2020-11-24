@@ -60,6 +60,9 @@ private:
 	void aboutBox();
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
+	
+	// Helper function because of JUCE API
+	int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;
 	RecentlyOpenedFilesList recentFiles_;

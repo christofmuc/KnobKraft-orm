@@ -116,7 +116,9 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
 		// Select only the newly selected synth in the synth filters
-		advancedFilters_.synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
+		if (UIModel::currentSynth()) {
+			advancedFilters_.synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
+		}
 
 		// Rebuild the other features
 		rebuildImportFilterBox();
@@ -204,10 +206,13 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
-	// First, we need to find out how many patches there are (for the paging control)
-	int total = database_.getPatchesCount(buildFilter());
-	patchButtons_->setTotalCount(total);
-	patchButtons_->refresh(true); // This kicks of loading the first page
+	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
+	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
+		// First, we need to find out how many patches there are (for the paging control)
+		int total = database_.getPatchesCount(buildFilter());
+		patchButtons_->setTotalCount(total);
+		patchButtons_->refresh(true); // This kicks of loading the first page
+	}
 }
 
 void PatchView::hideCurrentPatch()
@@ -401,10 +406,6 @@ void PatchView::retrieveEditBuffer()
 				});
 		});
 	}
-	else {
-		// Button shouldn't be enabled
-		jassert(false);
-	}
 }
 
 int PatchView::totalNumberOfPatches() 
@@ -464,9 +465,12 @@ void PatchView::loadPatches() {
 
 void PatchView::exportPatches()
 {
-	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-		librarian_.saveSysexPatchesToDisk(patches);
-	});
+	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
+	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
+		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+			librarian_.saveSysexPatchesToDisk(patches);
+		});
+	}
 }
 
 std::string PatchView::currentlySelectedSourceUUID() {

@@ -258,8 +258,6 @@ MainComponent::MainComponent() :
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 
 	addAndMakeVisible(mainTabs_);
-
-
 	addAndMakeVisible(menuBar_);
 	addAndMakeVisible(resizerBar_);
 	addAndMakeVisible(logArea_);
@@ -302,9 +300,14 @@ MainComponent::MainComponent() :
 	// Refresh Setup View with the result of this
 	UIModel::instance()->currentSynth_.sendChangeMessage();
 
-	// Feel free to request the globals page from the Rev2
-	settingsView_->loadGlobals();
+	// If there is no synth configured, like, on first launch, show the Setup tab instead of the default Library tab
+	if (list.empty()) {
+		int setupIndex = findIndexOfTabWithNameEnding(&mainTabs_, "Setup");
+		mainTabs_.setCurrentTabIndex(setupIndex, false);
+	}
 
+	// Feel free to request the globals page from the active synth
+	settingsView_->loadGlobals();
 
 	// Make sure you set the size of the component after
 	// you add any child components.
@@ -531,16 +534,31 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		refreshSynthList();
 	}
 	else {
-		Settings::instance().set("CurrentSynth", UIModel::currentSynth()->getName());
 		// The active synth has been switched, make sure to refresh the tab name properly
-		StringArray tabnames = mainTabs_.getTabNames();
-		for (int i = 0; i < mainTabs_.getNumTabs(); i++) {
-			if (tabnames[i].endsWithIgnoreCase("settings")) {
-				mainTabs_.setTabName(i, UIModel::currentSynth()->getName() + " settings");
-				break;
+		int index = findIndexOfTabWithNameEnding(&mainTabs_, " settings");
+		if (index != -1) {
+			auto synth = UIModel::currentSynth();
+			if (synth) {
+				// Persist current synth for next launch
+				Settings::instance().set("CurrentSynth", synth->getName());
+				// Rename tab to show settings of this synth
+				mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
+			}
+			else {
+				mainTabs_.setTabName(index, "...");
 			}
 		}
 	}
+}
+
+int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name) {
+	StringArray tabnames = mainTabs->getTabNames();
+	for (int i = 0; i < mainTabs->getNumTabs(); i++) {
+		if (tabnames[i].endsWithIgnoreCase(name)) {
+			return i;			
+		}
+	}
+	return -1;
 }
 
 File MainComponent::getAutoCategoryFile() const {
