@@ -1,9 +1,6 @@
 [submodule "third_party/JUCE"]
 	path = third_party/JUCE
 	url = https://github.com/WeAreROLI/JUCE.git
-[submodule "third_party/juce-cmake"]
-	path = third_party/juce-cmake
-	url = https://github.com/remymuller/juce-cmake.git
 [submodule "MidiKraft-base"]
 	path = MidiKraft-base
 	url = https://github.com/christofmuc/MidiKraft-base.git
