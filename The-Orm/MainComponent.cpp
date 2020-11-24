@@ -469,8 +469,8 @@ void MainComponent::resized()
 {
 	auto area = getLocalBounds();
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
-	auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
-	patchList_.setBounds(topRow);
+	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
+	//patchList_.setBounds(topRow);
 	auto secondTopRow = area.removeFromTop(60).reduced(8);
 	synthList_.setBounds(secondTopRow);
 	//menuBar_.setBounds(area.removeFromTop(30));
