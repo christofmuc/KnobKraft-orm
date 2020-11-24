@@ -149,6 +149,7 @@ target_link_libraries(juce-static
 	    juce::juce_cryptography juce::juce_data_structures juce::juce_dsp
 	    juce::juce_events juce::juce_graphics juce::juce_gui_basics
 	    juce::juce_gui_extra juce::juce_opengl juce::juce_video
+		${LINUX_JUCE_LINK_LIBRARIES}
 	PUBLIC
 		juce::juce_recommended_config_flags
 		juce::juce_recommended_lto_flags
