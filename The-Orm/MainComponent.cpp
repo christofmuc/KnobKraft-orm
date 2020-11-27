@@ -558,7 +558,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		quickconfigreDebounce_.callDebounced([this, synthList]() {
 			auto myList = synthList;
 			autodetector_.quickconfigure(myList);
-		}, 500);
+		}, 2000);
 	}
 	if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top

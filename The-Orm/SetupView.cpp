@@ -25,6 +25,22 @@
 #include <boost/format.hpp>
 #include <algorithm>
 
+class MidiChannelPropertyEditorWithOldDevices : public MidiDevicePropertyEditor {
+public:
+	MidiChannelPropertyEditorWithOldDevices(std::string const &title, std::string const &sectionName, bool inputInsteadOutput) : MidiDevicePropertyEditor(title, sectionName, inputInsteadOutput) {
+		if (inputInsteadOutput) {
+			auto set = midikraft::MidiController::instance()->currentInputs(true);
+			std::vector<std::string> list(set.begin(), set.end());
+			refreshDropdownList(list);
+		}
+		else {
+			auto set = midikraft::MidiController::instance()->currentOutputs(true);
+			std::vector<std::string> list(set.begin(), set.end());
+			refreshDropdownList(list);
+		}
+	}
+};
+
 
 const char *kSetupHint1 = "In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
 	"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.";
@@ -127,8 +143,8 @@ void SetupView::rebuildSetupColumn() {
 		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
 		auto sectionName = synth.getName();
 		// For each synth, we need 3 properties, and we need to listen to changes: 
-		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
-		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
+		properties_.push_back(std::make_shared<MidiChannelPropertyEditorWithOldDevices>("Sent to device", sectionName, false));
+		properties_.push_back(std::make_shared<MidiChannelPropertyEditorWithOldDevices>("Receive from device", sectionName, true));
 		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
 	}
 	// We need to know if any of these are clicked
