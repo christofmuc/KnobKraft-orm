@@ -299,6 +299,9 @@ MainComponent::MainComponent() :
 	// Refresh Setup View with the result of this
 	UIModel::instance()->currentSynth_.sendChangeMessage();
 
+	// Monitor the list of available MIDI devices
+	midikraft::MidiController::instance()->addChangeListener(this);
+
 	// If there is no synth configured, like, on first launch, show the Setup tab instead of the default Library tab
 	if (list.empty()) {
 		int setupIndex = findIndexOfTabWithNameEnding(&mainTabs_, "Setup");
@@ -549,10 +552,18 @@ void MainComponent::refreshSynthList() {
 
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 {
+	if (source == midikraft::MidiController::instance()) {
+		// Kick off a new quickconfigure, as the MIDI interface setup has changed and synth available will be different
+		auto synthList = UIModel::instance()->synthList_.activeSynths();
+		quickconfigreDebounce_.callDebounced([this, synthList]() {
+			auto myList = synthList;
+			autodetector_.quickconfigure(myList);
+		}, 500);
+	}
 	if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
-	}
+	} 
 
 	// The active synth has been switched, make sure to refresh the tab name properly
 	int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");

@@ -87,10 +87,7 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	};
 	autoConfigureButton_.setButtonText("Auto-Configure");
 
-	inputDeviceList_ = std::make_shared<MidiDevicePropertyEditor>("JustForListening", "noSection", true, true);
-	inputDeviceList_->addChangeListener(this);
-	outputDeviceList_= std::make_shared<MidiDevicePropertyEditor>("JustForListening", "noSection", false, true);
-	outputDeviceList_->addChangeListener(this);
+	midikraft::MidiController::instance()->addChangeListener(this);
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 }
@@ -130,8 +127,8 @@ void SetupView::rebuildSetupColumn() {
 		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
 		auto sectionName = synth.getName();
 		// For each synth, we need 3 properties, and we need to listen to changes: 
-		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false, false));
-		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true, false));
+		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Sent to device", sectionName, false));
+		properties_.push_back(std::make_shared<MidiDevicePropertyEditor>("Receive from device", sectionName, true));
 		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
 	}
 	// We need to know if any of these are clicked
@@ -233,7 +230,7 @@ void SetupView::valueChanged(Value& value)
 
 void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == inputDeviceList_.get() || source == outputDeviceList_.get()) {
+	if (source == midikraft::MidiController::instance()) {
 		// Refresh setup list on the right side
 		rebuildSetupColumn();
 	}

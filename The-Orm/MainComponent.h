@@ -12,6 +12,7 @@
 #include "MidiLogView.h"
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
+#include "DebounceTimer.h"
 
 #include "PatchDatabase.h"
 #include "AutoDetection.h"
@@ -67,6 +68,9 @@ private:
 	std::unique_ptr<midikraft::PatchDatabase> database_;
 	RecentlyOpenedFilesList recentFiles_;
 	midikraft::AutoDetection autodetector_;
+
+	// For kicking off new quickconfigures automatically
+	DebounceTimer quickconfigreDebounce_;
 
 	// The infrastructure for the menu and the short cut keys
 	std::unique_ptr<LambdaMenuModel> menuModel_;

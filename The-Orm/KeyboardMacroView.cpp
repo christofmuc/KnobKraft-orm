@@ -161,8 +161,8 @@ KeyboardMacroView::~KeyboardMacroView()
 
 void KeyboardMacroView::setupPropertyEditor() {
 	// Midi Device Selector can broadcast a change message when a new device is detected or removed
-	midiDeviceList_ = std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true, true);
-	midiDeviceList_->addChangeListener(this);
+	midiDeviceList_ = std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true);
+	midikraft::MidiController::instance()->addChangeListener(this);
 
 	customMasterkeyboardSetup_.clear();
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
@@ -300,8 +300,9 @@ void KeyboardMacroView::turnOnMasterkeyboardInput() {
 
 void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == midiDeviceList_.get()) {
+	if (source == midikraft::MidiController::instance()) {
 		// The list of MIDI devices changed, need to refresh the property editor
+		midiDeviceList_->refreshDeviceList();
 		customSetup_.setProperties(customMasterkeyboardSetup_);
 	} else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
 		// Mode 1 - follow current synth, use that as master keyboard

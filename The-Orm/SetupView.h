@@ -54,8 +54,6 @@ private:
 	TextButton autoConfigureButton_;
 	PropertyEditor synthSelection_;
 	PropertyEditor synthSetup_;
-	std::shared_ptr<MidiDevicePropertyEditor> inputDeviceList_; // Listen to this to get notified of newly available devices!
-	std::shared_ptr<MidiDevicePropertyEditor> outputDeviceList_; // Listen to this to get notified of newly available devices!
 
 	DebounceTimer timedAction_;
 };
