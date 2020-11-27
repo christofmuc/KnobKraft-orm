@@ -44,7 +44,9 @@ void PatchPerSynthList::setPatches(std::vector<midikraft::PatchHolder> const &pa
 			patchButtons_.back()->setPatchHolder(nullptr, false, false);
 		}
 		addAndMakeVisible(*patchButtons_.back());
-		buttonForSynth_[patch.synth()->getName()] = patchButtons_.back();
+		if (patch.synth()) {
+			buttonForSynth_[patch.synth()->getName()] = patchButtons_.back();
+		}
 	}
 	resized();
 }
