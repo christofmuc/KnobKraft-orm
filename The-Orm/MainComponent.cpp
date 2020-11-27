@@ -26,6 +26,7 @@
 #include "RefaceDX.h"
 #include "BCR2000.h"
 #include "MKS80.h"
+#include "Keystep.h"
 
 #include "GenericAdaptation.h"
 
@@ -105,6 +106,7 @@ MainComponent::MainComponent() :
 	//synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Keystep>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptations
