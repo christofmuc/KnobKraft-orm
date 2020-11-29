@@ -531,6 +531,31 @@ namespace knobkraft {
 		}
 	}
 
+	midikraft::TPatchVector GenericAdaptation::loadSysex(std::vector<MidiMessage> const &sysexMessages)
+	{
+		try {
+			auto vector = messageToVector(sysexMessages[0]);
+			int c = channel().toZeroBasedInt();
+			py::object result = callMethod("loadSysex", c, vector);
+			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
+			midikraft::TPatchVector patches;
+			for (const auto& singlePatch : Sysex::vectorToMessages(byteData)) {
+				auto patch = patchFromProgramDumpSysex(singlePatch);
+				if (patch) {
+					patches.push_back(patch);
+				}
+				else {
+					SimpleLogger::instance()->postMessage("Module generated invalid program dump while loading from sysex!");
+				}
+			}
+			return patches;
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage("Exception when running adaptation method 'loadSysex': " + String(ex.what()));
+			return midikraft::Synth::loadSysex(sysexMessages);
+		}
+	}
+
 	std::string GenericAdaptation::getName() const
 	{
 		try {

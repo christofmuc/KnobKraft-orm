@@ -48,6 +48,9 @@ namespace knobkraft {
 		virtual std::shared_ptr<midikraft::Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const midikraft::Patch &patch) const override;
 
+		// Super special cases allow you to declare functions in Python to overload this, else it will fallback to the normal base class implementation
+		virtual midikraft::TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
+
 		// The following functions are implemented generically and current cannot be defined in Python
 		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		bool isOwnSysex(MidiMessage const &message) const override;
