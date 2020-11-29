@@ -61,6 +61,14 @@ namespace knobkraft {
 			patchNumber_ = std::make_shared<GenericPatchNumber>(MidiProgramNumber::fromZeroBase(0));
 		}
 
+		bool pythonModuleHasFunction(std::string const &functionName) {
+			ScopedLock lock(GenericAdaptation::multiThreadGuard);
+			if (!adaptation_) {
+				return false;
+			}
+			return py::hasattr(*adaptation_, functionName.c_str());
+		}
+
 		template <typename ... Args>
 		py::object callMethod(std::string const &methodName, Args& ... args) const {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
@@ -119,6 +127,10 @@ namespace knobkraft {
 		}
 
 		void setName(std::string const &name) override {
+			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
+			if (!pythonModuleHasFunction("renamePatch")) return;
+
+			// Very well, then try to change the name in the patch data
 			try {
 				ScopedLock lock(GenericAdaptation::multiThreadGuard);
 				std::vector<int> v(data().data(), data().data() + data().size());

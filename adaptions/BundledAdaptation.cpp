@@ -19,6 +19,7 @@ namespace knobkraft {
 			{ "DSI Prophet 12", "DSI_Prophet_12", std::string(DSI_Prophet_12_py, DSI_Prophet_12_py + DSI_Prophet_12_py_size) },
 			//{ "Korg DW-8000 Adaption", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size ) },
 			{ "Korg DW-6000", "Korg_DW_6000", std::string(KorgDW6000_py, KorgDW6000_py + KorgDW6000_py_size) },
+			{ "Korg MS2000", "Korg_MS2000", std::string(KorgMS2000_py, KorgMS2000_py + KorgMS2000_py_size) },
 			{ "Matrix 6", "Matrix_6", std::string(Matrix_6_py, Matrix_6_py + Matrix_6_py_size) },
 			{ "Matrix 1000 Adaption", "Matrix_1000", std::string(Matrix1000_py, Matrix1000_py + Matrix1000_py_size) },
 			{ "Pioneer Toraiz AS1", "Pioneer_Toraiz_AS1", std::string(PioneerToraiz_AS1_py, PioneerToraiz_AS1_py + PioneerToraiz_AS1_py_size) },
