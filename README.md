@@ -26,6 +26,7 @@ As adaptation currently available and reported to work by the community:
 
 * Behringer Deepmind 12 (untested)
 * Korg DW-6000 (untested)
+* Korg MS2000 (untested)
 * DSI Pro 2 (untested)
 * DSI Prophet 08 (untested)
 * Pioneer Toraiz AS-1 (untested)
