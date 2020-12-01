@@ -302,7 +302,12 @@ namespace knobkraft {
 	{
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
 		if (!hasPython()) {
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install using 'brew install python3'. Turning off all adaptations.");
+#ifdef __APPLE__
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install from https://www.python.org/ftp/python/3.7.9/python-3.7.9-macosx10.9.pkg. Turning off all adaptations.");
+			//SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install using 'brew install python3'. Turning off all adaptations.");
+#else
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install from https://www.python.org/downloads/release/python-378/. Turning off all adaptations.");
+#endif
 			return result;
 		}
 
