@@ -95,7 +95,7 @@ def nameFromDump(message):
 
 def renamePatch(message, new_name):
     if isSingleProgramDump(message) or isEditBufferDump(message):
-        # The Matrix 6 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
+        # The Matrix 1000 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
         valid_name = [ord(x) if ord(x) < 0x60 else (ord(x) - 0x20) for x in new_name]
         new_name_nibbles = nibble([(valid_name[i] & 0x3f) if i < len(new_name) else 0x20 for i in range(8)])
         return rebuildChecksum(message[0:5] + new_name_nibbles + message[21:])
