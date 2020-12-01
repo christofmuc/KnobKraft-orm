@@ -121,6 +121,10 @@ def convertToProgramDump(channel, message, patchNo):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
+def friendlyBankName(bank_number):
+    return "%03d-%03d" % (bank_number * 100, (bank_number+1)*100-1)
+
+
 def rebuildChecksum(message):
     if isSingleProgramDump(message) or isEditBufferDump(message):
         data = denibble(message, 5, len(message) - 2)
