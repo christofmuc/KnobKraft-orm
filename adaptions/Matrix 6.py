@@ -20,10 +20,6 @@ def createQuickEditModeMessage():
     return [0xf0, 0x10, 0x06, 0x05, 0xf7]
 
 
-def deviceDetectWaitMilliseconds():
-    return 200
-
-
 def needsChannelSpecificDetection():
     return False
 

@@ -76,17 +76,11 @@ Example implementation:
 
 ### Device detection
 
-The device detection mechanism needs four functions to be implemented to work. And note that while many devices implement a version of a device ID request message or similar, sometimes it is smarter to do something completely different to coax the MIDI channel out of the device. Or to get it to react at all, you sometimes need to use brute force. E.g. to detect a Roland MKS-80 I initiate a full bank dump, and when the first data block comes just abort the transfer. Only then I know there is an MKS-80, and the MIDI channel is encoded in its response.
+The device detection mechanism needs three functions to be implemented to work. And note that while many devices implement a version of a device ID request message or similar, sometimes it is smarter to do something completely different to coax the MIDI channel out of the device. Or to get it to react at all, you sometimes need to use brute force. E.g. to detect a Roland MKS-80 I initiate a full bank dump, and when the first data block comes just abort the transfer. Only then I know there is an MKS-80, and the MIDI channel is encoded in its response.
 
     def needsChannelSpecificDetection():
 
 This function should return `True` if the `createDeviceDetectMessage()` should be called once for each of the 16 possible MIDI channels and MIDI outputs, or `False` if it should only be called once per MIDI output.
-
-    def deviceDetectWaitMilliseconds():
-
-You guessed it, return the number of milliseconds the main program will wait for the synth to answer before it moves on testing the next MIDI output. If this number is too low, you will get very confused because the synth will be detected on the wrong interface. Better start with a higher number, and when everything works bring this value down by experimenting. 200 ms is a good value for most device, I found.
-
-Note that the main program will only wait once for all 16 channels, if you have channel specific detection turned on. The assumption is that there is no collision between the 16 different detect messages sent, and the device will only reply to one of them. 
 
     def createDeviceDetectMessage(channel):
 
@@ -125,6 +119,14 @@ Here is the example implementation for the Korg DW6000:
         return -1
 
 Basically I just check the first 4 bytes of the message. The `len()` check only prevents an index out of bounds exception should the message be shorter. When the first 4 bytes of the message match my expectations, I return 1 as a valid MIDI channel. In the case of the DW6000 there is no way to detect the channel, but that doesn't prevent the Librarian from working. The DW6000 as a low-budget synth simply was not equipped for the situation when somebody had two DW6000s!
+
+    def deviceDetectWaitMilliseconds():
+
+You guessed it, return the number of milliseconds the main program will wait for the synth to answer before it moves on testing the next MIDI output. If this number is too low, you will get very confused because the synth will be detected on the wrong interface. Better start with a higher number, and when everything works bring this value down by experimenting. 200 ms is a good value for most devices, and is the default if you do not implement this method.
+
+Note that the main program will only wait once for all 16 channels, if you have channel specific detection turned on. The assumption is that there is no collision between the 16 different detect messages sent, and the device will only reply to one of them. 
+
+**[Hack that needs to be removed: return a negative number from the deviceDetectWaitMilliseconds() method, and no device detect will be attempted]**
 
 With these four functions implemented, go ahead and test if the device detection works! Look at the MIDI log to watch the MIDI traffic. And remember that all synths need some kind of special setting/mode/switches to reply to sysex commands, better re-read that manual.
 

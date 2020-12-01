@@ -485,6 +485,9 @@ namespace knobkraft {
 
 	int GenericAdaptation::deviceDetectSleepMS()
 	{
+		if (!pythonModuleHasFunction("deviceDetectWaitMilliseconds")) {
+			return 200;
+		}
 		try
 		{
 			py::object result = callMethod("deviceDetectWaitMilliseconds");
@@ -494,7 +497,7 @@ namespace knobkraft {
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling deviceDetectSleepMS: %s") % ex.what()).str());
 			ex.restore();
-			return 100;
+			return 200;
 		}
 	}
 
