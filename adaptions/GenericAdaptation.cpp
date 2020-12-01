@@ -327,6 +327,14 @@ namespace knobkraft {
 		return result;
 	}
 
+	bool GenericAdaptation::pythonModuleHasFunction(std::string const &functionName) const {
+		ScopedLock lock(GenericAdaptation::multiThreadGuard);
+		if (!adaptation_module) {
+			return false;
+		}
+		return py::hasattr(*adaptation_module, functionName.c_str());
+	}
+
 	template <typename ... Args>
 	py::object GenericAdaptation::callMethod(std::string const &methodName, Args& ... args) const {
 		if (!adaptation_module) {
@@ -431,8 +439,19 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::friendlyBankName(MidiBankNumber bankNo) const
 	{
-		//TODO could delegate this to the python code as well
-		return (boost::format("Bank %d") % bankNo.toOneBased()).str();
+		if (!pythonModuleHasFunction("friendlyBankName")) {
+			return (boost::format("Bank %d") % bankNo.toOneBased()).str();
+		}
+		try {
+			int bankAsInt = bankNo.toZeroBased();
+			py::object result = callMethod("friendlyBankName", bankAsInt);
+			return result.cast<std::string>();
+		}
+		catch (py::error_already_set &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling friendlyBankName: %s") % ex.what()).str());
+			ex.restore();
+			return "invalid name";
+		}
 	}
 
 	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const

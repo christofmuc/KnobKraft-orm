@@ -71,6 +71,7 @@ namespace knobkraft {
 		static MidiMessage vectorToMessage(std::vector<int> const &data);
 
 	private:
+		bool pythonModuleHasFunction(std::string const &functionName) const;
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const;
 
 		// Helper function for adding the built-in adaptations
