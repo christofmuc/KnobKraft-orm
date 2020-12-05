@@ -160,7 +160,7 @@ def convertToEditBuffer(channel, message):
     if isSingleProgramDump(message) or isEditBufferDump(message):
         # The data structures are the same, only byte 2 seems to contain the device ID (or channel), and
         # byte 4 should be 0x40, current program data dump
-        return message[0:1] + [0x030 | (channel & 0x0f), 0x58, 0x40] + message[5:]
+        return message[0:2] + [0x030 | (channel & 0x0f), 0x58, 0x40] + message[5:]
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
