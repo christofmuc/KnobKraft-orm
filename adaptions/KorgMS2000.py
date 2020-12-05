@@ -128,6 +128,9 @@ def createProgramDumpRequest(channel, patchNo):
     # The MS2000 specifies it reacts on program change, but does not define any bank select.
     # So we use program change to address the 128 programs directly and send that before the data dump request
     return [0xc0 | (channel & 0x0f), (patchNo & 0x7f)] + [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x1c, 0xf7]
+    # If the above doesn't work, comment it out and comment the next return statement in.
+    #  But then you also need to change line 152 to check for message[4] == 0x40 instead of message[4] == 0x4c
+    #return [0xc0 | (channel & 0x0f), (patchNo & 0x7f)] +  createEditBufferRequest(channel)
 
 
 def isSingleProgramDump(message):
