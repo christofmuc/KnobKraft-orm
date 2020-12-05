@@ -15,6 +15,12 @@ def createDeviceDetectMessage(channel):
 
 
 def deviceDetectWaitMilliseconds():
+    return 200
+
+
+def generalMessageDelay():
+    # It seems the Blofeld is not the fastest horse in the MIDI stable, so better build in a small delay before
+    # sending messages
     return 100
 
 
@@ -24,16 +30,16 @@ def needsChannelSpecificDetection():
 
 
 def channelIfValidDeviceResponse(message):
-    if (len(message) > 9
+    if (len(message) > 6
             and message[0] == 0xf0  # Sysex
             and message[1] == 0x7e  # Non-realtime
             and message[3] == 0x06  # Device request
             and message[4] == 0x02  # Device request reply
             and message[5] == 0x3e  # Waldorf
-            and message[6] == 0x13  # Blofeld
-            and message[7] == 0x00  # Family MS is 0
-            and message[8] == 0x00  # Family member
-            and message[9] == 0x00):  # Family member
+            and message[6] == 0x13):  # Blofeld
+            #and message[7] == 0x00  # Family MS is 0
+            #and message[8] == 0x00  # Family member
+            #and message[9] == 0x00):  # Family member
         # Extract the Blofeld's device ID from byte 2 of the message
         return message[2]
     return -1
