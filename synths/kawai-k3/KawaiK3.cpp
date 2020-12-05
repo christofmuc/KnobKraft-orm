@@ -658,7 +658,7 @@ namespace midikraft {
 				MidiBuffer messages;
 				messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), 1), 1); // Any program can be used
 				messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBased()), 2);
-				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
+				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(messages);
 				// We ignore the result of these sends, just hope for the best
 			}
 			else {
@@ -668,7 +668,7 @@ namespace midikraft {
 		});
 		controller->enableMidiOutput(midiOutput());
 		controller->enableMidiInput(midiInput());
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(messages);
+		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(messages);
 	}
 
 	void KawaiK3::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
@@ -695,7 +695,7 @@ namespace midikraft {
 			}
 		}
 		// Send the filtered stuff
-		midiOut->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(filtered));
+		midiOut->sendBlockOfMessagesFullSpeed(MidiHelpers::bufferFromMessages(filtered));
 		if (patchToSend) {
 			sendPatchToSynth(MidiController::instance(), SimpleLogger::instance(), MidiHelpers::bufferFromMessages({ *patchToSend }));
 		}
