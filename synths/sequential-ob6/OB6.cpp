@@ -210,7 +210,7 @@ namespace midikraft {
 	{
 		// The OB6 will change its channel with a nice NRPN message
 		// See page 79 of the manual
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(createNRPN(1026, newChannel.toOneBasedInt()));
+		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(createNRPN(1026, newChannel.toOneBasedInt()));
 		setCurrentChannelZeroBased(midiInput(), midiOutput(), newChannel.toZeroBasedInt());
 		onFinished();
 	}
@@ -218,7 +218,7 @@ namespace midikraft {
 	void OB6::setMidiControl(MidiController *controller, bool isOn)
 	{
 		// See page 77 of the manual
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(createNRPN(1031, isOn ? 1 : 0));
+		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(createNRPN(1031, isOn ? 1 : 0));
 		midiControl_ = isOn;
 	}
 
@@ -241,7 +241,7 @@ namespace midikraft {
 	void OB6::setLocalControl(MidiController *controller, bool localControlOn)
 	{
 		// This is the documented way, but at least my OB6 completely ignores it
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(createNRPN(1035, localControlOn ? 1 : 0));
+		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(createNRPN(1035, localControlOn ? 1 : 0));
 		// DSI support recommended to use the CC parameter, and that funnily works - but only, if MIDI control is turned on (makes sense)
 		// Interestingly, this works even when the "Param Rcv" is set to NRPN. The documentation suggestions otherwise.
 		controller->getMidiOutput(midiOutput())->sendMessageNow(MidiMessage::controllerEvent(channel().toOneBasedInt(), 0x7a, localControlOn ? 1 : 0));
