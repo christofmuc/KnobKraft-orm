@@ -275,6 +275,16 @@ Another example from the code for the Prophet 12 shows how to handle this when b
 
 Some capabilities are not required to be implemented, but enhance the user experience. 
 
+### Throtteling communication
+
+Some older devices don't like it if multiple messages are sent to them too quickly, their small processors need a while to finish with message received and they might just ignore another message if it comes up too quickly. Actually some older devices are really good and fast despite running on some 2 MHz micro-processor like the Zilog Z80, but many also like it if there is a delay between messages.
+
+To turn on a delay between messages sent, implement the following function returning an integer milliseconds value:
+
+    def generalMessageDelay():
+
+This delay will be used only in those cases where a method returns multiple MIDI messages, not between calls to methods. E.g. if the `createProgramDumpRequest` returns an array which contains two messages, a program change and an edit buffer request message, the Orm will wait the specified milliseconds after sending the first message before sending the second. It will not wait before sending the first message.
+
 ### Renaming patches
 For example, the Orm always allows the user to specify a name for a patch, but that name will not appear on the synth unless you implement the following function. If you don't implement it, the patches will keep their original name even if you change the database name for a patch.
 

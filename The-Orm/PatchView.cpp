@@ -577,7 +577,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 			auto location = dynamic_cast<midikraft::MidiLocationCapability *>(patch.synth());
 			if (location) {
 				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.getNumEvents() % allMessages.data.size()).str());
-				midikraft::MidiController::instance()->getMidiOutput(location->midiOutput())->sendBlockOfMessagesNow(allMessages);
+				patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
 			}
 			else {
 				jassertfalse;

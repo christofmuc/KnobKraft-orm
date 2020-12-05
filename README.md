@@ -62,6 +62,14 @@ You can always use the source to build it yourself, please read on for more inst
 
 This software is build and run on Windows 10, macOS 10.15, and several Linux distributions. Note that this is not a commercial project, and as I am using Windows mostly expect some hiccups. But I will get back to you if you report a bug and try to resolve it!
 
+# Building your own adaptation for a synthesizer
+
+It is possible to create an adaptation for a new synthesizer that is not yet on the supported device list. For that, you'll select an existing adaptation that might be close to what you need (e.g. same manufacturer, same device family), and use a text editor to adapt the Python code controlling how to generate the device specific messages required and what to do with the answers from the synth.
+
+If you're up to that, I have written a whole [Programming Guide](adaptions/Adaptation\ Programming\ Guide.md) documenting the required and optional methods to be implemented.
+
+I know this is not easy, and most importantly new devices also might require capabilities that are not yet part of the Orm, so please don't hesitate to contact me, I'll try to help!
+
 # Building the software
 
 ## Prerequisites

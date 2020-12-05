@@ -469,6 +469,26 @@ namespace knobkraft {
 		return false;
 	}
 
+	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
+	{
+		if (pythonModuleHasFunction("generalMessageDelay")) {
+			try {
+				auto result = callMethod("generalMessageDelay");
+				int delay = py::cast<int>(result);
+				// Be a bit careful with this device, do specify a delay when sending messages
+				midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesThrottled(buffer, delay);
+			}
+			catch (py::error_already_set &ex) {
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling friendlyBankName: %s") % ex.what()).str());
+				ex.restore();
+			}
+		}
+		else {
+			// No special behavior - just send at full speed
+			midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesFullSpeed(buffer);
+		}
+	}
+
 	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)
 	{
 		try {

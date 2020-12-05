@@ -29,6 +29,13 @@ def deviceDetectWaitMilliseconds():
     return 200
 
 
+def generalMessageDelay():
+    # The MS2000 doesn't seem to like to get the messages too fast, so wait a bit between messages
+    # The better implementation would be probably to do a handshake implementation, as it will likely reply
+    # with a 0x23 DATA LOAD COMPLETED message on a program change message?
+    return 100
+
+
 def needsChannelSpecificDetection():
     return True
 

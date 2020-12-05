@@ -438,7 +438,7 @@ void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(Value
 				if (controllerSync) {
 					if (papa_->bcr2000_->wasDetected()) {
 						auto updateMessage = controllerSync->createParameterMessages(newValue, papa_->bcr2000_->channel());
-						midikraft::MidiController::instance()->getMidiOutput(papa_->bcr2000_->midiOutput())->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(updateMessage));
+						papa_->bcr2000_->sendBlockOfMessagesToSynth(papa_->bcr2000_->midiOutput(), MidiHelpers::bufferFromMessages(updateMessage));
 					}
 					return;
 				}

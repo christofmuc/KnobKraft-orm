@@ -52,6 +52,9 @@ namespace knobkraft {
 		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		bool isOwnSysex(MidiMessage const &message) const override;
 
+		// This generic synth method is overridden to allow throttling of messages for older synths like the Korg MS2000
+		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer) override;
+
 		// Internal workings of the Generic Adaptation module
 
 		// Call this once before using any other function
