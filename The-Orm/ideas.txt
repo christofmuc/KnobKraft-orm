@@ -3,15 +3,25 @@ Completely unprioritised list of things to do
 
 Before next release
 * Finish PatchInterchangeFormat
-* Test USB connectivity with Rev2
+* Adjust wait time for GenericAdaptation (MS2000)
 
-Before next next release
+Before next major release
+* Update to Python 3.8, correct error messages in GenericAdaptation
+* Test USB connectivity with Rev2
 * Finish Rev2 Layer functionality
 
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
+
+BANK MANAGEMENT
+* Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
+  a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
+* Database would just store reference to patch (name and ID, not the whole patch)
+* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
+* Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
+* How do I do drag and drop from the Library into the bank?
 
 UI/UX
 * Store filter per synth!
@@ -96,13 +106,14 @@ DW8000
 * Doesn't properly support the default naming thing
 
 Archiving
-* Allow to open or create another database, so you could e.g. sort your patches into different databases. This would require another folder for the thumbnails?
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
 
 Generic Module/Adaptations
 + Missing - MD5 cleaning to avoid duplicates
 + Missing - better patch names for synths without patch names
-+ Pretty bank names?
++ Global Settings editor
++ Default name mechanism
++ LegacyLoad mechanism
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
 + Could show which Flavours/Profiles are implemented for each adaptation (checkbox list)
@@ -168,6 +179,9 @@ MIDI setup
 Global Parameter Editing
 * Debounce is currently disabled - can I reenable it?
 
+Better fonts with Freetype
+  + http://vinniefalco.github.io/VFLib/class_free_type_faces.html#details
+
 Big things
     * VST build of Orm for Daws
     * Masterkeyboard setup screen to select which keyboard plays which synth
@@ -199,7 +213,7 @@ Big things
 
 More synthesizers
 
-	+ Behringer RD 8
+ 	+ Behringer RD 8
 	+ Novation Circuit
 
 Requested on Reddit
