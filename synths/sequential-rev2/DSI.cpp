@@ -272,8 +272,8 @@ namespace midikraft {
 					//TODO not implemented yet
 					jassert(false);
 				}
-				SimpleLogger::instance()->postMessage("Setting " + def.typedNamedValue.name() + " to " + valueText);
-				MidiController::instance()->getMidiOutput(synth_->midiOutput())->sendBlockOfMessagesNow(messages);
+				SimpleLogger::instance()->postMessage("Setting " + def.typedNamedValue.name() + " to " + valueText);				
+				synth_->sendBlockOfMessagesToSynth(synth_->midiOutput(), messages);
 				return;
 			}
 		}

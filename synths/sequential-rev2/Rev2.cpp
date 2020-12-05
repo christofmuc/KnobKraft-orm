@@ -304,7 +304,7 @@ namespace midikraft {
 			// Which of the layers is played is not part of the patch data, but is a global setting/parameter. Luckily, this can be switched via an NRPN message
 			// The DSI synths like MSB before LSB
 			auto messages = MidiHelpers::generateRPN(channel().toOneBasedInt(), 4190, layerNo, true, true, true);
-			MidiController::instance()->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(MidiHelpers::bufferFromMessages(messages));
+			sendBlockOfMessagesToSynth(midiOutput(), MidiHelpers::bufferFromMessages(messages));
 		}
 	}
 
@@ -338,18 +338,20 @@ namespace midikraft {
 
 	void Rev2::changeInputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> onFinished)
 	{
+		ignoreUnused(controller);
 		// The Rev2 will change its channel with a nice NRPN message
 		// See page 87 of the manual
 		// Setting it to 0 would be Omni, so we use one based int
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(createNRPN(4098, newChannel.toOneBasedInt()));
+		sendBlockOfMessagesToSynth(midiOutput(), createNRPN(4098, newChannel.toOneBasedInt()));
 		setCurrentChannelZeroBased(midiInput(), midiOutput(), newChannel.toZeroBasedInt());
 		onFinished();
 	}
 
 	void Rev2::setMidiControl(MidiController *controller, bool isOn)
 	{
+		ignoreUnused(controller);
 		// See page 87 of the manual
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(createNRPN(4103, isOn ? 1 : 0));
+		sendBlockOfMessagesToSynth(midiOutput(), createNRPN(4103, isOn ? 1 : 0));
 		localControl_ = isOn;
 	}
 
@@ -544,7 +546,8 @@ namespace midikraft {
 
 	void Rev2::setLocalControl(MidiController *controller, bool localControlOn)
 	{
-		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesNow(createNRPN(4107, localControlOn ? 1 : 0));
+		ignoreUnused(controller);
+		sendBlockOfMessagesToSynth(midiOutput(), createNRPN(4107, localControlOn ? 1 : 0));
 		localControl_ = localControlOn;
 	}
 
