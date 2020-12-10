@@ -33,7 +33,7 @@ def generalMessageDelay():
     # The MS2000 doesn't seem to like to get the messages too fast, so wait a bit between messages
     # The better implementation would be probably to do a handshake implementation, as it will likely reply
     # with a 0x23 DATA LOAD COMPLETED message on a program change message?
-    return 100
+    return 400
 
 
 def needsChannelSpecificDetection():
@@ -115,41 +115,11 @@ def numberOfPatchesPerBank():
 
 
 def createProgramDumpRequest(channel, patchNo):
-    # (3) PROGRAM DATA DUMP REQUEST                                      R
-    # +----------------+--------------------------------------------------+
-    # |     Byte       |             Description                          |
-    # +----------------+--------------------------------------------------+
-    # | F0,42,3g,58    | EXCLUSIVE HEADER                                 |
-    # | 0001 1100 (1C) | PROGRAM DATA DUMP REQUEST              1CH       |
-    # | 1111 0111 (F7) | EOX                                              |
-    # +----------------+--------------------------------------------------+
-    # Obviously, the MS2000 does not allow to specify which program it should send, it will probably only send the
-    # active program. So we must prefix our request with a MIDI program change command.
-    # The MS2000 specifies it reacts on program change, but does not define any bank select.
-    # So we use program change to address the 128 programs directly and send that before the data dump request
-    return [0xc0 | (channel & 0x0f), (patchNo & 0x7f)] + [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x1c, 0xf7]
-    # If the above doesn't work, comment it out and comment the next return statement in.
-    #  But then you also need to change line 152 to check for message[4] == 0x40 instead of message[4] == 0x4c
-    #return [0xc0 | (channel & 0x0f), (patchNo & 0x7f)] +  createEditBufferRequest(channel)
+    return [0xc0 | (channel & 0x0f), (patchNo & 0x7f)] +  createEditBufferRequest(channel)
 
 
 def isSingleProgramDump(message):
-    # (8) PROGRAM DATA DUMP                                            R/T
-    # +----------------+--------------------------------------------------+
-    # |     Byte       |             Description                          |
-    # +----------------+--------------------------------------------------+
-    # | F0,42,3g,58    | EXCLUSIVE HEADER                                 |
-    # | 0100 1100 (4C) | PROGRAM DATA DUMP                      4CH       |
-    # | 0ddd dddd (dd) | Data                                  (NOTE 2,6) |
-    # |     :          |  :                                               |
-    # | 1111 0111 (F7) | EOX                                              |
-    # +----------------+--------------------------------------------------+
-    return (len(message) > 4
-            and message[0] == 0xf0
-            and message[1] == 0x42  # Korg
-            and (message[2] & 0xf0) == 0x30
-            and message[3] == 0x58  # MS2000
-            and message[4] == 0x4c)  # Program Data Dump
+    return isEditBufferDump(message)
 
 
 def nameFromDump(message):
