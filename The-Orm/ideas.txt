@@ -3,17 +3,28 @@ Completely unprioritised list of things to do
 
 Before next release
 * Finish PatchInterchangeFormat
-* Adjust wait time for GenericAdaptation (MS2000)
 
-Before next major release
+Before next major release 1.9.0
 * Update to Python 3.8, correct error messages in GenericAdaptation
 * Test USB connectivity with Rev2
 * Finish Rev2 Layer functionality
 
+Release 2.0
+* Add Bank Management
+
+
 BUGS
++ Macro Keyboard following synth is not intuitive - it follows the patch, not the synth. So you cannot switch back...
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
+
+User questions
+* Where are the files? 
+* How to sync two computers?
+* How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
+	
+
 
 BANK MANAGEMENT
 * Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
@@ -55,13 +66,12 @@ Generic Editor
 + Could allow any other layout - that would make the current one rather the BCR2000 cheat sheet
 + Could allow vector display and editor
 + Could allow envelope display and editor (instead of knobs for the env)
-
++ Split view? Left patches, right editor
 
 
 KawaiK3 - supported by BCR2000
 + need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)
 + warning, that would make any of the other patches to be the fake edit buffer. I have to think about that.
-+ Split view? Left patches, right editor
 
 OB-6
 + Implement parameter set of OB-6 for patch diff
