@@ -2,19 +2,21 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-* Finish PatchInterchangeFormat
+* Better Masterkeyboard logic?
 
-Before next major release 1.9.0
+
+Next major release 1.9.0
+* Button to migrate to new fingerprinting algorithm - or do this automatically? Can test if the hashing still produces the same output
 * Update to Python 3.8, correct error messages in GenericAdaptation
 * Test USB connectivity with Rev2
-* Finish Rev2 Layer functionality
+* Finish PatchInterchangeFormat
 
 Release 2.0
 * Add Bank Management
 
-
 BUGS
 + Macro Keyboard following synth is not intuitive - it follows the patch, not the synth. So you cannot switch back...
++ My Kawai K3 banks have patches without names?
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
@@ -54,6 +56,7 @@ STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Editor
 * Clock Mode Setup
 * Masterkeyboard Screen
+* Finish Rev2 Layer functionality
 
 Patch display
 * Allow "show patch" button as the simplified version of the patch diff dialog
