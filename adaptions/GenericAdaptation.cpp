@@ -592,6 +592,11 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const
 	{
+		// This is an optional function to allow ignoring bytes that do not define the identity of the patch
+		if (!pythonModuleHasFunction("calculateFingerprint")) {
+			return Synth::calculateFingerprint(patch);
+		}
+
 		try {
 			std::vector<int> data(patch->data().data(), patch->data().data() + patch->data().size());
 			py::object result = callMethod("calculateFingerprint", data);
