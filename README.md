@@ -20,6 +20,7 @@ As adaptation currently available and reported to work by the community:
 
 * Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
 * Sequential Pro 3 
+* Sequential Prophet 5 Rev 4
 * Sequential/Dave Smith Instruments Prophet 12 - thanks to @Andy2No!
 
  Already implemented adaptations which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
@@ -31,8 +32,8 @@ As adaptation currently available and reported to work by the community:
 * DSI Prophet 08 (untested)
 * Pioneer Toraiz AS-1 (untested)
 * Roland JX-8P (untested)
-* Sequential Prophet 5 Rev 4 (untested)
 * Sequential Prophet 6 (untested)
+* Sequential Prophet X (untested)
 * Waldorf Blofeld (untested)
 
 The adaptations are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptations - at least, scripting the MIDI. No custom UI currently is possible or planned as of now.
