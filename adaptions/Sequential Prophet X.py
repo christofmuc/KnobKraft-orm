@@ -3,6 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import hashlib
 
 prophetX_ID = 0b00110000  # See Page 153 of the prophet X manual
 
@@ -100,6 +101,14 @@ def convertToEditBuffer(channel, message):
         # Have to strip out bank and program, and set command to edit buffer dump
         return message[0:3] + [0b00000011] + message[6:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
+def calculateFingerprint(message):
+    if isEditBufferDump(message):
+        return hashlib.md5(bytearray(message[4:-1])).hexdigest()  # Calculate the fingerprint from the payload data
+    if isSingleProgramDump(message):
+        return hashlib.md5(bytearray(message[6:-1])).hexdigest()  # Same here, don't use bank or program place
+    raise Exception("can only fingerprint edit buffer dumps or single program dumps")
 
 
 def unescapeSysex(sysex):
