@@ -107,14 +107,19 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	// Install keyboard handler to refresh midi keyboard display
 	midikraft::MidiController::instance()->addMessageHandler(handle_, [this](MidiInput *source, MidiMessage const &message) {
 		if (source && source->getName().toStdString() == customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue()) {
-			if (customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue()) {
-				// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
-				auto currentPatch = UIModel::currentPatch();
+			int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
+			if (forwardMode == 2 || forwardMode == 3) {
 				midikraft::Synth *toWhichSynthToForward = nullptr;
-				if (currentPatch.patch()) {
-					toWhichSynthToForward = currentPatch.synth();
+				// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
+				if (forwardMode == 3) {
+					// Forward to the synth of the current patch
+					auto currentPatch = UIModel::currentPatch();
+					if (currentPatch.patch()) {
+						toWhichSynthToForward = currentPatch.synth();
+					}
 				}
-				if (!toWhichSynthToForward) {
+				if (forwardMode == 2 || !toWhichSynthToForward) {
+					// Forward to the synth selected in the top row
 					toWhichSynthToForward = UIModel::currentSynth();
 				}
 				if (toWhichSynthToForward) {
@@ -167,7 +172,8 @@ void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.clear();
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", false));
+	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "} };
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", 1, lookup));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127 ));
@@ -289,7 +295,8 @@ void KeyboardMacroView::valueChanged(Value& value)
 }
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
-	if (customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue()) {
+	int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
+	if (forwardMode == 2 || forwardMode == 3) {
 		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
 		if (masterkeyboardDevice.isNotEmpty()) {
 			midikraft::MidiController::instance()->enableMidiInput(masterkeyboardDevice.toStdString());
