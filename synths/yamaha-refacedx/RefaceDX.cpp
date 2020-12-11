@@ -249,9 +249,9 @@ namespace midikraft {
 		return false;
 	}
 
-	Synth::PatchData RefaceDX::filterVoiceRelevantData(PatchData const &unfilteredData) const
+	Synth::PatchData RefaceDX::filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const
 	{
-		return Patch::blankOut(kRefaceDXBlankOutZones, unfilteredData);
+		return Patch::blankOut(kRefaceDXBlankOutZones, unfilteredData->data());
 	}
 
 	std::shared_ptr<DataFile> RefaceDX::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const

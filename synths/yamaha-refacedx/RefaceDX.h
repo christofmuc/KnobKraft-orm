@@ -25,7 +25,7 @@ namespace midikraft {
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-		Synth::PatchData filterVoiceRelevantData(Synth::PatchData const &unfilteredData) const;
+		Synth::PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// StreamLoadCapability
 		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) override;
