@@ -29,8 +29,13 @@ namespace midikraft {
 
 	void RefaceDXPatch::setName(std::string const &name)
 	{
-		ignoreUnused(name);
-
+		// Poke this into the first 10 bytes of the common block, which is the ASCII name. Ignore UTF 8 complexity for now.
+		for (int i = 0; i < std::min((size_t)10, name.size()); i++) {
+			setAt(i, name[i]);
+		}
+		for (int i = std::min(10, (int) name.size()); i < 10; i++) {
+			setAt(i, ' ');
+		}
 	}
 
 	bool RefaceDXPatch::isDefaultName() const
