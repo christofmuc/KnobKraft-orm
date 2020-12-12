@@ -229,6 +229,9 @@ namespace midikraft {
 			// Migration of old data from version 1.3.0 had an extra byte
 			return std::make_shared<KawaiK3Wave>(std::vector<uint8>(data.begin(), data.begin() + 64), place);
 		}
+		if (data.size() == 99) {
+			return std::make_shared<KawaiK3Wave>(std::vector<uint8>(data.begin(), data.begin() + 98), place);
+		}
 
 		jassertfalse;
 		return {};
