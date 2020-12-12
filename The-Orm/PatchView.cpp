@@ -424,14 +424,19 @@ void PatchView::deletePatches()
 }
 
 void PatchView::reindexPatches() {
-	int totalAffected = totalNumberOfPatches();
-	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex the %d patches matching the current filter?") % totalAffected).str(),
+	// We do reindex all patches of the currently selected synth. It does not make sense to reindex less than that.
+	auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
+	if (!currentSynth) return;
+	auto filter = midikraft::PatchDatabase::allForSynth(currentSynth);
+
+	int totalAffected = database_.getPatchesCount(filter);
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex all %d patches for synth %s?") % totalAffected % currentSynth->getName()).str(),
 		(boost::format("This will reindex the %d patches with the current fingerprinting algorithm.\n\n"
 			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n") 
 			% totalAffected).str())) {
 		std::string backupName = database_.makeDatabaseBackup("-before-reindexing");
 		SimpleLogger::instance()->postMessage((boost::format("Created database backup at %s") % backupName).str());
-		int countAfterReindexing = database_.reindexPatches(buildFilter());
+		int countAfterReindexing = database_.reindexPatches(filter);
 		if (countAfterReindexing != -1) {
 			// No error, display user info
 			if (totalAffected > countAfterReindexing) {
