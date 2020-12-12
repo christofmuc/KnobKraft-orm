@@ -5,7 +5,6 @@ Before next release
 
 
 Next major release 1.9.0
-* Button to migrate to new fingerprinting algorithm - or do this automatically? Can test if the hashing still produces the same output
 * Update to Python 3.8, correct error messages in GenericAdaptation
 * Test USB connectivity with Rev2
 * Finish PatchInterchangeFormat
@@ -14,7 +13,6 @@ Release 2.0
 * Add Bank Management
 
 BUGS
-+ My Kawai K3 banks have patches without names?
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
