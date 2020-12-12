@@ -135,8 +135,8 @@ MainComponent::MainComponent() :
 
 	autodetector_.addChangeListener(&synthList_);
 
-	// Prepare for resizing the UI to fit on the screen
-	auto globalScaling = (float)Desktop::getInstance().getDisplays().getMainDisplay().scale;
+	// Prepare for resizing the UI to fit on the screen. Crash on headless devices
+	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
 	setAcceptableGlobalScaleFactor();
 
 	// Create the menu bar structure
@@ -316,7 +316,7 @@ MainComponent::MainComponent() :
 
 	// Make sure you set the size of the component after
 	// you add any child components.
-	juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+	juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
 	if (mainScreenSize.getHeight() >= 1024) {
 		setSize(1536 / 2, 2048 / 2);
 	}
@@ -458,9 +458,9 @@ void MainComponent::checkUserConsent()
 void MainComponent::setAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getMainDisplay().scale;
+	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
-	auto availableHeight = Desktop::getInstance().getDisplays().getMainDisplay().userArea.getHeight();
+	auto availableHeight = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
 	std::vector<float> scales = { 0.75f / globalScaling, 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
 	float goodScale = 0.75f / globalScaling;
 	for (auto scale : scales) {
