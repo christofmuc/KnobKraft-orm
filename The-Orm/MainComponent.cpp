@@ -146,7 +146,7 @@ MainComponent::MainComponent() :
 				{ "Open database..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Delete patches..." } } } },
+		{1, { "Edit", { { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
 		{3, { "Categories", { { "Edit auto-categories" }, { "Rerun auto categorize" } } } },
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
@@ -205,8 +205,11 @@ MainComponent::MainComponent() :
 			{ "Delete patches...", { 13, "Delete patches...", [this] {
 				patchView_->deletePatches();
 			}}},
+			{ "Reindex patches...", { 14, "Reindex patches...", [this] {
+				patchView_->reindexPatches();
+			}}},
 		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { 14, "Crash reporting consent", [this] {
+			{ "Crash reporting consent...", { 15, "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
 		#endif

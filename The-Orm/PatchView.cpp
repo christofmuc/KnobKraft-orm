@@ -423,6 +423,34 @@ void PatchView::deletePatches()
 	}
 }
 
+void PatchView::reindexPatches() {
+	int totalAffected = totalNumberOfPatches();
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex the %d patches matching the current filter?") % totalAffected).str(),
+		(boost::format("This will reindex the %d patches with the current fingerprinting algorithm.\n\n"
+			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n") 
+			% totalAffected).str())) {
+		std::string backupName = database_.makeDatabaseBackup("-before-reindexing");
+		SimpleLogger::instance()->postMessage((boost::format("Created database backup at %s") % backupName).str());
+		int countAfterReindexing = database_.reindexPatches(buildFilter());
+		if (countAfterReindexing != -1) {
+			// No error, display user info
+			if (totalAffected > countAfterReindexing) {
+				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful", 
+					(boost::format("The reindexing reduced the number of patches from %d to %d due to deduplication.") % totalAffected % countAfterReindexing).str());
+			}
+			else {
+				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful", "The count of patches did not change, but they are now indexed with the correct fingerprint and should stop duplicating themselves.");
+			}
+		}
+		else {
+			AlertWindow::showMessageBox(AlertWindow::WarningIcon, "Error reindexing patches", "There was an error reindexing the patches selected. View the log for more details");
+			
+		}
+		rebuildImportFilterBox();
+		retrieveFirstPageFromDatabase();
+	}
+}
+
 int PatchView::totalNumberOfPatches() 
 {
 	return database_.getPatchesCount(buildFilter());

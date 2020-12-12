@@ -64,6 +64,7 @@ public:
 
 	// Protected functions that are potentially dangerous and are only called via the main menu
 	void deletePatches();
+	void reindexPatches();
 
 	// Additional functions for the auto thumbnailer
 	int totalNumberOfPatches();
