@@ -2,7 +2,6 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
-* Better Masterkeyboard logic?
 
 
 Next major release 1.9.0
@@ -15,7 +14,6 @@ Release 2.0
 * Add Bank Management
 
 BUGS
-+ Macro Keyboard following synth is not intuitive - it follows the patch, not the synth. So you cannot switch back...
 + My Kawai K3 banks have patches without names?
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
@@ -29,6 +27,7 @@ User questions
 
 
 BANK MANAGEMENT
+* Bank management (github #9)
 * Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
   a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
 * Database would just store reference to patch (name and ID, not the whole patch)
@@ -47,6 +46,8 @@ UI/UX
 * Better responsiveness for the patch grid - if not enough vertical space, use less rows instead of shrinking the buttons
 * Page buttons should be clickable?
 * Better responsiveness for the page buttons - should abbreviate
+* Make page number clickable to switch to that page, show less page numbers if these are really many
+* Save Window-layout for restart
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
@@ -122,12 +123,12 @@ Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
 
 Generic Module/Adaptations
-+ Missing - MD5 cleaning to avoid duplicates
++ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
+  -> use annotationManger instead of dynamic cast?
 + Missing - better patch names for synths without patch names
 + Global Settings editor
 + Default name mechanism
 + LegacyLoad mechanism
-+ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
 + Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
 + Could show which Flavours/Profiles are implemented for each adaptation (checkbox list)
 + Could create FlowChart to select which methods to implement!
@@ -147,13 +148,12 @@ Librarian
 * Could sniff synth out of sysex file opened
 * Could introduce collections/sessions/songs  = lists
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
-* Make page number clickable to switch to that page, show less page numbers if these are really many
-* Bank management (github #9)
 * Could have patch name autogenerator like LaserMammoth
 * Could have patch interchange format - basically a JSON format with sysex, plus metadata. Serializing the PatchHolder I think should be good enough
 
 Patch Diff
 * Could be trimmed down to show only the delta parameters (doesn't make sense in Hex mode)
+* Could show different but ignored bytes in a third color
 
 Advanced Queries
 * Needs better operators for comparing a PyTschirp attribute with int, bool so you don't have to type the get()
@@ -197,6 +197,7 @@ Better fonts with Freetype
 
 Big things
     * VST build of Orm for Daws
+	* VST version? If yes, why?
     * Masterkeyboard setup screen to select which keyboard plays which synth
 	* Clock setup screen to determine which device is master clock, can be combined with MIDI routing
 	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
@@ -222,7 +223,6 @@ Big things
 	* Can I synchronize multiple devices via the LaserMammoth Backend?
 	* Could have voice input for naming patches? General voice control?
 	* Should I use Amazon DynamoDB to synchronize multiple installations? Encryption?
-	* VST version? If yes, why?
 
 More synthesizers
 
