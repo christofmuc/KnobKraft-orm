@@ -418,6 +418,7 @@ void PatchView::deletePatches()
 			"Are you sure?", "Yes", "No")) {
 			int deleted = database_.deletePatches(buildFilter());
 			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
+			rebuildImportFilterBox();
 			retrieveFirstPageFromDatabase();
 		}
 	}
