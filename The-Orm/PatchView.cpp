@@ -524,7 +524,13 @@ void PatchView::exportPatches()
 
 std::string PatchView::currentlySelectedSourceUUID() {
 	if (importList_.getSelectedItemIndex() > 0) {
-		return imports_[importList_.getSelectedItemIndex() - 1].id;
+		std::string selectedItemText = importList_.getText().toStdString();
+		for (auto import : imports_) {
+			if (import.description == selectedItemText) {
+				return import.id;
+			}
+		}
+		jassertfalse;
 	}
 	return "";
 }
@@ -535,11 +541,12 @@ void PatchView::rebuildImportFilterBox() {
 	imports_.clear();
 
 	StringArray sourceNameList;
-	sourceNameList.add(kAllPatchesFilter);
 	for (const auto& source : sources) {
 		sourceNameList.add(source.description);
 		imports_.push_back(source);
 	}
+	sourceNameList.sortNatural();
+	sourceNameList.insert(0, kAllPatchesFilter);
 	importList_.clear();
 	importList_.addItemList(sourceNameList, 1);
 }
