@@ -576,10 +576,16 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 			auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
 			if (info) {
 				for (int i = 0; i < (int) imports_.size(); i++) {
-					if ((imports_[i].name == info->toDisplayString(UIModel::currentSynth(), false)) 
+					if ((imports_[i].id == info->md5(UIModel::currentSynth())) 
 						|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
 					{
-							importList_.setSelectedItemIndex(i + 1, dontSendNotification);
+						// Search for the import in the sorted list
+						for (int j = 0; j < importList_.getNumItems(); j++) {
+							if (importList_.getItemText(j).toStdString() == imports_[i].description) {
+								importList_.setSelectedItemIndex(j, dontSendNotification);
+								break;
+							}
+						}
 					}
 				}
 			}
