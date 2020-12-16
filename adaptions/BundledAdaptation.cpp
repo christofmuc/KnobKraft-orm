@@ -17,6 +17,7 @@ namespace knobkraft {
 			{ "DSI Pro 2", "DSI_Pro_2", std::string(DSI_Pro_2_py, DSI_Pro_2_py + DSI_Pro_2_py_size) },
 			{ "DSI Prophet 08", "DSI_Prophet_08", std::string(DSI_Prophet_08_py, DSI_Prophet_08_py + DSI_Prophet_08_py_size) },
 			{ "DSI Prophet 12", "DSI_Prophet_12", std::string(DSI_Prophet_12_py, DSI_Prophet_12_py + DSI_Prophet_12_py_size) },
+			{ "Electra One", "Electra_one", std::string(ElectraOne_py, ElectraOne_py + ElectraOne_py_size) },
 			//{ "Korg DW-8000 Adaption", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size ) },
 			{ "Korg DW-6000", "Korg_DW_6000", std::string(KorgDW6000_py, KorgDW6000_py + KorgDW6000_py_size) },
 			{ "Korg MS2000", "Korg_MS2000", std::string(KorgMS2000_py, KorgMS2000_py + KorgMS2000_py_size) },
