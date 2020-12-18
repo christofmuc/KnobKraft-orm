@@ -666,7 +666,6 @@ namespace midikraft {
 			}
 			else {
 				//TODO the message handler is never removed in case you do not get a write confirmation. This will crash.
-				jassertfalse;
 			}
 		});
 		controller->enableMidiOutput(midiOutput());
