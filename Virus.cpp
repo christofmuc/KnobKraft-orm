@@ -17,6 +17,8 @@ namespace midikraft {
 
 	// Definition for the "unused" data bytes inside Page A and Page B of the Virus.
 	// These unused bytes need to be blanked for us to compare patches in order to detect duplicates
+	//TODO Warning - this is the table that is correct for the Virus B. But the Virus C, TI, and maybe even TI2 seem to use those bytes
+	// for different purposes, so blanking all of this is probably too much.
 	std::vector<Range<int>> kVirusBlankOutZones = {
 		{ 0, 5 }, // general controllers in Page A
 		{ 6, 10}, // more controllers
