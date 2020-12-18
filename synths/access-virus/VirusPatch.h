@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "PatchNumber.h"
+#include "StoredTagCapability.h"
 
 namespace midikraft {
 
@@ -17,7 +18,7 @@ namespace midikraft {
 		virtual std::string friendlyName() const override;
 	};
 
-	class VirusPatch : public Patch, public StoredPatchNameCapability {
+	class VirusPatch : public Patch, public StoredPatchNameCapability, public StoredTagCapability {
 	public:
 		VirusPatch(Synth::PatchData const &data);
 
@@ -28,6 +29,11 @@ namespace midikraft {
 		// StoredPatchNameCapability
 		virtual void setName(std::string const &name) override;
 		virtual bool isDefaultName() const override;
+
+		// StoredTagCapability
+		int getNumTagsStored() const override;
+		bool setTags(std::set<Tag> const &tags) override;
+		std::set<Tag> tags() const override;
 
 		enum DataFileTypes { PATCH_VIRUS_B = 0 };
 		enum Page { PageA = 0, PageB = 1 };

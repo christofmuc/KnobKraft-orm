@@ -12,6 +12,8 @@
 
 namespace midikraft {
 
+	std::vector<std::string> kVirusCategories = { "Off", "Lead", "Bass", "Pad", "Decay", "Pluck", "Acid", "Classic", "Arpeggiator", "Effects", "Drums", "Percussion", "Input", "Vocoder", "Favourite1", "Favourite2", "Favourite3" };
+
 	// C++ 11 has u32string, which allows me to access any character with the character index from the Virus' sysex data. The arrows are not rendered by JUCE, however
 	std::u32string virus_codepage = U" !\"  #&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[¥]^_`abcdefghijklmnopqrstuvwxyz{|}→←";
 	//                                       &' )   -./0         :    ?@A                          ¥                                }
@@ -85,6 +87,41 @@ namespace midikraft {
 	{
 		// We have stored the A and the B pages in one vector
 		return page * 128 + index;
+	}
+
+	int VirusPatch::getNumTagsStored() const
+	{
+		return 2;
+	}
+
+	bool VirusPatch::setTags(std::set<Tag> const &tags)
+	{
+		ignoreUnused(tags);
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	std::set<Tag> VirusPatch::tags() const
+	{
+		std::set<Tag> result;
+		size_t cat1 = data()[index(PageB, 123)];
+		if (cat1 != 0) {
+			if (cat1 < kVirusCategories.size()) {
+				result.emplace(kVirusCategories[cat1]);
+			}
+			else {
+				SimpleLogger::instance()->postMessage((boost::format("Found invalid category in Virus patch %s: %d") % name() % cat1).str());
+			}
+		}
+		size_t cat2 = data()[index(PageB, 124)];
+		if (cat2 != 0) {
+			if (cat2 < kVirusCategories.size()) {
+				result.emplace(kVirusCategories[cat2]);
+			}
+			else {
+				SimpleLogger::instance()->postMessage((boost::format("Found invalid secondary category in Virus patch %s: %d") % name() % cat2).str());
+			}
+		}
+		return result;
 	}
 
 	std::string VirusPatchNumber::friendlyName() const
