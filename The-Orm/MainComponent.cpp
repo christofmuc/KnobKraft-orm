@@ -92,6 +92,8 @@ MainComponent::MainComponent() :
 		recentFiles_.restoreFromString(Settings::instance().get("RecentFiles"));
 	}
 
+	automaticCategories_ = std::make_shared<midikraft::AutomaticCategory>(); // Load the automatic category definitions
+
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
 	// Create the list of all synthesizers!
@@ -165,8 +167,8 @@ MainComponent::MainComponent() :
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
-			if (!URL(getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-				getAutoCategoryFile().revealToUser();
+			if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+				automaticCategories_->getAutoCategoryFile().revealToUser();
 			}
 		} } },
 		{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
@@ -174,10 +176,10 @@ MainComponent::MainComponent() :
 			int affected = database_->getPatchesCount(currentFilter);
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 				"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
-				"This makes sense if you changed the auto category search strings!\n\n"
+				"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
 				"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
 				)) {
-				AutoCategorizeWindow window(database_.get(), getAutoCategoryFile().getFullPathName(), currentFilter, [this]() {
+				AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
 					patchView_->retrieveFirstPageFromDatabase();
 				});
 				window.runThread();
@@ -225,7 +227,7 @@ MainComponent::MainComponent() :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(*database_, synths);
+	patchView_ = std::make_unique<PatchView>(*database_, synths, automaticCategories_);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
 	//recordingView_ = std::make_unique<RecordingView>(*patchView_);
@@ -592,20 +594,6 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, Strin
 		}
 	}
 	return -1;
-}
-
-File MainComponent::getAutoCategoryFile() const {
-	File appData = File::getSpecialLocation(File::userApplicationDataDirectory).getChildFile("KnobKraft");
-	if (!appData.exists()) {
-		appData.createDirectory();
-	}
-	File jsoncFile = appData.getChildFile("automatic_categories.jsonc");
-	if (!jsoncFile.exists()) {
-		// Create an initial file from the resources!
-		FileOutputStream out(jsoncFile);
-		out.writeText(midikraft::AutoCategory::defaultJson(), false, false, "\\n");
-	}
-	return jsoncFile;
 }
 
 void MainComponent::aboutBox()

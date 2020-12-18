@@ -18,7 +18,7 @@
 CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(midikraft::PatchHolder&)> favoriteHandler,
 	std::function<void(midikraft::PatchHolder&)> sessionHandler) : Component(), favoriteHandler_(favoriteHandler), sessionHandler_(sessionHandler)
 	, categories_(categories, [this](CategoryButtons::Category categoryClicked) { 
-		midikraft::Category cat({ categoryClicked.category, categoryClicked.color, categoryClicked.bitIndex });
+		midikraft::Category cat({ categoryClicked.category, categoryClicked.color });
 		categoryUpdated(cat);
 	}, false, false),
 	name_(0, false, [this](int) { 		
@@ -77,7 +77,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 		
 		std::set<CategoryButtons::Category> buttonCategories;
 		for (const auto& cat : patch.categories()) {
-			buttonCategories.insert({ cat.category, cat.color, cat.bitIndex });
+			buttonCategories.insert({ cat.category, cat.color });
 		}
 		categories_.setActive(buttonCategories);
 
@@ -209,7 +209,7 @@ void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
 		currentPatch_.clearCategories();
 		for (const auto& cat : categories) {
 			// Have to convert into juce-widget version of Category here
-			midikraft::Category newCat(cat.category, cat.color, cat.bitIndex);
+			midikraft::Category newCat(cat.category, cat.color);
 			currentPatch_.setCategory(newCat, true); 
 		}
 		favoriteHandler_(currentPatch_);

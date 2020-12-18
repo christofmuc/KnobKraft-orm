@@ -16,6 +16,7 @@
 
 #include "PatchDatabase.h"
 #include "AutoDetection.h"
+#include "AutomaticCategory.h"
 #include "PropertyEditor.h"
 #include "SynthList.h"
 #include "LambdaMenuModel.h"
@@ -57,7 +58,6 @@ private:
 	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
-	File getAutoCategoryFile() const;
 	void aboutBox();
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
@@ -66,6 +66,7 @@ private:
 	int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;
+	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 	RecentlyOpenedFilesList recentFiles_;
 	midikraft::AutoDetection autodetector_;
 

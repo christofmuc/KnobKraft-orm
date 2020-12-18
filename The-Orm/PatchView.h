@@ -24,6 +24,7 @@
 
 #include "PatchDatabase.h"
 #include "PatchHolder.h"
+#include "AutomaticCategory.h"
 
 #include "ImportFromSynthDialog.h"
 
@@ -38,7 +39,7 @@ class PatchView : public Component,
 	private TextEditor::Listener
 {
 public:
-	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths);
+	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector);
 	virtual ~PatchView();
 
 	void resized() override;
@@ -81,15 +82,15 @@ private:
 		CategoryButtons synthFilters_;
 	};
 
-	static std::vector<CategoryButtons::Category> predefinedCategories();
+	std::vector<CategoryButtons::Category> predefinedCategories();
 
 	virtual void textEditorTextChanged(TextEditor&) override;
 	virtual void textEditorEscapeKeyPressed(TextEditor&) override;
-	
+
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
-	
+
 	void loadPatches();
 	void exportPatches();
 	std::string currentlySelectedSourceUUID();
@@ -101,9 +102,10 @@ private:
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 
-	
+	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
+
 	ComboBox importList_;
-	
+
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;
 	AdvancedFilterPanel advancedFilters_;

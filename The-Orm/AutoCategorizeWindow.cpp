@@ -9,11 +9,13 @@
 void AutoCategorizeWindow::run()
 {
 	// Load the auto category file and re-categorize everything!
-	midikraft::AutoCategory::loadFromFile(fullPathToAutoCategoryFile_.toStdString());
+	if (detector_->autoCategoryFileExists()) {
+		detector_->loadFromFile(detector_->getAutoCategoryFile().getFullPathName().toStdString());
+	}
 	auto patches = database_->getPatches(activeFilter_, 0, 100000);
 	size_t tick = 0;
 	for (auto patch : patches) {
-		if (patch.autoCategorizeAgain()) {
+		if (patch.autoCategorizeAgain(detector_)) {
 			if (threadShouldExit()) break;
 			// This was changed, updating database
 			SimpleLogger::instance()->postMessage("Updating patch " + String(patch.name()) + " with new categories");

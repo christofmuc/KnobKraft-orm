@@ -26,8 +26,8 @@
 const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
 
-PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
-	: database_(database), librarian_(synths), synths_(synths),
+PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
+	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector),
 	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
@@ -108,7 +108,7 @@ PatchView::~PatchView()
 }
 
 CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability *name) {
-	return CategoryButtons::Category(name->getName(), Colours::black, 0);
+	return CategoryButtons::Category(name->getName(), Colours::black);
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
@@ -148,8 +148,8 @@ void PatchView::rebuildSynthFilters() {
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 {
 	std::vector<CategoryButtons::Category> result;
-	for (auto c : midikraft::AutoCategory::predefinedCategoryVector()) {
-		result.push_back({ c.category, c.color, c.bitIndex });
+	for (auto c : automaticCategories_->predefinedCategoryVector()) {
+		result.push_back({ c.category, c.color });
 	}
 	return result;
 }
@@ -172,7 +172,7 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	// Transform into real category
 	std::set<midikraft::Category> catSelected;
 	for (auto c : categoryFilters_.selectedCategories()) {
-		catSelected.emplace(c.category, c.color, c.bitIndex);
+		catSelected.emplace(c.category, c.color);
 	}
 	bool typeSelected = false;
 	int filterType = 0;
@@ -505,7 +505,7 @@ private:
 
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
-		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth());
+		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), automaticCategories_);
 		if (patches.size() > 0) {
 			mergeNewPatches(patches);
 		}
