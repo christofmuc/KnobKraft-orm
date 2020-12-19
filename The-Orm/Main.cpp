@@ -188,21 +188,33 @@ public:
                                                                           .findColour (ResizableWindow::backgroundColourId),
                                                     DocumentWindow::allButtons)
         {
+			setResizable(true, true);
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
-
-           #if JUCE_IOS || JUCE_ANDROID
-            setFullScreen (true);
-           #else
-            setResizable (true, true);
-            centreWithSize (getWidth(), getHeight());
-           #endif
-
-            setVisible (true);
+			
+#if JUCE_IOS || JUCE_ANDROID
+			setFullScreen(true);
+			setContentOwned(new MainComponent(false), false);
+			centreWithSize(getWidth(), getHeight());
+#else
+			if (Settings::instance().keyIsSet("mainWindowSize")) {
+				// Restore window size
+				restoreWindowStateFromString(Settings::instance().get("mainWindowSize"));
+				setContentOwned(new MainComponent(false), false);
+			}
+			else {
+				// Calculate best size for first start. 
+				setContentOwned(new MainComponent(true), true);
+				setResizable(true, true);
+				centreWithSize(getWidth(), getHeight());
+			}
+#endif
+			setVisible(true);
         }
 
         void closeButtonPressed() override
         {
+			Settings::instance().set("mainWindowSize", getWindowStateAsString().toStdString());
+
             // This is called when the user tries to close this window. Here, we'll just
             // ask the app to quit when this happens, but you can change this to do
             // whatever you need.

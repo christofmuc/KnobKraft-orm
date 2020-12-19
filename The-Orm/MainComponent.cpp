@@ -70,7 +70,7 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 }
 
 //==============================================================================
-MainComponent::MainComponent() :
+MainComponent::MainComponent(bool makeYourOwnSize) :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
@@ -325,12 +325,14 @@ MainComponent::MainComponent() :
 
 	// Make sure you set the size of the component after
 	// you add any child components.
-	juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-	if (mainScreenSize.getHeight() >= 1024) {
-		setSize(1536 / 2, 2048 / 2);
-	}
-	else {
-		setSize(1536 / 2, mainScreenSize.getHeight());
+	if (makeYourOwnSize) {
+		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
+		if (mainScreenSize.getHeight() >= 1024) {
+			setSize(1536 / 2, 2048 / 2);
+		}
+		else {
+			setSize(1536 / 2, mainScreenSize.getHeight());
+		}
 	}
 
 	// Refresh Window title

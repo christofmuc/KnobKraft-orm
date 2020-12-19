@@ -35,7 +35,7 @@ class LogViewLogger;
 class MainComponent : public Component, private ChangeListener
 {
 public:
-	MainComponent();
+	MainComponent(bool makeYourOwnSize);
     ~MainComponent();
 
 	virtual void resized() override;
