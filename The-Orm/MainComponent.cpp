@@ -150,7 +150,7 @@ MainComponent::MainComponent() :
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
-		{3, { "Categories", { { "Edit auto-categories" }, { "Rerun auto categorize" } } } },
+		{3, { "Categories", { { "Edit auto-categories" }, { "Edit category import mapping" },  { "Rerun auto categorize" } } } },
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
 #ifdef USE_SENTRY
@@ -167,11 +167,18 @@ MainComponent::MainComponent() :
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
+		// This will create the file on demand, copying out the built-in information!
 			if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();
 			}
 		} } },
-		{ "Rerun auto categorize...", { 2, "Rerun auto categorize", [this]() {
+		{ "Edit category import mapping", { 2, "Edit category import mapping", [this]() {
+			// This will create the file on demand, copying out the built-in information!
+			if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
+				automaticCategories_->getAutoCategoryMappingFile().revealToUser();
+			}
+		} } },
+		{ "Rerun auto categorize...", { 3, "Rerun auto categorize", [this]() {
 			auto currentFilter = patchView_->buildFilter();
 			int affected = database_->getPatchesCount(currentFilter);
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
@@ -185,33 +192,33 @@ MainComponent::MainComponent() :
 				window.runThread();
 			}
 		} } },
-		{ "About", { 3, "About", [this]() {
+		{ "About", { 4, "About", [this]() {
 			aboutBox();
 		}}},
-		{ "Quit", { 4, "Quit", [this]() {
+		{ "Quit", { 5, "Quit", [this]() {
 			JUCEApplicationBase::quit();
 		}}},
 			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { 5, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-			{ "Scale 100%", { 6, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-			{ "Scale 125%", { 7, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-			{ "Scale 150%", { 8, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-			{ "Scale 175%", { 9, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-			{ "Scale 200%", { 10, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-			{ "New database...", { 11, "New database...", [this] {
+			{ "Scale 75%", { 6, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
+			{ "Scale 100%", { 7, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
+			{ "Scale 125%", { 8, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
+			{ "Scale 150%", { 9, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
+			{ "Scale 175%", { 10, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
+			{ "Scale 200%", { 11, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+			{ "New database...", { 12, "New database...", [this] {
 				createNewDatabase();
 			}}},
-			{ "Open database...", { 12, "Open database...", [this] {
+			{ "Open database...", { 13, "Open database...", [this] {
 				openDatabase();
 			}}},
-			{ "Delete patches...", { 13, "Delete patches...", [this] {
+			{ "Delete patches...", { 14, "Delete patches...", [this] {
 				patchView_->deletePatches();
 			}}},
-			{ "Reindex patches...", { 14, "Reindex patches...", [this] {
+			{ "Reindex patches...", { 15, "Reindex patches...", [this] {
 				patchView_->reindexPatches();
 			}}},
 		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { 15, "Crash reporting consent", [this] {
+			{ "Crash reporting consent...", { 16, "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
 		#endif
