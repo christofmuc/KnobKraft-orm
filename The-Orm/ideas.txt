@@ -3,11 +3,12 @@ Completely unprioritised list of things to do
 
 Before next release
 
+Next release 1.9.0
+* Finish PatchInterchangeFormat
 
-Next major release 1.9.0
+Next release 1.10.0
 * Update to Python 3.8, correct error messages in GenericAdaptation
 * Test USB connectivity with Rev2
-* Finish PatchInterchangeFormat
 
 Release 2.0
 * Add Bank Management
@@ -15,7 +16,6 @@ Release 2.0
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
-+ Bug: Turning off all synths in the list issues the program error message that a patch was found that is not part of the query.
 
 User questions
 * Where are the files? 
