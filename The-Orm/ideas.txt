@@ -35,6 +35,7 @@ BANK MANAGEMENT
 
 UI/UX
 * Store filter per synth!
+* Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
 * The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
