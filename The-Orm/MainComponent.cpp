@@ -524,7 +524,7 @@ void MainComponent::refreshSynthList() {
 				patchList.push_back(currentPatches[s.device()->getName()]);
 			}
 			else {
-				patchList.push_back(midikraft::PatchHolder(s.synth(), std::make_shared<midikraft::FromSynthSource>(Time()), nullptr, false));
+				patchList.push_back(midikraft::PatchHolder(s.synth(), std::make_shared<midikraft::FromSynthSource>(Time()), nullptr));
 			}
 		}
 	}
