@@ -5,48 +5,53 @@
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
-Questions help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github. 
+Questions and help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github. 
 
-Currently natively supported and tested synths as of version 1.8.0 [Those I own or haved owned, so they are likely to work well]:
 
-* Access Virus B
-* Kawai K3/K3M
-* Korg DW-8000/EX-8000
-* Oberheim Matrix 1000
-* Sequential/Dave Smith Instruments OB-6
-* Sequential/Dave Smith Instruments Prophet Rev2
-* Yamaha Reface DX
+| Manufacturer  | Synth | Status | Type | Kudos |
+| ------------- | ------------- | --- | --- | --- |
+| Access  | Virus A, B, Classic, KB, Indigo  | works | native | |
+| Access  | Virus C  | beta | native | Thanks to guavadude@gs! |
+| Behringer | BCR2000 | in progess | native | |
+| Behringer | Deepmind 12 | alpha | adaptation | |
+| Behringer | RD-8 | in progress | native | |
+| DSI | Pro 2 | beta | adaptation | |
+| DSI | Prophet 8 | beta | adaptation | |
+| DSI/Sequential | OB-6 | works | native | |
+| DSI/Sequential | Prophet Rev2 | works | native | |
+| DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No ! |
+| Electra | one | alpha | adaptation |
+| Kawai | K3/K3M | works | native | | 
+| Korg | DW-6000 | alpha | adaptation | |
+| Korg | DW-8000/EX-8000 | works | native | |
+| Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
+| Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
+| Oberheim | Matrix 1000 | works | native | |
+| Prioneer | Toraiz AS-1 | beta | adaptation | |
+| Roland | JX-8P | alpha | adaptation | |
+| Roland | MKS-50 | in progress | native | |
+| Roland | MKS-80 | in progress | native | |
+| Sequential| Pro 3 | works | adaptation | |
+| Sequential | Prophet 5 Rev 4 | works | adaptation | |
+| Sequential | Prophet 6 | beta | adaptation | |
+| Sequential | Prophet X | beta | adaptation | |
+| Sequential/DSI | OB-6 | works | native | |
+| Sequential/DSI | Prophet Rev2 | works | native | |
+| Sequential/DSI | Prophet 12 | works | adaptation |
+| Waldorf | Blofeld | alpha | adaptation | |
+| Yamaha | Reface DX | works | native | |
 
-As adaptation currently available and reported to work by the community:
-
-* Oberheim Matrix 6/6R - thanks to @tsantilis for his help!
-* Sequential Pro 3 
-* Sequential Prophet 5 Rev 4
-* Sequential/Dave Smith Instruments Prophet 12 - thanks to @Andy2No!
-
- Already implemented adaptations which might require further testing, please get back to me and open an issue if you want these done. And if they work fine for you, also drop me a note so I can mark them as tested!
-
-* Behringer Deepmind 12 (untested)
-* Korg DW-6000 (untested)
-* Korg MS2000 (untested)
-* DSI Pro 2 (untested)
-* DSI Prophet 08 (untested)
-* Pioneer Toraiz AS-1 (untested)
-* Roland JX-8P (untested)
-* Sequential Prophet 6 (untested)
-* Sequential Prophet X (untested)
-* Waldorf Blofeld (untested)
+Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
 
 The adaptations are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptations - at least, scripting the MIDI. No custom UI currently is possible or planned as of now.
 
 So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptations for more devices!
 
-Next up for development by myself are:
+# How does it look?
 
-* Behringer RD-8
-* Roland MKS-80
+[Disclaimer]: The video shows version 1.0.0, a lot has happened since then.
 
-I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well:
+I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well
 
 [![](youtube-screenshot.PNG)](https://youtu.be/lPoFOVpTANM)
 
