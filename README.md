@@ -35,9 +35,6 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |
 | Sequential | Prophet X | beta | adaptation | |
-| Sequential/DSI | OB-6 | works | native | |
-| Sequential/DSI | Prophet Rev2 | works | native | |
-| Sequential/DSI | Prophet 12 | works | adaptation |
 | Waldorf | Blofeld | alpha | adaptation | |
 | Yamaha | Reface DX | works | native | |
 
