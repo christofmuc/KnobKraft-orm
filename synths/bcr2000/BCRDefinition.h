@@ -34,7 +34,9 @@ namespace midikraft {
 
 	class BCRStandardDefinition : public BCRdefinition {
 	public:
-		BCRStandardDefinition(BCRtype type, int encoderNumber) : BCRdefinition(type, encoderNumber) {};
+		BCRStandardDefinition(BCRtype type, int encoderNumber) : BCRdefinition(type, encoderNumber) {
+		}
+
 		virtual std::string generateBCR(int channel) const = 0;
 	};
 
