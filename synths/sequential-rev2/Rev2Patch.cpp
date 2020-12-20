@@ -252,16 +252,16 @@ namespace midikraft {
 
 		if (layerA == layerB) {
 			switch (layerMode()) {
-			case LayeredPatch::SEPARATE: return layerA + " [2x]"; // That's a weird state
-			case LayeredPatch::STACK: return layerA + "[+]";
-			case LayeredPatch::SPLIT: return layerA + "[|]"; // That's a weird state
+			case LayeredPatchCapability::SEPARATE: return layerA + " [2x]"; // That's a weird state
+			case LayeredPatchCapability::STACK: return layerA + "[+]";
+			case LayeredPatchCapability::SPLIT: return layerA + "[|]"; // That's a weird state
 			}
 		}
 		else {
 			switch (layerMode()) {
-			case LayeredPatch::SEPARATE: return layerA + "." + layerB;
-			case LayeredPatch::STACK: return layerA + "[+]";  // return layerA + "+" + layerB;
-			case LayeredPatch::SPLIT: return layerA + "|" + layerB;
+			case LayeredPatchCapability::SEPARATE: return layerA + "." + layerB;
+			case LayeredPatchCapability::STACK: return layerA + "[+]";  // return layerA + "+" + layerB;
+			case LayeredPatchCapability::SPLIT: return layerA + "|" + layerB;
 			}
 		}
 		return "invalid patch";
@@ -296,13 +296,13 @@ namespace midikraft {
 		return result;
 	}
 
-	LayeredPatch::LayerMode Rev2Patch::layerMode() const
+	LayeredPatchCapability::LayerMode Rev2Patch::layerMode() const
 	{
 		//TODO - the sysex index should be taken from the Rev2 Parameter definitions
 		switch (at(231)) {
-		case 0: return LayeredPatch::SEPARATE;
-		case 1: return LayeredPatch::STACK;
-		case 2: return LayeredPatch::SPLIT;
+		case 0: return LayeredPatchCapability::SEPARATE;
+		case 1: return LayeredPatchCapability::STACK;
+		case 2: return LayeredPatchCapability::SPLIT;
 		}
 		throw std::runtime_error("Invalid layer mode of Rev2");
 	}
