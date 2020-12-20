@@ -6,6 +6,7 @@
 
 #include "KawaiK3_BCR2000.h"
 
+#include "Capability.h"
 #include "KawaiK3.h"
 #include "BCR2000.h"
 
@@ -233,7 +234,7 @@ namespace midikraft {
 		TypedNamedValueSet result;
 		// Iterate over our definition and set the labels on the view to show the layout
 		for (auto def : k3Setup) {
-			auto bcrdef = dynamic_cast<BCRGetParameterCapability*>(def);
+			auto bcrdef = midikraft::Capability::hasCapability<BCRGetParameterCapability>(def);
 			if (bcrdef) {
 				auto param = bcrdef->parameter();
 				if (param) {
@@ -246,7 +247,7 @@ namespace midikraft {
 				}
 			}
 			else {
-				auto simpleDef = dynamic_cast<BCRNamedParameterCapability*>(def);
+				auto simpleDef = midikraft::Capability::hasCapability<BCRNamedParameterCapability>(def);
 				if (simpleDef) {
 					int button = buttonNumber(def);
 					if (button != -1) {
