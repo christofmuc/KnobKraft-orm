@@ -94,7 +94,7 @@ namespace midikraft {
 	int Matrix1000Patch::value(SynthParameterDefinition const &param) const
 	{
 		int result;
-		auto intDefinition = dynamic_cast<SynthIntParameterCapability const *>(&param);
+		auto intDefinition = midikraft::Capability::hasCapability<SynthIntParameterCapability const>(&param);
 		if (intDefinition && intDefinition->valueInPatch(*this, result)) {
 			return result;
 		}
@@ -122,7 +122,7 @@ namespace midikraft {
 	bool Matrix1000Patch::paramActive(Matrix1000Param id) const
 	{
 		auto &param = Matrix1000ParamDefinition::param(id);
-		auto activeDefinition = dynamic_cast<SynthParameterActiveDetectionCapability const *>(&param);
+		auto activeDefinition = midikraft::Capability::hasCapability<SynthParameterActiveDetectionCapability const>(&param);
 		return !activeDefinition || activeDefinition->isActive(this);
 	}
 
