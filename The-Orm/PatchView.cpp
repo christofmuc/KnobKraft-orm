@@ -10,7 +10,7 @@
 #include "ImportFromSynthDialog.h"
 #include "AutomaticCategory.h"
 #include "PatchDiff.h"
-#include "LayeredPatch.h"
+#include "LayeredPatchCapability.h"
 #include "LayerCapability.h"
 #include "Logger.h"
 #include "UIModel.h"
@@ -346,7 +346,7 @@ private:
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
-	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
 	if (activeSynth && device->wasDetected()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
@@ -384,7 +384,7 @@ void PatchView::retrievePatches() {
 void PatchView::retrieveEditBuffer()
 {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
-	auto midiLocation = std::dynamic_pointer_cast<midikraft::MidiLocationCapability>(activeSynth);
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	if (activeSynth && midiLocation) {
 		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 			activeSynth,
@@ -612,7 +612,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 	}
 	else {
 		// Toggle through the layers, if the patch is a layered patch...
-		auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch.patch());
+		auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
 		if (layers) {
 			currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
 		}

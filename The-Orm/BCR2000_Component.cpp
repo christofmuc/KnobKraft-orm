@@ -177,7 +177,7 @@ TypedNamedValueSet BCR2000_Component::createParameterModel() {
 	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
 	if (detailedParameters) {
 		for (auto param : detailedParameters->allParameterDefinitions()) {
-			auto editorParam = std::dynamic_pointer_cast<midikraft::SynthParameterEditorCapability>(param);
+			auto editorParam = midikraft::Capability::hasCapability<midikraft::SynthParameterEditorCapability>(param);
 			if (editorParam) {
 				auto tnv = editorParam->makeTypedNamedValue();
 				if (tnv) {
@@ -297,7 +297,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 		for (auto param : detailedParameters->allParameterDefinitions()) {
 			if (param->name() == paramName) {
 				// First thing - update our internal patch model with the new value. This only works for int capabilities
-				auto intValueCap = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
+				auto intValueCap = midikraft::Capability::hasCapability<midikraft::SynthIntParameterCapability>(param);
 				if (intValueCap) {
 					if (patch_) {
 						intValueCap->setInPatch(*patch_, treeWhosePropertyHasChanged.getProperty(property));
@@ -310,7 +310,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 					jassertfalse;
 				}
 
-				auto liveUpdater = std::dynamic_pointer_cast<midikraft::SynthParameterLiveEditCapability>(param);
+				auto liveUpdater = midikraft::Capability::hasCapability<midikraft::SynthParameterLiveEditCapability>(param);
 				if (liveUpdater) {
 					if (patch_) {
 						MidiBuffer messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
@@ -377,10 +377,10 @@ void BCR2000_Component::UpdateSynthListener::updateAllKnobsFromPatch(std::shared
 {
 	patch_ = newPatch;
 
-	auto detailedParameters = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(newPatch);
+	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(newPatch);
 	if (detailedParameters) {
 		for (auto param : detailedParameters->allParameterDefinitions()) {
-			auto intParam = std::dynamic_pointer_cast<midikraft::SynthIntParameterCapability>(param);
+			auto intParam = midikraft::Capability::hasCapability<midikraft::SynthIntParameterCapability>(param);
 			if (intParam) {
 				int value;
 				if (intParam->valueInPatch(*newPatch, value)) {
@@ -412,7 +412,7 @@ void BCR2000_Component::UpdateControllerListener::listenForMidiMessages(MidiInpu
 		// This at least is a message from our controller
 		auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
 		for (auto param : detailedParameters->allParameterDefinitions()) {
-			auto controllerSync = std::dynamic_pointer_cast<midikraft::SynthParameterControllerMapping>(param);
+			auto controllerSync = midikraft::Capability::hasCapability<midikraft::SynthParameterControllerMappingCapability>(param);
 			if (controllerSync) {
 				int newValue;
 				if (controllerSync->messagesMatchParameter({ message }, newValue)) {
@@ -434,7 +434,7 @@ void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(Value
 		for (auto param : detailedParameters->allParameterDefinitions()) {
 			if (param->name() == paramName) {
 				// Now we need to find the CC mapping, and send it to the controller!
-				auto controllerSync = std::dynamic_pointer_cast<midikraft::SynthParameterControllerMapping>(param);
+				auto controllerSync = midikraft::Capability::hasCapability<midikraft::SynthParameterControllerMappingCapability>(param);
 				if (controllerSync) {
 					if (papa_->bcr2000_->wasDetected()) {
 						auto updateMessage = controllerSync->createParameterMessages(newValue, papa_->bcr2000_->channel());

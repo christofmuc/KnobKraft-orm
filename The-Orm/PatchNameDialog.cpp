@@ -7,7 +7,8 @@
 
 #include "PatchNameDialog.h"
 
-#include "LayeredPatch.h"
+#include "Capability.h"
+#include "LayeredPatchCapability.h"
 
 #include "Logger.h"
 
@@ -35,7 +36,7 @@ void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
 	PropertyEditor::TProperties props;
 
 	// Check if the patch is a layered patch
-	auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch->patch()); 
+	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch->patch());
 	names_.clear();
 	if (layers) {
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
@@ -102,7 +103,7 @@ void PatchNameDialog::buttonClicked(Button *button)
 {
 	if (button == &ok_) {
 		
-		auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch_->patch());
+		auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch_->patch());
 		if (layers) {
 			for (int i = 0; i < layers->numberOfLayers(); i++) {
 				String newName = names_[i].getValue().toString();

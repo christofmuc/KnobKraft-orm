@@ -9,8 +9,9 @@
 #include "Synth.h"
 #include "PatchHolder.h"
 #include "Patch.h"
+#include "Capability.h"
 
-#include "LayeredPatch.h"
+#include "LayeredPatchCapability.h"
 #include "DetailedParametersCapability.h"
 
 #include <algorithm>
@@ -117,7 +118,7 @@ PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const
 	showHexDiff_ = true;
 
 	// If there is detailed parameter information, also show the second option
-	auto parameterDetails = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(patch1.patch());
+	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch1.patch());
 	if (parameterDetails) {
 		addAndMakeVisible(textBased_);
 		textBased_.setButtonText("Show parameter values");
@@ -299,12 +300,12 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 	std::string result;
 
 	int numLayers = 1;
-	auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatch>(patch);
+	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch);
 	if (layers) {
 		numLayers = layers->numberOfLayers();
 	}
 
-	auto parameterDetails = std::dynamic_pointer_cast<midikraft::DetailedParametersCapability>(patch);
+	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch);
 
 	if (parameterDetails) {
 		for (int layer = 0; layer < numLayers; layer++) {
@@ -314,13 +315,13 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 			}
 			for (auto param : parameterDetails->allParameterDefinitions()) {
 				if (layers) {
-					auto multiLayerParam = std::dynamic_pointer_cast<midikraft::SynthMultiLayerParameterCapability>(param);
+					auto multiLayerParam = midikraft::Capability::hasCapability<midikraft::SynthMultiLayerParameterCapability>(param);
 					jassert(multiLayerParam);
 					if (multiLayerParam) {
 						multiLayerParam->setSourceLayer(layer);
 					}
 				}
-				auto activeCheck = std::dynamic_pointer_cast<midikraft::SynthParameterActiveDetectionCapability>(param);
+				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
 				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
 					result = result + (boost::format("%s: %s\n") % param->description() % param->valueInPatchToText(*patch)).str();
 				}
