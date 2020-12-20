@@ -1,5 +1,6 @@
 #include "Rev2ParamDefinition.h"
 
+#include "Capability.h"
 #include "Patch.h"
 
 namespace midikraft {
@@ -123,7 +124,7 @@ namespace midikraft {
 
 	MidiBuffer Rev2ParamDefinition::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const
 	{
-		auto midiLocation = dynamic_cast<MidiLocationCapability const *>(synth);
+		auto midiLocation = midikraft::Capability::hasCapability<MidiLocationCapability const>(synth);
 		if (midiLocation) {
 			int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
 			switch (type()) {
