@@ -13,7 +13,7 @@ namespace midikraft {
 	class KawaiK3;
 
 	class KawaiK3Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, public SynthLookupParameterCapability,
-		public SynthParameterLiveEditCapability, public SynthParameterControllerMapping, public SynthParameterEditorCapability
+		public SynthParameterLiveEditCapability, public SynthParameterControllerMappingCapability, public SynthParameterEditorCapability
 	{
 	public:
 		enum Parameter {

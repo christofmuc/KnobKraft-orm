@@ -6,6 +6,8 @@
 
 #include "KawaiK3Patch.h"
 
+#include "Capability.h"
+
 #include "KawaiK3.h"
 #include "KawaiK3Wave.h"
 
@@ -39,7 +41,7 @@ namespace midikraft {
 		// Poke this into the sysex bytes
 		auto patch = std::make_shared<KawaiK3Patch>(MidiProgramNumber::fromZeroBase(0), initPatchSyx); // The init patch always is patch #0
 		for (auto value : initValues) {
-			auto param = std::dynamic_pointer_cast<SynthIntParameterCapability>(KawaiK3Parameter::findParameter(value.first));
+			auto param = midikraft::Capability::hasCapability<SynthIntParameterCapability>(KawaiK3Parameter::findParameter(value.first));
 			if (param) {
 				param->setInPatch(*patch, value.second);
 			}
