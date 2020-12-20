@@ -45,8 +45,8 @@ bool AutoThumbnailingDialog::waitForPatchSwitchAndSendToSynth() {
 
 	// Now, each synth needs a different amount of time to process the new patch and be able to play the first note with it
 	// let's use the detection interval as a hint
-	auto synth = UIModel::currentSynth();
-	auto discoverableDevice = dynamic_cast<midikraft::DiscoverableDevice*>(synth);
+	auto synth = UIModel::instance()->currentSynth_.smartSynth();
+	auto discoverableDevice = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
 	if (discoverableDevice) {
 		sleep(discoverableDevice->deviceDetectSleepMS());
 	}
@@ -95,13 +95,13 @@ bool AutoThumbnailingDialog::syncRecordThumbnail() {
 void AutoThumbnailingDialog::run()
 {
 	// We need a current Synth, and that needs to be detected successfully!
-	auto synth = UIModel::currentSynth();
+	auto synth = UIModel::instance()->currentSynth_.smartSynth();
 	if (!synth) {
 		jassertfalse; // This would be a program error
 		return; 
 	}
 
-	auto location = dynamic_cast<midikraft::DiscoverableDevice*>(UIModel::currentSynth());
+	auto location = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
 	if (!location || !location->wasDetected()) {
 		SimpleLogger::instance()->postMessage("Cannot record patches when the " + synth->getName() + " hasn't been detected!");
 		return;

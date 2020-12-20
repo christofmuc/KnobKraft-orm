@@ -109,21 +109,21 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 		if (source && source->getName().toStdString() == customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue()) {
 			int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
 			if (forwardMode == 2 || forwardMode == 3) {
-				midikraft::Synth *toWhichSynthToForward = nullptr;
+				std::shared_ptr<midikraft::Synth> toWhichSynthToForward;
 				// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
 				if (forwardMode == 3) {
 					// Forward to the synth of the current patch
 					auto currentPatch = UIModel::currentPatch();
 					if (currentPatch.patch()) {
-						toWhichSynthToForward = currentPatch.synth();
+						toWhichSynthToForward = currentPatch.smartSynth();
 					}
 				}
 				if (forwardMode == 2 || !toWhichSynthToForward) {
 					// Forward to the synth selected in the top row
-					toWhichSynthToForward = UIModel::currentSynth();
+					toWhichSynthToForward = UIModel::instance()->currentSynth_.smartSynth();
 				}
 				if (toWhichSynthToForward) {
-					auto location = dynamic_cast<midikraft::MidiLocationCapability *>(toWhichSynthToForward);
+					auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(toWhichSynthToForward);
 					if (location) {
 						// Check if this is a channel message, and if yes, re-channel to the current synth
 						MidiMessage channelMessage = message;
@@ -313,9 +313,9 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 		customSetup_.setProperties(customMasterkeyboardSetup_);
 	} else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
 		// Mode 1 - follow current synth, use that as master keyboard
-		auto currentSynth = UIModel::currentSynth();
-		auto masterKeyboard = dynamic_cast<midikraft::MasterkeyboardCapability *>(currentSynth);
-		auto location = dynamic_cast<midikraft::MidiLocationCapability *>(currentSynth);
+		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
+		auto masterKeyboard = midikraft::Capability::hasCapability<midikraft::MasterkeyboardCapability>(currentSynth);
+		auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(currentSynth);
 		if (location) {
 			auto tnv = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice);
 			tnv->value().setValue(tnv->indexOfValue(location->midiInput()));
@@ -331,7 +331,7 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 				}
 			}
 		}
-		auto keyboard = dynamic_cast<midikraft::KeyboardCapability *>(currentSynth);
+		auto keyboard = midikraft::Capability::hasCapability<midikraft::KeyboardCapability>(currentSynth);
 		if (keyboard) {
 			customMasterkeyboardSetup_.valueByName(kLowestNote).setValue(keyboard->getLowestKey().noteNumber());
 			customMasterkeyboardSetup_.valueByName(kHighestNote).setValue(keyboard->getHighestKey().noteNumber());

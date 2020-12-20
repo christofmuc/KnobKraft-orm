@@ -96,14 +96,16 @@ void RecordingView::sampleNote() {
 		UIModel::instance()->thumbnails_.sendChangeMessage();
 	});
 
-	auto device = dynamic_cast<midikraft::DiscoverableDevice *>(UIModel::currentSynth());
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(UIModel::instance()->currentSynth_.smartSynth());
 	if (device->wasDetected()) {
-		auto location = dynamic_cast<midikraft::MidiLocationCapability *>(UIModel::currentSynth());
+		auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(UIModel::instance()->currentSynth_.smartSynth());
 		auto noteNumber = MidiNote(440.0).noteNumber();
-		auto noteOn = MidiMessage::noteOn(location->channel().toOneBasedInt(), noteNumber, (uint8) 127);
-		auto noteOff = MidiMessage::noteOff(location->channel().toOneBasedInt(), noteNumber);
-		midiSender_.addMessageToBuffer(location->midiOutput(), noteOn, 0.0);
-		midiSender_.addMessageToBuffer(location->midiOutput(), noteOff, 0.5);
+		if (location) {
+			auto noteOn = MidiMessage::noteOn(location->channel().toOneBasedInt(), noteNumber, (uint8)127);
+			auto noteOff = MidiMessage::noteOff(location->channel().toOneBasedInt(), noteNumber);
+			midiSender_.addMessageToBuffer(location->midiOutput(), noteOn, 0.0);
+			midiSender_.addMessageToBuffer(location->midiOutput(), noteOff, 0.5);
+		}
 	}
 }
 

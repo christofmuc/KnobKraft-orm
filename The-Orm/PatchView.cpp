@@ -553,7 +553,7 @@ void PatchView::rebuildImportFilterBox() {
 
 void PatchView::rebuildDataTypeFilterBox() {
 	advancedFilters_.dataTypeSelector_.clear();
-	auto dflc = dynamic_cast<midikraft::DataFileLoadCapability *>(UIModel::currentSynth());
+	auto dflc = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(UIModel::instance()->currentSynth_.smartSynth());
 	if (dflc) {
 		StringArray typeNameList;
 		typeNameList.add(kAllDataTypesFilter);
@@ -616,12 +616,12 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 		if (layers) {
 			currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
 		}
-		auto layerSynth = dynamic_cast<midikraft::LayerCapability *>(patch.synth());
+		auto layerSynth = midikraft::Capability::hasCapability<midikraft::LayerCapability>(patch.smartSynth());
 		if (layerSynth) {
 			SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
 			//layerSynth->switchToLayer(currentLayer_);
 			MidiBuffer allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
-			auto location = dynamic_cast<midikraft::MidiLocationCapability *>(patch.synth());
+			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (location) {
 				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.getNumEvents() % allMessages.data.size()).str());
 				patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);

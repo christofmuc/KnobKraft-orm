@@ -14,6 +14,9 @@
 #include "Settings.h"
 #include "BundledAdaptation.h"
 
+#include "GenericPatch.h"
+#include "GenericEditBufferCapability.h"
+
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
 #include <memory>
@@ -36,132 +39,11 @@ namespace knobkraft {
 		sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
 	}
 
-	class GenericPatchNumber : public midikraft::PatchNumber {
-	public:
-		GenericPatchNumber(MidiProgramNumber programNumber) : programNumber_(programNumber) {
-		}
-
-		std::string friendlyName() const override
-		{
-			return (boost::format("%d") % programNumber_.toOneBased()).str();
-		}
-
-	private:
-		MidiProgramNumber programNumber_;
-	};
-
-	class GenericPatch : public midikraft::Patch, public midikraft::StoredPatchNameCapability {
-	public:
-		enum DataType {
-			PROGRAM_DUMP = 0,
-			EDIT_BUFFER
-		};
-
-		GenericPatch(pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::Patch(dataType, data), adaptation_(adaptation_module) {
-			patchNumber_ = std::make_shared<GenericPatchNumber>(MidiProgramNumber::fromZeroBase(0));
-		}
-
-		bool pythonModuleHasFunction(std::string const &functionName) {
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
-			if (!adaptation_) {
-				return false;
-			}
-			return py::hasattr(*adaptation_, functionName.c_str());
-		}
-
-		template <typename ... Args>
-		py::object callMethod(std::string const &methodName, Args& ... args) const {
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
-			if (!adaptation_) {
-				return py::none();
-			}
-			if (py::hasattr(*adaptation_, methodName.c_str())) {
-				try {
-					auto result = adaptation_.attr(methodName.c_str())(args...);
-					checkForPythonOutputAndLog();
-					return result;
-				}
-				catch (std::exception &ex) {
-					throw ex;
-				}
-				catch (...) {
-					throw std::runtime_error("Unhandled exception");
-				}
-			}
-			else {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: method %s not found, fatal!") % methodName).str());
-				return py::none();
-			}
-		}
-
-
-		std::string name() const override
-		{
-			try {
-				ScopedLock lock(GenericAdaptation::multiThreadGuard);
-				std::vector<int> v(data().data(), data().data() + data().size());
-				auto result = adaptation_.attr("nameFromDump")(v);
-				checkForPythonOutputAndLog();
-				return result.cast<std::string>();
-			}
-			catch (py::error_already_set &ex) {
-				std::string errorMessage = (boost::format("Error calling nameFromDump: %s") % ex.what()).str();
-				ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
-				SimpleLogger::instance()->postMessage(errorMessage);
-			}
-			catch (...) {
-				SimpleLogger::instance()->postMessage("Uncaught exception in name() of Patch of GenericAdaptation");
-			}
-			return "invalid";
-		}
-
-		std::shared_ptr<midikraft::PatchNumber> patchNumber() const override
-		{
-			return patchNumber_;
-		}
-
-
-		void setPatchNumber(MidiProgramNumber patchNumber) override
-		{
-			patchNumber_ = std::make_shared<GenericPatchNumber>(patchNumber);
-		}
-
-		void setName(std::string const &name) override {
-			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
-			if (!pythonModuleHasFunction("renamePatch")) return;
-
-			// Very well, then try to change the name in the patch data
-			try {
-				ScopedLock lock(GenericAdaptation::multiThreadGuard);
-				std::vector<int> v(data().data(), data().data() + data().size());
-				py::object result = callMethod("renamePatch", v, name);
-				auto intVector = result.cast<std::vector<int>>();
-				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
-				setData(byteData);
-			}
-			catch (py::error_already_set &ex) {
-				std::string errorMessage = (boost::format("Error calling renamePatch: %s") % ex.what()).str();
-				SimpleLogger::instance()->postMessage(errorMessage);
-			}
-			catch (...) {
-				SimpleLogger::instance()->postMessage("Uncaught exception in setName of Patch of GenericAdaptation");
-			}
-		}
-
-		virtual bool isDefaultName() const override {
-			// Not implemented yet
-			return false;
-		}
-
-
-	private:
-		pybind11::module &adaptation_;
-		std::string name_;
-		std::shared_ptr<midikraft::PatchNumber> patchNumber_;
-	};
 
 	GenericAdaptation::GenericAdaptation(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
+		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(shared_from_this());
+		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(shared_from_this());
 		try {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			adaptation_module = py::module::import(filepath_.c_str());
@@ -335,82 +217,6 @@ namespace knobkraft {
 		return py::hasattr(*adaptation_module, functionName.c_str());
 	}
 
-	template <typename ... Args>
-	py::object GenericAdaptation::callMethod(std::string const &methodName, Args& ... args) const {
-		if (!adaptation_module) {
-			return py::none();
-		}
-		ScopedLock lock(GenericAdaptation::multiThreadGuard);
-		if (py::hasattr(*adaptation_module, methodName.c_str())) {
-			auto result = adaptation_module.attr(methodName.c_str())(args...);
-			//checkForPythonOutputAndLog();
-			return result;
-		}
-		else {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: method %s not found, fatal!") % methodName).str());
-			return py::none();
-		}
-	}
-
-	juce::MidiMessage GenericAdaptation::requestEditBufferDump()
-	{
-		try {
-			int c = channel().toZeroBasedInt();
-			py::object result = callMethod("createEditBufferRequest", c);
-			// These should be only one midi message...
-			return { vectorToMessage(result.cast<std::vector<int>>()) };
-		}
-		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling createEditBufferRequest: %s") % ex.what()).str());
-			ex.restore();
-			return {};
-		}
-	}
-
-	bool GenericAdaptation::isEditBufferDump(const MidiMessage& message) const
-	{
-		try {
-			auto vectorForm = messageToVector(message);
-			py::object result = callMethod("isEditBufferDump", vectorForm);
-			return result.cast<bool>();
-		}
-		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling isEditBufferDump: %s") % ex.what()).str());
-			ex.restore();
-			return false;
-		}
-	}
-
-	std::shared_ptr<midikraft::Patch> GenericAdaptation::patchFromSysex(const MidiMessage& message) const
-	{
-		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
-		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(const_cast<py::module &>(adaptation_module), data, GenericPatch::EDIT_BUFFER);
-	}
-
-	std::vector<juce::MidiMessage> GenericAdaptation::patchToSysex(const midikraft::Patch &patch) const
-	{
-		try {
-			auto data = patch.data();
-			int c = channel().toZeroBasedInt();
-			py::object result = callMethod("convertToEditBuffer", c, data);
-			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
-			return Sysex::vectorToMessages(byteData);
-		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToEditBuffer: %s") % ex.what()).str());
-			return {};
-		}
-		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-		//return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
-	}
-
-	juce::MidiMessage GenericAdaptation::saveEditBufferToProgram(int programNumber)
-	{
-		ignoreUnused(programNumber);
-		return MidiMessage();
-	}
-
 	int GenericAdaptation::numberOfBanks() const
 	{
 		try {
@@ -553,21 +359,21 @@ namespace knobkraft {
 		}
 	}
 
-	std::shared_ptr<midikraft::Patch> GenericAdaptation::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<midikraft::Patch> GenericAdaptation::GenericProgramDumpCapability::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(const_cast<py::module &>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		return std::make_shared<GenericPatch>(const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 	}
 
-	std::vector<juce::MidiMessage> GenericAdaptation::patchToProgramDumpSysex(const midikraft::Patch &patch) const
+	std::vector<juce::MidiMessage> GenericAdaptation::GenericProgramDumpCapability::patchToProgramDumpSysex(const midikraft::Patch &patch) const
 	{
 		try
 		{
 			auto data = patch.data();
-			int c = channel().toZeroBasedInt();
+			int c = me_->channel().toZeroBasedInt();
 			int programNo = patch.patchNumber()->midiProgramNumber().toZeroBased();
-			py::object result = callMethod("convertToProgramDump", c, data, programNo);
+			py::object result = me_->callMethod("convertToProgramDump", c, data, programNo);
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
@@ -608,11 +414,11 @@ namespace knobkraft {
 		}
 	}
 
-	std::vector<juce::MidiMessage> GenericAdaptation::requestPatch(int patchNo) const
+	std::vector<juce::MidiMessage> GenericAdaptation::GenericProgramDumpCapability::requestPatch(int patchNo) const
 	{
 		try {
-			int c = channel().toZeroBasedInt();
-			py::object result = callMethod("createProgramDumpRequest", c, patchNo);
+			int c = me_->channel().toZeroBasedInt();
+			py::object result = me_->callMethod("createProgramDumpRequest", c, patchNo);
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
@@ -622,11 +428,11 @@ namespace knobkraft {
 		}
 	}
 
-	bool GenericAdaptation::isSingleProgramDump(const MidiMessage& message) const
+	bool GenericAdaptation::GenericProgramDumpCapability::isSingleProgramDump(const MidiMessage& message) const
 	{
 		try {
-			auto vector = messageToVector(message);
-			py::object result = callMethod("isSingleProgramDump", vector);
+			auto vector = me_->messageToVector(message);
+			py::object result = me_->callMethod("isSingleProgramDump", vector);
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
@@ -656,6 +462,48 @@ namespace knobkraft {
 	{
 		auto byteData = intVectorToByteVector(data);
 		return MidiMessage(byteData.data(), (int)byteData.size());
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability)
+	{
+		if (pythonModuleHasFunction("isEditBufferDump")
+			&& pythonModuleHasFunction("createEditBufferRequest")
+			&& pythonModuleHasFunction("convertToEditBuffer")) {
+			*outCapability = dynamic_cast<midikraft::EditBufferCapability *>(editBufferCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability)
+	{
+		midikraft::EditBufferCapability *cap;
+		if (hasCapability(&cap)) {
+			outCapability = editBufferCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability  **outCapability)
+	{
+		if (pythonModuleHasFunction("isSingleProgramDump")
+			&& pythonModuleHasFunction("createProgramDumpRequest")
+			&& pythonModuleHasFunction("convertToProgramDump")) {
+			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability *>(programDumpCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability)
+	{
+		midikraft::ProgramDumpCabability *cap;
+		if (hasCapability(&cap)) {
+			outCapability = programDumpCapabilityImpl_;
+			return true;
+		}
+		return false;
 	}
 
 }

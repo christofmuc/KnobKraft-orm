@@ -6,6 +6,8 @@
 
 #include "CurrentPatchDisplay.h"
 
+#include "Capability.h"
+
 #include "PatchNameDialog.h"
 #include "PatchButtonPanel.h"
 #include "PatchHolderButton.h"
@@ -83,7 +85,7 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 
 		if (patch.synth()) {
 			synthName_.setText(patch.synth()->getName(), dontSendNotification);
-			auto dataFileCap = dynamic_cast<midikraft::DataFileLoadCapability *>(patch.synth());
+			auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch.smartSynth());
 			if (dataFileCap) {
 				patchType_.setText(dataFileCap->dataTypeNames()[patch.patch()->dataTypeID()].name, dontSendNotification);
 			}

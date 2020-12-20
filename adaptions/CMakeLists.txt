@@ -23,6 +23,8 @@ set(Sources
 	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
 	CreateNewAdaptationDialog.cpp CreateNewAdaptationDialog.h
 	GenericAdaptation.cpp GenericAdaptation.h
+	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
+	GenericPatch.cpp GenericPatch.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
 )

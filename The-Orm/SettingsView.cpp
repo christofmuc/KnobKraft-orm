@@ -57,7 +57,7 @@ void SettingsView::resized()
 void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	ignoreUnused(source);
-	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(UIModel::currentSynth());
+	auto gsc = midikraft::Capability::hasCapability<midikraft::GlobalSettingsCapability>(UIModel::instance()->currentSynth_.smartSynth());
 	if (gsc) {
 		propertyEditor_.setProperties(gsc->getGlobalSettings());
 		errorMessageInstead_.setText("", dontSendNotification);
@@ -76,9 +76,9 @@ void SettingsView::changeListenerCallback(ChangeBroadcaster* source)
 }
 
 void SettingsView::loadGlobals() {
-	auto synth = UIModel::currentSynth();
-	auto midiLocation = dynamic_cast<midikraft::MidiLocationCapability *>(synth);
-	auto gsc = dynamic_cast<midikraft::GlobalSettingsCapability *>(synth);
+	auto synth = UIModel::instance()->currentSynth_.smartSynth();
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+	auto gsc = midikraft::Capability::hasCapability<midikraft::GlobalSettingsCapability>(synth);
 	if (gsc && midiLocation) {
 		errorMessageInstead_.setText("", dontSendNotification);
 		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), nullptr,
