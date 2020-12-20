@@ -6,6 +6,8 @@
 
 #include "Matrix1000Patch.h"
 
+#include "Capability.h"
+
 #include "Matrix1000ParamDefinition.h"
 
 #include <boost/format.hpp>
@@ -108,7 +110,7 @@ namespace midikraft {
 	SynthParameterDefinition const & Matrix1000Patch::paramBySysexIndex(int sysexIndex) const 
 	{
 		for (auto param : Matrix1000ParamDefinition::allDefinitions) {
-			auto intParam = std::dynamic_pointer_cast<SynthIntParameterCapability>(param);
+			auto intParam = midikraft::Capability::hasCapability<SynthIntParameterCapability>(param);
 			if (intParam && intParam->sysexIndex() == sysexIndex) {
 				//! TODO- this is a bad way to address the parameters, as this is not uniquely defined
 				return *param;
