@@ -107,8 +107,8 @@ namespace midikraft {
 		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
 
 		// Kawai K3 specifics
-		std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const;
-		MidiMessage patchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const;
+		std::shared_ptr<Patch> k3PatchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const;
+		MidiMessage k3PatchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const;
 
 		typedef std::vector<uint8> WaveData;
 

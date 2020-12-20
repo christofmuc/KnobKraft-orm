@@ -36,7 +36,7 @@ namespace midikraft {
 	public:
 		KawaiK3BCRCCDefinition(BCRtype type, int encoderNumber, KawaiK3Parameter::Parameter param, int controllerNumber, int minValue, int maxValue);
 
-		virtual std::string generateBCR(int channel) const;
+		virtual std::string generateBCR(int channel) const override;
 
 	private:
 		CCBCRdefinition impl;

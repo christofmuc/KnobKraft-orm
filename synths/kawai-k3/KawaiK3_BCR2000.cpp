@@ -34,7 +34,7 @@ namespace midikraft {
 			KawaiK3 k3;
 			k3.setCurrentChannelZeroBased("", "", channel);
 			auto patch = KawaiK3Patch::createInitPatch();
-			auto syx = k3.patchToSysex(patch->data(), KawaiK3::kFakeEditBuffer.toZeroBased(), false);
+			auto syx = k3.k3PatchToSysex(patch->data(), KawaiK3::kFakeEditBuffer.toZeroBased(), false);
 
 			return (boost::format("$button %d ; Init Patch\n"
 				"  .tx $F0 %s $f7 $c%x $00\n" // Notice the program change message, else the K3 will keep playing the edit buffer and not reload the program

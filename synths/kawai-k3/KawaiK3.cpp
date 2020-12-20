@@ -240,7 +240,7 @@ namespace midikraft {
 	std::shared_ptr<Patch> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		if (isSingleProgramDump(message)) {
-			auto singlePatch = patchFromSysex(message, MidiProgramNumber::fromZeroBase(0));
+			auto singlePatch = k3PatchFromSysex(message, MidiProgramNumber::fromZeroBase(0));
 			if (singlePatch) {
 				singlePatch->setPatchNumber(MidiProgramNumber::fromZeroBase(sysexSubcommand(message)));
 				return singlePatch;
@@ -251,10 +251,10 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> KawaiK3::patchToProgramDumpSysex(const Patch &patch) const
 	{
-		return { patchToSysex(patch.data(), patch.patchNumber()->midiProgramNumber().toZeroBased(), false) };
+		return { k3PatchToSysex(patch.data(), patch.patchNumber()->midiProgramNumber().toZeroBased(), false) };
 	}
 
-	std::shared_ptr<Patch> KawaiK3::patchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const {
+	std::shared_ptr<Patch> KawaiK3::k3PatchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const {
 		// Parse the sysex and build a patch class that allows access to the individual params in that patch
 		if (isSingleProgramDump(message) || isBankDumpAndNotWaveDump(message)) {
 			// Build the patch data ("tone data") from the nibbles
@@ -306,7 +306,7 @@ namespace midikraft {
 			// A bank has 50 programs...
 			for (int i = 0; i < 50; i++) {
 				// This is not really efficient, but for now I'd be good with this
-				result.push_back(patchFromSysex(message, MidiProgramNumber::fromZeroBase(i)));
+				result.push_back(k3PatchFromSysex(message, MidiProgramNumber::fromZeroBase(i)));
 			}
 		}
 		else {
@@ -356,7 +356,7 @@ namespace midikraft {
 
 	juce::MidiMessage KawaiK3::waveToSysex(std::shared_ptr<KawaiK3Wave> wave)
 	{
-		return patchToSysex(wave->data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE), false);
+		return k3PatchToSysex(wave->data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE), false);
 	}
 
 	std::vector<float> KawaiK3::romWave(int waveNo)
@@ -519,9 +519,9 @@ namespace midikraft {
 		switch (dataFile->dataTypeID())
 		{
 		case K3_PATCH:
-			return { patchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), false), patchToSysex(dataFile->data(), static_cast<int>(WaveType::USER_WAVE), true) };
+			return { k3PatchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), false), k3PatchToSysex(dataFile->data(), static_cast<int>(WaveType::USER_WAVE), true) };
 		case K3_WAVE:
-			return { patchToSysex(dataFile->data(), 100, false) };
+			return { k3PatchToSysex(dataFile->data(), 100, false) };
 		default:
 			break;
 		}
@@ -589,7 +589,7 @@ namespace midikraft {
 		return channel();
 	}
 
-	juce::MidiMessage KawaiK3::patchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const
+	juce::MidiMessage KawaiK3::k3PatchToSysex(Synth::PatchData const &patch, int programNo, bool produceWaveInsteadOfPatch) const
 	{
 		if (programNo < 0 || programNo > 101) {
 			jassert(false);

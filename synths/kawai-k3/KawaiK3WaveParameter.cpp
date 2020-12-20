@@ -73,7 +73,7 @@ namespace midikraft {
 		case KawaiK3::K3_PATCH: {
 			if (patch.data().size() != 98) return false;
 			for (int i = 34; i < 64 + 34; i += 2) {
-				int harmonic = patch.data()[i];
+				uint8 harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
 					outValue = patch.data()[i + 1];
 					return true;
@@ -84,7 +84,7 @@ namespace midikraft {
 		case KawaiK3::K3_WAVE:
 			jassert(patch.data().size() == 64);
 			for (int i = 0; i < 64; i += 2) {
-				int harmonic = patch.data()[i];
+				uint8 harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
 					outValue = patch.data()[i + 1];
 					return true;
@@ -113,7 +113,7 @@ namespace midikraft {
 	{		
 		auto k3 = dynamic_cast<KawaiK3 const *>(synth);
 		if (k3) {
-			auto message = k3->patchToSysex(patch->data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE), true);
+			auto message = k3->k3PatchToSysex(patch->data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE), true);
 			return MidiHelpers::bufferFromMessages({ message });
 		}
 		else {
