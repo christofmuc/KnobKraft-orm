@@ -3,12 +3,10 @@ Completely unprioritised list of things to do
 
 Before next release
 
-Next release 1.9.0
-* Finish PatchInterchangeFormat
-
 Next release 1.10.0
 * Update to Python 3.8, correct error messages in GenericAdaptation
 * Test USB connectivity with Rev2
+* Add PatchInterchangeFormat exprot
 
 Release 2.0
 * Add Bank Management
