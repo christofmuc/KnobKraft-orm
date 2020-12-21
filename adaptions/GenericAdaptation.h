@@ -92,17 +92,17 @@ namespace knobkraft {
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{
 			if (!adaptation_module) {
-				return py::none();
+				return pybind11::none();
 			}
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
-			if (py::hasattr(*adaptation_module, methodName.c_str())) {
+			if (pybind11::hasattr(*adaptation_module, methodName.c_str())) {
 				auto result = adaptation_module.attr(methodName.c_str())(args...);
 				//checkForPythonOutputAndLog();
 				return result;
 			}
 			else {
 				SimpleLogger::instance()->postMessage((boost::format("Adaptation: method %s not found, fatal!") % methodName).str());
-				return py::none();
+				return pybind11::none();
 			}
 		}
 
