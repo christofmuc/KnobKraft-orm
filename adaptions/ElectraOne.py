@@ -57,14 +57,6 @@ def numberOfPatchesPerBank():
     return 1
 
 
-def createProgramDumpRequest(channel, patchNo):
-    raise Exception("Need to make this optional, because it cannot be implemented")
-
-
-def isSingleProgramDump(message):
-    raise Exception("Need to make this optional, because it cannot be implemented")
-
-
 def nameFromDump(message):
     if isEditBufferDump(message):
         jsonBlock = message[6:-1]
