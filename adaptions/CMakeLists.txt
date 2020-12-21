@@ -25,6 +25,7 @@ set(Sources
 	GenericAdaptation.cpp GenericAdaptation.h
 	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
 	GenericPatch.cpp GenericPatch.h
+	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
 )

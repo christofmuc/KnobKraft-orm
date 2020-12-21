@@ -19,6 +19,7 @@ namespace knobkraft {
 
 	//TODO Some forwards during refactoring
 	class GenericEditBufferCapability;
+	class GenericProgramDumpCapability;
 	void checkForPythonOutputAndLog();
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
@@ -83,18 +84,7 @@ namespace knobkraft {
 		friend class GenericEditBufferCapability;
 		std::shared_ptr<GenericEditBufferCapability> editBufferCapabilityImpl_;
 
-		// ProgramDumpCapability
-		class GenericProgramDumpCapability : public midikraft::ProgramDumpCabability {
-		public:
-			GenericProgramDumpCapability(std::shared_ptr<GenericAdaptation> me) : me_(me) {}
-			virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
-			virtual bool isSingleProgramDump(const MidiMessage& message) const override;
-			virtual std::shared_ptr<midikraft::Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
-			virtual std::vector<MidiMessage> patchToProgramDumpSysex(const midikraft::Patch &patch) const override;
-
-		private:
-			std::shared_ptr<GenericAdaptation> me_;
-		};
+		friend class GenericProgramDumpCapability;
 		std::shared_ptr<GenericProgramDumpCapability> programDumpCapabilityImpl_;
 
 		bool pythonModuleHasFunction(std::string const &functionName) const;

@@ -16,6 +16,7 @@
 
 #include "GenericPatch.h"
 #include "GenericEditBufferCapability.h"
+#include "GenericProgramDumpCapability.h"
 
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
@@ -42,8 +43,8 @@ namespace knobkraft {
 
 	GenericAdaptation::GenericAdaptation(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
-		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(shared_from_this());
-		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(shared_from_this());
+		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
+		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		try {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			adaptation_module = py::module::import(filepath_.c_str());
@@ -57,6 +58,8 @@ namespace knobkraft {
 
 	GenericAdaptation::GenericAdaptation(pybind11::module adaptationModule)
 	{
+		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
+		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
@@ -359,31 +362,6 @@ namespace knobkraft {
 		}
 	}
 
-	std::shared_ptr<midikraft::Patch> GenericAdaptation::GenericProgramDumpCapability::patchFromProgramDumpSysex(const MidiMessage& message) const
-	{
-		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
-		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
-	}
-
-	std::vector<juce::MidiMessage> GenericAdaptation::GenericProgramDumpCapability::patchToProgramDumpSysex(const midikraft::Patch &patch) const
-	{
-		try
-		{
-			auto data = patch.data();
-			int c = me_->channel().toZeroBasedInt();
-			int programNo = patch.patchNumber()->midiProgramNumber().toZeroBased();
-			py::object result = me_->callMethod("convertToProgramDump", c, data, programNo);
-			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
-			return Sysex::vectorToMessages(byteData);
-		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToProgramDump: %s") % ex.what()).str());
-			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-			return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
-		}
-	}
-
 	std::string GenericAdaptation::getName() const
 	{
 		try {
@@ -411,33 +389,6 @@ namespace knobkraft {
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling calculateFingerprint: %s") % ex.what()).str());
 			return {};
-		}
-	}
-
-	std::vector<juce::MidiMessage> GenericAdaptation::GenericProgramDumpCapability::requestPatch(int patchNo) const
-	{
-		try {
-			int c = me_->channel().toZeroBasedInt();
-			py::object result = me_->callMethod("createProgramDumpRequest", c, patchNo);
-			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
-			return Sysex::vectorToMessages(byteData);
-		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling createProgramDumpRequest: %s") % ex.what()).str());
-			return {};
-		}
-	}
-
-	bool GenericAdaptation::GenericProgramDumpCapability::isSingleProgramDump(const MidiMessage& message) const
-	{
-		try {
-			auto vector = me_->messageToVector(message);
-			py::object result = me_->callMethod("isSingleProgramDump", vector);
-			return result.cast<bool>();
-		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling isSingleProgramDump: %s") % ex.what()).str());
-			return false;
 		}
 	}
 
