@@ -299,7 +299,7 @@ namespace midikraft {
 					uint8 midiChannel = block.data[1]; // Receiving channel of Reface DX
 					if (midiChannel == 0x10) {
 						// That's omni, not good for your setup, so let's log a warning
-						Logger::getCurrentLogger()->writeToLog("Warning: Your RefaceDX is set to receive MIDI omni, so it will react on all channels");
+						SimpleLogger::instance()->postMessage("Warning: Your RefaceDX is set to receive MIDI omni, so it will react on all channels");
 						return MidiChannel::omniChannel();
 					}
 					return MidiChannel::fromZeroBase(midiChannel);
