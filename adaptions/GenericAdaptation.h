@@ -17,6 +17,8 @@
 
 namespace knobkraft {
 
+	//TODO Some forwards during refactoring
+	class GenericEditBufferCapability;
 	void checkForPythonOutputAndLog();
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
