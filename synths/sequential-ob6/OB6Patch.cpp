@@ -13,6 +13,10 @@
 
 namespace midikraft {
 
+	OB6Patch::OB6Patch(int dataTypeID, Synth::PatchData const &patchData, MidiProgramNumber programNo) : Patch(dataTypeID, patchData), place_(programNo)
+	{
+	}
+
 	std::string OB6Patch::name() const
 	{
 		// The OB6 has a 20 character patch name storage
@@ -42,19 +46,9 @@ namespace midikraft {
 		return name() == "Basic Program";
 	}
 
-	std::shared_ptr<PatchNumber> OB6Patch::patchNumber() const
+	MidiProgramNumber OB6Patch::patchNumber() const
 	{
-		return std::make_shared<OB6Number>(place_);
-	}
-
-	void OB6Patch::setPatchNumber(MidiProgramNumber patchNumber)
-	{
-		place_ = patchNumber;
-	}
-
-	std::string OB6Number::friendlyName() const
-	{
-		return (boost::format("#%03d") % programNumber_.toOneBased()).str();
+		return place_;
 	}
 
 }

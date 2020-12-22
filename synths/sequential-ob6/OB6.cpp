@@ -134,6 +134,11 @@ namespace midikraft {
 		return 100;
 	}
 
+	std::string OB6::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		return (boost::format("#%03d") % programNo.toOneBased()).str();
+	}
+
 	std::string OB6::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
@@ -148,10 +153,11 @@ namespace midikraft {
 					int startIndex = messageCode == 0x02 ? 5 : 3;
 					const uint8 *startOfData = &message.getSysExData()[startIndex];
 					auto globalDumpData = unescapeSysex(startOfData, message.getSysExDataSize() - startIndex, 1024);
-					auto patch = std::make_shared<OB6Patch>(OB6::PATCH, globalDumpData);
+					MidiProgramNumber place;
 					if (messageCode == 0x02) {
-						patch->setPatchNumber(MidiProgramNumber::fromZeroBase(message.getSysExData()[3] * 100 + message.getSysExData()[4]));
+						place = MidiProgramNumber::fromZeroBase(message.getSysExData()[3] * 100 + message.getSysExData()[4]);
 					}
+					auto patch = std::make_shared<OB6Patch>(OB6::PATCH, globalDumpData, place);
 					return patch;
 				}
 			}
@@ -161,8 +167,7 @@ namespace midikraft {
 
 	std::shared_ptr<DataFile> OB6::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		auto patch = std::make_shared<OB6Patch>(OB6::PATCH, data);
-		patch->setPatchNumber(place);
+		auto patch = std::make_shared<OB6Patch>(OB6::PATCH, data, place);
 		return patch;
 	}
 
@@ -375,7 +380,12 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> OB6::patchToProgramDumpSysex(const Patch &patch) const
 	{
-		return patchToSysex(patch);
+		// Create a program data dump message
+		int programPlace = programNumber.toZeroBased();
+		std::vector<uint8> programDataDump({ 0x01 /* DSI */, midiModelID_, 0x02 /* Program Data */, (uint8)(programPlace / numberOfPatches()), (uint8)(programPlace % numberOfPatches()) });
+		auto escaped = escapeSysex(patch->data(), patch->data().size());
+		std::copy(escaped.begin(), escaped.end(), std::back_inserter(programDataDump));
+		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(programDataDump) });
 	}
 
 }

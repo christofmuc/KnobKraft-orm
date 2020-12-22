@@ -25,6 +25,7 @@ namespace midikraft {
 		virtual std::string getName() const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;
 
 
