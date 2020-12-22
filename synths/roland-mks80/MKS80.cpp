@@ -127,7 +127,7 @@ namespace midikraft {
 		return false;
 	}
 
-	std::shared_ptr<Patch> MKS80::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> MKS80::patchFromSysex(const MidiMessage& message) const
 	{
 		//TODO - not sure if this is proper. It seems the patch needs multiple MIDI messages just like in the Yamaha Reface DX
 		if (isEditBufferDump(message)) {
@@ -155,16 +155,20 @@ namespace midikraft {
 		return std::shared_ptr<Patch>();
 	}
 
-	std::vector<juce::MidiMessage> MKS80::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> MKS80::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		// The MKS80 edit buffer can be modified by sending 4 APR messages, one each for upper, lower * tone, patch
 		// Let's assume we do not need to send a PGR message, as we don't want to store this program?
 		std::vector<MidiMessage> result;
-		auto mks80Patch = dynamic_cast<const MKS80_Patch &>(patch);
-		result.push_back(mks80Patch.buildAPRMessage(MKS80_Patch::APR_Section::PATCH_UPPER, channel()));
-		result.push_back(mks80Patch.buildAPRMessage(MKS80_Patch::APR_Section::PATCH_LOWER, channel()));
-		result.push_back(mks80Patch.buildAPRMessage(MKS80_Patch::APR_Section::TONE_UPPER, channel()));
-		result.push_back(mks80Patch.buildAPRMessage(MKS80_Patch::APR_Section::TONE_LOWER, channel()));
+		auto mks80Patch = std::dynamic_pointer_cast<MKS80_Patch>(patch);
+		if (!mks80Patch) {
+			jassertfalse;
+			return {};
+		}
+		result.push_back(mks80Patch->buildAPRMessage(MKS80_Patch::APR_Section::PATCH_UPPER, channel()));
+		result.push_back(mks80Patch->buildAPRMessage(MKS80_Patch::APR_Section::PATCH_LOWER, channel()));
+		result.push_back(mks80Patch->buildAPRMessage(MKS80_Patch::APR_Section::TONE_UPPER, channel()));
+		result.push_back(mks80Patch->buildAPRMessage(MKS80_Patch::APR_Section::TONE_LOWER, channel()));
 		return result;
 	}
 
