@@ -14,6 +14,7 @@
 #include "ProgramDumpCapability.h"
 
 #include <pybind11/embed.h>
+#include <boost/format.hpp>
 
 namespace knobkraft {
 
@@ -75,11 +76,11 @@ namespace knobkraft {
 		static MidiMessage vectorToMessage(std::vector<int> const &data);
 
 		// Implement runtime capabilities		
-		virtual bool hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) override;
-		virtual bool hasCapability(midikraft::EditBufferCapability **outCapability) override;
-		virtual bool hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability) override;
-		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) override;
-		
+		virtual bool hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) const override;
+		virtual bool hasCapability(midikraft::EditBufferCapability **outCapability) const  override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability) const override;
+		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) const  override;
+
 	private:
 		friend class GenericEditBufferCapability;
 		std::shared_ptr<GenericEditBufferCapability> editBufferCapabilityImpl_;
