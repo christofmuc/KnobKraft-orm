@@ -37,6 +37,7 @@ namespace midikraft {
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
@@ -44,15 +45,16 @@ namespace midikraft {
 		// Edit Buffer Capability
 		virtual MidiMessage requestEditBufferDump() override;
 		virtual bool isEditBufferDump(const MidiMessage& message) const override;
-		virtual std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message) const override;
-		virtual std::vector<MidiMessage> patchToSysex(const Patch &patch) const override;
+		virtual std::shared_ptr<DataFile> patchFromSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const override;
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
 		// Program Dump Capability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
-		virtual std::shared_ptr<Patch> patchFromProgramDumpSysex(const MidiMessage& message) const override;
-		virtual std::vector<MidiMessage> patchToProgramDumpSysex(const Patch &patch) const override;
+		virtual MidiProgramNumber getProgramNumber(const MidiMessage &message) const override;
+		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
 
 		// Bank Dump Capability
 		virtual std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;

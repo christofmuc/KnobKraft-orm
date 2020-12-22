@@ -143,7 +143,7 @@ namespace midikraft {
 	{
 		// No matter which value changed, we need to create a new global settings sysex message and queue it for sending debounced
 		ignoreUnused(treeWhosePropertyHasChanged, property);
-				
+
 		if (!globalSettingsData_.empty() && synth_->wasDetected()) {
 			auto newMessage = globalSettingsData_;
 			// Poke all values from the globalSettings array into the data
@@ -157,7 +157,7 @@ namespace midikraft {
 								newMidiValue = (uint8)newMidiValue;
 							}
 						}
-						newMessage[def.sysexIndex] = (uint8) newMidiValue;
+						newMessage[def.sysexIndex] = (uint8)newMidiValue;
 					}
 				}
 			}
@@ -185,6 +185,12 @@ namespace midikraft {
 		return 100;
 	}
 
+	std::string Matrix1000::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		// The Matrix does a 3 digit display, with the first patch being "000" and the highest being "999"s 
+		return (boost::format("%03d") % programNo.toZeroBased()).str();
+	}
+
 	std::string Matrix1000::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
@@ -193,7 +199,7 @@ namespace midikraft {
 	bool Matrix1000::isEditBufferDump(const MidiMessage& message) const
 	{
 		return isOwnSysex(message) &&
-			MidiHelpers::isSysexMessageMatching(message, { {2, MIDI_COMMAND.SINGLE_PATCH_DATA}, { 3, (uint8) 0x00 /* Unspecified, but let's assume else it's a single program dump */ } });
+			MidiHelpers::isSysexMessageMatching(message, { {2, MIDI_COMMAND.SINGLE_PATCH_DATA}, { 3, (uint8)0x00 /* Unspecified, but let's assume else it's a single program dump */ } });
 	}
 
 
@@ -206,23 +212,29 @@ namespace midikraft {
 			&& message.getSysExData()[3] < 100; // Should be a valid program number in this bank
 	}
 
-	std::shared_ptr<Patch> Matrix1000::patchFromProgramDumpSysex(const MidiMessage& message) const
+	MidiProgramNumber Matrix1000::getProgramNumber(const MidiMessage &message) const
+	{
+		if (isSingleProgramDump(message)) {
+			return MidiProgramNumber::fromZeroBase(message.getSysExData()[3]);
+		}
+		return MidiProgramNumber::fromZeroBase(0);
+	}
+
+	std::shared_ptr<DataFile> Matrix1000::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		if (isSingleProgramDump(message)) {
 			//TODO doesn't check length of data provided
-			auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(&message.getSysExData()[4], message.getSysExDataSize() - 4));
-			matrixPatch->setPatchNumber(MidiProgramNumber::fromZeroBase(message.getSysExData()[3]));
+			auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(&message.getSysExData()[4], message.getSysExDataSize() - 4), getProgramNumber(message));
 			return matrixPatch;
 		}
 		return nullptr;
 	}
 
-	std::vector<juce::MidiMessage> Matrix1000::patchToProgramDumpSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> Matrix1000::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
-		//TODO - this is nearly a copy of the patchToSysex
-		uint8 programNo = patch.patchNumber()->midiProgramNumber().toZeroBased() % 100;
+		uint8 programNo = programNumber.toZeroBased() % 100;
 		std::vector<uint8> singleProgramDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_DATA, programNo });
-		auto patchdata = escapeSysex(patch.data());
+		auto patchdata = escapeSysex(patch->data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(singleProgramDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(singleProgramDump) });
 	}
@@ -278,26 +290,21 @@ namespace midikraft {
 		return result;
 	}
 
-	std::shared_ptr<Patch> Matrix1000::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Matrix1000::patchFromSysex(const MidiMessage& message) const
 	{
 		if (!isEditBufferDump(message)) {
 			jassert(false);
-			return std::make_shared<Matrix1000Patch>(PatchData());
+			return std::make_shared<Matrix1000Patch>(PatchData(), MidiProgramNumber());
 		}
-
-		// Patch number - currently unused, I think. The problem is that you don't know which bank this program belongs to, because
-		// it depends on how this was requested.
-		//uint8 patchNumber = message.getSysExData()[3];
 
 		// Decode the data
 		const uint8 *startOfData = &message.getSysExData()[4];
-		auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(startOfData, message.getSysExDataSize() - 4));
+		auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(startOfData, message.getSysExDataSize() - 4), getProgramNumber(message));
 		return matrixPatch;
 	}
 
 	std::shared_ptr<DataFile> Matrix1000::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
-		auto newPatch = std::make_shared<Matrix1000Patch>(data);
-		newPatch->setPatchNumber(place);
+		auto newPatch = std::make_shared<Matrix1000Patch>(data, place);
 		return newPatch;
 	}
 
@@ -388,7 +395,7 @@ namespace midikraft {
 
 	void Matrix1000::setGlobalSettingsFromDataFile(std::shared_ptr<DataFile> dataFile)
 	{
-		auto settingsArray = unescapeSysex(dataFile->data().data(), (int) dataFile->data().size());
+		auto settingsArray = unescapeSysex(dataFile->data().data(), (int)dataFile->data().size());
 		if (settingsArray.size() == 172) {
 			updateSynthWithGlobalSettingsListener_.globalSettingsData_ = settingsArray;
 			for (size_t i = 0; i < sMatrix1000GlobalSettings()->definitions.size(); i++) {
@@ -398,7 +405,7 @@ namespace midikraft {
 						// Very special code that only works because there are just two fields in the global settings that need it
 						// Master transpose and Master tuning
 						if (intValue > 127) {
-							intValue = (int8) intValue;
+							intValue = (int8)intValue;
 						}
 					}
 					globalSettings_[i]->value().setValue(var(intValue));
@@ -426,10 +433,10 @@ namespace midikraft {
 		return DF_MATRIX1000_SETTINGS;
 	}
 
-	std::vector<juce::MidiMessage> Matrix1000::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> Matrix1000::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		std::vector<uint8> editBufferDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER, 0x00 });
-		auto patchdata = escapeSysex(patch.data());
+		auto patchdata = escapeSysex(patch->data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(editBufferDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(editBufferDump) });
 	}

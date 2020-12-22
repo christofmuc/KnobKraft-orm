@@ -19,12 +19,7 @@ namespace midikraft {
 
 	const int kMatrix1000DataType = 0; // The Matrix1000 has just one data file type - the patch. No layers, voices, alternate tunings...
 
-	std::string Matrix1000PatchNumber::friendlyName() const {
-		// The Matrix does a 3 digit display, with the first patch being "000" and the highest being "999"s 
-		return (boost::format("%03d") % programNumber_.toZeroBased()).str();
-	}
-
-	Matrix1000Patch::Matrix1000Patch(Synth::PatchData const &patchdata) : Patch(kMatrix1000DataType, patchdata)
+	Matrix1000Patch::Matrix1000Patch(Synth::PatchData const &patchdata, MidiProgramNumber place) : Patch(kMatrix1000DataType, patchdata), number_(place)
 	{
 	}
 
@@ -83,12 +78,8 @@ namespace midikraft {
 		return std::regex_search(name(), matcher);
 	}
 
-	std::shared_ptr<PatchNumber> Matrix1000Patch::patchNumber() const {
-		return std::make_shared<Matrix1000PatchNumber>(number_);
-	}
-
-	void Matrix1000Patch::setPatchNumber(MidiProgramNumber patchNumber) {
-		number_ = Matrix1000PatchNumber(patchNumber);
+	MidiProgramNumber Matrix1000Patch::patchNumber() const {
+		return number_;
 	}
 
 	int Matrix1000Patch::value(SynthParameterDefinition const &param) const

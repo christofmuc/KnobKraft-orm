@@ -14,21 +14,14 @@
 
 namespace midikraft {
 
-	class Matrix1000PatchNumber : public PatchNumber {
-	public:
-		using PatchNumber::PatchNumber;
-		virtual std::string friendlyName() const override;
-	};
-
 	class Matrix1000Patch : public Patch, public StoredPatchNameCapability, public DetailedParametersCapability {
 	public:
-		Matrix1000Patch(Synth::PatchData const &patchdata);
+		Matrix1000Patch(Synth::PatchData const &patchdata, MidiProgramNumber place);
 
 		virtual std::string name() const override;
 		virtual void setName(std::string const &name) override;
 		virtual bool isDefaultName() const override;
-		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
+		virtual MidiProgramNumber patchNumber() const override;
 
 		int value(SynthParameterDefinition const &param) const;
 		int param(Matrix1000Param id) const;
@@ -40,7 +33,7 @@ namespace midikraft {
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
 	private:
-		Matrix1000PatchNumber number_;
+		MidiProgramNumber number_;
 	};
 
 }
