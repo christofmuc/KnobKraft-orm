@@ -103,7 +103,7 @@ namespace midikraft {
 		return (boost::format("%s%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1)).str();
 	}
 
-	std::shared_ptr<Patch> Rev2::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Rev2::patchFromSysex(const MidiMessage& message) const
 	{
 		int startIndex = -1;
 
@@ -154,12 +154,12 @@ namespace midikraft {
 	}
 
 
-	std::vector<juce::MidiMessage> Rev2::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> Rev2::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		// By default, create an edit buffer dump file...
 		std::vector<uint8> programEditBufferDataDump({ 0x01 /* DSI */, midiModelID_, 0x03 /* Edit Buffer Data */ });
-		jassert(patch.data().size() == 2046 || patch.data().size() == 2048); // Original size is 2046, but to find some programming errors at some points I buffer to 2048
-		auto patchData = escapeSysex(patch.data(), 2046);
+		jassert(patch->data().size() == 2046 || patch->data().size() == 2048); // Original size is 2046, but to find some programming errors at some points I buffer to 2048
+		auto patchData = escapeSysex(patch->data(), 2046);
 		jassert(patchData.size() == 2339);
 		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programEditBufferDataDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(programEditBufferDataDump) });
@@ -551,17 +551,17 @@ namespace midikraft {
 		localControl_ = localControlOn;
 	}
 
-	std::shared_ptr<Patch> Rev2::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Rev2::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		return patchFromSysex(message);
 	}
 
-	std::vector<juce::MidiMessage> Rev2::patchToProgramDumpSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> Rev2::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		// Create a program data dump message
-		int programPlace = patch.patchNumber()->midiProgramNumber().toZeroBased();
+		int programPlace = programNumber.toZeroBased();
 		std::vector<uint8> programDataDump({ 0x01 /* DSI */, midiModelID_, 0x02 /* Program Data */, (uint8) (programPlace / 128), (uint8) (programPlace % 128) });
-		auto patchData = escapeSysex(patch.data(), 2046);
+		auto patchData = escapeSysex(patch->data(), 2046);
 		jassert(patchData.size() == 2339);
 		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programDataDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(programDataDump) });
