@@ -48,6 +48,7 @@ namespace midikraft {
 		// Program Dump Capability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
+		virtual MidiProgramNumber getProgramNumber(const MidiMessage &message) const override;
 
 		// MasterkeyboadCapability, common
 		virtual MidiChannel getOutputChannel() const override;

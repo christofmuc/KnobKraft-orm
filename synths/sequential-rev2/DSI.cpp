@@ -122,6 +122,15 @@ namespace midikraft {
 		return isOwnSysex(message) && message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0x02;
 	}
 
+	MidiProgramNumber DSISynth::getProgramNumber(const MidiMessage &message) const
+	{
+		if (isSingleProgramDump(message)) {
+			// Bank is stored in position 3, program number in position 4
+			return MidiProgramNumber::fromZeroBase(message.getSysExData()[3] * numberOfPatches() + message.getSysExData()[4]);
+		}
+		return MidiProgramNumber::fromZeroBase(0);
+	}
+
 	MidiChannel DSISynth::getOutputChannel() const
 	{
 		// There is no difference between the output and the input channel

@@ -221,14 +221,7 @@ namespace midikraft {
 		Rev2ParamDefinition(980, 1043, 128, 255, "Poly Seq Vel 6", 960)
 	};
 
-	std::string Rev2PatchNumber::friendlyName() const {
-		// The Rev2 has 8 banks of 128 patches, in two sections U and F called U1 to U4 and F1 to F4
-		int section = midiProgramNumber().toZeroBased() / 128;
-		int program = midiProgramNumber().toZeroBased() % 128;
-		return (boost::format("%s%d P%d") % (section == 0 ? "U" : "F") % ((bank_ % 4) + 1) % program).str();
-	}
-
-	Rev2Patch::Rev2Patch() : Patch(Rev2::PATCH)
+	Rev2Patch::Rev2Patch() : Patch(Rev2::PATCH), number_(MidiProgramNumber::fromZeroBase(0))
 	{
 		// Load the init patch
 		MidiMessage initPatch = MidiMessage(Rev2_InitPatch_syx, Rev2_InitPatch_syx_size);
@@ -239,7 +232,7 @@ namespace midikraft {
 		setData(initpatch->data());
 	}
 
-	Rev2Patch::Rev2Patch(Synth::PatchData const &patchData) : Patch(Rev2::PATCH, patchData)
+	Rev2Patch::Rev2Patch(Synth::PatchData const &patchData, MidiProgramNumber programNo) : Patch(Rev2::PATCH, patchData), number_(programNo)
 	{
 	}
 
@@ -278,12 +271,8 @@ namespace midikraft {
 		return name() == "Basic Program A.Basic Program B";
 	}
 
-	std::shared_ptr<PatchNumber> Rev2Patch::patchNumber() const {
-		return std::make_shared<Rev2PatchNumber>(number_);
-	}
-
-	void Rev2Patch::setPatchNumber(MidiProgramNumber patchNumber) {
-		number_ = Rev2PatchNumber(patchNumber);
+	MidiProgramNumber Rev2Patch::patchNumber() const {
+		return number_;
 	}
 
 	std::vector<std::shared_ptr<SynthParameterDefinition>> Rev2Patch::allParameterDefinitions() const

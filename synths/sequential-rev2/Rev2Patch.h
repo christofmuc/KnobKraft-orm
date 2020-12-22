@@ -15,25 +15,15 @@
 
 namespace midikraft {
 
-	class Rev2PatchNumber : public PatchNumber {
-	public:
-		using PatchNumber::PatchNumber;
-		virtual std::string friendlyName() const override;
-
-	private:
-		int bank_; // 0 to 7 for banks U1 to U4 and F1 to F4
-	};
-
 	class Rev2Patch : public Patch, public LayeredPatchCapability, public StoredPatchNameCapability, public DetailedParametersCapability {
 	public:
 		Rev2Patch();
-		Rev2Patch(Synth::PatchData const &patchData);
+		Rev2Patch(Synth::PatchData const &patchData, MidiProgramNumber programNo);
 
 		virtual std::string name() const override;
 		virtual void setName(std::string const &name) override;
 		virtual bool isDefaultName() const override;
-		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
+		virtual MidiProgramNumber patchNumber() const override;
 
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
 
@@ -46,7 +36,7 @@ namespace midikraft {
 		static std::shared_ptr<Rev2ParamDefinition> find(std::string const &paramID);
 
 	private:
-		Rev2PatchNumber number_;
+		MidiProgramNumber number_;
 	};
 
 }
