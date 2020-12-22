@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Patch.h"
-#include "PatchNumber.h"
 #include "StoredPatchNameCapability.h"
 
 namespace midikraft {
