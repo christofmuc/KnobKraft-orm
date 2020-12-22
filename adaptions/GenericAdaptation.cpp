@@ -415,7 +415,7 @@ namespace knobkraft {
 		return MidiMessage(byteData.data(), (int)byteData.size());
 	}
 
-	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability)
+	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability) const
 	{
 		if (pythonModuleHasFunction("isEditBufferDump")
 			&& pythonModuleHasFunction("createEditBufferRequest")
@@ -426,7 +426,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability)
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) const
 	{
 		midikraft::EditBufferCapability *cap;
 		if (hasCapability(&cap)) {
@@ -436,7 +436,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability  **outCapability)
+	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability  **outCapability) const
 	{
 		if (pythonModuleHasFunction("isSingleProgramDump")
 			&& pythonModuleHasFunction("createProgramDumpRequest")
@@ -447,7 +447,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability)
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability) const
 	{
 		midikraft::ProgramDumpCabability *cap;
 		if (hasCapability(&cap)) {
