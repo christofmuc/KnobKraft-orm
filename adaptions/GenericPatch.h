@@ -9,6 +9,7 @@
 #include "PatchNumber.h"
 #include "Patch.h"
 
+#include "Capability.h"
 #include "StoredPatchNameCapability.h"
 
 #include <pybind11/embed.h>
@@ -26,7 +27,21 @@ namespace knobkraft {
 		MidiProgramNumber programNumber_;
 	};
 
-	class GenericPatch : public midikraft::Patch, public midikraft::StoredPatchNameCapability {
+	class GenericPatch;
+
+	class GenericStoredPatchNameCapability : public midikraft::StoredPatchNameCapability {
+	public:
+		GenericStoredPatchNameCapability(GenericPatch *me) : me_(me) {}
+
+		void setName(std::string const &name) override;
+		virtual bool isDefaultName() const override;
+
+	private:
+		GenericPatch *me_;
+	};
+
+	class GenericPatch : public midikraft::Patch, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
+	{
 	public:
 		enum DataType {
 			PROGRAM_DUMP = 0,
@@ -35,7 +50,7 @@ namespace knobkraft {
 
 		GenericPatch(pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
 
-		bool pythonModuleHasFunction(std::string const &functionName);
+		bool pythonModuleHasFunction(std::string const &functionName) const;
 
 		template <typename ... Args>
 		pybind11::object callMethod(std::string const &methodName, Args& ... args) const {
@@ -68,10 +83,13 @@ namespace knobkraft {
 		std::shared_ptr<midikraft::PatchNumber> patchNumber() const override;
 		void setPatchNumber(MidiProgramNumber patchNumber) override;
 
-		void setName(std::string const &name) override;
-		virtual bool isDefaultName() const override;
+		// Runtime Capabilities
+		bool hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const override;
+		bool hasCapability(midikraft::StoredPatchNameCapability **outCapability) const override;
 
 	private:
+		std::shared_ptr<GenericStoredPatchNameCapability> genericStoredPatchNameCapabilityImpl_;
+
 		pybind11::module &adaptation_;
 		std::string name_;
 		std::shared_ptr<midikraft::PatchNumber> patchNumber_;

@@ -10,6 +10,8 @@
 
 namespace py = pybind11;
 
+#include <boost/format.hpp>
+
 namespace knobkraft {
 
 	GenericPatchNumber::GenericPatchNumber(MidiProgramNumber programNumber) : programNumber_(programNumber)
@@ -26,7 +28,7 @@ namespace knobkraft {
 		patchNumber_ = std::make_shared<GenericPatchNumber>(MidiProgramNumber::fromZeroBase(0));
 	}
 
-	bool GenericPatch::pythonModuleHasFunction(std::string const &functionName)
+	bool GenericPatch::pythonModuleHasFunction(std::string const &functionName) const
 	{
 		ScopedLock lock(GenericAdaptation::multiThreadGuard);
 		if (!adaptation_) {
@@ -65,19 +67,19 @@ namespace knobkraft {
 		patchNumber_ = std::make_shared<GenericPatchNumber>(patchNumber);
 	}
 
-	void GenericPatch::setName(std::string const &name)
+	void GenericStoredPatchNameCapability::setName(std::string const &name)
 	{
 		// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
-		if (!pythonModuleHasFunction("renamePatch")) return;
+		if (!me_->pythonModuleHasFunction("renamePatch")) return;
 
 		// Very well, then try to change the name in the patch data
 		try {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
-			std::vector<int> v(data().data(), data().data() + data().size());
-			py::object result = callMethod("renamePatch", v, name);
+			std::vector<int> v(me_->data().data(), me_->data().data() + me_->data().size());
+			py::object result = me_->callMethod("renamePatch", v, name);
 			auto intVector = result.cast<std::vector<int>>();
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
-			setData(byteData);
+			me_->setData(byteData);
 		}
 		catch (py::error_already_set &ex) {
 			std::string errorMessage = (boost::format("Error calling renamePatch: %s") % ex.what()).str();
@@ -88,9 +90,28 @@ namespace knobkraft {
 		}
 	}
 
-	bool GenericPatch::isDefaultName() const
+	bool GenericStoredPatchNameCapability::isDefaultName() const
 	{
 		// Not implemented yet
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const
+	{
+		midikraft::StoredPatchNameCapability *impl;
+		if (hasCapability(&impl)) {
+			outCapability = genericStoredPatchNameCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(midikraft::StoredPatchNameCapability **outCapability) const
+	{
+		if (pythonModuleHasFunction("renamePatch")) {
+			*outCapability = genericStoredPatchNameCapabilityImpl_.get();
+			return true;
+		}
 		return false;
 	}
 
