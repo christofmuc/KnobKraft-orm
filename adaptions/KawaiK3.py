@@ -59,8 +59,14 @@ def convertToProgramDump(channel, data, program_no):
 
 def nameFromDump(message):
     if isSingleProgramDump(message):
-        return "%02d" % (message[6] +1)
+        return "%s %02d" % ("Internal" if message[6] < 50 else "Cartridge", (message[6] % 50) + 1)
     raise Exception("Only single program dumps can be named")
+
+
+def numberFromDump(message):
+    if isSingleProgramDump(message):
+        return message[6] + 1
+    raise Exception("Only single program dumps have program numbers")
 
 
 def isOwnSysex(data):
