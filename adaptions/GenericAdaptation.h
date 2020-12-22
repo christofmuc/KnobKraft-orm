@@ -12,6 +12,7 @@
 #include "Capability.h"
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
+#include "BankDumpCapability.h"
 
 #include <pybind11/embed.h>
 #include <boost/format.hpp>
@@ -21,11 +22,13 @@ namespace knobkraft {
 	//TODO Some forwards during refactoring
 	class GenericEditBufferCapability;
 	class GenericProgramDumpCapability;
+	class GenericBankDumpCapability;
 	void checkForPythonOutputAndLog();
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
+		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -80,6 +83,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::EditBufferCapability **outCapability) const  override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability) const override;
 		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) const  override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const override;
+		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
 
 	private:
 		friend class GenericEditBufferCapability;
@@ -87,6 +92,9 @@ namespace knobkraft {
 
 		friend class GenericProgramDumpCapability;
 		std::shared_ptr<GenericProgramDumpCapability> programDumpCapabilityImpl_;
+
+		friend class GenericBankDumpCapability;
+		std::shared_ptr<GenericBankDumpCapability> bankDumpCapabilityImpl_;
 
 		bool pythonModuleHasFunction(std::string const &functionName) const;
 

@@ -17,6 +17,7 @@
 #include "GenericPatch.h"
 #include "GenericEditBufferCapability.h"
 #include "GenericProgramDumpCapability.h"
+#include "GenericBankDumpCapability.h"
 
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
@@ -456,5 +457,27 @@ namespace knobkraft {
 		}
 		return false;
 	}
+
+	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability  **outCapability) const
+	{
+		if (pythonModuleHasFunction("isPartOfBankDump")
+			&& pythonModuleHasFunction("createBankDumpRequest")
+			&& pythonModuleHasFunction("convertToProgramDump")) {
+			*outCapability = dynamic_cast<midikraft::BankDumpCapability *>(bankDumpCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const
+	{
+		midikraft::BankDumpCapability *cap;
+		if (hasCapability(&cap)) {
+			outCapability = bankDumpCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
 
 }

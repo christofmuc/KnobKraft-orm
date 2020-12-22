@@ -28,6 +28,7 @@ set(Sources
 	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
 	CreateNewAdaptationDialog.cpp CreateNewAdaptationDialog.h
 	GenericAdaptation.cpp GenericAdaptation.h
+	GenericBankDumpCapability.cpp GenericBankDumpCapability.h
 	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
 	GenericPatch.cpp GenericPatch.h
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
