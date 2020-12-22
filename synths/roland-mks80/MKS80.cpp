@@ -38,6 +38,13 @@ namespace midikraft {
 		return 64;
 	}
 
+	std::string MKS80::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		int bank = programNo.toZeroBased() / 8;
+		int patch = programNo.toZeroBased() % 8;
+		return (boost::format("%d%d") % (bank + 1) % (patch + 1)).str();
+	}
+
 	std::string MKS80::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		//TODO needs to match the definitions above
@@ -303,7 +310,7 @@ namespace midikraft {
 		bool valid = false;
 		bool isAPR = false; // We have two modes - either we load PGR and APR messages, or we do load DAT messages
 		int patchCounter = 0;
-		std::shared_ptr<MKS80_PatchNumber> currentPatch;
+		std::unique_ptr<MidiProgramNumber> currentPatch;
 		std::map<MKS80_Patch::APR_Section, std::vector<uint8>> data;
 		std::vector<std::vector<uint8>> datBlocks;
 	};
@@ -365,9 +372,9 @@ namespace midikraft {
 					state.isAPR = true;
 					const uint8 *data = message.getSysExData();
 					if (message.getSysExDataSize() == 9 && data[4] == 0x02 /* Level */ && data[5] == 0x00 /* dummy */ && data[6] == 0x00 /* patch number following */ && data[8] == 0x00 /* NOP */) {
-						state.currentPatch = std::make_shared<MKS80_PatchNumber>(MidiProgramNumber::fromZeroBase(data[7]));
+						state.currentPatch = std::make_unique<MidiProgramNumber>(MidiProgramNumber::fromZeroBase(data[7]));
 						state.data.clear();
-						SimpleLogger::instance()->postMessage((boost::format("Found PGR message starting new patch %s") % state.currentPatch->friendlyName()).str());
+						SimpleLogger::instance()->postMessage((boost::format("Found PGR message starting new patch %s") % friendlyProgramName(*state.currentPatch)).str());
 					}
 					else {
 						state.currentPatch.reset();
@@ -407,7 +414,7 @@ namespace midikraft {
 					if (state.data.size() == 4) {
 						// We got 4 sections of valid APR data, so we now can create a patch that is standalone and has two layers (both tone and patch!)
 						SimpleLogger::instance()->postMessage("Successfully loaded patch from APR format!");
-						result.push_back(std::make_shared<MKS80_Patch>(state.currentPatch, state.data));
+						result.push_back(std::make_shared<MKS80_Patch>(*state.currentPatch, state.data));
 					}
 					break;
 				}
@@ -469,7 +476,7 @@ namespace midikraft {
 			int lowerTone = patch[MKS80_Patch::APR_Section::PATCH_LOWER][MKS80_Parameter::TONE_NUMBER];
 			//jassert(lowerTone== i); // If this is not guaranteed, we might not archive the whole data because a patch might refer to "outside" tone data, leaving tone data unused
 			patch[MKS80_Patch::APR_Section::TONE_LOWER] = toneData[lowerTone];
-			result.push_back(std::make_shared<MKS80_Patch>(std::make_shared<MKS80_PatchNumber>(MidiProgramNumber::fromZeroBase(i)), patch));
+			result.push_back(std::make_shared<MKS80_Patch>(MidiProgramNumber::fromZeroBase(i), patch));
 		}
 
 		return result;

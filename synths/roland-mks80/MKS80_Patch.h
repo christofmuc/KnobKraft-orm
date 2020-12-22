@@ -12,14 +12,6 @@
 
 namespace midikraft {
 
-	class MKS80_PatchNumber : public PatchNumber {
-	public:
-		MKS80_PatchNumber(MidiProgramNumber patchnumber);
-		MKS80_PatchNumber(int bank, int patch);
-
-		virtual std::string friendlyName() const override;
-	};
-
 	class MKS80_Patch : public Patch, public DetailedParametersCapability {
 	public:
 		enum DataFileType {
@@ -32,13 +24,12 @@ namespace midikraft {
 			TONE_LOWER = (0b00100000 | 0b00000010),
 		};
 
-		MKS80_Patch(std::shared_ptr<MKS80_PatchNumber> patchNumber, std::map<APR_Section, std::vector<uint8>> const &data);
+		MKS80_Patch(MidiProgramNumber patchNumber, std::map<APR_Section, std::vector<uint8>> const &data);
 		MKS80_Patch(MidiProgramNumber patchNumber, Synth::PatchData const &data);
 
 		virtual std::string name() const override;
 
-		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
+		virtual MidiProgramNumber patchNumber() const override;
 
 		int value(SynthParameterDefinition const &param) const;
 		SynthParameterDefinition const & paramBySysexIndex(int sysexIndex) const;
@@ -58,7 +49,7 @@ namespace midikraft {
 	private:
 		void copyDataSection(std::map<APR_Section, std::vector<uint8>> const &data, std::vector<uint8> &result, MKS80_Patch::APR_Section section, int expectedLength);
 
-		std::shared_ptr<MKS80_PatchNumber> patchNumber_;
+		MidiProgramNumber patchNumber_;
 	};
 
 }

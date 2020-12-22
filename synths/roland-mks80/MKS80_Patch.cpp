@@ -9,30 +9,11 @@
 #include "PackedDataFormatInfo.h"
 #include "MKS80_Parameter.h"
 #include "MidiHelpers.h"
+#include "MKS80.h"
 
 #include <boost/format.hpp>
 
 namespace midikraft {
-
-	MKS80_PatchNumber::MKS80_PatchNumber(int bank, int patch) : PatchNumber(MidiProgramNumber::fromZeroBase(bank * 8 + patch))
-	{
-		jassert(bank >= 0 && bank < 8);
-		jassert(patch >= 0 && patch < 8);
-		if (bank < 0 || bank >= 8 || patch < 0 || patch >= 8) {
-			throw new std::runtime_error("Illegal argument to constructor of MKS80_PatchNumber, abort!");
-		}
-	}
-
-	MKS80_PatchNumber::MKS80_PatchNumber(MidiProgramNumber patchNumber) : PatchNumber(patchNumber)
-	{
-	}
-
-	std::string MKS80_PatchNumber::friendlyName() const
-	{
-		int bank = programNumber_.toZeroBased() / 8;
-		int patch = programNumber_.toZeroBased() % 8;
-		return (boost::format("%d%d") % (bank + 1) % (patch + 1)).str();
-	}
 
 	void MKS80_Patch::copyDataSection(std::map<APR_Section, std::vector<uint8>> const &data, std::vector<uint8> &result, MKS80_Patch::APR_Section section, int expectedLength) {
 		if (data.find(section) == data.end()) {
@@ -44,7 +25,7 @@ namespace midikraft {
 		std::copy(data.find(section)->second.cbegin(), data.find(section)->second.cend(), std::back_inserter(result));
 	}
 
-	MKS80_Patch::MKS80_Patch(std::shared_ptr<MKS80_PatchNumber> patchNumber, std::map<APR_Section, std::vector<uint8>> const &data) : Patch(DF_MKS80_PATCH), patchNumber_(patchNumber)
+	MKS80_Patch::MKS80_Patch(MidiProgramNumber patchNumber, std::map<APR_Section, std::vector<uint8>> const &data) : Patch(DF_MKS80_PATCH), patchNumber_(patchNumber)
 	{
 		std::vector<uint8> aggregatedData;
 		copyDataSection(data, aggregatedData, APR_Section::PATCH_UPPER, 15);
@@ -54,24 +35,19 @@ namespace midikraft {
 		setData(aggregatedData);
 	}
 
-	MKS80_Patch::MKS80_Patch(MidiProgramNumber patchNumber, Synth::PatchData const &data) : Patch(DF_MKS80_PATCH, data)
+	MKS80_Patch::MKS80_Patch(MidiProgramNumber patchNumber, Synth::PatchData const &data) : Patch(DF_MKS80_PATCH, data), patchNumber_(patchNumber)
 	{
-		patchNumber_ = std::make_shared<MKS80_PatchNumber>(patchNumber);
 	}
 
 	std::string MKS80_Patch::name() const
 	{
-		return patchNumber_ ? patchNumber_->friendlyName() : "unnamed";
+		MKS80 mks;
+		return mks.friendlyProgramName(patchNumber_); //TODO could call static function
 	}
 
-	std::shared_ptr<PatchNumber> MKS80_Patch::patchNumber() const
+	MidiProgramNumber MKS80_Patch::patchNumber() const
 	{
 		return patchNumber_;
-	}
-
-	void MKS80_Patch::setPatchNumber(MidiProgramNumber patchNumber)
-	{
-		patchNumber_ = std::make_shared<MKS80_PatchNumber>(patchNumber);
 	}
 
 	int MKS80_Patch::value(SynthParameterDefinition const &param) const
