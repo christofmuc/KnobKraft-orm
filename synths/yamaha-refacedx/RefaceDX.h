@@ -60,7 +60,7 @@ namespace midikraft {
 		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
 
 		// Internal
-		std::vector<MidiMessage> patchToSysex(const Patch &patch) const;
+		std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const;
 
 	private:
 		struct TDataBlock {

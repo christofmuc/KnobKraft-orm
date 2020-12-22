@@ -262,14 +262,14 @@ namespace midikraft {
 		return newPatch;
 	}
 
-	std::vector<juce::MidiMessage> RefaceDX::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> RefaceDX::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		std::vector<juce::MidiMessage> result;
 
 		result.push_back(buildDataBlockMessage(TDataBlock(0x0e, 0x0f, 0x00, std::vector<uint8>().begin(), 0)));
-		result.push_back(buildDataBlockMessage(TDataBlock(0x30, 0x00, 0x00, patch.data().begin(), 38)));
+		result.push_back(buildDataBlockMessage(TDataBlock(0x30, 0x00, 0x00, patch->data().begin(), 38)));
 		for (size_t op = 0; op < 4; op++) {
-			result.push_back(buildDataBlockMessage(TDataBlock(0x31, (uint8)op, 0x00, patch.data().begin() + 38 + op * 28, 28)));
+			result.push_back(buildDataBlockMessage(TDataBlock(0x31, (uint8)op, 0x00, patch->data().begin() + 38 + op * 28, 28)));
 		}
 		result.push_back(buildDataBlockMessage(TDataBlock(0x0f, 0x0f, 0x00, std::vector<uint8>().begin(), 0)));
 		return result;
@@ -382,14 +382,7 @@ namespace midikraft {
 	std::vector<juce::MidiMessage> RefaceDX::dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const
 	{
 		ignoreUnused(target);
-		auto refacePatch = std::dynamic_pointer_cast<RefaceDXPatch>(dataFile);
-		if (refacePatch) {
-			return patchToSysex(*refacePatch);
-		}
-		else {
-			jassertfalse;
-			return {};
-		}
+		return patchToSysex(dataFile);
 	}
 
 	int RefaceDX::numberOfBanks() const
