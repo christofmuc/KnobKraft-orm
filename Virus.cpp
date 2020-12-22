@@ -188,7 +188,7 @@ namespace midikraft {
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	std::shared_ptr<Patch> Virus::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Virus::patchFromSysex(const MidiMessage& message) const
 	{
 		if (isEditBufferDump(message) || isSingleProgramDump(message)) {
 			auto pages = getPagesFromMessage(message, 8);
@@ -203,15 +203,14 @@ namespace midikraft {
 
 	std::shared_ptr<DataFile> Virus::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		auto patch = std::make_shared<VirusPatch>(data);
-		patch->setPatchNumber(place);
+		auto patch = std::make_shared<VirusPatch>(data, place);
 		return patch;
 	}
 
-	std::vector<juce::MidiMessage> Virus::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> Virus::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		std::vector<uint8> message({ 0x10 /* Single program dump */, 0x00 /* Edit Buffer */, 0x40 /* Single Buffer */ });
-		std::copy(patch.data().begin(), patch.data().end(), std::back_inserter(message));
+		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(message));
 		uint8 checksum = (MidiHelpers::checksum7bit(message) + deviceID_) & 0x7f;
 		message.push_back(checksum);
 		return std::vector<MidiMessage>({ createSysexMessage(message) });
