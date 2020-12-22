@@ -21,7 +21,7 @@ namespace midikraft {
 		KawaiK3BCR2000Definition(BCRtype type, int number, KawaiK3Parameter::Parameter param, BCRledMode ledMode = ONE_DOT) :
 			BCRStandardDefinition(type, number), param_(param), ledMode_(ledMode) {}
 
-		virtual std::string generateBCR(int channel) const;
+		virtual std::string generateBCR(int channel) const override;
 
 		KawaiK3Parameter::Parameter param() const { return param_; }
 
