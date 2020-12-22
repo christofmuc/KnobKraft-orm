@@ -7,16 +7,13 @@
 #include "KorgDW8000Patch.h"
 
 #include "KorgDW8000Parameter.h"
+#include "KorgDW8000.h"
 
 #include <boost/format.hpp>
 
 namespace midikraft {
 
 	const int kKorgDW8000DataTypeID = 0; // The DW8000 has only one data-type, no layers, tones, tunings, or other stuff
-
-	std::string KorgDW8000PatchNumber::friendlyName() const {
-		return (boost::format("%d%d") % ((programNumber_.toZeroBased() / 8) + 1) % ((programNumber_.toZeroBased() % 8) + 1)).str();
-	}
 
 	KorgDW8000Patch::KorgDW8000Patch(Synth::PatchData const &patchdata, MidiProgramNumber const &programNumber) : Patch(kKorgDW8000DataTypeID, patchdata), number_(programNumber)
 	{
@@ -26,15 +23,12 @@ namespace midikraft {
 
 	std::string KorgDW8000Patch::name() const
 	{
-		return number_.friendlyName();
+		KorgDW8000 dw;
+		return dw.friendlyProgramName(number_); //TODO Could call a static method here
 	}
 
-	std::shared_ptr<PatchNumber> KorgDW8000Patch::patchNumber() const {
-		return std::make_shared<KorgDW8000PatchNumber>(number_);
-	}
-
-	void KorgDW8000Patch::setPatchNumber(MidiProgramNumber patchNumber) {
-		number_ = KorgDW8000PatchNumber(patchNumber);
+	MidiProgramNumber KorgDW8000Patch::patchNumber() const {
+		return number_;
 	}
 
 	std::vector<std::shared_ptr<SynthParameterDefinition>> KorgDW8000Patch::allParameterDefinitions() const

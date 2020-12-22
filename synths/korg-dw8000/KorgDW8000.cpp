@@ -90,6 +90,11 @@ namespace midikraft {
 		return 64;
 	}
 
+	std::string KorgDW8000::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		return (boost::format("%d%d") % ((programNo.toZeroBased() / 8) + 1) % ((programNo.toZeroBased() % 8) + 1)).str();
+	}
+
 	std::string KorgDW8000::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		ignoreUnused(bankNo);
