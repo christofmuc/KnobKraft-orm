@@ -18,7 +18,7 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	std::shared_ptr<midikraft::Patch> GenericProgramDumpCapability::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<midikraft::DataFile> GenericProgramDumpCapability::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
@@ -52,14 +52,28 @@ namespace knobkraft {
 		}
 	}
 
+	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const MidiMessage &message) const
+	{
+		if (me_->pythonModuleHasFunction("numberFromDump")) {
+			try {
+				auto vector = me_->messageToVector(message);
+				py::object result = me_->callMethod("numberFromDump", vector);
+				return MidiProgramNumber::fromZeroBase(result.cast<int>());
+			}
+			catch (std::exception &ex) {
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling numberFromDump: %s") % ex.what()).str());
+			}
+		}
+		return MidiProgramNumber::fromZeroBase(0);
+	}
 
-	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(const midikraft::Patch &patch) const
+	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(std::shared_ptr<midikraft::DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		try
 		{
-			auto data = patch.data();
+			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
-			int programNo = patch.patchNumber()->midiProgramNumber().toZeroBased();
+			int programNo = programNumber.toZeroBased();
 			py::object result = me_->callMethod("convertToProgramDump", c, data, programNo);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
@@ -67,7 +81,7 @@ namespace knobkraft {
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToProgramDump: %s") % ex.what()).str());
 			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-			return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
+			return { MidiMessage(patch->data().data(), (int)patch->data().size()) };
 		}
 	}
 

@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "PatchNumber.h"
 #include "Patch.h"
 
 #include "Capability.h"
@@ -17,15 +16,6 @@
 #include <boost/format.hpp>
 
 namespace knobkraft {
-
-	class GenericPatchNumber : public midikraft::PatchNumber {
-	public:
-		GenericPatchNumber(MidiProgramNumber programNumber);
-		std::string friendlyName() const override;
-
-	private:
-		MidiProgramNumber programNumber_;
-	};
 
 	class GenericPatch;
 
@@ -40,7 +30,7 @@ namespace knobkraft {
 		GenericPatch *me_;
 	};
 
-	class GenericPatch : public midikraft::Patch, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
+	class GenericPatch : public midikraft::DataFile, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
 	{
 	public:
 		enum DataType {
@@ -77,11 +67,7 @@ namespace knobkraft {
 			}
 		}
 
-
 		std::string name() const override;
-
-		std::shared_ptr<midikraft::PatchNumber> patchNumber() const override;
-		void setPatchNumber(MidiProgramNumber patchNumber) override;
 
 		// Runtime Capabilities
 		bool hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const override;
@@ -92,7 +78,6 @@ namespace knobkraft {
 
 		pybind11::module &adaptation_;
 		std::string name_;
-		std::shared_ptr<midikraft::PatchNumber> patchNumber_;
 	};
 
 

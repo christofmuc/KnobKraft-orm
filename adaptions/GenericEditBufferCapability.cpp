@@ -51,17 +51,17 @@ namespace knobkraft {
 		}
 	}
 
-	std::shared_ptr<midikraft::Patch> GenericEditBufferCapability::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<midikraft::DataFile> GenericEditBufferCapability::patchFromSysex(const MidiMessage& message) const
 	{
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
 		return std::make_shared<GenericPatch>(const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::EDIT_BUFFER);
 	}
 
-	std::vector<juce::MidiMessage> GenericEditBufferCapability::patchToSysex(const midikraft::Patch &patch) const
+	std::vector<juce::MidiMessage> GenericEditBufferCapability::patchToSysex(std::shared_ptr<midikraft::DataFile> patch) const
 	{
 		try {
-			auto data = patch.data();
+			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
 			py::object result = me_->callMethod("convertToEditBuffer", c, data);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());

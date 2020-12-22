@@ -266,8 +266,8 @@ namespace knobkraft {
 
 	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
+		ignoreUnused(place);
 		auto patch = std::make_shared<GenericPatch>(const_cast<py::module &>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
-		patch->setPatchNumber(place);
 		return patch;
 	}
 
@@ -441,6 +441,7 @@ namespace knobkraft {
 	{
 		if (pythonModuleHasFunction("isSingleProgramDump")
 			&& pythonModuleHasFunction("createProgramDumpRequest")
+			&& pythonModuleHasFunction("numberFromDump")
 			&& pythonModuleHasFunction("convertToProgramDump")) {
 			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability *>(programDumpCapabilityImpl_.get());
 			return true;

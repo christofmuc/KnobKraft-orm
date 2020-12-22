@@ -14,18 +14,8 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	GenericPatchNumber::GenericPatchNumber(MidiProgramNumber programNumber) : programNumber_(programNumber)
+	GenericPatch::GenericPatch(pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::DataFile(dataType, data), adaptation_(adaptation_module)
 	{
-	}
-
-	std::string GenericPatchNumber::friendlyName() const
-	{
-		return (boost::format("%d") % programNumber_.toOneBased()).str();
-	}
-
-	GenericPatch::GenericPatch(pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::Patch(dataType, data), adaptation_(adaptation_module)
-	{
-		patchNumber_ = std::make_shared<GenericPatchNumber>(MidiProgramNumber::fromZeroBase(0));
 	}
 
 	bool GenericPatch::pythonModuleHasFunction(std::string const &functionName) const
@@ -55,16 +45,6 @@ namespace knobkraft {
 			SimpleLogger::instance()->postMessage("Uncaught exception in name() of Patch of GenericAdaptation");
 		}
 		return "invalid";
-	}
-
-	std::shared_ptr<midikraft::PatchNumber> GenericPatch::patchNumber() const
-	{
-		return patchNumber_;
-	}
-
-	void GenericPatch::setPatchNumber(MidiProgramNumber patchNumber)
-	{
-		patchNumber_ = std::make_shared<GenericPatchNumber>(patchNumber);
 	}
 
 	void GenericStoredPatchNameCapability::setName(std::string const &name)
