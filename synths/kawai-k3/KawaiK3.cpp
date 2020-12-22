@@ -165,6 +165,14 @@ namespace midikraft {
 		return false;
 	}
 
+	MidiProgramNumber KawaiK3::getProgramNumber(const MidiMessage &message) const
+	{
+		if (isSingleProgramDump(message)) {
+			return MidiProgramNumber::fromZeroBase(sysexSubcommand(message));
+		}
+		return MidiProgramNumber::fromZeroBase(0);
+	}
+
 	juce::MidiMessage KawaiK3::requestWaveBufferDump(WaveType waveType) const
 	{
 		return requestPatch(static_cast<int>(waveType))[0];
@@ -237,7 +245,7 @@ namespace midikraft {
 		return {};
 	}
 
-	std::shared_ptr<Patch> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		if (isSingleProgramDump(message)) {
 			auto singlePatch = k3PatchFromSysex(message, MidiProgramNumber::fromZeroBase(0));
@@ -249,9 +257,9 @@ namespace midikraft {
 		return {};
 	}
 
-	std::vector<juce::MidiMessage> KawaiK3::patchToProgramDumpSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> KawaiK3::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
-		return { k3PatchToSysex(patch.data(), patch.patchNumber()->midiProgramNumber().toZeroBased(), false) };
+		return { k3PatchToSysex(patch->data(), programNumber.toZeroBased(), false) };
 	}
 
 	std::shared_ptr<Patch> KawaiK3::k3PatchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const {
@@ -286,7 +294,6 @@ namespace midikraft {
 				}
 				else {
 					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 patch. Expected %02X but got %02X") % data[34] % (sum & 0xff)).str());
-					//messages.push_back(patchToProgramDumpSysex(KawaiK3Patch(programIndex, toneData))[0]);
 				}
 			}
 			else {
