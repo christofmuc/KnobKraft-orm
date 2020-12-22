@@ -194,7 +194,11 @@ namespace midikraft {
 			auto pages = getPagesFromMessage(message, 8);
 			if (pages.size() == 256) {
 				// That should be Page A and Page B from the manual
-				auto patch = std::make_shared<VirusPatch>(pages);
+				MidiProgramNumber place;
+				if (isSingleProgramDump(message)) {
+					place = getProgramNumber(message);
+				}
+				auto patch = std::make_shared<VirusPatch>(pages, place);
 				return patch;
 			}
 		}
