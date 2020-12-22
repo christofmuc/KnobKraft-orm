@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "Rev2ParamDefinition.h"
+#include "StoredPatchNameCapability.h"
 #include "DetailedParametersCapability.h"
 
 #include "LayeredPatchCapability.h"
