@@ -144,7 +144,7 @@ namespace midikraft {
 		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
 	}
 
-	std::shared_ptr<Patch> OB6::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> OB6::patchFromSysex(const MidiMessage& message) const
 	{
 		if (isOwnSysex(message)) {
 			if (message.getSysExDataSize() > 2) {
@@ -176,10 +176,10 @@ namespace midikraft {
 		return Patch::blankOut(kOB6BlankOutZones, unfilteredData->data());
 	}
 
-	std::vector<juce::MidiMessage> OB6::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> OB6::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		std::vector<uint8> message({ 0x01 /* DSI */, midiModelID_, 0x03 /* Edit Buffer data */ });
-		auto escaped = escapeSysex(patch.data(), patch.data().size());
+		auto escaped = escapeSysex(patch->data(), patch->data().size());
 		std::copy(escaped.begin(), escaped.end(), std::back_inserter(message));
 		return std::vector<juce::MidiMessage>({ MidiHelpers::sysexMessage(message) });
 	}
@@ -373,12 +373,12 @@ namespace midikraft {
 		return kOB6GlobalSettings();
 	}
 
-	std::shared_ptr<Patch> OB6::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> OB6::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		return patchFromSysex(message);
 	}
 
-	std::vector<juce::MidiMessage> OB6::patchToProgramDumpSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> OB6::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		// Create a program data dump message
 		int programPlace = programNumber.toZeroBased();
