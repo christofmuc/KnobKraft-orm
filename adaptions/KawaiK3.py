@@ -69,6 +69,10 @@ def numberFromDump(message):
     raise Exception("Only single program dumps have program numbers")
 
 
+def friendlyBankName(bank):
+    return "Internal" if bank == 0 else "Cartridge"
+
+
 def isOwnSysex(data):
     return (data[0] == 0xf0  # Sysex
             and data[1] == 0x40  # Kawai
