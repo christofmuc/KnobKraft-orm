@@ -7,8 +7,6 @@
 
 #include "OB6Patch.h"
 
-#include "PatchNumber.h"
-
 #include <boost/format.hpp>
 
 namespace midikraft {
