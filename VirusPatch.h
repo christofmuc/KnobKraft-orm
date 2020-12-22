@@ -9,6 +9,7 @@
 #include "Patch.h"
 #include "PatchNumber.h"
 #include "StoredTagCapability.h"
+#include "StoredPatchNameCapability.h"
 
 namespace midikraft {
 
