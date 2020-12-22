@@ -9,6 +9,8 @@
 #include "PatchNumber.h"
 #include "Patch.h"
 
+#include "StoredPatchNameCapability.h"
+
 #include <pybind11/embed.h>
 
 #include <boost/format.hpp>
