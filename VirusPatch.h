@@ -13,19 +13,12 @@
 
 namespace midikraft {
 
-	class VirusPatchNumber : public PatchNumber {
-	public:
-		using PatchNumber::PatchNumber;
-		virtual std::string friendlyName() const override;
-	};
-
 	class VirusPatch : public Patch, public StoredPatchNameCapability, public StoredTagCapability {
 	public:
-		VirusPatch(Synth::PatchData const &data);
+		VirusPatch(Synth::PatchData const &data, MidiProgramNumber place);
 
 		virtual std::string name() const override;
-		virtual std::shared_ptr<PatchNumber> patchNumber() const override;
-		virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
+		virtual MidiProgramNumber patchNumber() const override;
 		
 		// StoredPatchNameCapability
 		virtual void setName(std::string const &name) override;
@@ -41,7 +34,7 @@ namespace midikraft {
 		static int index(Page page, int index);
 
 	private:
-		MidiProgramNumber place_ = MidiProgramNumber::fromZeroBase(0);
+		MidiProgramNumber place_;
 	};
 
 }

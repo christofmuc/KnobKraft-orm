@@ -40,7 +40,7 @@ namespace midikraft {
 	}
 
 
-	VirusPatch::VirusPatch(Synth::PatchData const &data) : Patch(PATCH_VIRUS_B, data)
+	VirusPatch::VirusPatch(Synth::PatchData const &data, MidiProgramNumber place) : Patch(PATCH_VIRUS_B, data), place_(place)
 	{
 		jassert(data.size() == 256);
 	}
@@ -73,14 +73,9 @@ namespace midikraft {
 		return name() == "- Init -";
 	}
 
-	std::shared_ptr<PatchNumber> VirusPatch::patchNumber() const
+	MidiProgramNumber VirusPatch::patchNumber() const
 	{
-		return std::make_shared<VirusPatchNumber>(place_);
-	}
-
-	void VirusPatch::setPatchNumber(MidiProgramNumber patchNumber)
-	{
-		place_ = patchNumber;
+		return place_;
 	}
 
 	int VirusPatch::index(Page page, int index)
@@ -122,13 +117,6 @@ namespace midikraft {
 			}
 		}
 		return result;
-	}
-
-	std::string VirusPatchNumber::friendlyName() const
-	{
-		char bankChar(char(programNumber_.toZeroBased() / 128 + 'a'));
-		uint8 progNo = programNumber_.toZeroBased() % 128;
-		return (boost::format("%c%d") % bankChar % progNo).str();
 	}
 
 }

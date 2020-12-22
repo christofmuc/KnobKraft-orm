@@ -23,6 +23,7 @@ namespace midikraft {
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 
 		// This needs to be overridden because the Virus contains a lot of noise in the patch data that is not really relevant
