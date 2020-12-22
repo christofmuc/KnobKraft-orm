@@ -156,6 +156,16 @@ namespace midikraft {
 		return 50;
 	}
 
+	std::string KawaiK3::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		switch (programNo.toZeroBased()) {
+		case 100: return "Internal Wave";
+		case 101: return "Cartridge Wave";
+		default:
+			return (boost::format("%02d") % programNo.toOneBased()).str();
+		}
+	}
+
 	bool KawaiK3::isSingleProgramDump(const MidiMessage& message) const
 	{
 		if (sysexFunction(message) == ONE_BLOCK_DATA_DUMP) {
@@ -248,11 +258,7 @@ namespace midikraft {
 	std::shared_ptr<DataFile> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		if (isSingleProgramDump(message)) {
-			auto singlePatch = k3PatchFromSysex(message, MidiProgramNumber::fromZeroBase(0));
-			if (singlePatch) {
-				singlePatch->setPatchNumber(MidiProgramNumber::fromZeroBase(sysexSubcommand(message)));
-				return singlePatch;
-			}
+			return k3PatchFromSysex(message, getProgramNumber(message));
 		}
 		return {};
 	}
@@ -652,7 +658,7 @@ namespace midikraft {
 			SimpleLogger::instance()->postMessage("Writing K3 user wave to the internal wave memory");
 		}
 		else {
-			SimpleLogger::instance()->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % (KawaiK3PatchNumber(kFakeEditBuffer).friendlyName())).str());
+			SimpleLogger::instance()->postMessage((boost::format("Writing K3 patch '%s' to program %s") % dataFile->name() % friendlyProgramName(kFakeEditBuffer)).str());
 		}
 		MidiBuffer messages = MidiHelpers::bufferFromMessages(dataFileToMessages(dataFile, target));
 		sendPatchToSynth(MidiController::instance(), SimpleLogger::instance(), messages);

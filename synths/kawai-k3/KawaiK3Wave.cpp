@@ -11,12 +11,12 @@
 
 namespace midikraft {
 
-	KawaiK3Wave::KawaiK3Wave(Synth::PatchData const& data, MidiProgramNumber programNo) : Patch(KawaiK3::K3_WAVE, data), programNo_(programNo)
+	KawaiK3Wave::KawaiK3Wave(Synth::PatchData const& data, MidiProgramNumber place) : DataFile(KawaiK3::K3_WAVE, data), programNo_(place)
 	{
 		jassert(data.size() == 64);
 	}
 
-	KawaiK3Wave::KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo) : Patch(KawaiK3::K3_WAVE), programNo_(programNo)
+	KawaiK3Wave::KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber place) : DataFile(KawaiK3::K3_WAVE), programNo_(place)
 	{
 		KawaiK3HarmonicsParameters::fromHarmonics(harmonics, *this);
 	}
@@ -24,25 +24,6 @@ namespace midikraft {
 	std::string KawaiK3Wave::name() const
 	{
 		return "User Wave";
-	}
-
-	std::shared_ptr<midikraft::PatchNumber> KawaiK3Wave::patchNumber() const
-	{
-		return std::make_shared <KawaiK3WaveNumber>(programNo_);
-	}
-
-	void KawaiK3Wave::setPatchNumber(MidiProgramNumber patchNumber)
-	{
-		programNo_ = patchNumber;
-	}
-
-	std::string KawaiK3WaveNumber::friendlyName() const
-	{
-		switch (programNumber_.toZeroBased()) {
-		case 100: return "Internal";
-		case 101: return "Cartridge";
-		default: return "Invalid";
-		}
 	}
 
 }

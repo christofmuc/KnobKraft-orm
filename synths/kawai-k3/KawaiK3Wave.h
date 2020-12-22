@@ -13,22 +13,13 @@
 
 namespace midikraft {
 
-	class KawaiK3WaveNumber : public PatchNumber {
-	public:
-		using PatchNumber::PatchNumber;
-		virtual std::string friendlyName() const;
-	};
-
 	//! This is the storage class for a stand-alone user wave of the Kawai K3. 
-	class KawaiK3Wave : public Patch {
+	class KawaiK3Wave : public DataFile {
 	public:
 		KawaiK3Wave(Synth::PatchData const& data, MidiProgramNumber programNo);
 		KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo);
 
 		std::string name() const override;
-
-		std::shared_ptr<PatchNumber> patchNumber() const override;
-		void setPatchNumber(MidiProgramNumber patchNumber) override;
 
 	private:
 		MidiProgramNumber programNo_;

@@ -15,10 +15,6 @@
 
 namespace midikraft {
 
-	std::string KawaiK3PatchNumber::friendlyName() const {
-		return (boost::format("%02d") % programNumber_.toOneBased()).str();
-	}
-
 	KawaiK3Patch::KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata) 
 		: Patch(programNo.toZeroBased() >= 100 ? KawaiK3::K3_WAVE : KawaiK3::K3_PATCH, patchdata), number_(programNo)
 	{
@@ -53,15 +49,12 @@ namespace midikraft {
 	std::string KawaiK3Patch::name() const
 	{
 		// The Kawai K3 is so old is has no display to display a patch name, hence, also none stored in the patch data
-		return number_.friendlyName();
+		KawaiK3 k3;
+		return k3.friendlyProgramName(number_); //TODO could do static call
 	}
 
-	std::shared_ptr<PatchNumber> KawaiK3Patch::patchNumber() const {
-		return std::make_shared<KawaiK3PatchNumber>(number_);
-	}
-
-	void KawaiK3Patch::setPatchNumber(MidiProgramNumber patchNumber) {
-		number_ = KawaiK3PatchNumber(patchNumber);
+	MidiProgramNumber KawaiK3Patch::patchNumber() const {
+		return number_;
 	}
 
 	std::vector<std::shared_ptr<SynthParameterDefinition>> KawaiK3Patch::allParameterDefinitions() const
