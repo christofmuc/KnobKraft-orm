@@ -6,7 +6,7 @@
 
 
 def name():
-    return "Korg DW-8000 Adaption"
+    return "Korg DW-8000 Adaptation"
 
 
 def createDeviceDetectMessage(channel):
@@ -60,7 +60,7 @@ def numberOfPatchesPerBank():
 def createProgramDumpRequest(channel, patchNo):
     program = patchNo % numberOfPatchesPerBank()
     # This is done by creating a program change request and then an edit buffer request
-    return [0b11000000 | channel, program] + createEditBufferRequest(channel)
+    return [0b11000000 | (channel & 0xf), program] + createEditBufferRequest(channel)
 
 
 def isSingleProgramDump(message):

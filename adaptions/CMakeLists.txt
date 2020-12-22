@@ -10,6 +10,11 @@ project(KnobKraft-Generic-Adaptation)
 
 file(GLOB adaptation_files "${CMAKE_CURRENT_LIST_DIR}/*.py")
 
+add_custom_target(
+	CompiledAdaptations
+	DEPENDS ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
+)
+
 add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
 	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
 	DEPENDS ${adaptation_files}
@@ -31,13 +36,13 @@ set(Sources
 )
 
 set_source_files_properties(
-	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
-	DEPENDS ${adaptation_files}
+	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h	
 	PROPERTIES GENERATED TRUE
 )
 
 # Setup library
 add_library(knobkraft-generic-adaptation ${Sources})
+add_dependencies(knobkraft-generic-adaptation CompiledAdaptations)
 target_include_directories(knobkraft-generic-adaptation PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(knobkraft-generic-adaptation PUBLIC "${icu_SOURCE_DIR}/lib64")

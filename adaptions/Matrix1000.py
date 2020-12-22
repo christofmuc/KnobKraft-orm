@@ -9,7 +9,7 @@
 
 
 def name():
-    return "Matrix 1000 Adaption"
+    return "Matrix 1000 Adaptation"
 
 
 def createDeviceDetectMessage(channel):

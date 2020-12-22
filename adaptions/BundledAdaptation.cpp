@@ -18,11 +18,14 @@ namespace knobkraft {
 			{ "DSI Prophet 08", "DSI_Prophet_08", std::string(DSI_Prophet_08_py, DSI_Prophet_08_py + DSI_Prophet_08_py_size) },
 			{ "DSI Prophet 12", "DSI_Prophet_12", std::string(DSI_Prophet_12_py, DSI_Prophet_12_py + DSI_Prophet_12_py_size) },
 			{ "Electra One", "Electra_one", std::string(ElectraOne_py, ElectraOne_py + ElectraOne_py_size) },
-			//{ "Korg DW-8000 Adaption", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size ) },
 			{ "Korg DW-6000", "Korg_DW_6000", std::string(KorgDW6000_py, KorgDW6000_py + KorgDW6000_py_size) },
 			{ "Korg MS2000", "Korg_MS2000", std::string(KorgMS2000_py, KorgMS2000_py + KorgMS2000_py_size) },
 			{ "Matrix 6", "Matrix_6", std::string(Matrix_6_py, Matrix_6_py + Matrix_6_py_size) },
-			{ "Matrix 1000 Adaption", "Matrix_1000", std::string(Matrix1000_py, Matrix1000_py + Matrix1000_py_size) },
+#ifdef _DEBUG
+			{ "Matrix 1000 Test", "Matrix_1000", std::string(Matrix1000_py, Matrix1000_py + Matrix1000_py_size) },
+			{ "Korg DW-8000 Test", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size ) },
+			{ "Kawai K3 Test", "Kawai_K3", std::string(KawaiK3_py, KawaiK3_py + KawaiK3_py_size) },
+#endif
 			{ "Pioneer Toraiz AS1", "Pioneer_Toraiz_AS1", std::string(PioneerToraiz_AS1_py, PioneerToraiz_AS1_py + PioneerToraiz_AS1_py_size) },
 			{ "Roland JX-8P", "Roland_JX_8P", std::string(Roland_JX_8P_py, Roland_JX_8P_py + Roland_JX_8P_py_size) },
 			{ "Sequential Pro 3", "Sequential_Pro_3", std::string(Sequential_Pro_3_py, Sequential_Pro_3_py + Sequential_Pro_3_py_size) },
