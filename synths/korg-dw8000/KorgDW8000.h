@@ -38,8 +38,8 @@ namespace midikraft {
 		// Edit Buffer Capability
 		virtual MidiMessage requestEditBufferDump() override;
 		virtual bool isEditBufferDump(const MidiMessage& message) const override;
-		virtual std::shared_ptr<Patch> patchFromSysex(const MidiMessage& message) const override;
-		virtual std::vector<MidiMessage> patchToSysex(const Patch &patch) const override;
+		virtual std::shared_ptr<DataFile> patchFromSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const override;
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
 		// SoundExpanderCapability

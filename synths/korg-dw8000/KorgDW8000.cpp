@@ -130,7 +130,7 @@ namespace midikraft {
 			&& data[3] == DATA_DUMP;
 	}
 
-	std::shared_ptr<Patch> KorgDW8000::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> KorgDW8000::patchFromSysex(const MidiMessage& message) const
 	{
 		// The DW8000 is so primitive that it does do nothing to the few bytes of data it needs per patch
 		if (!isEditBufferDump(message)) {
@@ -151,7 +151,7 @@ namespace midikraft {
 		return std::make_shared<KorgDW8000Patch>(data, place);
 	}
 
-	std::vector<juce::MidiMessage> KorgDW8000::patchToSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> KorgDW8000::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
 		// For the patch sysex, all we need to do is to add the header on the correct channel
 		std::vector<uint8> data(4);
@@ -159,7 +159,7 @@ namespace midikraft {
 		data[1] = uint8(0x30 | channel().toZeroBasedInt());
 		data[2] = 0x03; // DW8000
 		data[3] = DATA_DUMP;
-		std::copy(patch.data().begin(), patch.data().end(), std::back_inserter(data));
+		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(data));
 
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(data) });
 	}
