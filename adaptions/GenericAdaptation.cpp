@@ -46,6 +46,7 @@ namespace knobkraft {
 	{
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
+		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		try {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			adaptation_module = py::module::import(filepath_.c_str());
@@ -61,6 +62,7 @@ namespace knobkraft {
 	{
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
+		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
