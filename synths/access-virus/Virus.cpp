@@ -120,14 +120,25 @@ namespace midikraft {
 		return false;
 	}
 
-	std::shared_ptr<Patch> Virus::patchFromProgramDumpSysex(const MidiMessage& message) const
+	MidiProgramNumber Virus::getProgramNumber(const MidiMessage &message) const
+	{
+		if (isSingleProgramDump(message)) {
+			uint8 bank = message.getSysExData()[6];
+			uint8 program = message.getSysExData()[7];
+			return MidiProgramNumber::fromZeroBase(bank * numberOfPatches() + program);
+		}
+		return MidiProgramNumber::fromZeroBase(0);
+	}
+
+	std::shared_ptr<DataFile> Virus::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		return patchFromSysex(message);
 	}
 
-	std::vector<juce::MidiMessage> Virus::patchToProgramDumpSysex(const Patch &patch) const
+	std::vector<juce::MidiMessage> Virus::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		//TODO this might be too much of a shortcut
+		ignoreUnused(programNumber);
 		return patchToSysex(patch);
 	}
 
@@ -308,6 +319,13 @@ namespace midikraft {
 	{
 		ignoreUnused(controller, isOn);
 		throw new std::runtime_error("Invalid call");
+	}
+
+	std::string Virus::friendlyProgramName(MidiProgramNumber programNumber) const
+	{
+		char bankChar(char(programNumber.toZeroBased() / 128 + 'a'));
+		uint8 progNo = programNumber.toZeroBased() % 128;
+		return (boost::format("%c%d") % bankChar % progNo).str();
 	}
 
 	MidiMessage Virus::createSysexMessage(std::vector<uint8> const &message) const {
