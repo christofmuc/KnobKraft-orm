@@ -315,7 +315,8 @@ namespace midikraft {
 		// Patches loaded from a list of MidiMessages... First we need to find complete "voices"
 		std::vector<RefaceDXPatch::TVoiceData> voiceData;
 		bool patchActive = false;
-		for (auto message : sysexMessages) {
+		int count = 0;
+		for (const auto& message : sysexMessages) {
 			TDataBlock block;
 			if (dataBlockFromDump(message, block)) {
 				if (block.addressHigh == 0x0e && block.addressMid == 0x0f && block.addressLow == 0x00) {
@@ -326,6 +327,7 @@ namespace midikraft {
 					else {
 						// Create a new but empty voice data entry
 						voiceData.push_back(RefaceDXPatch::TVoiceData());
+						voiceData.back().count = count++;
 					}
 					patchActive = true;
 				}
@@ -374,7 +376,7 @@ namespace midikraft {
 			std::vector<uint8> aggregated;
 			std::copy(voice.common.begin(), voice.common.end(), std::back_inserter(aggregated));
 			for (int op = 0; op < 4; op++) std::copy(voice.op[op].begin(), voice.op[op].end(), std::back_inserter(aggregated));
-			result.push_back(std::make_shared<RefaceDXPatch>(aggregated));
+			result.push_back(std::make_shared<RefaceDXPatch>(aggregated, MidiProgramNumber::fromZeroBase(voice.count)));
 		}
 		return result;
 	}

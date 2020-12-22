@@ -14,7 +14,7 @@ namespace midikraft {
 
 	class RefaceDXPatch : public Patch, public StoredPatchNameCapability {
 	public:
-		typedef struct { std::vector<uint8> common; std::vector<uint8> op[4]; } TVoiceData;
+		typedef struct { std::vector<uint8> common; std::vector<uint8> op[4]; int count;  } TVoiceData;
 
 		RefaceDXPatch(Synth::PatchData const &voiceData, MidiProgramNumber place);
 
