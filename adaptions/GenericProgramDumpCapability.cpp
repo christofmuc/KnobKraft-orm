@@ -25,24 +25,6 @@ namespace knobkraft {
 		return std::make_shared<GenericPatch>(const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 	}
 
-	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(const midikraft::Patch &patch) const
-	{
-		try
-		{
-			auto data = patch.data();
-			int c = me_->channel().toZeroBasedInt();
-			int programNo = patch.patchNumber()->midiProgramNumber().toZeroBased();
-			py::object result = me_->callMethod("convertToProgramDump", c, data, programNo);
-			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
-			return Sysex::vectorToMessages(byteData);
-		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToProgramDump: %s") % ex.what()).str());
-			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-			return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
-		}
-	}
-
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::requestPatch(int patchNo) const
 	{
 		try {
@@ -70,5 +52,23 @@ namespace knobkraft {
 		}
 	}
 
+
+	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(const midikraft::Patch &patch) const
+	{
+		try
+		{
+			auto data = patch.data();
+			int c = me_->channel().toZeroBasedInt();
+			int programNo = patch.patchNumber()->midiProgramNumber().toZeroBased();
+			py::object result = me_->callMethod("convertToProgramDump", c, data, programNo);
+			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToProgramDump: %s") % ex.what()).str());
+			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
+			return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
+		}
+	}
 
 }
