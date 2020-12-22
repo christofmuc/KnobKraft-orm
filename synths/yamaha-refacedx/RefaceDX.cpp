@@ -12,6 +12,8 @@
 #include "Sysex.h"
 #include "MidiController.h"
 
+#include <boost/format.hpp>
+
 namespace midikraft {
 
 	std::vector<Range<int>> kRefaceDXBlankOutZones = {
@@ -256,8 +258,7 @@ namespace midikraft {
 
 	std::shared_ptr<DataFile> RefaceDX::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
-		auto newPatch = std::make_shared<RefaceDXPatch>(data);
-		newPatch->setPatchNumber(place);
+		auto newPatch = std::make_shared<RefaceDXPatch>(data, place);
 		return newPatch;
 	}
 
@@ -400,6 +401,13 @@ namespace midikraft {
 	int RefaceDX::numberOfPatches() const
 	{
 		return 32;
+	}
+
+	std::string RefaceDX::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		int bank = programNo.toZeroBased() / 8;
+		int patch = programNo.toZeroBased() % 8;
+		return (boost::format("Bank%d-%d") % bank % patch).str();
 	}
 
 	std::string RefaceDX::friendlyBankName(MidiBankNumber bankNo) const

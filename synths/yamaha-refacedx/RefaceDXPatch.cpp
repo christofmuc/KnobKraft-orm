@@ -13,7 +13,7 @@ namespace midikraft {
 
 	const int kRefaceDXPatchType = 0;
 
-	RefaceDXPatch::RefaceDXPatch(Synth::PatchData const &voiceData) : Patch(kRefaceDXPatchType, voiceData), originalProgramNumber_(MidiProgramNumber::fromZeroBase(0))
+	RefaceDXPatch::RefaceDXPatch(Synth::PatchData const &voiceData, MidiProgramNumber place) : Patch(kRefaceDXPatchType, voiceData), originalProgramNumber_(place)
 	{
 	}
 
@@ -43,21 +43,9 @@ namespace midikraft {
 		return name() == "Init Voice";
 	}
 
-	std::shared_ptr<PatchNumber> RefaceDXPatch::patchNumber() const
+	MidiProgramNumber RefaceDXPatch::patchNumber() const
 	{
-		return std::make_shared<RefaceDXPatchNumber>(originalProgramNumber_);
-	}
-
-	void RefaceDXPatch::setPatchNumber(MidiProgramNumber patchNumber)
-	{
-		originalProgramNumber_ = patchNumber;
-	}
-
-	std::string RefaceDXPatchNumber::friendlyName() const
-	{
-		int bank = midiProgramNumber().toZeroBased() / 8;
-		int patch = midiProgramNumber().toZeroBased() % 8;
-		return (boost::format("Bank%d-%d") % bank % patch).str();
+		return originalProgramNumber_;
 	}
 
 }
