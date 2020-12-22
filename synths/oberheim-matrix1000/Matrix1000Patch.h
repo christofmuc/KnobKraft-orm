@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "DetailedParametersCapability.h"
+#include "StoredPatchNameCapability.h"
 
 #include "Matrix1000ParamDefinition.h"
 
