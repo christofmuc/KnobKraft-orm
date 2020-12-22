@@ -8,6 +8,8 @@
 
 #include "Patch.h"
 
+#include "GenericAdaptation.h"
+
 #include "Capability.h"
 #include "StoredPatchNameCapability.h"
 
@@ -46,7 +48,7 @@ namespace knobkraft {
 		pybind11::object callMethod(std::string const &methodName, Args& ... args) const {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			if (!adaptation_) {
-				return py::none();
+				return pybind11::none();
 			}
 			if (pybind11::hasattr(*adaptation_, methodName.c_str())) {
 				try {
