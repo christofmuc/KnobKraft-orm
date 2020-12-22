@@ -122,16 +122,16 @@ Archiving
 Generic Module/Adaptations
 + Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
   -> use annotationManger instead of dynamic cast?
-+ Missing - better patch names for synths without patch names
-+ Global Settings editor
-+ Default name mechanism
-+ LegacyLoad mechanism
-+ Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
 + Could show which Flavours/Profiles are implemented for each adaptation (checkbox list)
 + Could create FlowChart to select which methods to implement!
-+ Provide "orm" python package with denibble, DSI packing etc.
++ Better patch names for synths that only implement EditBufferCapability and not ProgramDumpCapability, and no StoredPatchNameCapability (Korg DW-8000)
++ Default name mechanism
++ LegacyLoad mechanism
++ Global Settings editor
++ Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
 + Could watch files and hot reload module when changed on disk (for easier development)
 + Could add python editor with hot reload function
++ [Bad idea: Provide "orm" python package with denibble, DSI packing etc.]. Then the code is no longer pure python, and you cannot write tests without importing a specific module. I don't think I need that.
 
 Macro page
 * Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
@@ -167,6 +167,7 @@ Alternate Tunings
 
 Database schema
 * Should have foreign key constraint imports.id == patches.sourceID
+* Current unique constraint is on md5, but should be on (synth name, md5)
 * Should have unique constraing imports.id (should edit buffer import contain synth name? could be scrambled by MD5?)
 * Should have non-null everywhere
 * Should think about naming convention
