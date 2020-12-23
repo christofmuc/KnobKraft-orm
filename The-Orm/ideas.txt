@@ -4,8 +4,11 @@ Completely unprioritised list of things to do
 Before next release
 
 Next release 1.10.0
-* Update to Python 3.8, correct error messages in GenericAdaptation
+* Need to show which capabilities are implemented and which functions are implemented for each adaptation
 * Test USB connectivity with Rev2
+
+Next release 1.11.0	
+* Update to Python 3.8, correct error messages in GenericAdaptation
 * Add PatchInterchangeFormat exprot
 
 Release 2.0
@@ -21,9 +24,9 @@ User questions
 * How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
 	
 
-
 BANK MANAGEMENT
 * Bank management (github #9)
+* Could introduce collections/sessions/songs  = lists
 * Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
   a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
 * Database would just store reference to patch (name and ID, not the whole patch)
@@ -81,7 +84,6 @@ Behringer RD-8
 + Need support for Patterns and Songs with display of content?
 
 RefaceDX
-* Patch renaming
 * Parameter set missing
 
 Virus
@@ -144,7 +146,6 @@ Librarian
 * Allow recursive directory traversal during import
 * Could accept synth-initiated dumps at any time
 * Could sniff synth out of sysex file opened
-* Could introduce collections/sessions/songs  = lists
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Could have patch name autogenerator like LaserMammoth
 * Could have patch interchange format - basically a JSON format with sysex, plus metadata. Serializing the PatchHolder I think should be good enough
@@ -191,12 +192,11 @@ MIDI setup
 Global Parameter Editing
 * Debounce is currently disabled - can I reenable it?
 
-Better fonts with Freetype
+Better fonts with Freetype. This is old.
   + http://vinniefalco.github.io/VFLib/class_free_type_faces.html#details
 
 Big things
     * VST build of Orm for Daws
-	* VST version? If yes, why?
     * Masterkeyboard setup screen to select which keyboard plays which synth
 	* Clock setup screen to determine which device is master clock, can be combined with MIDI routing
 	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
@@ -204,6 +204,7 @@ Big things
 	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
 	* could sort by patch similarity
 	* Adding full BCR2000 support
+	* Full custom Window Management?
 	* Adding spectrogram display, this needs to keep the current patch above the tab row!
 	* Could add page for Synth "SuperPowers", i.e. features or UI that is Synth specific. 
 	* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
