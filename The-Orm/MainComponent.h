@@ -48,6 +48,7 @@ private:
 	void createNewDatabase();
 	void openDatabase();
 	void openDatabase(File &databaseFile);
+	void saveDatabaseAs();
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
 	void persistRecentFileList();

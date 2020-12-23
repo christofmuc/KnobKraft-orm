@@ -146,6 +146,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{0, { "File", {
 				{ "New database..." },
 				{ "Open database..." },
+				{ "Save database as..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Delete patches..." }, { "Reindex patches..." } } } },
@@ -211,14 +212,17 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			{ "Open database...", { 13, "Open database...", [this] {
 				openDatabase();
 			}}},
-			{ "Delete patches...", { 14, "Delete patches...", [this] {
+			{ "Save database as...", { 14, "Save database as...", [this] {
+				saveDatabaseAs();
+			}}},
+			{ "Delete patches...", { 15, "Delete patches...", [this] {
 				patchView_->deletePatches();
 			}}},
-			{ "Reindex patches...", { 15, "Reindex patches...", [this] {
+			{ "Reindex patches...", { 16, "Reindex patches...", [this] {
 				patchView_->reindexPatches();
 			}}},
 		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { 16, "Crash reporting consent", [this] {
+			{ "Crash reporting consent...", { 17, "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
 		#endif
@@ -417,6 +421,21 @@ void MainComponent::openDatabase(File &databaseFile)
 			UIModel::instance()->currentSynth_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
 		}
+	}
+}
+
+void MainComponent::saveDatabaseAs()
+{
+	std::string lastPath = Settings::instance().get("LastDatabasePath", "");
+	if (lastPath.empty()) {
+		lastPath = File(midikraft::PatchDatabase::generateDefaultDatabaseLocation()).getParentDirectory().getFullPathName().toStdString();
+	}
+	File lastDirectory(lastPath);
+	FileChooser databaseChooser("Please choose a new KnobKraft Orm SQlite database file...", lastDirectory, "*.db3");
+	if (databaseChooser.browseForFileToSave(true)) {
+		File databaseFile = databaseChooser.getResult();
+		database_->makeDatabaseBackup(databaseFile);
+		openDatabase(databaseFile);
 	}
 }
 
