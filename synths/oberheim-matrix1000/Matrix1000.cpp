@@ -261,7 +261,7 @@ namespace midikraft {
 	{
 		switch (streamType) {
 		case StreamLoadCapability::StreamType::BANK_DUMP:
-			return 100 + 50 + 1;
+			return 100 + 0x50 + 1;
 		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
 			return 1;
 		default:
@@ -316,8 +316,8 @@ namespace midikraft {
 			return editbuffer > 0;
 		case midikraft::StreamLoadCapability::StreamType::BANK_DUMP:
 			// The documentation found in the Internet on the split patches is wrong. It states the Matrix 1000 sends 50, but in reality it sends 0x50 = 80. That is a strange number.
-			// Ignoring the number of split messages and relying on the fact that the master dump is the last message sent.
-			return found == numberOfPatches() && split >= 50 && master > 0;
+			// Bob from Tauntek confirmed the assembler code of the M1K uses $50, so that error probably has been there since the 80s.
+			return found == numberOfPatches() && split == 0x50 && master > 0;
 		default:
 			return true;
 		}
