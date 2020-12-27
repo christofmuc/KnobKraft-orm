@@ -198,8 +198,10 @@ namespace midikraft {
 
 	bool Matrix1000::isEditBufferDump(const MidiMessage& message) const
 	{
-		// The Matrix1000 has no EditBufferDump format, but it always is a program dump. 
-		return isSingleProgramDump(message);
+		// The Matrix1000 either sends Edit Buffers as Program Dumps, or it is a Single Patch Data to Edit Buffer message, which the M1k will never generate on its own, 
+		// but we will when we save data to disk.
+		return isSingleProgramDump(message) || 
+			(isOwnSysex(message) && MidiHelpers::isSysexMessageMatching(message, { {2, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER}, { 3, (uint8)0x00} }));
 	}
 
 
@@ -338,7 +340,7 @@ namespace midikraft {
 				result.push_back(patchFromProgramDumpSysex(message));
 			}
 			else if (isEditBufferDump(message)) {
-				// This code is unreachable for the M1000, as an edit buffer dump always is a program dump
+				// This code will be reached for the message format "single patch data to edit buffer", which the M1k will never generate, but I will
 				result.push_back(patchFromSysex(message));
 			}
 			else if (isSplitPatch(message) || globalSettingsLoader_->isDataFile(message, 0)) {
