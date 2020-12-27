@@ -62,6 +62,7 @@ namespace midikraft {
 		virtual bool isMessagePartOfStream(const MidiMessage& message, StreamType streamType) const override;
 		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) const override;
 		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) const override;
+		virtual TPatchVector loadPatchesFromStream(std::vector<MidiMessage> const &streamDump) const override;
 
 		// SoundExpanderCapability
 		virtual bool canChangeInputChannel() const override;

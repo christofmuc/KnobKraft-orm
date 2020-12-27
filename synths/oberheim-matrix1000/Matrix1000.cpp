@@ -330,6 +330,23 @@ namespace midikraft {
 		return false;
 	}
 
+	midikraft::TPatchVector Matrix1000::loadPatchesFromStream(std::vector<MidiMessage> const &sysexMessages) const
+	{
+		TPatchVector result;
+		for (auto message : sysexMessages) {
+			if (isEditBufferDump(message)) {
+				result.push_back(patchFromSysex(message));
+			}
+			else if (isSingleProgramDump(message)) {
+				result.push_back(patchFromProgramDumpSysex(message));
+			}
+			else {
+				// Ignore other messages like global settings and fake split patches
+			}
+		}
+		return result;
+	}
+
 	bool Matrix1000::isSplitPatch(MidiMessage const &message) const {
 		// The Matrix 1000 does not support split patches, but for the sake of compatibility with the Matrix 6 it will send out 50 split patches as answer to the request dump, 
 		// which shall be ignored...
