@@ -122,7 +122,7 @@ Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
 
 Generic Module/Adaptations
-+ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX), StreamDumpCapability (BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
++ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX, Matrix1000, BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
   -> use annotationManger instead of dynamic cast?
 + Could show which Flavours/Profiles are implemented for each adaptation (checkbox list)
 + Could create FlowChart to select which methods to implement!
