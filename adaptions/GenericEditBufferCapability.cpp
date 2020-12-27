@@ -22,7 +22,7 @@ namespace py = pybind11;
 namespace knobkraft {
 
 
-	juce::MidiMessage GenericEditBufferCapability::requestEditBufferDump()
+	juce::MidiMessage GenericEditBufferCapability::requestEditBufferDump() const
 	{
 		try {
 			int c = me_->channel().toZeroBasedInt();
