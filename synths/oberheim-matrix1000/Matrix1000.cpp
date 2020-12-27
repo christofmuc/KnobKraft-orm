@@ -198,8 +198,8 @@ namespace midikraft {
 
 	bool Matrix1000::isEditBufferDump(const MidiMessage& message) const
 	{
-		return isOwnSysex(message) &&
-			MidiHelpers::isSysexMessageMatching(message, { {2, MIDI_COMMAND.SINGLE_PATCH_DATA}, { 3, (uint8)0x00 /* Unspecified, but let's assume else it's a single program dump */ } });
+		// The Matrix1000 has no EditBufferDump format, but it always is a program dump. 
+		return isSingleProgramDump(message);
 	}
 
 
@@ -334,11 +334,12 @@ namespace midikraft {
 	{
 		TPatchVector result;
 		for (auto message : sysexMessages) {
-			if (isEditBufferDump(message)) {
-				result.push_back(patchFromSysex(message));
-			}
-			else if (isSingleProgramDump(message)) {
+			if (isSingleProgramDump(message)) {
 				result.push_back(patchFromProgramDumpSysex(message));
+			}
+			else if (isEditBufferDump(message)) {
+				// This code is unreachable for the M1000, as an edit buffer dump always is a program dump
+				result.push_back(patchFromSysex(message));
 			}
 			else {
 				// Ignore other messages like global settings and fake split patches
@@ -519,7 +520,7 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Matrix1000::patchToSysex(std::shared_ptr<DataFile> patch) const
 	{
-		std::vector<uint8> editBufferDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER, 0x00 });
+		std::vector<uint8> editBufferDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER, 0x00 /* Unspecified, but let's assume 0 is ok */ });
 		auto patchdata = escapeSysex(patch->data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(editBufferDump));
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(editBufferDump) });
