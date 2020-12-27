@@ -323,7 +323,7 @@ namespace midikraft {
 		return MidiChannel::invalidChannel();
 	}
 
-	TPatchVector RefaceDX::loadSysex(std::vector<MidiMessage> const &sysexMessages)
+	TPatchVector RefaceDX::loadPatchesFromStream(std::vector<MidiMessage> const &sysexMessages) const 
 	{
 		// Patches loaded from a list of MidiMessages... First we need to find complete "voices"
 		std::vector<RefaceDXPatch::TVoiceData> voiceData;

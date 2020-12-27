@@ -34,6 +34,7 @@ namespace midikraft {
 		virtual bool isMessagePartOfStream(MidiMessage const &message, StreamType streamType)  const override;
 		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType)  const override;
 		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType)  const override;
+		virtual TPatchVector loadPatchesFromStream(std::vector<MidiMessage> const &streamDump) const override;
 
 		// Masterkeyboard Capability
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> finished) override;
@@ -53,9 +54,6 @@ namespace midikraft {
 		// This is overridden from the official implementation in the RefaceDXDiscovery, because that will not tell us the MIDI channel
 		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		virtual MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
-
-		// This needs to be overridden because the base implementation assumes a patch fits into a single MidiMessage, which is not true for the Reface DX
-		virtual TPatchVector loadSysex(std::vector<MidiMessage> const &sysexMessages) override;
 
 		// DataFileSendCapability
 		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
