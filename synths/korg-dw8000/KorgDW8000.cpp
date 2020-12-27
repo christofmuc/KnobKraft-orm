@@ -67,7 +67,7 @@ namespace midikraft {
 		return 1;
 	}
 
-	juce::MidiMessage KorgDW8000::requestEditBufferDump()
+	juce::MidiMessage KorgDW8000::requestEditBufferDump() const
 	{
 		// This is called a "Data Save Request" in the Service Manual (p. 6)
 		return MidiHelpers::sysexMessage({ 0x42 /* Korg */, uint8(0x30 | channel().toZeroBasedInt()), 0x03 /* Model ID = DW 8000 */, DATA_SAVE_REQUEST });
