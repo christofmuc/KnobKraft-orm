@@ -195,29 +195,32 @@ Global Parameter Editing
 Better fonts with Freetype. This is old.
   + http://vinniefalco.github.io/VFLib/class_free_type_faces.html#details
 
-Big things
+
+ Epics on Github
     * VST build of Orm for Daws
     * Masterkeyboard setup screen to select which keyboard plays which synth
+		* MIDI routing (first only to and forth, then remapping channels, ...)
 	* Clock setup screen to determine which device is master clock, can be combined with MIDI routing
-	* editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
-	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
-	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
+		* Clock routing screen
 	* could sort by patch similarity
-	* Adding full BCR2000 support
-	* Full custom Window Management?
+	* The automatic patch clusterer!
+
+Big things
 	* Adding spectrogram display, this needs to keep the current patch above the tab row!
-	* Could add page for Synth "SuperPowers", i.e. features or UI that is Synth specific. 
 	* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 	* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
 	  * Record notes played (duration) a specific patch
 	  * Allow to sort by playing time
-	* Synth_v2 class/interface more following the generic adaptation design than the original Synth class	
+	* Editor for the synth using the JUCE property editor/Dials. Could do custom layouts for editors (non-skeuomorphic)
+	* Adding PyTschirp - for matters like Rev2 Sequencer Features, but also patch randomization, genetic algorithms. Could expose database queries to PyTschirp
+	  * Could do targeted randomize - take only the search result as the base set, determine histograms/probability functions for each parameter
+		* Patch randomizer	
+		* Automatic patch optimizer
+	* Adding full BCR2000 support
+	* Full custom Window Management?
+	* Could add page for Synth "SuperPowers", i.e. features or UI that is Synth specific. 
+	* Refactoring: Synth_v2 class/interface more following the generic adaptation design than the original Synth class. Maybe drop C++ Synths alltogether at some point in the future?
 	* Implement PatchBook Visualization
-	* Patch randomizer
-	* The automatic patch clusterer!
-	* Automatic patch optimizer
-	* MIDI routing (first only to and forth, then remapping channels, ...)
-	* Clock routing screen
 	* Interface into LaserMammoth devices? Can I execute Javascript?
 	* Integrate with CTRLR? Can I host their panels? If yes, for what?
 	* Can I synchronize multiple devices via the LaserMammoth Backend?
