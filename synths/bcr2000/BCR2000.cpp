@@ -434,17 +434,17 @@ namespace midikraft {
 
 	MidiMessage BCR2000::requestEditBuffer() const
 	{
-		return requestDump(0x7F);
+		return requestStreamDump(0x7F)[0];
 	}
 
-	juce::MidiMessage BCR2000::requestDump(int number) const
+	std::vector<MidiMessage> BCR2000::requestStreamDump(int number) const
 	{
 		std::vector<uint8> data = createSysexCommandData(REQUEST_DATA);
 		data.push_back((uint8) number);
-		return MidiHelpers::sysexMessage(data);
+		return { MidiHelpers::sysexMessage(data) };
 	}
 
-	bool BCR2000::isPartOfDump(const MidiMessage& message) const
+	bool BCR2000::isPartOfStreamDump(const MidiMessage& message) const
 	{
 		if (isSysexFromBCR2000(message)) {
 			// This is the reply. We do not use the identity string returned
@@ -455,7 +455,7 @@ namespace midikraft {
 		return false;
 	}
 
-	bool BCR2000::isDumpFinished(std::vector<MidiMessage> const &bankDump) const
+	bool BCR2000::isStreamDumpFinished(std::vector<MidiMessage> const &bankDump) const
 	{
 		if (!bankDump.empty()) {
 			std::string line = convertSyxToText(bankDump.back());

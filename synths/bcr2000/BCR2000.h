@@ -70,9 +70,9 @@ namespace midikraft {
 		MidiMessage requestEditBuffer() const;
 
 		// StreamDumpCapability
-		virtual MidiMessage requestDump(int number) const override;
-		virtual bool isPartOfDump(const MidiMessage& message) const override;
-		virtual bool isDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
+		virtual std::vector<MidiMessage> requestStreamDump(int number) const override;
+		virtual bool isPartOfStreamDump(const MidiMessage& message) const override;
+		virtual bool isStreamDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
 		virtual TPatchVector loadStreamDump(std::vector<MidiMessage> const &streamDump) const override;
 
 		// DataFileSendCapability
