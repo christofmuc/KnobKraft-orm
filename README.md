@@ -148,7 +148,9 @@ The app icon is courtesy of W07 at the Sequential forums, thanks for your contri
 
 For the restless Prophet 12 testing thanks and a medal for most comments on a ticket go to @Andy2No!
 
-Thanks also go to @gnidorah and @dukzcry for reporting bugs with the RefaceDX implementation, which were fixed! Thanks to @GriffReborn for bug reports with the Virus B implementation! Big shout out over to gearslutz' @Behrmoog, who did the first three synth adaptations on his own, brave and fearless! Special thanks to @windo who spent nights testing the Korg MS2000 to make it work, despite me being too stupid to understand a quite clear sysex documentation! Also many thanks to @markusschloesser for great feedback and inquisitive persistence!
+Thanks also go to @gnidorah and @dukzcry for reporting bugs with the RefaceDX implementation, which were fixed! Thanks to @GriffReborn for bug reports with the Virus B implementation! Big shout out over to gearslutz' @Behrmoog, who did the first three synth adaptations on his own, brave and fearless! Special thanks to @windo who spent nights testing the Korg MS2000 to make it work, despite me being too stupid to understand a quite clear sysex documentation! Also many thanks to @markusschloesser for great feedback and inquisitive persistence! 
+
+For bug reports, thanks to Iulian from the Facebook M1000 group!
 
 ## About the author
 
