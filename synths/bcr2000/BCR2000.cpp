@@ -434,18 +434,35 @@ namespace midikraft {
 
 	MidiMessage BCR2000::requestEditBuffer() const
 	{
-		return requestStreamDump(0x7F)[0];
+		return requestStreamElement(0x7F, StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP)[0];
 	}
 
-	std::vector<MidiMessage> BCR2000::requestStreamDump(int number) const
+	std::vector<MidiMessage> BCR2000::requestStreamElement(int number, StreamLoadCapability::StreamType streamType) const
 	{
 		std::vector<uint8> data = createSysexCommandData(REQUEST_DATA);
-		data.push_back((uint8) number);
+		switch (streamType)
+		{
+		case midikraft::StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			data.push_back((uint8)0x7f);
+			break;
+		case midikraft::StreamLoadCapability::StreamType::BANK_DUMP:
+			data.push_back((uint8)number);
+			break;
+		default:
+			return {};
+		}
 		return { MidiHelpers::sysexMessage(data) };
 	}
 
-	bool BCR2000::isPartOfStreamDump(const MidiMessage& message) const
+	int BCR2000::numberOfStreamMessagesExpected(StreamType streamType) const
 	{
+		ignoreUnused(streamType);
+		return -1;
+	}
+
+	bool BCR2000::isMessagePartOfStream(const MidiMessage& message, StreamType streamType) const
+	{
+		ignoreUnused(streamType);
 		if (isSysexFromBCR2000(message)) {
 			// This is the reply. We do not use the identity string returned
 			if (message.getSysExDataSize() >= 5 && sysexCommand(message) == SEND_BCL_MESSAGE) {
@@ -455,8 +472,9 @@ namespace midikraft {
 		return false;
 	}
 
-	bool BCR2000::isStreamDumpFinished(std::vector<MidiMessage> const &bankDump) const
+	bool BCR2000::isStreamComplete(std::vector<MidiMessage> const &bankDump, StreamType streamType) const
 	{
+		ignoreUnused(streamType);
 		if (!bankDump.empty()) {
 			std::string line = convertSyxToText(bankDump.back());
 			if (line == "$end") {
@@ -466,7 +484,13 @@ namespace midikraft {
 		return false;
 	}
 
-	midikraft::TPatchVector BCR2000::loadStreamDump(std::vector<MidiMessage> const &streamDump) const
+	bool BCR2000::shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) const
+	{
+		ignoreUnused(messages, streamType);
+		return false;
+	}
+
+	midikraft::TPatchVector BCR2000::loadPatchesFromStream(std::vector<MidiMessage> const &streamDump) const
 	{
 		midikraft::TPatchVector result;
 

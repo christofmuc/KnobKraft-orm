@@ -11,7 +11,7 @@
 #include "SimpleDiscoverableDevice.h"
 #include "MidiController.h"
 #include "MidiChannel.h"
-#include "StreamDumpCapability.h"
+#include "StreamLoadCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DataFileSendCapability.h"
 
@@ -24,7 +24,7 @@ namespace midikraft {
 
 	class BCRdefinition;
 
-	class BCR2000 : public Synth, public SimpleDiscoverableDevice, public StreamDumpCapability, public DataFileSendCapability {
+	class BCR2000 : public Synth, public SimpleDiscoverableDevice, public StreamLoadCapability, public DataFileSendCapability {
 	public:
 		struct BCRError {
 			uint8 errorCode;
@@ -69,11 +69,13 @@ namespace midikraft {
 		// Unused so far
 		MidiMessage requestEditBuffer() const;
 
-		// StreamDumpCapability
-		virtual std::vector<MidiMessage> requestStreamDump(int number) const override;
-		virtual bool isPartOfStreamDump(const MidiMessage& message) const override;
-		virtual bool isStreamDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
-		virtual TPatchVector loadStreamDump(std::vector<MidiMessage> const &streamDump) const override;
+		// StreamLoadCapability
+		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) const override;
+		virtual int numberOfStreamMessagesExpected(StreamType streamType) const override;
+		virtual bool isMessagePartOfStream(MidiMessage const &message, StreamType streamType) const override;
+		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) const override;
+		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) const override;
+		virtual TPatchVector loadPatchesFromStream(std::vector<MidiMessage> const &streamDump) const override;
 
 		// DataFileSendCapability
 		virtual std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
