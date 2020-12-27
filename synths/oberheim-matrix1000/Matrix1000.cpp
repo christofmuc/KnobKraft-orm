@@ -341,8 +341,11 @@ namespace midikraft {
 				// This code is unreachable for the M1000, as an edit buffer dump always is a program dump
 				result.push_back(patchFromSysex(message));
 			}
-			else {
+			else if (isSplitPatch(message) || globalSettingsLoader_->isDataFile(message, 0)) {
 				// Ignore other messages like global settings and fake split patches
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Matrix 1000: Ignoring sysex message found, not implemented: " + message.getDescription());
 			}
 		}
 		return result;
