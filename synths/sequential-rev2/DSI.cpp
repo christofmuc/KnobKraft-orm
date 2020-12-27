@@ -98,7 +98,7 @@ namespace midikraft {
 		return false;
 	}
 
-	MidiMessage DSISynth::requestEditBufferDump()
+	MidiMessage DSISynth::requestEditBufferDump() const
 	{
 		return MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00000110 });
 	}

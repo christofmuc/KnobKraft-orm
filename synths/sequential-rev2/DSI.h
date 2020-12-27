@@ -41,7 +41,7 @@ namespace midikraft {
 		virtual bool needsChannelSpecificDetection() override;
 
 		// Edit Buffer Capability
-		virtual MidiMessage requestEditBufferDump() override;
+		virtual MidiMessage requestEditBufferDump() const override;
 		virtual bool isEditBufferDump(const MidiMessage& message) const override;
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
