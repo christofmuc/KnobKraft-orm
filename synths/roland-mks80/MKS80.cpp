@@ -111,7 +111,7 @@ namespace midikraft {
 		return "Roland MKS-80";
 	}
 
-	MidiMessage MKS80::requestEditBufferDump()
+	MidiMessage MKS80::requestEditBufferDump() const
 	{
 		// This is actually an empty message - as we don't have a requestProgramDump, we will issue a program change before
 		// sending this (non) message - and this will trigger an PGR and 4 APR messages by the MKS80 anyway. How minimalistic!
