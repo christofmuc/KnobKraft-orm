@@ -65,7 +65,7 @@ namespace midikraft {
 		return 8;
 	}
 
-	juce::MidiMessage Virus::requestEditBufferDump()
+	juce::MidiMessage Virus::requestEditBufferDump() const
 	{
 		std::vector<uint8> message({ 0x30 /* Single request */, 0x00 /* Single Buffer */, 0x40 /* Single mode single buffer */ });
 		return createSysexMessage(message);
