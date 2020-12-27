@@ -93,7 +93,7 @@ namespace midikraft {
 		return gMatrix1000GlobalSettings;
 	}
 
-	juce::MidiMessage Matrix1000::requestEditBufferDump()
+	juce::MidiMessage Matrix1000::requestEditBufferDump() const
 	{
 		return createRequest(EDIT_BUFFER, 0x00);
 	}

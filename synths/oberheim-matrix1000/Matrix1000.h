@@ -43,7 +43,7 @@ namespace midikraft {
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// Edit Buffer Capability
-		virtual MidiMessage requestEditBufferDump() override;
+		virtual MidiMessage requestEditBufferDump() const override;
 		virtual bool isEditBufferDump(const MidiMessage& message) const override;
 		virtual std::shared_ptr<DataFile> patchFromSysex(const MidiMessage& message) const override;
 		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const override;
