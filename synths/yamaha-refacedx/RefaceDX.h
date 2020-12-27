@@ -29,10 +29,11 @@ namespace midikraft {
 		Synth::PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// StreamLoadCapability
-		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) override;
-		virtual bool isMessagePartOfStream(MidiMessage const &message, StreamType streamType) override;
-		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) override;
-		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) override;
+		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) const override;
+		virtual int numberOfStreamMessagesExpected(StreamType streamType) const override;
+		virtual bool isMessagePartOfStream(MidiMessage const &message, StreamType streamType)  const override;
+		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType)  const override;
+		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType)  const override;
 
 		// Masterkeyboard Capability
 		virtual void changeOutputChannel(MidiController *controller, MidiChannel newChannel, std::function<void()> finished) override;
@@ -73,7 +74,7 @@ namespace midikraft {
 			std::vector<uint8> data;
 		};
 
-		juce::MidiMessage buildRequest(uint8 addressHigh, uint8 addressMid, uint8 addressLow);
+		juce::MidiMessage buildRequest(uint8 addressHigh, uint8 addressMid, uint8 addressLow) const;
 		juce::MidiMessage buildParameterChange(uint8 addressHigh, uint8 addressMid, uint8 addressLow, uint8 value);
 		MidiMessage buildDataBlockMessage(TDataBlock const &block) const;
 		bool dataBlockFromDump(const MidiMessage &message, TDataBlock &outBlock) const;

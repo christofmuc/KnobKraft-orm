@@ -21,7 +21,7 @@ namespace midikraft {
 	};
 
 
-	juce::MidiMessage RefaceDX::buildRequest(uint8 addressHigh, uint8 addressMid, uint8 addressLow)
+	juce::MidiMessage RefaceDX::buildRequest(uint8 addressHigh, uint8 addressMid, uint8 addressLow) const
 	{
 		return MidiHelpers::sysexMessage(
 			{ 0x43 /* Yamaha */, (uint8)(0x20 /* dump request */ | deviceID_), 0x7f /* Group high */, 0x1c /* Group low */, 0x05 /* Model */, addressHigh, addressMid, addressLow }
@@ -35,7 +35,7 @@ namespace midikraft {
 		);
 	}
 
-	std::vector<MidiMessage> RefaceDX::requestStreamElement(int elemNo, StreamType streamType) 
+	std::vector<MidiMessage> RefaceDX::requestStreamElement(int elemNo, StreamType streamType) const
 	{
 		switch (streamType) {
 		case StreamLoadCapability::StreamType::BANK_DUMP:
@@ -50,7 +50,20 @@ namespace midikraft {
 		}
 	}
 
-	bool RefaceDX::isMessagePartOfStream(MidiMessage const &message, StreamType streamType)
+	int RefaceDX::numberOfStreamMessagesExpected(StreamType streamType) const
+	{
+		switch (streamType)
+		{
+		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			return 7;
+		case StreamLoadCapability::StreamType::BANK_DUMP:
+			return 32 + 32 + 32 + 32 * 4;
+		default:
+			return 0;
+		}
+	}
+
+	bool RefaceDX::isMessagePartOfStream(MidiMessage const &message, StreamType streamType) const
 	{
 		ignoreUnused(streamType); // Both stream types consist of the same message types
 		if (isOwnSysex(message)) {
@@ -65,7 +78,7 @@ namespace midikraft {
 		return false;
 	}
 
-	bool RefaceDX::isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) {
+	bool RefaceDX::isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) const {
 		int headers, footers, common, operators;
 		headers = footers = common = operators = 0;
 		for (auto message : messages) {
@@ -91,7 +104,7 @@ namespace midikraft {
 		}
 	}
 
-	bool RefaceDX::shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType)
+	bool RefaceDX::shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) const
 	{
 		int headers, footers;
 		headers = footers = 0;
