@@ -124,6 +124,7 @@ namespace midikraft {
 	{
 		if (isSingleProgramDump(message)) {
 			uint8 bank = message.getSysExData()[6];
+			if (bank > 0) bank -= 1; // bank is 1-based, but in case of edit buffer this will be 0 already
 			uint8 program = message.getSysExData()[7];
 			return MidiProgramNumber::fromZeroBase(bank * numberOfPatches() + program);
 		}
