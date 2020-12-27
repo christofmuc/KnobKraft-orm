@@ -12,7 +12,7 @@
 #include "Patch.h"
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
-#include "BankDumpCapability.h"
+#include "StreamLoadCapability.h"
 #include "SoundExpanderCapability.h"
 #include "GlobalSettingsCapability.h"
 //#include "SupportedByBCR2000.h"
@@ -25,7 +25,7 @@ namespace midikraft {
 
 	class Matrix1000 : public Synth, /* public SupportedByBCR2000, */
 		public SimpleDiscoverableDevice,
-		public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, // pretty complete MIDI implementation of the Matrix1000
+		public EditBufferCapability, public ProgramDumpCabability, public StreamLoadCapability, // pretty complete MIDI implementation of the Matrix1000
 		public SoundExpanderCapability, public GlobalSettingsCapability
 	{
 	public:
@@ -56,11 +56,12 @@ namespace midikraft {
 		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const MidiMessage& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
 
-		// Bank Dump Capability
-		virtual std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
-		virtual bool isBankDump(const MidiMessage& message) const override;
-		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
-		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
+		// StreamLoadCapability
+		virtual std::vector<MidiMessage> requestStreamElement(int number, StreamType streamType) const override;
+		virtual int numberOfStreamMessagesExpected(StreamType streamType) const override;
+		virtual bool isMessagePartOfStream(const MidiMessage& message, StreamType streamType) const override;
+		virtual bool isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) const override;
+		virtual bool shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) const override;
 
 		// SoundExpanderCapability
 		virtual bool canChangeInputChannel() const override;
@@ -88,6 +89,9 @@ namespace midikraft {
 		virtual std::vector<std::shared_ptr<TypedNamedValue>> getGlobalSettings() override;
 		virtual DataFileLoadCapability *loader() override;
 		virtual int settingsDataFileType() const override;
+
+		// Matrix1000 specific functions
+		bool isSplitPatch(MidiMessage const &message) const;
 
 		//private: Only for testing public
 		PatchData unescapeSysex(const uint8 *sysExData, int sysExLen) const;

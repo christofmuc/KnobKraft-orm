@@ -239,35 +239,101 @@ namespace midikraft {
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(singleProgramDump) });
 	}
 
-	std::vector<MidiMessage>  Matrix1000::requestBankDump(MidiBankNumber bankNo) const
+	std::vector<MidiMessage> Matrix1000::requestStreamElement(int no, StreamType streamType) const
 	{
-		if (!bankNo.isValid()) {
+		switch (streamType) {
+		case StreamLoadCapability::StreamType::BANK_DUMP: {
+			MidiBankNumber bankNo = MidiBankNumber::fromZeroBase(no);
+			if (!bankNo.isValid()) {
+				return {};
+			}
+			return { createBankSelect(bankNo), createRequest(BANK_AND_MASTER, 0) };
+		}
+		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			return { requestEditBufferDump() };
+		default:
+			SimpleLogger::instance()->postMessage("The Matrix1000 does not support loading this stream type");
 			return {};
 		}
-		return { createBankSelect(bankNo), createRequest(BANK_AND_MASTER, 0) };
 	}
 
-	bool Matrix1000::isBankDump(const MidiMessage& message) const
+	int Matrix1000::numberOfStreamMessagesExpected(StreamType streamType) const
 	{
-		// This is more "is part of bank dump"
-		return isSingleProgramDump(message);
+		switch (streamType) {
+		case StreamLoadCapability::StreamType::BANK_DUMP:
+			return 100 + 80 + 1;
+		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			return 1;
+		default:
+			return 0;
+		}
 	}
 
-	bool Matrix1000::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
+	bool Matrix1000::isMessagePartOfStream(const MidiMessage& message, StreamType streamType) const
+	{
+		switch (streamType) {
+		case StreamLoadCapability::StreamType::BANK_DUMP:
+			return isSingleProgramDump(message) || isSplitPatch(message) || globalSettingsLoader_->isDataFile(message, 0);
+		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+			return isEditBufferDump(message);
+		default:
+			return false;
+		}
+	}
+
+	bool Matrix1000::isStreamComplete(std::vector<MidiMessage> const &messages, StreamType streamType) const
 	{
 		// Count the number of patch dumps in that stream
 		int found = 0;
-		for (auto message : bankDump) {
-			if (isSingleProgramDump(message)) found++;
+		int split = 0;
+		int master = 0;
+		int editbuffer = 0;
+		for (auto message : messages) {
+			switch (streamType) {
+			case midikraft::StreamLoadCapability::StreamType::BANK_DUMP:
+				if (isSingleProgramDump(message)) {
+					found++;
+				}
+				else if (isSplitPatch(message)) {
+					split++;
+				}
+				else if (globalSettingsLoader_->isDataFile(message, 0 /* TODO this is ignored */)) {
+					master++;
+				}
+				break;
+			case midikraft::StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
+				if (isEditBufferDump(message)) {
+					editbuffer++;
+				}
+				break;
+			default:
+				break;
+			}
 		}
-		return found == numberOfPatches();
+		switch (streamType)
+		{
+		case midikraft::StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:			
+			return editbuffer > 0;
+		case midikraft::StreamLoadCapability::StreamType::BANK_DUMP:
+			// The documentation found in the Internet on the split patches is wrong. It states the Matrix 1000 sends 50, but in reality it sends 0x50 = 80. That is a strange number.
+			return found == numberOfPatches() && split == 0x50 && master > 0;
+		default:
+			return true;
+		}
 	}
 
-	TPatchVector Matrix1000::patchesFromSysexBank(const MidiMessage& message) const
+	bool Matrix1000::shouldStreamAdvance(std::vector<MidiMessage> const &messages, StreamType streamType) const
 	{
-		ignoreUnused(message);
-		// Coming here would be a logic error - the Matrix has a patch dump request, but the synth will reply with lots of individual patch dumps
-		throw std::logic_error("The method or operation is not implemented.");
+		ignoreUnused(messages, streamType);
+		// The Matrix 1000 does not need encouragement to send the next stream element, so we can safely return false here
+		return false;
+	}
+
+	bool Matrix1000::isSplitPatch(MidiMessage const &message) const {
+		// The Matrix 1000 does not support split patches, but for the sake of compatibility with the Matrix 6 it will send out 50 split patches as answer to the request dump, 
+		// which shall be ignored...
+		// Format: F0H 10H 06H 02H <number> <36 bytes of data> <checksum> F7H.
+		return isOwnSysex(message) && message.getSysExDataSize() >2 && message.getSysExData()[2] == 0x02;
 	}
 
 	juce::MidiMessage Matrix1000::saveEditBufferToProgram(int programNumber)
