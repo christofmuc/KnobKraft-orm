@@ -29,12 +29,12 @@ namespace knobkraft {
 	{
 		try {
 			int c = me_->channel().toZeroBasedInt();
-			py::object result = me_->callMethod("createProgramDumpRequest", c, patchNo);
+			py::object result = me_->callMethod(kCreateProgramDumpRequest, c, patchNo);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling createProgramDumpRequest: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateProgramDumpRequest % ex.what()).str());
 			return {};
 		}
 	}
@@ -43,11 +43,11 @@ namespace knobkraft {
 	{
 		try {
 			auto vector = me_->messageToVector(message);
-			py::object result = me_->callMethod("isSingleProgramDump", vector);
+			py::object result = me_->callMethod(kIsSingleProgramDump, vector);
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling isSingleProgramDump: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsSingleProgramDump % ex.what()).str());
 			return false;
 		}
 	}
@@ -57,11 +57,11 @@ namespace knobkraft {
 		if (me_->pythonModuleHasFunction("numberFromDump")) {
 			try {
 				auto vector = me_->messageToVector(message);
-				py::object result = me_->callMethod("numberFromDump", vector);
+				py::object result = me_->callMethod(kNumberFromDump, vector);
 				return MidiProgramNumber::fromZeroBase(result.cast<int>());
 			}
 			catch (std::exception &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling numberFromDump: %s") % ex.what()).str());
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberFromDump % ex.what()).str());
 			}
 		}
 		return MidiProgramNumber::fromZeroBase(0);
@@ -74,12 +74,12 @@ namespace knobkraft {
 			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
 			int programNo = programNumber.toZeroBased();
-			py::object result = me_->callMethod("convertToProgramDump", c, data, programNo);
+			py::object result = me_->callMethod(kConvertToProgramDump, c, data, programNo);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToProgramDump: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kConvertToProgramDump % ex.what()).str());
 			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
 			return { MidiMessage(patch->data().data(), (int)patch->data().size()) };
 		}

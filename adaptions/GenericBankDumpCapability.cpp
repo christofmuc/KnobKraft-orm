@@ -22,12 +22,12 @@ namespace knobkraft {
 		try {
 			int c = me_->channel().toZeroBasedInt();
 			int bank = bankNo.toZeroBased();
-			py::object result = me_->callMethod("createBankDumpRequest", c, bank);
+			py::object result = me_->callMethod(kCreateBankDumpRequest, c, bank);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling createBankDumpRequest: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateBankDumpRequest % ex.what()).str());
 			return {};
 		}
 	}
@@ -36,11 +36,11 @@ namespace knobkraft {
 	{
 		try {
 			auto vector = me_->messageToVector(message);
-			py::object result = me_->callMethod("isPartOfBankDump", vector);
+			py::object result = me_->callMethod(kIsPartOfBankDump, vector);
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling isPartOfBankDump: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsPartOfBankDump % ex.what()).str());
 			return false;
 		}
 	}
@@ -52,11 +52,11 @@ namespace knobkraft {
 			for (auto message : bankDump) {
 				vector.push_back(me_->messageToVector(message));
 			}
-			py::object result = me_->callMethod("isBankDumpFinished", vector);
+			py::object result = me_->callMethod(kIsBankDumpFinished, vector);
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling isBankDumpFinished: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsBankDumpFinished % ex.what()).str());
 			return false;
 		}
 	}
@@ -65,11 +65,11 @@ namespace knobkraft {
 	{
 		try {
 			std::vector<int> vector = me_->messageToVector(message);
-			py::object result = me_->callMethod("extractPatchesFromBank", vector);
+			py::object result = me_->callMethod(kExtractPatchesFromBank, vector);
 			return {};
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling extractPatchesFromBank: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kExtractPatchesFromBank % ex.what()).str());
 			return {};
 		}
 	}

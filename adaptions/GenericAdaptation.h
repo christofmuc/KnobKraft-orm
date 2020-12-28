@@ -25,6 +25,14 @@ namespace knobkraft {
 	class GenericBankDumpCapability;
 	void checkForPythonOutputAndLog();
 
+	extern const char *kIsEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
+		*kNameFromDump, *kRenamePatch,
+		*kIsSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
+		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
+
+	extern std::vector<const char *> kAdapatationPythonFunctionNames;
+
+
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
@@ -61,6 +69,7 @@ namespace knobkraft {
 		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer) override;
 
 		// Internal workings of the Generic Adaptation module
+		bool pythonModuleHasFunction(std::string const &functionName) const;
 
 		// Call this once before using any other function
 		static void startupGenericAdaptation();
@@ -95,8 +104,6 @@ namespace knobkraft {
 
 		friend class GenericBankDumpCapability;
 		std::shared_ptr<GenericBankDumpCapability> bankDumpCapabilityImpl_;
-
-		bool pythonModuleHasFunction(std::string const &functionName) const;
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

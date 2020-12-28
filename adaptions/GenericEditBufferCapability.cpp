@@ -26,12 +26,12 @@ namespace knobkraft {
 	{
 		try {
 			int c = me_->channel().toZeroBasedInt();
-			py::object result = me_->callMethod("createEditBufferRequest", c);
+			py::object result = me_->callMethod(kCreateEditBufferRequest, c);
 			// These should be only one midi message...
 			return { GenericAdaptation::vectorToMessage(result.cast<std::vector<int>>()) };
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling createEditBufferRequest: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateEditBufferRequest % ex.what()).str());
 			ex.restore();
 			return {};
 		}
@@ -41,11 +41,11 @@ namespace knobkraft {
 	{
 		try {
 			auto vectorForm = me_->messageToVector(message);
-			py::object result = me_->callMethod("isEditBufferDump", vectorForm);
+			py::object result = me_->callMethod(kIsEditBufferDump, vectorForm);
 			return result.cast<bool>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling isEditBufferDump: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsEditBufferDump % ex.what()).str());
 			ex.restore();
 			return false;
 		}
@@ -63,12 +63,12 @@ namespace knobkraft {
 		try {
 			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
-			py::object result = me_->callMethod("convertToEditBuffer", c, data);
+			py::object result = me_->callMethod(kConvertToEditBuffer, c, data);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling convertToEditBuffer: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kConvertToEditBuffer % ex.what()).str());
 			return {};
 		}
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)

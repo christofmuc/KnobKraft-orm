@@ -31,6 +31,59 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
+	const char *pythonMethodNames;
+	
+	const char 
+		*kName = "name",
+		*kNumberOfBanks = "numberOfBanks",
+		*kNumberOfPatchesPerBank = "numberOfPatchesPerBank",
+		*kCreateDeviceDetectMessage = "createDeviceDetectMessage",
+		*kChannelIfValidDeviceResponse = "channelIfValidDeviceResponse",
+		*kNeedsChannelSpecificDetection = "needsChannelSpecificDetection",
+		*kDeviceDetectWaitMilliseconds = "deviceDetectWaitMilliseconds",
+		*kNameFromDump = "nameFromDump",
+		*kRenamePatch = "renamePatch",
+		*kIsEditBufferDump = "isEditBufferDump",
+		*kCreateEditBufferRequest = "createEditBufferRequest",
+		*kConvertToEditBuffer = "convertToEditBuffer",
+		*kIsSingleProgramDump = "isSingleProgramDump",
+		*kCreateProgramDumpRequest = "createProgramDumpRequest",
+		*kConvertToProgramDump = "convertToProgramDump",
+		*kNumberFromDump = "numberFromDump",
+		*kCreateBankDumpRequest = "createBankDumpRequest",
+		*kIsPartOfBankDump = "isPartOfBankDump",
+		*kIsBankDumpFinished = "isBankDumpFinished",
+		*kExtractPatchesFromBank = "extractPatchesFromBank",
+		*kGeneralMessageDelay = "generalMessageDelay",
+		*kCalculateFingerprint = "calculateFingerprint",
+		*kFriendlyBankName = "friendlyBankName";
+
+	std::vector<const char *> kAdapatationPythonFunctionNames = {
+		kName,
+		kNumberOfBanks,
+		kNumberOfPatchesPerBank,
+		kCreateDeviceDetectMessage,
+		kChannelIfValidDeviceResponse,
+		kNeedsChannelSpecificDetection,
+		kDeviceDetectWaitMilliseconds,
+		kNameFromDump,
+		kRenamePatch,
+		kIsEditBufferDump,
+		kCreateEditBufferRequest,
+		kConvertToEditBuffer,
+		kIsSingleProgramDump,
+		kCreateProgramDumpRequest,
+		kConvertToProgramDump,
+		kNumberFromDump,
+		kCreateBankDumpRequest,
+		kIsPartOfBankDump,
+		kIsBankDumpFinished,
+		kExtractPatchesFromBank,
+		kGeneralMessageDelay,
+		kCalculateFingerprint,
+		kFriendlyBankName,
+	};
+
 	const char *kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;
@@ -225,11 +278,11 @@ namespace knobkraft {
 	int GenericAdaptation::numberOfBanks() const
 	{
 		try {
-			py::object result = callMethod("numberOfBanks");
+			py::object result = callMethod(kNumberOfBanks);
 			return result.cast<int>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling numberOfBanks: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfBanks % ex.what()).str());
 			ex.restore();
 			return 1;
 		}
@@ -238,11 +291,11 @@ namespace knobkraft {
 	int GenericAdaptation::numberOfPatches() const
 	{
 		try {
-			py::object result = callMethod("numberOfPatchesPerBank");
+			py::object result = callMethod(kNumberOfPatchesPerBank);
 			return result.cast<int>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling numberOfPatchesPerBank: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfPatchesPerBank % ex.what()).str());
 			ex.restore();
 			return 0;
 		}
@@ -250,16 +303,16 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::friendlyBankName(MidiBankNumber bankNo) const
 	{
-		if (!pythonModuleHasFunction("friendlyBankName")) {
+		if (!pythonModuleHasFunction(kFriendlyBankName)) {
 			return (boost::format("Bank %d") % bankNo.toOneBased()).str();
 		}
 		try {
 			int bankAsInt = bankNo.toZeroBased();
-			py::object result = callMethod("friendlyBankName", bankAsInt);
+			py::object result = callMethod(kFriendlyBankName, bankAsInt);
 			return result.cast<std::string>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling friendlyBankName: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyBankName % ex.what()).str());
 			ex.restore();
 			return "invalid name";
 		}
@@ -282,15 +335,15 @@ namespace knobkraft {
 
 	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
 	{
-		if (pythonModuleHasFunction("generalMessageDelay")) {
+		if (pythonModuleHasFunction(kGeneralMessageDelay)) {
 			try {
-				auto result = callMethod("generalMessageDelay");
+				auto result = callMethod(kGeneralMessageDelay);
 				int delay = py::cast<int>(result);
 				// Be a bit careful with this device, do specify a delay when sending messages
 				midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesThrottled(buffer, delay);
 			}
 			catch (py::error_already_set &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling friendlyBankName: %s") % ex.what()).str());
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kGeneralMessageDelay % ex.what()).str());
 				ex.restore();
 			}
 		}
@@ -303,12 +356,12 @@ namespace knobkraft {
 	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)
 	{
 		try {
-			py::object result = callMethod("createDeviceDetectMessage", channel);
+			py::object result = callMethod(kCreateDeviceDetectMessage, channel);
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling createDeviceDetectMessage: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateDeviceDetectMessage % ex.what()).str());
 			ex.restore();
 			return {};
 		}
@@ -316,17 +369,17 @@ namespace knobkraft {
 
 	int GenericAdaptation::deviceDetectSleepMS()
 	{
-		if (!pythonModuleHasFunction("deviceDetectWaitMilliseconds")) {
+		if (!pythonModuleHasFunction(kDeviceDetectWaitMilliseconds)) {
 			return 200;
 		}
 		try
 		{
-			py::object result = callMethod("deviceDetectWaitMilliseconds");
+			py::object result = callMethod(kDeviceDetectWaitMilliseconds);
 			return result.cast<int>();
 
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling deviceDetectSleepMS: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kDeviceDetectWaitMilliseconds % ex.what()).str());
 			ex.restore();
 			return 200;
 		}
@@ -336,7 +389,7 @@ namespace knobkraft {
 	{
 		try {
 			auto vector = messageToVector(message);
-			py::object result = callMethod("channelIfValidDeviceResponse", vector);
+			py::object result = callMethod(kChannelIfValidDeviceResponse, vector);
 			int intResult = result.cast<int>();
 			if (intResult >= 0 && intResult < 16) {
 				return MidiChannel::fromZeroBase(intResult);
@@ -346,20 +399,23 @@ namespace knobkraft {
 			}
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling channelIfValidDeviceResponse: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kChannelIfValidDeviceResponse % ex.what()).str());
 			return MidiChannel::invalidChannel();
 		}
 	}
 
 	bool GenericAdaptation::needsChannelSpecificDetection()
 	{
+		if (!pythonModuleHasFunction(kNeedsChannelSpecificDetection)) {
+			return true;
+		}
 		try
 		{
-			py::object result = callMethod("needsChannelSpecificDetection");
+			py::object result = callMethod(kNeedsChannelSpecificDetection);
 			return result.cast<bool>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling needsChannelSpecificDetection: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNeedsChannelSpecificDetection % ex.what()).str());
 			return true;
 		}
 	}
@@ -367,11 +423,11 @@ namespace knobkraft {
 	std::string GenericAdaptation::getName() const
 	{
 		try {
-			py::object result = callMethod("name");
+			py::object result = callMethod(kName);
 			return result.cast<std::string>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling getName: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kName % ex.what()).str());
 			return "Invalid";
 		}
 	}
@@ -379,17 +435,17 @@ namespace knobkraft {
 	std::string GenericAdaptation::calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const
 	{
 		// This is an optional function to allow ignoring bytes that do not define the identity of the patch
-		if (!pythonModuleHasFunction("calculateFingerprint")) {
+		if (!pythonModuleHasFunction(kCalculateFingerprint)) {
 			return Synth::calculateFingerprint(patch);
 		}
 
 		try {
 			std::vector<int> data(patch->data().data(), patch->data().data() + patch->data().size());
-			py::object result = callMethod("calculateFingerprint", data);
+			py::object result = callMethod(kCalculateFingerprint, data);
 			return result.cast<std::string>();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling calculateFingerprint: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCalculateFingerprint % ex.what()).str());
 			return {};
 		}
 	}
@@ -419,9 +475,9 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability) const
 	{
-		if (pythonModuleHasFunction("isEditBufferDump")
-			&& pythonModuleHasFunction("createEditBufferRequest")
-			&& pythonModuleHasFunction("convertToEditBuffer")) {
+		if (pythonModuleHasFunction(kIsEditBufferDump)
+			&& pythonModuleHasFunction(kCreateEditBufferRequest)
+			&& pythonModuleHasFunction(kConvertToEditBuffer)) {
 			*outCapability = dynamic_cast<midikraft::EditBufferCapability *>(editBufferCapabilityImpl_.get());
 			return true;
 		}
@@ -440,10 +496,9 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability  **outCapability) const
 	{
-		if (pythonModuleHasFunction("isSingleProgramDump")
-			&& pythonModuleHasFunction("createProgramDumpRequest")
-			//&& pythonModuleHasFunction("numberFromDump") // numberFromDump is optional
-			&& pythonModuleHasFunction("convertToProgramDump")) {
+		if (pythonModuleHasFunction(kIsSingleProgramDump)
+			&& pythonModuleHasFunction(kCreateProgramDumpRequest)
+			&& pythonModuleHasFunction(kConvertToProgramDump)) {
 			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability *>(programDumpCapabilityImpl_.get());
 			return true;
 		}
@@ -462,9 +517,10 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability  **outCapability) const
 	{
-		if (pythonModuleHasFunction("isPartOfBankDump")
-			&& pythonModuleHasFunction("createBankDumpRequest")
-			&& pythonModuleHasFunction("convertToProgramDump")) {
+		if (pythonModuleHasFunction(kCreateBankDumpRequest)
+			&& pythonModuleHasFunction(kExtractPatchesFromBank)
+			&& pythonModuleHasFunction(kIsPartOfBankDump)
+			&& pythonModuleHasFunction(kIsBankDumpFinished)) {
 			*outCapability = dynamic_cast<midikraft::BankDumpCapability *>(bankDumpCapabilityImpl_.get());
 			return true;
 		}
