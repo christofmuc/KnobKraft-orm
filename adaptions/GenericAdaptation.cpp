@@ -109,6 +109,9 @@ namespace knobkraft {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
 			ex.restore();
 		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
+		}
 	}
 
 	GenericAdaptation::GenericAdaptation(pybind11::module adaptationModule)
@@ -140,6 +143,9 @@ namespace knobkraft {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % moduleName % ex.what()).str());
 			ex.restore();
 		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % moduleName % ex.what()).str());
+		}
 		return nullptr;
 	}
 
@@ -154,6 +160,9 @@ namespace knobkraft {
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure inspecting python module: %s") % ex.what()).str());
 			ex.restore();
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure inspecting python module: %s") % ex.what()).str());
 		}
 	}
 
@@ -286,6 +295,10 @@ namespace knobkraft {
 			ex.restore();
 			return 1;
 		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfBanks % ex.what()).str());
+			return 1;
+		}
 	}
 
 	int GenericAdaptation::numberOfPatches() const
@@ -297,6 +310,10 @@ namespace knobkraft {
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfPatchesPerBank % ex.what()).str());
 			ex.restore();
+			return 0;
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfPatchesPerBank % ex.what()).str());
 			return 0;
 		}
 	}
@@ -314,6 +331,10 @@ namespace knobkraft {
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyBankName % ex.what()).str());
 			ex.restore();
+			return "invalid name";
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyBankName % ex.what()).str());
 			return "invalid name";
 		}
 	}
@@ -346,6 +367,9 @@ namespace knobkraft {
 				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kGeneralMessageDelay % ex.what()).str());
 				ex.restore();
 			}
+			catch (std::exception &ex) {
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kGeneralMessageDelay % ex.what()).str());
+			}
 		}
 		else {
 			// No special behavior - just send at full speed
@@ -365,6 +389,10 @@ namespace knobkraft {
 			ex.restore();
 			return {};
 		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateDeviceDetectMessage % ex.what()).str());
+			return {};
+		}
 	}
 
 	int GenericAdaptation::deviceDetectSleepMS()
@@ -381,6 +409,10 @@ namespace knobkraft {
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kDeviceDetectWaitMilliseconds % ex.what()).str());
 			ex.restore();
+			return 200;
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kDeviceDetectWaitMilliseconds % ex.what()).str());
 			return 200;
 		}
 	}

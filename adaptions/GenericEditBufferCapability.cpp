@@ -35,6 +35,10 @@ namespace knobkraft {
 			ex.restore();
 			return {};
 		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateEditBufferRequest % ex.what()).str());
+			return {};
+		}
 	}
 
 	bool GenericEditBufferCapability::isEditBufferDump(const MidiMessage& message) const
@@ -47,6 +51,10 @@ namespace knobkraft {
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsEditBufferDump % ex.what()).str());
 			ex.restore();
+			return false;
+		}
+		catch (std::exception &ex) {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsEditBufferDump % ex.what()).str());
 			return false;
 		}
 	}
