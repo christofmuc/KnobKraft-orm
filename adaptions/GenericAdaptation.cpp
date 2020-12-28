@@ -112,24 +112,24 @@ namespace knobkraft {
 		}
 
 #ifdef __APPLE__
-		// The Apple might not have a Python 3.7 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
-		// First, check the location where the Python 3.7 Mac installer will put it (taken from python.org/downloads)
-		String python37_macHome = "/Library/Frameworks/Python.framework/Versions/3.7";
-		File python37(python37_macHome);
-		if (!python37.exists()) {
+		// The Apple might not have a Python 3.8 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
+		// First, check the location where the Python 3.8 Mac installer will put it (taken from python.org/downloads)
+		String python37_macHome = "/Library/Frameworks/Python.framework/Versions/3.8";
+		File python38(python38_macHome);
+		if (!python38.exists()) {
 			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
-			python37_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.7";
-			File python37_alternative(python37_macHome);
-			if (!python37_alternative.exists()) {
-				// No Python3.7 found, don't set path
+			python38_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.8";
+			File python38_alternative(python38_macHome);
+			if (!python38_alternative.exists()) {
+				// No Python3.8 found, don't set path
 				return;
 			}
 			else {
-				Py_SetPythonHome(const_cast<wchar_t*>(python37_macHome.toWideCharPointer()));
+				Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
 			}
 		}
 		else {
-			Py_SetPythonHome(const_cast<wchar_t*>(python37_macHome.toWideCharPointer()));
+			Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
 		}
 #endif
 		sGenericAdaptationPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
@@ -191,10 +191,9 @@ namespace knobkraft {
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
 		if (!hasPython()) {
 #ifdef __APPLE__
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install from https://www.python.org/ftp/python/3.7.9/python-3.7.9-macosx10.9.pkg. Turning off all adaptations.");
-			//SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install using 'brew install python3'. Turning off all adaptations.");
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.8 installation. Please install using 'brew install python3' or from https://www.python.org/ftp/python/. Turning off all adaptations.");
 #else
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.7 installation. Please install from https://www.python.org/downloads/release/python-378/. Turning off all adaptations.");
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.8 installation. Please install from https://www.python.org/downloads/release/python-387/. Turning off all adaptations.");
 #endif
 			return result;
 		}
