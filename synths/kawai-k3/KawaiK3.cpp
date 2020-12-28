@@ -258,7 +258,7 @@ namespace midikraft {
 	std::shared_ptr<DataFile> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
 		if (isSingleProgramDump(message)) {
-			return k3PatchFromSysex(message, getProgramNumber(message));
+			return k3PatchFromSysex(message, 0);
 		}
 		return {};
 	}
@@ -268,13 +268,13 @@ namespace midikraft {
 		return { k3PatchToSysex(patch->data(), programNumber.toZeroBased(), false) };
 	}
 
-	std::shared_ptr<Patch> KawaiK3::k3PatchFromSysex(const MidiMessage& message, MidiProgramNumber programIndex) const {
+	std::shared_ptr<Patch> KawaiK3::k3PatchFromSysex(const MidiMessage& message, int indexIntoBankDump /* = 0 */) const {
 		// Parse the sysex and build a patch class that allows access to the individual params in that patch
 		if (isSingleProgramDump(message) || isBankDumpAndNotWaveDump(message)) {
 			// Build the patch data ("tone data") from the nibbles
 			std::vector<uint8> data;
 			auto rawData = message.getSysExData();
-			int readIndex = 6 + programIndex.toZeroBased() * 35 * 2;
+			int readIndex = 6 + indexIntoBankDump * 35 * 2;
 			int readBytes = 0;
 			while (readIndex < message.getSysExDataSize() - 1 && readBytes < 35) {
 				uint8 highNibble = rawData[readIndex];
@@ -296,7 +296,12 @@ namespace midikraft {
 				if (data[34] == (sum & 0xff)) {
 					// CRC check successful
 					jassert(toneData.size() == 34);
-					return std::make_shared<KawaiK3Patch>(programIndex, toneData);
+					if (isSingleProgramDump(message)) {
+						return std::make_shared<KawaiK3Patch>(getProgramNumber(message), toneData);
+					}
+					else {
+						return std::make_shared<KawaiK3Patch>(MidiProgramNumber::fromZeroBase(indexIntoBankDump), toneData);
+					}
 				}
 				else {
 					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 patch. Expected %02X but got %02X") % data[34] % (sum & 0xff)).str());
@@ -319,7 +324,7 @@ namespace midikraft {
 			// A bank has 50 programs...
 			for (int i = 0; i < 50; i++) {
 				// This is not really efficient, but for now I'd be good with this
-				result.push_back(k3PatchFromSysex(message, MidiProgramNumber::fromZeroBase(i)));
+				result.push_back(k3PatchFromSysex(message,i));
 			}
 		}
 		else {
