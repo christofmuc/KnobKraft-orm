@@ -27,6 +27,7 @@ IF(CRASH_REPORTING)
 ENDIF()
 
 set(SOURCES
+	AdaptationView.cpp AdaptationView.h
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
 	AutoThumbnailingDialog.cpp AutoThumbnailingDialog.h

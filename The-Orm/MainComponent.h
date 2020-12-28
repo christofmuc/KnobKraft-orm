@@ -29,6 +29,7 @@
 #include "SetupView.h"
 #include "RecordingView.h"
 #include "BCR2000_Component.h"
+#include "AdaptationView.h"
 
 class LogViewLogger;
 
@@ -89,6 +90,7 @@ private:
 	StretchableLayoutManager stretchableManager_;
 	StretchableLayoutResizerBar resizerBar_;
 	MidiLogView midiLogView_;
+	knobkraft::AdaptationView adaptationView_;
 	InsetBox midiLogArea_;
 	std::unique_ptr<SettingsView> settingsView_;
 	std::unique_ptr<SetupView> setupView_;
