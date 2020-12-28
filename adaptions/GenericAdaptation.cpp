@@ -443,7 +443,7 @@ namespace knobkraft {
 	{
 		if (pythonModuleHasFunction("isSingleProgramDump")
 			&& pythonModuleHasFunction("createProgramDumpRequest")
-			&& pythonModuleHasFunction("numberFromDump")
+			//&& pythonModuleHasFunction("numberFromDump") // numberFromDump is optional
 			&& pythonModuleHasFunction("convertToProgramDump")) {
 			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability *>(programDumpCapabilityImpl_.get());
 			return true;
