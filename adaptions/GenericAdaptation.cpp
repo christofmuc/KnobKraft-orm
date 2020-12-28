@@ -167,7 +167,7 @@ namespace knobkraft {
 #ifdef __APPLE__
 		// The Apple might not have a Python 3.8 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
 		// First, check the location where the Python 3.8 Mac installer will put it (taken from python.org/downloads)
-		String python37_macHome = "/Library/Frameworks/Python.framework/Versions/3.8";
+		String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.8";
 		File python38(python38_macHome);
 		if (!python38.exists()) {
 			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
