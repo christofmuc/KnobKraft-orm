@@ -15,6 +15,8 @@
 
 #include "ColourHelpers.h"
 
+#include <boost/format.hpp>
+
 //#include "SessionDatabase.h"
 
 CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(midikraft::PatchHolder&)> favoriteHandler,
@@ -69,7 +71,8 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 		name_.setButtonText(patch.name());
 		refreshNameButtonColour();
 		if (patch.sourceInfo()) {
-			import_.setText(patch.sourceInfo()->toDisplayString(patch.synth(), false), dontSendNotification);
+			String position = (boost::format(" at %d") % patch.patchNumber().toZeroBased()).str();
+			import_.setText(String(patch.sourceInfo()->toDisplayString(patch.synth(), false)) + position, dontSendNotification);
 		}
 		else {
 			import_.setText("No import information", dontSendNotification);
