@@ -136,8 +136,8 @@ namespace midikraft {
 		// When we request a bank dump from the K3, we always also request the user wave, because if one of the patches
 		// references the wave, we need to know which wave?
 		return {
-			requestWaveBufferDump(bankNo.toZeroBased() == 0 ? WaveType::USER_WAVE : WaveType::USER_WAVE_CARTRIDGE),
-			buildSysexFunctionMessage(ALL_BLOCK_DATA_REQUEST, (uint8)bankNo.toZeroBased())
+			buildSysexFunctionMessage(ALL_BLOCK_DATA_REQUEST, (uint8)bankNo.toZeroBased()),
+			requestWaveBufferDump(bankNo.toZeroBased() == 0 ? WaveType::USER_WAVE : WaveType::USER_WAVE_CARTRIDGE)
 		};
 	}
 
