@@ -8,6 +8,7 @@ import hashlib
 prophet12_ID = 0b00101010  # See Page 82 of the prophet 12 manual
 name_len = 17  # Strangely, the Prophet12 has 17 characters for a patch name. Is this right?
 
+
 def name():
     return "DSI Prophet 12"
 

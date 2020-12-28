@@ -114,23 +114,16 @@ def numberOfPatchesPerBank():
     return 16
 
 
-def createProgramDumpRequest(channel, patchNo):
-    return [0xc0 | (channel & 0x0f), (patchNo & 0x7f)] +  createEditBufferRequest(channel)
-
-
-def isSingleProgramDump(message):
-    return isEditBufferDump(message)
-
-
 def nameFromDump(message):
-    if isSingleProgramDump(message) or isEditBufferDump(message):
+    if isEditBufferDump(message):
         # We need to first convert from 7 bit data to 8 bit data, before we can extract the program name
         patchData = unescapeSysex(message[5:-1])
         return ''.join([chr(x) for x in patchData[0:12]])
+    return "Invalid"
 
 
 def convertToEditBuffer(channel, message):
-    if isSingleProgramDump(message) or isEditBufferDump(message):
+    if isEditBufferDump(message):
         # The data structures are the same, only byte 2 seems to contain the device ID (or channel), and
         # byte 4 should be 0x40, current program data dump
         return message[0:2] + [0x030 | (channel & 0x0f), 0x58, 0x40] + message[5:]
@@ -211,34 +204,6 @@ def escapeSysex(data):
 # The following functions are not called by the KnobKraft Orm (yet), but I use them to convert ALL DATA DUMPS file from
 # the Internet into individual edit buffer dumps
 #
-def isAllDataDump(message):
-    return (len(message) > 4
-            and message[0] == 0xf0
-            and message[1] == 0x42  # Korg
-            and (message[2] & 0xf0) == 0x30
-            and message[3] == 0x58  # MS2000
-            and message[4] == 0x50)  # All Data dump
-
-
-def loadSysex(channel, message):
-    if isEditBufferDump(message) or isSingleProgramDump(message):
-        return message
-    if isAllDataDump(message):
-        data = unescapeSysex(message[5:-1])
-        # There are different files out there with different number of patches (64 or 128), plus the global data
-        data_pointer = 0
-        result = []
-        while data_pointer + 254 < len(data):
-            # Read one more patch
-            next_patch = data[data_pointer:data_pointer + 254]
-            next_program_dump = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x4c] + escapeSysex(next_patch) + [0xf7]
-            print("Found patch " + nameFromDump(next_program_dump))
-            result = result + next_program_dump
-            data_pointer = data_pointer + 254
-        return result
-    raise Exception("This code can only read a single message of type 'ALL DATA DUMP'")
-
-
 def testEscaping():
     testData = [x for x in range(254)]
     escaped = escapeSysex(testData)

@@ -95,6 +95,16 @@ def convertToEditBuffer(channel, message):
     raise Exception("Neither edit buffer nor program dump - can't be converted")
 
 
+def convertToProgramDump(channel, message, program_number):
+    bank = program_number // numberOfPatchesPerBank()
+    program = program_number % numberOfPatchesPerBank()
+    if isEditBufferDump(message):
+        return message[0:3] + [0b00000010] + [bank, program] + message[4:]
+    elif isSingleProgramDump(message):
+        return message[0:3] + [0b00000010] + [bank, program] + message[6:]
+    raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
 def unescapeSysex(sysex):
     result = []
     dataIndex = 0

@@ -119,6 +119,16 @@ def convertToEditBuffer(channel, message):
     raise Exception("Data is neither edit buffer nor single program buffer from Toraiz AS-1")
 
 
+def convertToProgramDump(channel, message, program_number):
+    bank = program_number // numberOfPatchesPerBank()
+    program = program_number % numberOfPatchesPerBank()
+    if isEditBufferDump(message):
+        return message[0:9] + [0b00000010] + [bank, program] + message[10:]
+    elif isSingleProgramDump(message):
+        return message[0:10] + [bank, program] + message[12:]
+    raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
 def unescapeSysex(sysex):
     result = []
     dataIndex = 0

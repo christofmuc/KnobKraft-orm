@@ -56,17 +56,8 @@ def numberOfPatchesPerBank():
     return 1
 
 
-def createProgramDumpRequest(channel, patchNo):
-    # The JX-8P has no Program Buffer Request, but sending this will make the Orm wait for a reply
-    return [0xf0, 0xf7]
-
-
-def isSingleProgramDump(message):
-    return isEditBufferDump(message)
-
-
 def nameFromDump(message):
-    if isSingleProgramDump(message):
+    if isEditBufferDump(message):
         return ''.join([chr(x) for x in message[7:17]])
 
 

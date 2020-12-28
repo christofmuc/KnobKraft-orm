@@ -55,17 +55,6 @@ def numberOfPatchesPerBank():
     return 64
 
 
-def createProgramDumpRequest(channel, patchNo):
-    program = patchNo % numberOfPatchesPerBank()
-    # This is done by creating a program change request and then an edit buffer request
-    return [0b11000000 | channel, program] + createEditBufferRequest(channel)
-
-
-def isSingleProgramDump(message):
-    # The DW-6000 does not differentiate - you need to send program change messages in between to get other programs
-    return isEditBufferDump(message)
-
-
 def nameFromDump(message):
     # The DW-6000 has no patch name memory, so all patches get the same name for a start
     return "DW-6000"

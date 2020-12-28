@@ -91,6 +91,12 @@ def convertToEditBuffer(channel, message):
     raise Exception("This is not a program dump, can't be converted")
 
 
+def convertToProgramDump(channel, message, program_number):
+    if isSingleProgramDump(message):
+        return createQuickEditModeMessage() + message[0:4] + [program_number] + message[5:]
+    raise Exception("This is not a program dump, can't be converted")
+
+
 def denibble(message, start_index):
     denibbled_data_content = [message[x] | (message[x + 1] << 4) for x in range(start_index, len(message) - 2, 2)]
     expected_checksum = message[-2]

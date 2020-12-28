@@ -94,6 +94,18 @@ def convertToEditBuffer(channel, message):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
+def convertToProgramDump(channel, message, program_number):
+    bank = program_number // numberOfPatchesPerBank()
+    program = program_number % numberOfPatchesPerBank()
+    if isEditBufferDump(message):
+        # Need to construct a new program dump from an edit buffer dump. Keep the protocol version intact
+        return message[0:5] + [channel, 0x04, message[7], bank, program] + message[8:]
+    if isSingleProgramDump(message):
+        # Need to construct a new program dump from a single program dump. Keep the protocol version intact
+        return message[0:5] + [channel, 0x04, message[7], bank, program] + message[10:]
+    raise Exception("Neither edit buffer nor program dump can't be converted")
+
+
 def unescapeSysex(sysex):
     # This implements the algorithm defined on page 141 of the Deepmind user manual. I think it is the same as DSI uses
     result = []

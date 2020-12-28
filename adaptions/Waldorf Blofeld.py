@@ -101,3 +101,10 @@ def convertToEditBuffer(channel, message):
         return message[:3] + [channel, 0x10, 0x7f, 0x00] + message[7:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
 
+
+def convertToProgramDump(channel, message, program_number):
+    bank = program_number // numberOfPatchesPerBank()
+    program = program_number % numberOfPatchesPerBank()
+    if isEditBufferDump(message) or isSingleProgramDump(message):
+        return message[:3] + [channel, 0x10, bank, program] + message[7:]
+    raise Exception("Neither edit buffer nor program dump - can't be converted")
