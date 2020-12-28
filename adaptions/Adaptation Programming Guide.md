@@ -161,6 +161,18 @@ With these four functions implemented, go ahead and test if the device detection
 
 # Capabilities
 
+When programming your Adaptation, the type of messages your device provides will also prescribe which classes of Capability or 'Device Profile' you can and should implement. Not all capability classes are to be implemented by all devices, some capabilities are a replacement for another capability in case the messages of the device function differently.
+
+In C++, there are many more capabilities exposed, but for the Adaptations currently three different capabilities can be implemented in addition to the required functions described above and the pure optional functions described in the last section of this document.
+
+The three capabilities are:
+
+  1. The **Edit Buffer Capability** - this is probably the most common and intuitive capability, and most MIDI devices have the concept of an edit buffer. A transient storage of the patch that is currentl being edited by the player. Normally, a request method to retrieve the edit buffer as well as a send to edit buffer message exist. Sometimes, the request for an edit buffer is replied to with a program dump, sometimes there is a specific edit buffer dump message.
+  2. The **Program Dump Capability** - this can be implemented in addition to or instead of the Edit Buffer Capability. The Program Dump capability allows to address to memory places of the synth directly via bank number/program number. Normally, there is a message to request a specific program from a specific memory position, and a message to send a patch into a specific program position. Of course, all variations and asymmetries possible exist in the MIDI world as well. In case your device has only Program Dump Capability and not Edit Buffer Capability, it is common practice to implement the Edit Buffer Capability with the help of the Program Dump Capability, but to use a fixed memory position as "edit buffer". Note that this might or might not reflect the last changes the player made to the patch. E.g. at the Kawai K3 there is no way to retrieve the transient buffer the user is currently modifying.
+  3. The **Bank Dump Capability** - some synths allow to request a full bank of patches with just a single request command. The reply could then be either a single bank dump message (Kawai K3), or a stream of individual program messages (Access Virus), or a stream of program messages and other stuff that you might want to ignore (Matrix 1000). In any case, implementing the bank dump capability is more involved than the capabilities above, but usually provides much better performance. If the bank dump capability is missing, the Librarian will try to iterate over the individual patches and use either program change commands and the edit buffer requests, or the individual program dump requests. For very few devices, the bank dump capability is the only way to retrieve the content of the device.
+
+The capabilities are explained in the sections in more detail.
+
 ## Edit Buffer Capability
 
 The EditBufferCapability is used to retrieve the Edit Buffer and to send a patch into the edit buffer for audition. Also, if no other capabilities are implemented and the synth reacts on program change messages, it will be used by the Librarian to retrieve, one by one, all patches from the synth.
