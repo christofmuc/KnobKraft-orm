@@ -304,7 +304,7 @@ namespace midikraft {
 					}
 				}
 				else {
-					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 patch. Expected %02X but got %02X") % data[34] % (sum & 0xff)).str());
+					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 patch. Expected %02X but got %02X") % (int) data[34] % (sum & 0xff)).str());
 				}
 			}
 			else {
@@ -365,7 +365,7 @@ namespace midikraft {
 					return std::make_shared<KawaiK3Wave>(waveData, MidiProgramNumber::fromZeroBase(waveNo));
 				}
 				else {
-					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 wave. Expected %02X but got %02X") % data[64] % (sum & 0xff)).str());
+					SimpleLogger::instance()->postMessage((boost::format("Checksum error when loading Kawai K3 wave. Expected %02X but got %02X") % (int) data[64] % (sum & 0xff)).str());
 				}
 			}
 		}
