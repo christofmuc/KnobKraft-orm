@@ -381,26 +381,26 @@ Note that in this function, you will not get a single MIDI message or list of by
 
 ### Extracting the patches from a bank dump
 
-Now, this is easily the most involved function we have to build. The mission is to read the stream of MIDI messages which we have identified to be part of the bank dump stream, and construct a new list of single edit buffer or program buffer messages, which can be stored separately in the database of the Librarian, and also sent into the synth for audition.
+Now, this is easily the most involved function we have to build. The mission is to read a MIDI message, which we have previously identified to be part of the bank dump stream, and construct a new list of single edit buffer or program buffer messages, which can be stored separately in the database of the Librarian, and also sent into the synth for audition.
 
-Here is the full example for the Korg MS2000, which has to find the bank dump message, then unescape the sysex, i.e. restore it to 8 bit instead of the 7 bit sysex format (that function can be found in the source code of the adaptation, I don't list it here), and with the extracted partial data it will construct a new edit buffer for each patch loaded, put it into a list and return that list.
+Here is the full example for the Korg MS2000, which has to unescape the sysex, i.e. restore it to 8 bit instead of the 7 bit sysex format (that function can be found in the source code of the adaptation, I don't list it here), and with the extracted partial data it will construct a new edit buffer for each patch loaded, and append it into the result list. The return value is again one list of bytes, but it will contain many MIDI messages one after each other. Each MIDI message returned is an edit buffer dump message for the Korg MS2000.
 
-    def extractPatchesFromBank(messages):
-        for message in messages:
-            if isPartOfBankDump(message):
-                channel = message[2] & 0x0f
-                data = unescapeSysex(message[5:-1])
-                data_pointer = 0
-                result = []
-                while data_pointer + 254 < len(data):
-                    # Read one more patch
-                    next_patch = data[data_pointer:data_pointer + 254]
-                    next_program_dump = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x40] + escapeSysex(next_patch) + [0xf7]
-                    result = result + next_program_dump
-                    data_pointer = data_pointer + 254
-                return result
-            raise Exception("This code can only read a single message of type 'ALL DATA DUMP'")
-        return []
+    def extractPatchesFromBank(message):
+        if isPartOfBankDump(message):
+            channel = message[2] & 0x0f
+            data = unescapeSysex(message[5:-1])
+            # There are different files out there with different number of patches (64 or 128), plus the global data
+            data_pointer = 0
+            result = []
+            while data_pointer + 254 < len(data):
+                # Read one more patch
+                next_patch = data[data_pointer:data_pointer + 254]
+                next_program_dump = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x40] + escapeSysex(next_patch) + [0xf7]
+                print("Found patch " + nameFromDump(next_program_dump))
+                result = result + next_program_dump
+                data_pointer = data_pointer + 254
+            return result
+        raise Exception("This code can only read a single message of type 'ALL DATA DUMP'")
 
 
 ### Getting the patch's name
