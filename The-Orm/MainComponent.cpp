@@ -268,7 +268,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
 	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
-	mainTabs_.addTab("Adaptation", tabColour, &adaptationView_, false);
 	mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
 	mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
@@ -616,8 +615,35 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 
 	// The active synth has been switched, check if it is an adaptation and then refresh the adaptation view
 	auto adaptation = std::dynamic_pointer_cast<knobkraft::GenericAdaptation>(UIModel::instance()->currentSynth_.smartSynth());
+	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	if (adaptation) {
 		adaptationView_.setupForAdaptation(adaptation);
+		int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
+		if (i == -1) {
+			// Need to add the tab back in
+			mainTabs_.addTab("Adaptation", tabColour, &adaptationView_, false, 2);
+		}
+		i = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+		if (i != -1) {
+			if (mainTabs_.getCurrentTabIndex() == i) {
+				mainTabs_.setCurrentTabIndex(2);
+			}
+			mainTabs_.removeTab(i);
+		}
+	}
+	else {
+		int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
+		if (i != -1) {
+			int j = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+			if (j == -1) {
+				mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
+			}
+			i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
+			if (mainTabs_.getCurrentTabIndex() == i) {
+				mainTabs_.setCurrentTabIndex(i - 1);
+			}
+			mainTabs_.removeTab(i);
+		}
 	}
 }
 
