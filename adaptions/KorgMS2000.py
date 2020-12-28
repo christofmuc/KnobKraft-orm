@@ -160,7 +160,6 @@ def isBankDumpFinished(messages):
 
 def extractPatchesFromBank(message):
     if isPartOfBankDump(message):
-        print("Starting to read MS2000 bank")
         channel = message[2] & 0x0f
         data = unescapeSysex(message[5:-1])
         # There are different files out there with different number of patches (64 or 128), plus the global data
@@ -170,8 +169,8 @@ def extractPatchesFromBank(message):
             # Read one more patch
             next_patch = data[data_pointer:data_pointer + 254]
             next_program_dump = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x40] + escapeSysex(next_patch) + [0xf7]
-            print("Found patch " + nameFromDump(next_program_dump))
-            result.append(next_program_dump)
+            #print("Found patch " + nameFromDump(next_program_dump))
+            result = result + next_program_dump
             data_pointer = data_pointer + 254
         return result
     raise Exception("This code can only read a single message of type 'ALL DATA DUMP'")

@@ -67,11 +67,12 @@ namespace knobkraft {
 			std::vector<int> vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kExtractPatchesFromBank, vector);
 			midikraft::TPatchVector patchesFound;
+			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+			auto messages = Sysex::vectorToMessages(byteData);
 			int no = 0;
-			for (auto m = result.begin(); m != result.end(); m++) {
-				auto patchVector = m->cast<std::vector<int>>();
-				auto bytes = me_->intVectorToByteVector(patchVector);
-				auto patch = me_->patchFromPatchData(bytes, MidiProgramNumber::fromZeroBase(no++));
+			for (auto programDump : messages) {
+				std::vector<uint8> data(programDump.getRawData(), programDump.getRawData() + programDump.getRawDataSize());
+				auto patch = me_->patchFromPatchData(data, MidiProgramNumber::fromZeroBase(no++)); //TODO the no is ignored
 				if (patch) {
 					patchesFound.push_back(patch);
 				}
