@@ -66,7 +66,20 @@ namespace knobkraft {
 		try {
 			std::vector<int> vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kExtractPatchesFromBank, vector);
-			return {};
+			midikraft::TPatchVector patchesFound;
+			int no = 0;
+			for (auto m = result.begin(); m != result.end(); m++) {
+				auto patchVector = m->cast<std::vector<int>>();
+				auto bytes = me_->intVectorToByteVector(patchVector);
+				auto patch = me_->patchFromPatchData(bytes, MidiProgramNumber::fromZeroBase(no++));
+				if (patch) {
+					patchesFound.push_back(patch);
+				}
+				else {
+					SimpleLogger::instance()->postMessage((boost::format("Adaptation: Could not create patch from data returned from %s") % kExtractPatchesFromBank).str());
+				}
+			}
+			return patchesFound;
 		}
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kExtractPatchesFromBank % ex.what()).str());

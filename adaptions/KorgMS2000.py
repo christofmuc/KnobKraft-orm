@@ -137,6 +137,46 @@ def convertToEditBuffer(channel, message):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
+def createBankDumpRequest(channel, bank):
+    # |     1C      | PROGRAM DATA DUMP REQUEST                  |
+    return [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x1c, 0xf7]
+
+
+def isPartOfBankDump(message):
+    return (len(message) > 4
+            and message[0] == 0xf0
+            and message[1] == 0x42  # Korg
+            and (message[2] & 0xf0) == 0x30
+            and message[3] == 0x58  # MS2000
+            and (message[4] == 0x50 or message[4] == 0x4c))  # Program Data dump or All Data dump
+
+
+def isBankDumpFinished(messages):
+    for message in messages:
+        if isPartOfBankDump(message):
+            return True
+    return False
+
+
+def extractPatchesFromBank(message):
+    if isPartOfBankDump(message):
+        print("Starting to read MS2000 bank")
+        channel = message[2] & 0x0f
+        data = unescapeSysex(message[5:-1])
+        # There are different files out there with different number of patches (64 or 128), plus the global data
+        data_pointer = 0
+        result = []
+        while data_pointer + 254 < len(data):
+            # Read one more patch
+            next_patch = data[data_pointer:data_pointer + 254]
+            next_program_dump = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x40] + escapeSysex(next_patch) + [0xf7]
+            print("Found patch " + nameFromDump(next_program_dump))
+            result.append(next_program_dump)
+            data_pointer = data_pointer + 254
+        return result
+    raise Exception("This code can only read a single message of type 'ALL DATA DUMP'")
+
+
 def unescapeSysex(sysex):
     result = []
     dataIndex = 0
