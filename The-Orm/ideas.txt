@@ -3,9 +3,6 @@ Completely unprioritised list of things to do
 
 Before next release
 
-Next release 1.10.0
-* Need to show which capabilities are implemented and which functions are implemented for each adaptation
-
 Next release 1.11.0	
 * Add PatchInterchangeFormat exprot
 * Test USB connectivity with Rev2
@@ -122,19 +119,17 @@ Archiving
 + Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
 
 Generic Module/Adaptations
-+ Would need different "flavours" aka EditBufferCapability, ProgramDumpCabability, BankDumpCapability (Virus), StreamLoadCapability (RefaceDX, Matrix1000, BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)
-  -> use annotationManger instead of dynamic cast?
-+ Could show which Flavours/Profiles are implemented for each adaptation (checkbox list)
++ Add missing capabilities: StreamLoadCapability (RefaceDX, Matrix1000, BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)  
++ Could nicer show which Flavours/Profiles are implemented for each adaptation (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Problem with K3 implementation -> it needs hand shaking on sending to edit buffer, waiting for write confirmation message before continuing
-+ Better patch names for synths that only implement EditBufferCapability and not ProgramDumpCapability, and no StoredPatchNameCapability (Korg DW-8000)
++ Better patch names for synths that only implement EditBufferCapability and not ProgramDumpCapability, and no StoredPatchNameCapability (Korg DW-8000) github #43
 + Default name mechanism
 + LegacyLoad mechanism
 + Global Settings editor
 + Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
 + Could watch files and hot reload module when changed on disk (for easier development)
 + Could add python editor with hot reload function
-+ [Bad idea: Provide "orm" python package with denibble, DSI packing etc.]. Then the code is no longer pure python, and you cannot write tests without importing a specific module. I don't think I need that.
 
 Macro page
 * Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
