@@ -5,11 +5,10 @@ Before next release
 
 Next release 1.10.0
 * Need to show which capabilities are implemented and which functions are implemented for each adaptation
-* Test USB connectivity with Rev2
 
 Next release 1.11.0	
-* Update to Python 3.8, correct error messages in GenericAdaptation
 * Add PatchInterchangeFormat exprot
+* Test USB connectivity with Rev2
 
 Release 2.0
 * Add Bank Management
@@ -35,6 +34,7 @@ BANK MANAGEMENT
 * How do I do drag and drop from the Library into the bank?
 
 UI/UX
+* Different log levels with error colors
 * Store filter per synth!
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
