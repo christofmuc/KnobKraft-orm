@@ -19,7 +19,11 @@ Technically, the C++ program uses Python in so called embedded mode, and the Pyt
 
 ## Creating a new Adaptation
 
-New adaptations are stored as a single Python file with the ending `.py` in a directory on your computer, and are read in on start of the KnobKraft Orm. To find out or change the directory where those are stored, press the button `Set User Adaptation Dir` in the Setup tab.
+New adaptations are stored as a single Python file with the ending `.py` in a directory on your computer, and are read in on start of the KnobKraft Orm.
+
+The Orm will read in all python files in the specified directory, so you can name or rename the file you are working on as you like. The identity of the device supported is specified by the string returned by the `name()` function you implement, so make sure not to have two files in the directory which have the same return value there.
+
+To find out or change the directory where those are stored, press the button `Set User Adaptation Dir` in the Setup tab.
 
 [![](SetupTab.PNG)]
 
