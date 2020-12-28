@@ -434,9 +434,6 @@ namespace midikraft {
 							unresolvedUserWave.push_back(newPatch);
 						}
 					}
-					else {
-						jassertfalse;
-					}
 				}
 			}
 			else if (isSingleProgramDump(message)) {
