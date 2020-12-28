@@ -84,6 +84,14 @@ namespace knobkraft {
 		kFriendlyBankName,
 	};
 
+	std::vector<const char *> kMinimalRequiredFunctionNames = {
+		kName,
+		kNumberOfBanks,
+		kNumberOfPatchesPerBank,
+		kCreateDeviceDetectMessage,
+		kChannelIfValidDeviceResponse,
+	};
+
 	const char *kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;

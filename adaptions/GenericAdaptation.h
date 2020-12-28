@@ -31,6 +31,7 @@ namespace knobkraft {
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
 
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;
+	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 

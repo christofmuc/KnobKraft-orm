@@ -27,6 +27,18 @@ namespace knobkraft {
 
 		infoText = (boost::format("Implementation information for the adaptation for the '%s':\n\n") % adaptationSynth->getName()).str();
 
+		bool failure = false;
+		for (auto functionName : kMinimalRequiredFunctionNames) {
+			if (!adaptationSynth->pythonModuleHasFunction(functionName)) {
+				infoText += (boost::format("Error: Required function %s has not been implemented yet\n") % functionName).str();
+				failure = true;
+			}
+		}
+		if (!failure) {
+			infoText += "All required functions have been implemented\n";
+		} 
+		infoText += "\n";
+
 		auto hasEditBuffer = midikraft::Capability::hasCapability<midikraft::EditBufferCapability>(adaptationSynth);
 		auto hasProgramDump = midikraft::Capability::hasCapability<midikraft::ProgramDumpCabability>(adaptationSynth);
 		auto hasBankDump = midikraft::Capability::hasCapability<midikraft::BankDumpCapability>(adaptationSynth);
