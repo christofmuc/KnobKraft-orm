@@ -636,7 +636,12 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		if (i != -1) {
 			int j = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
 			if (j == -1) {
-				mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
+				if (UIModel::currentSynth()) {
+					mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
+				}
+				else {
+					mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false, 1);
+				}
 			}
 			i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
 			if (mainTabs_.getCurrentTabIndex() == i) {
