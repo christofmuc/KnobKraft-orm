@@ -415,14 +415,16 @@ namespace midikraft {
 			if (isWaveBufferDump(message)) {
 				// A new wave, store it itself in the result vector
 				auto currentWave = waveFromSysex(message);
-				result.push_back(currentWave);
+				if (currentWave) {
+					result.push_back(currentWave);
 
-				// And if we have unresolved patches, add this wave to them (the convention seems to be patches first, at the very end the user wave)
-				// Though I only found one factory bank on the Kawai US website that has the user wave stored (K3GINT.SYX)
-				for (auto patch : unresolvedUserWave) {
-					patch->addWaveIfOscillatorUsesIt(currentWave);
+					// And if we have unresolved patches, add this wave to them (the convention seems to be patches first, at the very end the user wave)
+					// Though I only found one factory bank on the Kawai US website that has the user wave stored (K3GINT.SYX)
+					for (auto patch : unresolvedUserWave) {
+						patch->addWaveIfOscillatorUsesIt(currentWave);
+					}
+					unresolvedUserWave.clear();
 				}
-				unresolvedUserWave.clear();
 			}
 			else if (isBankDumpAndNotWaveDump(message)) {
 				auto newPatches = patchesFromSysexBank(message);
