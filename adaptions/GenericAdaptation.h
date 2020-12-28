@@ -114,7 +114,7 @@ namespace knobkraft {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			if (pybind11::hasattr(*adaptation_module, methodName.c_str())) {
 				auto result = adaptation_module.attr(methodName.c_str())(args...);
-				//checkForPythonOutputAndLog();
+				checkForPythonOutputAndLog();
 				return result;
 			}
 			else {
