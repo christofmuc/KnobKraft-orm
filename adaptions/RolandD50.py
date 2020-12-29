@@ -126,7 +126,7 @@ if __name__ == "__main__":
     g_command, g_address, g_data = parseRolandMessage(detectMessage)
     assert (g_command == command_rq1)
     assert (g_address == [0x00, 0x01, 0x00])
-    assert (g_data == [0x00, 0x02, 0x0f])
+    assert (g_data == [0x00, 0x00, 0x40])
 
     with open(R"D:\Christof\Music\RolandD50\BB1_SYX\BobbyBluz_1.syx", "rb") as bankDump:
         g_sysex = bankDump.read()
