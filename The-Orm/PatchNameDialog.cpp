@@ -40,8 +40,8 @@ void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
 	names_.clear();
 	if (layers) {
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
-			names_.push_back(Value(String(layers->layerName(i)).trim()));
-			TypedNamedValue v("Layer " + String(i), "Patch name", names_[i].getValue(), 20);
+			TypedNamedValue v("Layer " + String(i), "Patch name",String(layers->layerName(i)).trim(), 20);
+			names_.push_back(v.value());
 			props.push_back(std::make_shared<TypedNamedValue>(v));
 		}
 	}
@@ -110,6 +110,7 @@ void PatchNameDialog::buttonClicked(Button *button)
 				//SimpleLogger::instance()->postMessage("Layer " + String(i) + " is " + names_[i].getValue());
 				layers->setLayerName(i, newName.toStdString());
 			}
+			patch_->setName(patch_->patch()->name());
 		}
 		else {
 			String newName = names_[0].getValue().toString();
