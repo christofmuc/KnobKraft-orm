@@ -2,6 +2,9 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
+* Should setup github project page
+* Should have direct download link to latest release
+* Should have patreon/paypal link for donations?
 
 Next release 1.11.0	
 * Add PatchInterchangeFormat exprot
