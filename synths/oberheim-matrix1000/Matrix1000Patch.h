@@ -14,14 +14,18 @@
 
 namespace midikraft {
 
-	class Matrix1000Patch : public Patch, public StoredPatchNameCapability, public DetailedParametersCapability {
+	class Matrix1000Patch : public Patch, public StoredPatchNameCapability, public DefaultNameCapability, public DetailedParametersCapability {
 	public:
 		Matrix1000Patch(Synth::PatchData const &patchdata, MidiProgramNumber place);
 
 		virtual std::string name() const override;
-		virtual void setName(std::string const &name) override;
-		virtual bool isDefaultName() const override;
 		virtual MidiProgramNumber patchNumber() const override;
+
+		// StoredPatchNameCapability
+		virtual void setName(std::string const &name) override;
+
+		// DefaultNameCapability
+		virtual bool isDefaultName() const override;
 
 		int value(SynthParameterDefinition const &param) const;
 		int param(Matrix1000Param id) const;
