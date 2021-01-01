@@ -25,7 +25,7 @@ namespace midikraft {
 		virtual void setName(std::string const &name) override;
 
 		// DefaultNameCapability
-		virtual bool isDefaultName() const override;
+		virtual bool isDefaultName(std::string const &patchName) const override;
 
 		int value(SynthParameterDefinition const &param) const;
 		int param(Matrix1000Param id) const;

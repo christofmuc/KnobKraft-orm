@@ -72,10 +72,10 @@ namespace midikraft {
 		}
 	}
 
-	bool Matrix1000Patch::isDefaultName() const
+	bool Matrix1000Patch::isDefaultName(std::string const &patchName) const
 	{
 		std::regex matcher("BNK[0-9]: [0-9][0-9]", std::regex::icase);
-		return std::regex_search(name(), matcher);
+		return std::regex_search(patchName, matcher);
 	}
 
 	MidiProgramNumber Matrix1000Patch::patchNumber() const {
