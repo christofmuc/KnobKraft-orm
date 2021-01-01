@@ -26,7 +26,7 @@ namespace knobkraft {
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
-		*kNameFromDump, *kRenamePatch,
+		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
 

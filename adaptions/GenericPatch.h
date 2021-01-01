@@ -23,16 +23,27 @@ namespace knobkraft {
 
 	class GenericStoredPatchNameCapability : public midikraft::StoredPatchNameCapability {
 	public:
-		GenericStoredPatchNameCapability(GenericPatch *me) : me_(me) {}
+		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
 
 		void setName(std::string const &name) override;
-		virtual bool isDefaultName() const override;
 
 	private:
-		GenericPatch *me_;
+		std::weak_ptr<GenericPatch> me_;
+	};
+
+	class GenericDefaultNameCapability : public midikraft::DefaultNameCapability {
+	public:
+		GenericDefaultNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
+
+		virtual bool isDefaultName(std::string const &patchName) const override;
+
+	private:
+		std::weak_ptr<GenericPatch> me_;
 	};
 
 	class GenericPatch : public midikraft::DataFile, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
+		, public midikraft::RuntimeCapability<midikraft::DefaultNameCapability>
+		, public std::enable_shared_from_this<GenericPatch>
 	{
 	public:
 		enum DataType {
@@ -74,9 +85,12 @@ namespace knobkraft {
 		// Runtime Capabilities
 		bool hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const override;
 		bool hasCapability(midikraft::StoredPatchNameCapability **outCapability) const override;
+		bool hasCapability(std::shared_ptr<midikraft::DefaultNameCapability> &outCapability) const override;
+		bool hasCapability(midikraft::DefaultNameCapability **outCapability) const override;
 
 	private:
 		std::shared_ptr<GenericStoredPatchNameCapability> genericStoredPatchNameCapabilityImpl_;
+		std::shared_ptr<GenericDefaultNameCapability> genericDefaultNameCapabilityImp_;
 
 		pybind11::module &adaptation_;
 		std::string name_;

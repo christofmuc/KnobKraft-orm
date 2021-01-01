@@ -49,30 +49,45 @@ namespace knobkraft {
 
 	void GenericStoredPatchNameCapability::setName(std::string const &name)
 	{
-		// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
-		if (!me_->pythonModuleHasFunction(kRenamePatch)) return;
+		if (!me_.expired()) {
+			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
+			if (!me_.lock()->pythonModuleHasFunction(kRenamePatch)) return;
 
-		// Very well, then try to change the name in the patch data
-		try {
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
-			std::vector<int> v(me_->data().data(), me_->data().data() + me_->data().size());
-			py::object result = me_->callMethod(kRenamePatch, v, name);
-			auto intVector = result.cast<std::vector<int>>();
-			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
-			me_->setData(byteData);
-		}
-		catch (py::error_already_set &ex) {
-			std::string errorMessage = (boost::format("Error calling %s: %s") % kRenamePatch % ex.what()).str();
-			SimpleLogger::instance()->postMessage(errorMessage);
-		}
-		catch (...) {
-			SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kRenamePatch).str());
+			// Very well, then try to change the name in the patch data
+			try {
+				ScopedLock lock(GenericAdaptation::multiThreadGuard);
+				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+				py::object result = me_.lock()->callMethod(kRenamePatch, v, name);
+				auto intVector = result.cast<std::vector<int>>();
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
+				me_.lock()->setData(byteData);
+			}
+			catch (py::error_already_set &ex) {
+				std::string errorMessage = (boost::format("Error calling %s: %s") % kRenamePatch % ex.what()).str();
+				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+			catch (...) {
+				SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kRenamePatch).str());
+			}
 		}
 	}
 
-	bool GenericStoredPatchNameCapability::isDefaultName() const
+	bool GenericDefaultNameCapability::isDefaultName(std::string const &patchName) const
 	{
-		// Not implemented yet
+		if (!me_.expired()) {
+			auto patch = me_.lock();
+			try {
+				py::object result = patch->callMethod(kIsDefaultName, patchName);
+				return py::cast<bool>(result);
+			}
+			catch (py::error_already_set &ex) {
+				std::string errorMessage = (boost::format("Error calling %s: %s") % kIsDefaultName % ex.what()).str();
+				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+			catch (...) {
+				SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kIsDefaultName).str());
+			}
+		}
 		return false;
 	}
 
@@ -80,6 +95,11 @@ namespace knobkraft {
 	{
 		midikraft::StoredPatchNameCapability *impl;
 		if (hasCapability(&impl)) {
+			if (!genericStoredPatchNameCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch *non_const = const_cast<GenericPatch *>(this);
+				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this());
+			}
 			outCapability = genericStoredPatchNameCapabilityImpl_;
 			return true;
 		}
@@ -89,11 +109,44 @@ namespace knobkraft {
 	bool GenericPatch::hasCapability(midikraft::StoredPatchNameCapability **outCapability) const
 	{
 		if (pythonModuleHasFunction(kRenamePatch)) {
+			if (!genericStoredPatchNameCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch *non_const = const_cast<GenericPatch *>(this);
+				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this());
+			}
 			*outCapability = genericStoredPatchNameCapabilityImpl_.get();
 			return true;
 		}
 		return false;
 	}
 
+	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::DefaultNameCapability> &outCapability) const
+	{
+		midikraft::DefaultNameCapability *impl;
+		if (hasCapability(&impl)) {
+			if (!genericDefaultNameCapabilityImp_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch *non_const = const_cast<GenericPatch *>(this);
+				non_const->genericDefaultNameCapabilityImp_ = std::make_shared<GenericDefaultNameCapability>(non_const->shared_from_this());
+			}
+			outCapability = genericDefaultNameCapabilityImp_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(midikraft::DefaultNameCapability **outCapability) const
+	{
+		if (pythonModuleHasFunction(kIsDefaultName)) {
+			if (!genericDefaultNameCapabilityImp_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch *non_const = const_cast<GenericPatch *>(this);
+				non_const->genericDefaultNameCapabilityImp_ = std::make_shared<GenericDefaultNameCapability>(non_const->shared_from_this());
+			}
+			*outCapability = genericDefaultNameCapabilityImp_.get();
+			return true;
+		}
+		return false;
+	}
 }
 
