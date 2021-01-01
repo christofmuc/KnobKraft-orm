@@ -90,7 +90,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(patchButtons_.get());
 	patchButtons_->setPatchLoader([this](int skip, int limit, std::function<void(std::vector< midikraft::PatchHolder>)> callback) {
 		loadPage(skip, limit, callback);
-	});	
+	});
 
 	rebuildSynthFilters();
 
@@ -191,17 +191,17 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	for (auto s : advancedFilters_.synthFilters_.selectedCategories()) {
 		midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(s.category);
 		if (synthFound.synth()) {
-			synthMap[synthFound.synth()->getName()] = synthFound.synth(); 
+			synthMap[synthFound.synth()->getName()] = synthFound.synth();
 		}
 	}
-	return { synthMap, 
-		currentlySelectedSourceUUID(), 
-		nameFilter, 
-		onlyFaves_.getToggleState(), 
-		typeSelected, 
-		filterType, 
-		showHidden_.getToggleState(), 
-		onlyUntagged_.getToggleState(), 
+	return { synthMap,
+		currentlySelectedSourceUUID(),
+		nameFilter,
+		onlyFaves_.getToggleState(),
+		typeSelected,
+		filterType,
+		showHidden_.getToggleState(),
+		onlyUntagged_.getToggleState(),
 		catSelected };
 }
 
@@ -266,10 +266,10 @@ void PatchView::resized()
 	auto normalFilter = area.removeFromTop(32 * 2 + 24 + 3 * 8).reduced(8);
 	auto sourceRow = normalFilter.removeFromTop(24);
 	auto filterRow = normalFilter.withTrimmedTop(8); // 32 per row
-	
+
 	int advancedFilterHeight = advancedSearch_->isOpen() ? (24 + 24 + 2 * 32) : 24;
 	advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(8).withTrimmedRight(8));
-	
+
 	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
@@ -390,20 +390,20 @@ void PatchView::retrieveEditBuffer()
 			activeSynth,
 			nullptr,
 			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
-				// There should only be one edit buffer, just check that this is true here
-				jassert(patchesLoaded.size() == 1);
+			// There should only be one edit buffer, just check that this is true here
+			jassert(patchesLoaded.size() == 1);
 
-				// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
-				auto now = Time::getCurrentTime();
-				auto editBufferSource = std::make_shared<midikraft::FromSynthSource>(now);
-				for (auto &p : patchesLoaded) {
-					p.setSourceInfo(editBufferSource);
-				}
+			// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
+			auto now = Time::getCurrentTime();
+			auto editBufferSource = std::make_shared<midikraft::FromSynthSource>(now);
+			for (auto &p : patchesLoaded) {
+				p.setSourceInfo(editBufferSource);
+			}
 
-				// Off to the UI thread (because we will update the UI)
-				MessageManager::callAsync([this, patchesLoaded]() {
-					mergeNewPatches(patchesLoaded);
-				});
+			// Off to the UI thread (because we will update the UI)
+			MessageManager::callAsync([this, patchesLoaded]() {
+				mergeNewPatches(patchesLoaded);
+			});
 		});
 	}
 }
@@ -433,7 +433,7 @@ void PatchView::reindexPatches() {
 	int totalAffected = database_.getPatchesCount(filter);
 	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex all %d patches for synth %s?") % totalAffected % currentSynth->getName()).str(),
 		(boost::format("This will reindex the %d patches with the current fingerprinting algorithm.\n\n"
-			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n") 
+			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n")
 			% totalAffected).str())) {
 		std::string backupName = database_.makeDatabaseBackup("-before-reindexing");
 		SimpleLogger::instance()->postMessage((boost::format("Created database backup at %s") % backupName).str());
@@ -441,7 +441,7 @@ void PatchView::reindexPatches() {
 		if (countAfterReindexing != -1) {
 			// No error, display user info
 			if (totalAffected > countAfterReindexing) {
-				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful", 
+				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful",
 					(boost::format("The reindexing reduced the number of patches from %d to %d due to deduplication.") % totalAffected % countAfterReindexing).str());
 			}
 			else {
@@ -450,14 +450,14 @@ void PatchView::reindexPatches() {
 		}
 		else {
 			AlertWindow::showMessageBox(AlertWindow::WarningIcon, "Error reindexing patches", "There was an error reindexing the patches selected. View the log for more details");
-			
+
 		}
 		rebuildImportFilterBox();
 		retrieveFirstPageFromDatabase();
 	}
 }
 
-int PatchView::totalNumberOfPatches() 
+int PatchView::totalNumberOfPatches()
 {
 	return database_.getPatchesCount(buildFilter());
 }
@@ -467,7 +467,7 @@ void PatchView::selectFirstPatch()
 	patchButtons_->selectFirst();
 }
 
-class MergeManyPatchFiles: public ProgressHandlerWindow {
+class MergeManyPatchFiles : public ProgressHandlerWindow {
 public:
 	MergeManyPatchFiles(midikraft::PatchDatabase &database, std::vector<midikraft::PatchHolder> &patchesLoaded, std::function<void(std::vector<midikraft::PatchHolder>)> successHandler) :
 		ProgressHandlerWindow("Storing in database", "Merging new patches into database..."),
@@ -487,6 +487,7 @@ public:
 			}
 			else {
 				SimpleLogger::instance()->postMessage("All patches already known to database");
+				finished_({});
 			}
 		}
 	}
@@ -572,18 +573,20 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 		// Back to UI thread
 		MessageManager::callAsync([this, outNewPatches]() {
 			rebuildImportFilterBox();
-			// Select this import
-			auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
-			if (info) {
-				for (int i = 0; i < (int) imports_.size(); i++) {
-					if ((imports_[i].id == info->md5(UIModel::currentSynth())) 
-						|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
-					{
-						// Search for the import in the sorted list
-						for (int j = 0; j < importList_.getNumItems(); j++) {
-							if (importList_.getItemText(j).toStdString() == imports_[i].description) {
-								importList_.setSelectedItemIndex(j, dontSendNotification);
-								break;
+			if (outNewPatches.size() > 0) {
+				// Select this import
+				auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
+				if (info) {
+					for (int i = 0; i < (int)imports_.size(); i++) {
+						if ((imports_[i].id == info->md5(UIModel::currentSynth()))
+							|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
+						{
+							// Search for the import in the sorted list
+							for (int j = 0; j < importList_.getNumItems(); j++) {
+								if (importList_.getItemText(j).toStdString() == imports_[i].description) {
+									importList_.setSelectedItemIndex(j, dontSendNotification);
+									break;
+								}
 							}
 						}
 					}
