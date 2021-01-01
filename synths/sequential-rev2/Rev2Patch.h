@@ -15,7 +15,7 @@
 
 namespace midikraft {
 
-	class Rev2Patch : public Patch, public LayeredPatchCapability, public StoredPatchNameCapability, public DetailedParametersCapability {
+	class Rev2Patch : public Patch, public LayeredPatchCapability, public StoredPatchNameCapability, public DefaultNameCapability, public DetailedParametersCapability {
 	public:
 		Rev2Patch();
 		Rev2Patch(Synth::PatchData const &patchData, MidiProgramNumber programNo);
