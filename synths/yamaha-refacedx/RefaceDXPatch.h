@@ -23,7 +23,7 @@ namespace midikraft {
 		virtual void setName(std::string const &name) override;
 
 		// DefaultNameCapability
-		virtual bool isDefaultName() const override;
+		virtual bool isDefaultName(std::string const &patchName) const override;
 
 		virtual MidiProgramNumber patchNumber() const override;
 

@@ -38,9 +38,9 @@ namespace midikraft {
 		}
 	}
 
-	bool RefaceDXPatch::isDefaultName() const
+	bool RefaceDXPatch::isDefaultName(std::string const &patchName) const
 	{
-		return name() == "Init Voice";
+		return patchName == "Init Voice";
 	}
 
 	MidiProgramNumber RefaceDXPatch::patchNumber() const
