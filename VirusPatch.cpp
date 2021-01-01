@@ -68,9 +68,9 @@ namespace midikraft {
 		//TODO
 	}
 
-	bool VirusPatch::isDefaultName() const
+	bool VirusPatch::isDefaultName(std::string const &patchName) const
 	{
-		return name() == "- Init -";
+		return patchName == "- Init -";
 	}
 
 	MidiProgramNumber VirusPatch::patchNumber() const
