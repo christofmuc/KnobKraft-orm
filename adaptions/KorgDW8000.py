@@ -66,3 +66,12 @@ def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message[0:2] + [0x30 | channel] + message[3:]
     raise Exception("This is not an edit buffer - can't be converted")
+
+
+def friendlyProgramName(program):
+    return "%d%d" % (program // 8 + 1, (program % 8) + 1)
+
+
+if __name__ == "__main__":
+    assert friendlyProgramName(0) == "11"
+    assert friendlyProgramName(63) == "88"
