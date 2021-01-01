@@ -22,7 +22,7 @@ namespace midikraft {
 		// StoredPatchNameCapability
 		virtual void setName(std::string const &name) override;
 		// DefaultNameCapability
-		virtual bool isDefaultName() const override;
+		virtual bool isDefaultName(std::string const &patchName) const override;
 
 		// StoredTagCapability
 		int getNumTagsStored() const override;
