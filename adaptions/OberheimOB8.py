@@ -9,6 +9,7 @@ import re
 has_encore = False
 oberheim_id = [0x10, 0x01]
 encore_id = [0x00, 0x00, 0x2f, 0x04]
+default_name_detector = re.compile("OB-8(:| \\(E\\):) [A-D]*[1-8]")
 
 
 def name():
@@ -39,11 +40,11 @@ def channelIfValidDeviceResponse(message):
 
 
 def numberOfBanks():
-    return 1
+    return 15
 
 
 def numberOfPatchesPerBank():
-    return 120
+    return 8
 
 
 def createProgramDumpRequest(channel, patchNo):
@@ -60,7 +61,7 @@ def createProgramDumpRequestEncore(channel, patchNo):
 
 def isSingleProgramDump(message):
     return len(message) > 3 and message[0] == 0xf0 and (
-                (isOberheim(message) and message[3] == 0x01) or (isEncore(message) and message[5] == 0x01))
+            (isOberheim(message) and message[3] == 0x01) or (isEncore(message) and message[5] == 0x01))
 
 
 def convertToProgramDump(channel, message, patchNo):
@@ -69,17 +70,42 @@ def convertToProgramDump(channel, message, patchNo):
     raise Exception("Only program dumps can be converted")
 
 
-def nameFromDump(message):
+def numberFromDump(message):
     if isSingleProgramDump(message):
         if isOberheim(message):
-            return "OB-8: %03d" % (message[4])
+            return message[4]
         elif isEncore(message):
-            return  "OB-8 (E): %03d" % (message[6])
+            return message[6]
+    raise Exception("Can't extract program number from message")
+
+
+def nameFromDump(message):
+    if isSingleProgramDump(message):
+        program = numberFromDump(message)
+        if isOberheim(message):
+            return "OB-8: %s" % friendlyProgramName(program)
+        elif isEncore(message):
+            return "OB-8 (E): %s" % friendlyProgramName(program)
+    return "invalid name"
+
+
+def friendlyBankName(bank_number):
+    # This is just too good to not implement it. The OB-8 has 4 bank buttons, which can be used to combine! the bank
+    # selected. So basically you are punching in 4 bits. And it is one based, so you have 15 banks ("groups" here)
+    bank = bank_number + 1
+    return ("A" if (bank & 1 != 0) else "") + \
+           ("B" if (bank & 2 != 0) else "") + \
+           ("C" if (bank & 4 != 0) else "") + \
+           ("D" if (bank & 8 != 0) else "")
+
+
+def friendlyProgramName(program):
+    return "%s%d" % (friendlyBankName(program // 8), (program % 8) + 1)
 
 
 def isDefaultName(patchName):
     # This regex ideally matches exactly the default names we produce with the above method nameFromDump()
-    return re.match("OB-8(:| \\(E\\):) [0-9][0-9][0-9]", patchName) is not None
+    return default_name_detector.match(patchName) is not None
 
 
 def calculateFingerprint(message):
@@ -127,11 +153,12 @@ if __name__ == "__main__":
     fake_program_117 = [0xf0] + makeCorrectHeader() + [0x01, 117, 0xf7]
     assert isSingleProgramDump(fake_program_117)
     assert isOberheim(fake_program_117)
-    assert nameFromDump(fake_program_117) == "OB-8: 117"
+    assert nameFromDump(fake_program_117) == "OB-8: ABCD6"
     assert isDefaultName(nameFromDump(fake_program_117))
     has_encore = True
     fake_program_117 = [0xf0] + makeCorrectHeader() + [0x01, 117, 0xf7]
     assert isSingleProgramDump(fake_program_117)
     assert isEncore(fake_program_117)
-    assert nameFromDump(fake_program_117) == "OB-8 (E): 117"
+    assert nameFromDump(fake_program_117) == "OB-8 (E): ABCD6"
     assert isDefaultName(nameFromDump(fake_program_117))
+    assert friendlyBankName(14) == "ABCD"
