@@ -57,7 +57,8 @@ namespace knobkraft {
 		*kExtractPatchesFromBank = "extractPatchesFromBank",
 		*kGeneralMessageDelay = "generalMessageDelay",
 		*kCalculateFingerprint = "calculateFingerprint",
-		*kFriendlyBankName = "friendlyBankName";
+		*kFriendlyBankName = "friendlyBankName",
+		*kFriendlyProgramName= "friendlyProgramName";
 
 	std::vector<const char *> kAdapatationPythonFunctionNames = {
 		kName,
@@ -84,6 +85,7 @@ namespace knobkraft {
 		kGeneralMessageDelay,
 		kCalculateFingerprint,
 		kFriendlyBankName,
+		kFriendlyProgramName,
 	};
 
 	std::vector<const char *> kMinimalRequiredFunctionNames = {
@@ -385,6 +387,25 @@ namespace knobkraft {
 			// No special behavior - just send at full speed
 			midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesFullSpeed(buffer);
 		}
+	}
+
+	std::string GenericAdaptation::friendlyProgramName(MidiProgramNumber programNo) const
+	{
+		if (pythonModuleHasFunction(kFriendlyProgramName)) {
+			try {
+				int zerobased = programNo.toZeroBased();
+				auto result = callMethod(kFriendlyProgramName, zerobased);
+				return py::cast<std::string>(result);
+			}
+			catch (py::error_already_set &ex) {
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyProgramName % ex.what()).str());
+				ex.restore();
+			}
+			catch (std::exception &ex) {
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyProgramName % ex.what()).str());
+			}
+		}
+		return Synth::friendlyProgramName(programNo);
 	}
 
 	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)
