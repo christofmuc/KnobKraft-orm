@@ -39,9 +39,9 @@ namespace midikraft {
 		}
 	}
 
-	bool OB6Patch::isDefaultName() const
+	bool OB6Patch::isDefaultName(std::string const &patchName) const
 	{
-		return name() == "Basic Program";
+		return patchName == "Basic Program";
 	}
 
 	MidiProgramNumber OB6Patch::patchNumber() const
