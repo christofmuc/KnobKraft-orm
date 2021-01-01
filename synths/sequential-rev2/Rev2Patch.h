@@ -22,7 +22,7 @@ namespace midikraft {
 
 		virtual std::string name() const override;
 		virtual void setName(std::string const &name) override;
-		virtual bool isDefaultName() const override;
+		virtual bool isDefaultName(std::string const &patchName) const override;
 		virtual MidiProgramNumber patchNumber() const override;
 
 		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;

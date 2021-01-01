@@ -266,9 +266,9 @@ namespace midikraft {
 		ignoreUnused(name);
 	}
 
-	bool Rev2Patch::isDefaultName() const
+	bool Rev2Patch::isDefaultName(std::string const &patchName) const
 	{
-		return name() == "Basic Program A.Basic Program B";
+		return patchName == "Basic Program A.Basic Program B";
 	}
 
 	MidiProgramNumber Rev2Patch::patchNumber() const {
