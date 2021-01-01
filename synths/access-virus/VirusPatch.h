@@ -12,7 +12,7 @@
 
 namespace midikraft {
 
-	class VirusPatch : public Patch, public StoredPatchNameCapability, public StoredTagCapability {
+	class VirusPatch : public Patch, public StoredPatchNameCapability, public DefaultNameCapability, public StoredTagCapability {
 	public:
 		VirusPatch(Synth::PatchData const &data, MidiProgramNumber place);
 
@@ -21,6 +21,7 @@ namespace midikraft {
 		
 		// StoredPatchNameCapability
 		virtual void setName(std::string const &name) override;
+		// DefaultNameCapability
 		virtual bool isDefaultName() const override;
 
 		// StoredTagCapability
