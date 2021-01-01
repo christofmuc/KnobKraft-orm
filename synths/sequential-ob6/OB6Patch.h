@@ -11,7 +11,7 @@
 
 namespace midikraft {
 
-	class OB6Patch : public Patch, public StoredPatchNameCapability {
+	class OB6Patch : public Patch, public StoredPatchNameCapability, public DefaultNameCapability {
 	public:
 		OB6Patch(int dataTypeID, Synth::PatchData const &patchData, MidiProgramNumber programNo);
 
