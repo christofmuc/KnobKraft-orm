@@ -3,6 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import re
 
 
 def name():
@@ -63,6 +64,10 @@ def nameFromDump(message):
     raise Exception("Only single program dumps can be named")
 
 
+def isDefaultName(patchName):
+    return re.match("(Internal|Cartridge) [0-9][0-9]$", patchName) is not None
+
+
 def numberFromDump(message):
     if isSingleProgramDump(message):
         return message[6] + 1
@@ -83,3 +88,8 @@ def isOwnSysex(data):
 
 def buildSysexFunction(channel, function, sub_command):
     return [0xf0, 0x40, (channel & 0x0f), function, 0x00, 0x01, sub_command, 0xf7]
+
+
+if __name__ == "__main__":
+    assert isDefaultName("Cartridge 09")
+    assert not isDefaultName("Internal 111")
