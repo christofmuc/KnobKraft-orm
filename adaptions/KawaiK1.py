@@ -285,7 +285,7 @@ def bankNoForProgramNo(program_number):
 def insertDeviceID(channel, message):
     # TODO not sure what to do with the device ID min and max values. Is this for display?
     device_id = (channel + adaptation["Device ID"][1]) % adaptation["Device ID"][2]
-    return message[0:adaptation["Device ID"][0]] + [channel] + message[adaptation["Device ID"][0] + 1:]
+    return message[0:adaptation["Device ID"][0]] + [(channel & 0x0f) if channel != -1 else 0] + message[adaptation["Device ID"][0] + 1:]
 
 
 def ignoreDeviceID(message):
