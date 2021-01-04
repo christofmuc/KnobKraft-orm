@@ -86,7 +86,7 @@ set(MIDIKRAFT_LIBRARIES
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
-	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
+	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)
@@ -95,7 +95,7 @@ IF(WIN32)
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY ${D_LOG_SENTRY})
 		set(SENTRY_LIB sentry)
 	ENDIF()
-	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib")
+	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib" "${WINSPARKLE_LIBDIR}")
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
@@ -145,7 +145,7 @@ IF(WIN32)
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
 					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
-					${SENTRY_DISTRIBUTION_FILES}
+					${SENTRY_DISTRIBUTION_FILES} "${WINSPARKLE_LIBDIR}/WinSparkle.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(

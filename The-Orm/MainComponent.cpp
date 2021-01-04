@@ -33,6 +33,10 @@
 #include "sentry.h"
 #endif
 
+#ifdef WIN32
+#include <winsparkle.h>
+#endif
+
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
@@ -339,9 +343,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}
 	}
 
-	// Refresh Window title
+	// Refresh Window title and other things to do when the MainComponent is displayed
 	MessageManager::callAsync([]() {
 		UIModel::instance()->windowTitle_.sendChangeMessage();
+#ifdef WIN32
+		win_sparkle_init();
+#endif
 	});
 
 #ifdef USE_SENTRY
@@ -362,10 +369,20 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+#ifdef WIN32
+	win_sparkle_cleanup();
+#endif
 	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
+}
+
+void MainComponent::checkForUpdates() {
+#ifdef WIN32
+	win_sparkle_set_appcast_url("https://raw.githubusercontent.com/christofmuc/KnobKraft-orm/master/adaptions/Behringer%20Deepmind%2012.py");
+	win_sparkle_init();
+#endif
 }
 
 void MainComponent::createNewDatabase()

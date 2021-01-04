@@ -46,6 +46,7 @@ public:
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
 
 private:
+	void checkForUpdates();
 	void createNewDatabase();
 	void openDatabase();
 	void openDatabase(File &databaseFile);
