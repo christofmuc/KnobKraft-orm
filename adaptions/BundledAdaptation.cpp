@@ -29,6 +29,7 @@ namespace knobkraft {
 			{ "Kawai K3 Test", "Kawai_K3", std::string(KawaiK3_py, KawaiK3_py + KawaiK3_py_size) },
 #endif
 			{ "Pioneer Toraiz AS1", "Pioneer_Toraiz_AS1", std::string(PioneerToraiz_AS1_py, PioneerToraiz_AS1_py + PioneerToraiz_AS1_py_size) },
+			{ "Quasimidi Cyber-6", "Quasimidi_Cyber_6", std::string(QuasimidiCyber6_py, QuasimidiCyber6_py + QuasimidiCyber6_py_size) },
 			{ "Roland JX-8P", "Roland_JX_8P", std::string(Roland_JX_8P_py, Roland_JX_8P_py + Roland_JX_8P_py_size) },
 			{ "Sequential Pro 3", "Sequential_Pro_3", std::string(Sequential_Pro_3_py, Sequential_Pro_3_py + Sequential_Pro_3_py_size) },
 			{ "Sequential Prophet 5 Rev4", "Sequential_Prophet_5_Rev4", std::string(Sequential_Prophet_5_Rev4_py, Sequential_Prophet_5_Rev4_py + Sequential_Prophet_5_Rev4_py_size) },
