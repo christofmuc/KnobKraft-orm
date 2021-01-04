@@ -256,13 +256,7 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 	}, skip, limit);
 }
 
-void PatchView::resized()
-{
-	Rectangle<int> area(getLocalBounds());
-	auto topRow = area.removeFromTop(100);
-	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
-	currentPatchDisplay_->setBounds(topRow);
-
+void PatchView::resizePatchGridIntoRect(Rectangle<int> area) {
 	auto normalFilter = area.removeFromTop(32 * 2 + 24 + 3 * 8).reduced(8);
 	auto sourceRow = normalFilter.removeFromTop(24);
 	auto filterRow = normalFilter.withTrimmedTop(8); // 32 per row
@@ -277,6 +271,28 @@ void PatchView::resized()
 
 	importList_.setBounds(sourceRow);
 	patchButtons_->setBounds(area.reduced(10));
+}
+
+void PatchView::resized()
+{
+	Rectangle<int> area(getLocalBounds());
+
+	if (area.getWidth() > area.getHeight() * 1.5) {
+		// Landscape layout		
+		auto rightSection = area.removeFromRight(area.getWidth() / 3);
+		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
+		currentPatchDisplay_->setBounds(rightSection);
+
+		resizePatchGridIntoRect(area);
+	}
+	else {
+		// Portrait
+		auto topRow = area.removeFromTop(100);
+		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
+		currentPatchDisplay_->setBounds(topRow);
+
+		resizePatchGridIntoRect(area);
+	}
 }
 
 void PatchView::comboBoxChanged(ComboBox* box)

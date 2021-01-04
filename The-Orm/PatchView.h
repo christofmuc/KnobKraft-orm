@@ -89,6 +89,7 @@ private:
 
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
+	void resizePatchGridIntoRect(Rectangle<int> rect);
 	void retrievePatches();
 
 	void loadPatches();

@@ -122,32 +122,56 @@ void CurrentPatchDisplay::reset()
 }
 
 void CurrentPatchDisplay::resized()
-{
-	Rectangle<int> area(getLocalBounds().reduced(8)); // This is for the background colour to show more
+{	
+	Rectangle<int> area(getLocalBounds().reduced(8)); 
 	auto topRow = area.removeFromTop(40);
 
-	// Split the top row in three parts, with the centered one taking 240 px (the patch name)
-	int side = (topRow.getWidth() - 240) / 2;
-	auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
-	auto leftCornerUpper = leftCorner.removeFromTop(20);
-	auto leftCornerLower = leftCorner;
-	auto rightCorner = topRow.removeFromRight(side).withTrimmedLeft(8);
+	if (area.getWidth() < area.getHeight() * 1.5) {
+		// Portrait
+		// Only patch name, fav and hide button in top row
+		auto rightCorner = topRow.removeFromRight(240).withTrimmedLeft(8);
+		// Right side - hide and favorite button
+		hide_.setBounds(rightCorner.removeFromRight(100));
+		favorite_.setBounds(rightCorner.removeFromRight(100));
+		name_.setBounds(topRow);
 
-	// Right side - hide and favorite button
-	hide_.setBounds(rightCorner.removeFromRight(100));
-	favorite_.setBounds(rightCorner.removeFromRight(100));
+		// Next row, Synth name
+		auto nextRow = area.removeFromTop(20);
+		import_.setBounds(nextRow);
+		nextRow = area.removeFromTop(20);
+		synthName_.setBounds(nextRow);
+		nextRow = area.removeFromTop(20);
+		patchType_.setBounds(nextRow);
+		
+		
 
-	// Left side - synth patch
-	synthName_.setBounds(leftCornerUpper.removeFromLeft(100));
-	patchType_.setBounds(leftCornerUpper.removeFromLeft(100).withTrimmedLeft(8));
-	import_.setBounds(leftCornerLower);
+		categories_.setBounds(area);
+	}
+	else {
+		// Landscape - the classical layout originally done for the Portrait Tablet
 
-	// Center - patch name
-	name_.setBounds(topRow);
+		// Split the top row in three parts, with the centered one taking 240 px (the patch name)
+		int side = (topRow.getWidth() - 240) / 2;
+		auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
+		auto leftCornerUpper = leftCorner.removeFromTop(20);
+		auto leftCornerLower = leftCorner;
+		auto rightCorner = topRow.removeFromRight(side).withTrimmedLeft(8);
 
-	auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
-	categories_.setBounds(bottomRow);
-	
+		// Right side - hide and favorite button
+		hide_.setBounds(rightCorner.removeFromRight(100));
+		favorite_.setBounds(rightCorner.removeFromRight(100));
+
+		// Left side - synth patch
+		synthName_.setBounds(leftCornerUpper.removeFromLeft(100));
+		patchType_.setBounds(leftCornerUpper.removeFromLeft(100).withTrimmedLeft(8));
+		import_.setBounds(leftCornerLower);
+
+		// Center - patch name
+		name_.setBounds(topRow);
+
+		auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
+		categories_.setBounds(bottomRow);
+	}
 }
 
 void CurrentPatchDisplay::buttonClicked(Button *button)
