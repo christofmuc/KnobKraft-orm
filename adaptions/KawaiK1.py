@@ -3,6 +3,8 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from knobdiver import lazyHex, Adaptation
+
 
 adaptation = {
     "Manufacturer Name": "Kawai",
@@ -19,45 +21,43 @@ adaptation = {
                       "Transmission Format": "7bit", "Checksum Type": "Kawai K1/K4",
                       # "Memory Bank": True,
                       "Offsets": (0, 0, 0),  # These are the program offsets for single, bank, program change
-                      "Single Request": [0xf0, 0x40, 0x00, 0x00, 0x00, 0x03, 0x00, "EN#", 0xf7],
-                      "Single Reply": [0xf0, 0x40, 0x00, 0x20, 0x00, 0x03, 0x00, "EN#", "SUM", "SIN", "CHK", 0xf7],
-                      "Bank Request": [0xf0, 0x40, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00, 0xf7],
-                      "Bank Reply": [0xf0, 0x40, 0x00, 0x21, 0x00, 0x03, 0x00, 0x00, "[", "SUM", "SIN", "CHK", "]",
-                                     0xf7]},
+                      "Single Request": lazyHex("f0 40 00 00 00 03 00 EN# f7"),
+                      "Single Reply": lazyHex("f0 40 00 20 00 03 00 EN# SUM SIN CHK f7"),
+                      "Bank Request": lazyHex("f0 40 00 01 00 03 00 00 f7"),
+                      "Bank Reply": lazyHex("f0 40 00 21 00 03 00 00 [ SUM SIN CHK ] f7")},
                      {"Bank Name": "Int-Singles i/2", "Data Type": "Single", "# of Entries": 32,
                       "Transmission Format": "7bit", "Checksum Type": "Kawai K1/K4",
                       # "Memory Bank": True,
                       "Offsets": (32, 32, 32),  # These are the program offsets for single, bank, program change
-                      "Single Request": [0xf0, 0x40, 0x00, 0x00, 0x00, 0x03, 0x00, "EN#", 0xf7],
-                      "Single Reply": [0xf0, 0x40, 0x00, 0x20, 0x00, 0x03, 0x00, "EN#", "SUM", "SIN", "CHK", 0xf7],
-                      "Bank Request": [0xf0, 0x40, 0x00, 0x01, 0x00, 0x03, 0x00, 0x20, 0xf7],
-                      "Bank Reply": [0xf0, 0x40, 0x00, 0x21, 0x00, 0x03, 0x00, 0x20, "[", "SUM", "SIN", "CHK", "]",
-                                     0xf7]},
+                      "Single Request": lazyHex("f0 40 00 00 00 03 00 EN# f7"),
+                      "Single Reply": lazyHex("f0 40 00 20 00 03 00 EN# SUM SIN CHK f7"),
+                      "Bank Request": lazyHex("f0 40 00 01 00 03 00 20 f7"),
+                      "Bank Reply": lazyHex("f0 40 00 21 00 03 00 20 [ SUM SIN CHK ] f7")},
                      {"Bank Name": "Ext-Singles E/1", "Data Type": "Single", "# of Entries": 32,
                       "Transmission Format": "7bit", "Checksum Type": "Kawai K1/K4",
                       # "Memory Bank": True,
                       "Offsets": (0, 0, 0),  # These are the program offsets for single, bank, program change
-                      "Single Request": [0xf0, 0x40, 0x00, 0x00, 0x00, 0x03, 0x01, "EN#", 0xf7],
-                      "Single Reply": [0xf0, 0x40, 0x00, 0x20, 0x00, 0x03, 0x01, "EN#", "SUM", "SIN", "CHK", 0xf7],
-                      "Bank Request": [0xf0, 0x40, 0x00, 0x01, 0x00, 0x03, 0x01, 0x00, 0xf7],
-                      "Bank Reply": [0xf0, 0x40, 0x00, 0x21, 0x00, 0x03, 0x01, 0x00, "[", "SUM", "SIN", "CHK", "]",
-                                     0xf7]},
+                      "Single Request": lazyHex("f0, 40, 00, 00, 00, 03, 01, EN# f7"),
+                      "Single Reply": lazyHex("f0, 40, 00, 20, 00, 03, 01, EN#, SUM, SIN, CHK, f7"),
+                      "Bank Request": lazyHex("f0, 40, 00, 01, 00, 03, 01, 00, f7"),
+                      "Bank Reply": lazyHex("f0, 40, 00, 21, 00, 03, 01, 00, [, SUM, SIN, CHK, ], f7")},
                      {"Bank Name": "Ext-Singles e/2", "Data Type": "Single", "# of Entries": 32,
                       "Transmission Format": "7bit", "Checksum Type": "Kawai K1/K4",
                       # "Memory Bank": True,
                       "Offsets": (32, 32, 32),  # These are the program offsets for single, bank, program change
-                      "Single Request": [0xf0, 0x40, 0x00, 0x00, 0x00, 0x03, 0x01, "EN#", 0xf7],
-                      "Single Reply": [0xf0, 0x40, 0x00, 0x20, 0x00, 0x03, 0x01, "EN#", "SUM", "SIN", "CHK", 0xf7],
-                      "Bank Request": [0xf0, 0x40, 0x00, 0x01, 0x00, 0x03, 0x01, 0x20, 0xf7],
-                      "Bank Reply": [0xf0, 0x40, 0x00, 0x21, 0x00, 0x03, 0x01, 0x20, "[", "SUM", "SIN", "CHK", "]",
-                                     0xf7]}
-                     ],
-}
+                      "Single Request": lazyHex("f0, 40, 00, 00, 00, 03, 01, EN#, f7"),
+                      "Single Reply": lazyHex("f0, 40, 00, 20, 00, 03, 01, EN#, SUM, SIN, CHK, f7"),
+                      "Bank Request": lazyHex("f0, 40, 00, 01, 00, 03, 01, 20, f7"),
+                      "Bank Reply": lazyHex("f0, 40, 00, 21, 00, 03, 01, 20, [, SUM, SIN, CHK, ], f7")}
+                     ], }
+
 
 
 #####################################################################################################################
 #
 # No user serviceable parts below this line
+device = Adaptation(adaptation)
+
 
 def name():
     return adaptation["Manufacturer Name"] + " " + adaptation["Model"]
@@ -67,7 +67,7 @@ def createDeviceDetectMessage(channel):
     if adaptation["Scan with Universal Device Inquiry"]:
         raise Exception("Universal Device Inquiry not implemented yet")
     else:
-        return insertDeviceID(channel, adaptation["Scan request"])
+        return device.insertDeviceID(channel, adaptation["Scan request"])
 
 
 def needsChannelSpecificDetection():
@@ -83,7 +83,7 @@ def generalMessageDelay():
 
 
 def channelIfValidDeviceResponse(message):
-    if ignoreDeviceID(message) == adaptation["Scan reply"]:
+    if device.ignoreDeviceID(message) == adaptation["Scan reply"]:
         return message[2] & 0x0f  # I can't believe device ID is really 1-based?
     return -1
 
@@ -100,7 +100,7 @@ def numberOfPatchesPerBank():
 
 
 def createProgramDumpRequest(channel, program_no):
-    bank = bankNoForProgramNo(program_no)
+    bank = device.bankNoForProgramNo(program_no)
     request = adaptation["Bank Drivers"][bank]["Single Request"]
     result = []
     for c in request:
@@ -111,12 +111,12 @@ def createProgramDumpRequest(channel, program_no):
                 pass  # For now, ignore other pseud0-bytes
         else:
             result.append(c)
-    return insertDeviceID(channel, result)
+    return device.insertDeviceID(channel, result)
 
 
 def isSingleProgramDump(message):
     for b in range(numberOfBanks()):
-        worked, program, data = parseMessage(message, adaptation["Bank Drivers"][b]["Single Reply"])
+        worked, program, data = device.parseMessage(message, adaptation["Bank Drivers"][b]["Single Reply"])
         if worked:
             return True
     return False
@@ -125,16 +125,16 @@ def isSingleProgramDump(message):
 def convertToProgramDump(channel, message, program_no):
     if isSingleProgramDump(message):
         for b in range(numberOfBanks()):
-            worked, program, data = parseMessage(message, adaptation["Bank Drivers"][b]["Single Reply"])
+            worked, program, data = device.parseMessage(message, adaptation["Bank Drivers"][b]["Single Reply"])
             if worked:
-                single_dump = createMessage(adaptation["Bank Drivers"][b]["Single Reply"], program_no, data)
-                return insertDeviceID(channel, single_dump)
+                single_dump = Adaptation.createMessage(adaptation["Bank Drivers"][b]["Single Reply"], program_no, data)
+                return device.insertDeviceID(channel, single_dump)
     raise Exception("Can only convert single program dumps!")
 
 
 def nameFromDump(message):
     for bank in range(numberOfBanks()):
-        worked, program, data = parseMessage(message, adaptation["Bank Drivers"][bank]["Single Reply"])
+        worked, program, data = device.parseMessage(message, adaptation["Bank Drivers"][bank]["Single Reply"])
         if worked:
             name = []
             for i in range(adaptation["Data Types"]["Single"]["Name Size"]):
@@ -146,19 +146,19 @@ def nameFromDump(message):
 
 def numberFromDump(message):
     for b in range(numberOfBanks()):
-        worked, program, data = parseMessage(message, adaptation["Bank Drivers"][b]["Single Reply"])
+        worked, program, data = device.parseMessage(message, adaptation["Bank Drivers"][b]["Single Reply"])
         if worked:
             return program
     raise Exception("Only single program dumps have program numbers")
 
 
 def createBankDumpRequest(channel, bank):
-    return insertDeviceID(channel, adaptation["Bank Drivers"][bank]["Bank Request"])
+    return device.insertDeviceID(channel, adaptation["Bank Drivers"][bank]["Bank Request"])
 
 
 def isPartOfBankDump(message):
     for b in range(numberOfBanks()):
-        worked, program, data = parseMessage(message, adaptation["Bank Drivers"][b]["Bank Reply"],
+        worked, program, data = device.parseMessage(message, adaptation["Bank Drivers"][b]["Bank Reply"],
                                              adaptation["Bank Drivers"][b])
         if worked:
             return True
@@ -175,11 +175,11 @@ def isBankDumpFinished(messages):
 def extractPatchesFromBank(message):
     result = []
     for b in range(numberOfBanks()):
-        worked, programs, datas = parseMessage(message, adaptation["Bank Drivers"][b]["Bank Reply"],
+        worked, programs, datas = device.parseMessage(message, adaptation["Bank Drivers"][b]["Bank Reply"],
                                                adaptation["Bank Drivers"][b])
         if worked:
             for i in range(len(datas)):
-                single_dump = createMessage(adaptation["Bank Drivers"][b]["Single Reply"], i, datas[i])
+                single_dump = device.createMessage(adaptation["Bank Drivers"][b]["Single Reply"], i, datas[i])
                 assert isSingleProgramDump(single_dump)
                 result = result + single_dump
     return result
@@ -187,113 +187,6 @@ def extractPatchesFromBank(message):
 
 def friendlyBankName(bank):
     return adaptation["Bank Drivers"][bank]["Bank Name"]
-
-
-def parseMessage(message, reply_expected, bank_driver=None):
-    reply = ignoreDeviceID(message)
-    prg_result = -1
-    result = []
-    nested = False
-    reply_ptr = 0
-    expected_ptr = 0
-    loop_start = -1
-    while reply_ptr < len(reply):
-        if type(reply_expected[expected_ptr]) is str:
-            if reply_expected[expected_ptr] == "[":
-                nested = True
-                if type(prg_result) is not list:
-                    prg_result = []
-                loop_start = expected_ptr
-                expected_ptr = expected_ptr + 1
-            elif reply_expected[expected_ptr] == "]":
-                # Check if we have enough
-                if len(result) < bank_driver["# of Entries"]:
-                    expected_ptr = loop_start
-                else:
-                    expected_ptr = expected_ptr + 1
-            elif reply_expected[expected_ptr] == "SUM":
-                summation_start = reply_ptr
-                expected_ptr = expected_ptr + 1
-            elif reply_expected[expected_ptr] == "EN#":
-                if nested:
-                    prg_result.append(reply[reply_ptr])
-                else:
-                    prg_result = reply[reply_ptr]
-                expected_ptr = expected_ptr + 1
-                reply_ptr = reply_ptr + 1
-            elif reply_expected[expected_ptr] == "SIN":
-                data = []
-                while len(data) < adaptation["Data Types"]["Single"]["Size"]:
-                    data.append(reply[reply_ptr])
-                    reply_ptr = reply_ptr + 1
-                expected_ptr = expected_ptr + 1
-                if nested:
-                    result.append(data)
-                else:
-                    result = data
-            elif reply_expected[expected_ptr] == "CHK":
-                # Ignore checksum for now
-                expected_ptr = expected_ptr + 1
-                reply_ptr = reply_ptr + 1
-            else:
-                raise Exception("Unknown pseudo byte" + reply_expected[expected_ptr])
-        else:
-            # Just check that all bytes are as expected
-            if reply[reply_ptr] != reply_expected[expected_ptr]:
-                return False, -1, []
-            reply_ptr = reply_ptr + 1
-            expected_ptr = expected_ptr + 1
-    return True, prg_result, result
-
-
-def createMessage(expected_message, program_no, data_block):
-    data = []
-    ptr = 0
-    while ptr < len(expected_message):
-        if type(expected_message[ptr]) is str:
-            if expected_message[ptr] == "SUM":
-                summation_start = ptr
-                ptr = ptr + 1
-            elif expected_message[ptr] == "EN#":
-                data.append(program_no)
-                ptr = ptr + 1
-            elif expected_message[ptr] == "SIN":
-                data = data + data_block
-                ptr = ptr + 1
-            elif expected_message[ptr] == "CHK":
-                # Ignore checksum for now
-                data.append(0)
-                ptr = ptr + 1
-            else:
-                raise Exception("Unknown pseudo byte" + expected_message[ptr])
-        else:
-            # Just copy byte verbatim
-            data.append(expected_message[ptr])
-            ptr = ptr + 1
-    return data
-
-
-def bankNoForProgramNo(program_number):
-    bank = 0
-    count = 0
-    while adaptation["Bank Drivers"][bank]["# of Entries"] + count < program_number + 1:
-        count = count + adaptation["Bank Drivers"][bank]["# of Entries"]
-        bank = bank + 1
-    return bank
-
-
-def insertDeviceID(channel, message):
-    # TODO not sure what to do with the device ID min and max values. Is this for display?
-    device_id = (channel + adaptation["Device ID"][1]) % adaptation["Device ID"][2]
-    return message[0:adaptation["Device ID"][0]] + [channel] + message[adaptation["Device ID"][0] + 1:]
-
-
-def ignoreDeviceID(message):
-    return message[0:adaptation["Device ID"][0]] + [0] + message[adaptation["Device ID"][0] + 1:]
-
-
-def kawaiK1K4Checksum(data):
-    return (0xA4 + sum(data)) & 0x7f
 
 
 import binascii
@@ -324,8 +217,8 @@ def runTests():
     assert friendlyBankName(0) == "Int-Singles I/1"
     assert friendlyBankName(1) == "Int-Singles i/2"
     assert createProgramDumpRequest(2, 31) == [0xf0, 0x40, 2, 0x00, 0x00, 0x03, 0x00, 31, 0xf7]
-    assert bankNoForProgramNo(31) == 0
-    assert bankNoForProgramNo(32) == 1
+    assert device.bankNoForProgramNo(31) == 0
+    assert device.bankNoForProgramNo(32) == 1
 
     test_single = "F040002000030000467265746C65737320313B2432323E02150010005F320032343237484848483D3C3D6F0E0E0A2A4E515164000000000C100E073C3B3C2A000000001A1616224D4D435E323232321D1E2B143B3D3E321F323236323232320BF7"
     # test_single2 = "F040002000030001467265746C65737320325D0C32323E021D00321B323200323235363C4E403C57255A6E0E0F2F0E64646464000000000B09062D40251F4B000000001517111E4233613D323232323200212C323232321832170C3232323265F7"

@@ -155,6 +155,10 @@ IF(WIN32)
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 
+# Copy knobdiver python module
+add_custom_target(copy-knobdiver-files ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/../adaptions/knobdiver" ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/knobdiver)
+
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
