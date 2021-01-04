@@ -21,7 +21,8 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet Rev2 | works | native | |
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No ! |
 | Electra | one | alpha | adaptation |
-| Kawai | K3/K3M | works | native | | 
+| Kawai | K1/K1m/K1r | beta | adaptation | | 
+| Kawai | K3/K3m | works | native | | 
 | Korg | DW-6000 | alpha | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|

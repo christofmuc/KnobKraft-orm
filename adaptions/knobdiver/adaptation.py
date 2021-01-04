@@ -104,7 +104,7 @@ class Adaptation(object):
     def insertDeviceID(self, channel, message):
         # TODO not sure what to do with the device ID min and max values. Is this for display?
         device_id = (channel + self.adaptation["Device ID"][1]) % self.adaptation["Device ID"][2]
-        return message[0:self.adaptation["Device ID"][0]] + [channel] + message[self.adaptation["Device ID"][0] + 1:]
+        return message[0:self.adaptation["Device ID"][0]] + [(channel & 0x0f) if channel != -1 else 0] + message[self.adaptation["Device ID"][0] + 1:]
 
     def ignoreDeviceID(self, message):
         return message[0:self.adaptation["Device ID"][0]] + [0] + message[self.adaptation["Device ID"][0] + 1:]
