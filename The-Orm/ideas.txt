@@ -1,5 +1,10 @@
-Completely unprioritised list of things to do
+﻿Completely unprioritised list of things to do
 =============================================
+
+Surf! Auto-Surf! Dive!
+
+AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
+AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
 
 Before next release
 * Should setup github project page
