@@ -119,7 +119,6 @@ def isBankDumpFinished(messages):
 
 
 def extractPatchesFromBank(message):
-    print("Extract patches from Bank called")
     if isSingleProgramDump(message):
         return message
     raise Exception("Only Single Program dumps are expected to be part of a bank dump")
