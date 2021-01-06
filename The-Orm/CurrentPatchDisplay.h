@@ -13,23 +13,24 @@
 
 #include "Patch.h"
 #include "PatchHolder.h"
+#include "PatchTextBox.h"
 
 class CurrentPatchDisplay : public Component,
 	private TextButton::Listener
 {
 public:
 	CurrentPatchDisplay(std::vector<CategoryButtons::Category>  categories, 
-		std::function<void(midikraft::PatchHolder&)> favoriteHandler, 
-		std::function<void(midikraft::PatchHolder&)> sessionHandler);
+		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler,
+		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> sessionHandler);
 	virtual ~CurrentPatchDisplay();
 
-	void setCurrentPatch(midikraft::PatchHolder patch);
+	void setCurrentPatch(std::shared_ptr<midikraft::PatchHolder> patch);
 	void reset();
 
 	void resized() override;
 	void buttonClicked(Button*) override;
 
-	midikraft::PatchHolder getCurrentPatch() const;
+	std::shared_ptr<midikraft::PatchHolder> getCurrentPatch() const;
 
 	// For remote control via MidiKeyboard
 	void toggleFavorite();
@@ -50,9 +51,10 @@ private:
 	TextButton favorite_;
 	TextButton hide_;
 	CategoryButtons categories_;
-	std::function<void(midikraft::PatchHolder&)> favoriteHandler_;
-	std::function<void(midikraft::PatchHolder&)> sessionHandler_;
-	midikraft::PatchHolder currentPatch_;
+	PatchTextBox patchAsText_;
+	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler_;
+	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> sessionHandler_;
+	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)
 };

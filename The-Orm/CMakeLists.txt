@@ -43,6 +43,7 @@ set(SOURCES
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
+	PatchTextBox.cpp PatchTextBox.h
 	PatchView.cpp PatchView.h
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h

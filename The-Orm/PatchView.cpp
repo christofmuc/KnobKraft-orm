@@ -48,11 +48,11 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(onlyUntagged_);
 
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
-		[this](midikraft::PatchHolder &favoritePatch) {
-		database_.putPatch(favoritePatch);
+		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
+		database_.putPatch(*favoritePatch);
 		patchButtons_->refresh(true);
 	},
-		[this](midikraft::PatchHolder &sessionPatch) {
+		[this](std::shared_ptr<midikraft::PatchHolder> sessionPatch) {
 		ignoreUnused(sessionPatch);
 		UIModel::instance()->currentSession_.changedSession();
 	});
@@ -126,7 +126,7 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 		retrieveFirstPageFromDatabase();
 	}
 	else if (dynamic_cast<CurrentPatch *>(source)) {
-		currentPatchDisplay_->setCurrentPatch(UIModel::currentPatch());
+		currentPatchDisplay_->setCurrentPatch(std::make_shared<midikraft::PatchHolder>(UIModel::currentPatch()));
 	}
 	else if (dynamic_cast<CurrentSynthList *>(source)) {
 		rebuildSynthFilters();
@@ -336,8 +336,8 @@ void PatchView::showPatchDiffDialog() {
 }
 
 void PatchView::saveCurrentPatchCategories() {
-	if (currentPatchDisplay_->getCurrentPatch().patch()) {
-		database_.putPatch(currentPatchDisplay_->getCurrentPatch());
+	if (currentPatchDisplay_->getCurrentPatch()->patch()) {
+		database_.putPatch(*currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
 }

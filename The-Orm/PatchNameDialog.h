@@ -14,14 +14,14 @@
 
 class PatchNameDialog : public Component, private TextButton::Listener {
 public:
-	PatchNameDialog(std::function<void(midikraft::PatchHolder *result)> callback);
+	PatchNameDialog(std::function<void(std::shared_ptr<midikraft::PatchHolder> result)> callback);
 	virtual ~PatchNameDialog() = default;
 
-	void setPatch(midikraft::PatchHolder *patch);
+	void setPatch(std::shared_ptr<midikraft::PatchHolder> patch);
 
 	virtual void resized() override;
 
-	static void showPatchNameDialog(midikraft::PatchHolder *patch, Component *centeredAround, std::function<void(midikraft::PatchHolder *)> callback);
+	static void showPatchNameDialog(std::shared_ptr<midikraft::PatchHolder> patch, Component *centeredAround, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> callback);
 	static void release();
 
 	void notifyResult();
@@ -31,13 +31,13 @@ private:
 	static DialogWindow *sWindow_;
 
 	void buttonClicked(Button*) override;
-	std::function<void(midikraft::PatchHolder *result)> callback_;
+	std::function<void(std::shared_ptr<midikraft::PatchHolder> result)> callback_;
 
 	PropertyEditor propertyEditor_;
 	TextButton ok_;
 	TextButton cancel_;
 
-	midikraft::PatchHolder  *patch_;
+	std::shared_ptr<midikraft::PatchHolder> patch_;
 	std::vector<Value> names_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchNameDialog)
