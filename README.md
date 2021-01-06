@@ -171,7 +171,6 @@ This is by far not the first attempt at solving the challenge, I only hope it is
 | [CTRLR](https://github.com/RomanKubiak/ctrlr) | Yes | Win, Mac | C++ & Lua | 2015 | Lua code | Yes |
 | [LaserMammoth](https://f0f7.net/fe/#/SysexLibrarian) | Yes | Chrome Web | Javascript & PHP | 2016 | Javascript code | Yes |
 | [MidiManager](https://midimanager.com/) | No | Chrome Web | ? | 2020 | JSON data | Yes |
-
 |  [Opcode Systems Galaxy](http://web.archive.org/web/19961113040000/http://www.opcode.com/products/gal_gpe/) | No| Mac | ? | 1990 | ? | Yes |
 | [MidiSynth](http://www.sigabort.co/midisynth.html) | No | Win, Mac | ? | 2015 | ? | No |
 | [Patch Base](https://coffeeshopped.com/patch-base) | No | iOS, Mac | ? | 2020 | ? | No |
