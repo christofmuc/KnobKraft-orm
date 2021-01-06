@@ -608,7 +608,9 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
 	if (index != -1) {
 		// Rename tab to show settings of this synth
-		mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
+		if (UIModel::currentSynth()) {
+			mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
+		}
 	}
 	else {
 		mainTabs_.setTabName(index, "Settings");
