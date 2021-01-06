@@ -303,14 +303,13 @@ namespace knobkraft {
 			return result.cast<int>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfBanks % ex.what()).str());
+			logAdaptationError(kNumberOfBanks, ex);
 			ex.restore();
-			return 1;
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfBanks % ex.what()).str());
-			return 1;
+			logAdaptationError(kNumberOfBanks, ex);
 		}
+		return 1;
 	}
 
 	int GenericAdaptation::numberOfPatches() const
@@ -320,14 +319,13 @@ namespace knobkraft {
 			return result.cast<int>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfPatchesPerBank % ex.what()).str());
+			logAdaptationError(kNumberOfPatchesPerBank, ex);
 			ex.restore();
-			return 0;
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberOfPatchesPerBank % ex.what()).str());
-			return 0;
+			logAdaptationError(kNumberOfPatchesPerBank, ex);
 		}
+		return 0;
 	}
 
 	std::string GenericAdaptation::friendlyBankName(MidiBankNumber bankNo) const
@@ -341,14 +339,13 @@ namespace knobkraft {
 			return result.cast<std::string>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyBankName % ex.what()).str());
+			logAdaptationError(kFriendlyBankName, ex);
 			ex.restore();
-			return "invalid name";
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyBankName % ex.what()).str());
-			return "invalid name";
+			logAdaptationError(kFriendlyBankName, ex);
 		}
+		return "invalid name";
 	}
 
 	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
@@ -376,11 +373,11 @@ namespace knobkraft {
 				midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesThrottled(buffer, delay);
 			}
 			catch (py::error_already_set &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kGeneralMessageDelay % ex.what()).str());
+				logAdaptationError(kGeneralMessageDelay, ex);
 				ex.restore();
 			}
 			catch (std::exception &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kGeneralMessageDelay % ex.what()).str());
+				logAdaptationError(kGeneralMessageDelay, ex);
 			}
 		}
 		else {
@@ -398,11 +395,11 @@ namespace knobkraft {
 				return py::cast<std::string>(result);
 			}
 			catch (py::error_already_set &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyProgramName % ex.what()).str());
+				logAdaptationError(kFriendlyProgramName, ex);
 				ex.restore();
 			}
 			catch (std::exception &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kFriendlyProgramName % ex.what()).str());
+				logAdaptationError(kFriendlyProgramName, ex);
 			}
 		}
 		return Synth::friendlyProgramName(programNo);
@@ -416,12 +413,12 @@ namespace knobkraft {
 			return Sysex::vectorToMessages(byteData);
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateDeviceDetectMessage % ex.what()).str());
+			logAdaptationError(kCreateDeviceDetectMessage, ex);
 			ex.restore();
 			return {};
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateDeviceDetectMessage % ex.what()).str());
+			logAdaptationError(kCreateDeviceDetectMessage, ex);
 			return {};
 		}
 	}
@@ -438,14 +435,13 @@ namespace knobkraft {
 
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kDeviceDetectWaitMilliseconds % ex.what()).str());
+			logAdaptationError(kDeviceDetectWaitMilliseconds, ex);
 			ex.restore();
-			return 200;
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kDeviceDetectWaitMilliseconds % ex.what()).str());
-			return 200;
+			logAdaptationError(kDeviceDetectWaitMilliseconds, ex);
 		}
+		return 200;
 	}
 
 	MidiChannel GenericAdaptation::channelIfValidDeviceResponse(const MidiMessage &message)
@@ -461,10 +457,14 @@ namespace knobkraft {
 				return MidiChannel::invalidChannel();
 			}
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kChannelIfValidDeviceResponse % ex.what()).str());
-			return MidiChannel::invalidChannel();
+		catch (py::error_already_set &ex) {
+			logAdaptationError(kChannelIfValidDeviceResponse, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			logAdaptationError(kChannelIfValidDeviceResponse, ex);
+		}
+		return MidiChannel::invalidChannel();
 	}
 
 	bool GenericAdaptation::needsChannelSpecificDetection()
@@ -477,10 +477,14 @@ namespace knobkraft {
 			py::object result = callMethod(kNeedsChannelSpecificDetection);
 			return result.cast<bool>();
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNeedsChannelSpecificDetection % ex.what()).str());
-			return true;
+		catch (py::error_already_set &ex) {
+			logAdaptationError(kNeedsChannelSpecificDetection, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			logAdaptationError(kNeedsChannelSpecificDetection, ex);
+		}
+		return true;
 	}
 
 	std::string GenericAdaptation::getName() const
@@ -489,10 +493,14 @@ namespace knobkraft {
 			py::object result = callMethod(kName);
 			return result.cast<std::string>();
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kName % ex.what()).str());
-			return "Invalid";
+		catch (py::error_already_set &ex) {
+			logAdaptationError(kName, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			logAdaptationError(kName, ex);
+		}
+		return "Invalid";
 	}
 
 	std::string GenericAdaptation::calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const
@@ -507,10 +515,14 @@ namespace knobkraft {
 			py::object result = callMethod(kCalculateFingerprint, data);
 			return result.cast<std::string>();
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCalculateFingerprint % ex.what()).str());
-			return {};
+		catch (py::error_already_set &ex) {
+			logAdaptationError(kCalculateFingerprint, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			logAdaptationError(kCalculateFingerprint, ex);
+		}
+		return {};
 	}
 
 	std::vector<int> GenericAdaptation::messageToVector(MidiMessage const &message) {
@@ -600,7 +612,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	void GenericAdaptation::logAdaptationError(const char *methodName, std::exception &ex)
+	void GenericAdaptation::logAdaptationError(const char *methodName, std::exception &ex) const
 	{
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();

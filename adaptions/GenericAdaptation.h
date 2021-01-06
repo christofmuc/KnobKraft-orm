@@ -98,7 +98,7 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
 
 		// Common error logging
-		void logAdaptationError(const char *methodName, std::exception &e);
+		void logAdaptationError(const char *methodName, std::exception &e) const;
 
 	private:
 		friend class GenericEditBufferCapability;
