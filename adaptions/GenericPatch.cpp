@@ -17,7 +17,7 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	GenericPatch::GenericPatch(pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::DataFile(dataType, data), adaptation_(adaptation_module)
+	GenericPatch::GenericPatch(GenericAdaptation const *me, pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::DataFile(dataType, data), me_(me), adaptation_(adaptation_module)
 	{
 	}
 
@@ -44,10 +44,19 @@ namespace knobkraft {
 			ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
 			SimpleLogger::instance()->postMessage(errorMessage);
 		}
-		catch (...) {
-			SimpleLogger::instance()->postMessage("Uncaught exception in name() of Patch of GenericAdaptation");
+		catch (std::exception &ex) {
+			logAdaptationError(kNameFromDump, ex);
 		}
 		return "invalid";
+	}
+
+	void GenericPatch::logAdaptationError(const char *methodName, std::exception &ex) const
+	{
+		// This hoop is required to properly process Python created exceptions
+		std::string exceptionMessage = ex.what();
+		MessageManager::callAsync([this, methodName, exceptionMessage]() {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % me_->getName() % methodName % exceptionMessage).str());
+		});
 	}
 
 	void GenericStoredPatchNameCapability::setName(std::string const &name)
@@ -66,11 +75,16 @@ namespace knobkraft {
 				me_.lock()->setData(byteData);
 			}
 			catch (py::error_already_set &ex) {
-				std::string errorMessage = (boost::format("Error calling %s: %s") % kRenamePatch % ex.what()).str();
-				SimpleLogger::instance()->postMessage(errorMessage);
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kRenamePatch, ex);
+				ex.restore();
+			}
+			catch (std::exception &ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kRenamePatch, ex);
 			}
 			catch (...) {
-				SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kRenamePatch).str());
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation[unknown]: Uncaught exception in %s of Patch of GenericAdaptation") % kRenamePatch).str());
 			}
 		}
 	}
@@ -84,8 +98,13 @@ namespace knobkraft {
 				return py::cast<bool>(result);
 			}
 			catch (py::error_already_set &ex) {
-				std::string errorMessage = (boost::format("Error calling %s: %s") % kIsDefaultName % ex.what()).str();
-				SimpleLogger::instance()->postMessage(errorMessage);
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kIsDefaultName, ex);
+				ex.restore();
+			}
+			catch (std::exception &ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kIsDefaultName, ex);
 			}
 			catch (...) {
 				SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kIsDefaultName).str());

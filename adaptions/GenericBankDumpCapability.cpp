@@ -26,10 +26,14 @@ namespace knobkraft {
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateBankDumpRequest % ex.what()).str());
-			return {};
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kCreateBankDumpRequest, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kCreateBankDumpRequest, ex);
+		}
+		return {};
 	}
 
 	bool GenericBankDumpCapability::isBankDump(const MidiMessage& message) const
@@ -39,10 +43,14 @@ namespace knobkraft {
 			py::object result = me_->callMethod(kIsPartOfBankDump, vector);
 			return result.cast<bool>();
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsPartOfBankDump % ex.what()).str());
-			return false;
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kIsPartOfBankDump, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kIsPartOfBankDump, ex);
+		}
+		return false;
 	}
 
 	bool GenericBankDumpCapability::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
@@ -55,10 +63,14 @@ namespace knobkraft {
 			py::object result = me_->callMethod(kIsBankDumpFinished, vector);
 			return result.cast<bool>();
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsBankDumpFinished % ex.what()).str());
-			return false;
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kIsBankDumpFinished, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kIsBankDumpFinished, ex);
+		}
+		return false;
 	}
 
 	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(const MidiMessage& message) const
@@ -82,10 +94,14 @@ namespace knobkraft {
 			}
 			return patchesFound;
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kExtractPatchesFromBank % ex.what()).str());
-			return {};
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kExtractPatchesFromBank, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kExtractPatchesFromBank, ex);
+		}
+		return {};
 	}
 
 }

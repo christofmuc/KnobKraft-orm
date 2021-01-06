@@ -31,14 +31,13 @@ namespace knobkraft {
 			return { GenericAdaptation::vectorToMessage(result.cast<std::vector<int>>()) };
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateEditBufferRequest % ex.what()).str());
+			me_->logAdaptationError(kCreateEditBufferRequest, ex);
 			ex.restore();
-			return {};
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateEditBufferRequest % ex.what()).str());
-			return {};
+			me_->logAdaptationError(kCreateEditBufferRequest, ex);
 		}
+		return {};
 	}
 
 	bool GenericEditBufferCapability::isEditBufferDump(const MidiMessage& message) const
@@ -49,21 +48,20 @@ namespace knobkraft {
 			return result.cast<bool>();
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsEditBufferDump % ex.what()).str());
+			me_->logAdaptationError(kIsEditBufferDump, ex);
 			ex.restore();
-			return false;
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsEditBufferDump % ex.what()).str());
-			return false;
+			me_->logAdaptationError(kIsEditBufferDump, ex);
 		}
+		return false;
 	}
 
 	std::shared_ptr<midikraft::DataFile> GenericEditBufferCapability::patchFromSysex(const MidiMessage& message) const
 	{
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::EDIT_BUFFER);
+		return std::make_shared<GenericPatch>(me_, const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::EDIT_BUFFER);
 	}
 
 	std::vector<juce::MidiMessage> GenericEditBufferCapability::patchToSysex(std::shared_ptr<midikraft::DataFile> patch) const
@@ -75,12 +73,14 @@ namespace knobkraft {
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kConvertToEditBuffer % ex.what()).str());
-			return {};
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kConvertToEditBuffer, ex);
+			ex.restore();
 		}
-		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-		//return { MidiMessage(patch.data().data(), (int)patch.data().size()) };
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kConvertToEditBuffer, ex);
+		}
+		return {};
 	}
 
 	juce::MidiMessage GenericEditBufferCapability::saveEditBufferToProgram(int programNumber)
