@@ -8,6 +8,9 @@
 
 #include "GenericAdaptation.h"
 
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
+
 namespace py = pybind11;
 
 #include <boost/format.hpp>
