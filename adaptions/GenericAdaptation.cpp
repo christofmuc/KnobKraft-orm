@@ -354,7 +354,7 @@ namespace knobkraft {
 	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
 		ignoreUnused(place);
-		auto patch = std::make_shared<GenericPatch>(const_cast<py::module &>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module &>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 		return patch;
 	}
 
@@ -600,5 +600,13 @@ namespace knobkraft {
 		return false;
 	}
 
+	void GenericAdaptation::logAdaptationError(const char *methodName, std::exception &ex)
+	{
+		// This hoop is required to properly process Python created exceptions
+		std::string exceptionMessage = ex.what();
+		MessageManager::callAsync([this, methodName, exceptionMessage]() {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % getName() % methodName % exceptionMessage).str());
+		});
+	}
 
 }

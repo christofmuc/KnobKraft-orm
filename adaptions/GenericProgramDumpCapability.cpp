@@ -22,7 +22,7 @@ namespace knobkraft {
 	{
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
-		return std::make_shared<GenericPatch>(const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		return std::make_shared<GenericPatch>(me_, const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 	}
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::requestPatch(int patchNo) const
@@ -33,10 +33,14 @@ namespace knobkraft {
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kCreateProgramDumpRequest % ex.what()).str());
-			return {};
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kCreateProgramDumpRequest, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kCreateProgramDumpRequest, ex);
+		}
+		return {};
 	}
 
 	bool GenericProgramDumpCapability::isSingleProgramDump(const MidiMessage& message) const
@@ -46,10 +50,14 @@ namespace knobkraft {
 			py::object result = me_->callMethod(kIsSingleProgramDump, vector);
 			return result.cast<bool>();
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kIsSingleProgramDump % ex.what()).str());
-			return false;
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kIsSingleProgramDump, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kIsSingleProgramDump, ex);
+		}
+		return false;
 	}
 
 	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const MidiMessage &message) const
@@ -60,8 +68,12 @@ namespace knobkraft {
 				py::object result = me_->callMethod(kNumberFromDump, vector);
 				return MidiProgramNumber::fromZeroBase(result.cast<int>());
 			}
+			catch (py::error_already_set &ex) {
+				me_->logAdaptationError(kNumberFromDump, ex);
+				ex.restore();
+			}
 			catch (std::exception &ex) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kNumberFromDump % ex.what()).str());
+				me_->logAdaptationError(kNumberFromDump, ex);
 			}
 		}
 		return MidiProgramNumber::fromZeroBase(0);
@@ -78,11 +90,14 @@ namespace knobkraft {
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Error calling %s: %s") % kConvertToProgramDump % ex.what()).str());
-			// Make it a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage(s)
-			return { MidiMessage(patch->data().data(), (int)patch->data().size()) };
+		catch (py::error_already_set &ex) {
+			me_->logAdaptationError(kConvertToProgramDump, ex);
+			ex.restore();
 		}
+		catch (std::exception &ex) {
+			me_->logAdaptationError(kConvertToProgramDump, ex);
+		}
+		return { MidiMessage(patch->data().data(), (int)patch->data().size()) };
 	}
 
 }

@@ -97,6 +97,9 @@ namespace knobkraft {
 		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const override;
 		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
 
+		// Common error logging
+		void logAdaptationError(const char *methodName, std::exception &e);
+
 	private:
 		friend class GenericEditBufferCapability;
 		std::shared_ptr<GenericEditBufferCapability> editBufferCapabilityImpl_;
