@@ -88,6 +88,14 @@ def nameFromDump(message):
     raise Exception("Can only extract name from master keyboard program dump")
 
 
+def numberFromDump(message):
+    if isSingleProgramDump(message):
+        bank = message[6]
+        program = message[7]
+        return bank * numberOfPatchesPerBank() + program
+    raise Exception("Can only extract number from single program dumps")
+
+
 def renamePatch(message, new_name):
     if isSingleProgramDump(message):
         data_block = unescapeSysex(message[8:-1])  # The data block starts at index 8, and does not include the 0xf7
