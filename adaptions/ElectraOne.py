@@ -69,7 +69,7 @@ def nameFromDump(message):
             return presetInfo["name"]
         except json.JSONDecodeError:
             # That is non valid JSON, maybe an extra comma, let's try to regex the name then
-            found = re.search("\"name\"\\s*:\\s*\"(.*)\"", jsonString)
+            found = re.search("\"name\"\\s*:\\s*\"([^\"]*)\"", jsonString)
             if found is None:
                 return "JSON Error"
             return found.group(1)
@@ -113,8 +113,7 @@ def stringToPreset(jsonString):
     return bytearray([0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7])
 
 
-# Some test code that is not run by the KnobKraft Orm on load
-if __name__ == '__main__':
+def run_tests():
     with open(R"testData/elektraOne-demo-preset.syx", mode="rb") as preset:
         content = preset.read()
         old_name = nameFromDump(content)
@@ -131,3 +130,15 @@ if __name__ == '__main__':
     assert name_from_corrupt == "ROLAND MKS-80 v3"
     not_renamed = renamePatch(testCrash, "do crash")
     assert nameFromDump(not_renamed) == "ROLAND MKS-80 v3"
+
+    with open(R"testData/elektraOne-corrupted-preset.syx", mode="rb") as preset:
+        content = preset.read()
+        old_name = nameFromDump(content)
+        assert old_name == "ROLAND MKS-80 v3"
+        new = renamePatch(content, "betterName")
+        assert nameFromDump(new) == old_name
+
+
+# Some test code that is not run by the KnobKraft Orm on load
+if __name__ == '__main__':
+    run_tests()
