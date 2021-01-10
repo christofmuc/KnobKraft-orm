@@ -27,13 +27,10 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 	auto dfl = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(synth);
 	if (dfl) {
 		// This is for synths that support multiple data types. They will want to generate their bank list on their own
-		auto data_types = dfl->dataTypeNames();
 		auto imports = dfl->dataFileImportChoices();
 		for (int i = 0; i < imports.size(); i++) {
-			if (data_types[imports[i].dataTypeID].canBeRequested) {
-				choices.add(imports[i].description);
-				choiceValues.add(i);
-			}
+			choices.add(imports[i].description);
+			choiceValues.add(i);
 		}
 		bankValue_ = Array<var>();
 		banks_ = new MultiChoicePropertyComponent(bankValue_, "Data", choices, choiceValues);
@@ -68,7 +65,7 @@ void ImportFromSynthDialog::resized()
 void ImportFromSynthDialog::buttonClicked(Button *button)
 {
 	auto dfl = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(synth_);
-	std::vector<SelectedDataTypes> result;
+	std::vector<SelectedImports> result;
 	if (button == &ok_) {
 		// Close Window
 		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
@@ -79,17 +76,16 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 			var selected = bankValue_.getValue();
 			auto imports = dfl->dataFileImportChoices();
 			for (auto index : *selected.getArray()) {
-				SelectedDataTypes checked;
+				SelectedImports checked;
 				checked.isDataImport = true;
-				checked.dataTypeID = imports[(int)index].dataTypeID;
-				checked.startIndex = imports[(int)index].startItemNo;
+				checked.import = imports[(int) index];
 				result.push_back(checked);
 			}
 		}
 		else {
 			var selected = bankValue_.getValue();
 			for (auto bank : *selected.getArray()) {
-				SelectedDataTypes checked;
+				SelectedImports checked;
 				checked.isDataImport = false;
 				checked.bank = MidiBankNumber::fromZeroBase((int)bank);
 				result.push_back(checked);
@@ -105,17 +101,15 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 			auto data_types = dfl->dataTypeNames();
 			auto imports = dfl->dataFileImportChoices();
 			for (int i = 0; i < imports.size(); i++) {
-				if (data_types[imports[i].dataTypeID].canBeRequested) {
-					SelectedDataTypes checked;
-					checked.isDataImport = true;
-					checked.dataTypeID = i;
-					result.push_back(checked);
-				}
+				SelectedImports checked;
+				checked.isDataImport = true;
+				checked.import = imports[i];
+				result.push_back(checked);
 			}
 		}
 		else {
 			for (int i = 0; i < numBanks_; i++) {
-				SelectedDataTypes checked;
+				SelectedImports checked;
 				checked.isDataImport = false;
 				checked.bank = MidiBankNumber::fromZeroBase(i);
 				result.push_back(checked);

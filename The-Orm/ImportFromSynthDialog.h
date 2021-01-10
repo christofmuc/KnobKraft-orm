@@ -11,17 +11,17 @@
 #include "Synth.h"
 #include "MidiBankNumber.h"
 #include "ProgressHandler.h"
+#include "DataFileLoadCapability.h"
 
 class ImportFromSynthDialog : public Component, private Button::Listener
 {
 public:
-	struct SelectedDataTypes{
+	struct SelectedImports {
 		bool isDataImport;
-		int dataTypeID;
-		int startIndex;
+		midikraft::DataFileLoadCapability::DataFileImportDescription import;
 		MidiBankNumber bank = MidiBankNumber::invalid();
 	};
-	typedef std::function<void(std::vector<SelectedDataTypes> bankNo)> TSuccessHandler;
+	typedef std::function<void(std::vector<SelectedImports> bankNo)> TSuccessHandler;
 
 	ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk);
 	virtual ~ImportFromSynthDialog() = default;

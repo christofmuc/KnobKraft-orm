@@ -72,6 +72,8 @@ Generic Editor
 + Could allow envelope display and editor (instead of knobs for the env)
 + Split view? Left patches, right editor
 
+Advanced Patch switching
++ Could "freeze certain parameters", e.g. Sequencer, and update the rest via update messages (or patch the patch)
 
 KawaiK3 - supported by BCR2000
 + need Program Change handler to react on a program change initiated by the Kawai K3 (which should query the new patch, and set the current patch as the new patch)

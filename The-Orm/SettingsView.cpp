@@ -81,7 +81,7 @@ void SettingsView::loadGlobals() {
 	auto gsc = midikraft::Capability::hasCapability<midikraft::GlobalSettingsCapability>(synth);
 	if (gsc && midiLocation) {
 		errorMessageInstead_.setText("", dontSendNotification);
-		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), 0, nullptr,
+		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsImport(), nullptr,
 			[this, gsc](std::vector<midikraft::PatchHolder> dataLoaded) {
 			gsc->setGlobalSettingsFromDataFile(dataLoaded[0].patch());
 			MessageManager::callAsync([this, gsc]() {

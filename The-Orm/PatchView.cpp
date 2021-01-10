@@ -351,14 +351,14 @@ void PatchView::retrievePatches() {
 	if (activeSynth && device->wasDetected()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
-			[this, progressWindow, activeSynth, midiLocation](std::vector<ImportFromSynthDialog::SelectedDataTypes> banks) {
+			[this, progressWindow, activeSynth, midiLocation](std::vector<ImportFromSynthDialog::SelectedImports> banks) {
 			if (!banks.empty()) {
-				if (banks[0].isDataImport && false) {
+				if (banks[0].isDataImport) {
 					// Modern, complex version. We are retrieving one or more data types via the DataTypeLoadCapability
-					std::vector<std::pair<int, int>> dataFileInfo;
+					std::vector<midikraft::DataFileLoadCapability::DataFileImportDescription> dataFileInfo;
 					for (auto d : banks) {
 						jassert(d.isDataImport);
-						dataFileInfo.emplace_back(d.dataTypeID, d.startIndex);
+						dataFileInfo.push_back(d.import);
 					}
 					progressWindow->launchThread();
 					auto dfl = std::dynamic_pointer_cast<midikraft::DataFileLoadCapability>(activeSynth);
