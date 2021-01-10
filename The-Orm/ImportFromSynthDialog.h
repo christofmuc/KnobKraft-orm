@@ -15,7 +15,13 @@
 class ImportFromSynthDialog : public Component, private Button::Listener
 {
 public:
-	typedef std::function<void(std::vector<MidiBankNumber> bankNo)> TSuccessHandler;
+	struct SelectedDataTypes{
+		bool isDataImport;
+		int dataTypeID;
+		int startIndex;
+		MidiBankNumber bank = MidiBankNumber::invalid();
+	};
+	typedef std::function<void(std::vector<SelectedDataTypes> bankNo)> TSuccessHandler;
 
 	ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk);
 	virtual ~ImportFromSynthDialog() = default;
@@ -24,6 +30,7 @@ public:
 	void buttonClicked(Button*) override;
 
 private:
+	midikraft::Synth *synth_;
 	TSuccessHandler onOk_;
 	MultiChoicePropertyComponent  *banks_;
 	PropertyPanel propertyPanel_;

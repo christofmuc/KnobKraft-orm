@@ -351,19 +351,47 @@ void PatchView::retrievePatches() {
 	if (activeSynth && device->wasDetected()) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
-			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
-			if (!bankNo.empty()) {
-				progressWindow->launchThread();
-				librarian_.startDownloadingAllPatches(
-					midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
-					activeSynth,
-					bankNo,
-					progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
-					progressWindow->signalThreadShouldExit();
-					MessageManager::callAsync([this, patchesLoaded]() {
-						mergeNewPatches(patchesLoaded);
+			[this, progressWindow, activeSynth, midiLocation](std::vector<ImportFromSynthDialog::SelectedDataTypes> banks) {
+			if (!banks.empty()) {
+				if (banks[0].isDataImport && false) {
+					// Modern, complex version. We are retrieving one or more data types via the DataTypeLoadCapability
+					std::vector<std::pair<int, int>> dataFileInfo;
+					for (auto d : banks) {
+						jassert(d.isDataImport);
+						dataFileInfo.emplace_back(d.dataTypeID, d.startIndex);
+					}
+					progressWindow->launchThread();
+					auto dfl = std::dynamic_pointer_cast<midikraft::DataFileLoadCapability>(activeSynth);
+					librarian_.startDownloadingMultipleDataTypes(
+						midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
+						dfl,
+						dataFileInfo,
+						progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow->signalThreadShouldExit();
+						MessageManager::callAsync([this, patchesLoaded]() {
+							mergeNewPatches(patchesLoaded);
+						});
 					});
-				});
+				}
+				else {
+					// Old, standard version. This is just a list of bank numbers
+					std::vector<MidiBankNumber> bankNo;
+					for (auto d : banks) {
+						jassert(!d.isDataImport);
+						bankNo.push_back(d.bank);
+					}
+					progressWindow->launchThread();
+					librarian_.startDownloadingAllPatches(
+						midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
+						activeSynth,
+						bankNo,
+						progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow->signalThreadShouldExit();
+						MessageManager::callAsync([this, patchesLoaded]() {
+							mergeNewPatches(patchesLoaded);
+						});
+					});
+				}
 			}
 		}
 		);

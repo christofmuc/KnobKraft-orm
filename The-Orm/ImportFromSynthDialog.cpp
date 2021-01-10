@@ -6,8 +6,10 @@
 
 #include "ImportFromSynthDialog.h"
 
+#include "Capability.h"
+#include "DataFileLoadCapability.h"
 
-ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : onOk_(onOk)
+ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : synth_(synth), onOk_(onOk)
 {
 	addAndMakeVisible(propertyPanel_);
 	addAndMakeVisible(cancel_);
@@ -20,16 +22,32 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 	cancel_.setButtonText("Cancel");
 	cancel_.addListener(this);
 
-	// Populate the bank selector
-	numBanks_ = synth->numberOfBanks();
 	StringArray choices;
 	Array<var> choiceValues;
-	for (int i = 0; i < numBanks_; i++) {
-		choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
-		choiceValues.add(i);
+	auto dfl = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(synth);
+	if (dfl) {
+		// This is for synths that support multiple data types. They will want to generate their bank list on their own
+		auto data_types = dfl->dataTypeNames();
+		auto imports = dfl->dataFileImportChoices();
+		for (int i = 0; i < imports.size(); i++) {
+			if (data_types[imports[i].dataTypeID].canBeRequested) {
+				choices.add(imports[i].description);
+				choiceValues.add(i);
+			}
+		}
+		bankValue_ = Array<var>();
+		banks_ = new MultiChoicePropertyComponent(bankValue_, "Data", choices, choiceValues);
 	}
-	bankValue_ = Array<var>();
-	banks_ = new MultiChoicePropertyComponent(bankValue_, "Banks", choices, choiceValues);
+	else {
+		// Simple - we only have banks, so just populate the bank selector
+		numBanks_ = synth->numberOfBanks();
+		for (int i = 0; i < numBanks_; i++) {
+			choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
+			choiceValues.add(i);
+		}
+		bankValue_ = Array<var>();
+		banks_ = new MultiChoicePropertyComponent(bankValue_, "Banks", choices, choiceValues);
+	}
 	banks_->setExpanded(true);
 	propertyPanel_.addProperties({ banks_});
 
@@ -49,31 +67,60 @@ void ImportFromSynthDialog::resized()
 
 void ImportFromSynthDialog::buttonClicked(Button *button)
 {
+	auto dfl = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(synth_);
+	std::vector<SelectedDataTypes> result;
 	if (button == &ok_) {
 		// Close Window
 		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
 			dw->exitModalState(1);
 		}
-		std::vector<MidiBankNumber> result;
-		var selected = bankValue_.getValue();
-		for (auto bank : *selected.getArray()) {
-			if ((int)bank < numBanks_) {
-				result.push_back(MidiBankNumber::fromZeroBase((int)bank));
-			}
-			else {
-				// All selected, just add all banks into the array
-				jassertfalse;
+
+		if (dfl) {
+			var selected = bankValue_.getValue();
+			auto imports = dfl->dataFileImportChoices();
+			for (auto index : *selected.getArray()) {
+				SelectedDataTypes checked;
+				checked.isDataImport = true;
+				checked.dataTypeID = imports[(int)index].dataTypeID;
+				checked.startIndex = imports[(int)index].startItemNo;
+				result.push_back(checked);
 			}
 		}
-
+		else {
+			var selected = bankValue_.getValue();
+			for (auto bank : *selected.getArray()) {
+				SelectedDataTypes checked;
+				checked.isDataImport = false;
+				checked.bank = MidiBankNumber::fromZeroBase((int)bank);
+				result.push_back(checked);
+			}
+		}
 		onOk_(result);
 	}
 	else if (button == &all_) {
 		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
 			dw->exitModalState(1);
 		}
-		std::vector<MidiBankNumber> result;
-		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i));
+		if (dfl) {
+			auto data_types = dfl->dataTypeNames();
+			auto imports = dfl->dataFileImportChoices();
+			for (int i = 0; i < imports.size(); i++) {
+				if (data_types[imports[i].dataTypeID].canBeRequested) {
+					SelectedDataTypes checked;
+					checked.isDataImport = true;
+					checked.dataTypeID = i;
+					result.push_back(checked);
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < numBanks_; i++) {
+				SelectedDataTypes checked;
+				checked.isDataImport = false;
+				checked.bank = MidiBankNumber::fromZeroBase(i);
+				result.push_back(checked);
+			}
+		}
 		onOk_(result);
 	}
 	else if (button == &cancel_) {
