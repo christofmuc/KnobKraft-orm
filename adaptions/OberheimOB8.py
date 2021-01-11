@@ -6,11 +6,17 @@
 import hashlib
 import re
 
+# The information for the Encore MIDI is taken from https://www.encoreelectronics.com/ob8mk.pdf
+
 has_encore = False
 oberheim_id = [0x10, 0x01]
 encore_id = [0x00, 0x00, 0x2f, 0x04]
 default_name_detector = re.compile("OB-8(:| \\(E\\):) [A-D]*[1-8]")
 
+
+# Potential: The OB8 Encore also allows an All Dump request, but I have not implemented it relying on single
+# patch requests, which should work equally well.
+# The request string is F0 00 00 2F 04 02 F7
 
 def name():
     return "Oberheim OB-8"
@@ -147,9 +153,10 @@ def nibble(message):
     return result
 
 
-# Some tests not run by the Orm. You can run these in PyCharm by just clicking "Run", as there is no dependency
-# on KnobKraft in this module
-if __name__ == "__main__":
+# End of implementation for KnobKraft. Tests follow
+
+def run_tests():
+    global has_encore
     fake_program_117 = [0xf0] + makeCorrectHeader() + [0x01, 117, 0xf7]
     assert isSingleProgramDump(fake_program_117)
     assert isOberheim(fake_program_117)
@@ -162,3 +169,9 @@ if __name__ == "__main__":
     assert nameFromDump(fake_program_117) == "OB-8 (E): ABCD6"
     assert isDefaultName(nameFromDump(fake_program_117))
     assert friendlyBankName(14) == "ABCD"
+    new_location = convertToProgramDump(0, fake_program_117, 66)
+    assert isSingleProgramDump(new_location)
+
+
+if __name__ == "__main__":
+    run_tests()
