@@ -26,6 +26,7 @@
 #include "Python.h"
 
 namespace py = pybind11;
+using namespace py::literals;
 
 #include <boost/format.hpp>
 
@@ -106,6 +107,11 @@ namespace knobkraft {
 		sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
 	}
 
+	class FatalAdaptationException : public std::runtime_error {
+	public:
+		using std::runtime_error::runtime_error;
+	};
+
 
 	GenericAdaptation::GenericAdaptation(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
@@ -113,16 +119,29 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		try {
+			// Validate that the filename is a good idea
+			auto result = py::dict("filename"_a = pythonModuleFilePath);
+			py::exec(R"(
+				import re
+				python_identifier = re.compile(r"^[^\d\W]\w*\Z")
+				matches = re.match(python_identifier, filename) is not None
+			)", py::globals(), result);
+			if (!result["matches"].cast<bool>()) {
+				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Warning: file name %s is not a valid module identifier in Python, please use only lower case letters and numbers") % pythonModuleFilePath).str());
+			}
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
+			adaptationName_ = getName();
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
 			ex.restore();
+			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 		catch (std::exception &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
+			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 	}
 
@@ -131,7 +150,7 @@ namespace knobkraft {
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
-		adaptation_module = adaptationModule;
+		adaptation_module = adaptationModule;		
 	}
 
 	std::shared_ptr<GenericAdaptation> GenericAdaptation::fromBinaryCode(std::string moduleName, std::string adaptationCode)
@@ -149,6 +168,7 @@ namespace knobkraft {
 			checkForPythonOutputAndLog();
 			auto newAdaptation = std::make_shared<GenericAdaptation>(py::cast<py::module>(adaptation_module));
 			//if (newAdaptation) newAdaptation->logNamespace();
+			newAdaptation->adaptationName_ = newAdaptation->getName();
 			return newAdaptation;
 		}
 		catch (py::error_already_set &ex) {
@@ -276,7 +296,12 @@ namespace knobkraft {
 		File adaptationDirectory = getAdaptationDirectory();
 		if (adaptationDirectory.exists()) {
 			for (auto f : adaptationDirectory.findChildFiles(File::findFiles, false, "*.py")) {
-				result.push_back(std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString()));
+				try {
+					result.push_back(std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString()));
+				}
+				catch (FatalAdaptationException &) {
+					SimpleLogger::instance()->postMessage("Unloading adaptation module " + String(f.getFullPathName()));
+				}
 			}
 		}
 
@@ -617,7 +642,7 @@ namespace knobkraft {
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();
 		MessageManager::callAsync([this, methodName, exceptionMessage]() {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % getName() % methodName % exceptionMessage).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % adaptationName_ % methodName % exceptionMessage).str());
 		});
 	}
 
