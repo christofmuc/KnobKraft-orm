@@ -143,6 +143,7 @@ namespace knobkraft {
 
 		pybind11::module adaptation_module;
 		std::string filepath_;
+		std::string adaptationName_;
 	};
 
 }
