@@ -28,6 +28,7 @@ namespace knobkraft {
 			{ "Matrix 1000 Test", "Matrix_1000", std::string(Matrix1000_py, Matrix1000_py + Matrix1000_py_size) },
 			{ "Korg DW-8000 Test", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size) },
 			{ "Kawai K3 Test", "Kawai_K3", std::string(KawaiK3_py, KawaiK3_py + KawaiK3_py_size) },
+			{ "Yamaha reface DX", "Yamaha_refaceDX", std::string(YamahaRefaceDX_py, YamahaRefaceDX_py + YamahaRefaceDX_py_size) },
 #endif
 			{ "Pioneer Toraiz AS1", "Pioneer_Toraiz_AS1", std::string(PioneerToraiz_AS1_py, PioneerToraiz_AS1_py + PioneerToraiz_AS1_py_size) },
 			{ "Quasimidi Cyber-6", "Quasimidi_Cyber_6", std::string(QuasimidiCyber6_py, QuasimidiCyber6_py + QuasimidiCyber6_py_size) },

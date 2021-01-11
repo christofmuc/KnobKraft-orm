@@ -361,10 +361,9 @@ void PatchView::retrievePatches() {
 						dataFileInfo.push_back(d.import);
 					}
 					progressWindow->launchThread();
-					auto dfl = std::dynamic_pointer_cast<midikraft::DataFileLoadCapability>(activeSynth);
 					librarian_.startDownloadingMultipleDataTypes(
 						midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
-						dfl,
+						activeSynth,
 						dataFileInfo,
 						progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
 						progressWindow->signalThreadShouldExit();
@@ -588,10 +587,8 @@ void PatchView::rebuildDataTypeFilterBox() {
 		typeNameList.add(kAllDataTypesFilter);
 		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
 			auto typeName = dflc->dataTypeNames()[i];
-			if (typeName.canBeSent) {
 				typeNameList.add(typeName.name);
 			}
-		}
 		advancedFilters_.dataTypeSelector_.addItemList(typeNameList, 1);
 	}
 }

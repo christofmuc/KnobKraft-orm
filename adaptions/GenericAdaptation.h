@@ -13,6 +13,7 @@
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
+#include "DataFileLoadCapability.h"
 
 #include <pybind11/embed.h>
 #include <boost/format.hpp>
@@ -23,21 +24,25 @@ namespace knobkraft {
 	class GenericEditBufferCapability;
 	class GenericProgramDumpCapability;
 	class GenericBankDumpCapability;
+	class GenericDataFileLoadCapability;
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
-		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
+		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,
+		*kDataTypeIDs, *kDataRequestIds, *kCreateStreamRequest, *kMessagesPerStreamType, *kIsPartOfStream, *kIsStreamComplete,
+		*kShouldStreamAdvance, *kLoadStreamIntoPatches;
 
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
 
-	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
-		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
+	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice,
+		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>,
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
+		public midikraft::RuntimeCapability<midikraft::DataFileLoadCapability>,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -55,7 +60,7 @@ namespace knobkraft {
 		int numberOfBanks() const override;
 		int numberOfPatches() const override;
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;
-	
+
 		// Implement the methods needed for device detection
 		std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		int deviceDetectSleepMS() override;
@@ -81,7 +86,7 @@ namespace knobkraft {
 		static File getAdaptationDirectory();
 		// Configure the adaptation directory
 		static void setAdaptationDirectoy(std::string const &directory);
-		
+
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptations();
 		static CriticalSection multiThreadGuard;
 
@@ -96,6 +101,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) const  override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const override;
 		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::DataFileLoadCapability> &outCapability) const override;
+		virtual bool hasCapability(midikraft::DataFileLoadCapability **outCapability) const override;
 
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
@@ -109,6 +116,9 @@ namespace knobkraft {
 
 		friend class GenericBankDumpCapability;
 		std::shared_ptr<GenericBankDumpCapability> bankDumpCapabilityImpl_;
+
+		friend class GenericDataFileLoadCapability;
+		std::shared_ptr<GenericDataFileLoadCapability> dataFileLoadCapabilityImpl_;
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

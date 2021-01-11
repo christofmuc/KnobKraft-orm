@@ -11,6 +11,7 @@
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
+#include "DataFileLoadCapability.h"
 
 #include <boost/format.hpp>
 
@@ -42,10 +43,12 @@ namespace knobkraft {
 		auto hasEditBuffer = midikraft::Capability::hasCapability<midikraft::EditBufferCapability>(adaptationSynth);
 		auto hasProgramDump = midikraft::Capability::hasCapability<midikraft::ProgramDumpCabability>(adaptationSynth);
 		auto hasBankDump = midikraft::Capability::hasCapability<midikraft::BankDumpCapability>(adaptationSynth);
+		auto hasDataFileLoad = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(adaptationSynth);
 
 		infoText += (boost::format("Edit Buffer Capability has %sbeen implemented\n") % (hasEditBuffer ? "" : "not ")).str();
 		infoText += (boost::format("Program Dump Capability has %sbeen implemented\n") % (hasProgramDump? "" : "not ")).str();
 		infoText += (boost::format("Bank Dump Capability has %sbeen implemented\n") % (hasBankDump ? "" : "not ")).str();
+		infoText += (boost::format("Data File Load Capability has %sbeen implemented\n") % (hasDataFileLoad? "" : "not ")).str();
 
 		infoText += "\n\nImplemented functions:\n\n";
 		for (auto functionName : kAdapatationPythonFunctionNames) {

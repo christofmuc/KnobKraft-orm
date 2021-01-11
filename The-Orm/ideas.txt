@@ -2,6 +2,10 @@ Completely unprioritised list of things to do
 =============================================
 
 Before next release
+* New mode - forward always to fixed synth (ignore UI)
+
+
+Better marketing
 * Should setup github project page
 * Should have direct download link to latest release
 * Should have patreon/paypal link for donations?
@@ -230,7 +234,13 @@ Big things
 More synthesizers
 
  	+ Behringer RD 8
-	+ Novation Circuit
+	+ Moog Source Encore - can only do bank uploads (?), not single uploads https://www.encoreelectronics.com/smkmanual.pdf
+	+ Oberheim OB-X Encore - if the OB-8 works, this is piece of cake: https://www.encoreelectronics.com/obxmk.pdf
+	+ Oberheim OB-XA Encore - this has more features, like sending to edit buffer (somehow not requesting it?), and universal device inquiry https://www.encoreelectronics.com/obxamk.pdf
+	+ Jupiter 8 Encore - https://www.encoreelectronics.com/jp8mk.pdf can do edit buffer, patch and presets (different types?)
+	Kenton kits do not seem to implement sysex
+	Tubbutec does not seem to implement sysex
+	CHD does not seem to implement sysex sending (it does receive sysex for the Juno 60)
 
 Requested on Reddit
 

@@ -76,10 +76,7 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 			var selected = bankValue_.getValue();
 			auto imports = dfl->dataFileImportChoices();
 			for (auto index : *selected.getArray()) {
-				SelectedImports checked;
-				checked.isDataImport = true;
-				checked.import = imports[(int) index];
-				result.push_back(checked);
+				result.push_back({ true, imports[(int)index] });
 			}
 		}
 		else {
@@ -101,10 +98,7 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 			auto data_types = dfl->dataTypeNames();
 			auto imports = dfl->dataFileImportChoices();
 			for (int i = 0; i < imports.size(); i++) {
-				SelectedImports checked;
-				checked.isDataImport = true;
-				checked.import = imports[i];
-				result.push_back(checked);
+				result.push_back({ true, imports[i]});
 			}
 		}
 		else {

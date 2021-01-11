@@ -18,6 +18,7 @@
 #include "GenericEditBufferCapability.h"
 #include "GenericProgramDumpCapability.h"
 #include "GenericBankDumpCapability.h"
+#include "GenericDataFileLoadCapability.h"
 
 #include <pybind11/stl.h>
 //#include <pybind11/pybind11.h>
@@ -32,8 +33,8 @@ namespace py = pybind11;
 namespace knobkraft {
 
 	const char *pythonMethodNames;
-	
-	const char 
+
+	const char
 		*kName = "name",
 		*kNumberOfBanks = "numberOfBanks",
 		*kNumberOfPatchesPerBank = "numberOfPatchesPerBank",
@@ -55,10 +56,18 @@ namespace knobkraft {
 		*kIsPartOfBankDump = "isPartOfBankDump",
 		*kIsBankDumpFinished = "isBankDumpFinished",
 		*kExtractPatchesFromBank = "extractPatchesFromBank",
+		*kDataTypeIDs = "dataTypeIDs",
+		*kDataRequestIds = "dataRequestIDs",
+		*kCreateStreamRequest = "createStreamRequest",
+		*kMessagesPerStreamType = "messagesPerStreamType",
+		*kIsPartOfStream = "isPartOfStream",
+		*kIsStreamComplete = "isStreamComplete",
+		*kShouldStreamAdvance = "shouldStreamAdvance",
+		*kLoadStreamIntoPatches = "loadStreamIntoPatches",
 		*kGeneralMessageDelay = "generalMessageDelay",
 		*kCalculateFingerprint = "calculateFingerprint",
 		*kFriendlyBankName = "friendlyBankName",
-		*kFriendlyProgramName= "friendlyProgramName";
+		*kFriendlyProgramName = "friendlyProgramName";
 
 	std::vector<const char *> kAdapatationPythonFunctionNames = {
 		kName,
@@ -82,10 +91,19 @@ namespace knobkraft {
 		kIsPartOfBankDump,
 		kIsBankDumpFinished,
 		kExtractPatchesFromBank,
+		kDataTypeIDs,
+		kDataRequestIds,
+		kCreateStreamRequest,
+		kMessagesPerStreamType,
+		kIsPartOfStream,
+		kIsStreamComplete,
+		kShouldStreamAdvance,
+		kLoadStreamIntoPatches,
 		kGeneralMessageDelay,
 		kCalculateFingerprint,
 		kFriendlyBankName,
 		kFriendlyProgramName,
+
 	};
 
 	std::vector<const char *> kMinimalRequiredFunctionNames = {
@@ -112,6 +130,7 @@ namespace knobkraft {
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
+		dataFileLoadCapabilityImpl_ = std::make_shared<GenericDataFileLoadCapability>(this);
 		try {
 			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			adaptation_module = py::module::import(filepath_.c_str());
@@ -131,6 +150,7 @@ namespace knobkraft {
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
+		dataFileLoadCapabilityImpl_ = std::make_shared<GenericDataFileLoadCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
@@ -607,6 +627,32 @@ namespace knobkraft {
 		midikraft::BankDumpCapability *cap;
 		if (hasCapability(&cap)) {
 			outCapability = bankDumpCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::DataFileLoadCapability  **outCapability) const
+	{
+		if (pythonModuleHasFunction(kDataTypeIDs)
+			&& pythonModuleHasFunction(kDataRequestIds)
+			&& pythonModuleHasFunction(kCreateStreamRequest)
+			&& pythonModuleHasFunction(kMessagesPerStreamType)
+			&& pythonModuleHasFunction(kIsPartOfStream)
+			&& pythonModuleHasFunction(kIsStreamComplete)
+			&& pythonModuleHasFunction(kShouldStreamAdvance)
+			&& pythonModuleHasFunction(kLoadStreamIntoPatches)) {
+			*outCapability = dynamic_cast<midikraft::DataFileLoadCapability *>(dataFileLoadCapabilityImpl_.get());
+			return true; 
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::DataFileLoadCapability> &outCapability) const
+	{
+		midikraft::DataFileLoadCapability *cap;
+		if (hasCapability(&cap)) {
+			outCapability = dataFileLoadCapabilityImpl_;
 			return true;
 		}
 		return false;
