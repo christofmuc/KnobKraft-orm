@@ -228,7 +228,13 @@ Big things
 More synthesizers
 
  	+ Behringer RD 8
-	+ Novation Circuit
+	+ Moog Source Encore - can only do bank uploads (?), not single uploads https://www.encoreelectronics.com/smkmanual.pdf. This is a problem until KnobKraft 2.0, I guess. Unless I encode the whole bank dump as a single patch?
+	+ Jupiter 8 Encore - https://www.encoreelectronics.com/jp8mk.pdf can do edit buffer, patch and presets (different types?)
+
+Not possible:
+	Kenton kits do not seem to implement sysex
+	Tubbutec does not seem to implement sysex
+	CHD does not seem to implement sysex sending (it does receive sysex for the Juno 60)
 
 Requested on Reddit
 

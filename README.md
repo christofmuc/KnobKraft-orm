@@ -29,6 +29,8 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
 | Oberheim | Matrix 1000 | works | native | |
+| Oberheim | OB-X (Encore) | alpha | adaptation | |
+| Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
 | Prioneer | Toraiz AS-1 | beta | adaptation | |
 | Quasimidi | Cyber-6 | alpha | adaptation | |

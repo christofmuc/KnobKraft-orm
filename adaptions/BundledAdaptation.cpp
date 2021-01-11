@@ -24,6 +24,8 @@ namespace knobkraft {
 			{ "Korg MS2000", "Korg_MS2000", std::string(KorgMS2000_py, KorgMS2000_py + KorgMS2000_py_size) },
 			{ "Matrix 6", "Matrix_6", std::string(Matrix_6_py, Matrix_6_py + Matrix_6_py_size) },
 			{ "Oberheim OB-8", "Oberheim_OB8", std::string(OberheimOB8_py, OberheimOB8_py + OberheimOB8_py_size) },
+			{ "Oberheim OB-X", "Oberheim_OB_X", std::string(OberheimOBX_py, OberheimOBX_py + OberheimOBX_py_size) },
+			{ "Oberheim OB-Xa", "Oberheim_OB_Xa", std::string(OberheimOBXa_py, OberheimOBXa_py + OberheimOBXa_py_size) },
 #ifdef _DEBUG
 			{ "Matrix 1000 Test", "Matrix_1000", std::string(Matrix1000_py, Matrix1000_py + Matrix1000_py_size) },
 			{ "Korg DW-8000 Test", "Korg_DW_8000_Adaption", std::string(KorgDW8000_py, KorgDW8000_py + KorgDW8000_py_size) },
