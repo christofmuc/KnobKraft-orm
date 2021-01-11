@@ -97,7 +97,6 @@ namespace knobkraft {
 
 		GenericAdaptation const *me_;
 		pybind11::module &adaptation_;
-		std::string name_;
 	};
 
 
