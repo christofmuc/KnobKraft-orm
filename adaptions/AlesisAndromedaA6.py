@@ -59,7 +59,7 @@ def convertToEditBuffer(channel, message):  # from chris on gh
     bank = 0
     program = numberOfPatchesPerBank() - 1
     if isEditBufferDump(message):
-        return [0xF0, 0x00, 0x00, 0x0E, 0x1D, 0x00, bank, program] + message[7:] + [0xc0 | (channel % 0x7f), program]
+        return [0xf0, 0x00, 0x00, 0x0e, 0x1d, 0x00, bank, program] + message[7:] + [0xc0 | (channel % 0x7f), program]
     if isSingleProgramDump(message):
         # We just need to adjust bank and program and position 6 and 7
         return message[:6] + [bank, program] + message[8:] + [0xc0 | (channel % 0x7f), program]
@@ -148,8 +148,8 @@ def extractPatchesFromBank(message):
 
 
 def calculateFingerprint(message):
-    if isSingleProgramDump(message):
-        data_block = unescapeSysex(message[8:-1])  # The data block starts at index 8, and does not include the 0xf7
+    if isSingleProgramDump(message) or isEditBufferDump(message):
+        data_block = unescapeSysex(getDataBlock(message))
         # Blank out name
         data_block[2:2 + 16] = [0] * 16
         return hashlib.md5(bytearray(data_block)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
