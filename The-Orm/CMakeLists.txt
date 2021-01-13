@@ -44,6 +44,7 @@ set(SOURCES
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
 	PatchView.cpp PatchView.h
+	ReceiveManualDumpWindow.cpp ReceiveManualDumpWindow.h
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h
