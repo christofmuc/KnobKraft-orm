@@ -16,6 +16,7 @@
 const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
 const char *kRouteMasterkeyboard = "Forward MIDI to synth";
+const char *kFixedSynthSelected = "Fixed synth played";
 const char *kInputDevice = "MIDI Input Device";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
@@ -108,10 +109,18 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	midikraft::MidiController::instance()->addMessageHandler(handle_, [this](MidiInput *source, MidiMessage const &message) {
 		if (source && source->getName().toStdString() == customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue()) {
 			int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
-			if (forwardMode == 2 || forwardMode == 3) {
+			if (forwardMode == 2 || forwardMode == 3 || forwardMode == 4) {
 				std::shared_ptr<midikraft::Synth> toWhichSynthToForward;
-				// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
-				if (forwardMode == 3) {
+				if (forwardMode == 4) {
+					// Fixed synth routing, that means, don't take away my master keyboard while I select a patch for a different synth
+					auto selectedSynth = customMasterkeyboardSetup_.typedNamedValueByName(kFixedSynthSelected)->lookupValue();
+					for (auto s : UIModel::instance()->synthList_.activeSynths()) {
+						if (s->getName() == selectedSynth) {
+							toWhichSynthToForward = std::dynamic_pointer_cast<midikraft::Synth>(s);
+						}
+					}
+				} else if (forwardMode == 3) {
+					// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
 					// Forward to the synth of the current patch
 					auto currentPatch = UIModel::currentPatch();
 					if (currentPatch.patch()) {
@@ -172,8 +181,14 @@ void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.clear();
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
-	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "} };
+	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "}, {4, "Always select to the fixed synth set below" } };
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", 1, lookup));
+	std::map<int, std::string> synth_list;
+	int i = 1;
+	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
+		synth_list.emplace(i++, s->getName());
+	}
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, synth_list));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127 ));
@@ -296,7 +311,7 @@ void KeyboardMacroView::valueChanged(Value& value)
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
 	int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
-	if (forwardMode == 2 || forwardMode == 3) {
+	if (forwardMode == 2 || forwardMode == 3 || forwardMode == 4) {
 		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
 		if (masterkeyboardDevice.isNotEmpty()) {
 			midikraft::MidiController::instance()->enableMidiInput(masterkeyboardDevice.toStdString());
