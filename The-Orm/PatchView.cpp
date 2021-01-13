@@ -22,6 +22,9 @@
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
 #include <boost/format.hpp>
+#include "PatchInterchangeFormat.h"
+#include "Settings.h"
+#include "ReceiveManualDumpWindow.h"
 
 const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
@@ -70,13 +73,19 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	{ "fetchEditBuffer",{ 1, "Import edit buffer from synth", [this]() {
 		retrieveEditBuffer();
 	} } },
-	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
+	{ "receiveManualDump",{ 2, "Receive manual dump", [this]() {
+		receiveManualDump();
+	} } },
+	{ "loadsysEx", { 3, "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "exportSysex", { 3, "Export into sysex files", [this]() {
+	{ "exportSysex", { 4, "Export into sysex files", [this]() {
 		exportPatches();
 	} } },
-	{ "showDiff", { 4, "Show patch comparison", [this]() {
+	{ "exportPIF", { 5, "Export into PIF", [this]() {
+		createPatchInterchangeFile();
+	} } },
+	{ "showDiff", { 6, "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
 	};
@@ -348,7 +357,7 @@ void PatchView::retrievePatches() {
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
-	if (activeSynth && device->wasDetected()) {
+	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, progressWindow, activeSynth, midiLocation](std::vector<ImportFromSynthDialog::SelectedImports> banks) {
@@ -531,6 +540,26 @@ private:
 	std::function<void(std::vector<midikraft::PatchHolder>)> finished_;
 };
 
+void PatchView::receiveManualDump() {
+	auto synthToReceiveFrom = UIModel::instance()->currentSynth_.smartSynth();
+
+	if (synthToReceiveFrom) {
+		// We need to start a listener thread, and display a waiting dialog box with an end button all the while...
+		ReceiveManualDumpWindow receiveDumpBox(UIModel::instance()->currentSynth_.smartSynth());
+
+		receiveDumpBox.runThread();
+
+		auto messagesReceived = receiveDumpBox.result();
+		if (messagesReceived.size() > 0) {
+			// Try to load via Librarian
+			auto patches = librarian_.loadSysexPatchesManualDump(synthToReceiveFrom, messagesReceived, automaticCategories_);
+			if (patches.size() > 0) {
+				mergeNewPatches(patches);
+			}
+		}
+	}
+}
+
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
 		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), automaticCategories_);
@@ -546,6 +575,33 @@ void PatchView::exportPatches()
 	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
 		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
 			librarian_.saveSysexPatchesToDisk(patches);
+		});
+	}
+}
+
+void PatchView::updateLastPath() {
+	if (lastPathForPIF_.empty()) {
+		// Read from settings
+		lastPathForPIF_ = Settings::instance().get("lastPatchInterchangePath", "");
+		if (lastPathForPIF_.empty()) {
+			// Default directory
+			lastPathForPIF_ = File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString();
+		}
+	}
+}
+
+void PatchView::createPatchInterchangeFile()
+{
+	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
+	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
+		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+			updateLastPath();
+			FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
+			if (pifChooser.browseForFileToSave(true)) {
+				midikraft::PatchInterchangeFormat::save(patches, pifChooser.getResult().getFullPathName().toStdString());
+				lastPathForPIF_ = pifChooser.getResult().getFullPathName().toStdString();
+				Settings::instance().set("lastPatchInterchangePath", lastPathForPIF_);
+			}
 		});
 	}
 }
@@ -587,8 +643,8 @@ void PatchView::rebuildDataTypeFilterBox() {
 		typeNameList.add(kAllDataTypesFilter);
 		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
 			auto typeName = dflc->dataTypeNames()[i];
-				typeNameList.add(typeName.name);
-			}
+			typeNameList.add(typeName.name);
+		}
 		advancedFilters_.dataTypeSelector_.addItemList(typeNameList, 1);
 	}
 }

@@ -92,7 +92,10 @@ private:
 	void retrievePatches();
 
 	void loadPatches();
+	void receiveManualDump();
 	void exportPatches();
+	void updateLastPath();
+	void createPatchInterchangeFile();
 	std::string currentlySelectedSourceUUID();
 	void rebuildSynthFilters();
 	void rebuildImportFilterBox();
@@ -128,6 +131,8 @@ private:
 	midikraft::PatchHolder compareTarget_;
 
 	midikraft::PatchDatabase &database_;
+	
+	std::string lastPathForPIF_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };
