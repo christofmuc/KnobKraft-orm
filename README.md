@@ -176,6 +176,7 @@ This is by far not the first attempt at solving the challenge, I only hope it is
 | [MidiManager](https://midimanager.com/) | No | Chrome Web | ? | 2020 | JSON data | Yes |
 |  [Opcode Systems Galaxy](http://web.archive.org/web/19961113040000/http://www.opcode.com/products/gal_gpe/) | No| Mac | ? | 1990 | ? | Yes |
 | [MidiSynth](http://www.sigabort.co/midisynth.html) | No | Win, Mac | ? | 2015 | ? | No |
+| [Unisynth](http://www.midimetric.com/home.html) | No | Win | C# .net | 1999 | ? | No |
 | [Patch Base](https://coffeeshopped.com/patch-base) | No | iOS, Mac | ? | 2020 | ? | No |
 | [ToneTweak](https://tonetweak.com/sysex-librarian) | No | Chrome Web | ? | 2020 | ? | No |
 | [MidiQuest](https://squest.com/) | No | Win, Mac | ? | 2008 | ? | No |
