@@ -11,6 +11,8 @@
 #include "GenericAdaptation.h"
 #include "InfoText.h"
 
+#include "LambdaButtonStrip.h"
+
 namespace knobkraft {
 
 	class AdaptationView : public Component {
@@ -24,7 +26,11 @@ namespace knobkraft {
 	private:
 		std::shared_ptr<GenericAdaptation> adaptation_;
 
+		InfoText setupHelp_;
 		InfoText adaptationInfo_;
+		HyperlinkButton knobkraftWiki_;
+
+		LambdaButtonStrip extraFunctions_;
 	};
 
 }

@@ -6,6 +6,7 @@
 
 device_ID = 0b00101100  # See Page 134 of the Pro 2 manual
 
+
 def name():
     return "DSI Pro 2"
 
@@ -86,7 +87,7 @@ def nameFromDump(message):
         dataBlock = message[4:-1]
     if len(dataBlock) > 0:
         patchData = unescapeSysex(dataBlock)
-        return ''.join([chr(x) for x in patchData[378:378+20]])
+        return ''.join([chr(x) for x in patchData[378:378 + 20]])
     return "Invalid"
 
 
@@ -106,6 +107,14 @@ def convertToProgramDump(channel, message, patchNo):
     if isSingleProgramDump(message):
         return message[0:4] + [bank, program] + message[6:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
+def setupHelp():
+    return "The DSI Pro 2 has two relevant global settings:\n\n" \
+           "1. You must set MIDI Sysex Enable to On\n" \
+           "2. You must choose the MIDI Sysex Cable.\n\n" \
+           "Options are DIN MIDI cable or the USB for sysex. USB is much faster.\n\n" \
+           "Both settings are accessible via the GLOBALS menu."
 
 
 def unescapeSysex(sysex):

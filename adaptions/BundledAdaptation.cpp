@@ -7,10 +7,11 @@
 #include "BundledAdaptation.h"
 
 #include "CompiledAdaptations.h"
+#include "GenericAdaptation.h"
 
 namespace knobkraft {
 
-	std::vector<knobkraft::BundledAdaptation> gBundledAdaptations()
+	std::vector<knobkraft::BundledAdaptation> BundledAdaptations::getAll()
 	{
 		return {
 			{ "Alesis Andromeda A6", "Alesis_Andromeda_A6", std::string(AlesisAndromedaA6_py, AlesisAndromedaA6_py + AlesisAndromedaA6_py_size) },
@@ -40,6 +41,39 @@ namespace knobkraft {
 			{ "Sequential Prophet X", "Sequential_Prophet_X", std::string(Sequential_Prophet_X_py, Sequential_Prophet_X_py + Sequential_Prophet_X_py_size) },
 			{ "Waldorf Blofeld", "Waldorf_Blofeld", std::string(Waldorf_Blofeld_py, Waldorf_Blofeld_py + Waldorf_Blofeld_py_size) },
 		};
+	}
+
+	bool BundledAdaptations::breakOut(std::string synthName)
+	{
+		// Find it
+		BundledAdaptation adaptation;
+		for (auto a : getAll()) {
+			if (a.synthName == synthName) {
+				adaptation = a;
+				break;
+			}
+		}
+		if (adaptation.pythonModuleName.empty()) {
+			SimpleLogger::instance()->postMessage("Program error - could not find adaptation for synth " + synthName);
+			return false;
+		}
+
+		auto dir = GenericAdaptation::getAdaptationDirectory();
+
+		// Copy out source code
+		File target = dir.getChildFile(adaptation.pythonModuleName + ".py");
+		if (target.exists()) {
+			juce::AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "File exists", "There is already a file for this adaptation, which we will not overwrite.");
+			return false;
+		}
+
+		FileOutputStream out(target);
+#if WIN32
+		out.writeText(adaptation.adaptationSourceCode, false, false, "\r\n");
+#else
+		out.writeText(adaptation.adaptationSourceCode, false, false, "\n");
+#endif
+		return true;
 	}
 
 }

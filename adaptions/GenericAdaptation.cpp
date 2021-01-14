@@ -59,7 +59,8 @@ namespace knobkraft {
 		*kGeneralMessageDelay = "generalMessageDelay",
 		*kCalculateFingerprint = "calculateFingerprint",
 		*kFriendlyBankName = "friendlyBankName",
-		*kFriendlyProgramName= "friendlyProgramName";
+		*kFriendlyProgramName = "friendlyProgramName",
+		*kSetupHelp = "setupHelp";
 
 	std::vector<const char *> kAdapatationPythonFunctionNames = {
 		kName,
@@ -87,6 +88,7 @@ namespace knobkraft {
 		kCalculateFingerprint,
 		kFriendlyBankName,
 		kFriendlyProgramName,
+		kSetupHelp,
 	};
 
 	std::vector<const char *> kMinimalRequiredFunctionNames = {
@@ -306,7 +308,7 @@ namespace knobkraft {
 		}
 
 		// Then, iterate over the list of built-in adaptations and add those which are not present in the directory
-		auto adaptations = gBundledAdaptations();
+		auto adaptations = BundledAdaptations::getAll();
 		for (auto const &b : adaptations) {
 			createCompiledAdaptationModule(b.pythonModuleName, b.adaptationSourceCode, result);
 		}
@@ -319,6 +321,31 @@ namespace knobkraft {
 			return false;
 		}
 		return py::hasattr(*adaptation_module, functionName.c_str());
+	}
+
+	bool GenericAdaptation::isFromFile() const
+	{
+		return !filepath_.empty();
+	}
+
+	std::string GenericAdaptation::getSourceFilePath() const
+	{
+		return adaptation_module.attr("__file__").cast<std::string>();
+	}
+
+	void GenericAdaptation::reloadPython()
+	{
+		try {
+			adaptation_module.reload();
+			logNamespace();
+		}
+		catch (py::error_already_set &ex) {
+			logAdaptationError(kNumberOfBanks, ex);
+			ex.restore();
+		}
+		catch (std::exception &ex) {
+			logAdaptationError(kNumberOfBanks, ex);
+		}
 	}
 
 	int GenericAdaptation::numberOfBanks() const
@@ -428,6 +455,26 @@ namespace knobkraft {
 			}
 		}
 		return Synth::friendlyProgramName(programNo);
+	}
+
+	std::string GenericAdaptation::setupHelpText() const
+	{
+		if (!pythonModuleHasFunction("setupHelp")) {
+			return Synth::setupHelpText();
+		}
+
+		try {
+			return py::cast<std::string>(callMethod(kSetupHelp));
+		}
+		catch (py::error_already_set &ex) {
+			logAdaptationError(kSetupHelp, ex);
+			ex.restore();
+			return Synth::setupHelpText();
+		}
+		catch (std::exception &ex) {
+			logAdaptationError(kSetupHelp, ex);
+			return Synth::setupHelpText();
+		}
 	}
 
 	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)

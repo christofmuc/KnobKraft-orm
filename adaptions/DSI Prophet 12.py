@@ -130,6 +130,14 @@ def renamePatch(message, new_name):
     return message[:header_len] + escapeSysex(data) + [0xf7]
 
 
+def setupHelp():
+    return "The DSI Prophet 12 has two relevant global settings:\n\n" \
+           "1. You must set MIDI Sysex Enable to On\n" \
+           "2. You must choose the MIDI Sysex Cable.\n\n" \
+           "Options are DIN MIDI cable or the USB for sysex. USB is much faster.\n\n" \
+           "Both settings are accessible via the GLOBALS menu."
+
+
 def getDataBlock(message):
     if isSingleProgramDump(message):
         return message[6:-1]
