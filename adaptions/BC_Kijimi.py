@@ -106,7 +106,7 @@ def run_tests():
     different_position = convertToProgramDump(0, patch, 666)
     assert isSingleProgramDump(different_position)
     assert numberFromDump(different_position) == 666
-    assert nameFromDump(different_position) == "BC Kijimi 5-027"
+    assert nameFromDump(different_position) == "Kijimi 5-027"
     assert isDefaultName(nameFromDump(different_position))
 
     assert calculateFingerprint(different_position) == calculateFingerprint(patch)
