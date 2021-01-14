@@ -11,16 +11,17 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Manufacturer  | Synth | Status | Type | Kudos |
 | ------------- | ------------- | --- | --- | --- |
 | Access  | Virus A, B, Classic, KB, Indigo  | works | native | |
-| Access  | Virus C  | beta | native | Thanks to guavadude@gs! |
-| Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser! |
+| Access  | Virus C  | beta | native | Thanks to guavadude@gs |
+| Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | alpha | adaptation | |
 | Behringer | RD-8 | in progress | native | |
+| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont|
 | DSI | Pro 2 | beta | adaptation | |
 | DSI | Prophet 8 | beta | adaptation | |
 | DSI/Sequential | OB-6 | works | native | |
 | DSI/Sequential | Prophet Rev2 | works | native | |
-| DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No ! |
+| DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
