@@ -15,6 +15,7 @@ namespace knobkraft {
 	{
 		return {
 			{ "Alesis Andromeda A6", "Alesis_Andromeda_A6", std::string(AlesisAndromedaA6_py, AlesisAndromedaA6_py + AlesisAndromedaA6_py_size) },
+			{ "BC Kijimi", "BC_Kijimi", std::string(BC_Kijimi_py, BC_Kijimi_py + BC_Kijimi_py_size) },
 			{ "Deepmind 12", "Deepmind_12", std::string(Behringer_Deepmind_12_py, Behringer_Deepmind_12_py + Behringer_Deepmind_12_py_size) },
 			{ "DSI Pro 2", "DSI_Pro_2", std::string(DSI_Pro_2_py, DSI_Pro_2_py + DSI_Pro_2_py_size) },
 			{ "DSI Prophet 08", "DSI_Prophet_08", std::string(DSI_Prophet_08_py, DSI_Prophet_08_py + DSI_Prophet_08_py_size) },
