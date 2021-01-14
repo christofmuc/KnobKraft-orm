@@ -549,6 +549,20 @@ For example, the good old Korg DW8000 has 64 slots, but has banks 1 to 8 and in 
     def friendlyProgramName(program):
         return "%d%d" % (program // 8 + 1, (program % 8) + 1)
 
+## Leaving helpful setup information specific for a synth
+
+Especially some of our more vintage synths require some preset done, sometimes after every power on, before they can be accessed by the KnobKraft Orm. You can implement the following optional function to return a text displayed to the user in the synth's settings tab:
+
+    def setupHelp():
+
+This just returns a text string displayed. Make sure to quote a possible multiline text correctly. The return character has to be encoded as `\n`, and as it is Python you need a trailing backslash if the line continues into the next line. Or just copy this example and change the text:
+
+    def setupHelp():
+        return "The DSI Prophet 12 has two relevant global settings:\n\n" \
+            "1. You must set MIDI Sysex Enable to On\n" \
+            "2. You must choose the MIDI Sysex Cable.\n\n" \
+            "Options are DIN MIDI cable or the USB for sysex. USB is much faster.\n\n" \
+            "Both settings are accessible via the GLOBALS menu."
 
 ## Examples
 
