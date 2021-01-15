@@ -52,21 +52,32 @@ def name():
 
 
 def createDeviceDetectMessage(channel):
-    # The DX7 cannot be auto detected, because it doesn't reply to any message sent. Just return an empty MIDI message
-    return [0xf0, 0xf7]
+    # The DX7II doesn't have a dedicated detect message, but we're just asking it for the system data to extract the
+    # MIDI channel it is set to
+    return createUniversalDumpRequest(channel, "LM  ", "8973S ")
 
 
 def needsChannelSpecificDetection():
-    return False
+    return True
 
 
 def deviceDetectWaitMilliseconds():
-    # If this value is negative, the KnobKraft Orm will skip the auto-detection altogether
-    return -1
+    # No idea how fast the DX7II is
+    return 500
 
 
 def channelIfValidDeviceResponse(message):
-    # The DX7 cannot be auto detected, because it doesn't reply to any message sent
+    if isUniversalBulkDump(message):
+        classification, data_format = getClassFromUniversalBulkDump(message)
+        if classification == "LM  " and data_format == "8973S ":
+            blocks = getDataBlocksFromUniversalBulkDump(message)
+            system_data = blocks[0][10:]
+            # Ok, here we should have 85 bytes of system setup parameter data. I can guess that the manual
+            # of the DX7s specifies these bytes, as 21 parameters are given and there is "64 bytes more".
+            # If that is true, the "MIDI system common message RX channel (device No.) is at index 14
+            if system_data[14] != (message[2] & 0x0f):
+                print("DX7II system parameter common message RX channel does not seem to be device No. Program error?")
+            return message[2] & 0x0f
     return -1
 
 
@@ -136,6 +147,7 @@ def extractPatchesFromBank(message):
             len(data_block), (0x20 << 7)))
     elif isPartOfBankDump(message):
         if isUniversalBulkDump(message):
+            blocks = getDataBlocksFromUniversalBulkDump(message)
             print("Ignoring DX7II sysex message of class %s and format %s" % getClassFromUniversalBulkDump(message))
         elif isParameterChange(message):
             print("Ignoring DX7II parameter change message: g:%d h:%s p:%s v:%s" % getParameterChanged(message))
@@ -157,8 +169,12 @@ def nameFromDump(message):
 
 
 def setupHelp():
-    return "On the DX7II/DX7IId, you need to turn memory protection off (Button #14), and set MIDI IN to normal (button #29).\n" \
-           "Without MIDI IN normal it will not accept the sysex data but give no error message."
+    return "On the DX7II/DX7IId, you need to turn memory protection off (Button #14), and set MIDI IN to normal (button #29).\n\n" \
+           "Without MIDI IN normal it will not accept the sysex data but give no error message.\n\n" \
+           "The second bank in the DX7s cannot be addressed from the computer, but you have to select the transmit and "\
+           "receive block to be used for the bank requests in the MIDI menu of the synth (button #32).\n"\
+           "Actually they could be set using parameter transfer system setup parameter #76 and #77. "\
+           "It is just not implemented in the adaptation. Feel free to edit!"
 
 
 def packedVoiceToSingleVoice(packed):
@@ -204,6 +220,27 @@ def getClassFromUniversalBulkDump(message):
     raise Exception("Need universal bulk dump message here")
 
 
+def getDataBlocksFromUniversalBulkDump(message):
+    if isUniversalBulkDump(message):
+        # The Universal Bulk Dump can contain repeats of data blocks. This is important to know to parse it
+        # and calculate the length and checksum correctly...
+        blocks = []
+        read_ptr = 4
+        while read_ptr < len(message) and message[read_ptr] != 0xf7:
+            data_len = (message[read_ptr] << 7) | message[read_ptr + 1]
+            read_ptr += 2
+            data_block = message[read_ptr:read_ptr + data_len]
+            read_ptr += data_len
+            if len(data_block) != data_len:
+                raise Exception("Corrupted data - data block in universal bulk dump doesn't contain enough data")
+            expected_chk = message[read_ptr]
+            read_ptr += 1
+            if expected_chk != checksum(data_block):
+                raise Exception("Corrupted data - invalid checksum in universal bulk dump.")
+            blocks.append(data_block)
+        return blocks
+
+
 def isParameterChange(message):
     return (len(message) > 5 and message[0] == 0xf0
             and message[1] == 0x43  # Yamaha
@@ -225,6 +262,7 @@ def isOwnSysexOfSubstatusAndGroup(message, substatus, group):
             and message[1] == 0x43  # Yamaha
             and (message[2] & 0xf0) == substatus
             and message[3] == group)
+
 
 
 def createGroupRequest(channel, group):
@@ -271,6 +309,16 @@ def run_tests():
                 patches = splitSysexMessage(patchData)
                 for p in patches:
                     print(nameFromDump(p))
+            if isUniversalBulkDump(message):
+                classification, data_format = getClassFromUniversalBulkDump(message)
+                if classification == "LM  " and data_format == "8973S ":
+                    blocks = getDataBlocksFromUniversalBulkDump(message)
+                    system_data = blocks[0][10:]
+                    print("MIDI transmit channel", system_data[0])
+                    print("MIDI receive channel 1", system_data[0])
+                    print("MIDI receive channel 2", system_data[0])
+                    print("MIDI receive channel 2", system_data[0])
+                    if system_data[14] != (message[2] & 0x0f):
 
 
 if __name__ == "__main__":
