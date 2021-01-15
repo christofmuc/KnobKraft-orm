@@ -617,7 +617,8 @@ void PatchView::rebuildDataTypeFilterBox() {
 		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
 			auto typeName = dflc->dataTypeNames()[i];
 			if (typeName.canBeSent) {
-			typeNameList.add(typeName.name);
+				typeNameList.add(typeName.name);
+			}
 		}
 		advancedFilters_.dataTypeSelector_.addItemList(typeNameList, 1);
 	}
