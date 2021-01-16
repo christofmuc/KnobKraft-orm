@@ -16,7 +16,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | alpha | adaptation | |
 | Behringer | RD-8 | in progress | native | |
-| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont|
+| Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
 | DSI | Pro 2 | beta | adaptation | |
 | DSI | Prophet 8 | beta | adaptation | |
 | DSI/Sequential | OB-6 | works | native | |
