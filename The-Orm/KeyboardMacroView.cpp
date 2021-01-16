@@ -181,7 +181,7 @@ void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.clear();
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kMacrosEnabled, "Setup", true));
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
-	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "}, {4, "Always select to the fixed synth set below" } };
+	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "}, {4, "Always forward to the fixed synth set below" } };
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", 1, lookup));
 	std::map<int, std::string> synth_list;
 	int i = 1;
