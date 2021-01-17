@@ -1,14 +1,9 @@
 ﻿Completely unprioritised list of things to do
 =============================================
-
 Surf! Auto-Surf! Dive!
 
 AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
 AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
-
-Before next release
-* New mode - forward always to fixed synth (ignore UI)
-
 
 Better marketing
 * Should setup github project page
@@ -16,8 +11,14 @@ Better marketing
 * Should have patreon/paypal link for donations?
 
 Next release 1.11.0	
-* Add PatchInterchangeFormat exprot
-* Test USB connectivity with Rev2
+* Test and document PatchInterchangeFormat exprot
+
+Bugs open in 1.11:
+* Global Settings don't work for Matrix
+* DataFileLoad takes precedence over editbuffer, but shouldn'T
+* How to load unknowns sysex data without creating duplicates?
+* Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
+
 
 Release 2.0
 * Add Bank Management
@@ -49,6 +50,7 @@ UI/UX
 * Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
 * The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * The current patch per synth could be hidable
 * The current patch should go to the right of the screen
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
@@ -56,7 +58,7 @@ UI/UX
 * Page buttons should be clickable?
 * Better responsiveness for the page buttons - should abbreviate
 * Make page number clickable to switch to that page, show less page numbers if these are really many
-* Save Window-layout for restart
+* Save Window-layout for restart, including splitter position
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
@@ -124,38 +126,31 @@ BCR2000
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
 
-DW8000
-* Doesn't properly support the default naming thing
-
-Archiving
-+ Durability - also write all patches on the disk as individual patch files ready to send back to synth [Got Export now]
+Adaptation Tab
++ Could watch files and hot reload module when changed on disk (for easier development) https://github.com/FigBug/Gin
++ Could add python editor with hot reload function -> RATHER, launch editor. And if internal, ask if to break out
 
 Generic Module/Adaptations
 + Add missing capabilities: StreamLoadCapability (RefaceDX, Matrix1000, BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)  
-+ Could nicer show which Flavours/Profiles are implemented for each adaptation (checkbox list)
 + Could create FlowChart to select which methods to implement!
 + Problem with K3 implementation -> it needs hand shaking on sending to edit buffer, waiting for write confirmation message before continuing
-+ Better patch names for synths that only implement EditBufferCapability and not ProgramDumpCapability, and no StoredPatchNameCapability (Korg DW-8000) github #43
-+ Default name mechanism
 + LegacyLoad mechanism
 + Global Settings editor
-+ Could support "CC flood" and "NRPN flood" types of storage, for certain types of synths which are not supported via sysex
-+ Could watch files and hot reload module when changed on disk (for easier development)
-+ Could add python editor with hot reload function
++ Parameter information!
 
 Macro page
+* Could make a macro that opens and closes the manual dump window
 * Somehow better feedback that a macro has been fired. Speech output? Amazon Polly? A Toast?
 * Show on global level if macros on/off 
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
+* Could make the keyboard playable via mouse and keyboard, but then I need to change the routing of the MIDI events (just react on state changes)
 
 Librarian
 * Allow recursive directory traversal during import
-* Could accept synth-initiated dumps at any time
+* Could accept synth-initiated dumps at any time!
 * Could sniff synth out of sysex file opened
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * Could have patch name autogenerator like LaserMammoth
-* Could have patch interchange format - basically a JSON format with sysex, plus metadata. Serializing the PatchHolder I think should be good enough
 
 Patch Diff
 * Could be trimmed down to show only the delta parameters (doesn't make sense in Hex mode)
@@ -193,7 +188,7 @@ Autosampler (the lazy synthesist)
 * How to decide this is a drone and will not stop (endless release?)
 
 MIDI setup
-* Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos
+* Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos [Got Echo test now]
 * MIDI log needs a "turn off" function [Why?]
 
 Global Parameter Editing
@@ -237,10 +232,10 @@ Big things
 More synthesizers
 
  	+ Behringer RD 8
-	+ Moog Source Encore - can only do bank uploads (?), not single uploads https://www.encoreelectronics.com/smkmanual.pdf
-	+ Oberheim OB-X Encore - if the OB-8 works, this is piece of cake: https://www.encoreelectronics.com/obxmk.pdf
-	+ Oberheim OB-XA Encore - this has more features, like sending to edit buffer (somehow not requesting it?), and universal device inquiry https://www.encoreelectronics.com/obxamk.pdf
+	+ Moog Source Encore - can only do bank uploads (?), not single uploads https://www.encoreelectronics.com/smkmanual.pdf. This is a problem until KnobKraft 2.0, I guess. Unless I encode the whole bank dump as a single patch?
 	+ Jupiter 8 Encore - https://www.encoreelectronics.com/jp8mk.pdf can do edit buffer, patch and presets (different types?)
+
+Not possible:
 	Kenton kits do not seem to implement sysex
 	Tubbutec does not seem to implement sysex
 	CHD does not seem to implement sysex sending (it does receive sysex for the Juno 60)

@@ -90,7 +90,13 @@ void CurrentPatchDisplay::setCurrentPatch(midikraft::PatchHolder patch)
 			synthName_.setText(patch.synth()->getName(), dontSendNotification);
 			auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch.smartSynth());
 			if (dataFileCap) {
-				patchType_.setText(dataFileCap->dataTypeNames()[patch.patch()->dataTypeID()].name, dontSendNotification);
+				int datatype = patch.patch()->dataTypeID();
+				if (datatype < dataFileCap->dataTypeNames().size()) {
+					patchType_.setText(dataFileCap->dataTypeNames()[patch.patch()->dataTypeID()].name, dontSendNotification);
+				}
+				else {
+					jassertfalse;
+				}
 			}
 			else {
 				patchType_.setText("Patch", dontSendNotification);

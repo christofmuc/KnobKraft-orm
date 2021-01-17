@@ -4,6 +4,9 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import json
+import re
+
+
 # This uses information from https://docs.electra.one/developers/midiimplementation.html
 
 
@@ -61,16 +64,28 @@ def nameFromDump(message):
     if isEditBufferDump(message):
         jsonBlock = message[6:-1]
         jsonString = ''.join([chr(x) for x in jsonBlock])
-        presetInfo = json.loads(jsonString)
-        return presetInfo["name"]
+        try:
+            presetInfo = json.loads(jsonString)
+            return presetInfo["name"]
+        except json.JSONDecodeError:
+            # That is non valid JSON, maybe an extra comma, let's try to regex the name then
+            found = re.search("\"name\"\\s*:\\s*\"([^\"]*)\"", jsonString)
+            if found is None:
+                return "JSON Error"
+            return found.group(1)
     return "Invalid"
 
 
 def renamePatch(message, newName):
     if isEditBufferDump(message):
-        presetAsJson = presetToJson(message)
-        presetAsJson["name"] = newName
-        return jsonToPreset(presetAsJson)
+        try:
+            presetAsJson = presetToJson(message)
+            presetAsJson["name"] = newName
+            return jsonToPreset(presetAsJson)
+        except json.JSONDecodeError:
+            # Don't print this as I currently call rename way too often.
+            print("Can only rename valid JSON, the preset may be corrupted")
+            return message
     raise Exception("Can only rename Electra One preset dumps")
 
 
@@ -83,6 +98,7 @@ def convertToEditBuffer(channel, message):
 def presetToJson(message):
     jsonBlock = message[6:-1]
     jsonString = ''.join([chr(x) for x in jsonBlock])
+    # This throws a json.JSONDecodeError in case the preset is not valid JSON (which could happen when hand-tweaking)
     return json.loads(jsonString)
 
 
@@ -92,13 +108,37 @@ def jsonToPreset(json_data):
     return bytearray([0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7])
 
 
-# Some test code that is not run by the KnobKraft Orm on load
-if __name__ == '__main__':
-    with open(R"D:\Christof\Music\ElectraOne\elektraOne-demo-preset.syx", mode="rb") as preset:
+def stringToPreset(jsonString):
+    dataBlock = [ord(x) for x in list(jsonString)]
+    return bytearray([0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7])
+
+
+def run_tests():
+    with open(R"testData/elektraOne-demo-preset.syx", mode="rb") as preset:
         content = preset.read()
         old_name = nameFromDump(content)
-        print(old_name)
         same = renamePatch(content, old_name)
         assert same == content
         new = renamePatch(content, "betterName")
-        print(nameFromDump(new))
+        assert nameFromDump(new) == "betterName"
+
+    # Test parse errors
+    invalid_json = '{  "version": 2,  "name" :"ROLAND MKS-80 v3",\n   "data":{  \r\n },  ]}'
+    testCrash = stringToPreset(invalid_json)
+    assert isEditBufferDump(testCrash)
+    name_from_corrupt = nameFromDump(testCrash)
+    assert name_from_corrupt == "ROLAND MKS-80 v3"
+    not_renamed = renamePatch(testCrash, "do crash")
+    assert nameFromDump(not_renamed) == "ROLAND MKS-80 v3"
+
+    with open(R"testData/elektraOne-corrupted-preset.syx", mode="rb") as preset:
+        content = preset.read()
+        old_name = nameFromDump(content)
+        assert old_name == "ROLAND MKS-80 v3"
+        new = renamePatch(content, "betterName")
+        assert nameFromDump(new) == old_name
+
+
+# Some test code that is not run by the KnobKraft Orm on load
+if __name__ == '__main__':
+    run_tests()

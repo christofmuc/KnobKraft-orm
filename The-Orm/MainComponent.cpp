@@ -424,7 +424,7 @@ void MainComponent::openDatabase()
 	}
 }
 
-void MainComponent::openDatabase(File &databaseFile) 
+void MainComponent::openDatabase(File &databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
@@ -511,7 +511,7 @@ void MainComponent::setAcceptableGlobalScaleFactor() {
 	std::vector<float> scales = { 0.75f / globalScaling, 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
 	float goodScale = 0.75f / globalScaling;
 	for (auto scale : scales) {
-		if (availableHeight > 1024*scale) {
+		if (availableHeight > 1024 * scale) {
 			goodScale = scale;
 		}
 	}
@@ -613,22 +613,26 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
-	} 
+	}
+
+	auto synth = UIModel::currentSynth();
+	if (synth) {
+		// Persist current synth for next launch
+		Settings::instance().set("CurrentSynth", synth->getName());
+	}
 
 	// The active synth has been switched, make sure to refresh the tab name properly
 	int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
 	if (index != -1) {
-		auto synth = UIModel::currentSynth();
-		if (synth) {
-			// Persist current synth for next launch
-			Settings::instance().set("CurrentSynth", synth->getName());
-			// Rename tab to show settings of this synth
+		// Rename tab to show settings of this synth
+		if (UIModel::currentSynth()) {
 			mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
 		}
-		else {
-			mainTabs_.setTabName(index, "Settings");
-		}
 	}
+	else {
+		mainTabs_.setTabName(index, "Settings");
+	}
+
 
 	// The active synth has been switched, check if it is an adaptation and then refresh the adaptation view
 	auto adaptation = std::dynamic_pointer_cast<knobkraft::GenericAdaptation>(UIModel::instance()->currentSynth_.smartSynth());
@@ -673,7 +677,7 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, Strin
 	StringArray tabnames = mainTabs->getTabNames();
 	for (int i = 0; i < mainTabs->getNumTabs(); i++) {
 		if (tabnames[i].endsWithIgnoreCase(name)) {
-			return i;			
+			return i;
 		}
 	}
 	return -1;

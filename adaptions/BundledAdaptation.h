@@ -16,7 +16,10 @@ namespace knobkraft {
 		std::string adaptationSourceCode;
 	};
 
-	extern std::vector<BundledAdaptation> gBundledAdaptations();
+	struct BundledAdaptations {
+		static std::vector<BundledAdaptation> getAll();
+		static bool breakOut(std::string synthName);
+	};
 
 }
 

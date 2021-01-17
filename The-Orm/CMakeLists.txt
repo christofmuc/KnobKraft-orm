@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.10.4)
+project(KnobKraftOrm VERSION 1.11.0)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
@@ -44,6 +44,7 @@ set(SOURCES
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
 	PatchView.cpp PatchView.h
+	ReceiveManualDumpWindow.cpp ReceiveManualDumpWindow.h
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h

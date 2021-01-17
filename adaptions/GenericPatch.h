@@ -51,7 +51,7 @@ namespace knobkraft {
 			EDIT_BUFFER
 		};
 
-		GenericPatch(pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
+		GenericPatch(GenericAdaptation const *me, pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
 
 		bool pythonModuleHasFunction(std::string const &functionName) const;
 
@@ -82,6 +82,9 @@ namespace knobkraft {
 
 		std::string name() const override;
 
+		// For error handling
+		void logAdaptationError(const char *methodName, std::exception &e) const;
+
 		// Runtime Capabilities
 		bool hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const override;
 		bool hasCapability(midikraft::StoredPatchNameCapability **outCapability) const override;
@@ -92,8 +95,8 @@ namespace knobkraft {
 		std::shared_ptr<GenericStoredPatchNameCapability> genericStoredPatchNameCapabilityImpl_;
 		std::shared_ptr<GenericDefaultNameCapability> genericDefaultNameCapabilityImp_;
 
+		GenericAdaptation const *me_;
 		pybind11::module &adaptation_;
-		std::string name_;
 	};
 
 
