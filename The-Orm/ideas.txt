@@ -10,8 +10,11 @@ Better marketing
 * Should have direct download link to latest release
 * Should have patreon/paypal link for donations?
 
-Next release 1.11.0	
+Next release 1.11.1
 * Test and document PatchInterchangeFormat exprot
+* Alpha implementation for the Yamaha DX7 (pure model, no detection or request codes, only manual receive)
+* Alpha implementation for the Yamaha DX7IID/FD/s and compatibles. I think this should already work, but only uses the original voice data and not the supplement data. Would be interested in getting feedback!
+
 
 Bugs open in 1.11:
 * Global Settings don't work for Matrix
