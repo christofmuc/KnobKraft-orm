@@ -30,6 +30,7 @@ ENDIF()
 IF(SPARKLE_UPDATES)
 	message("Sparkle and WinSparkle updates are turned on, the executable will be linked against WinSparkle")
 	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem") 
+	SET(WINSPARKLE_DISTRIBUTION_FILES "${WINSPARKLE_LIBDIR}/WinSparkle.dll")
 ENDIF()
 
 set(SOURCES
@@ -157,7 +158,7 @@ IF(WIN32)
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
 					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
-					${SENTRY_DISTRIBUTION_FILES} "${WINSPARKLE_LIBDIR}/WinSparkle.dll"
+					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(
