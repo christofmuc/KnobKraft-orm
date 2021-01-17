@@ -33,7 +33,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
 | Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
-| Prioneer | Toraiz AS-1 | beta | adaptation | |
+| Pioneer | Toraiz AS-1 | beta | adaptation | |
 | Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
