@@ -67,8 +67,10 @@ IF (WIN32)
 		URL https://github.com/vslavik/winsparkle/releases/download/v0.7.0/WinSparkle-0.7.0.zip
 	)
 	FetchContent_MakeAvailable(winsparkle)
-	set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
-	set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
+	#set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
+	#set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
+	set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/include")
+	set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/x64/Debug")
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
 
