@@ -18,8 +18,10 @@
 
 #include "version.cpp"
 
+#ifdef USE_SPARKLE
 #ifdef WIN32
 #include <winsparkle.h>
+#endif
 #endif
 
 #ifdef USE_SENTRY
@@ -72,9 +74,11 @@ public:
 		char *applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
 
+#ifdef USE_SPARKLE
 #ifdef WIN32
 		// Setup Winsparkle Auto Updater
 		win_sparkle_set_app_details(String("KnobKraft").toWideCharPointer(), getApplicationName().toWideCharPointer(), getApplicationVersion().toWideCharPointer());
+#endif
 #endif
 
 		// Init python for GenericAdaptation
