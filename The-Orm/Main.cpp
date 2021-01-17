@@ -18,6 +18,12 @@
 
 #include "version.cpp"
 
+#ifdef USE_SPARKLE
+#ifdef WIN32
+#include <winsparkle.h>
+#endif
+#endif
+
 #ifdef USE_SENTRY
 #include "sentry.h"
 #include "sentry-config.h"
@@ -67,6 +73,13 @@ public:
 		// This method is where you should put your application's initialization code..
 		char *applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
+
+#ifdef USE_SPARKLE
+#ifdef WIN32
+		// Setup Winsparkle Auto Updater
+		win_sparkle_set_app_details(String("KnobKraft").toWideCharPointer(), getApplicationName().toWideCharPointer(), getApplicationVersion().toWideCharPointer());
+#endif
+#endif
 
 		// Init python for GenericAdaptation
 		knobkraft::GenericAdaptation::startupGenericAdaptation();

@@ -29,8 +29,16 @@
 
 #include "GenericAdaptation.h"
 
+
 #ifdef USE_SENTRY
 #include "sentry.h"
+#endif
+
+#ifdef USE_SPARKLE
+#include "BinaryData.h"
+#ifdef WIN32
+#include <winsparkle.h>
+#endif
 #endif
 
 
@@ -157,6 +165,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 #ifdef USE_SENTRY
 			{ "Crash reporting consent" },
 #endif
+			{ "Check for updates..." },
 			{ "About" } } } }
 	};
 
@@ -225,7 +234,15 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			{ "Crash reporting consent...", { 17, "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
-		#endif
+		#endif 
+#ifdef USE_SPARKLE
+			{ "Check for updates...", { 18, "Check for updates...", [this] {
+#ifdef WIN32
+				win_sparkle_check_update_with_ui_and_install();
+#endif
+			}}},
+#endif
+
 	};
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
@@ -339,9 +356,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}
 	}
 
-	// Refresh Window title
-	MessageManager::callAsync([]() {
+	// Refresh Window title and other things to do when the MainComponent is displayed
+	MessageManager::callAsync([this]() {
 		UIModel::instance()->windowTitle_.sendChangeMessage();
+#ifdef WIN32
+		checkForUpdates();
+#endif
 	});
 
 #ifdef USE_SENTRY
@@ -362,10 +382,25 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+#ifdef USE_SPARKLE
+#ifdef WIN32
+	win_sparkle_cleanup();
+#endif
+#endif
 	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
+}
+
+void MainComponent::checkForUpdates() {
+#ifdef USE_SPARKLE
+#ifdef WIN32
+	win_sparkle_set_appcast_url("https://raw.githubusercontent.com/christofmuc/appcasts/master/KnobKraft-Orm/appcast.xml");
+	win_sparkle_set_dsa_pub_pem(BinaryData::dsa_pub_pem);
+	win_sparkle_init();
+#endif
+#endif
 }
 
 void MainComponent::createNewDatabase()
