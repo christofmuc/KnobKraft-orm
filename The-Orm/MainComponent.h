@@ -46,7 +46,7 @@ public:
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
 
 private:
-	void checkForUpdates();
+	void checkForUpdatesOnStartup();
 	void createNewDatabase();
 	void openDatabase();
 	void openDatabase(File &databaseFile);
@@ -57,6 +57,7 @@ private:
 #ifdef USE_SENTRY
 	void checkUserConsent();
 #endif
+	void crashTheSoftware();
 
 	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);

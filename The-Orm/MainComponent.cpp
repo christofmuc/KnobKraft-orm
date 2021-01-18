@@ -163,6 +163,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
 #ifdef USE_SENTRY
+			{ "Crash software.."},
 			{ "Crash reporting consent" },
 #endif
 			{ "Check for updates..." },
@@ -234,11 +235,14 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			{ "Crash reporting consent...", { 17, "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
+			{ "Crash software...", { 18, "Crash software..", [this] {
+				crashTheSoftware();
+			}}},
 		#endif 
 #ifdef USE_SPARKLE
-			{ "Check for updates...", { 18, "Check for updates...", [this] {
+			{ "Check for updates...", { 19, "Check for updates...", [this] {
 #ifdef WIN32
-				win_sparkle_check_update_with_ui_and_install();
+				win_sparkle_check_update_with_ui();
 #endif
 			}}},
 #endif
@@ -360,7 +364,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	MessageManager::callAsync([this]() {
 		UIModel::instance()->windowTitle_.sendChangeMessage();
 #ifdef WIN32
-		checkForUpdates();
+		checkForUpdatesOnStartup();
 #endif
 	});
 
@@ -393,11 +397,25 @@ MainComponent::~MainComponent()
 	Logger::setCurrentLogger(nullptr);
 }
 
-void MainComponent::checkForUpdates() {
+#ifdef USE_SPARKLE
+void logSparkleError() {
+	SimpleLogger::instance()->postMessage("Error encountered in WinSparkle");
+}
+
+void sparkleInducedShutdown() {
+	MessageManager::callAsync([]() {
+		JUCEApplicationBase::quit();
+	});
+}
+#endif
+
+void MainComponent::checkForUpdatesOnStartup() {
 #ifdef USE_SPARKLE
 #ifdef WIN32
 	win_sparkle_set_appcast_url("https://raw.githubusercontent.com/christofmuc/appcasts/master/KnobKraft-Orm/appcast.xml");
 	win_sparkle_set_dsa_pub_pem(BinaryData::dsa_pub_pem);
+	win_sparkle_set_error_callback(logSparkleError);
+	win_sparkle_set_shutdown_request_callback(sparkleInducedShutdown);
 	win_sparkle_init();
 #endif
 #endif
@@ -519,6 +537,15 @@ void MainComponent::checkUserConsent()
 	}
 }
 #endif
+
+void MainComponent::crashTheSoftware()
+{
+	if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Test software crash", "This function is to check if the crash information upload works. When you press ok, the software will crash.\n\n"
+		"Do you feel like it?")) {
+		char *bad_idea = nullptr;
+		(*bad_idea) = 0;
+	}
+}
 
 void MainComponent::setAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
