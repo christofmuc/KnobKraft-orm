@@ -38,6 +38,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppExeName}"; DestDir: "{app}"; 
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppName}.pdb"; DestDir: "{app}"; 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
 Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; 
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc67.dll"; DestDir: "{app}";
