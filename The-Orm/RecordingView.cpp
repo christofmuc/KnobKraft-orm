@@ -37,10 +37,10 @@ RecordingView::RecordingView(PatchView &patchView) : patchView_(patchView), devi
 	addAndMakeVisible(thumbnail_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "performSample", { 0, "Sample one note", [this]() {
+	{ "performSample", { "Sample one note", [this]() {
 		sampleNote();
 	} } },
-	{ "autoThumbnail", { 1, "Create thumbnails", [this]() {
+	{ "autoThumbnail", { "Create thumbnails", [this]() {
 		AutoThumbnailingDialog dialog(patchView_, *this);
 		dialog.runThread();
 	} } },

@@ -67,25 +67,25 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(*advancedSearch_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "retrieveActiveSynthPatches",{ 0, "Import patches from synth", [this]() {
+	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
 		retrievePatches();
 	} } },
-	{ "fetchEditBuffer",{ 1, "Import edit buffer from synth", [this]() {
+	{ "fetchEditBuffer",{ "Import edit buffer from synth", [this]() {
 		retrieveEditBuffer();
 	} } },
-	{ "receiveManualDump",{ 2, "Receive manual dump", [this]() {
+	{ "receiveManualDump",{ "Receive manual dump", [this]() {
 		receiveManualDump();
-	} } },
-	{ "loadsysEx", { 3, "Import sysex files from computer", [this]() {
+	},  } },
+	{ "loadsysEx", { "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "exportSysex", { 4, "Export into sysex files", [this]() {
+	{ "exportSysex", { "Export into sysex files", [this]() {
 		exportPatches();
-	} } },
-	{ "exportPIF", { 5, "Export into PIF", [this]() {
+	  }}},
+	{ "exportPIF", { "Export into PIF", [this]() {
 		createPatchInterchangeFile();
 	} } },
-	{ "showDiff", { 6, "Show patch comparison", [this]() {
+	{ "showDiff", { "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
 	};

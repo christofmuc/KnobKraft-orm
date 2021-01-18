@@ -172,24 +172,24 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { 0, "Auto-detect synths", [this, synths]() {
+	{ "Auto-detect synths", { "Auto-detect synths", [this, synths]() {
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
-		{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
+		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
 		// This will create the file on demand, copying out the built-in information!
 			if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();
 			}
 		} } },
-		{ "Edit category import mapping", { 2, "Edit category import mapping", [this]() {
+		{ "Edit category import mapping", { "Edit category import mapping", [this]() {
 			// This will create the file on demand, copying out the built-in information!
 			if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryMappingFile().revealToUser();
 			}
 		} } },
-		{ "Rerun auto categorize...", { 3, "Rerun auto categorize", [this]() {
+		{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
 			auto currentFilter = patchView_->buildFilter();
 			int affected = database_->getPatchesCount(currentFilter);
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
@@ -203,44 +203,44 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				window.runThread();
 			}
 		} } },
-		{ "About", { 4, "About", [this]() {
+		{ "About", { "About", [this]() {
 			aboutBox();
 		}}},
-		{ "Quit", { 5, "Quit", [this]() {
+		{ "Quit", { "Quit", [this]() {
 			JUCEApplicationBase::quit();
 		}}},
 			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { 6, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-			{ "Scale 100%", { 7, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-			{ "Scale 125%", { 8, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-			{ "Scale 150%", { 9, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-			{ "Scale 175%", { 10, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-			{ "Scale 200%", { 11, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-			{ "New database...", { 12, "New database...", [this] {
+			{ "Scale 75%", { "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
+			{ "Scale 100%", { "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
+			{ "Scale 125%", { "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
+			{ "Scale 150%", { "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
+			{ "Scale 175%", { "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
+			{ "Scale 200%", { "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+			{ "New database...", { "New database...", [this] {
 				createNewDatabase();
 			}}},
-			{ "Open database...", { 13, "Open database...", [this] {
+			{ "Open database...", { "Open database...", [this] {
 				openDatabase();
 			}}},
-			{ "Save database as...", { 14, "Save database as...", [this] {
+			{ "Save database as...", { "Save database as...", [this] {
 				saveDatabaseAs();
 			}}},
-			{ "Delete patches...", { 15, "Delete patches...", [this] {
+			{ "Delete patches...", { "Delete patches...", [this] {
 				patchView_->deletePatches();
 			}}},
-			{ "Reindex patches...", { 16, "Reindex patches...", [this] {
+			{ "Reindex patches...", { "Reindex patches...", [this] {
 				patchView_->reindexPatches();
 			}}},
 		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { 17, "Crash reporting consent", [this] {
+			{ "Crash reporting consent...", { "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
-			{ "Crash software...", { 18, "Crash software..", [this] {
+			{ "Crash software...", { "Crash software..", [this] {
 				crashTheSoftware();
 			}}},
 		#endif 
 #ifdef USE_SPARKLE
-			{ "Check for updates...", { 19, "Check for updates...", [this] {
+			{ "Check for updates...", { "Check for updates...", [this] {
 #ifdef WIN32
 				win_sparkle_check_update_with_ui();
 #endif
@@ -259,7 +259,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(*database_, synths, automaticCategories_);
+	patchView_ = std::make_unique<PatchView>(commandManager_, *database_, synths, automaticCategories_);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
 	//recordingView_ = std::make_unique<RecordingView>(*patchView_);
