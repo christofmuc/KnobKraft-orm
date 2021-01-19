@@ -21,6 +21,7 @@ Bugs open in 1.11:
 * DataFileLoad takes precedence over editbuffer, but shouldn'T
 * How to load unknowns sysex data without creating duplicates?
 * Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
+* Should be called Stream Load instead of DataFile
 
 
 Release 2.0
