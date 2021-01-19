@@ -41,6 +41,8 @@ public:
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 
+	void jumpToPage(int pagenumber);
+
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
@@ -57,11 +59,12 @@ private:
 	std::string activePatchMd5_;
 
 	TextButton pageUp_, pageDown_;
-	Label pageNumbers_;
+	OwnedArray<TextButton> pageNumbers_;
 	int pageBase_;
 	int pageNumber_;
 	int pageSize_;
 	int totalSize_;
+	int numPages_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchButtonPanel)
 };

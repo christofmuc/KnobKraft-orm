@@ -27,8 +27,6 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	addAndMakeVisible(pageDown_); 
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
-	addAndMakeVisible(pageNumbers_);
-	pageNumbers_.setJustificationType(Justification::centred);
 
 	UIModel::instance()->thumbnails_.addChangeListener(this);
 }
@@ -46,6 +44,24 @@ void PatchButtonPanel::setTotalCount(int totalCount)
 {
 	pageBase_ = pageNumber_ = 0;
 	totalSize_ = totalCount;
+	numPages_ = totalCount / pageSize_;
+	if (totalCount % pageSize_ != 0) numPages_++;
+
+	// Create the page buttons
+	pageNumbers_.clear();
+	for (int i = 0; i < numPages_; i++) {
+		TextButton *b = new TextButton();
+		b->setButtonText(String(i + 1));
+		b->setClickingTogglesState(true);
+		b->setRadioGroupId(1357);
+		b->setConnectedEdges(TextButton::ConnectedOnLeft | TextButton::ConnectedOnRight);
+		b->setColour(ComboBox::outlineColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::windowBackground));
+		b->onClick = [this, i, b]() { if (b->getToggleState()) jumpToPage(i);  };
+		addAndMakeVisible(b);
+		if (i == 0) b->setToggleState(true, dontSendNotification);
+		pageNumbers_.add(std::move(b));
+	}
+	resized();
 }
 
 void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget /* = -1 */) {
@@ -133,7 +149,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 		}
 	}
 
-	// Also, set the page number stripe
+	/*// Also, set the page number stripe
 	std::string pages;
 	size_t numberOfPages = (totalSize_ / pageSize_) + 1;
 	for (size_t i = 0; i < numberOfPages; i++) {
@@ -146,22 +162,22 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 			pages.append((boost::format("%d") % (i + 1)).str());
 		}
 	}
-	pageNumbers_.setText(pages, dontSendNotification);
+	pageNumbers_.setText(pages, dontSendNotification);*/
 }
 
 void PatchButtonPanel::resized()
 {
-	// Create 64 patch buttons in a grid
-	/*FlexBox fb;
-	fb.flexWrap = FlexBox::Wrap::wrap;
-	fb.justifyContent = FlexBox::JustifyContent::spaceBetween;
-	fb.alignContent = FlexBox::AlignContent::stretch;
-	for (auto patchbutton : patchButtons_) {
-		fb.items.add(FlexItem(*patchbutton).withMinWidth(50.0f).withMinHeight(50.0f));
-	}
-	fb.performLayout(getLocalBounds().toFloat());*/
 	Rectangle<int> area(getLocalBounds());
-	pageNumbers_.setBounds(area.removeFromBottom(20));
+	auto pageNumberStrip = area.removeFromBottom(40).withTrimmedTop(8);
+	FlexBox pageNumberBox;
+	pageNumberBox.flexDirection = FlexBox::Direction::row;
+	pageNumberBox.justifyContent = FlexBox::JustifyContent::center;
+	pageNumberBox.alignContent = FlexBox::AlignContent::center;
+	for (auto page : pageNumbers_) {
+		pageNumberBox.items.add(FlexItem(*page).withHeight(32).withWidth((float) page->getBestWidthForHeight(32)));
+	}
+	pageNumberBox.performLayout(pageNumberStrip);
+
 	pageDown_.setBounds(area.removeFromLeft(32).withTrimmedRight(8));
 	pageUp_.setBounds(area.removeFromRight(32).withTrimmedLeft(8));
 
@@ -195,6 +211,7 @@ void PatchButtonPanel::pageUp(bool selectNext) {
 	if (pageBase_ + pageSize_ < totalSize_) {
 		pageBase_ += pageSize_;
 		pageNumber_++;
+		if (pageNumber_ < pageNumbers_.size()) pageNumbers_[pageNumber_]->setToggleState(true, dontSendNotification);
 		refresh(true, selectNext ? 0 : -1);
 	}
 }
@@ -203,7 +220,16 @@ void PatchButtonPanel::pageDown(bool selectLast) {
 	if (pageBase_ - pageSize_ >= 0) {
 		pageBase_ -= pageSize_;
 		pageNumber_--;
+		if (pageNumber_ >= 0 && pageNumber_ < pageNumbers_.size()) pageNumbers_[pageNumber_]->setToggleState(true, dontSendNotification);
 		refresh(true, selectLast ? 1 : -1);
+	}
+}
+
+void PatchButtonPanel::jumpToPage(int pagenumber) {
+	if (pagenumber >= 0 && pagenumber < numPages_) {
+		pageBase_ = pagenumber * pageSize_;
+		pageNumber_ = pagenumber;
+		refresh(true);
 	}
 }
 
@@ -248,6 +274,7 @@ void PatchButtonPanel::selectFirst()
 {
 	pageBase_ = 0;
 	pageNumber_ = 0;
+	if (!pageNumbers_.isEmpty()) pageNumbers_[0]->setToggleState(true, dontSendNotification);
 	refresh(true, 0);
 }
 
