@@ -37,6 +37,9 @@ void ReceiveManualDumpWindow::run()
 
 	do {
 	} while (!threadShouldExit());
+	// Don't forget to unregister!
+	midikraft::MidiController::instance()->removeMessageHandler(incomingHandler);
+	incomingHandler = midikraft::MidiController::makeNoneHandle();
 }
 
 std::vector<juce::MidiMessage> ReceiveManualDumpWindow::result() const
