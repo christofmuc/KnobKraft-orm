@@ -285,7 +285,7 @@ void PatchView::resized()
 	categoryFilters_.setBounds(filterRow);
 
 	importList_.setBounds(sourceRow);
-	patchButtons_->setBounds(area.reduced(10));
+	patchButtons_->setBounds(area.withTrimmedRight(8).withTrimmedLeft(8));
 }
 
 void PatchView::comboBoxChanged(ComboBox* box)
