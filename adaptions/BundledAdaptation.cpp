@@ -40,6 +40,8 @@ namespace knobkraft {
 			{ "Sequential Prophet 6", "Sequential_Prophet_6", std::string(Sequential_Prophet_6_py, Sequential_Prophet_6_py + Sequential_Prophet_6_py_size) },
 			{ "Sequential Prophet X", "Sequential_Prophet_X", std::string(Sequential_Prophet_X_py, Sequential_Prophet_X_py + Sequential_Prophet_X_py_size) },
 			{ "Waldorf Blofeld", "Waldorf_Blofeld", std::string(Waldorf_Blofeld_py, Waldorf_Blofeld_py + Waldorf_Blofeld_py_size) },
+			{ "Yamaha DX7", "Yamaha_DX7", std::string(YamahaDX7_py, YamahaDX7_py+ YamahaDX7_py_size) },
+			{ "Yamaha DX7II", "Yamaha_DX7II", std::string(YamahaDX7II_py, YamahaDX7II_py+ YamahaDX7II_py_size) },
 		};
 	}
 
