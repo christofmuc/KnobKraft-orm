@@ -30,6 +30,7 @@ Release 2.0
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
++ When hiding the (last?) patch on a page, the page is advanced without necessity
 
 User questions
 * Where are the files? 
@@ -109,7 +110,10 @@ Rev2
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
+* Could sport virtual file type "Layer"? Then you could select an active layer, and send only individual layers to the synth (with either tons of NRPNs or by querying the edit buffer first?) 
+  * Problem - Sending one full layer only with NRPNs takes 187 parameters per layer, 12 bytes as NRPN per parameter = 2244 bytes (without sequencers), or 0.75 seconds per layer.
 * Softswitch of Patch
+	* Noteoff on send patch (or send mute patch first?), or don't send patches, but rather NRPN storms?
 
 K3
 * Drawbar Organ Waveform Generator - could use BCR2000!
@@ -151,11 +155,13 @@ Macro page
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
 * Could make the keyboard playable via mouse and keyboard, but then I need to change the routing of the MIDI events (just react on state changes)
+* What about up/down Octave shifts? - that kills the macro setup?
 
 Librarian
 * Allow recursive directory traversal during import
 * Could accept synth-initiated dumps at any time!
 * Could sniff synth out of sysex file opened
+* Better text search https://community.esri.com/groups/appstudio/blog/2018/11/29/optimizing-sqlite-like https://www.sqlitetutorial.net/sqlite-full-text-search/
 * Could have patch name autogenerator like LaserMammoth
 
 Patch Diff
@@ -182,6 +188,7 @@ Database schema
 * Should have non-null everywhere
 * Should think about naming convention
 * Should create indexes where needed 
+* Could use FTS3 or FTS4 for the full-text search
 
 Autosampler (the lazy synthesist)
 * Need preview mode that will play it to synth (when synth is not turned on?)
