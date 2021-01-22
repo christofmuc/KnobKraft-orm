@@ -35,6 +35,7 @@ jobs:
     - script: git submodule update --init --recursive
       displayName: Checking out submodules
     - task: UsePythonVersion@0
+      name: UsePython
       inputs:
         versionSpec: '3.8' 
         addToPath: true 
@@ -54,13 +55,13 @@ jobs:
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.8.7\x64\python.exe'
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\python.exe'
       condition: variables.isWindows2017
     - task: CMake@1
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.8.7\x64\python.exe'
+        cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\x64\python.exe'
       condition: variables.isWindows2019
     - task: CMake@1
       displayName: Running CMake build for Windows
