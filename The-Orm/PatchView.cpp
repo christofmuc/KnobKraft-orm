@@ -31,7 +31,7 @@ const char *kAllDataTypesFilter = "All types";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
 	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector),
-	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
+	categoryFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
@@ -124,6 +124,8 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
+		categoryFilters_.setCategories(predefinedCategories());
+
 		// Select only the newly selected synth in the synth filters
 		if (UIModel::currentSynth()) {
 			advancedFilters_.synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
@@ -157,8 +159,8 @@ void PatchView::rebuildSynthFilters() {
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 {
 	std::vector<CategoryButtons::Category> result;
-	for (auto c : automaticCategories_->predefinedCategoryVector()) {
-		result.push_back({ c.category, c.color });
+	for (const auto& c : database_.getCategories()) {
+		result.emplace_back(c.category, c.color);
 	}
 	return result;
 }
