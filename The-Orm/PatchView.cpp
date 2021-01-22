@@ -25,6 +25,7 @@
 #include "PatchInterchangeFormat.h"
 #include "Settings.h"
 #include "ReceiveManualDumpWindow.h"
+#include "ExportDialog.h"
 
 const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
@@ -81,7 +82,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	} } },
 	{ "exportSysex", { "Export into sysex files", [this]() {
 		exportPatches();
-	  }}},
+	}}},
 	{ "exportPIF", { "Export into PIF", [this]() {
 		createPatchInterchangeFile();
 	} } },
@@ -547,7 +548,9 @@ void PatchView::exportPatches()
 	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
 	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
 		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-			librarian_.saveSysexPatchesToDisk(patches);
+			ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
+				librarian_.saveSysexPatchesToDisk(params, patches);
+			});
 		});
 	}
 }
