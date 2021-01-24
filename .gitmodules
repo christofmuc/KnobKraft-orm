@@ -80,3 +80,6 @@
 [submodule "third_party/winsparkle"]
 	path = third_party/winsparkle
 	url = https://github.com/vslavik/winsparkle.git
+[submodule "third_party/Gin"]
+	path = third_party/Gin
+	url = https://github.com/FigBug/Gin.git
