@@ -178,7 +178,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
 			// This will create the file on demand, copying out the built-in information!
-			EditCategoryDialog::showEditDialog(*database_, this, [this]() {});
+			EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::PatchDatabase::CategoryDefinition> const &newDefinitions) {
+				database_->updateCategories(newDefinitions);
+			});
 			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();
 			}*/

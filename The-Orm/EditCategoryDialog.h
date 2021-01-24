@@ -13,11 +13,14 @@
 
 class EditCategoryDialog : public Component {
 public:
+	typedef std::function<void(std::vector < midikraft::PatchDatabase::CategoryDefinition> const &)> TCallback;
 	EditCategoryDialog(midikraft::PatchDatabase &database);
 
 	virtual void resized() override;
 
-	static void showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, std::function<void()> callback);
+	static void showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, TCallback callback);
+
+	void provideResult(TCallback callback);
 
 private:
 	void addCategory(midikraft::PatchDatabase::CategoryDefinition const &def);

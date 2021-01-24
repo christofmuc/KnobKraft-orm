@@ -9,7 +9,7 @@
 #include "PropertyEditor.h"
 #include "gin/gin.h"
 
-static std::function<void()> sCallback_;
+static EditCategoryDialog::TCallback sCallback_;
 
 class CategoryRow : public Component {
 public:
@@ -120,7 +120,7 @@ void EditCategoryDialog::addCategory(midikraft::PatchDatabase::CategoryDefinitio
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Active", header, def.isActive)));
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Name", header, def.name, 30)));
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Color", header, def.color)));
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("ID", header, def.id)));
+	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("ID", header, def.id, 0, 62)));
 }
 
 void EditCategoryDialog::resized()
@@ -137,11 +137,12 @@ void EditCategoryDialog::resized()
 static void dialogClosed(int modalResult, EditCategoryDialog* dialog)
 {
 	if (modalResult == 1 && dialog != nullptr) { // (must check that dialog isn't null in case it was deleted..)
-		sCallback_();
+		// Readout the properties and create a new list of Category definitions
+		dialog->provideResult(sCallback_);
 	}
 }
 
-void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, std::function<void()> callback)
+void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, TCallback callback)
 {
 	if (!sEditCategoryDialog_) {
 		sEditCategoryDialog_= std::make_unique<EditCategoryDialog>(db);
@@ -159,7 +160,21 @@ void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component 
 
 }
 
+void EditCategoryDialog::provideResult(TCallback callback)
+{
+	std::vector<midikraft::PatchDatabase::CategoryDefinition> result;
+	for (int i = 0; i < props_.size(); i += 4) {
+		int id = props_[i + 3]->value().getValue();
+		bool active = props_[i]->value().getValue();
+		String name = props_[i + 1]->value().getValue();
+		Colour color = Colour::fromString(props_[i + 2]->value().getValue().operator juce::String());
+		result.push_back({ id, active, name.toStdString(), color});
+	}
+	callback(result);
+}
+
 std::unique_ptr<EditCategoryDialog> EditCategoryDialog::sEditCategoryDialog_;
 
 juce::DialogWindow * EditCategoryDialog::sWindow_;
 
+		
