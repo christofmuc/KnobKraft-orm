@@ -10,8 +10,6 @@
 #include "MidiController.h"
 #include "UIModel.h"
 
-#include "HorizontalLayoutContainer.h"
-
 #include "AutoCategorizeWindow.h"
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
@@ -179,7 +177,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
-		// This will create the file on demand, copying out the built-in information!
+			// This will create the file on demand, copying out the built-in information!
 			EditCategoryDialog::showEditDialog(*database_, this, [this]() {});
 			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();
