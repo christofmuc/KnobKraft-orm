@@ -20,11 +20,14 @@ public:
 	static void showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, std::function<void()> callback);
 
 private:
+	void addCategory(midikraft::PatchDatabase::CategoryDefinition const &def);
+
 	static std::unique_ptr<EditCategoryDialog> sEditCategoryDialog_;
 	static DialogWindow *sWindow_;
 
 	ListBox parameters_;
 	TypedNamedValueSet props_;
+	TextButton add_;
 	TextButton ok_;
 	TextButton cancel_;
 

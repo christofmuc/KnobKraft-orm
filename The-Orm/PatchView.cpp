@@ -161,7 +161,9 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 {
 	std::vector<CategoryButtons::Category> result;
 	for (const auto& c : database_.getCategories()) {
-		result.emplace_back(c.category, c.color);
+		if (c.isActive) {
+			result.emplace_back(c.name, c.color);
+		}
 	}
 	return result;
 }
