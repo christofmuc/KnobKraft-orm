@@ -14,6 +14,7 @@
 
 #include "AutoCategorizeWindow.h"
 #include "AutoDetectProgressWindow.h"
+#include "EditCategoryDialog.h"
 
 #include "Settings.h"
 
@@ -179,9 +180,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
 		// This will create the file on demand, copying out the built-in information!
-			if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			EditCategoryDialog::showEditDialog(*database_, this, [this]() {});
+			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();
-			}
+			}*/
 		} } },
 		{ "Edit category import mapping", { "Edit category import mapping", [this]() {
 			// This will create the file on demand, copying out the built-in information!

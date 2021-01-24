@@ -142,6 +142,9 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_AL
 # Adding JUCE 6.0
 add_subdirectory("third_party/JUCE")
 
+# Adding JUCE modules
+add_subdirectory("third_party/")
+
 # Build a static library from juce 
 add_library(juce-static STATIC)
 target_link_libraries(juce-static
