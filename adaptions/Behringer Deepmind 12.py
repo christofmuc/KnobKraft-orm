@@ -78,10 +78,10 @@ def nameFromDump(message):
     nameBaseIndex = 223
     if isEditBufferDump(message):
         data = unescapeSysex(message[8:-1])
-        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex+18]])
+        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex+16]])
     if isSingleProgramDump(message):
         data = unescapeSysex(message[10:-1])
-        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex+18]])
+        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex+16]])
     return 'invalid'
 
 
