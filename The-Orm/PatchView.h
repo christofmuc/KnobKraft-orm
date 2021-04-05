@@ -91,6 +91,8 @@ private:
 
 	void retrievePatches();
 
+	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
+
 	void loadPatches();
 	void receiveManualDump();
 	void exportPatches();

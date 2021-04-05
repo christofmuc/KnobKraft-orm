@@ -10,7 +10,7 @@ void AutoCategorizeWindow::run()
 {
 	// Load the auto category file and re-categorize everything!
 	if (detector_->autoCategoryFileExists()) {
-		detector_->loadFromFile(detector_->getAutoCategoryFile().getFullPathName().toStdString());
+		detector_->loadFromFile(database_->getCategories(), detector_->getAutoCategoryFile().getFullPathName().toStdString());
 	}
 	auto patches = database_->getPatches(activeFilter_, 0, 100000);
 	size_t tick = 0;

@@ -13,7 +13,7 @@ Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Co
 	auto cats = patch.categories();
 	if (!cats.empty()) {
 		// Random in case the patch has multiple categories
-		color = cats.cbegin()->color.darker();
+		color = cats.cbegin()->color();
 	}
 	return color;
 }

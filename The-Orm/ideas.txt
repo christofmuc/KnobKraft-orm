@@ -30,6 +30,7 @@ Release 2.0
 BUGS
 + PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
++ When hiding the (last?) patch on a page, the page is advanced without necessity
 
 User questions
 * Where are the files? 
@@ -109,7 +110,10 @@ Rev2
 * Support custom layering by allowing to combine layers to new patches, and by promoting B layers to A layers
 * Sanitize tuning name before putting it into the database column (otherwise displays as "BLOB")
 * Noteoff on send patch (or send mute patch first? Then I could also just ramp down program volume?)
+* Could sport virtual file type "Layer"? Then you could select an active layer, and send only individual layers to the synth (with either tons of NRPNs or by querying the edit buffer first?) 
+  * Problem - Sending one full layer only with NRPNs takes 187 parameters per layer, 12 bytes as NRPN per parameter = 2244 bytes (without sequencers), or 0.75 seconds per layer.
 * Softswitch of Patch
+	* Noteoff on send patch (or send mute patch first?), or don't send patches, but rather NRPN storms?
 
 K3
 * Drawbar Organ Waveform Generator - could use BCR2000!
@@ -151,11 +155,13 @@ Macro page
 * Also allow macros to work despite other keys being down (to switch while holding)
 * Also allow sequences, not just chords
 * Could make the keyboard playable via mouse and keyboard, but then I need to change the routing of the MIDI events (just react on state changes)
+* What about up/down Octave shifts? - that kills the macro setup?
 
 Librarian
 * Allow recursive directory traversal during import
 * Could accept synth-initiated dumps at any time!
 * Could sniff synth out of sysex file opened
+* Better text search https://community.esri.com/groups/appstudio/blog/2018/11/29/optimizing-sqlite-like https://www.sqlitetutorial.net/sqlite-full-text-search/
 * Could have patch name autogenerator like LaserMammoth
 
 Patch Diff
@@ -182,6 +188,7 @@ Database schema
 * Should have non-null everywhere
 * Should think about naming convention
 * Should create indexes where needed 
+* Could use FTS3 or FTS4 for the full-text search
 
 Autosampler (the lazy synthesist)
 * Need preview mode that will play it to synth (when synth is not turned on?)
@@ -192,6 +199,9 @@ Autosampler (the lazy synthesist)
 * Could add different preview - "oscilloscope" to show only one cycle
 * Could add FFT preview as well
 * How to decide this is a drone and will not stop (endless release?)
+
+Synth profiling
+https://www.deepsonic.ch/deep/htm/deepsonic_analytics_envelope_lfo_speed.php
 
 MIDI setup
 * Echo test - send a sysex, and see if this comes back (e.g. K3 or MKS80 repeating them). If yes, down prioritize those echos [Got Echo test now]
@@ -271,3 +281,39 @@ Other crash reporting tools not considered:
 + Code signing (well, if you don't use MS, you can spare the money)
   - https://shop.globalsign.com/de-de/code-signing
   - https://secure.ssl.com/orders/new
+
+Good links for CMake
+
+  + https://dominikberner.ch/cmake-find-library/
+
+Morphing etc
+
+  + https://github.com/delfrrr/delaunator-cpp
+  + http://tapkee.lisitsyn.me/
+
+
+Patreon setup
+
+  + https://www.patreon.com/join/nintoracaudio
+  + https://github.com/stefan-niedermann/paypal-donate-button/blob/master/README.md
+  + https://www.paypal.com/paypalme/AbdennourT/10
+  + https://www.geekwire.com/2019/github-introduces-sponsors-button-allowing-users-donate-money-open-source-contributors/
+  + https://adrienjoly.medium.com/getting-paid-directly-by-users-to-craft-software-for-them-1a8ef5e1a73 !
+  + https://github.com/uraimo/awesome-software-patreons
+  + https://medium.com/@svinkle/publish-and-share-your-own-website-for-free-with-github-2eff049a1cb5
+  + https://www.heise.de/news/YouTuber-muessen-Teil-ihrer-Einnahmen-in-den-USA-versteuern-5076741.html
+  + https://guides.github.com/features/pages/
+  + https://pages.github.com/
+
+Design einkaufen?
+  + https://www.fiverr.com/designer_nk_/do-modern-minimalist-logo-and-full-brand-identity-design?context_referrer=gig_page&source=similar_gigs&ref_ctx_id=ade40f21-92f0-4460-9351-8e494e1cc0d4&context=recommendation&pckg_id=1&pos=1&is_pro=false&context_alg=t2g_dfm
+  + https://www.fiverr.com/majesticwork/do-modern-creative-professional-logo-in-2-hour?context_referrer=subcategory_listing&source=gallery-listing&ref_ctx_id=17ac78a4-3342-4b94-9329-35669457cd8b&pckg_id=1&pos=30&context_type=rating&funnel=5417af16-0483-46d0-8ae8-e1f3bc93df4e&seller_online=true
+  + https://www.fiverr.com/pathum_tzoo1/design-awesome-web-ui?context_referrer=subcategory_listing&ref_ctx_id=7ea901d5-9919-4174-90e6-d8240d57d489&pckg_id=1&pos=15&filtered_factors=commercial_use%2Cresponsive_design&filtered_price=0.00%2C57.78&context_type=rating&funnel=618b5e87-8cfd-4f4e-a0e2-237175a0d629&ref=gig_price_range%3A0%2C50%7Cmain_type%3Amobile_apps%7Cimage_file_format%3Asvg%7Cpackage_includes%3Acommercial_use%2Cresponsive_design
+  https://www.fiverr.com/categories/graphics-design/web-plus-mobile-design/graphic-ui?ref=gig_price_range%3A0%2C50%7Cmain_type%3Amobile_apps%7Cimage_file_format%3Asvg%7Cpackage_includes%3Acommercial_use%2Cresponsive_design
+
+Audio Routing (JammerNetz)
+   + https://github.com/eiz/SynchronousAudioRouter/releases
+   + https://alternativeto.net/software/virtual-audio-cable/
+
+Life Coding
+  + https://tidalcycles.org/Welcome
