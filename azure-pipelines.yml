@@ -70,7 +70,7 @@ jobs:
         cmakeArgs: '--build . --config RelWithDebInfo'
       condition: variables.isWindows
 
-    - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.11.3.exe
+    - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.12.0.exe
       displayName: Publish Windows Installer
       artifact: WindowsInstaller
       condition: variables.isWindows2019
@@ -92,7 +92,7 @@ jobs:
       displayName: Build with CMake for Mac
       condition: variables.isMac
       
-    - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.11.3-Darwin.dmg
+    - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.12.0-Darwin.dmg
       displayName: Publish Mac Installer
       artifact: MacInstaller
       condition: variables.isMac
