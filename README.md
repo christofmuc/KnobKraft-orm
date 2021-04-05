@@ -25,6 +25,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Electra | one | works | adaptation |
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
+| Korg | 03R/W | beta | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | beta | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|

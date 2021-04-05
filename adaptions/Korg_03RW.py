@@ -1,11 +1,13 @@
 #
-#   Copyright (c) 2020 Christof Ruch. All rights reserved.
+#   Copyright (c) 2021 Christof Ruch. All rights reserved.
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
 #
 #   Built upon the Korg MS2000 file.
+#
+#   This works for program mode only, combination mode seems to be more complex to support
 
 
 def name():
