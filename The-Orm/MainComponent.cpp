@@ -390,6 +390,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+	// Prevent memory leaks being reported on shutdown
+	EditCategoryDialog::shutdown();
+
 #ifdef USE_SPARKLE
 #ifdef WIN32
 	win_sparkle_cleanup();

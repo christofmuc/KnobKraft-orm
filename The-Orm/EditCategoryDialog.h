@@ -22,6 +22,8 @@ public:
 
 	void provideResult(TCallback callback);
 
+	static void shutdown();
+
 private:
 	void addCategory(midikraft::CategoryDefinition const &def);
 

@@ -173,6 +173,11 @@ void EditCategoryDialog::provideResult(TCallback callback)
 	callback(result);
 }
 
+void EditCategoryDialog::shutdown()
+{
+	sEditCategoryDialog_.reset();
+}
+
 std::unique_ptr<EditCategoryDialog> EditCategoryDialog::sEditCategoryDialog_;
 
 juce::DialogWindow * EditCategoryDialog::sWindow_;
