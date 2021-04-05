@@ -99,7 +99,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		recentFiles_.restoreFromString(Settings::instance().get("RecentFiles"));
 	}
 
-	automaticCategories_ = std::make_shared<midikraft::AutomaticCategory>(); // Load the automatic category definitions
+	automaticCategories_ = std::make_shared<midikraft::AutomaticCategory>(database_->getCategories()); // Load the automatic category definitions
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
@@ -178,8 +178,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
 			// This will create the file on demand, copying out the built-in information!
-			EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::PatchDatabase::CategoryDefinition> const &newDefinitions) {
+			EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const &newDefinitions) {
 				database_->updateCategories(newDefinitions);
+				UIModel::instance()->categoriesChanged.sendChangeMessage();
 			});
 			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();

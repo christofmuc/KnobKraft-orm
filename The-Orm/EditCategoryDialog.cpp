@@ -88,15 +88,15 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database)
 	auto cats = database.getCategories();
 
 	for (auto cat : cats) {
-		addCategory(cat);
+		addCategory(*cat.def());
 	}
 
 	parameters_.setModel(new CategoryListModel(props_));
 	//parameters_.setRowHeight(60);
 	addAndMakeVisible(parameters_);
 
-	add_.onClick = [this]() {
-		int nextID = 1;
+	add_.onClick = [this, &database]() {
+		int nextID = database.getNextBitindex();
 		addCategory({ nextID, true, "New category", Colours::aquamarine});
 		parameters_.setModel(new CategoryListModel(props_));
 	};
@@ -115,7 +115,7 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database)
 	setBounds(0, 0, 540, 600);
 }
 
-void EditCategoryDialog::addCategory(midikraft::PatchDatabase::CategoryDefinition const &def) {
+void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const &def) {
 	std::string header = "Define categories";
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Active", header, def.isActive)));
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Name", header, def.name, 30)));
@@ -162,7 +162,7 @@ void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component 
 
 void EditCategoryDialog::provideResult(TCallback callback)
 {
-	std::vector<midikraft::PatchDatabase::CategoryDefinition> result;
+	std::vector<midikraft::CategoryDefinition> result;
 	for (int i = 0; i < props_.size(); i += 4) {
 		int id = props_[i + 3]->value().getValue();
 		bool active = props_[i]->value().getValue();
