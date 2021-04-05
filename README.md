@@ -14,7 +14,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Access  | Virus C  | beta | native | Thanks to guavadude@gs |
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
-| Behringer | Deepmind 12 | alpha | adaptation | |
+| Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | native | |
 | Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
 | DSI | Pro 2 | beta | adaptation | |
