@@ -1,9 +1,14 @@
 
 
-
-set(GIN_SOURCES
-	${CMAKE_CURRENT_LIST_DIR}/Gin/modules/gin/gin.cpp
-)
+if(APPLE)
+	set(GIN_SOURCES
+		${CMAKE_CURRENT_LIST_DIR}/Gin/modules/gin/gin.cmm
+	)
+else()
+	set(GIN_SOURCES
+		${CMAKE_CURRENT_LIST_DIR}/Gin/modules/gin/gin.cpp
+	)
+endif()
 
 add_library(gin ${GIN_SOURCES})
 target_link_libraries(gin PRIVATE juce-static)
