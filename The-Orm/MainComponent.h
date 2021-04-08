@@ -22,6 +22,7 @@
 #include "LambdaMenuModel.h"
 #include "LambdaButtonStrip.h"
 #include "PatchPerSynthList.h"
+#include "PatchListTree.h"
 
 #include "PatchView.h"
 #include "SettingsView.h"

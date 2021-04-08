@@ -21,6 +21,7 @@
 #include "CategoryButtons.h"
 #include "CurrentPatchDisplay.h"
 #include "CollapsibleContainer.h"
+#include "PatchListTree.h"
 
 #include "PatchDatabase.h"
 #include "PatchHolder.h"
@@ -110,6 +111,7 @@ private:
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
 	ComboBox importList_;
+	PatchListTree patchListTree_;
 
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;

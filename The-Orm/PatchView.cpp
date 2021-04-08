@@ -36,6 +36,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
+	addAndMakeVisible(patchListTree_);
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
@@ -281,6 +282,10 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 void PatchView::resized()
 {
 	Rectangle<int> area(getLocalBounds());
+
+	auto sidebar = area.removeFromLeft(std::max(100, area.getWidth() / 6));
+	patchListTree_.setBounds(sidebar.reduced(8));
+
 	auto topRow = area.removeFromTop(100);
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 	currentPatchDisplay_->setBounds(topRow);
