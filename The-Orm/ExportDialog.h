@@ -21,6 +21,8 @@ public:
 
 	static void showExportDialog(Component *centeredAround, std::function<void(midikraft::Librarian::ExportParameters)> callback);	
 
+	static void shutdown();
+
 private:
 	static std::unique_ptr<ExportDialog> sExportDialog_;
 	static DialogWindow *sWindow_;
