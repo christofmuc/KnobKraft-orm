@@ -156,7 +156,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Save database as..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Delete patches..." }, { "Reindex patches..." } } } },
+		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
 		{3, { "Categories", { { "Edit auto-categories" }, { "Edit category import mapping" },  { "Rerun auto categorize" } } } },
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
@@ -233,6 +233,28 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}}},
 			{ "Reindex patches...", { "Reindex patches...", [this] {
 				patchView_->reindexPatches();
+			}}},
+			{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [this] {
+				auto patch = UIModel::currentPatch();
+				if (patch.patch() && patch.synth()) {
+					std::stringstream buffer;
+					buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
+					bool first = true;
+					auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
+					for (const auto& m : messages) {
+						for (int i = 0; i < m.getRawDataSize(); i++) {
+							if (!first) {
+								buffer << ", ";
+							}
+							else {
+								first = false;
+							}
+							buffer << (int) m.getRawData()[i];
+						}
+					}
+					buffer << "]";
+					SystemClipboard::copyTextToClipboard(buffer.str());
+				}
 			}}},
 		#ifdef USE_SENTRY
 			{ "Crash reporting consent...", { "Crash reporting consent", [this] {
