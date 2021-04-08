@@ -13,6 +13,7 @@
 #include "AutoCategorizeWindow.h"
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
+#include "ExportDialog.h"
 
 #include "Settings.h"
 
@@ -392,6 +393,7 @@ MainComponent::~MainComponent()
 {
 	// Prevent memory leaks being reported on shutdown
 	EditCategoryDialog::shutdown();
+	ExportDialog::shutdown();
 
 #ifdef USE_SPARKLE
 #ifdef WIN32

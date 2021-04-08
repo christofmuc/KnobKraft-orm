@@ -72,6 +72,11 @@ void ExportDialog::showExportDialog(Component *centeredAround, std::function<voi
 
 }
 
+void ExportDialog::shutdown()
+{
+	sExportDialog_.reset();
+}
+
 std::unique_ptr<ExportDialog> ExportDialog::sExportDialog_;
 
 juce::DialogWindow * ExportDialog::sWindow_;
