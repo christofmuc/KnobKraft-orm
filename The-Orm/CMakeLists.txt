@@ -41,6 +41,7 @@ set(SOURCES
 	BCR2000_Component.cpp BCR2000_Component.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	EditCategoryDialog.cpp EditCategoryDialog.h
+	ElectraOneRouter.cpp ElectraOneRouter.h
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
