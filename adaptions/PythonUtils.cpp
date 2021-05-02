@@ -8,6 +8,9 @@
 
 #include "Logger.h"
 
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+
 namespace py = pybind11;
 
 PyStdErrOutStreamRedirect::PyStdErrOutStreamRedirect()
@@ -54,7 +57,8 @@ void PyStdErrOutStreamRedirect::flushToLogger(std::string const &logDomain)
 	}
 	auto output = stdoutString();
 	if (!output.empty()) {
-		SimpleLogger::instance()->postMessage(logDomain + ": " + output);
+		boost::trim_right(output);
+		SimpleLogger::instance()->postMessage((boost::format("%s: %s") % logDomain % output).str());
 	}
 	clear();
 }
