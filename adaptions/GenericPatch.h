@@ -67,8 +67,14 @@ namespace knobkraft {
 					checkForPythonOutputAndLog();
 					return result;
 				}
+				catch (py::error_already_set &ex) {
+					logAdaptationError(methodName.c_str(), ex);
+					ex.restore();
+					return pybind11::none();
+				}
 				catch (std::exception &ex) {
-					throw ex;
+					logAdaptationError(methodName.c_str(), ex);
+					return pybind11::none();
 				}
 				catch (...) {
 					throw std::runtime_error("Unhandled exception");

@@ -54,8 +54,10 @@ namespace knobkraft {
 	{
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();
-		MessageManager::callAsync([this, methodName, exceptionMessage]() {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % me_->getName() % methodName % exceptionMessage).str());
+		std::string adaptionName = me_->getName();
+		std::string methodCopy(methodName, methodName + strlen(methodName));
+		MessageManager::callAsync([adaptionName, methodCopy, exceptionMessage]() {
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % adaptionName % methodCopy % exceptionMessage).str());
 		});
 	}
 
@@ -67,13 +69,13 @@ namespace knobkraft {
 
 			// Very well, then try to change the name in the patch data
 			try {
-				ScopedLock lock(GenericAdaptation::multiThreadGuard);
+				//ScopedLock lock(GenericAdaptation::multiThreadGuard);
 				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
 				py::object result = me_.lock()->callMethod(kRenamePatch, v, name);
 				auto intVector = result.cast<std::vector<int>>();
 				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
 				me_.lock()->setData(byteData);
-			}
+ 			}
 			catch (py::error_already_set &ex) {
 				if (!me_.expired())
 					me_.lock()->logAdaptationError(kRenamePatch, ex);
