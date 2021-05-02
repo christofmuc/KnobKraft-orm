@@ -304,21 +304,20 @@ namespace midikraft {
 			// Which of the layers is played is not part of the patch data, but is a global setting/parameter. Luckily, this can be switched via an NRPN message
 			// The DSI synths like MSB before LSB
 			auto messages = MidiHelpers::generateRPN(channel().toOneBasedInt(), 4190, layerNo, true, true, true);
-			sendBlockOfMessagesToSynth(midiOutput(), MidiHelpers::bufferFromMessages(messages));
+			sendBlockOfMessagesToSynth(midiOutput(), messages);
 		}
 	}
 
-	MidiBuffer Rev2::layerToSysex(std::shared_ptr<DataFile> const patch, int sourceLayer, int targetLayer) const
+	std::vector<MidiMessage> Rev2::layerToSysex(std::shared_ptr<DataFile> const patch, int sourceLayer, int targetLayer) const
 	{
 		ignoreUnused(targetLayer);
-		MidiBuffer allMessages;
+		std::vector<MidiMessage> allMessages;
 		// Now, these will be a lot of NRPN messages generated, but what we can do is to generate a layer change by settings all values of all parameters via NRPN
 		auto rev2patch = std::dynamic_pointer_cast<Rev2Patch>(patch);
 		if (rev2patch) {
 			// Loop all parameters, and create set value messages for them
-			int deltaTimeInSamples = 0;
 			int count = 0;
-			for (auto param : rev2patch->allParameterDefinitions()) {
+			for (const auto& param : rev2patch->allParameterDefinitions()) {
 				count++;
 				if (count > 88) break;
 				auto rev2param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
@@ -327,8 +326,8 @@ namespace midikraft {
 					rev2param->setTargetLayer(targetLayer);
 					auto p = std::dynamic_pointer_cast<Patch>(patch);
 					if (p) {
-						allMessages.addEvents(rev2param->setValueMessages(p, this), 0, -1, deltaTimeInSamples);
-						deltaTimeInSamples += 10;
+						auto setcommand = rev2param->setValueMessages(p, this);
+						std::copy(setcommand.cbegin(), setcommand.cend(), std::back_inserter(allMessages));
 					}
 				}
 			}

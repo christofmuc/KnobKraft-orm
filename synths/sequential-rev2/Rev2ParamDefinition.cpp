@@ -3,6 +3,8 @@
 #include "Capability.h"
 #include "Patch.h"
 
+#include "MidiHelpers.h"
+
 namespace midikraft {
 
 	const int kSysexStartLayerB = 1024; // Layer B starts at sysex index 1024
@@ -122,7 +124,7 @@ namespace midikraft {
 		return true;
 	}
 
-	MidiBuffer Rev2ParamDefinition::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const
+	std::vector<MidiMessage> Rev2ParamDefinition::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const
 	{
 		auto midiLocation = midikraft::Capability::hasCapability<MidiLocationCapability const>(synth);
 		if (midiLocation) {
@@ -133,19 +135,19 @@ namespace midikraft {
 			case SynthParameterDefinition::ParamType::INT: {
 				int value;
 				if (valueInPatch(*patch, value)) {
-					return MidiRPNGenerator::generate(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse, value, true);
+					return MidiHelpers::generateRPN(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse, value, true, true, true);
 				}
 			}
 			case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
 				// Fall through
 			case SynthParameterDefinition::ParamType::INT_ARRAY: {
-				MidiBuffer result;
+				std::vector<MidiMessage> result;
 				std::vector<int> values;
 				if (valueInPatch(*patch, values)) {
 					int idx = 0;
 					for (auto value : values) {
-						auto buffer = MidiRPNGenerator::generate(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse + idx, value, true);
-						result.addEvents(buffer, 0, -1, 0);
+						auto buffer = MidiHelpers::generateRPN(midiLocation->channel().toOneBasedInt(), nrpnNumberToUse + idx, value, true, true, true);
+						std::copy(buffer.cbegin(), buffer.cend(), std::back_inserter(result));
 						idx++;
 					}
 					return result;
@@ -153,7 +155,7 @@ namespace midikraft {
 			}
 			}
 		}
-		return MidiBuffer();
+		return {};
 	}
 
 	void Rev2ParamDefinition::setTargetLayer(int layerNo)

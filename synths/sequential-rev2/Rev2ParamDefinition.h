@@ -38,7 +38,7 @@ namespace midikraft {
 		virtual void setInPatch(DataFile &patch, std::vector<int> value) const override;
 
 		// SynthParameterLiveEditCapability
-		virtual MidiBuffer setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const override;
+		virtual std::vector<MidiMessage> setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const override;
 
 		// SynthMultiLayerParameterCapability 
 		virtual void setTargetLayer(int layerNo) override;
