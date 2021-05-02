@@ -17,6 +17,7 @@ const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
 const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kFixedSynthSelected = "Fixed synth played";
+const char *kUseElectraOne = "Forward Electra One";
 const char *kInputDevice = "MIDI Input Device";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
@@ -55,7 +56,7 @@ public:
 			}
 		}
 		if (keyPressed == 0) {
-			done_ = true; 
+			done_ = true;
 		}
 	}
 
@@ -79,14 +80,14 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	for (auto config : kAllKeyboardMacroEvents) {
 		auto configComponent = new MacroConfig(config,
 			[this](KeyboardMacroEvent event) {
-				RecordProgress recorder(state_);
-				if (recorder.runThread()) {
-					KeyboardMacro newMacro = { event, recorder.notesSelected() };
-					macros_[event] = newMacro;
-					saveSettings();
-					refreshUI();
-				}
-			},
+			RecordProgress recorder(state_);
+			if (recorder.runThread()) {
+				KeyboardMacro newMacro = { event, recorder.notesSelected() };
+				macros_[event] = newMacro;
+				saveSettings();
+				refreshUI();
+			}
+		},
 			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
 				for (auto key : macros_[event].midiNotes) {
@@ -119,7 +120,8 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 							toWhichSynthToForward = std::dynamic_pointer_cast<midikraft::Synth>(s);
 						}
 					}
-				} else if (forwardMode == 3) {
+				}
+				else if (forwardMode == 3) {
 					// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
 					// Forward to the synth of the current patch
 					auto currentPatch = UIModel::currentPatch();
@@ -143,20 +145,20 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 					}
 				}
 			}
-		if (message.isNoteOnOrOff()) {
-			ignoreUnused(source);
-			state_.processNextMidiEvent(message);
+			if (message.isNoteOnOrOff()) {
+				ignoreUnused(source);
+				state_.processNextMidiEvent(message);
 
-			// Check if this is a message we will transform into a macro
-			for (const auto& macro : macros_) {
-				if (isMacroState(macro.second)) {
-					auto code = macro.first;
-					MessageManager::callAsync([this, code]() {
-						executeMacro_(code);
-					});
+				// Check if this is a message we will transform into a macro
+				for (const auto& macro : macros_) {
+					if (isMacroState(macro.second)) {
+						auto code = macro.first;
+						MessageManager::callAsync([this, code]() {
+							executeMacro_(code);
+						});
+					}
 				}
 			}
-		}
 		}
 	});
 
@@ -189,10 +191,11 @@ void KeyboardMacroView::setupPropertyEditor() {
 		synth_list.emplace(i++, s->getName());
 	}
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, synth_list));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kUseElectraOne, "MIDI Routing", false));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127 ));
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kHighestNote, "Setup Masterkeyboard", 0x60, 0, 127 ));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kLowestNote, "Setup Masterkeyboard", 0x24, 0, 127));
+	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kHighestNote, "Setup Masterkeyboard", 0x60, 0, 127));
 	for (auto tnv : customMasterkeyboardSetup_) {
 		tnv->value().addListener(this);
 	}
@@ -248,7 +251,7 @@ void KeyboardMacroView::loadFromSettings() {
 
 void KeyboardMacroView::saveSettings() {
 	var result;
-	
+
 	for (auto macro : macros_) {
 		var notes;
 		for (auto note : macro.second.midiNotes) {
@@ -260,7 +263,7 @@ void KeyboardMacroView::saveSettings() {
 		result.append(def);
 	}
 	String json = JSON::toString(result);
-	Settings::instance().set("MacroDefinitions", json.toStdString());	
+	Settings::instance().set("MacroDefinitions", json.toStdString());
 
 	for (auto &prop : customMasterkeyboardSetup_) {
 		Settings::instance().set(prop->name().toStdString(), prop->value().toString().toStdString());
@@ -281,7 +284,7 @@ void KeyboardMacroView::resized()
 	customSetup_.setBounds(area.removeFromTop(260).withSizeKeepingCentre(contentWidth, 260).reduced(8));
 	// Then the keyboard	
 	auto keyboardArea = area.removeFromTop(166);
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int) keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
 
 	// Set up table
 	for (auto c : configs_) {
@@ -307,6 +310,9 @@ void KeyboardMacroView::valueChanged(Value& value)
 	else if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kInputDevice))) {
 		turnOnMasterkeyboardInput();
 	}
+	else if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kUseElectraOne))) {
+		controllerRouter_.enable(value.getValue());
+	}
 }
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
@@ -326,7 +332,8 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 		// The list of MIDI devices changed, need to refresh the property editor
 		midiDeviceList_->refreshDeviceList();
 		customSetup_.setProperties(customMasterkeyboardSetup_);
-	} else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
+	}
+	else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
 		// Mode 1 - follow current synth, use that as master keyboard
 		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
 		auto masterKeyboard = midikraft::Capability::hasCapability<midikraft::MasterkeyboardCapability>(currentSynth);

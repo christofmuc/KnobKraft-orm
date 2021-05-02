@@ -67,7 +67,7 @@ namespace knobkraft {
 		bool isOwnSysex(MidiMessage const &message) const override;
 
 		// This generic synth method is overridden to allow throttling of messages for older synths like the Korg MS2000
-		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer) override;
+		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer) override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const;  //TODO this looks like a capability
 		virtual std::string setupHelpText() const;
 
