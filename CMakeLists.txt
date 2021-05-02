@@ -28,7 +28,7 @@ IF (WIN32)
 
     FetchContent_Declare(
 	  boost
-	  URL "https://dl.bintray.com/boostorg/release/1.71.0/source/boost_1_71_0.zip"
+	  URL "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_71_0.zip"
 	)
 	FetchContent_MakeAvailable(boost)
 
