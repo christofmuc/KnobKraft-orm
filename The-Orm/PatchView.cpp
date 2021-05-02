@@ -283,8 +283,8 @@ void PatchView::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 
-	auto sidebar = area.removeFromLeft(std::max(100, area.getWidth() / 6));
-	patchListTree_.setBounds(sidebar.reduced(8));
+	/*auto sidebar = area.removeFromLeft(std::max(100, area.getWidth() / 6));
+	patchListTree_.setBounds(sidebar.reduced(8));*/
 
 	auto topRow = area.removeFromTop(100);
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
