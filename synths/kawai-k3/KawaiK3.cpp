@@ -690,17 +690,16 @@ namespace midikraft {
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(messages);
 	}
 
-	void KawaiK3::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
+	void KawaiK3::sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		// We need to inspect if in there are any patch dumps are wave dump messages
 		auto midiOut = MidiController::instance()->getMidiOutput(midiOutput);
 		std::vector<MidiMessage> filtered;
 		std::shared_ptr<MidiMessage> patchToSend;
 		std::shared_ptr<MidiMessage> waveToSend;
-		for (auto m : buffer) {
-			MidiMessage message = m.getMessage();
+		for (const auto& message : buffer) {
 			// Suppress empty sysex messages, they seem to confuse vintage hardware (the Kawai K3 in particular)
-			if (message.isSysEx() && message.getSysExDataSize() == 0) continue;
+			if (MidiHelpers::isEmptySysex(message)) continue;
 
 			// Special handling required for patch dumps and wave dumps!
 			if (isSingleProgramDump(message)) {

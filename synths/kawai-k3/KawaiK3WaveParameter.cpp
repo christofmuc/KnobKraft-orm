@@ -109,12 +109,12 @@ namespace midikraft {
 		return std::make_shared<TypedNamedValue>(name(), "KawaiK3", 0, 0, 31);
 	}
 
-	juce::MidiBuffer KawaiK3DrawbarParameters::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const
+	std::vector<MidiMessage>  KawaiK3DrawbarParameters::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const
 	{		
 		auto k3 = dynamic_cast<KawaiK3 const *>(synth);
 		if (k3) {
 			auto message = k3->k3PatchToSysex(patch->data(), static_cast<int>(KawaiK3::WaveType::USER_WAVE), true);
-			return MidiHelpers::bufferFromMessages({ message });
+			return { message };
 		}
 		else {
 			jassertfalse;

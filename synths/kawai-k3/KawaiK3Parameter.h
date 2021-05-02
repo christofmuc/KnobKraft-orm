@@ -92,7 +92,7 @@ namespace midikraft {
 		int shiftedBitMask() const;
 
 		// SynthParameterLiveEditCapability
-		virtual MidiBuffer setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const override;
+		virtual std::vector<MidiMessage> setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const override;
 
 		// SynthParameterControllerMapping
 		virtual bool messagesMatchParameter(std::vector<juce::MidiMessage> const& messages, int& outNewValue) const override;
@@ -100,7 +100,7 @@ namespace midikraft {
 
 
 	private:
-		MidiBuffer setValueMessages(KawaiK3 const* synth, int newValue) const;
+		std::vector<MidiMessage> setValueMessages(KawaiK3 const* synth, int newValue) const;
 
 		std::string name_;
 		Parameter paramNo_;

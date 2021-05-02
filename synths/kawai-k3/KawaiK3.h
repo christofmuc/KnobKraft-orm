@@ -69,7 +69,7 @@ namespace midikraft {
 
 		// Special Synth implementation override, because the K3 sends actually write confirmation messages in 1985. Awesome engineers!
 		virtual void sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
-		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer) override;
+		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer) override;
 
 		// Discoverable Device
 		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;

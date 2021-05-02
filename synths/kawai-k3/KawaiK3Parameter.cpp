@@ -254,7 +254,7 @@ namespace midikraft {
 		return (((uint16)((1 << sysexBits_) - 1)) << sysexShift_) & 0xff;
 	}
 
-	juce::MidiBuffer KawaiK3Parameter::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const
+	std::vector<MidiMessage>  KawaiK3Parameter::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const* synth) const
 	{
 		auto k3 = dynamic_cast<KawaiK3 const*>(synth);
 		jassert(k3);
@@ -264,10 +264,10 @@ namespace midikraft {
 			return setValueMessages(k3, paramValue);
 		}
 		jassertfalse;
-		return MidiBuffer();
+		return {};
 	}
 
-	juce::MidiBuffer KawaiK3Parameter::setValueMessages(KawaiK3 const* k3, int paramValue) const
+	std::vector<MidiMessage> KawaiK3Parameter::setValueMessages(KawaiK3 const* k3, int paramValue) const
 	{
 		uint8 highNibble, lowNibble;
 		if (minValue() < 0) {
@@ -294,7 +294,7 @@ namespace midikraft {
 		auto dataBlock = k3->buildSysexFunction(KawaiK3::PARAMETER_SEND, (uint8)paramNo());
 		dataBlock.push_back(highNibble);
 		dataBlock.push_back(lowNibble);
-		return MidiHelpers::bufferFromMessages({ MidiMessage::createSysExMessage(&dataBlock[0], static_cast<int>(dataBlock.size())) });
+		return { MidiMessage::createSysExMessage(&dataBlock[0], static_cast<int>(dataBlock.size())) };
 	}
 
 	bool KawaiK3Parameter::messagesMatchParameter(std::vector<juce::MidiMessage> const& messages, int& outNewValue) const

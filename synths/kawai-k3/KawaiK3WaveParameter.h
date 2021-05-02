@@ -51,7 +51,7 @@ namespace midikraft {
 		std::shared_ptr<TypedNamedValue> makeTypedNamedValue() override;
 
 		// SynthParameterLiveEditCapability
-		MidiBuffer setValueMessages(std::shared_ptr<DataFile>, Synth const* synth) const override;
+		std::vector<MidiMessage> setValueMessages(std::shared_ptr<DataFile>, Synth const* synth) const override;
 
 	private:
 		Drawbar drawbar_;
