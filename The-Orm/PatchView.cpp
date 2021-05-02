@@ -711,10 +711,12 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 		if (layerSynth) {
 			SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
 			//layerSynth->switchToLayer(currentLayer_);
-			MidiBuffer allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
+			auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
 			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (location) {
-				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.getNumEvents() % allMessages.data.size()).str());
+				int totalSize = 0;
+				totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const &m) { return m.getRawDataSize() + acc; });
+				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.size() % totalSize).str());
 				patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
 			}
 			else {

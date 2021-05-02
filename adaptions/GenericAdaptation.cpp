@@ -415,7 +415,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
+	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		if (pythonModuleHasFunction(kGeneralMessageDelay)) {
 			try {
