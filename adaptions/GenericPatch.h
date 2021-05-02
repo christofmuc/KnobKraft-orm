@@ -67,7 +67,7 @@ namespace knobkraft {
 					checkForPythonOutputAndLog();
 					return result;
 				}
-				catch (py::error_already_set &ex) {
+				catch (pybind11::error_already_set &ex) {
 					logAdaptationError(methodName.c_str(), ex);
 					ex.restore();
 					return pybind11::none();
