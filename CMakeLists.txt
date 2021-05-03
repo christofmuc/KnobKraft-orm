@@ -189,6 +189,10 @@ set_target_properties(juce-static PROPERTIES
 	C_VISIBILITY_PRESET hidden
 	CXX_VISIBILITY_PRESET hidden)
 
+# Add more third party libraries
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(third_party/json)
+add_subdirectory(third_party/json-schema-validator)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
@@ -196,6 +200,7 @@ add_subdirectory(juce-widgets)
 add_subdirectory(MidiKraft-base)
 add_subdirectory(MidiKraft-librarian)
 add_subdirectory(MidiKraft-database)
+add_subdirectory(MidiKraft-electra-one)
 
 # Import the synths currently supported
 add_subdirectory(synths/MidiKraft-access-virus)

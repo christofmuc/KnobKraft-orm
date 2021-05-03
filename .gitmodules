@@ -83,3 +83,12 @@
 [submodule "third_party/Gin"]
 	path = third_party/Gin
 	url = https://github.com/FigBug/Gin.git
+[submodule "third_party/json"]
+	path = third_party/json
+	url = https://github.com/nlohmann/json.git
+[submodule "third_party/json-schema-validator"]
+	path = third_party/json-schema-validator
+	url = https://github.com/pboettch/json-schema-validator.git
+[submodule "MidiKraft-electra-one"]
+	path = MidiKraft-electra-one
+	url = https://github.com/christofmuc/MidiKraft-electra-one.git

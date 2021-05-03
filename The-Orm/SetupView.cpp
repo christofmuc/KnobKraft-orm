@@ -17,6 +17,7 @@
 #include "AutoDetectProgressWindow.h"
 #include "LoopDetection.h"
 
+#include "KorgDW8000_ElectraOne.h"
 
 #include "UIModel.h"
 
@@ -24,6 +25,7 @@
 
 #include <boost/format.hpp>
 #include <algorithm>
+#include <fstream>
 
 class MidiChannelPropertyEditorWithOldDevices : public MidiDevicePropertyEditor {
 public:
@@ -92,7 +94,19 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 			} } },
 			{"createNewAdaptation", { "Create new adaptation", [this]() {
 				knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
+			} } },
+			{"createElectraOne", { "Test DW8000 ElectraOne", [this]() {
+				midikraft::KorgDW8000_ElectraOne dw8000;
+				auto result = dw8000.createJson(MidiChannel::fromZeroBase(0));
+				std::ofstream out("test.epr");
+				out << result;
+				midikraft::ElectraOneInstrumentDefinition eif;
+				eif.addControllers(dw8000.controllers());
+				auto eif_file = eif.createJson(UIModel::currentSynthOfPatchSmart());
+				std::ofstream out2("test.eif");
+				out2 << eif_file;
 			} } }
+
 		});
 	addAndMakeVisible(functionButtons_);
 

@@ -82,6 +82,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-base 
 		midikraft-librarian 
 		midikraft-database 
+		midikraft-electra-one
 		midikraft-access-virus
 		midikraft-behringer-bcr2000
 		midikraft-kawai-k3
