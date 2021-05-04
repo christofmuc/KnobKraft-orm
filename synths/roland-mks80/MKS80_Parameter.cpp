@@ -115,7 +115,26 @@ namespace midikraft {
 	void MKS80_Parameter::setInPatch(DataFile &patch, int value) const
 	{
 		ignoreUnused(patch, value);
-		throw std::logic_error("The method or operation is not implemented.");
+		//throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	std::shared_ptr<TypedNamedValue> MKS80_Parameter::makeTypedNamedValue()
+	{
+		//TODO - this code looks like it is not really synth specific
+		switch (type()) {
+		case midikraft::SynthParameterDefinition::ParamType::INT:
+			return std::make_shared<TypedNamedValue>(name(), "MKS80", 0, minValue(), maxValue());
+		case midikraft::SynthParameterDefinition::ParamType::LOOKUP: {
+			std::map<int, std::string> lookup;
+			for (int i = minValue(); i <= maxValue(); i++) {
+				lookup.emplace(i, valueAsText(i));
+			}
+			return std::make_shared<TypedNamedValue>(name(), "MKS80", 0, lookup);
+		}
+		default:
+			jassertfalse;
+		}
+		return nullptr;
 	}
 
 	MKS80_Parameter::MKS80_Parameter(ParameterType paramType, int paramIndex, std::string const &name, int min, int max) :

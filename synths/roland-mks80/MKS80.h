@@ -11,18 +11,19 @@
 #include "Synth.h"
 #include "EditBufferCapability.h"
 #include "HandshakeLoadingCapability.h"
+#include "DetailedParametersCapability.h"
 #include "SoundExpanderCapability.h"
 #include "LegacyLoaderCapability.h"
 #include "SimpleDiscoverableDevice.h"
-//#include "SupportedByBCR2000.h"
+#include "SupportedByBCR2000.h"
 
 #include "MKS80_Parameter.h"
 
 namespace midikraft {
 
 	class MKS80 : public Synth, public EditBufferCapability, public HandshakeLoadingCapability,
-		public SimpleDiscoverableDevice,
-		public LegacyLoaderCapability, public SoundExpanderCapability /*, public SupportedByBCR2000 */ {
+		public SimpleDiscoverableDevice, public DetailedParametersCapability,
+		public LegacyLoaderCapability, public SoundExpanderCapability, public SupportedByBCR2000 {
 	public:
 		MKS80();
 
@@ -55,6 +56,9 @@ namespace midikraft {
 		virtual void startDownload(std::shared_ptr<SafeMidiOutput> output, std::shared_ptr<ProtocolState> saveState) override;
 		virtual bool isNextMessage(MidiMessage const &message, std::vector<MidiMessage> &answer, std::shared_ptr<ProtocolState> state) override;
 
+		// DetailedParametersLoadingCapability
+		virtual std::vector<std::shared_ptr<SynthParameterDefinition>> allParameterDefinitions() const override;
+
 		// Sound expander capability
 		virtual bool canChangeInputChannel() const override;
 		virtual void changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished) override;
@@ -72,17 +76,14 @@ namespace midikraft {
 		virtual TPatchVector load(std::string const &filename, std::vector<uint8> const &fileContent) override;
 		
 		// SupportedByBCR2000
-		/*std::vector<std::string> presetNames() override;
-		void setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-		void syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger) override;
-		void setupBCR2000View(BCR2000_Component &view) override;
-		void setupBCR2000Values(BCR2000_Component &view, Patch *patch) override;*/
+		virtual void setupBCR2000(BCR2000 &bcr) override;
+		virtual void setupBCR2000View(BCR2000Proxy *view, TypedNamedValueSet &parameterModel, ValueTree &valueTree) override;
 
 		// Other methods to help with the complexity of the MKS80 format
 		static TPatchVector patchesFromAPRs(std::vector<std::vector<uint8>> const &toneData, std::vector<std::vector<uint8>> const &patchData);
 
 	private:
-		//std::string presetName();
+		std::string presetName();
 
 		static uint8 rolandChecksum(std::vector<uint8>::iterator start, std::vector<uint8>::iterator end);
 

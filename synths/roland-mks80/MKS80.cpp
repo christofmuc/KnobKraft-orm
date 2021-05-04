@@ -12,7 +12,7 @@
 #include "MidiHelpers.h"
 
 //#include "BCR2000.h"
-//#include "MKS80_BCR2000.h"
+#include "MKS80_BCR2000.h"
 
 //#include "BCR2000_Component.h"
 //#include "BCR2000_Presets.h"
@@ -276,6 +276,11 @@ namespace midikraft {
 		return false;
 	}
 
+	std::vector<std::shared_ptr<SynthParameterDefinition>> MKS80::allParameterDefinitions() const
+	{
+		return MKS80_Parameter::allParameterDefinitions;
+	}
+
 	bool MKS80::canChangeInputChannel() const
 	{
 		// This is a clear omission on Roland's side.
@@ -491,26 +496,24 @@ namespace midikraft {
 		// The MKS80 needs two BCR2000 presets - one for lower, one for upper
 		auto name = presetName();
 		return { (boost::format(name) % 0).str(), (boost::format(name) % 1).str() };
-	}
+	}*/
 
 	std::string MKS80::presetName() {
-		return (boost::format("Knobkraft MKS80 %%d %d") % channel().toOneBasedInt()).str();
+		return (boost::format("KnobKraft MKS80 %%d %d") % channel().toOneBasedInt()).str();
 	}
 
-	void MKS80::setupBCR2000(MidiController *controller, BCR2000 &bcr, SimpleLogger *logger)
+	void MKS80::setupBCR2000(BCR2000 &bcr)
 	{
 		if (bcr.wasDetected() && wasDetected() && channel().isValid()) {
 			// Make sure to bake the current channel of the synth into the setup for the BCR
-			auto bcl = MKS80_BCR2000::generateBCL(presetName(), channel().toZeroBasedInt(), MKS80_LOWER, MKS80_LOWER);
+			auto bcl = MKS80_BCR2000::generateBCL(presetName(), channel().toZeroBasedInt());
 			auto syx = bcr.convertToSyx(bcl);
-			bcr.sendSysExToBCR(controller->getMidiOutput(bcr.midiOutput()), syx, *controller, logger);
+			bcr.sendSysExToBCR(MidiController::instance()->getMidiOutput(bcr.midiOutput()), syx, [](std::vector<BCR2000::BCRError> const &errors) {
+				//TODO
+				ignoreUnused(errors);
+			});
 		}
 	}
-
-	void MKS80::syncDumpToBCR(MidiProgramNumber programNumber, MidiController *controller, BCR2000 &bcr, SimpleLogger *logger)
-	{
-		//TOOO
-	}*/
 
 	MidiMessage MKS80::buildHandshakingMessage(MKS80_Operation_Code code) const {
 		return buildHandshakingMessage(code, channel());
@@ -561,30 +564,33 @@ namespace midikraft {
 		return MKS80_Operation_Code::INVALID;
 	}
 
-	/*void MKS80::setupBCR2000View(BCR2000_Component &view)
+	void MKS80::setupBCR2000View(BCR2000Proxy *view, TypedNamedValueSet &parameterModel, ValueTree &valueTree)
 	{
+		ignoreUnused(valueTree);
+
 		// Iterate over our definition and set the labels on the view to show the layout
 		for (auto def : MKS80_BCR2000::BCR2000_setup(MKS80_Parameter::LOWER)) {
 			auto encoder = dynamic_cast<MKS80_BCR2000_Encoder*>(def);
+			auto nameCapa = dynamic_cast<BCRNamedParameterCapability *>(def);
 			if (encoder) {
 				switch (encoder->type()) {
 				case BUTTON:
-					view.setButtonParam(encoder->encoderNumber(), encoder->parameterDef()->name());
+					view->setButtonParam(encoder->encoderNumber(), encoder->parameterDef()->name());
 					break;
 				case ENCODER:
-					view.setRotaryParam(encoder->encoderNumber(), encoder->parameterDef().get()); // TODO, should propage shared_ptr
+					view->setRotaryParam(encoder->encoderNumber(), parameterModel.typedNamedValueByName(nameCapa->name()).get()); // TODO, should propagate shared_ptr
 					break;
 				}
 			}
 			else {
-				auto simpleDef = dynamic_cast<BCRStandardDefinitionWithName *>(def);
+				auto simpleDef = dynamic_cast<BCRStandardDefinition *>(def);
 				if (simpleDef) {
 					int button = simpleDef->type() == BUTTON ? simpleDef->encoderNumber() : -1;
-					if (button != -1) view.setButtonParam(button, simpleDef->name());
+					if (button != -1 && nameCapa) view->setButtonParam(button, nameCapa->name());
 				}
 			}
 		}
-	}*/
+	}
 
 	//void MKS80::setupBCR2000Values(BCR2000_Component &view, Patch *patch)
 	//{

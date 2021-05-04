@@ -30,7 +30,7 @@ namespace midikraft {
 		RJC = 0b01001111, // Rejection
 	};
 
-	class MKS80_Parameter : public SynthParameterDefinition, public SynthIntParameterCapability {
+	class MKS80_Parameter : public SynthParameterDefinition, public SynthIntParameterCapability, public SynthParameterEditorCapability {
 	public:
 		enum ParameterType {
 			TONE,
@@ -123,6 +123,9 @@ namespace midikraft {
 		virtual int maxValue() const override;
 		virtual bool valueInPatch(DataFile const &patch, int &outValue) const override;
 		virtual void setInPatch(DataFile &patch, int value) const override;
+
+		// SynthParameterEditorCapability
+		virtual std::shared_ptr<TypedNamedValue> makeTypedNamedValue() override;
 
 		void setSection(SynthSection section);
 
