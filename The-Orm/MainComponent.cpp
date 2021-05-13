@@ -112,7 +112,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	//synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
@@ -313,7 +313,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	addAndMakeVisible(patchList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
-	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
+	mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
 	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
 	mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
