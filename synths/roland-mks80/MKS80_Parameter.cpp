@@ -8,6 +8,7 @@
 #include "MKS80_Parameter.h"
 
 #include "Patch.h"
+#include "MKS80_Patch.h"
 
 #include <boost/format.hpp>
 
@@ -114,8 +115,13 @@ namespace midikraft {
 
 	void MKS80_Parameter::setInPatch(DataFile &patch, int value) const
 	{
-		ignoreUnused(patch, value);
-		//throw std::logic_error("The method or operation is not implemented.");
+		auto mks80Patch = dynamic_cast<MKS80_Patch const &>(patch);
+		if (value >= min_ && value <= max_) {
+			mks80Patch.dataSection(paramType_, section_)[paramIndex_] = (uint8) value;
+		}
+		else {
+			jassertfalse;
+		}
 	}
 
 	std::shared_ptr<TypedNamedValue> MKS80_Parameter::makeTypedNamedValue()
@@ -183,10 +189,12 @@ namespace midikraft {
 
 	bool MKS80_Parameter::valueInPatch(DataFile const &patch, int &outValue) const
 	{
-		if (paramType_ == TONE) {
-			outValue = patch.data()[paramIndex_];
+		auto mks80Patch = dynamic_cast<MKS80_Patch const &>(patch);
+		outValue = mks80Patch.dataSection(paramType_, section_)[paramIndex_];
+		if (outValue >= min_ && outValue <= max_) {
 			return true;
 		}
+		jassertfalse;
 		return false;
 	}
 

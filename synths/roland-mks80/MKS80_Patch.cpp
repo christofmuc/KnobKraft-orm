@@ -205,4 +205,26 @@ namespace midikraft {
 		return PackedDataFormatInfo::applyMapping(kMKS80PatchFormatDefinition, dat, 30);
 	}
 
+	juce::uint8 * MKS80_Patch::dataSection(APR_Section section)
+	{
+		switch (section) {
+		case MKS80_Patch::APR_Section::PATCH_UPPER: return data_.data();
+		case MKS80_Patch::APR_Section::PATCH_LOWER: return data_.data() + 15;
+		case MKS80_Patch::APR_Section::TONE_UPPER: return data_.data() + 30;
+		case MKS80_Patch::APR_Section::TONE_LOWER: return data_.data() + 30 + 48;
+		}
+		jassertfalse;
+		throw new std::runtime_error("Invalid APR Section value");
+	}
+
+	juce::uint8 * MKS80_Patch::dataSection(MKS80_Parameter::ParameterType type, MKS80_Parameter::SynthSection section)
+	{
+		if (type == MKS80_Parameter::ParameterType::TONE) {
+			return dataSection(section == MKS80_Parameter::SynthSection::LOWER ? MKS80_Patch::APR_Section::TONE_LOWER : MKS80_Patch::APR_Section::TONE_UPPER);
+		}
+		else {
+			return dataSection(section == MKS80_Parameter::SynthSection::LOWER ? MKS80_Patch::APR_Section::PATCH_LOWER : MKS80_Patch::APR_Section::PATCH_UPPER);
+		}
+	}
+
 }

@@ -10,6 +10,8 @@
 #include "MidiProgramNumber.h"
 #include "DetailedParametersCapability.h"
 
+#include "MKS80_Parameter.h"
+
 namespace midikraft {
 
 	class MKS80_Patch : public Patch, public DetailedParametersCapability {
@@ -45,6 +47,10 @@ namespace midikraft {
 		//! For the funky DAT format
 		static std::vector<uint8> toneFromDat(std::vector<uint8> const &dat);
 		static std::vector<uint8> patchesFromDat(std::vector<uint8> const &dat);
+
+		// Helper functions to access the correct part of the sysex data
+		uint8 *dataSection(APR_Section section);
+		uint8 *dataSection(MKS80_Parameter::ParameterType type, MKS80_Parameter::SynthSection section);
 
 	private:
 		void copyDataSection(std::map<APR_Section, std::vector<uint8>> const &data, std::vector<uint8> &result, MKS80_Patch::APR_Section section, int expectedLength);
