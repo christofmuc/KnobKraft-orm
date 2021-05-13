@@ -134,6 +134,11 @@ BCR2000
 * Could use bank list as preset list by querying bank names
 * DIN MIDI will be slow now, need second strategy to send
 
+Electra One
+* Warning: Limit of patch request messages per EIF is 128 https://forum.electra.one/t/increase-the-maximum-number-of-patch-request-messages/475
+* Should it use https://ubjson.org/
+
+
 Adaptation Tab
 + Could watch files and hot reload module when changed on disk (for easier development) https://github.com/FigBug/Gin
 + Could add python editor with hot reload function -> RATHER, launch editor. And if internal, ask if to break out
