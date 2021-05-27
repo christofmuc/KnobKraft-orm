@@ -24,6 +24,7 @@ namespace knobkraft {
 
 	juce::MidiMessage GenericEditBufferCapability::requestEditBufferDump() const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
 			py::object result = me_->callMethod(kCreateEditBufferRequest, c);
@@ -42,6 +43,7 @@ namespace knobkraft {
 
 	bool GenericEditBufferCapability::isEditBufferDump(const MidiMessage& message) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			auto vectorForm = me_->messageToVector(message);
 			py::object result = me_->callMethod(kIsEditBufferDump, vectorForm);
@@ -59,6 +61,7 @@ namespace knobkraft {
 
 	std::shared_ptr<midikraft::DataFile> GenericEditBufferCapability::patchFromSysex(const MidiMessage& message) const
 	{
+		py::gil_scoped_acquire acquire;
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
 		return std::make_shared<GenericPatch>(me_, const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::EDIT_BUFFER);
@@ -66,6 +69,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericEditBufferCapability::patchToSysex(std::shared_ptr<midikraft::DataFile> patch) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
@@ -85,6 +89,7 @@ namespace knobkraft {
 
 	juce::MidiMessage GenericEditBufferCapability::saveEditBufferToProgram(int programNumber)
 	{
+		py::gil_scoped_acquire acquire;
 		ignoreUnused(programNumber);
 		return MidiMessage();
 	}

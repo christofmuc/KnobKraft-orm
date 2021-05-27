@@ -79,6 +79,8 @@ namespace knobkraft {
 
 		// Call this once before using any other function
 		static void startupGenericAdaptation();
+		// Graceful shutdown with this please
+		static void shutdownGenericAdaptation();
 		// Check if the python runtime is available
 		static bool hasPython();
 		// Get the current adaptation directory, this is a configurable property with default
@@ -87,7 +89,6 @@ namespace knobkraft {
 		static void setAdaptationDirectoy(std::string const &directory);
 		
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptations();
-		static CriticalSection multiThreadGuard;
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
 		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
@@ -119,7 +120,7 @@ namespace knobkraft {
 			if (!adaptation_module) {
 				return pybind11::none();
 			}
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
+			py::gil_scoped_acquire acquire;
 			if (pybind11::hasattr(*adaptation_module, methodName.c_str())) {
 				auto result = adaptation_module.attr(methodName.c_str())(args...);
 				checkForPythonOutputAndLog();

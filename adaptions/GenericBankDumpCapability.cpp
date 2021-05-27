@@ -19,6 +19,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericBankDumpCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
 			int bank = bankNo.toZeroBased();
@@ -38,6 +39,7 @@ namespace knobkraft {
 
 	bool GenericBankDumpCapability::isBankDump(const MidiMessage& message) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			auto vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kIsPartOfBankDump, vector);
@@ -55,6 +57,7 @@ namespace knobkraft {
 
 	bool GenericBankDumpCapability::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			std::vector<std::vector<int>> vector;
 			for (auto message : bankDump) {
@@ -75,6 +78,7 @@ namespace knobkraft {
 
 	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(const MidiMessage& message) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			std::vector<int> vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kExtractPatchesFromBank, vector);

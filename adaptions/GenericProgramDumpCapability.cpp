@@ -20,6 +20,7 @@ namespace knobkraft {
 
 	std::shared_ptr<midikraft::DataFile> GenericProgramDumpCapability::patchFromProgramDumpSysex(const MidiMessage& message) const
 	{
+		py::gil_scoped_acquire acquire;
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
 		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
 		return std::make_shared<GenericPatch>(me_, const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
@@ -27,6 +28,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::requestPatch(int patchNo) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
 			py::object result = me_->callMethod(kCreateProgramDumpRequest, c, patchNo);
@@ -45,6 +47,7 @@ namespace knobkraft {
 
 	bool GenericProgramDumpCapability::isSingleProgramDump(const MidiMessage& message) const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			auto vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kIsSingleProgramDump, vector);
@@ -62,6 +65,7 @@ namespace knobkraft {
 
 	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const MidiMessage &message) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (me_->pythonModuleHasFunction("numberFromDump")) {
 			try {
 				auto vector = me_->messageToVector(message);
@@ -81,6 +85,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(std::shared_ptr<midikraft::DataFile> patch, MidiProgramNumber programNumber) const
 	{
+		py::gil_scoped_acquire acquire;
 		try
 		{
 			auto data = patch->data();

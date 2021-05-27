@@ -20,6 +20,7 @@ PyStdErrOutStreamRedirect::PyStdErrOutStreamRedirect()
 
 PyStdErrOutStreamRedirect::~PyStdErrOutStreamRedirect()
 {
+	py::gil_scoped_acquire acquire;
 	auto sysm = py::module::import("sys");
 	sysm.attr("stdout") = _stdout;
 	sysm.attr("stderr") = _stderr;
@@ -27,18 +28,21 @@ PyStdErrOutStreamRedirect::~PyStdErrOutStreamRedirect()
 
 std::string PyStdErrOutStreamRedirect::stdoutString()
 {
+	py::gil_scoped_acquire acquire;
 	_stdout_buffer.attr("seek")(0);
 	return py::str(_stdout_buffer.attr("read")());
 }
 
 std::string PyStdErrOutStreamRedirect::stderrString()
 {
+	py::gil_scoped_acquire acquire;
 	_stderr_buffer.attr("seek")(0);
 	return py::str(_stderr_buffer.attr("read")());
 }
 
 void PyStdErrOutStreamRedirect::clear()
 {	
+	py::gil_scoped_acquire acquire;
 	auto sysm = py::module::import("sys");
 	_stdout = sysm.attr("stdout");
 	_stderr = sysm.attr("stderr");

@@ -23,7 +23,7 @@ namespace knobkraft {
 
 	bool GenericPatch::pythonModuleHasFunction(std::string const &functionName) const
 	{
-		ScopedLock lock(GenericAdaptation::multiThreadGuard);
+		py::gil_scoped_acquire acquire;
 		if (!adaptation_) {
 			return false;
 		}
@@ -32,8 +32,8 @@ namespace knobkraft {
 
 	std::string GenericPatch::name() const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			std::vector<int> v(data().data(), data().data() + data().size());
 			auto result = adaptation_.attr(kNameFromDump)(v);
 			checkForPythonOutputAndLog();
@@ -63,13 +63,13 @@ namespace knobkraft {
 
 	void GenericStoredPatchNameCapability::setName(std::string const &name)
 	{
+		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
 			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
 			if (!me_.lock()->pythonModuleHasFunction(kRenamePatch)) return;
 
 			// Very well, then try to change the name in the patch data
 			try {
-				//ScopedLock lock(GenericAdaptation::multiThreadGuard);
 				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
 				py::object result = me_.lock()->callMethod(kRenamePatch, v, name);
 				auto intVector = result.cast<std::vector<int>>();
@@ -93,6 +93,7 @@ namespace knobkraft {
 
 	bool GenericDefaultNameCapability::isDefaultName(std::string const &patchName) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
 			auto patch = me_.lock();
 			try {

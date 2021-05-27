@@ -86,6 +86,7 @@ public:
 
 		// Init python with the embedded pytschirp module, if the Python init was successful
 		if (knobkraft::GenericAdaptation::hasPython()) {
+			pybind11::gil_scoped_acquire acquire;
 			globalImportEmbeddedModules();
 		}
 
@@ -153,7 +154,10 @@ public:
         // Add your application's shutdown code here..
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
-        mainWindow = nullptr; // (deletes our window)
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
+
+		mainWindow = nullptr; // (deletes our window)
 
 		// The UI is gone, we don't need the UIModel anymore
 		UIModel::shutdown();
