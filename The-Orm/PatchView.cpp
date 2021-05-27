@@ -261,8 +261,10 @@ void PatchView::selectNextPatch()
 
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	database_.getPatchesAsync(buildFilter(), [this, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
-		// TODO - we might want to cancel a running query if the user clicks fast?
+	database_.getPatchesAsync(buildFilter(), [this, callback](midikraft::PatchDatabase::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+		// Discard the result when there is a newer filter - another thread will be working on a better result!
+		if (buildFilter() != filter)
+			return;
 
 		// Check if a client-side filter is active (python based)
 		String advancedQuery = advancedFilters_.nameSearchText_.getText();
