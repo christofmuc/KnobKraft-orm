@@ -31,7 +31,7 @@ const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
-	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), patchListTree_(database),
+	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), patchListTree_(database, [this](String id) { selectImportByID(id); }),
 	categoryFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
@@ -610,6 +610,22 @@ void PatchView::createPatchInterchangeFile()
 				Settings::instance().set("lastPatchInterchangePath", lastPathForPIF_);
 			}
 		});
+	}
+}
+
+void PatchView::selectImportByID(String id) {
+	std::string description;
+	for (auto import : imports_) {
+		if (import.id == id) {
+			description = import.description;
+			break;
+		}
+	}
+	for (int j = 0; j < importList_.getNumItems(); j++) {
+		if (importList_.getItemText(j).toStdString() == description) {
+			importList_.setSelectedItemIndex(j, sendNotificationAsync);
+			break;
+		}
 	}
 }
 

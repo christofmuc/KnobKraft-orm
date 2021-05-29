@@ -99,6 +99,7 @@ private:
 	void exportPatches();
 	void updateLastPath();
 	void createPatchInterchangeFile();
+	void selectImportByID(String id);
 	std::string currentlySelectedSourceUUID();
 	void rebuildSynthFilters();
 	void rebuildImportFilterBox();

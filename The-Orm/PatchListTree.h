@@ -13,7 +13,7 @@
 class PatchListTree : public Component {
 public:
 
-	PatchListTree(midikraft::PatchDatabase &db);
+	PatchListTree(midikraft::PatchDatabase &db, std::function<void(String)> clickHandler);
 	virtual ~PatchListTree();
 
 	virtual void resized();
@@ -22,6 +22,7 @@ public:
 
 private:
 	midikraft::PatchDatabase& db_;
+	std::function<void(String)> clickHandler_;
 
 	std::unique_ptr<TreeView> treeView_;
 };

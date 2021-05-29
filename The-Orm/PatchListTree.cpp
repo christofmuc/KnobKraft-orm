@@ -67,7 +67,7 @@ private:
 
 };
 
-PatchListTree::PatchListTree(midikraft::PatchDatabase& db) : db_(db)
+PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(String)> clickHandler) : db_(db), clickHandler_(clickHandler)
 {
 	treeView_ = std::make_unique<TreeView>();
 	addAndMakeVisible(*treeView_);
@@ -80,8 +80,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db) : db_(db)
 		std::vector<TreeViewItem*> result;
 		auto importList = db_.getImportsList(UIModel::currentSynth());
 		for (auto const& import : importList) {
-			result.push_back(new GroupNode(import.description, import.id, [](String id) {
-				SimpleLogger::instance()->postMessage(id + " clicked");
+			result.push_back(new GroupNode(import.description, import.id, [this](String id) {
+				clickHandler_(id);
 			}));
 		}
 		return result;
