@@ -7,12 +7,15 @@
 #include "PatchListTree.h"
 
 #include "UIModel.h"
+#include "Logger.h"
+#include "ColourHelpers.h"
 
 class GroupNode : public TreeViewItem {
 public:
 	typedef std::function<std::vector<TreeViewItem *>()> TChildGenerator;
+	typedef std::function<void(String)>  TClickedHandler;
 
-	GroupNode(String text) : text_(text), hasGenerated_(false), hasChildren_(false) {
+	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasGenerated_(false), hasChildren_(false), handler_(handler) {
 	}
 
 	GroupNode(String text, TChildGenerator childGenerator) : text_(text), hasGenerated_(false), childGenerator_(childGenerator), hasChildren_(true) {
@@ -34,18 +37,33 @@ public:
 		}
 	}
 
-	Component* createItemComponent() override
+	void paintItem(Graphics& g, int width, int height) override
 	{
-		return new Label("", text_);
+		auto &lf = LookAndFeel::getDefaultLookAndFeel();
+		g.setColour(lf.findColour(Label::textColourId));
+		g.drawText(text_, 0, 0, width, height, Justification::centredLeft);
+	}
+
+	bool canBeSelected() const override
+	{
+		return handler_.operator bool();
+	}
+
+	void itemSelectionChanged(bool isNowSelected) override
+	{
+		ignoreUnused(isNowSelected);
+		handler_(id_);
 	}
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GroupNode)
 
 private:
 	String text_;
+	String id_;
 	bool hasChildren_;
 	bool hasGenerated_;
 	TChildGenerator childGenerator_;
+	TClickedHandler handler_;
 
 };
 
@@ -54,17 +72,25 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db) : db_(db)
 	treeView_ = std::make_unique<TreeView>();
 	addAndMakeVisible(*treeView_);
 
-	TreeViewItem *all = new GroupNode("All patches");
+	TreeViewItem* all = new GroupNode("All patches", "***", [this](String id) {
+		ignoreUnused(id);
+		SimpleLogger::instance()->postMessage("All patches selected");
+	});
 	TreeViewItem* imports = new GroupNode("By import", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto importList = db_.getImportsList(UIModel::currentSynth());
 		for (auto const& import : importList) {
-			result.push_back(new GroupNode(import.description));
+			result.push_back(new GroupNode(import.description, import.id, [](String id) {
+				SimpleLogger::instance()->postMessage(id + " clicked");
+			}));
 		}
 		return result;
 	});
 	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports}); });
 	treeView_->setRootItem(root);
+	treeView_->setRootItemVisible(false);
+
+	treeView_->setColour(TreeView::selectedItemBackgroundColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::highlightedFill));
 }
 
 PatchListTree::~PatchListTree()
