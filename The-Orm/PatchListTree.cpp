@@ -6,6 +6,8 @@
 
 #include "PatchListTree.h"
 
+#include "UIModel.h"
+
 class GroupNode : public TreeViewItem {
 public:
 	typedef std::function<std::vector<TreeViewItem *>()> TChildGenerator;
@@ -23,7 +25,7 @@ public:
 
 	void itemOpennessChanged(bool isNowOpen) override
 	{
-		if (isNowOpen && !hasGenerated_) {
+		if (hasChildren_ && isNowOpen && !hasGenerated_) {
 			auto children = childGenerator_();
 			for (auto c : children) {
 				addSubItem(c);
@@ -47,23 +49,31 @@ private:
 
 };
 
-PatchListTree::PatchListTree()
+PatchListTree::PatchListTree(midikraft::PatchDatabase& db) : db_(db)
 {
-	addAndMakeVisible(treeView_);
+	treeView_ = std::make_unique<TreeView>();
+	addAndMakeVisible(*treeView_);
 
 	TreeViewItem *all = new GroupNode("All patches");
-	TreeViewItem *imports = new GroupNode("By import");
+	TreeViewItem* imports = new GroupNode("By import", [this]() {
+		std::vector<TreeViewItem*> result;
+		auto importList = db_.getImportsList(UIModel::currentSynth());
+		for (auto const& import : importList) {
+			result.push_back(new GroupNode(import.description));
+		}
+		return result;
+	});
 	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports}); });
-	treeView_.setRootItem(root);
+	treeView_->setRootItem(root);
 }
 
 PatchListTree::~PatchListTree()
 {
-	treeView_.deleteRootItem(); // Deletes the rest as well
+	treeView_->deleteRootItem(); // Deletes the rest as well
 }
 
 void PatchListTree::resized()
 {
 	auto area = getLocalBounds();
-	treeView_.setBounds(area);
+	treeView_->setBounds(area);
 }

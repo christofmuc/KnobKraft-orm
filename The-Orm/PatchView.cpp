@@ -31,7 +31,7 @@ const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
-	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector),
+	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), patchListTree_(database),
 	categoryFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
@@ -285,8 +285,8 @@ void PatchView::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 
-	/*auto sidebar = area.removeFromLeft(std::max(100, area.getWidth() / 6));
-	patchListTree_.setBounds(sidebar.reduced(8));*/
+	auto sidebar = area.removeFromLeft(std::max(100, area.getWidth() / 6));
+	patchListTree_.setBounds(sidebar.reduced(8));
 
 	auto topRow = area.removeFromTop(100);
 	buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
