@@ -13,6 +13,7 @@
 #include "MacroConfig.h"
 
 #include "MidiChannelPropertyEditor.h"
+#include "ElectraOneRouter.h"
 
 
 class KeyboardMacroView : public Component, private ChangeListener, private Value::Listener {
@@ -39,6 +40,7 @@ private:
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
 	std::shared_ptr<MidiDevicePropertyEditor> midiDeviceList_; // Listen to this to get notified of newly available devices!
+	ElectraOneRouter controllerRouter_;
 
 	OwnedArray<MacroConfig> configs_;
 

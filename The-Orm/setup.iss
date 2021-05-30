@@ -38,12 +38,14 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppExeName}"; DestDir: "{app}"; 
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppName}.pdb"; DestDir: "{app}"; 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
 Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; 
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc67.dll"; DestDir: "{app}";
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt67.dll"; DestDir: "{app}";
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
 

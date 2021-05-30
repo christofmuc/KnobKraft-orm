@@ -11,25 +11,31 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Manufacturer  | Synth | Status | Type | Kudos |
 | ------------- | ------------- | --- | --- | --- |
 | Access  | Virus A, B, Classic, KB, Indigo  | works | native | |
-| Access  | Virus C  | beta | native | Thanks to guavadude@gs! |
+| Access  | Virus C  | beta | native | Thanks to guavadude@gs |
+| Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
-| Behringer | Deepmind 12 | alpha | adaptation | |
+| Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | native | |
+| Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
 | DSI | Pro 2 | beta | adaptation | |
 | DSI | Prophet 8 | beta | adaptation | |
 | DSI/Sequential | OB-6 | works | native | |
 | DSI/Sequential | Prophet Rev2 | works | native | |
-| DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No ! |
-| Electra | one | alpha | adaptation |
+| DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
+| Electra | one | works | adaptation |
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
-| Korg | DW-6000 | alpha | adaptation | |
+| Korg | 03R/W | beta | adaptation | Thanks to Philippe! |
+| Korg | DW-6000 | beta | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
 | Oberheim | Matrix 1000 | works | native | |
+| Oberheim | OB-X (Encore) | alpha | adaptation | |
+| Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
-| Prioneer | Toraiz AS-1 | beta | adaptation | |
+| Pioneer | Toraiz AS-1 | beta | adaptation | |
+| Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
 | Roland | MKS-50 | in progress | native | |
@@ -39,7 +45,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Prophet 6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
 | Waldorf | Blofeld | alpha | adaptation | |
-| Yamaha | Reface DX | works | native | |
+| Yamaha | reface DX | works | native | |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
 
@@ -171,6 +177,7 @@ This is by far not the first attempt at solving the challenge, I only hope it is
 | [MidiManager](https://midimanager.com/) | No | Chrome Web | ? | 2020 | JSON data | Yes |
 |  [Opcode Systems Galaxy](http://web.archive.org/web/19961113040000/http://www.opcode.com/products/gal_gpe/) | No| Mac | ? | 1990 | ? | Yes |
 | [MidiSynth](http://www.sigabort.co/midisynth.html) | No | Win, Mac | ? | 2015 | ? | No |
+| [Unisynth](http://www.midimetric.com/home.html) | No | Win | C# .net | 1999 | ? | No |
 | [Patch Base](https://coffeeshopped.com/patch-base) | No | iOS, Mac | ? | 2020 | ? | No |
 | [ToneTweak](https://tonetweak.com/sysex-librarian) | No | Chrome Web | ? | 2020 | ? | No |
 | [MidiQuest](https://squest.com/) | No | Win, Mac | ? | 2008 | ? | No |

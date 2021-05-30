@@ -28,7 +28,7 @@ namespace knobkraft {
 		cancel_.addListener(this);
 
 		StringArray templateList;
-		for (auto const &a : gBundledAdaptations()) {
+		for (auto const &a : BundledAdaptations::getAll()) {
 			templateList.add(a.synthName);
 		}
 						
@@ -68,24 +68,8 @@ namespace knobkraft {
 			return false;
 		}
 
-		auto adaptation = gBundledAdaptations()[selected];
-
-		auto dir = GenericAdaptation::getAdaptationDirectory();
-
-		// Copy out source code
-		File target = dir.getChildFile(adaptation.pythonModuleName + ".py");
-		if (target.exists()) {
-			juce::AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "File exists", "There is already a file for this adaptation, which we will not overwrite.");
-			return false;
-		}
-		
-		FileOutputStream out(target);
-#if WIN32
-		out.writeText(adaptation.adaptationSourceCode, false, false, "\r\n");
-#else
-		out.writeText(adaptation.adaptationSourceCode, false, false, "\n");
-#endif
-		return true;
+		auto adaptation = BundledAdaptations::getAll()[selected];
+		return BundledAdaptations::breakOut(adaptation.synthName);
 	}
 
 	void CreateNewAdaptationDialog::buttonClicked(Button* button)

@@ -8,6 +8,9 @@
 
 #include "Logger.h"
 
+#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+
 namespace py = pybind11;
 
 PyStdErrOutStreamRedirect::PyStdErrOutStreamRedirect()
@@ -17,6 +20,7 @@ PyStdErrOutStreamRedirect::PyStdErrOutStreamRedirect()
 
 PyStdErrOutStreamRedirect::~PyStdErrOutStreamRedirect()
 {
+	py::gil_scoped_acquire acquire;
 	auto sysm = py::module::import("sys");
 	sysm.attr("stdout") = _stdout;
 	sysm.attr("stderr") = _stderr;
@@ -24,18 +28,21 @@ PyStdErrOutStreamRedirect::~PyStdErrOutStreamRedirect()
 
 std::string PyStdErrOutStreamRedirect::stdoutString()
 {
+	py::gil_scoped_acquire acquire;
 	_stdout_buffer.attr("seek")(0);
 	return py::str(_stdout_buffer.attr("read")());
 }
 
 std::string PyStdErrOutStreamRedirect::stderrString()
 {
+	py::gil_scoped_acquire acquire;
 	_stderr_buffer.attr("seek")(0);
 	return py::str(_stderr_buffer.attr("read")());
 }
 
 void PyStdErrOutStreamRedirect::clear()
 {	
+	py::gil_scoped_acquire acquire;
 	auto sysm = py::module::import("sys");
 	_stdout = sysm.attr("stdout");
 	_stderr = sysm.attr("stderr");
@@ -54,7 +61,8 @@ void PyStdErrOutStreamRedirect::flushToLogger(std::string const &logDomain)
 	}
 	auto output = stdoutString();
 	if (!output.empty()) {
-		SimpleLogger::instance()->postMessage(logDomain + ": " + output);
+		boost::trim_right(output);
+		SimpleLogger::instance()->postMessage((boost::format("%s: %s") % logDomain % output).str());
 	}
 	clear();
 }

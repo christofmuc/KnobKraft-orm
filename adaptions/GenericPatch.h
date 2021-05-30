@@ -57,7 +57,7 @@ namespace knobkraft {
 
 		template <typename ... Args>
 		pybind11::object callMethod(std::string const &methodName, Args& ... args) const {
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
+			py::gil_scoped_acquire acquire;
 			if (!adaptation_) {
 				return pybind11::none();
 			}
@@ -67,8 +67,14 @@ namespace knobkraft {
 					checkForPythonOutputAndLog();
 					return result;
 				}
+				catch (pybind11::error_already_set &ex) {
+					logAdaptationError(methodName.c_str(), ex);
+					ex.restore();
+					return pybind11::none();
+				}
 				catch (std::exception &ex) {
-					throw ex;
+					logAdaptationError(methodName.c_str(), ex);
+					return pybind11::none();
 				}
 				catch (...) {
 					throw std::runtime_error("Unhandled exception");
@@ -97,7 +103,6 @@ namespace knobkraft {
 
 		GenericAdaptation const *me_;
 		pybind11::module &adaptation_;
-		std::string name_;
 	};
 
 

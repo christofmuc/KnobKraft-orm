@@ -22,16 +22,21 @@
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
 #include <boost/format.hpp>
+#include "PatchInterchangeFormat.h"
+#include "Settings.h"
+#include "ReceiveManualDumpWindow.h"
+#include "ExportDialog.h"
 
 const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
-	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector),
-	categoryFilters_(predefinedCategories(), [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
+	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), patchListTree_(database, [this](String id) { selectImportByID(id); }),
+	categoryFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
+	addAndMakeVisible(patchListTree_);
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
@@ -47,15 +52,12 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	onlyUntagged_.addListener(this);
 	addAndMakeVisible(onlyUntagged_);
 
-	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
+	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(database_, predefinedCategories(),
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
 		patchButtons_->refresh(true);
-	},
-		[this](std::shared_ptr<midikraft::PatchHolder> sessionPatch) {
-		ignoreUnused(sessionPatch);
-		UIModel::instance()->currentSession_.changedSession();
-	});
+	}
+	);
 	addAndMakeVisible(currentPatchDisplay_.get());
 
 	addAndMakeVisible(categoryFilters_);
@@ -64,19 +66,25 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(*advancedSearch_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "retrieveActiveSynthPatches",{ 0, "Import patches from synth", [this]() {
+	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
 		retrievePatches();
 	} } },
-	{ "fetchEditBuffer",{ 1, "Import edit buffer from synth", [this]() {
+	{ "fetchEditBuffer",{ "Import edit buffer from synth", [this]() {
 		retrieveEditBuffer();
 	} } },
-	{ "loadsysEx", { 2, "Import sysex files from computer", [this]() {
+	{ "receiveManualDump",{ "Receive manual dump", [this]() {
+		receiveManualDump();
+	},  } },
+	{ "loadsysEx", { "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "exportSysex", { 3, "Export into sysex files", [this]() {
+	{ "exportSysex", { "Export into sysex files", [this]() {
 		exportPatches();
+	}}},
+	{ "exportPIF", { "Export into PIF", [this]() {
+		createPatchInterchangeFile();
 	} } },
-	{ "showDiff", { 4, "Show patch comparison", [this]() {
+	{ "showDiff", { "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
 	};
@@ -98,10 +106,12 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->currentPatch_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
+	UIModel::instance()->categoriesChanged.addChangeListener(this);
 }
 
 PatchView::~PatchView()
 {
+	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
@@ -115,6 +125,8 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	auto currentSynth = dynamic_cast<CurrentSynth *>(source);
 	if (currentSynth) {
+		categoryFilters_.setCategories(predefinedCategories());
+
 		// Select only the newly selected synth in the synth filters
 		if (UIModel::currentSynth()) {
 			advancedFilters_.synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
@@ -130,6 +142,10 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else if (dynamic_cast<CurrentSynthList *>(source)) {
 		rebuildSynthFilters();
+	}
+	else if (source == &UIModel::instance()->categoriesChanged) {
+		categoryFilters_.setCategories(predefinedCategories());
+		retrieveFirstPageFromDatabase();
 	}
 }
 
@@ -148,8 +164,10 @@ void PatchView::rebuildSynthFilters() {
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 {
 	std::vector<CategoryButtons::Category> result;
-	for (auto c : automaticCategories_->predefinedCategoryVector()) {
-		result.push_back({ c.category, c.color });
+	for (const auto& c : database_.getCategories()) {
+		if (c.def()->isActive) {
+			result.emplace_back(c.category(), c.color());
+		}
 	}
 	return result;
 }
@@ -172,7 +190,12 @@ midikraft::PatchDatabase::PatchFilter PatchView::buildFilter() {
 	// Transform into real category
 	std::set<midikraft::Category> catSelected;
 	for (auto c : categoryFilters_.selectedCategories()) {
-		catSelected.emplace(c.category, c.color);
+		for (auto dc : database_.getCategories()) {
+			if (dc.category() == c.category) {
+				catSelected.emplace(dc);
+				break;
+			}
+		}
 	}
 	bool typeSelected = false;
 	int filterType = 0;
@@ -238,8 +261,10 @@ void PatchView::selectNextPatch()
 
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	database_.getPatchesAsync(buildFilter(), [this, callback](std::vector<midikraft::PatchHolder> const &newPatches) {
-		// TODO - we might want to cancel a running query if the user clicks fast?
+	database_.getPatchesAsync(buildFilter(), [this, callback](midikraft::PatchDatabase::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+		// Discard the result when there is a newer filter - another thread will be working on a better result!
+		if (buildFilter() != filter)
+			return;
 
 		// Check if a client-side filter is active (python based)
 		String advancedQuery = advancedFilters_.nameSearchText_.getText();
@@ -270,7 +295,7 @@ void PatchView::resizePatchGridIntoRect(Rectangle<int> area) {
 	categoryFilters_.setBounds(filterRow);
 
 	importList_.setBounds(sourceRow);
-	patchButtons_->setBounds(area.reduced(10));
+	patchButtons_->setBounds(area.withTrimmedRight(8).withTrimmedLeft(8));
 }
 
 void PatchView::resized()
@@ -364,7 +389,7 @@ void PatchView::retrievePatches() {
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
-	if (activeSynth && device->wasDetected()) {
+	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
@@ -377,7 +402,8 @@ void PatchView::retrievePatches() {
 					progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
 					progressWindow->signalThreadShouldExit();
 					MessageManager::callAsync([this, patchesLoaded]() {
-						mergeNewPatches(patchesLoaded);
+						auto enhanced = autoCategorize(patchesLoaded);
+						mergeNewPatches(enhanced);
 					});
 				});
 			}
@@ -396,6 +422,13 @@ void PatchView::retrievePatches() {
 	}
 }
 
+std::vector<midikraft::PatchHolder> PatchView::autoCategorize(std::vector<midikraft::PatchHolder> const &patches) {
+	for (auto p : patches) {
+		p.autoCategorizeAgain(automaticCategories_);
+	}
+	return patches;
+}
+
 
 void PatchView::retrieveEditBuffer()
 {
@@ -408,6 +441,8 @@ void PatchView::retrieveEditBuffer()
 			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
 			// There should only be one edit buffer, just check that this is true here
 			jassert(patchesLoaded.size() == 1);
+
+			patchesLoaded = autoCategorize(patchesLoaded);
 
 			// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
 			auto now = Time::getCurrentTime();
@@ -520,11 +555,33 @@ private:
 	std::function<void(std::vector<midikraft::PatchHolder>)> finished_;
 };
 
+void PatchView::receiveManualDump() {
+	auto synthToReceiveFrom = UIModel::instance()->currentSynth_.smartSynth();
+
+	if (synthToReceiveFrom) {
+		// We need to start a listener thread, and display a waiting dialog box with an end button all the while...
+		ReceiveManualDumpWindow receiveDumpBox(UIModel::instance()->currentSynth_.smartSynth());
+
+		receiveDumpBox.runThread();
+
+		auto messagesReceived = receiveDumpBox.result();
+		if (messagesReceived.size() > 0) {
+			// Try to load via Librarian
+			auto patches = librarian_.loadSysexPatchesManualDump(synthToReceiveFrom, messagesReceived, automaticCategories_);
+			if (patches.size() > 0) {
+				auto enhanced = autoCategorize(patches);
+				mergeNewPatches(enhanced);
+			}
+		}
+	}
+}
+
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
 		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), automaticCategories_);
 		if (patches.size() > 0) {
-			mergeNewPatches(patches);
+			auto enhanced = autoCategorize(patches);
+			mergeNewPatches(enhanced);
 		}
 	}
 }
@@ -534,8 +591,53 @@ void PatchView::exportPatches()
 	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
 	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
 		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-			librarian_.saveSysexPatchesToDisk(patches);
+			ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
+				librarian_.saveSysexPatchesToDisk(params, patches);
+			});
 		});
+	}
+}
+
+void PatchView::updateLastPath() {
+	if (lastPathForPIF_.empty()) {
+		// Read from settings
+		lastPathForPIF_ = Settings::instance().get("lastPatchInterchangePath", "");
+		if (lastPathForPIF_.empty()) {
+			// Default directory
+			lastPathForPIF_ = File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString();
+		}
+	}
+}
+
+void PatchView::createPatchInterchangeFile()
+{
+	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
+	if (!advancedFilters_.synthFilters_.selectedCategories().empty()) {
+		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+			updateLastPath();
+			FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
+			if (pifChooser.browseForFileToSave(true)) {
+				midikraft::PatchInterchangeFormat::save(patches, pifChooser.getResult().getFullPathName().toStdString());
+				lastPathForPIF_ = pifChooser.getResult().getFullPathName().toStdString();
+				Settings::instance().set("lastPatchInterchangePath", lastPathForPIF_);
+			}
+		});
+	}
+}
+
+void PatchView::selectImportByID(String id) {
+	std::string description;
+	for (auto import : imports_) {
+		if (import.id == id) {
+			description = import.description;
+			break;
+		}
+	}
+	for (int j = 0; j < importList_.getNumItems(); j++) {
+		if (importList_.getItemText(j).toStdString() == description) {
+			importList_.setSelectedItemIndex(j, sendNotificationAsync);
+			break;
+		}
 	}
 }
 
@@ -639,10 +741,12 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 		if (layerSynth) {
 			SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
 			//layerSynth->switchToLayer(currentLayer_);
-			MidiBuffer allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
+			auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
 			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (location) {
-				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.getNumEvents() % allMessages.data.size()).str());
+				int totalSize = 0;
+				totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const &m) { return m.getRawDataSize() + acc; });
+				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.size() % totalSize).str());
 				patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
 			}
 			else {

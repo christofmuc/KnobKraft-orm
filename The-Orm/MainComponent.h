@@ -13,6 +13,7 @@
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
 #include "DebounceTimer.h"
+#include "SplitteredComponent.h"
 
 #include "PatchDatabase.h"
 #include "AutoDetection.h"
@@ -22,6 +23,7 @@
 #include "LambdaMenuModel.h"
 #include "LambdaButtonStrip.h"
 #include "PatchPerSynthList.h"
+#include "PatchListTree.h"
 
 #include "PatchView.h"
 #include "SettingsView.h"
@@ -46,6 +48,7 @@ public:
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
 
 private:
+	void checkForUpdatesOnStartup();
 	void createNewDatabase();
 	void openDatabase();
 	void openDatabase(File &databaseFile);
@@ -56,6 +59,7 @@ private:
 #ifdef USE_SENTRY
 	void checkUserConsent();
 #endif
+	void crashTheSoftware();
 
 	void setAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
@@ -87,8 +91,7 @@ private:
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
 	std::unique_ptr<KeyboardMacroView> keyboardView_;
-	StretchableLayoutManager stretchableManager_;
-	StretchableLayoutResizerBar resizerBar_;
+	std::unique_ptr<SplitteredComponent> splitter_;
 	MidiLogView midiLogView_;
 	knobkraft::AdaptationView adaptationView_;
 	InsetBox midiLogArea_;

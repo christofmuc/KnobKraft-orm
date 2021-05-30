@@ -27,8 +27,26 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	addAndMakeVisible(pageDown_); 
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
-	addAndMakeVisible(pageNumbers_);
-	pageNumbers_.setJustificationType(Justification::centred);
+
+	for (int i = 0; i < 2; i++) {
+		auto e = new Label();
+		e->setText("...", dontSendNotification);
+		addAndMakeVisible(e);
+		ellipsis_.add(std::move(e));
+	}
+
+	maxPageButtons_ = 16; // For now, hard-coded value.Should probably calculate this from the width available.
+	pageNumbers_.clear();
+	for (int i = 0; i < maxPageButtons_; i++) {
+		TextButton *b = new TextButton();
+		b->setClickingTogglesState(true);
+		b->setRadioGroupId(1357);
+		b->setConnectedEdges(TextButton::ConnectedOnLeft | TextButton::ConnectedOnRight);
+		b->setColour(ComboBox::outlineColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::windowBackground));
+		addAndMakeVisible(b);
+		b->setVisible(false);
+		pageNumbers_.add(std::move(b));
+	}
 
 	UIModel::instance()->thumbnails_.addChangeListener(this);
 }
@@ -46,6 +64,48 @@ void PatchButtonPanel::setTotalCount(int totalCount)
 {
 	pageBase_ = pageNumber_ = 0;
 	totalSize_ = totalCount;
+	numPages_ = totalCount / pageSize_;
+	if (totalCount % pageSize_ != 0) numPages_++;
+}
+
+void PatchButtonPanel::setupPageButtons() {
+	pageButtonMap_.clear();
+	if (numPages_ <= maxPageButtons_) {
+		// Easy, just make on page button for each page available
+		for (int i = 0; i < numPages_; i++) {
+			pageButtonMap_[i] = i;
+		}
+	}
+	else {
+		// Need first page, and then 5 more centered around the current page, and the last one to also show the count
+		int button = 0;
+		pageButtonMap_[button++] = 0;
+		int blockStart = std::max(1, std::min(numPages_ -  6, pageNumber_ - 2));
+		for (int page = blockStart; page < blockStart + 5; page++) {
+			if (page > 0 && page < numPages_) {
+				pageButtonMap_[button++] = page;
+			}
+		}
+		pageButtonMap_[button++] = numPages_ - 1;
+	}
+
+	// Now relabel!
+	for (auto button : pageButtonMap_) {
+		Button *b = pageNumbers_[button.first];
+		b->onClick = [this, b, button]() { if (b->getToggleState()) jumpToPage(button.second);  };
+		b->setButtonText(String(button.second + 1));
+		b->setVisible(true);
+		if (button.second == pageNumber_) {
+			b->setToggleState(true, dontSendNotification);
+		}
+	}
+	// Any more buttons unused?
+	for (int i = 0; i < maxPageButtons_; i++) {
+		if (i >= pageButtonMap_.size()) {
+			pageNumbers_[i]->setVisible(false);
+		}
+	}
+	resized();
 }
 
 void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget /* = -1 */) {
@@ -60,6 +120,7 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 			buttonClicked(((int) patches_.size()) - 1);
 		}
 	}
+	setupPageButtons();
 }
 
 String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {
@@ -132,36 +193,30 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 			}
 		}
 	}
-
-	// Also, set the page number stripe
-	std::string pages;
-	size_t numberOfPages = (totalSize_ / pageSize_) + 1;
-	for (size_t i = 0; i < numberOfPages; i++) {
-		if ((i == numberOfPages - 1) && (totalSize_ % pageSize_ == 0)) continue;
-		if (!pages.empty()) pages.append(" ");
-		if (i == pageNumber_) {
-			pages.append((boost::format("<%d>") % (i + 1)).str());
-		}
-		else {
-			pages.append((boost::format("%d") % (i + 1)).str());
-		}
-	}
-	pageNumbers_.setText(pages, dontSendNotification);
 }
 
 void PatchButtonPanel::resized()
 {
-	// Create 64 patch buttons in a grid
-	/*FlexBox fb;
-	fb.flexWrap = FlexBox::Wrap::wrap;
-	fb.justifyContent = FlexBox::JustifyContent::spaceBetween;
-	fb.alignContent = FlexBox::AlignContent::stretch;
-	for (auto patchbutton : patchButtons_) {
-		fb.items.add(FlexItem(*patchbutton).withMinWidth(50.0f).withMinHeight(50.0f));
-	}
-	fb.performLayout(getLocalBounds().toFloat());*/
 	Rectangle<int> area(getLocalBounds());
-	pageNumbers_.setBounds(area.removeFromBottom(20));
+	auto pageNumberStrip = area.removeFromBottom(40).withTrimmedTop(8);
+	FlexBox pageNumberBox;
+	pageNumberBox.flexDirection = FlexBox::Direction::row;
+	pageNumberBox.justifyContent = FlexBox::JustifyContent::center;
+	pageNumberBox.alignContent = FlexBox::AlignContent::center;
+	int ecounter = 0;
+	for (int i = 0; i < ellipsis_.size(); i++) ellipsis_[i]->setVisible(false);
+	for (int i = 0; i < pageNumbers_.size(); i++) {
+		auto page = pageNumbers_[i];
+		if (page->isVisible()) {
+			if (i > 0 && pageButtonMap_[i] != pageButtonMap_[i - 1] + 1) {
+				pageNumberBox.items.add(FlexItem(*ellipsis_[ecounter]).withHeight(32).withWidth(32));
+				ellipsis_[ecounter++]->setVisible(true);
+			}
+			pageNumberBox.items.add(FlexItem(*page).withHeight(32).withWidth((float)page->getBestWidthForHeight(32)));
+		}
+	}
+	pageNumberBox.performLayout(pageNumberStrip);
+
 	pageDown_.setBounds(area.removeFromLeft(32).withTrimmedRight(8));
 	pageUp_.setBounds(area.removeFromRight(32).withTrimmedLeft(8));
 
@@ -195,6 +250,7 @@ void PatchButtonPanel::pageUp(bool selectNext) {
 	if (pageBase_ + pageSize_ < totalSize_) {
 		pageBase_ += pageSize_;
 		pageNumber_++;
+		setupPageButtons();
 		refresh(true, selectNext ? 0 : -1);
 	}
 }
@@ -203,7 +259,17 @@ void PatchButtonPanel::pageDown(bool selectLast) {
 	if (pageBase_ - pageSize_ >= 0) {
 		pageBase_ -= pageSize_;
 		pageNumber_--;
+		setupPageButtons();
 		refresh(true, selectLast ? 1 : -1);
+	}
+}
+
+void PatchButtonPanel::jumpToPage(int pagenumber) {
+	if (pagenumber >= 0 && pagenumber < numPages_) {
+		pageBase_ = pagenumber * pageSize_;
+		pageNumber_ = pagenumber;
+		setupPageButtons();
+		refresh(true);
 	}
 }
 
@@ -248,6 +314,7 @@ void PatchButtonPanel::selectFirst()
 {
 	pageBase_ = 0;
 	pageNumber_ = 0;
+	if (!pageNumbers_.isEmpty()) pageNumbers_[0]->setToggleState(true, dontSendNotification);
 	refresh(true, 0);
 }
 

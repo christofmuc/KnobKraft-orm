@@ -41,6 +41,8 @@ public:
 	void pageUp(bool selectNext);
 	void pageDown(bool selectLast);
 
+	void jumpToPage(int pagenumber);
+
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
@@ -48,6 +50,8 @@ private:
 	File findPrehearFile(midikraft::PatchHolder const &patch);
 	void refreshThumbnail(int i);
 	int indexOfActive() const;
+	void resizePageNumbers();
+	void setupPageButtons();
 
 	std::vector<midikraft::PatchHolder> patches_;
 	std::unique_ptr<PatchButtonGrid<PatchHolderButton>> patchButtons_;
@@ -57,11 +61,15 @@ private:
 	std::string activePatchMd5_;
 
 	TextButton pageUp_, pageDown_;
-	Label pageNumbers_;
+	OwnedArray<TextButton> pageNumbers_;
+	OwnedArray<Label> ellipsis_;
 	int pageBase_;
 	int pageNumber_;
 	int pageSize_;
 	int totalSize_;
+	int numPages_;
+	int maxPageButtons_;
+	std::map<int, int> pageButtonMap_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchButtonPanel)
 };

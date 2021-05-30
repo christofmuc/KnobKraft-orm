@@ -18,6 +18,12 @@
 
 #include "version.cpp"
 
+#ifdef USE_SPARKLE
+#ifdef WIN32
+#include <winsparkle.h>
+#endif
+#endif
+
 #ifdef USE_SENTRY
 #include "sentry.h"
 #include "sentry-config.h"
@@ -68,11 +74,19 @@ public:
 		char *applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
 
+#ifdef USE_SPARKLE
+#ifdef WIN32
+		// Setup Winsparkle Auto Updater
+		win_sparkle_set_app_details(String("KnobKraft").toWideCharPointer(), getApplicationName().toWideCharPointer(), getApplicationVersion().toWideCharPointer());
+#endif
+#endif
+
 		// Init python for GenericAdaptation
 		knobkraft::GenericAdaptation::startupGenericAdaptation();
 
 		// Init python with the embedded pytschirp module, if the Python init was successful
 		if (knobkraft::GenericAdaptation::hasPython()) {
+			pybind11::gil_scoped_acquire acquire;
 			globalImportEmbeddedModules();
 		}
 
@@ -101,8 +115,16 @@ public:
 #endif
 		sentry_init(options);
 
+		// Setup user name so I can distinguish my own crashes from the rest. As we never want to user real names, we just generate a random UUID.
+		// If you don't like it anymore, you can delete it from the Settings.xml and you'll be a new person!
+		std::string userid = Settings::instance().get("UniqueButRandomUserID", juce::Uuid().toDashedString().toStdString());
+		Settings::instance().set("UniqueButRandomUserID", userid);
+		sentry_value_t user = sentry_value_new_object();
+		sentry_value_set_by_key(user, "id", sentry_value_new_string(userid.c_str()));
+		sentry_set_user(user);
+
 		// Fire a test event to see if Sentry actually works
-		//sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
+		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
 #endif
 
 		// Window Title Refresher
@@ -132,7 +154,10 @@ public:
         // Add your application's shutdown code here..
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
-        mainWindow = nullptr; // (deletes our window)
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
+
+		mainWindow = nullptr; // (deletes our window)
 
 		// The UI is gone, we don't need the UIModel anymore
 		UIModel::shutdown();

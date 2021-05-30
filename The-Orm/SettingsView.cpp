@@ -18,7 +18,7 @@ SettingsView::SettingsView(std::vector<midikraft::SynthHolder> const &synths) : 
 buttonStrip_(3001, LambdaButtonStrip::Direction::Horizontal)
 {
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "loadGlobals", { 0, "Load Globals", [this]() {
+	{ "loadGlobals", { "Load Globals", [this]() {
 		loadGlobals();
 	} } },
 	};

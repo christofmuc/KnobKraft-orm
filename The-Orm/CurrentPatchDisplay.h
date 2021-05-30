@@ -14,14 +14,15 @@
 #include "Patch.h"
 #include "PatchHolder.h"
 #include "PatchTextBox.h"
+#include "PatchDatabase.h"
 
 class CurrentPatchDisplay : public Component,
-	private TextButton::Listener
+	private TextButton::Listener, private ChangeListener
 {
 public:
-	CurrentPatchDisplay(std::vector<CategoryButtons::Category>  categories, 
-		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler,
-		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> sessionHandler);
+	CurrentPatchDisplay(midikraft::PatchDatabase &database,
+		std::vector<CategoryButtons::Category>  categories, 
+		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler);
 	virtual ~CurrentPatchDisplay();
 
 	void setCurrentPatch(std::shared_ptr<midikraft::PatchHolder> patch);
@@ -40,9 +41,11 @@ public:
 	virtual void paint(Graphics& g) override;
 
 private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
 	void refreshNameButtonColour();
-	void categoryUpdated(midikraft::Category clicked);
+	void categoryUpdated(CategoryButtons::Category clicked);
 
+	midikraft::PatchDatabase &database_;
 	Label synthName_;
 	Label patchType_;
 	PatchButton name_;
@@ -53,7 +56,6 @@ private:
 	CategoryButtons categories_;
 	PatchTextBox patchAsText_;
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler_;
-	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> sessionHandler_;
 	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)

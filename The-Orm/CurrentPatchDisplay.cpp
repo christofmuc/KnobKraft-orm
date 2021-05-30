@@ -15,15 +15,14 @@
 
 #include "ColourHelpers.h"
 
+#include "UIModel.h"
+
 #include <boost/format.hpp>
 
-//#include "SessionDatabase.h"
-
-CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler,
-	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> sessionHandler) : Component(), favoriteHandler_(favoriteHandler), sessionHandler_(sessionHandler)
+CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
+	: Component(), database_(database), favoriteHandler_(favoriteHandler)
 	, categories_(categories, [this](CategoryButtons::Category categoryClicked) { 
-		midikraft::Category cat({ categoryClicked.category, categoryClicked.color });
-		categoryUpdated(cat);
+		categoryUpdated(categoryClicked);
 	}, false, false),
 	name_(0, false, [this](int) { 		
 		PatchNameDialog::showPatchNameDialog(currentPatch_, getTopLevelComponent(), [this](std::shared_ptr<midikraft::PatchHolder> result) {
@@ -57,12 +56,15 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 
 	addAndMakeVisible(categories_);
 	addAndMakeVisible(import_);
-
 	addAndMakeVisible(patchAsText_);
+
+	// We need to recolor in case the categories are changed
+	UIModel::instance()->categoriesChanged.addChangeListener(this);
 }
 
 CurrentPatchDisplay::~CurrentPatchDisplay()
 {
+	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	PatchNameDialog::release();
 }
 
@@ -84,7 +86,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		
 		std::set<CategoryButtons::Category> buttonCategories;
 		for (const auto& cat : patch->categories()) {
-			buttonCategories.insert({ cat.category, cat.color });
+			buttonCategories.insert({ cat.category(), cat.color() });
 		}
 		categories_.setActive(buttonCategories);
 
@@ -92,7 +94,13 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 			synthName_.setText(patch->synth()->getName(), dontSendNotification);
 			auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch->smartSynth());
 			if (dataFileCap) {
-				patchType_.setText(dataFileCap->dataTypeNames()[patch->patch()->dataTypeID()].name, dontSendNotification);
+				int datatype = patch->patch()->dataTypeID();
+				if (datatype < dataFileCap->dataTypeNames().size()) {
+					patchType_.setText(dataFileCap->dataTypeNames()[patch->patch()->dataTypeID()].name, dontSendNotification);
+				}
+				else {
+					jassertfalse;
+				}
 			}
 			else {
 				patchType_.setText("Patch", dontSendNotification);
@@ -239,17 +247,44 @@ void CurrentPatchDisplay::paint(Graphics& g)
 	g.fillAll(getLookAndFeel().findColour(TextButton::buttonOnColourId));
 }
 
-void CurrentPatchDisplay::categoryUpdated(midikraft::Category clicked) {
-	if (currentPatch_->patch()) {
-		currentPatch_->setUserDecision(clicked);
-		auto categories = categories_.selectedCategories();
-		currentPatch_->clearCategories();
-		for (const auto& cat : categories) {
-			// Have to convert into juce-widget version of Category here
-			midikraft::Category newCat(cat.category, cat.color);
-			currentPatch_->setCategory(newCat, true); 
+void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+	std::vector<CategoryButtons::Category> result;
+	for (const auto& c : database_.getCategories()) {
+		if (c.def()->isActive) {
+			result.emplace_back(c.category(), c.color());
 		}
-		favoriteHandler_(currentPatch_);
+	}
+	categories_.setCategories(result);
+	refreshNameButtonColour();
+}
+
+void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
+	if (currentPatch_->patch()) {
+		// Search for the real category
+		for (auto realCat: database_.getCategories()) {
+			if (realCat.category() == clicked.category) {
+				currentPatch_->setUserDecision(realCat);
+				auto categories = categories_.selectedCategories();
+				currentPatch_->clearCategories();
+				for (const auto& cat : categories) {
+					// Have to convert into juce-widget version of Category here
+					bool found = false;
+					for (auto c : database_.getCategories()) {
+						if (c.category() == cat.category) {
+							currentPatch_->setCategory(c, true);
+							found = true;
+						}
+					}
+					if (!found) {
+						SimpleLogger::instance()->postMessage((boost::format("Can't set category %s as it is not stored in the database. Program error?") % cat.category).str());
+					}
+				}
+				favoriteHandler_(currentPatch_);
+				break;
+			}
+		}
 	}
 	refreshNameButtonColour();
 }

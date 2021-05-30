@@ -110,10 +110,10 @@ public:
 	CurrentSequencer currentSequencer_;
 	CurrentPatch currentPatch_; // Listen to this to get updated when the current patch changes
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified
-	CurrentSession currentSession_; // Listen to this to find out if the current session was modified
 	CurrentSynthList synthList_;
 	ThumbnailChanges thumbnails_;
 	WindowTitleChanges windowTitle_;
+	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
 
 private:
 	UIModel() = default;

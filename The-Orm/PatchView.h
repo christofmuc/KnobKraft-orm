@@ -21,6 +21,7 @@
 #include "CategoryButtons.h"
 #include "CurrentPatchDisplay.h"
 #include "CollapsibleContainer.h"
+#include "PatchListTree.h"
 
 #include "PatchDatabase.h"
 #include "PatchHolder.h"
@@ -92,8 +93,14 @@ private:
 	void resizePatchGridIntoRect(Rectangle<int> rect);
 	void retrievePatches();
 
+	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
+
 	void loadPatches();
+	void receiveManualDump();
 	void exportPatches();
+	void updateLastPath();
+	void createPatchInterchangeFile();
+	void selectImportByID(String id);
 	std::string currentlySelectedSourceUUID();
 	void rebuildSynthFilters();
 	void rebuildImportFilterBox();
@@ -106,6 +113,7 @@ private:
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
 	ComboBox importList_;
+	PatchListTree patchListTree_;
 
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;
@@ -129,6 +137,8 @@ private:
 	midikraft::PatchHolder compareTarget_;
 
 	midikraft::PatchDatabase &database_;
+	
+	std::string lastPathForPIF_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };

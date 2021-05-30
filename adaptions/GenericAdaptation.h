@@ -67,14 +67,20 @@ namespace knobkraft {
 		bool isOwnSysex(MidiMessage const &message) const override;
 
 		// This generic synth method is overridden to allow throttling of messages for older synths like the Korg MS2000
-		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer) override;
+		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer) override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const;  //TODO this looks like a capability
+		virtual std::string setupHelpText() const;
 
 		// Internal workings of the Generic Adaptation module
 		bool pythonModuleHasFunction(std::string const &functionName) const;
+		bool isFromFile() const;
+		std::string getSourceFilePath() const;
+		void reloadPython();
 
 		// Call this once before using any other function
 		static void startupGenericAdaptation();
+		// Graceful shutdown with this please
+		static void shutdownGenericAdaptation();
 		// Check if the python runtime is available
 		static bool hasPython();
 		// Get the current adaptation directory, this is a configurable property with default
@@ -83,7 +89,6 @@ namespace knobkraft {
 		static void setAdaptationDirectoy(std::string const &directory);
 		
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptations();
-		static CriticalSection multiThreadGuard;
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
 		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
@@ -98,7 +103,7 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
 
 		// Common error logging
-		void logAdaptationError(const char *methodName, std::exception &e);
+		void logAdaptationError(const char *methodName, std::exception &e) const;
 
 	private:
 		friend class GenericEditBufferCapability;
@@ -115,7 +120,7 @@ namespace knobkraft {
 			if (!adaptation_module) {
 				return pybind11::none();
 			}
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
+			py::gil_scoped_acquire acquire;
 			if (pybind11::hasattr(*adaptation_module, methodName.c_str())) {
 				auto result = adaptation_module.attr(methodName.c_str())(args...);
 				checkForPythonOutputAndLog();
@@ -133,6 +138,7 @@ namespace knobkraft {
 
 		pybind11::module adaptation_module;
 		std::string filepath_;
+		std::string adaptationName_;
 	};
 
 }
