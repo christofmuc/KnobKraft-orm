@@ -193,7 +193,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}
 		} } },
 		{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
-			auto currentFilter = patchView_->buildFilter();
+			auto currentFilter = patchView_->currentFilter();
 			int affected = database_->getPatchesCount(currentFilter);
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 				"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
