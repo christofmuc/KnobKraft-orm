@@ -80,7 +80,6 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	buttons_(301)
@@ -320,10 +319,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 
-	addAndMakeVisible(mainTabs_);
 	addAndMakeVisible(menuBar_);
-	addAndMakeVisible(resizerBar_);
-	addAndMakeVisible(logArea_);
+	splitter_ = std::make_unique<SplitteredComponent>(SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
+	addAndMakeVisible(splitter_.get());
 
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -345,12 +343,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}
 		}
 	}
-
-	// Setup the rest of the UI
-	// Resizer bar allows to enlarge the log area
-	stretchableManager_.setItemLayout(0, -0.1, -0.9, -0.8); // The editor tab window prefers to get 80%
-	stretchableManager_.setItemLayout(1, 5, 5, 5);  // The resizer is hard-coded to 5 pixels
-	stretchableManager_.setItemLayout(2, -0.1, -0.9, -0.2);
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
@@ -604,14 +596,7 @@ void MainComponent::resized()
 	synthList_.setBounds(secondTopRow);
 	//menuBar_.setBounds(area.removeFromTop(30));
 
-	// make a list of two of our child components that we want to reposition
-	Component* comps[] = { &mainTabs_, &resizerBar_, &logArea_ };
-
-	// this will position the 3 components, one above the other, to fit
-	// vertically into the rectangle provided.
-	stretchableManager_.layOutComponents(comps, 3,
-		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
-		true, true);
+	splitter_->setBounds(area);
 }
 
 void MainComponent::shutdown()

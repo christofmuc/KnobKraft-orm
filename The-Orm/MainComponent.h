@@ -13,6 +13,7 @@
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
 #include "DebounceTimer.h"
+#include "SplitteredComponent.h"
 
 #include "PatchDatabase.h"
 #include "AutoDetection.h"
@@ -90,8 +91,7 @@ private:
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
 	std::unique_ptr<KeyboardMacroView> keyboardView_;
-	StretchableLayoutManager stretchableManager_;
-	StretchableLayoutResizerBar resizerBar_;
+	std::unique_ptr<SplitteredComponent> splitter_;
 	MidiLogView midiLogView_;
 	knobkraft::AdaptationView adaptationView_;
 	InsetBox midiLogArea_;
