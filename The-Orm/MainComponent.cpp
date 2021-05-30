@@ -320,7 +320,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 
 	addAndMakeVisible(menuBar_);
-	splitter_ = std::make_unique<SplitteredComponent>(SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
+	splitter_ = std::make_unique<SplitteredComponent>("LogSplitter", SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
 	addAndMakeVisible(splitter_.get());
 
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
