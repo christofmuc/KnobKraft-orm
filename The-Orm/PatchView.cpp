@@ -30,13 +30,41 @@
 const char *kAllPatchesFilter = "All patches";
 const char *kAllDataTypesFilter = "All types";
 
+class PatchViewCenter : public Component
+{
+public:
+	ComboBox *importList_;
+	CategoryButtons *categoryFilters_;
+	CollapsibleContainer  *advancedSearch_;
+	ToggleButton *onlyFaves_;
+	ToggleButton *showHidden_;
+	ToggleButton *onlyUntagged_;
+	Label *patchLabel_;
+	PatchButtonPanel *patchButtons_;
+
+	virtual void resized() {
+		Rectangle<int> area(getBounds());
+		auto normalFilter = area.removeFromTop(32 * 2 + 24 + 3 * 8).reduced(8);
+		auto sourceRow = normalFilter.removeFromTop(24);
+		auto filterRow = normalFilter.withTrimmedTop(8); // 32 per row
+		int advancedFilterHeight = advancedSearch_->isOpen() ? (24 + 24 + 2 * 32) : 24;
+		advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(8).withTrimmedRight(8));
+		onlyUntagged_->setBounds(sourceRow.removeFromRight(100));
+		showHidden_->setBounds(sourceRow.removeFromRight(100));
+		onlyFaves_->setBounds(sourceRow.removeFromRight(100));
+		categoryFilters_->setBounds(filterRow);
+		importList_->setBounds(sourceRow);
+		patchButtons_->setBounds(area.withTrimmedRight(8).withTrimmedLeft(8));
+	}
+};
+
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
-	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), patchListTree_(database, [this](String id) { selectImportByID(id); }),
+	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), 
+	patchListTree_(database, [this](String id) { selectImportByID(id); }),
 	categoryFilters_({}, [this](CategoryButtons::Category) { retrieveFirstPageFromDatabase(); }, true, true),
 	advancedFilters_(this),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
-	addAndMakeVisible(patchListTree_);
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
@@ -58,12 +86,34 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		patchButtons_->refresh(true);
 	}
 	);
-	addAndMakeVisible(currentPatchDisplay_.get());
 
-	addAndMakeVisible(categoryFilters_);
+	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
+		if (UIModel::currentSynth()) {
+			selectPatch(patch);
+		}
+	});
 
 	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", &advancedFilters_, false);
 	addAndMakeVisible(*advancedSearch_);
+
+	// Refactoring helper PatchViewCenter
+	PatchViewCenter* center = new PatchViewCenter();
+	center->importList_ = &importList_;
+	center->categoryFilters_ = &categoryFilters_;
+	center->advancedSearch_ = advancedSearch_.get();
+	center->onlyFaves_ = &onlyFaves_;
+	center->showHidden_ = &showHidden_;
+	center->onlyUntagged_ = &onlyUntagged_;
+	center->patchLabel_ = &patchLabel_;
+	center->patchButtons_ = patchButtons_.get();
+
+	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
+		SplitteredEntry{ &patchListTree_, 15, 5, 40 },
+		SplitteredEntry{ center, 70, 40, 90 },
+		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
+	addAndMakeVisible(splitters_.get());
+
+	addAndMakeVisible(categoryFilters_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
@@ -88,14 +138,10 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		showPatchDiffDialog();
 	} } },
 	};
-	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder &patch) {
-		if (UIModel::currentSynth()) {
-			selectPatch(patch);
-		}
-	});
 	buttonStrip_.setButtonDefinitions(buttons);
 	addAndMakeVisible(buttonStrip_);
 	addAndMakeVisible(patchButtons_.get());
+
 	patchButtons_->setPatchLoader([this](int skip, int limit, std::function<void(std::vector< midikraft::PatchHolder>)> callback) {
 		loadPage(skip, limit, callback);
 	});
@@ -281,42 +327,21 @@ void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<mid
 	}, skip, limit);
 }
 
-void PatchView::resizePatchGridIntoRect(Rectangle<int> area) {
-	auto normalFilter = area.removeFromTop(32 * 2 + 24 + 3 * 8).reduced(8);
-	auto sourceRow = normalFilter.removeFromTop(24);
-	auto filterRow = normalFilter.withTrimmedTop(8); // 32 per row
-
-	int advancedFilterHeight = advancedSearch_->isOpen() ? (24 + 24 + 2 * 32) : 24;
-	advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(8).withTrimmedRight(8));
-
-	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
-	showHidden_.setBounds(sourceRow.removeFromRight(100));
-	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
-	categoryFilters_.setBounds(filterRow);
-
-	importList_.setBounds(sourceRow);
-	patchButtons_->setBounds(area.withTrimmedRight(8).withTrimmedLeft(8));
-}
-
 void PatchView::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 
 	if (area.getWidth() > area.getHeight() * 1.5) {
 		// Landscape layout		
-		auto rightSection = area.removeFromRight(area.getWidth() / 3);
 		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
-		currentPatchDisplay_->setBounds(rightSection);
-
-		resizePatchGridIntoRect(area);
+		splitters_->setBounds(area);
 	}
 	else {
 		// Portrait
 		auto topRow = area.removeFromTop(100);
 		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
-		currentPatchDisplay_->setBounds(topRow);
-
-		resizePatchGridIntoRect(area);
+		//currentPatchDisplay_->setBounds(topRow);
+		splitters_->setBounds(area);
 	}
 }
 

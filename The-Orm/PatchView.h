@@ -18,6 +18,7 @@
 #include "SynthHolder.h"
 
 #include "PatchButtonPanel.h"
+#include "SplitteredComponent.h"
 #include "CategoryButtons.h"
 #include "CurrentPatchDisplay.h"
 #include "CollapsibleContainer.h"
@@ -114,6 +115,7 @@ private:
 
 	ComboBox importList_;
 	PatchListTree patchListTree_;
+	std::unique_ptr<SplitteredComponent> splitters_;
 
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;
