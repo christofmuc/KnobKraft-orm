@@ -34,5 +34,6 @@ class RenameTest(AdaptationTestBase):
 # additional data like an example patch
 def create_tests(adaptation_module_to_test, example_patch):
     suite = unittest.TestSuite()
-    suite.addTest(RenameTest(adaptation_module_to_test, example_patch))
+    if hasattr(adaptation_module_to_test, "renamePatch"):
+        suite.addTest(RenameTest(adaptation_module_to_test, example_patch))
     return suite

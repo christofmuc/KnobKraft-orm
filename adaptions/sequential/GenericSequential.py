@@ -24,7 +24,11 @@ import hashlib
 
 class GenericSequential:
 
-    def __init__(self, name, device_id, banks, patches_per_bank, name_len, name_position, id_list=None,
+    def __init__(self, name, device_id, banks, patches_per_bank,
+                 name_len=0,
+                 name_position=0,
+                 file_version=None,
+                 id_list=None,
                  blank_out_zones=None):
         self.__id = device_id
         self.__name = name
@@ -36,7 +40,11 @@ class GenericSequential:
         self.__patches_per_bank = patches_per_bank
         self.__name_len = name_len
         self.__name_position = name_position
-        self.__blank_out_zones = blank_out_zones
+        self.__file_version = file_version
+        if blank_out_zones is None:
+            self.__blank_out_zones = [(name_position, name_len)]
+        else:
+            self.__blank_out_zones = blank_out_zones + [(name_position, name_len)]
 
     def name(self):
         return self.__name
@@ -58,25 +66,31 @@ class GenericSequential:
                 and message[3] == 0x06  # Device request
                 and message[4] == 0x02  # Device request reply
                 and message[5] == 0x01  # Sequential / Dave Smith Instruments
-                and message[6] in self.__id_list
-                and message[7] == 0x01  # Family MS is 1
-                and message[8] == 0x00  # Family member
-                and message[9] == 0x00):  # Family member
+                and message[6] in self.__id_list):
+            # Family seems to be different, the Prophet 12 has (0x01, 0x00, 0x00) while the Evolver has (0, 0, 0)
+            # and message[7] == 0x01  # Family MS is 1
+            # and message[8] == 0x00  # Family member
+            # and message[9] == 0x00):  # Family member
             # Extract the current MIDI channel from index 2 of the message
             # If the device is set to OMNI it will return 0x7f as MIDI channel - we use 1 for now which will work
             return message[2] if message[2] != 0x7f else 1
         return -1
 
     def createEditBufferRequest(self, channel):
-        return [0xf0, 0x01, self.__id, 0b00000110, 0xf7]
+        if self.__file_version is None:
+            # Modern style
+            return [0xf0, 0x01, self.__id, 0b00000110, 0xf7]
+        else:
+            # Evolver style
+            return [0xf0, 0x01, self.__id, self.__file_version, 0b00000110, 0xf7]
 
     def isEditBufferDump(self, message):
         return (len(message) > 3
                 and message[0] == 0xf0
                 and message[1] == 0x01  # Sequential
                 and message[2] in self.__id_list
-                and message[3] == 0b00000011  # Edit Buffer Data
-                )
+                and (self.__file_version is None and message[3] == 0b00000011  # Edit Buffer Data
+                     or message[3] == self.__file_version and message[4] == 0b00000011))  # Edit Buffer Data
 
     def numberOfBanks(self):
         return self.__banks
@@ -87,15 +101,20 @@ class GenericSequential:
     def createProgramDumpRequest(self, channel, patchNo):
         bank = patchNo // self.numberOfPatchesPerBank()
         program = patchNo % self.numberOfPatchesPerBank()
-        return [0xf0, 0x01, self.__id, 0b00000101, bank, program, 0xf7]
+        if self.__file_version is None:
+            # Modern style
+            return [0xf0, 0x01, self.__id, 0b00000101, bank, program, 0xf7]
+        else:
+            # Evolver style
+            return [0xf0, 0x01, self.__id, self.__file_version, 0b00000101, bank, program, 0xf7]
 
     def isSingleProgramDump(self, message):
         return (len(message) > 3
                 and message[0] == 0xf0
                 and message[1] == 0x01  # Sequential
                 and message[2] in self.__id_list
-                and message[3] == 0b00000010  # Program Data
-                )
+                and (self.__file_version is None and message[3] == 0b00000010  # Program Data
+                     or message[3] == self.__file_version and message[4] == 0b00000010))  # Program Data
 
     def nameFromDump(self, message):
         dataBlock = self.getDataBlock(message)
@@ -111,44 +130,46 @@ class GenericSequential:
             return message
         elif self.isSingleProgramDump(message):
             # Have to strip out bank and program, and set command to edit buffer dump
-            return message[0:3] + [0b00000011] + message[6:]
+            return message[0:3 + self.extraOffset()] + [0b00000011] + message[6 + self.extraOffset():]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
     def convertToProgramDump(self, channel, message, program_number):
         bank = program_number // self.numberOfPatchesPerBank()
         program = program_number % self.numberOfPatchesPerBank()
         if self.isEditBufferDump(message):
-            return message[0:3] + [0b00000010] + [bank, program] + message[4:]
+            return message[0:3 + self.extraOffset()] + [0b00000010] + [bank, program] + message[4 + self.extraOffset():]
         elif self.isSingleProgramDump(message):
-            return message[0:3] + [0b00000010] + [bank, program] + message[6:]
+            return message[0:3 + self.extraOffset()] + [0b00000010] + [bank, program] + message[6 + self.extraOffset():]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
     def calculateFingerprint(self, message):
         raw = self.getDataBlock(message)
         data = self.unescapeSysex(raw)
-        # Blank out Layer A and Layer B name, they should not matter for the fingerprint
-        data[self.__name_position:self.__name_position + self.__name_len] = [0] * self.__name_len
-        data[914:914 + self.__name_len] = [0] * self.__name_len  # each layer needs 512 bytes
+        # Blank out all blank out zones, normally this is the name (or layer names)
+        for zone in self.__blank_out_zones:
+            data[zone[0]:zone[0] + zone[1]] = [0] * zone[1]
         return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
 
     def renamePatch(self, message, new_name):
-        if self.isEditBufferDump(message):
-            header_len = 4
-        elif self.isSingleProgramDump(message):
-            header_len = 6
-        else:
-            raise Exception("Can only rename edit buffer or single program dumps")
+        header_len = self.headerLen(message)
         data = self.unescapeSysex(message[header_len:-1])
         for i in range(self.__name_len):
             data[self.__name_position + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
         return message[:header_len] + self.escapeSysex(data) + [0xf7]
 
     def getDataBlock(self, message):
-        if self.isSingleProgramDump(message):
-            return message[6:-1]
-        elif self.isEditBufferDump(message):
-            return message[4:-1]
-        raise Exception("Neither edit buffer nor program dump - cannot determine data block")
+        return message[self.headerLen(message):-1]
+
+    def headerLen(self, message):
+        if self.isEditBufferDump(message):
+            return 4 + self.extraOffset()
+        elif self.isSingleProgramDump(message):
+            return 6 + self.extraOffset()
+        else:
+            raise Exception("Can only work on edit buffer or single program dumps")
+
+    def extraOffset(self):
+        return 0 if self.__file_version is None else 1
 
     @staticmethod
     def unescapeSysex(sysex):
