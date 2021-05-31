@@ -5,8 +5,6 @@
 #
 import sequential
 
-prophet12_Desktop_ID = 0x2b  # The Pro12 Desktop module calls itself 0x2b,
-
 #
 # Configure the GenericSequential module for the Prophet 12
 #
@@ -16,6 +14,7 @@ synth = sequential.GenericSequential(name="DSI Prophet 12",
                                      patches_per_bank=99,
                                      name_len=17,
                                      name_position=402,
+                                     id_list=[0b00101010, 0x2b],  # The Pro12 Desktop module calls itself 0x2b,
                                      blank_out_zones=[(914, 17)]  # Make sure to blank out the layer B name as well
                                      )
 
