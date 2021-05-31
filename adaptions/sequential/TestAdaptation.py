@@ -55,6 +55,6 @@ def load_sysex(filename):
         start_index = 0
         for index, byte in enumerate(content):
             if byte == 0xf7:
-                messages.append(content[start_index:index + 1])
+                messages.append(list(content[start_index:index + 1]))
                 start_index = index + 1
         return messages
