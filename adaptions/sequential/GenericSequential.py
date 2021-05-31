@@ -155,7 +155,7 @@ class GenericSequential:
         data = self.unescapeSysex(message[header_len:-1])
         for i in range(self.__name_len):
             data[self.__name_position + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
-        return message[:header_len] + self.escapeSysex(data) + [0xf7]
+        return message[:header_len] + bytearray(self.escapeSysex(data)) + bytearray([0xf7])
 
     def getDataBlock(self, message):
         return message[self.headerLen(message):-1]

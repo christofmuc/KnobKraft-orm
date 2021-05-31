@@ -30,10 +30,31 @@ class RenameTest(AdaptationTestBase):
         self.assertEqual(result, "newname")
 
 
+class IsProgramDumpTest(AdaptationTestBase):
+
+    def runTest(self):
+        self.assertTrue(self.adaptation_module_to_test.isSingleProgramDump(self.example_patch))
+        data = self.adaptation_module_to_test.calculateFingerprint(self.example_patch)
+
+
 # This is needed to dynamically create the test cases as we parametrize them with the module to test and
 # additional data like an example patch
 def create_tests(adaptation_module_to_test, example_patch):
     suite = unittest.TestSuite()
     if hasattr(adaptation_module_to_test, "renamePatch"):
         suite.addTest(RenameTest(adaptation_module_to_test, example_patch))
+    if hasattr(adaptation_module_to_test, "isSingleProgramDump"):
+        suite.addTest(IsProgramDumpTest(adaptation_module_to_test, example_patch))
     return suite
+
+
+def load_sysex(filename):
+    with open(filename, mode="rb") as midi_messages:
+        content = midi_messages.read()
+        messages = []
+        start_index = 0
+        for index, byte in enumerate(content):
+            if byte == 0xf7:
+                messages.append(content[start_index:index + 1])
+                start_index = index + 1
+        return messages
