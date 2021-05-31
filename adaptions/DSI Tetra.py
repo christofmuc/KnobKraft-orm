@@ -6,18 +6,14 @@
 import sequential
 
 #
-# TODO - the Evolver has also a Waveshape Dump, that no other Sequential synth has. We need to support this
-# TODO - It also has the peculiar NameDataDump, as the name of the patch is not included in the patch data itself
-# TODO - currently all patches are listed with name "invalid"
-
-#
 # Configure the GenericSequential module
 #
-synth = sequential.GenericSequential(name="DSI Evolver",
-                                     device_id=0b00100000,  # See Page 82 of the prophet 12 manual
-                                     banks=4,
+synth = sequential.GenericSequential(name="DSI Tetra",
+                                     device_id=0b00100110,
+                                     banks=2,
                                      patches_per_bank=128,
-                                     file_version=0x01
+                                     name_position=184,
+                                     name_len=16
                                      )
 
 
@@ -70,8 +66,8 @@ def isSingleProgramDump(message):
     return synth.isSingleProgramDump(message)
 
 
-# def nameFromDump(message):
-#    return synth.nameFromDump(message)
+def nameFromDump(message):
+    return synth.nameFromDump(message)
 
 
 def convertToEditBuffer(channel, message):
@@ -86,13 +82,12 @@ def calculateFingerprint(message):
     return synth.calculateFingerprint(message)
 
 
-# def renamePatch(message, new_name):
-#    return synth.renamePatch(message, new_name)
+def renamePatch(message, new_name):
+    return synth.renamePatch(message, new_name)
 
 
 if __name__ == "__main__":
     import sys
     import unittest
-
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(sys.modules[__name__],
-                                                                         []))
+    messages = sequential.load_sysex("testData/Tetra_ProgramsCombos_1.0.syx")
+    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(sys.modules[__name__], messages[0]))
