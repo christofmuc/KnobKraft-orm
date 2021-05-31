@@ -10,7 +10,7 @@ import sequential
 # TODO - It also has the peculiar NameDataDump, as the name of the patch is not included in the patch data itself
 
 #
-# Configure the GenericSequential module for the Prophet 12
+# Configure the GenericSequential module
 #
 synth = sequential.GenericSequential(name="DSI Evolver",
                                      device_id=0b00100000,  # See Page 82 of the prophet 12 manual
