@@ -5,6 +5,8 @@
 #
 import sequential
 
+# TODO The Mopho X4 has 4 banks, not 3
+
 #
 # Configure the GenericSequential module
 #
