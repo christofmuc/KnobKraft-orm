@@ -10,16 +10,16 @@ this_module = sys.modules[__name__]
 
 
 #
-# Configure the GenericSequential module for the Prophet 12
+# Configure the GenericSequential module
 #
 synth = sequential.GenericSequential(name="DSI Prophet 12",
                                      device_id=0b00101010,  # See Page 82 of the prophet 12 manual
                                      banks=8,
                                      patches_per_bank=99,
-                                     name_len=17,
+                                     name_len=20,
                                      name_position=402,
                                      id_list=[0b00101010, 0x2b],  # The Pro12 Desktop module calls itself 0x2b,
-                                     blank_out_zones=[(914, 17)]  # Make sure to blank out the layer B name as well
+                                     blank_out_zones=[(914, 20)]  # Make sure to blank out the layer B name as well
                                      ).install(this_module)
 
 
