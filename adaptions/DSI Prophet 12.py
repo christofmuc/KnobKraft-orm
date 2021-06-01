@@ -4,6 +4,10 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import sequential
+import sys
+
+this_module = sys.modules[__name__]
+
 
 #
 # Configure the GenericSequential module for the Prophet 12
@@ -16,7 +20,7 @@ synth = sequential.GenericSequential(name="DSI Prophet 12",
                                      name_position=402,
                                      id_list=[0b00101010, 0x2b],  # The Pro12 Desktop module calls itself 0x2b,
                                      blank_out_zones=[(914, 17)]  # Make sure to blank out the layer B name as well
-                                     )
+                                     ).install(this_module)
 
 
 #
@@ -32,77 +36,7 @@ def setupHelp():
            "Both settings are accessible via the GLOBALS menu."
 
 
-#
-# No user serviceable parts below this line, this is only glue code that binds the expected methods to the instance
-#
-
-
-def name():
-    return synth.name()
-
-
-def createDeviceDetectMessage(channel):
-    return synth.createDeviceDetectMessage(channel)
-
-
-def deviceDetectWaitMilliseconds():
-    return synth.deviceDetectWaitMilliseconds()
-
-
-def needsChannelSpecificDetection():
-    return synth.needsChannelSpecificDetection()
-
-
-def channelIfValidDeviceResponse(message):
-    return synth.channelIfValidDeviceResponse(message)
-
-
-def createEditBufferRequest(channel):
-    return synth.createEditBufferRequest(channel)
-
-
-def isEditBufferDump(message):
-    return synth.isEditBufferDump(message)
-
-
-def numberOfBanks():
-    return synth.numberOfBanks()
-
-
-def numberOfPatchesPerBank():
-    return synth.numberOfPatchesPerBank()
-
-
-def createProgramDumpRequest(channel, patchNo):
-    return synth.createProgramDumpRequest(channel, patchNo)
-
-
-def isSingleProgramDump(message):
-    return synth.isSingleProgramDump(message)
-
-
-def nameFromDump(message):
-    return synth.nameFromDump(message)
-
-
-def convertToEditBuffer(channel, message):
-    return synth.convertToEditBuffer(channel, message)
-
-
-def convertToProgramDump(channel, message, program_number):
-    return synth.convertToProgramDump(channel, message, program_number)
-
-
-def calculateFingerprint(message):
-    return synth.calculateFingerprint(message)
-
-
-def renamePatch(message, new_name):
-    return synth.renamePatch(message, new_name)
-
-
 if __name__ == "__main__":
-    import sys
     import unittest
 
     binary = [240, 1, 42, 2, 0, 63, 0, 24, 40, 43, 58, 50, 37, 52, 0, 20, 63, 0, 0, 0, 4, 4, 0, 4, 4, 0, 1, 2, 3, 7, 0,
@@ -177,5 +111,4 @@ if __name__ == "__main__":
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 247]
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(sys.modules[__name__],
-                                                                         binary))
+    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module, binary))

@@ -199,3 +199,25 @@ class GenericSequential:
                     result.append(data[dataIndex + i] & 0x7f)
             dataIndex += 7
         return result
+
+    def install(self, module):
+        # This is required because the original KnobKraft modules are not objects, but rather a module namespace with
+        # methods declared. Expose our objects methods in the top level module namespace so the C++ code finds it
+        # TODO Make this a loop
+        setattr(module, 'name', self.name)
+        setattr(module, 'createDeviceDetectMessage', self.createDeviceDetectMessage)
+        setattr(module, 'deviceDetectWaitMilliseconds', self.deviceDetectWaitMilliseconds)
+        setattr(module, 'needsChannelSpecificDetection', self.needsChannelSpecificDetection)
+        setattr(module, 'channelIfValidDeviceResponse', self.channelIfValidDeviceResponse)
+        setattr(module, 'createEditBufferRequest', self.createEditBufferRequest)
+        setattr(module, 'isEditBufferDump', self.isEditBufferDump)
+        setattr(module, 'numberOfBanks', self.numberOfBanks)
+        setattr(module, 'numberOfPatchesPerBank', self.numberOfPatchesPerBank)
+        setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
+        setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
+        setattr(module, 'nameFromDump', self.nameFromDump)
+        setattr(module, 'convertToEditBuffer', self.convertToEditBuffer)
+        setattr(module, 'convertToProgramDump', self.convertToProgramDump)
+        setattr(module, 'calculateFingerprint', self.calculateFingerprint)
+        setattr(module, 'renamePatch', self.renamePatch)
+
