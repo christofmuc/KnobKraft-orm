@@ -207,6 +207,7 @@ IF(APPLE)
     INSTALL(TARGETS KnobKraftOrm
         BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
+		DIRECTORY ${CURRENT_PROJECT_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
         )
     
     INSTALL(CODE "include(BundleUtilities)
@@ -215,10 +216,11 @@ IF(APPLE)
     " COMPONENT Runtime)
     
     # Setup CPack variables
-    set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png)
+    set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
     set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
-    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt)
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
+	set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
     
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)
