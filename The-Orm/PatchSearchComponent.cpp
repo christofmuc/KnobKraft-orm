@@ -6,6 +6,7 @@
 
 #include "PatchSearchComponent.h"
 
+#include "LayoutConstants.h"
 #include "UIModel.h"
 
 const char* kAllDataTypesFilter = "All types";
@@ -43,9 +44,13 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	patchView_(patchView),
 	patchButtons_(patchButtons),
 	database_(database),
-	categoryFilters_({}, [this](CategoryButtons::Category) { patchView_->retrieveFirstPageFromDatabase(); }, true, true)
+	categoryFilters_({}, [this](CategoryButtons::Category) { patchView_->retrieveFirstPageFromDatabase(); }, true, true),
+	textSearch_([this]() { patchView_->retrieveFirstPageFromDatabase();  })
+
 {
 	advancedFilters_ = std::make_unique<AdvancedFilterPanel>(patchView_);
+
+	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
 	addAndMakeVisible(importList_);
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
@@ -67,23 +72,7 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", advancedFilters_.get(), false);
 	addAndMakeVisible(*advancedSearch_);
 	addAndMakeVisible(categoryFilters_);
-
-	addAndMakeVisible(nameSearchText_);
-	nameSearchText_.onTextChange = [this, patchView]() {
-		if (nameSearchText_.getText().isNotEmpty()) {
-			useNameSearch_.setToggleState(true, dontSendNotification);
-		}
-		patchView->retrieveFirstPageFromDatabase();
-	};
-	nameSearchText_.onEscapeKey = [this]() {
-		nameSearchText_.setText("", true);
-		useNameSearch_.setToggleState(false, dontSendNotification);
-	};
-	addAndMakeVisible(useNameSearch_);
-	useNameSearch_.setButtonText("search in name");
-	useNameSearch_.onClick = [patchView]() { patchView->retrieveFirstPageFromDatabase(); };
-
-
+	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -101,19 +90,32 @@ PatchSearchComponent::~PatchSearchComponent()
 void PatchSearchComponent::resized()
 {
 	Rectangle<int> area(getLocalBounds());
-	auto normalFilter = area.removeFromTop(32 * 2 + 24 + 3 * 8).reduced(8);
-	auto sourceRow = normalFilter.removeFromTop(24);
-	auto filterRow = normalFilter.withTrimmedTop(8); // 32 per row
-	int advancedFilterHeight = advancedSearch_->isOpen() ? (24 + 24 + 2 * 32) : 24;
-	advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(8).withTrimmedRight(8));
-	onlyUntagged_.setBounds(sourceRow.removeFromRight(100));
-	showHidden_.setBounds(sourceRow.removeFromRight(100));
-	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
+
+	// The left part with the search box gets 25% of the screen
+	int leftPart = area.getWidth() / 4;
+
+	// Find out how many rows we will need for the category filter buttons
+	int numRows = std::max(2, (int) ceil((float)(16 * LAYOUT_CHECKBOX_WIDTH) / (area.getWidth()/2)));
+
+	// Determine the reserved place for the filter
+	auto normalFilter = area.removeFromTop(LAYOUT_LINE_HEIGHT * numRows + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
+
+	auto leftHalf = normalFilter.removeFromLeft(leftPart);
+	auto sourceRow = leftHalf.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT);
+	textSearch_.setBounds(sourceRow);
+	auto favRow = leftHalf.removeFromTop(LAYOUT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_NORMAL);
+	onlyFaves_.setBounds(favRow.removeFromLeft(LAYOUT_CHECKBOX_WIDTH));
+	showHidden_.setBounds(favRow.removeFromLeft(LAYOUT_CHECKBOX_WIDTH));
+	onlyUntagged_.setBounds(favRow.removeFromLeft(LAYOUT_CHECKBOX_WIDTH));
+
+	auto filterRow = normalFilter; 
 	categoryFilters_.setBounds(filterRow);
-	nameSearchText_.setBounds(sourceRow.removeFromLeft(300));
-	useNameSearch_.setBounds(sourceRow.removeFromLeft(100).withTrimmedLeft(8));
-	importList_.setBounds(sourceRow.withTrimmedLeft(8));
-	patchButtons_->setBounds(area.withTrimmedRight(8).withTrimmedLeft(8));
+
+	int advancedFilterHeight = advancedSearch_->isOpen() ? (2 * LAYOUT_LINE_SPACING) : LAYOUT_LINE_HEIGHT;
+	advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
+	
+	//importList_.setBounds(sourceRow.withTrimmedLeft(LAYOUT_INSET_NORMAL));
+	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 }
 
 midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
@@ -135,10 +137,8 @@ midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
 		filterType = advancedFilters_->dataTypeSelector_.getSelectedId() - 2;
 	}
 	std::string nameFilter = "";
-	if (useNameSearch_.getToggleState()) {
-		if (!nameSearchText_.getText().startsWith("!")) {
-			nameFilter = nameSearchText_.getText().toStdString();
-		}
+	if (!textSearch_.searchText().startsWith("!")) {
+		nameFilter = textSearch_.searchText().toStdString();
 	}
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	// Build synth list
@@ -269,6 +269,6 @@ bool PatchSearchComponent::atLeastOneSynth()
 
 juce::String PatchSearchComponent::advancedTextSearch() const
 {
-	return nameSearchText_.getText();
+	return textSearch_.searchText();
 }
 
