@@ -86,6 +86,9 @@ void PatchTextBox::resized()
 
 String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> patch)
 {
+	if (!patch || !patch->patch())
+		return "No patch active";
+
 	String result;
 	std::vector<uint8> binaryData = patch->patch()->data();
 
@@ -108,6 +111,9 @@ String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> pat
 }
 
 String PatchTextBox::makeTextDocument(std::shared_ptr<midikraft::PatchHolder> patch) {
+	if (!patch || !patch->patch())
+		return "No patch active";
+
 	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
 	if (realPatch) {
 		return patchToTextRaw(realPatch, false);
