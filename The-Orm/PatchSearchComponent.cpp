@@ -20,20 +20,6 @@ public:
 	AdvancedFilterPanel(PatchView* patchView) :
 		synthFilters_({}, [patchView](CategoryButtons::Category) { patchView->retrieveFirstPageFromDatabase();  }, false, true)
 	{
-		addAndMakeVisible(nameSearchText_);
-		nameSearchText_.onTextChange = [this, patchView]() {
-			if (nameSearchText_.getText().isNotEmpty()) {
-				useNameSearch_.setToggleState(true, dontSendNotification);
-			}
-			patchView->retrieveFirstPageFromDatabase();
-		};
-		nameSearchText_.onEscapeKey = [this]() {
-			nameSearchText_.setText("", true);
-			useNameSearch_.setToggleState(false, dontSendNotification);
-		};
-		addAndMakeVisible(useNameSearch_);
-		useNameSearch_.setButtonText("search in name");
-		useNameSearch_.onClick = [patchView]() { patchView->retrieveFirstPageFromDatabase(); };
 		addAndMakeVisible(synthFilters_);
 		addAndMakeVisible(dataTypeSelector_);
 		dataTypeSelector_.setTextWhenNoChoicesAvailable("This synth does not support different data types");
@@ -44,16 +30,11 @@ public:
 	void resized()
 	{
 		auto area = getLocalBounds();
-		auto nameFilterRow = area.removeFromTop(24);
-		dataTypeSelector_.setBounds(nameFilterRow.removeFromLeft(200).withTrimmedRight(16));
-		useNameSearch_.setBounds(nameFilterRow.removeFromRight(100));
-		nameSearchText_.setBounds(nameFilterRow);
+		dataTypeSelector_.setBounds(area.removeFromLeft(200).withTrimmedRight(16));
 		synthFilters_.setBounds(area);
 	}
 
 	ComboBox dataTypeSelector_;
-	TextEditor nameSearchText_;
-	ToggleButton useNameSearch_;
 	CategoryButtons synthFilters_;
 };
 
@@ -87,6 +68,22 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(*advancedSearch_);
 	addAndMakeVisible(categoryFilters_);
 
+	addAndMakeVisible(nameSearchText_);
+	nameSearchText_.onTextChange = [this, patchView]() {
+		if (nameSearchText_.getText().isNotEmpty()) {
+			useNameSearch_.setToggleState(true, dontSendNotification);
+		}
+		patchView->retrieveFirstPageFromDatabase();
+	};
+	nameSearchText_.onEscapeKey = [this]() {
+		nameSearchText_.setText("", true);
+		useNameSearch_.setToggleState(false, dontSendNotification);
+	};
+	addAndMakeVisible(useNameSearch_);
+	useNameSearch_.setButtonText("search in name");
+	useNameSearch_.onClick = [patchView]() { patchView->retrieveFirstPageFromDatabase(); };
+
+
 	addAndMakeVisible(patchButtons_);
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -113,7 +110,9 @@ void PatchSearchComponent::resized()
 	showHidden_.setBounds(sourceRow.removeFromRight(100));
 	onlyFaves_.setBounds(sourceRow.removeFromRight(100));
 	categoryFilters_.setBounds(filterRow);
-	importList_.setBounds(sourceRow);
+	nameSearchText_.setBounds(sourceRow.removeFromLeft(300));
+	useNameSearch_.setBounds(sourceRow.removeFromLeft(100).withTrimmedLeft(8));
+	importList_.setBounds(sourceRow.withTrimmedLeft(8));
 	patchButtons_->setBounds(area.withTrimmedRight(8).withTrimmedLeft(8));
 }
 
@@ -136,9 +135,9 @@ midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
 		filterType = advancedFilters_->dataTypeSelector_.getSelectedId() - 2;
 	}
 	std::string nameFilter = "";
-	if (advancedFilters_->useNameSearch_.getToggleState()) {
-		if (!advancedFilters_->nameSearchText_.getText().startsWith("!")) {
-			nameFilter = advancedFilters_->nameSearchText_.getText().toStdString();
+	if (useNameSearch_.getToggleState()) {
+		if (!nameSearchText_.getText().startsWith("!")) {
+			nameFilter = nameSearchText_.getText().toStdString();
 		}
 	}
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
@@ -270,6 +269,6 @@ bool PatchSearchComponent::atLeastOneSynth()
 
 juce::String PatchSearchComponent::advancedTextSearch() const
 {
-	return advancedFilters_->nameSearchText_.getText();
+	return nameSearchText_.getText();
 }
 

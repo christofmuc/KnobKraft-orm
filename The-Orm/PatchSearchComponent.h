@@ -37,6 +37,8 @@ private:
 	PatchView* patchView_;
 	PatchButtonPanel* patchButtons_;
 	ComboBox importList_;
+	TextEditor nameSearchText_;
+	ToggleButton useNameSearch_;
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;
 	std::unique_ptr<AdvancedFilterPanel> advancedFilters_;
