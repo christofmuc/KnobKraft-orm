@@ -25,7 +25,6 @@ PatchTextBox::PatchTextBox() : mode_(DisplayMode::PARAMS)
 	addAndMakeVisible(hexBased_);
 	hexBased_.setButtonText("Show hex values");
 	hexBased_.setClickingTogglesState(true);
-	hexBased_.setToggleState(true, dontSendNotification);
 	hexBased_.setRadioGroupId(3, dontSendNotification);
 	hexBased_.onClick = [this]() {
 		mode_ = DisplayMode::HEX;
@@ -37,10 +36,13 @@ PatchTextBox::PatchTextBox() : mode_(DisplayMode::PARAMS)
 	textBased_.setToggleState(true, dontSendNotification);
 	textBased_.setRadioGroupId(3, dontSendNotification);
 	textBased_.setClickingTogglesState(true);
+	textBased_.setVisible(false);
 	textBased_.onClick = [this]() {
 		mode_ = DisplayMode::PARAMS;
 		refreshText();
 	};
+
+	hexBased_.setToggleState(true, dontSendNotification);
 }
 
 void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
