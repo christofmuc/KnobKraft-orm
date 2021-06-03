@@ -54,6 +54,7 @@ set(SOURCES
 	PatchListTree.cpp PatchListTree.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
+	PatchSearchComponent.cpp PatchSearchComponent.h
 	PatchTextBox.cpp PatchTextBox.h
 	PatchView.cpp PatchView.h
 	ReceiveManualDumpWindow.cpp ReceiveManualDumpWindow.h
