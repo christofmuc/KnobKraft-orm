@@ -31,8 +31,10 @@ public:
 	void resized()
 	{
 		auto area = getLocalBounds();
-		dataTypeSelector_.setBounds(area.removeFromLeft(200).withTrimmedRight(16));
-		synthFilters_.setBounds(area);
+		int width = area.getWidth() / 4;
+		auto leftArea = area.removeFromLeft(width);
+		synthFilters_.setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL));
+		dataTypeSelector_.setBounds(leftArea.removeFromTop(synthFilters_.usedHeight()).withSizeKeepingCentre(width, LAYOUT_LINE_HEIGHT));
 	}
 
 	ComboBox dataTypeSelector_;
@@ -87,6 +89,12 @@ PatchSearchComponent::~PatchSearchComponent()
 	UIModel::instance()->synthList_.removeChangeListener(this);
 }
 
+FlexItem createFlexButton(ToggleButton *button) {
+	button->setSize(LAYOUT_CHECKBOX_WIDTH, LAYOUT_LINE_HEIGHT);
+	button->changeWidthToFitText();
+	return FlexItem(*button).withMinWidth((float)button->getWidth() + 20.0f).withMinHeight(LAYOUT_LINE_HEIGHT).withMargin(LAYOUT_INSET_SMALL);
+}
+
 void PatchSearchComponent::resized()
 {
 	Rectangle<int> area(getLocalBounds());
@@ -94,27 +102,35 @@ void PatchSearchComponent::resized()
 	// The left part with the search box gets 25% of the screen
 	int leftPart = area.getWidth() / 4;
 
-	// Find out how many rows we will need for the category filter buttons
-	int numRows = std::max(2, (int) ceil((float)(16 * LAYOUT_CHECKBOX_WIDTH) / (area.getWidth()/2)));
-
 	// Determine the reserved place for the filter
-	auto normalFilter = area.removeFromTop(LAYOUT_LINE_HEIGHT * numRows + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
-
+	auto normalFilter = area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 	auto leftHalf = normalFilter.removeFromLeft(leftPart);
-	auto sourceRow = leftHalf.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT);
-	textSearch_.setBounds(sourceRow);
-	auto favRow = leftHalf.removeFromTop(LAYOUT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_NORMAL);
-	onlyFaves_.setBounds(favRow.removeFromLeft(LAYOUT_CHECKBOX_WIDTH));
-	showHidden_.setBounds(favRow.removeFromLeft(LAYOUT_CHECKBOX_WIDTH));
-	onlyUntagged_.setBounds(favRow.removeFromLeft(LAYOUT_CHECKBOX_WIDTH));
+
+	auto favRow = normalFilter.removeFromTop(LAYOUT_LINE_HEIGHT);
+	FlexBox fb;
+	fb.flexWrap = FlexBox::Wrap::wrap;
+	fb.flexDirection = FlexBox::Direction::row;
+	fb.justifyContent = FlexBox::JustifyContent::center;
+	fb.items.add(createFlexButton(&onlyFaves_));
+	fb.items.add(createFlexButton(&showHidden_));
+	fb.items.add(createFlexButton(&onlyUntagged_));
+	fb.performLayout(favRow);
 
 	auto filterRow = normalFilter; 
-	categoryFilters_.setBounds(filterRow);
+	categoryFilters_.setBounds(filterRow.withTrimmedTop(LAYOUT_INSET_NORMAL));
 
-	int advancedFilterHeight = advancedSearch_->isOpen() ? (2 * LAYOUT_LINE_SPACING) : LAYOUT_LINE_HEIGHT;
-	advancedSearch_->setBounds(area.removeFromTop(advancedFilterHeight).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
+	// Determine how much space out flex box needed!
+	int usedHeight = categoryFilters_.usedHeight() + LAYOUT_LINE_SPACING;
 	
-	//importList_.setBounds(sourceRow.withTrimmedLeft(LAYOUT_INSET_NORMAL));
+	auto sourceRow = leftHalf.removeFromTop(usedHeight);
+	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
+
+	area.removeFromTop(usedHeight);
+	advancedSearch_->setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
+
+	// Patch Buttons get the rest
+	int advancedFilterHeight = advancedSearch_->isOpen() ? advancedFilters_->synthFilters_.usedHeight() + LAYOUT_LARGE_LINE_HEIGHT : LAYOUT_LARGE_LINE_HEIGHT;
+	area.removeFromTop(advancedFilterHeight);
 	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 }
 
@@ -174,13 +190,16 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 		rebuildImportFilterBox();
 		rebuildDataTypeFilterBox();
 		patchView_->retrieveFirstPageFromDatabase();
+		resized();
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
 		rebuildSynthFilters();
+		resized();
 	}
 	else if (source == &UIModel::instance()->categoriesChanged) {
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
 		patchView_->retrieveFirstPageFromDatabase();
+		resized();
 	}
 }
 

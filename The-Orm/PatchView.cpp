@@ -178,7 +178,7 @@ void PatchView::resized()
 
 	/*if (area.getWidth() > area.getHeight() * 1.5)*/ {
 		// Landscape layout		
-		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
+		buttonStrip_.setBounds(area.removeFromBottom(LAYOUT_LARGE_LINE_SPACING + LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
 		splitters_->setBounds(area);
 	}
 	/*else {
