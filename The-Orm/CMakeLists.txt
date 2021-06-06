@@ -223,7 +223,7 @@ IF(APPLE)
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
     set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
-	set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
+	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
     
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)
