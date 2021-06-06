@@ -120,7 +120,7 @@ namespace knobkraft {
 			if (!adaptation_module) {
 				return pybind11::none();
 			}
-			py::gil_scoped_acquire acquire;
+			pybind11::gil_scoped_acquire acquire;
 			if (pybind11::hasattr(*adaptation_module, methodName.c_str())) {
 				auto result = adaptation_module.attr(methodName.c_str())(args...);
 				checkForPythonOutputAndLog();
