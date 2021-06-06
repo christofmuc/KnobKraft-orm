@@ -55,6 +55,10 @@ public:
 		handler_(id_);
 	}
 
+	String getTooltip() override {
+		return text_;
+	}
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GroupNode)
 
 private:

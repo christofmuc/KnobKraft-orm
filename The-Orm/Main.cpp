@@ -234,6 +234,8 @@ public:
 			}
 #endif
 			setVisible(true);
+
+			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
         }
 
         void closeButtonPressed() override
@@ -254,7 +256,9 @@ public:
         */
 
     private:
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
+
+		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_;
     };
 
 
