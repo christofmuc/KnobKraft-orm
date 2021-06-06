@@ -210,7 +210,7 @@ IF(APPLE)
         BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
 		)
-	INSTALL(DIRECTORY ${CURRENT_PROJECT_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
+	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
         )
     
     INSTALL(CODE "include(BundleUtilities)
