@@ -54,7 +54,7 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
-	addAndMakeVisible(importList_);
+	addAndMakeVisible(importList_); //TODO - this is actually no longer visible, but still used!?
 	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
 	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
 	importList_.onChange = [this]() { patchView_->retrieveFirstPageFromDatabase(); };
