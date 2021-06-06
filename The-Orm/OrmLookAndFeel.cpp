@@ -13,7 +13,7 @@
 	return { 14.0f };
 }*/
 
-void OrmLookAndFeel::drawButtonText(Graphics &g, TextButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+/*void OrmLookAndFeel::drawButtonText(Graphics &g, TextButton &button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
 	ignoreUnused(shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
 
@@ -32,11 +32,8 @@ void OrmLookAndFeel::drawButtonText(Graphics &g, TextButton &button, bool should
 	const int textWidth = button.getWidth() - leftIndent - rightIndent;
 
 	if (textWidth > 0) {
-/*		g.drawFittedText(button.getButtonText(),
-			leftIndent, yIndent, textWidth, button.getHeight() - yIndent * 2,
-			Justification::centred, 2, 1.0f);*/
 		g.drawText(button.getButtonText(),
 			leftIndent, yIndent, textWidth, button.getHeight() - yIndent * 2,
 			Justification::centred, true);
 	}
-}
+}*/
