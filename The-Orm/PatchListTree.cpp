@@ -83,6 +83,9 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 	TreeViewItem* imports = new GroupNode("By import", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto importList = db_.getImportsList(UIModel::currentSynth());
+		std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
+			return a.description < b.description;
+		});
 		for (auto const& import : importList) {
 			result.push_back(new GroupNode(import.description, import.id, [this](String id) {
 				clickHandler_(id);
