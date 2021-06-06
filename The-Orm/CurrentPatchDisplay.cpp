@@ -14,7 +14,7 @@
 #include "DataFileLoadCapability.h"
 
 #include "ColourHelpers.h"
-
+#include "LayoutConstants.h"
 #include "UIModel.h"
 
 #include <boost/format.hpp>
@@ -136,31 +136,41 @@ void CurrentPatchDisplay::reset()
 
 void CurrentPatchDisplay::resized()
 {	
-	Rectangle<int> area(getLocalBounds().reduced(8)); 
-	auto topRow = area.removeFromTop(40);
+	Rectangle<int> area(getLocalBounds().reduced(LAYOUT_INSET_NORMAL)); 
+	auto topRow = area.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT);
 
 	if (area.getWidth() < area.getHeight() * 1.5) {
 		// Portrait
 		patchAsText_.setVisible(true);
 
-		// Only patch name, fav and hide button in top row
-		auto rightCorner = topRow.removeFromRight(240).withTrimmedLeft(8);
-		// Right side - hide and favorite button
-		hide_.setBounds(rightCorner.removeFromRight(100));
-		favorite_.setBounds(rightCorner.removeFromRight(100));
+		// Only patch name in top row
 		name_.setBounds(topRow);
 
-		// Next row, Synth name
-		auto nextRow = area.removeFromTop(20);
+		// Next row fav and hide
+		auto nextRow = area.removeFromTop(LAYOUT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_NORMAL);
+		FlexBox fb;
+		fb.flexWrap = FlexBox::Wrap::wrap;
+		fb.flexDirection = FlexBox::Direction::row;
+		fb.justifyContent = FlexBox::JustifyContent::center;
+		fb.items.add(FlexItem(favorite_).withMinHeight(LAYOUT_LINE_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
+		fb.items.add(FlexItem(hide_).withMinHeight(LAYOUT_LINE_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
+		fb.performLayout(nextRow);
+
+		// Next row, Synth name. These lines are spaced only inset small apart as they are pure text
+		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
 		import_.setBounds(nextRow);
-		nextRow = area.removeFromTop(20);
+		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
 		synthName_.setBounds(nextRow);
-		nextRow = area.removeFromTop(20);
+		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
 		patchType_.setBounds(nextRow);
 		
+		categories_.setBounds(area.withTrimmedTop(LAYOUT_INSET_NORMAL));
+
+		//SimpleLogger::instance()->postMessage("Height is " + String(categories_.getChildComponent(categories_.getNumChildComponents() - 1)->getBottom()));
 		// Upper 25% of rest, tag buttons
-		categories_.setBounds(area.removeFromTop(area.getHeight()/4));
-		patchAsText_.setBounds(area);
+		//categories_.setBounds(area.removeFromTop(area.getHeight()/4).withTrimmedTop(LAYOUT_INSET_NORMAL));
+		//patchAsText_.setBounds(area);
+		patchAsText_.setVisible(false); // Feature to be enabled later
 	}
 	else {
 		// Landscape - the classical layout originally done for the Portrait Tablet
