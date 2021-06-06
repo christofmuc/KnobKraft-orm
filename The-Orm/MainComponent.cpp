@@ -79,6 +79,7 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
+	globalScaling_(1.0f),
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
 	logArea_(&logView_, BorderSize<int>(8)),
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
@@ -145,8 +146,16 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	autodetector_.addChangeListener(&synthList_);
 
 	// Prepare for resizing the UI to fit on the screen. Crash on headless devices
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
-	setAcceptableGlobalScaleFactor();
+	globalScaling_ = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
+	float scale = calcAcceptableGlobalScaleFactor();
+	auto persistedZoom = Settings::instance().get("zoom", "0");
+	if (persistedZoom != "0") {
+		float stored = (float)atof(persistedZoom.c_str());
+		if (stored >= 0.5f && stored <= 3.0f) {
+			scale = stored;
+		}
+	}
+	setZoomFactor(scale);
 
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
@@ -213,12 +222,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			JUCEApplicationBase::quit();
 		}}},
 			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-			{ "Scale 100%", { "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-			{ "Scale 125%", { "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-			{ "Scale 150%", { "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-			{ "Scale 175%", { "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-			{ "Scale 200%", { "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+			{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
+			{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
+			{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
+			{ "Scale 150%", { "Scale 150%", [this]() { setZoomFactor(1.5f); }}},
+			{ "Scale 175%", { "Scale 175%", [this]() { setZoomFactor(1.75f); }}},
+			{ "Scale 200%", { "Scale 200%", [this]() { setZoomFactor(2.0f); }}},
 			{ "New database...", { "New database...", [this] {
 				createNewDatabase();
 			}}},
@@ -570,20 +579,24 @@ void MainComponent::crashTheSoftware()
 	}
 }
 
-void MainComponent::setAcceptableGlobalScaleFactor() {
+void MainComponent::setZoomFactor(float newZoomInPercentage) {
+	Desktop::getInstance().setGlobalScaleFactor(newZoomInPercentage / globalScaling_);
+	Settings::instance().set("zoom", String(newZoomInPercentage).toStdString());
+}
+
+float MainComponent::calcAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
 	auto availableHeight = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
-	std::vector<float> scales = { 0.75f / globalScaling, 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
-	float goodScale = 0.75f / globalScaling;
+	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
+	float goodScale = 0.75f;
 	for (auto scale : scales) {
 		if (availableHeight > 1024 * scale) {
 			goodScale = scale;
 		}
 	}
-	Desktop::getInstance().setGlobalScaleFactor(goodScale);
+	return goodScale;
 }
 
 void MainComponent::resized()
