@@ -10,6 +10,7 @@
 
 #include "Settings.h"
 #include "UIModel.h"
+#include "OrmLookAndFeel.h"
 
 #include "GenericAdaptation.h"
 #include "embedded_module.h"
@@ -215,6 +216,10 @@ public:
         {
 			setResizable(true, true);
             setUsingNativeTitleBar (true);
+
+			// Select colour scheme
+			ormLookAndFeel_.setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
+			setLookAndFeel(&ormLookAndFeel_);
 			
 #if JUCE_IOS || JUCE_ANDROID
 			setFullScreen(true);
@@ -238,6 +243,10 @@ public:
 			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
         }
 
+		virtual ~MainWindow() {
+			setLookAndFeel(nullptr);
+		}
+
         void closeButtonPressed() override
         {
 			Settings::instance().set("mainWindowSize", getWindowStateAsString().toStdString());
@@ -258,6 +267,7 @@ public:
     private:
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
 
+		OrmLookAndFeel ormLookAndFeel_;
 		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_;
     };
 

@@ -15,7 +15,7 @@ class AdvancedFilterPanel;
 class PatchSearchComponent : public Component, private ChangeListener
 {
 public:
-	PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPanel* patchButtons, midikraft::PatchDatabase& database);
+	PatchSearchComponent(PatchView* patchView, PatchButtonPanel* patchButtons, midikraft::PatchDatabase& database);
 		
 	virtual ~PatchSearchComponent();
 
