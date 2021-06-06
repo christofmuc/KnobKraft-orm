@@ -50,7 +50,6 @@ private:
 	File findPrehearFile(midikraft::PatchHolder const &patch);
 	void refreshThumbnail(int i);
 	int indexOfActive() const;
-	void resizePageNumbers();
 	void setupPageButtons();
 
 	std::vector<midikraft::PatchHolder> patches_;
