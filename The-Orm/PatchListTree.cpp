@@ -44,6 +44,12 @@ public:
 		g.drawText(text_, 0, 0, width, height, Justification::centredLeft);
 	}
 
+	void paintOpenCloseButton(Graphics& g, const Rectangle<float>& area, Colour backgroundColour, bool isMouseOver) override {
+		ignoreUnused(backgroundColour);
+		TreeViewItem::paintOpenCloseButton(g, area, LookAndFeel::getDefaultLookAndFeel().findColour(TreeView::backgroundColourId), isMouseOver);
+	}
+
+
 	bool canBeSelected() const override
 	{
 		return handler_.operator bool();
@@ -74,6 +80,7 @@ private:
 PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(String)> clickHandler) : db_(db), clickHandler_(clickHandler)
 {
 	treeView_ = std::make_unique<TreeView>();
+	treeView_->setOpenCloseButtonsVisible(true);
 	addAndMakeVisible(*treeView_);
 
 	TreeViewItem* all = new GroupNode("All patches", "***", [this](String id) {

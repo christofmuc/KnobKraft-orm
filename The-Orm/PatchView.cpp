@@ -7,6 +7,7 @@
 #include "PatchView.h"
 
 #include "PatchSearchComponent.h"
+#include "InsetBox.h"
 
 #include "PatchHolder.h"
 #include "ImportFromSynthDialog.h"
@@ -52,7 +53,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
-		SplitteredEntry{ &patchListTree_, 15, 5, 40 },
+		SplitteredEntry{ new InsetBox(&patchListTree_, BorderSize<int>(LAYOUT_INSET_NORMAL)), 15, 5, 40 },
 		SplitteredEntry{ patchSearch_.get(), 70, 40, 90 },
 		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
 	addAndMakeVisible(splitters_.get());
