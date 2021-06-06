@@ -19,13 +19,17 @@ CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) 
 class AdvancedFilterPanel : public Component {
 public:
 	AdvancedFilterPanel(PatchView* patchView) :
-		synthFilters_({}, [patchView](CategoryButtons::Category) { patchView->retrieveFirstPageFromDatabase();  }, false, true)
+		synthFilters_({}, [patchView](CategoryButtons::Category) { 
+		patchView->retrieveFirstPageFromDatabase(); 
+	}, false, true)
 	{
 		addAndMakeVisible(synthFilters_);
 		addAndMakeVisible(dataTypeSelector_);
 		dataTypeSelector_.setTextWhenNoChoicesAvailable("This synth does not support different data types");
 		dataTypeSelector_.setTextWhenNothingSelected("Click here to show only data of a specific type");
-		dataTypeSelector_.onChange = [patchView]() { patchView->retrieveFirstPageFromDatabase();  };
+		dataTypeSelector_.onChange = [patchView]() { 
+			patchView->retrieveFirstPageFromDatabase();  
+		};
 	}
 
 	void resized()
@@ -76,6 +80,7 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(categoryFilters_);
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
+	advancedSearch_->toFront(false);
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
