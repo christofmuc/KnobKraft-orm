@@ -427,6 +427,7 @@ MainComponent::~MainComponent()
 	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+
 	Logger::setCurrentLogger(nullptr);
 }
 
