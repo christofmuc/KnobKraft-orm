@@ -57,7 +57,7 @@ namespace knobkraft {
 
 		template <typename ... Args>
 		pybind11::object callMethod(std::string const &methodName, Args& ... args) const {
-			py::gil_scoped_acquire acquire;
+			pybind11::gil_scoped_acquire acquire;
 			if (!adaptation_) {
 				return pybind11::none();
 			}
