@@ -20,15 +20,20 @@
 PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
 	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
+	gridSizeSlider_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
+	gridSizeSlider_.setRange(4.0, 8.0, 1.0);
+
 	// Load the last size of the slider position
 	auto storedSlider = Settings::instance().get("gridSizeSlider", "8");
 	int slider = atoi(storedSlider.c_str());
 	if (slider != 0) {
 		gridWidth_ = gridHeight_ = slider;
+		gridSizeSlider_.setValue(slider, dontSendNotification);
 	}
 	else {
 		gridWidth_ = 8;
 		gridHeight_ = 8; 
+		gridSizeSlider_.setValue(8.0, dontSendNotification);
 	}
 	pageSize_ = gridWidth_ * gridHeight_;
 
@@ -42,9 +47,6 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
 
-	gridSizeSlider_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
-	gridSizeSlider_.setRange(4.0, 8.0, 1.0);
-	gridSizeSlider_.setValue(8.0, dontSendNotification);
 	gridSizeSlider_.onValueChange = [this]() {
 		int newX = (int) gridSizeSlider_.getValue();
 		Settings::instance().set("gridSizeSlider", String(newX).toStdString());
