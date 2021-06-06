@@ -8,7 +8,6 @@
 
 #include "Patch.h"
 #include "UIModel.h"
-#include "LayeredPatchCapability.h"
 
 #include "ColourHelpers.h"
 #include "LayoutConstants.h"

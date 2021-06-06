@@ -7,6 +7,8 @@
 #include "PatchHolderButton.h"
 
 #include "ColourHelpers.h"
+#include "LayeredPatchCapability.h"
+
 
 Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
 	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
@@ -23,7 +25,18 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 	setActive(active);
 	Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 	if (holder) {
-		setButtonText(holder->name());
+		auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatchCapability>(holder->patch());
+		if (layers) {
+			if (layers->layerName(0) != layers->layerName(1)) {
+				setButtonText(layers->layerName(0), layers->layerName(1));
+			}
+			else {
+				setButtonText(layers->layerName(0));
+			}
+		}
+		else {
+			setButtonText(holder->name());
+		}
 		setSubtitle((showSynthName && holder->synth()) ? holder->synth()->getName() : "");
 		setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(*holder, this));
 		setFavorite(holder->isFavorite());
