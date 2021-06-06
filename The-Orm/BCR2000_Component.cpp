@@ -292,6 +292,7 @@ BCR2000_Component::UpdateSynthListener::~UpdateSynthListener()
 void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 {
 	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
+	patch_ = UIModel::instance()->currentPatch_.patch().patch();
 	if (detailedParameters) {
 		std::string paramName = property.toString().toStdString();
 		for (auto param : detailedParameters->allParameterDefinitions()) {
