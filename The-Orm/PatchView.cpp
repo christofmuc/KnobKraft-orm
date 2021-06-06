@@ -176,18 +176,18 @@ void PatchView::resized()
 {
 	Rectangle<int> area(getLocalBounds());
 
-	if (area.getWidth() > area.getHeight() * 1.5) {
+	/*if (area.getWidth() > area.getHeight() * 1.5)*/ {
 		// Landscape layout		
 		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 		splitters_->setBounds(area);
 	}
-	else {
+	/*else {
 		// Portrait
 		auto topRow = area.removeFromTop(100);
 		buttonStrip_.setBounds(area.removeFromBottom(60).reduced(8));
 		//currentPatchDisplay_->setBounds(topRow);
 		splitters_->setBounds(area);
-	}
+	}*/
 }
 
 void PatchView::showPatchDiffDialog() {

@@ -29,6 +29,7 @@
 
 #include "GenericAdaptation.h"
 
+#include "LayoutConstants.h"
 
 #ifdef USE_SENTRY
 #include "sentry.h"
@@ -605,10 +606,10 @@ void MainComponent::resized()
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
-	auto secondTopRow = area.removeFromTop(60).reduced(8);
-	synthList_.setBounds(secondTopRow);
-	//menuBar_.setBounds(area.removeFromTop(30));
+	auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
+		.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 
+	synthList_.setBounds(secondTopRow);
 	splitter_->setBounds(area);
 }
 
