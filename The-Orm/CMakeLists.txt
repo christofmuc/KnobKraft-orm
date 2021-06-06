@@ -209,7 +209,8 @@ IF(APPLE)
     INSTALL(TARGETS KnobKraftOrm
         BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
-		DIRECTORY ${CURRENT_PROJECT_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
+		)
+	INSTALL(DIRECTORY ${CURRENT_PROJECT_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
         )
     
     INSTALL(CODE "include(BundleUtilities)
