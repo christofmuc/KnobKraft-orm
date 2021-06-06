@@ -241,7 +241,7 @@ void PatchSearchComponent::rebuildDataTypeFilterBox()
 
 void PatchSearchComponent::selectImportByID(String id)
 {
-	std::string description;
+	std::string description = "All patches"; // Hackish - if the ID is not found, select the All patches item. This needs to be fixed once we have a more general List type
 	for (auto import : patchView_->imports_) {
 		if (import.id == id) {
 			description = import.description;

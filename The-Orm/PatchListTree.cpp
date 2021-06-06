@@ -84,8 +84,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 	addAndMakeVisible(*treeView_);
 
 	TreeViewItem* all = new GroupNode("All patches", "***", [this](String id) {
-		ignoreUnused(id);
-		SimpleLogger::instance()->postMessage("All patches selected");
+		clickHandler_(id);
 	});
 	TreeViewItem* imports = new GroupNode("By import", [this]() {
 		std::vector<TreeViewItem*> result;
