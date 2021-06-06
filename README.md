@@ -43,7 +43,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
 | Roland | MKS-50 | in progress | native | |
-| Roland | MKS-80 | in progress | native | |
+| Roland | MKS-80 | beta | native | |
 | Sequential| Pro 3 | works | adaptation | |
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |
