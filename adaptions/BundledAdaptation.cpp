@@ -16,6 +16,10 @@ namespace knobkraft {
 		return {
 			{ "Alesis Andromeda A6", "Alesis_Andromeda_A6", std::string(AlesisAndromedaA6_py, AlesisAndromedaA6_py + AlesisAndromedaA6_py_size) },
 			{ "Deepmind 12", "Deepmind_12", std::string(Behringer_Deepmind_12_py, Behringer_Deepmind_12_py + Behringer_Deepmind_12_py_size) },
+			{ "DSI Evolver", "DSI_Evolver", std::string(DSI_Evolver_py, DSI_Evolver_py + DSI_Evolver_py_size) },
+			{ "DSI Mopho", "DSI_Mopho", std::string(DSI_Mopho_py, DSI_Mopho_py + DSI_Mopho_py_size) },
+			{ "DSI Mopho X4", "DSI_Mopho_X4", std::string(DSI_Mopho_X4_py, DSI_Mopho_X4_py + DSI_Mopho_X4_py_size) },
+			{ "DSI Tetra", "DSI_Tetra", std::string(DSI_Tetra_py, DSI_Tetra_py + DSI_Tetra_py_size) },
 			{ "DSI Pro 2", "DSI_Pro_2", std::string(DSI_Pro_2_py, DSI_Pro_2_py + DSI_Pro_2_py_size) },
 			{ "DSI Prophet 08", "DSI_Prophet_08", std::string(DSI_Prophet_08_py, DSI_Prophet_08_py + DSI_Prophet_08_py_size) },
 			{ "DSI Prophet 12", "DSI_Prophet_12", std::string(DSI_Prophet_12_py, DSI_Prophet_12_py + DSI_Prophet_12_py_size) },

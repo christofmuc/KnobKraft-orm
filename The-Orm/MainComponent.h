@@ -13,6 +13,7 @@
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
 #include "DebounceTimer.h"
+#include "SplitteredComponent.h"
 
 #include "PatchDatabase.h"
 #include "AutoDetection.h"
@@ -60,7 +61,8 @@ private:
 #endif
 	void crashTheSoftware();
 
-	void setAcceptableGlobalScaleFactor();
+	void setZoomFactor(float newZoomInPercentage);
+	float calcAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
 	void aboutBox();
@@ -74,6 +76,9 @@ private:
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 	RecentlyOpenedFilesList recentFiles_;
 	midikraft::AutoDetection autodetector_;
+
+	// For display size support. This will be filled before we modify any global scales
+	float globalScaling_;
 
 	// For kicking off new quickconfigures automatically
 	DebounceTimer quickconfigreDebounce_;
@@ -90,8 +95,7 @@ private:
 	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
 	std::unique_ptr<KeyboardMacroView> keyboardView_;
-	StretchableLayoutManager stretchableManager_;
-	StretchableLayoutResizerBar resizerBar_;
+	std::unique_ptr<SplitteredComponent> splitter_;
 	MidiLogView midiLogView_;
 	knobkraft::AdaptationView adaptationView_;
 	InsetBox midiLogArea_;

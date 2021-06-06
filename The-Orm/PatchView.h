@@ -18,6 +18,7 @@
 #include "SynthHolder.h"
 
 #include "PatchButtonPanel.h"
+#include "SplitteredComponent.h"
 #include "CategoryButtons.h"
 #include "CurrentPatchDisplay.h"
 #include "CollapsibleContainer.h"
@@ -32,12 +33,10 @@
 #include <map>
 
 class PatchDiff;
+class PatchSearchComponent;
 
 class PatchView : public Component,
-	private ComboBox::Listener,
-	private ToggleButton::Listener,
-	private ChangeListener,
-	private TextEditor::Listener
+	private ChangeListener
 {
 public:
 	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector);
@@ -45,16 +44,9 @@ public:
 
 	void resized() override;
 
-	// ComboBox Listener
-	void comboBoxChanged(ComboBox* box) override;
-
-	// Button listener
-	void buttonClicked(Button* button) override;
-
 	// React on synth or patch changed
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
-	midikraft::PatchDatabase::PatchFilter buildFilter();
 	void retrieveFirstPageFromDatabase();
 
 	// Macro controls triggered by the MidiKeyboard
@@ -72,25 +64,18 @@ public:
 	int totalNumberOfPatches();
 	void selectFirstPatch();
 
-private:
-	struct AdvancedFilterPanel : public Component {
-		AdvancedFilterPanel(PatchView *patchView);
-		virtual void resized() override;
+	// Hand through from PatchSearch
+	midikraft::PatchDatabase::PatchFilter currentFilter();
 
-		ComboBox dataTypeSelector_;
-		TextEditor nameSearchText_;
-		ToggleButton useNameSearch_;
-		CategoryButtons synthFilters_;
-	};
+private:
+	friend class PatchSearchComponent;
 
 	std::vector<CategoryButtons::Category> predefinedCategories();
-
-	virtual void textEditorTextChanged(TextEditor&) override;
-	virtual void textEditorEscapeKeyPressed(TextEditor&) override;
 
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
+	StringArray sourceNameList();
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
@@ -99,10 +84,6 @@ private:
 	void exportPatches();
 	void updateLastPath();
 	void createPatchInterchangeFile();
-	std::string currentlySelectedSourceUUID();
-	void rebuildSynthFilters();
-	void rebuildImportFilterBox();
-	void rebuildDataTypeFilterBox();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
@@ -110,17 +91,12 @@ private:
 
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
-	ComboBox importList_;
 	PatchListTree patchListTree_;
+	std::unique_ptr<SplitteredComponent> splitters_;
 
-	CategoryButtons categoryFilters_;
-	std::unique_ptr<CollapsibleContainer> advancedSearch_;
-	AdvancedFilterPanel advancedFilters_;
-	ToggleButton onlyFaves_;
-	ToggleButton showHidden_;
-	ToggleButton onlyUntagged_;
 	Label patchLabel_;
 	LambdaButtonStrip buttonStrip_;
+	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;

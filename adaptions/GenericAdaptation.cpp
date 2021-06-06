@@ -167,6 +167,12 @@ namespace knobkraft {
 			auto builtins = py::module::import("builtins");
 			adaptation_module.attr("__builtins__") = builtins; // That seems to be implementation depend... https://docs.python.org/3/library/builtins.html
 			checkForPythonOutputAndLog();
+			auto locals = py::dict("adaptation_name"_a = moduleName, "this_module"_a = adaptation_module);
+			py::exec(R"(
+				import sys
+				sys.modules[adaptation_name] = this_module
+			)", py::globals(), locals);
+			checkForPythonOutputAndLog();
 			py::exec(adaptationCode, adaptation_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
 			checkForPythonOutputAndLog();
 			auto newAdaptation = std::make_shared<GenericAdaptation>(py::cast<py::module>(adaptation_module));

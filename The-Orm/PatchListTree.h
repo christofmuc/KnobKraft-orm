@@ -8,15 +8,22 @@
 
 #include "JuceHeader.h"
 
+#include "PatchDatabase.h"
+
 class PatchListTree : public Component {
 public:
 
-	PatchListTree();
+	PatchListTree(midikraft::PatchDatabase &db, std::function<void(String)> clickHandler);
 	virtual ~PatchListTree();
 
 	virtual void resized();
 
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
+
 private:
-	TreeView treeView_;
+	midikraft::PatchDatabase& db_;
+	std::function<void(String)> clickHandler_;
+
+	std::unique_ptr<TreeView> treeView_;
 };
 

@@ -10,6 +10,7 @@
 #include "UIModel.h"
 
 #include "ColourHelpers.h"
+#include "LayoutConstants.h"
 
 #include <boost/format.hpp>
 #include <algorithm>
@@ -198,7 +199,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 void PatchButtonPanel::resized()
 {
 	Rectangle<int> area(getLocalBounds());
-	auto pageNumberStrip = area.removeFromBottom(40).withTrimmedTop(8);
+	auto pageNumberStrip = area.removeFromBottom(LAYOUT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_NORMAL);
 	FlexBox pageNumberBox;
 	pageNumberBox.flexDirection = FlexBox::Direction::row;
 	pageNumberBox.justifyContent = FlexBox::JustifyContent::center;
@@ -209,16 +210,16 @@ void PatchButtonPanel::resized()
 		auto page = pageNumbers_[i];
 		if (page->isVisible()) {
 			if (i > 0 && pageButtonMap_[i] != pageButtonMap_[i - 1] + 1) {
-				pageNumberBox.items.add(FlexItem(*ellipsis_[ecounter]).withHeight(32).withWidth(32));
+				pageNumberBox.items.add(FlexItem(*ellipsis_[ecounter]).withHeight(LAYOUT_SMALL_ICON_HEIGHT).withWidth(LAYOUT_SMALL_ICON_WIDTH));
 				ellipsis_[ecounter++]->setVisible(true);
 			}
-			pageNumberBox.items.add(FlexItem(*page).withHeight(32).withWidth((float)page->getBestWidthForHeight(32)));
+			pageNumberBox.items.add(FlexItem(*page).withHeight(LAYOUT_LINE_HEIGHT).withWidth((float)page->getBestWidthForHeight(LAYOUT_LINE_HEIGHT)));
 		}
 	}
 	pageNumberBox.performLayout(pageNumberStrip);
 
-	pageDown_.setBounds(area.removeFromLeft(32).withTrimmedRight(8));
-	pageUp_.setBounds(area.removeFromRight(32).withTrimmedLeft(8));
+	pageDown_.setBounds(area.removeFromLeft(LAYOUT_SMALL_ICON_WIDTH).withTrimmedRight(LAYOUT_INSET_NORMAL));
+	pageUp_.setBounds(area.removeFromRight(LAYOUT_SMALL_ICON_WIDTH).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 
 	patchButtons_->setBounds(area);
 }

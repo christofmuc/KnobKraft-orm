@@ -29,6 +29,7 @@
 
 #include "GenericAdaptation.h"
 
+#include "LayoutConstants.h"
 
 #ifdef USE_SENTRY
 #include "sentry.h"
@@ -79,8 +80,8 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
+	globalScaling_(1.0f),
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	buttons_(301)
@@ -146,8 +147,16 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	autodetector_.addChangeListener(&synthList_);
 
 	// Prepare for resizing the UI to fit on the screen. Crash on headless devices
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
-	setAcceptableGlobalScaleFactor();
+	globalScaling_ = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
+	float scale = calcAcceptableGlobalScaleFactor();
+	auto persistedZoom = Settings::instance().get("zoom", "0");
+	if (persistedZoom != "0") {
+		float stored = (float)atof(persistedZoom.c_str());
+		if (stored >= 0.5f && stored <= 3.0f) {
+			scale = stored;
+		}
+	}
+	setZoomFactor(scale);
 
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
@@ -194,7 +203,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}
 		} } },
 		{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
-			auto currentFilter = patchView_->buildFilter();
+			auto currentFilter = patchView_->currentFilter();
 			int affected = database_->getPatchesCount(currentFilter);
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 				"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
@@ -214,12 +223,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			JUCEApplicationBase::quit();
 		}}},
 			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-			{ "Scale 100%", { "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-			{ "Scale 125%", { "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-			{ "Scale 150%", { "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-			{ "Scale 175%", { "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-			{ "Scale 200%", { "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+			{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
+			{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
+			{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
+			{ "Scale 150%", { "Scale 150%", [this]() { setZoomFactor(1.5f); }}},
+			{ "Scale 175%", { "Scale 175%", [this]() { setZoomFactor(1.75f); }}},
+			{ "Scale 200%", { "Scale 200%", [this]() { setZoomFactor(2.0f); }}},
 			{ "New database...", { "New database...", [this] {
 				createNewDatabase();
 			}}},
@@ -320,10 +329,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 
-	addAndMakeVisible(mainTabs_);
 	addAndMakeVisible(menuBar_);
-	addAndMakeVisible(resizerBar_);
-	addAndMakeVisible(logArea_);
+	splitter_ = std::make_unique<SplitteredComponent>("LogSplitter", SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
+	addAndMakeVisible(splitter_.get());
 
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -345,12 +353,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}
 		}
 	}
-
-	// Setup the rest of the UI
-	// Resizer bar allows to enlarge the log area
-	stretchableManager_.setItemLayout(0, -0.1, -0.9, -0.8); // The editor tab window prefers to get 80%
-	stretchableManager_.setItemLayout(1, 5, 5, 5);  // The resizer is hard-coded to 5 pixels
-	stretchableManager_.setItemLayout(2, -0.1, -0.9, -0.2);
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
@@ -578,20 +580,24 @@ void MainComponent::crashTheSoftware()
 	}
 }
 
-void MainComponent::setAcceptableGlobalScaleFactor() {
+void MainComponent::setZoomFactor(float newZoomInPercentage) {
+	Desktop::getInstance().setGlobalScaleFactor(newZoomInPercentage / globalScaling_);
+	Settings::instance().set("zoom", String(newZoomInPercentage).toStdString());
+}
+
+float MainComponent::calcAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
 	auto availableHeight = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
-	std::vector<float> scales = { 0.75f / globalScaling, 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
-	float goodScale = 0.75f / globalScaling;
+	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
+	float goodScale = 0.75f;
 	for (auto scale : scales) {
 		if (availableHeight > 1024 * scale) {
 			goodScale = scale;
 		}
 	}
-	Desktop::getInstance().setGlobalScaleFactor(goodScale);
+	return goodScale;
 }
 
 void MainComponent::resized()
@@ -600,18 +606,11 @@ void MainComponent::resized()
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
-	auto secondTopRow = area.removeFromTop(60).reduced(8);
+	auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
+		.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
+
 	synthList_.setBounds(secondTopRow);
-	//menuBar_.setBounds(area.removeFromTop(30));
-
-	// make a list of two of our child components that we want to reposition
-	Component* comps[] = { &mainTabs_, &resizerBar_, &logArea_ };
-
-	// this will position the 3 components, one above the other, to fit
-	// vertically into the rectangle provided.
-	stretchableManager_.layOutComponents(comps, 3,
-		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
-		true, true);
+	splitter_->setBounds(area);
 }
 
 void MainComponent::shutdown()

@@ -27,7 +27,7 @@ namespace knobkraft {
 				if (adaptation_ && adaptation_->isFromFile()) {
 					adaptation_->reloadPython();
 					setupForAdaptation(adaptation_);
-	}
+				}
 				else {
 					AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Not a user defined adaptation", "Only Adaptation modules that are loaded from a Python script can be reloaded");
 				}

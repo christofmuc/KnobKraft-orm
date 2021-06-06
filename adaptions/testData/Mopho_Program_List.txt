@@ -1,0 +1,387 @@
+Bank	Prg.	Name		
+1	1	Random Stepper		
+1	2	Wagnerian		
+1	3	PickdSynGtr		
+1	4	Single		
+1	5	Accenture FB		
+1	6	Progenesis		
+1	7	SingingFilter		
+1	8	Assign1 to BD FB		
+1	9	Tom Sawyer		
+1	10	Santiago		
+1	11	FeedbackSync		
+1	12	Triangular		
+1	13	RapidArpFB		
+1	14	MOONSTER		
+1	15	Rokoko		
+1	16	Aliens	
+1	17	Sync-otic	
+1	18	Evolver	
+1	19	Noiz Machine FB	
+1	20	Base (Hold) FB	
+1	21	PlayLOnLETitGO	
+1	22	Epic Brass	
+1	23	Soft Triangles	
+1	24	Plod	
+1	25	G-Rap Theme	
+1	26	Taurus	
+1	27	3OH3	
+1	28	Acid Rez	
+1	29	Whippersnap	
+1	30	P5 3-2 Sync	
+1	31	Fortunate Guy	
+1	32	Bandpassed	
+1	33	bOOmChik	
+1	34	Jazzophonetic	
+1	35	Crystal	
+1	36	Evokativ	
+1	37	Helicopters	
+1	38	CheeseIntro	
+1	39	Kik Bass	
+1	40	Ski Canyon Delay	
+1	41	Stop It	
+1	42	Tonga Conga	
+1	43	Talker	
+1	44	Sync Floyd Dark	
+1	45	Wow Saws	
+1	46	Opening Up	
+1	47	Chaos	
+1	48	Classic Square	
+1	49	HiwayPatrolBass	
+1	50	Haus Organ	
+1	51	Rezzy Neeyowng	
+1	52	Tricky Sweeper	
+1	53	Deep eMotion	
+1	54	Condor	
+1	55	Bridge Seq	
+1	56	Deep	
+1	57	AttackFilterBass	
+1	58	Synth Cello	
+1	59	Rubber Bandz	
+1	60	Sample+Hold It	
+1	61	Clean Glass Bell	
+1	62	Elastik	
+1	63	Itty Bit	
+1	64	BangForTheBuckFB	
+1	65	Bass Pedals	
+1	66	Hellabass	
+1	67	P'08 inb da House	
+1	68	N.U.N.I.	
+1	69	Rubycorn Dream	
+1	70	PW Downsweep	
+1	71	Saw Upsweep	
+1	72	Swirl	
+1	73	Offspring FB	
+1	74	Kalimbatron	
+1	75	Moroder 1	
+1	76	PanAnalog	
+1	77	Lo Contra	
+1	78	Harmonika	
+1	79	Solo French Horn	
+1	80	Royal Synth Horn	
+1	81	Small Pipes	
+1	82	DetunedSawLead	
+1	83	SizzleSawLead	
+1	84	Juice Squeezer	
+1	85	Tape Saturation	
+1	86	Half Live	
+1	87	Ice Planet	
+1	88	Mosquito	
+1	89	Box o'Morons	
+1	90	No Corn Yet	
+1	91	Geisha	
+1	92	Bowng Bass	
+1	93	Pressure Squared	
+1	94	Tarkus (F1 seq)	
+1	95	SlowWahFastClav	
+1	96	TriPulseAtkLd	
+1	97	BraggoBeat	
+1	98	Craftsman	
+1	99	Basement FB	
+1	100	Rasp Bass Line	
+1	101	Waver	
+1	102	Phasing Bass	
+1	103	Abrasive	
+1	104	Oscs+HFOs FB	
+1	105	T8 String	
+1	106	String Phaze	
+1	107	MonoOddy	
+1	108	Fusion Bass	
+1	109	Fiiilters	
+1	110	2 Much Red Bull	
+1	111	Sync Glider	
+1	112	Kalliope	
+1	113	Ultravox	
+1	114	Wet Bass	
+1	115	Hood Beat	
+1	116	Mr. Fusion	
+1	117	Harp Arp	
+1	118	Frnknstein(Hold)	
+1	119	Come Together	
+1	120	Take Off	
+1	121	VariClap	
+1	122	Blip	
+1	123	Zap	
+1	124	Drop Da Bomb	
+1	125	Wind	
+1	126	Thunder FB	
+1	127	Seashore FB	
+1	128	Introverted	
+Bank	Prg.	Name	
+2	1	D-mode	
+2	2	Sync Sweep	
+2	3	Curtis Filterz	
+2	4	Trancesexual	
+2	5	InvertdFiltrSaws	
+2	6	RubbrPickBassFB	
+2	7	noOB Brass 2pole	
+2	8	Descending	
+2	9	Steps	
+2	10	Steel Can Band	
+2	11	FakeDelay	
+2	12	The Big Diss	
+2	13	RubbrpunchBasFB	
+2	14	Mini	
+2	15	Clavanomic	
+2	16	Brassy	
+2	17	WelcomeBackELP	
+2	18	BouncingDotz	
+2	19	Tuned Trash Lids	
+2	20	Goovular	
+2	21	Octave Diver MW	
+2	22	PhattSubFB	
+2	23	WetSawtooth	
+2	24	Red Fizzz	
+2	25	Gamma	
+2	26	TonewheelOrgan	
+2	27	MassiveFakePWM	
+2	28	Ober SQUARE	
+2	29	Ambush	
+2	30	Zen Master	
+2	31	Pinball	
+2	32	Fired Bassist	
+2	33	Direful	
+2	34	Universe	
+2	35	Homeless	
+2	36	Rezodrone	
+2	37	Petsche	
+2	38	BladeRunner	
+2	39	Lost In Thought	
+2	40	Squelch	
+2	41	Punchy Kick	
+2	42	MellowBassFB	
+2	43	ManInTheMoon	
+2	44	80iesSynthPop	
+2	45	VeloXpand	
+2	46	Pig Pen	
+2	47	Carillon	
+2	48	Flutish	
+2	49	Solo Reed	
+2	50	Horn Swell	
+2	51	Jazz Bass Trip	
+2	52	DirtDevilRaveFB	
+2	53	Tube Fire	
+2	54	LowKey	
+2	55	Zardoz	
+2	56	Sync Floyd	
+2	57	Nebula	
+2	58	MadMusicBox	
+2	59	BottleClink	
+2	60	Tennis Beat	
+2	61	Ana Kick 1	
+2	62	Acid Saw	
+2	63	Acid Square	
+2	64	Acid Pulse	
+2	65	Podpogo pop	
+2	66	Ana Kick 2	
+2	67	MetalNoizLoopFB	
+2	68	AnalogCruizer	
+2	69	Mode 1	
+2	70	KJPW	
+2	71	Spartacus	
+2	72	Switched On	
+2	73	Steady	
+2	74	Different	
+2	75	Compressed	
+2	76	Git da funk out	
+2	77	Dual Seq	
+2	78	Japan	
+2	79	Bugger	
+2	80	Pure Prophet	
+2	81	Sonof ProOne	
+2	82	Oh Bee	
+2	83	Mud Acid	
+2	84	Zenhog	
+2	85	Bone-imba	
+2	86	Subtractive	
+2	87	Combo Organ	
+2	88	Roadzy Bass	
+2	89	Tangram	
+2	90	Wo-Wa-Wa	
+2	91	Rubber Rez FB	
+2	92	Virtuously	
+2	93	P '08 Pulse	
+2	94	Octave Glider	
+2	95	E3Rep	
+2	96	Omni Bass	
+2	97	Filter Chant	
+2	98	Whassup ?	
+2	99	Organ-ik	
+2	100	Pulse Shifter	
+2	101	Scrape Dry Rust	
+2	102	Detuned Poles	
+2	103	Brainwaves	
+2	104	Forbidden Planet	
+2	105	Dr. Dray	
+2	106	Soft Dark Bite	
+2	107	Catweazle	
+2	108	Cowbell Dance	
+2	109	Syncussion	
+2	110	Dial Tonez	
+2	111	Blubber 2	
+2	112	Pipe-ish	
+2	113	Stacker	
+2	114	Moddisee	
+2	115	ReversePlayback	
+2	116	Classic Synth	
+2	117	Softie	
+2	118	Aluminum	
+2	119	Heavy Weather	
+2	120	Rainstorm	
+2	121	HighVoltage	
+2	122	Transformer	
+2	123	R2D2	
+2	124	Morse Codec	
+2	125	Come In	
+2	126	Windchime	
+2	127	Tron Cycle	
+3	128	2600 Twitter	
+Bank	Prg.	Name	
+3	1	Krakker	
+3	2	Lemon Twist	
+3	3	Fake Arp	
+3	4	Tekk-notion	
+3	5	D.C.    FB	
+3	6	Solid Bottom FB	
+3	7	ElectronnFB	
+3	8	Coil Core  FB	
+3	9	Video Beatz	
+3	10	Fatso	
+3	11	Bustle	
+3	12	Alternative	
+3	13	CrawlInMySkinFB	
+3	14	Steam-Powered	
+3	15	LoFi Rhythm	
+3	16	Apprentice	
+3	17	Plutonium Mine	
+3	18	Marathon	
+3	19	Bassic	
+3	20	Latent Bass FB	
+3	21	Rezidiv  FB	
+3	22	Old School	
+3	23	InsectLead FB	
+3	24	BoingBoingFB	
+3	25	Simplesizer FB	
+3	26	Scratcher	
+3	27	Hands-On	
+3	28	PeeWeeEmm	
+3	29	2-pole-brassy	
+3	30	GlassRub	
+3	31	FlexiBell	
+3	32	ResoPWM  FB	
+3	33	VeloSyncer	
+3	34	AttakSub	
+3	35	Rezotator	
+3	36	ClickyWheels	
+3	37	3-storied	
+3	38	Chip Lead	
+3	39	Loaded Full FB	
+3	40	PressureBass FB	
+3	41	Groundloop  FB	
+3	42	Space House	
+3	43	CannedRhythm	
+3	44	Hold&Sample	
+3	45	Staccato	
+3	46	RetroMoPho	
+3	47	CurtiSquare	
+3	48	DustyCircuitBell	
+3	49	Raspy	
+3	50	Shattering FB	
+3	51	Popa Joey	
+3	52	Space Pong FB	
+3	53	Chillmatrix	
+3	54	Generator	
+3	55	Cold Turkey FB	
+3	56	Brat	
+3	57	Ignition	
+3	58	Spit 'n Spank	
+3	59	Machine	
+3	60	Overclock	
+3	61	SteppyDrone FB	
+3	62	Mini Amp	
+3	63	InverseTriadFB	
+3	64	The Real Thing	
+3	65	Axis	
+3	66	PercuLoop  FB	
+3	67	Suspicious	
+3	68	Weirdomat	
+3	69	Juggernaut FB	
+3	70	MightyTouchy	
+3	71	Tertianus	
+3	72	Thereminna	
+3	73	Ion Trails	
+3	74	MoPhat	
+3	75	Mo Tuba	
+3	76	Snapper  FB	
+3	77	Perpendicular	
+3	78	Hyde Park	
+3	79	Remastered	
+3	80	TapeVox	
+3	81	25%InputGain FB	
+3	82	Glockenz	
+3	83	Playerz 5th	
+3	84	GameboyLead	
+3	85	Still Nice	
+3	86	Thoroughlead	
+3	87	Unpredictable FM	
+3	88	Tormentor	
+3	89	Breed	
+3	90	Rubens-Bass FB	
+3	91	Rap-It	
+3	92	Pesky Lead	
+3	93	Lamento	
+3	94	AM-Bass	
+3	95	Sparkplug	
+3	96	Modded Farfisa	
+3	97	PanoBass	
+3	98	Camembert  FB	
+3	99	AccuBass  FB	
+3	100	YellowTool  FB	
+3	101	SubOscils	
+3	102	Hornet's Nest	
+3	103	Touch Me	
+3	104	Gravelly	
+3	105	Peavish	
+3	106	HighRes	
+3	107	Catwalk	
+3	108	Catwalk	
+3	109	MultiKick	
+3	110	Alimbic	
+3	111	Jupiter Storm	
+3	112	Arc-Welding	
+3	113	Neutrinos	
+3	114	Chopper FB	
+3	115	Ear-Piercing	
+3	116	Bosons	
+3	117	Cauldron   FB	
+3	118	Pressure Valve	
+3	119	Noise30%GainFB	
+3	120	Power Supply	
+3	121	Geiger Counter	
+3	122	Sleepin Droid	
+3	123	Ellipse	
+3	124	Richochet	
+3	125	E=Mc2	
+3	126	VeloPercussion	
+3	127	Filter Test	
+3	128	New Test	
