@@ -202,25 +202,27 @@ void CurrentPatchDisplay::resized()
 
 void CurrentPatchDisplay::buttonClicked(Button *button)
 {
-	if (button == &favorite_) {
-		if (currentPatch_->patch()) {
-			currentPatch_->setFavorite(midikraft::Favorite(button->getToggleState()));
-			favoriteHandler_(currentPatch_);
+	if (currentPatch_) {
+		if (button == &favorite_) {
+			if (currentPatch_->patch()) {
+				currentPatch_->setFavorite(midikraft::Favorite(button->getToggleState()));
+				favoriteHandler_(currentPatch_);
+			}
 		}
-	}
-	else if (button == &hide_) {
-		if (currentPatch_->patch()) {
-			currentPatch_->setHidden(hide_.getToggleState());
-			favoriteHandler_(currentPatch_);
+		else if (button == &hide_) {
+			if (currentPatch_->patch()) {
+				currentPatch_->setHidden(hide_.getToggleState());
+				favoriteHandler_(currentPatch_);
+			}
 		}
-	}
-	else if (button == &currentSession_) {
-	/*	if (currentPatch_) {
-			Session session("1");
-			SessionDatabase::instance()->storePatchInSession(currentSynth_, 
-				std::make_shared<SessionPatch>(session, currentSynth_->getName(), currentPatch_->patch()->patchName(), *currentPatch_));
-			sessionHandler_(*currentPatch_);
-		}*/
+		else if (button == &currentSession_) {
+			/*	if (currentPatch_) {
+					Session session("1");
+					SessionDatabase::instance()->storePatchInSession(currentSynth_,
+						std::make_shared<SessionPatch>(session, currentSynth_->getName(), currentPatch_->patch()->patchName(), *currentPatch_));
+					sessionHandler_(*currentPatch_);
+				}*/
+		}
 	}
 }
 
@@ -231,20 +233,20 @@ std::shared_ptr<midikraft::PatchHolder> CurrentPatchDisplay::getCurrentPatch() c
 
 void CurrentPatchDisplay::toggleFavorite()
 {
-	if (currentPatch_->patch()) {
+	if (currentPatch_ && currentPatch_->patch()) {
 		favorite_.setToggleState(!favorite_.getToggleState(), sendNotificationAsync);
 	}
 }
 
 void CurrentPatchDisplay::toggleHide()
 {
-	if (currentPatch_->patch()) {
+	if (currentPatch_ && currentPatch_->patch()) {
 		hide_.setToggleState(!hide_.getToggleState(), sendNotificationAsync);
 	}
 }
 
 void CurrentPatchDisplay::refreshNameButtonColour() {
-	if (currentPatch_->patch()) {
+	if (currentPatch_ && currentPatch_->patch()) {
 		name_.setColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
 	}
 	else {
@@ -271,7 +273,7 @@ void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 }
 
 void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
-	if (currentPatch_->patch()) {
+	if (currentPatch_ && currentPatch_->patch()) {
 		// Search for the real category
 		for (auto realCat: database_.getCategories()) {
 			if (realCat.category() == clicked.category) {
