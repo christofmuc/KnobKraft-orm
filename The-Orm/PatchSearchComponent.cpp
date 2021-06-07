@@ -80,7 +80,6 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(categoryFilters_);
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
-	advancedSearch_->toFront(false);
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
@@ -122,15 +121,15 @@ void PatchSearchComponent::resized()
 	fb.performLayout(favRow);
 
 	auto filterRow = normalFilter; 
-	categoryFilters_.setBounds(filterRow.withTrimmedTop(LAYOUT_INSET_NORMAL));
+	auto catFilterMin = categoryFilters_.determineMinimumSize(this, filterRow.withTrimmedTop(LAYOUT_INSET_NORMAL));
+	categoryFilters_.setBounds(catFilterMin.toNearestInt());
 
-	// Determine how much space out flex box needed!
-	int usedHeight = categoryFilters_.usedHeight() + LAYOUT_LINE_SPACING;
-	
-	auto sourceRow = leftHalf.removeFromTop(usedHeight);
+	int normalFilterHeight = LAYOUT_LINE_HEIGHT + LAYOUT_INSET_NORMAL + categoryFilters_.getHeight();
+
+	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
 
-	area.removeFromTop(usedHeight);
+	area.removeFromTop(normalFilterHeight);
 	advancedSearch_->setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
 
 	// Patch Buttons get the rest
