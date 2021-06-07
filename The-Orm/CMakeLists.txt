@@ -6,10 +6,12 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.13.0)
+project(KnobKraftOrm VERSION 1.13.1)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
+# Output the weird string Azure pipeline uses to parse a value into a variable. I hope.
+MESSAGE("##vso[task.setvariable variable=ormVersionNumber]${KnobKraftOrm_VERSION}")
 
 OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
 OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
