@@ -16,6 +16,7 @@
 #include "ColourHelpers.h"
 #include "LayoutConstants.h"
 #include "UIModel.h"
+#include "FlexBoxHelper.h"
 
 #include <boost/format.hpp>
 
@@ -154,7 +155,9 @@ void CurrentPatchDisplay::resized()
 		fb.justifyContent = FlexBox::JustifyContent::center;
 		fb.items.add(FlexItem(favorite_).withMinHeight(LAYOUT_LINE_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
 		fb.items.add(FlexItem(hide_).withMinHeight(LAYOUT_LINE_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
-		fb.performLayout(nextRow);
+		auto spaceNeeded = FlexBoxHelper::determineSizeForButtonLayout(this, this, { &favorite_, &hide_ }, nextRow);
+		fb.performLayout(spaceNeeded.toNearestInt());
+		area.removeFromTop((int) spaceNeeded.getHeight());
 
 		// Next row, Synth name. These lines are spaced only inset small apart as they are pure text
 		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);

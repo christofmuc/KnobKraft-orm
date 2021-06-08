@@ -7,6 +7,8 @@
 #include "PatchSearchComponent.h"
 
 #include "LayoutConstants.h"
+#include "FlexBoxHelper.h"
+
 #include "UIModel.h"
 
 const char* kAllDataTypesFilter = "All types";
@@ -121,7 +123,7 @@ void PatchSearchComponent::resized()
 	fb.performLayout(favRow);
 
 	auto filterRow = normalFilter; 
-	auto catFilterMin = categoryFilters_.determineMinimumSize(this, filterRow.withTrimmedTop(LAYOUT_INSET_NORMAL));
+	auto catFilterMin = categoryFilters_.determineSubAreaForButtonLayout(this, filterRow.withTrimmedTop(LAYOUT_INSET_NORMAL));
 	categoryFilters_.setBounds(catFilterMin.toNearestInt());
 
 	int normalFilterHeight = LAYOUT_LINE_HEIGHT + LAYOUT_INSET_NORMAL + categoryFilters_.getHeight();
