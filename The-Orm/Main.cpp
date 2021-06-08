@@ -25,6 +25,7 @@
 #endif
 #endif
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 #include "sentry.h"
 #include "sentry-config.h"
@@ -53,6 +54,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 		SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
 	}
 }
+#endif
 #endif
 
 //==============================================================================
@@ -99,6 +101,7 @@ public:
 		}
 		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 		// Initialize sentry for error crash reporting
 		sentry_options_t *options = sentry_options_new();
@@ -126,6 +129,7 @@ public:
 
 		// Fire a test event to see if Sentry actually works
 		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
+#endif
 #endif
 
 		// Window Title Refresher
@@ -170,9 +174,11 @@ public:
 		Settings::instance().saveAndClose();
 		Settings::shutdown();
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 		// Sentry shutdown
 		sentry_shutdown();
+#endif
 #endif
     }
 

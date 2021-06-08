@@ -31,8 +31,10 @@
 
 #include "LayoutConstants.h"
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 #include "sentry.h"
+#endif
 #endif
 
 #ifdef USE_SPARKLE
@@ -171,9 +173,11 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{3, { "Categories", { { "Edit auto-categories" }, { "Edit category import mapping" },  { "Rerun auto categorize" } } } },
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 			{ "Crash software.."},
 			{ "Crash reporting consent" },
+#endif
 #endif
 			{ "Check for updates..." },
 			{ "About" } } } }
@@ -266,6 +270,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 					SystemClipboard::copyTextToClipboard(buffer.str());
 				}
 			}}},
+		#ifndef _DEBUG
 		#ifdef USE_SENTRY
 			{ "Crash reporting consent...", { "Crash reporting consent", [this] {
 				checkUserConsent();
@@ -274,6 +279,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				crashTheSoftware();
 			}}},
 		#endif 
+		#endif
 #ifdef USE_SPARKLE
 			{ "Check for updates...", { "Check for updates...", [this] {
 #ifdef WIN32
@@ -397,6 +403,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 #endif
 	});
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 	auto consentAlreadyGiven = Settings::instance().get("SentryConsent", "unknown");
 	if (consentAlreadyGiven == "unknown") {
@@ -410,6 +417,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			sentry_user_consent_give();
 		}
 	}
+#endif
 #endif
 }
 
@@ -550,6 +558,7 @@ void MainComponent::persistRecentFileList()
 	Settings::instance().set("RecentFiles", recentFiles_.toString().toStdString());
 }
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 void MainComponent::checkUserConsent()
 {
@@ -570,6 +579,7 @@ void MainComponent::checkUserConsent()
 			"Thank you, I appreciate that!");
 	}
 }
+#endif
 #endif
 
 void MainComponent::crashTheSoftware()

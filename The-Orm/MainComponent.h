@@ -56,8 +56,10 @@ private:
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
 	void persistRecentFileList();
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 	void checkUserConsent();
+#endif
 #endif
 	void crashTheSoftware();
 
