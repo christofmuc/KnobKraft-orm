@@ -541,7 +541,7 @@ void MainComponent::saveDatabaseAs()
 
 class MergeAndExport : public ThreadWithProgressWindow {
 public:
-	MergeAndExport(Array<File> databases) : ThreadWithProgressWindow("Opening databases...", true, true), databases_(databases) {
+	MergeAndExport(Array<File> databases) : ThreadWithProgressWindow("Exporting databases...", true, true), databases_(databases) {
 	}
 
 	void run() override
@@ -558,43 +558,43 @@ public:
 			if (threadShouldExit()) {
 				break;
 			}
-			std::vector<midikraft::PatchHolder> allPatches;
-			try {
-				midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
-				auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
-				SimpleLogger::instance()->postMessage("Opening database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
-				allPatches = mergeSource.getPatches(filter, 0, -1);
-			} 
-			catch (midikraft::PatchDatabaseReadonlyException& e) {
-				ignoreUnused(e);
-				// This exception is thrown when opening the database caused a write operation. Most likely this is an old database needing to run migration code first.
-				// We'll do this by creating a backup as temporary file.
-				File tempfile = File::createTempFile("db3");
+			File exported = file.withFileExtension(".json");
+			if (!exported.exists()) {
+				std::vector<midikraft::PatchHolder> allPatches;
 				try {
-					midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
-					midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
+					midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
 					auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
-					SimpleLogger::instance()->postMessage("Opening database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+					SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
 					allPatches = mergeSource.getPatches(filter, 0, -1);
+				}
+				catch (midikraft::PatchDatabaseReadonlyException& e) {
+					ignoreUnused(e);
+					// This exception is thrown when opening the database caused a write operation. Most likely this is an old database needing to run migration code first.
+					// We'll do this by creating a backup as temporary file.
+					File tempfile = File::createTempFile("db3");
+					try {
+						midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
+						midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
+						auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+						SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+						allPatches = mergeSource.getPatches(filter, 0, -1);
+					}
+					catch (midikraft::PatchDatabaseException& e) {
+						SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
+					}
+					tempfile.deleteFile();
 				}
 				catch (midikraft::PatchDatabaseException& e) {
 					SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
 				}
-				tempfile.deleteFile();
-			}
-			catch (midikraft::PatchDatabaseException& e) {
-				SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
-			}
 
-			// We have all patches in memory - write them into a pip file
-			if (allPatches.size() > 0) {
-				File exported = file.withFileExtension(".pip");
-				if (!exported.exists()) {
+				// We have all patches in memory - write them into a pip file
+				if (allPatches.size() > 0) {
 					midikraft::PatchInterchangeFormat::save(allPatches, exported.getFullPathName().toStdString());
 				}
-				else {
-					SimpleLogger::instance()->postMessage("Not exporting because file already exists: " + exported.getFullPathName());
-				}
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Not exporting because file already exists: " + exported.getFullPathName());
 			}
 
 			done += 1.0;
