@@ -28,6 +28,7 @@
 #include "MKS80.h"
 
 #include "GenericAdaptation.h"
+#include "PatchInterchangeFormat.h"
 
 #include "LayoutConstants.h"
 
@@ -47,7 +48,7 @@
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
-	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
+	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(synth, color) {
 	}
 
 	std::string getName() override
@@ -71,7 +72,7 @@ public:
 
 Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet) {
 	auto lAF = &getLookAndFeel();
-	auto v4 = dynamic_cast<LookAndFeel_V4 *>(lAF);
+	auto v4 = dynamic_cast<LookAndFeel_V4*>(lAF);
 	if (v4) {
 		auto colorScheme = v4->getCurrentColourScheme();
 		return colorScheme.getUIColour(colourToGet);
@@ -93,7 +94,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	auto customDatabase = Settings::instance().get("LastDatabase");
 	File databaseFile(customDatabase);
 	if (databaseFile.existsAsFile()) {
-		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase);
+		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	}
 	else {
 		database_ = std::make_unique<midikraft::PatchDatabase>();
@@ -107,7 +108,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
-	// Create the list of all synthesizers!
+	// Create the list of all synthesizers!	
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
@@ -167,6 +168,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Open database..." },
 				{ "Save database as..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
+				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
@@ -191,95 +193,98 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
-			// This will create the file on demand, copying out the built-in information!
-			EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const &newDefinitions) {
-				database_->updateCategories(newDefinitions);
-				UIModel::instance()->categoriesChanged.sendChangeMessage();
+		// This will create the file on demand, copying out the built-in information!
+		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
+			database_->updateCategories(newDefinitions);
+			UIModel::instance()->categoriesChanged.sendChangeMessage();
+		});
+		/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			automaticCategories_->getAutoCategoryFile().revealToUser();
+		}*/
+	} } },
+	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
+		// This will create the file on demand, copying out the built-in information!
+		if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
+			automaticCategories_->getAutoCategoryMappingFile().revealToUser();
+		}
+	} } },
+	{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
+		auto currentFilter = patchView_->currentFilter();
+		int affected = database_->getPatchesCount(currentFilter);
+		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
+			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
+			"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
+			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
+			)) {
+			AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
+				patchView_->retrieveFirstPageFromDatabase();
 			});
-			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-				automaticCategories_->getAutoCategoryFile().revealToUser();
-			}*/
-		} } },
-		{ "Edit category import mapping", { "Edit category import mapping", [this]() {
-			// This will create the file on demand, copying out the built-in information!
-			if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
-				automaticCategories_->getAutoCategoryMappingFile().revealToUser();
-			}
-		} } },
-		{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
-			auto currentFilter = patchView_->currentFilter();
-			int affected = database_->getPatchesCount(currentFilter);
-			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
-				"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
-				"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
-				"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
-				)) {
-				AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
-					patchView_->retrieveFirstPageFromDatabase();
-				});
-				window.runThread();
-			}
-		} } },
-		{ "About", { "About", [this]() {
-			aboutBox();
+			window.runThread();
+		}
+	} } },
+	{ "About", { "About", [this]() {
+		aboutBox();
+	}}},
+	{ "Quit", { "Quit", [this]() {
+		JUCEApplicationBase::quit();
+	}}},
+		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+		{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
+		{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
+		{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
+		{ "Scale 150%", { "Scale 150%", [this]() { setZoomFactor(1.5f); }}},
+		{ "Scale 175%", { "Scale 175%", [this]() { setZoomFactor(1.75f); }}},
+		{ "Scale 200%", { "Scale 200%", [this]() { setZoomFactor(2.0f); }}},
+		{ "New database...", { "New database...", [this] {
+			createNewDatabase();
 		}}},
-		{ "Quit", { "Quit", [this]() {
-			JUCEApplicationBase::quit();
+		{ "Open database...", { "Open database...", [this] {
+			openDatabase();
 		}}},
-			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
-			{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
-			{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
-			{ "Scale 150%", { "Scale 150%", [this]() { setZoomFactor(1.5f); }}},
-			{ "Scale 175%", { "Scale 175%", [this]() { setZoomFactor(1.75f); }}},
-			{ "Scale 200%", { "Scale 200%", [this]() { setZoomFactor(2.0f); }}},
-			{ "New database...", { "New database...", [this] {
-				createNewDatabase();
-			}}},
-			{ "Open database...", { "Open database...", [this] {
-				openDatabase();
-			}}},
-			{ "Save database as...", { "Save database as...", [this] {
-				saveDatabaseAs();
-			}}},
-			{ "Delete patches...", { "Delete patches...", [this] {
-				patchView_->deletePatches();
-			}}},
-			{ "Reindex patches...", { "Reindex patches...", [this] {
-				patchView_->reindexPatches();
-			}}},
-			{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [this] {
-				auto patch = UIModel::currentPatch();
-				if (patch.patch() && patch.synth()) {
-					std::stringstream buffer;
-					buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
-					bool first = true;
-					auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
-					for (const auto& m : messages) {
-						for (int i = 0; i < m.getRawDataSize(); i++) {
-							if (!first) {
-								buffer << ", ";
-							}
-							else {
-								first = false;
-							}
-							buffer << (int) m.getRawData()[i];
+		{ "Save database as...", { "Save database as...", [this] {
+			saveDatabaseAs();
+		}}},
+		{ "Merge multiple databases...", { "Merge multiple databases...", [this]() {
+			mergeDatabases();
+		}}},
+		{ "Delete patches...", { "Delete patches...", [this] {
+			patchView_->deletePatches();
+		}}},
+		{ "Reindex patches...", { "Reindex patches...", [this] {
+			patchView_->reindexPatches();
+		}}},
+		{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [this] {
+			auto patch = UIModel::currentPatch();
+			if (patch.patch() && patch.synth()) {
+				std::stringstream buffer;
+				buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
+				bool first = true;
+				auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
+				for (const auto& m : messages) {
+					for (int i = 0; i < m.getRawDataSize(); i++) {
+						if (!first) {
+							buffer << ", ";
 						}
+						else {
+							first = false;
+						}
+						buffer << (int)m.getRawData()[i];
 					}
-					buffer << "]";
-					SystemClipboard::copyTextToClipboard(buffer.str());
 				}
-			}}},
-		#ifndef _DEBUG
-		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { "Crash reporting consent", [this] {
-				checkUserConsent();
-			}}},
-			{ "Crash software...", { "Crash software..", [this] {
-				crashTheSoftware();
-			}}},
-		#endif 
-		#endif
+				buffer << "]";
+				SystemClipboard::copyTextToClipboard(buffer.str());
+			}
+		}}},
+	#ifndef _DEBUG
+	#ifdef USE_SENTRY
+		{ "Crash reporting consent...", { "Crash reporting consent", [this] {
+			checkUserConsent();
+		}}},
+		{ "Crash software...", { "Crash software..", [this] {
+			crashTheSoftware();
+		}}},
+	#endif 
+	#endif
 #ifdef USE_SPARKLE
 			{ "Check for updates...", { "Check for updates...", [this] {
 #ifdef WIN32
@@ -476,7 +481,7 @@ void MainComponent::createNewDatabase()
 			databaseFile.deleteFile();
 		}
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			persistRecentFileList();
 			// That worked, new database file is in use!
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
@@ -502,11 +507,11 @@ void MainComponent::openDatabase()
 	}
 }
 
-void MainComponent::openDatabase(File &databaseFile)
+void MainComponent::openDatabase(File& databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			recentFiles_.removeFile(databaseFile);
 			persistRecentFileList();
 			// That worked, new database file is in use!
@@ -531,6 +536,94 @@ void MainComponent::saveDatabaseAs()
 		File databaseFile = databaseChooser.getResult();
 		database_->makeDatabaseBackup(databaseFile);
 		openDatabase(databaseFile);
+	}
+}
+
+class MergeAndExport : public ThreadWithProgressWindow {
+public:
+	MergeAndExport(Array<File> databases) : ThreadWithProgressWindow("Opening databases...", true, true), databases_(databases) {
+	}
+
+	void run() override
+	{
+		// Build synth list
+		std::vector<std::shared_ptr<midikraft::Synth>> allSynths;
+		for (auto & synth : UIModel::instance()->synthList_.allSynths()) {
+			allSynths.push_back(synth.synth());
+		}
+
+		double done = 0.0f;
+		int count = 0;
+		for (auto file : databases_) {
+			if (threadShouldExit()) {
+				break;
+			}
+			std::vector<midikraft::PatchHolder> allPatches;
+			try {
+				midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
+				auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+				SimpleLogger::instance()->postMessage("Opening database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+				allPatches = mergeSource.getPatches(filter, 0, -1);
+			} 
+			catch (midikraft::PatchDatabaseReadonlyException& e) {
+				ignoreUnused(e);
+				// This exception is thrown when opening the database caused a write operation. Most likely this is an old database needing to run migration code first.
+				// We'll do this by creating a backup as temporary file.
+				File tempfile = File::createTempFile("db3");
+				try {
+					midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
+					midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
+					auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+					SimpleLogger::instance()->postMessage("Opening database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+					allPatches = mergeSource.getPatches(filter, 0, -1);
+				}
+				catch (midikraft::PatchDatabaseException& e) {
+					SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
+				}
+				tempfile.deleteFile();
+			}
+			catch (midikraft::PatchDatabaseException& e) {
+				SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
+			}
+
+			// We have all patches in memory - write them into a pip file
+			if (allPatches.size() > 0) {
+				File exported = file.withFileExtension(".pip");
+				if (!exported.exists()) {
+					midikraft::PatchInterchangeFormat::save(allPatches, exported.getFullPathName().toStdString());
+				}
+				else {
+					SimpleLogger::instance()->postMessage("Not exporting because file already exists: " + exported.getFullPathName());
+				}
+			}
+
+			done += 1.0;
+			setProgress(done / databases_.size());
+			count++;
+		}
+		SimpleLogger::instance()->postMessage("Done, exported " + String(count) + " databases to pip files for reimport and merge");
+	}
+
+private:
+	Array<File> databases_;
+
+};
+
+void MainComponent::mergeDatabases()
+{
+	std::string lastPath = Settings::instance().get("LastDatabaseMergePath", "");
+	if (lastPath.empty()) {
+		lastPath = File(midikraft::PatchDatabase::generateDefaultDatabaseLocation()).getParentDirectory().getFullPathName().toStdString();
+	}
+
+	File lastDirectory(lastPath);
+	FileChooser databaseChooser("Please choose a directory with KnobKraft database files that will be merged...", lastDirectory);
+	if (databaseChooser.browseForDirectory()) {
+		// Find all databases
+		Array<File> databases;
+		databaseChooser.getResult().findChildFiles(databases, File::TypesOfFileToFind::findFiles, false, "*.db3");
+		MergeAndExport mergeDialog(databases);
+		mergeDialog.runThread();
 	}
 }
 
@@ -586,7 +679,7 @@ void MainComponent::crashTheSoftware()
 {
 	if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Test software crash", "This function is to check if the crash information upload works. When you press ok, the software will crash.\n\n"
 		"Do you feel like it?")) {
-		char *bad_idea = nullptr;
+		char* bad_idea = nullptr;
 		(*bad_idea) = 0;
 	}
 }
@@ -759,7 +852,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 }
 
-int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name) {
+int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, String const& name) {
 	StringArray tabnames = mainTabs->getTabNames();
 	for (int i = 0; i < mainTabs->getNumTabs(); i++) {
 		if (tabnames[i].endsWithIgnoreCase(name)) {

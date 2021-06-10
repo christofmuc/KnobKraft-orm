@@ -53,6 +53,7 @@ private:
 	void openDatabase();
 	void openDatabase(File &databaseFile);
 	void saveDatabaseAs();
+	void mergeDatabases();
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
 	void persistRecentFileList();
