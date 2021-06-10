@@ -168,6 +168,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Open database..." },
 				{ "Save database as..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
+				{ "Export multiple databases..."  },
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
@@ -243,6 +244,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}}},
 		{ "Save database as...", { "Save database as...", [this] {
 			saveDatabaseAs();
+		}}},
+		{ "Export multiple databases...", { "Export multiple databases...", [this]() {
+			exportDatabases();
 		}}},
 		{ "Merge multiple databases...", { "Merge multiple databases...", [this]() {
 			mergeDatabases();
@@ -609,6 +613,25 @@ private:
 
 };
 
+void MainComponent::exportDatabases()
+{
+	std::string lastPath = Settings::instance().get("LastDatabaseMergePath", "");
+	if (lastPath.empty()) {
+		lastPath = File(midikraft::PatchDatabase::generateDefaultDatabaseLocation()).getParentDirectory().getFullPathName().toStdString();
+	}
+
+	File lastDirectory(lastPath);
+	FileChooser databaseChooser("Please choose a directory with KnobKraft database files that will be exported...", lastDirectory);
+	if (databaseChooser.browseForDirectory()) {
+		Settings::instance().set("LastDatabaseMergePath", databaseChooser.getResult().getFullPathName().toStdString());
+		// Find all databases
+		Array<File> databases;
+		databaseChooser.getResult().findChildFiles(databases, File::TypesOfFileToFind::findFiles, false, "*.db3");
+		MergeAndExport mergeDialog(databases);
+		mergeDialog.runThread();
+	}
+}
+
 void MainComponent::mergeDatabases()
 {
 	std::string lastPath = Settings::instance().get("LastDatabaseMergePath", "");
@@ -617,13 +640,10 @@ void MainComponent::mergeDatabases()
 	}
 
 	File lastDirectory(lastPath);
-	FileChooser databaseChooser("Please choose a directory with KnobKraft database files that will be merged...", lastDirectory);
+	FileChooser databaseChooser("Please choose a directory with KnobKraft json files that will be imported and merged...", lastDirectory);
 	if (databaseChooser.browseForDirectory()) {
-		// Find all databases
-		Array<File> databases;
-		databaseChooser.getResult().findChildFiles(databases, File::TypesOfFileToFind::findFiles, false, "*.db3");
-		MergeAndExport mergeDialog(databases);
-		mergeDialog.runThread();
+		Settings::instance().set("LastDatabaseMergePath", databaseChooser.getResult().getFullPathName().toStdString());
+		patchView_->bulkImportPIP(databaseChooser.getResult());
 	}
 }
 

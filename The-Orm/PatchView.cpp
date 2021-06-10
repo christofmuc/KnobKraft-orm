@@ -448,6 +448,49 @@ void PatchView::loadPatches() {
 	}
 }
 
+class BulkImportPIP : public ThreadWithProgressWindow {
+public:
+	BulkImportPIP(File directory, midikraft::PatchDatabase &db) : ThreadWithProgressWindow("Importing patch archives...", true, true), directory_(directory), db_(db) {
+	}
+
+	virtual void run() {
+		std::map<std::string, std::shared_ptr<midikraft::Synth>> synths;
+		for (auto synth : UIModel::instance()->synthList_.allSynths()) {
+			synths[synth.getName()] = synth.synth();
+		}
+
+		Array<File> pips;
+		directory_.findChildFiles(pips, File::TypesOfFileToFind::findFiles, false, "*.json");
+		double count = 0.0;
+		for (auto const &pip : pips) {
+			if (threadShouldExit())
+				break;
+
+			if (pip.existsAsFile()) {
+				auto patches = midikraft::PatchInterchangeFormat::load(synths, pip.getFullPathName().toStdString(), nullptr);
+				std::vector<midikraft::PatchHolder> outNewPatches;
+				auto numberNew = db_.mergePatchesIntoDatabase(patches, outNewPatches, nullptr, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
+				if (numberNew > 0) {
+					SimpleLogger::instance()->postMessage("Loaded " + String(numberNew) + " additional patches from file " + pip.getFullPathName());
+				}
+			}
+
+			count += 1.0;
+			setProgress(count / pips.size());
+		}
+	}
+
+private:
+	File directory_;
+	midikraft::PatchDatabase& db_;
+};
+
+void PatchView::bulkImportPIP(File directory) {
+	BulkImportPIP bulk(directory, database_);
+
+	bulk.runThread();
+}
+
 void PatchView::exportPatches()
 {
 	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code

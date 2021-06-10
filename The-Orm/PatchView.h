@@ -67,6 +67,9 @@ public:
 	// Hand through from PatchSearch
 	midikraft::PatchDatabase::PatchFilter currentFilter();
 
+	// Special functions
+	void bulkImportPIP(File directory);
+
 private:
 	friend class PatchSearchComponent;
 
@@ -79,7 +82,7 @@ private:
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
-	void loadPatches();
+	void loadPatches();	
 	void receiveManualDump();
 	void exportPatches();
 	void updateLastPath();
