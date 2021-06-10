@@ -450,7 +450,8 @@ void PatchView::loadPatches() {
 
 class BulkImportPIP : public ThreadWithProgressWindow {
 public:
-	BulkImportPIP(File directory, midikraft::PatchDatabase &db) : ThreadWithProgressWindow("Importing patch archives...", true, true), directory_(directory), db_(db) {
+	BulkImportPIP(File directory, midikraft::PatchDatabase &db, std::shared_ptr<midikraft::AutomaticCategory> detector) 
+		: ThreadWithProgressWindow("Importing patch archives...", true, true), directory_(directory), db_(db), detector_(detector) {
 	}
 
 	virtual void run() {
@@ -467,7 +468,7 @@ public:
 				break;
 
 			if (pip.existsAsFile()) {
-				auto patches = midikraft::PatchInterchangeFormat::load(synths, pip.getFullPathName().toStdString(), nullptr);
+				auto patches = midikraft::PatchInterchangeFormat::load(synths, pip.getFullPathName().toStdString(), detector_);
 				std::vector<midikraft::PatchHolder> outNewPatches;
 				auto numberNew = db_.mergePatchesIntoDatabase(patches, outNewPatches, nullptr, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
 				if (numberNew > 0) {
@@ -483,10 +484,11 @@ public:
 private:
 	File directory_;
 	midikraft::PatchDatabase& db_;
+	std::shared_ptr<midikraft::AutomaticCategory> detector_;
 };
 
 void PatchView::bulkImportPIP(File directory) {
-	BulkImportPIP bulk(directory, database_);
+	BulkImportPIP bulk(directory, database_, automaticCategories_);
 
 	bulk.runThread();
 }
