@@ -326,12 +326,12 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 						}
 					}
 					else {
-						SimpleLogger::instance()->postMessage("Error: No patch loaded, can't calculate update messages");
+						//SimpleLogger::instance()->postMessage("Error: No patch loaded, can't calculate update messages");
 					}
 					return;
 				}
 				else {
-					SimpleLogger::instance()->postMessage("Error: Parameter does not implement SynthParameterLiveEditCapability, can't update synth");
+					//SimpleLogger::instance()->postMessage("Error: Parameter does not implement SynthParameterLiveEditCapability, can't update synth");
 					return;
 				}
 			}
