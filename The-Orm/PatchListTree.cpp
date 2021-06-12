@@ -57,9 +57,9 @@ public:
 		handler_(id_);
 	}
 
-	String getTooltip() override {
+	/*String getTooltip() override {
 		return text_;
-	}
+	}*/
 
 	void regenerate() {
 		if (childGenerator_) {
