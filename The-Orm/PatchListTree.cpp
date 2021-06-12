@@ -29,11 +29,7 @@ public:
 	void itemOpennessChanged(bool isNowOpen) override
 	{
 		if (hasChildren_ && isNowOpen && !hasGenerated_) {
-			auto children = childGenerator_();
-			for (auto c : children) {
-				addSubItem(c);
-			}
-			hasGenerated_ = true;
+			regenerate();
 		}
 	}
 
@@ -63,6 +59,16 @@ public:
 
 	String getTooltip() override {
 		return text_;
+	}
+
+	void regenerate() {
+		if (childGenerator_) {
+			auto children = childGenerator_();
+			for (auto c : children) {
+				addSubItem(c);
+			}
+			hasGenerated_ = true;
+		}
 	}
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GroupNode)
@@ -104,10 +110,13 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 	treeView_->setRootItemVisible(false);
 
 	treeView_->setColour(TreeView::selectedItemBackgroundColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::highlightedFill));
+
+	UIModel::instance()->currentSynth_.addChangeListener(this);
 }
 
 PatchListTree::~PatchListTree()
 {
+	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
 }
 
@@ -115,4 +124,30 @@ void PatchListTree::resized()
 {
 	auto area = getLocalBounds();
 	treeView_->setBounds(area);
+}
+
+void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
+{
+	if (source == &UIModel::instance()->currentSynth_) {
+		// Synth has changed, we need to regenerate the tree!
+		// Iterate nodes and regenerate in case group node and open!
+		auto root = treeView_->getRootItem();
+		auto currentNode = root;
+		while (currentNode != nullptr) {
+			for (int child = 0; child < currentNode->getNumSubItems(); child++) {
+				auto subItem = currentNode->getSubItem(child);
+				if (subItem->mightContainSubItems() && subItem->isOpen()) {
+					subItem->clearSubItems();
+					GroupNode *node = dynamic_cast<GroupNode*>(subItem);
+					if (node) {
+						node->regenerate();
+					}
+					else {
+						jassertfalse;
+					}
+				}
+			}
+			currentNode = nullptr; // No recursion here, would it make sense?
+		}
+	}
 }

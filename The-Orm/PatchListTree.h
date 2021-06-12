@@ -10,7 +10,7 @@
 
 #include "PatchDatabase.h"
 
-class PatchListTree : public Component {
+class PatchListTree : public Component, private ChangeListener {
 public:
 
 	PatchListTree(midikraft::PatchDatabase &db, std::function<void(String)> clickHandler);
@@ -21,6 +21,8 @@ public:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
 
 private:
+	void changeListenerCallback(ChangeBroadcaster* source) override;
+
 	midikraft::PatchDatabase& db_;
 	std::function<void(String)> clickHandler_;
 
