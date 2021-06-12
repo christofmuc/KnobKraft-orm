@@ -244,7 +244,7 @@ namespace knobkraft {
 		// For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find 
 		// python code we are installing, e.g. the generic sequential module which is used by all Sequential synths
 		File pythonPath2 = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory().getChildFile("python");
-		command = "import sys\nsys.path.append(R\"" + pythonPath2.getFullPathName()00.toStdString() + "\")\n";
+		command = "import sys\nsys.path.append(R\"" + pythonPath2.getFullPathName().toStdString() + "\")\n";
 		py::exec(command);
 #endif
 		checkForPythonOutputAndLog();
