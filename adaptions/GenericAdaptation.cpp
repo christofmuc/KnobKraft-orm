@@ -240,6 +240,13 @@ namespace knobkraft {
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n";
 		py::exec(command);
+#ifdef __APPLE__
+		// For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find 
+		// python code we are installing, e.g. the generic sequential module which is used by all Sequential synths
+		File pathToMyExecutable = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile);
+		command = "import sys\nsys.path.append(R\"" + pathToMyExecutable.getChildFile("python").getFullPathName().toStdString() + "\")\n";
+		py::exec(command);
+#endif
 		checkForPythonOutputAndLog();
 		sGenericAdaptationDontLockGIL = std::make_unique<py::gil_scoped_release>();
 		// From this point on, whenever you want to call into python you need to acquire the GIL 
