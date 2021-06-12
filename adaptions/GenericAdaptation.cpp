@@ -245,7 +245,7 @@ namespace knobkraft {
 		// python code we are installing, e.g. the generic sequential module which is used by all Sequential synths
 		File pythonPath2 = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getChildFile("python");
 		SimpleLogger::instance()->postMessage("Adding python path for modules: " + pythonPath2.getFullPathName());
-		command = "import sys\nsys.path.append(R\"" + pythonPath2.getFullPathName()).toStdString() + "\")\nprint(sys.path)\n";
+		command = "import sys\nsys.path.append(R\"" + pythonPath2.getFullPathName().toStdString() + "\")\nprint(sys.path)\n";
 		py::exec(command);
 #endif
 		checkForPythonOutputAndLog();
