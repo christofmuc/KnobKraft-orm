@@ -491,6 +491,8 @@ void PatchView::bulkImportPIP(File directory) {
 	BulkImportPIP bulk(directory, database_, automaticCategories_);
 
 	bulk.runThread();
+
+	retrieveFirstPageFromDatabase();
 }
 
 void PatchView::exportPatches()

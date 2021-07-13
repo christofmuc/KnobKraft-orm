@@ -584,12 +584,12 @@ public:
 						allPatches = mergeSource.getPatches(filter, 0, -1);
 					}
 					catch (midikraft::PatchDatabaseException& e) {
-						SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
+						SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
 					}
 					tempfile.deleteFile();
 				}
 				catch (midikraft::PatchDatabaseException& e) {
-					SimpleLogger::instance()->postMessage("Error opening database file " + file.getFullPathName() + ":" + e.what());
+					SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
 				}
 
 				// We have all patches in memory - write them into a pip file
