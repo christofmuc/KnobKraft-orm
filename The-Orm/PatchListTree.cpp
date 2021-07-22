@@ -105,7 +105,21 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 		}
 		return result;
 	});
-	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports}); });
+	TreeViewItem* lists = new GroupNode("User lists", [this]() {
+		std::vector<TreeViewItem*> result;
+		auto userLists = db_.allPatchLists();
+		std::sort(userLists.begin(), userLists.end(), [](const midikraft::ListInfo& a, const midikraft::ListInfo& b) {
+			return a.name < b.name;
+		});
+		for (auto const& list : userLists) {
+			result.push_back(new GroupNode(list.name, list.id, [this](String id) {				
+			}));
+		}
+		result.push_back(new GroupNode("Add new list", "invalid", [this](String id) {
+		}));
+		return result;
+	});
+	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports, lists}); });
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
