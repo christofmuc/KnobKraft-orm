@@ -26,19 +26,14 @@ public:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	void rebuildSynthFilters();
-	void rebuildImportFilterBox();
 	void rebuildDataTypeFilterBox();
 
-	void selectImportByID(String id);
-	void selectImportByDescription(std::string const& description);
-	std::string currentlySelectedSourceUUID();
 	bool atLeastOneSynth();
 	String advancedTextSearch() const;
 	
 private:
 	PatchView* patchView_;
 	PatchButtonPanel* patchButtons_;
-	ComboBox importList_;
 	TextSearchBox textSearch_;
 	CategoryButtons categoryFilters_;
 	std::unique_ptr<CollapsibleContainer> advancedSearch_;

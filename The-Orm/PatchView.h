@@ -98,6 +98,7 @@ private:
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
 	PatchListTree patchListTree_;
+	std::string sourceFilterID_; // This is the old "import" combo box in new
 	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;
 

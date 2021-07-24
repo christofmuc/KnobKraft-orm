@@ -227,14 +227,14 @@ void PatchView::saveCurrentPatchCategories() {
 void PatchView::setImportListFilter(String filter)
 {
 	listFilterID_ = "";
-	patchSearch_->selectImportByID(filter);
+	sourceFilterID_ = filter.toStdString();
 	retrieveFirstPageFromDatabase();
 }
 
 void PatchView::setUserListFilter(String filter)
 {
 	listFilterID_ = filter.toStdString();
-	patchSearch_->selectImportByID("***"); //TODO Hack needs fix
+	sourceFilterID_ = "";
 	retrieveFirstPageFromDatabase();
 }
 
@@ -340,7 +340,7 @@ void PatchView::deletePatches()
 			"Are you sure?", "Yes", "No")) {
 			int deleted = database_.deletePatches(currentFilter());
 			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
-			patchSearch_->rebuildImportFilterBox();
+			//TODO refresh import Filter
 			retrieveFirstPageFromDatabase();
 		}
 	}
@@ -374,7 +374,7 @@ void PatchView::reindexPatches() {
 			AlertWindow::showMessageBox(AlertWindow::WarningIcon, "Error reindexing patches", "There was an error reindexing the patches selected. View the log for more details");
 
 		}
-		patchSearch_->rebuildImportFilterBox();
+		//TODO refresh import filter
 		retrieveFirstPageFromDatabase();
 	}
 }
@@ -392,6 +392,7 @@ void PatchView::selectFirstPatch()
 midikraft::PatchFilter PatchView::currentFilter()
 {
 	auto filter = patchSearch_->buildFilter();
+	filter.importID = sourceFilterID_;
 	filter.listID = listFilterID_;
 	return filter;
 }
@@ -569,7 +570,6 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
 		// Back to UI thread
 		MessageManager::callAsync([this, outNewPatches]() {
-			patchSearch_->rebuildImportFilterBox();
 			if (outNewPatches.size() > 0) {
 				// Select this import
 				auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
@@ -578,11 +578,12 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 						if ((imports_[i].id == info->md5(UIModel::currentSynth()))
 							|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
 						{
-							patchSearch_->selectImportByDescription(imports_[i].description);
+							sourceFilterID_ = imports_[i].id;
 						}
 					}
 				}
 			}
+			//TODO refresh import filter
 			retrieveFirstPageFromDatabase();
 		});
 	});

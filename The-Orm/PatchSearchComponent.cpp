@@ -60,11 +60,6 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
-	addAndMakeVisible(importList_); //TODO - this is actually no longer visible, but still used!?
-	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
-	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
-	importList_.onChange = [this]() { patchView_->retrieveFirstPageFromDatabase(); };
-
 	onlyFaves_.setButtonText("Only Faves");
 	onlyFaves_.onClick = [this]() { patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyFaves_);
@@ -171,7 +166,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter()
 		}
 	}
 	return { synthMap,
-		currentlySelectedSourceUUID(),
+		"", // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
 		nameFilter,
 		"", // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
 		onlyFaves_.getToggleState(),
@@ -194,7 +189,6 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 		}
 
 		// Rebuild the other features
-		rebuildImportFilterBox();
 		rebuildDataTypeFilterBox();
 		patchView_->retrieveFirstPageFromDatabase();
 		resized();
@@ -223,12 +217,6 @@ void PatchSearchComponent::rebuildSynthFilters()
 	}
 }
 
-void PatchSearchComponent::rebuildImportFilterBox()
-{
-	importList_.clear();
-	importList_.addItemList(patchView_->sourceNameList(), 1);
-}
-
 void PatchSearchComponent::rebuildDataTypeFilterBox()
 {
 	advancedFilters_->dataTypeSelector_.clear();
@@ -244,48 +232,6 @@ void PatchSearchComponent::rebuildDataTypeFilterBox()
 		}
 		advancedFilters_->dataTypeSelector_.addItemList(typeNameList, 1);
 	}
-}
-
-void PatchSearchComponent::selectImportByID(String id)
-{
-	std::string description = "All patches"; // Hackish - if the ID is not found, select the All patches item. This needs to be fixed once we have a more general List type
-	for (auto import : patchView_->imports_) {
-		if (import.id == id) {
-			description = import.description;
-			break;
-		}
-	}
-	for (int j = 0; j < importList_.getNumItems(); j++) {
-		if (importList_.getItemText(j).toStdString() == description) {
-			importList_.setSelectedItemIndex(j, sendNotificationAsync);
-			break;
-		}
-	}
-}
-
-void PatchSearchComponent::selectImportByDescription(std::string const& description)
-{
-	// Search for the import in the sorted list
-	for (int j = 0; j < importList_.getNumItems(); j++) {
-		if (importList_.getItemText(j).toStdString() == description) {
-			importList_.setSelectedItemIndex(j, dontSendNotification);
-			break;
-		}
-	}
-}
-
-std::string PatchSearchComponent::currentlySelectedSourceUUID()
-{
-	if (importList_.getSelectedItemIndex() > 0) {
-		std::string selectedItemText = importList_.getText().toStdString();
-		for (auto import : patchView_->imports_) {
-			if (import.description == selectedItemText) {
-				return import.id;
-			}
-		}
-		jassertfalse;
-	}
-	return "";
 }
 
 bool PatchSearchComponent::atLeastOneSynth()

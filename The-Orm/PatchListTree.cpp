@@ -112,7 +112,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		synths_[synth.getName()] = synth.synth();
 	}
 
-	TreeViewItem* all = new GroupNode("All patches", "***", [this](String id) {
+	TreeViewItem* all = new GroupNode("All patches", "", [this](String id) {
 		importListHandler_(id);
 	});
 	TreeViewItem* imports = new GroupNode("By import", [this]() {
