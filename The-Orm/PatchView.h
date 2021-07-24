@@ -66,7 +66,7 @@ public:
 	void selectFirstPatch();
 
 	// Hand through from PatchSearch
-	midikraft::PatchDatabase::PatchFilter currentFilter();
+	midikraft::PatchFilter currentFilter();
 
 	// Special functions
 	void bulkImportPIP(File directory);
@@ -92,10 +92,13 @@ private:
 	void selectPatch(midikraft::PatchHolder &patch);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
+	void setImportListFilter(String filter);
+	void setUserListFilter(String filter);
 
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
 	PatchListTree patchListTree_;
+	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;
 
 	Label patchLabel_;

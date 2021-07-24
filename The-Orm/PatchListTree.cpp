@@ -19,7 +19,8 @@ public:
 	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasGenerated_(false), hasChildren_(false), handler_(handler) {
 	}
 
-	GroupNode(String text, TChildGenerator childGenerator, TDropHandler dropHandler) : text_(text), hasGenerated_(false), childGenerator_(childGenerator), hasChildren_(true) {
+	GroupNode(String text, TChildGenerator childGenerator, TClickedHandler clickedHandler, TDropHandler dropHandler) 
+		: text_(text), hasGenerated_(false), handler_(clickedHandler), childGenerator_(childGenerator), hasChildren_(true) {
 		dropHandler_ = dropHandler;
 	}
 
@@ -50,13 +51,14 @@ public:
 
 	bool canBeSelected() const override
 	{
-		return handler_.operator bool();
+		return handler_ != nullptr;
 	}
 
 	void itemSelectionChanged(bool isNowSelected) override
 	{
-		ignoreUnused(isNowSelected);
-		handler_(id_);
+		if (isNowSelected) {
+			handler_(id_);
+		}
 	}
 
 	/*String getTooltip() override {
@@ -98,7 +100,8 @@ private:
 	TDropHandler dropHandler_;
 };
 
-PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths, std::function<void(String)> clickHandler) : db_(db), clickHandler_(clickHandler)
+PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths, TSelectionHandler importListHandler, TSelectionHandler userListHandler)
+	: db_(db), importListHandler_(importListHandler), userListHandler_(userListHandler)
 {
 	treeView_ = std::make_unique<TreeView>();
 	treeView_->setOpenCloseButtonsVisible(true);
@@ -110,7 +113,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	}
 
 	TreeViewItem* all = new GroupNode("All patches", "***", [this](String id) {
-		clickHandler_(id);
+		importListHandler_(id);
 	});
 	TreeViewItem* imports = new GroupNode("By import", [this]() {
 		std::vector<TreeViewItem*> result;
@@ -120,11 +123,11 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		});
 		for (auto const& import : importList) {
 			result.push_back(new GroupNode(import.description, import.id, [this](String id) {
-				clickHandler_(id);
+				importListHandler_(id);
 			}));
 		}
 		return result;
-	}, false);
+	}, nullptr, nullptr);
 	TreeViewItem* lists = new GroupNode("User lists", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
@@ -137,8 +140,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		result.push_back(new GroupNode("Add new list", "invalid", [this](String id) {
 		}));
 		return result;
-	}, false);
-	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports, lists}); }, false);
+	}, nullptr, nullptr);
+	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports, lists}); }, nullptr, nullptr);
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
@@ -174,7 +177,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			result.push_back(newTreeViewItemForPatch(patch));
 		}
 		return result;
-	}, [this, list](juce::var dropItem) {
+	}, [this, list](String clicked) {
+		SimpleLogger::instance()->postMessage("List clicked: " + clicked + " with info " + list.id);
+		userListHandler_(list.id);
+	},
+		[this, list](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 

@@ -13,8 +13,9 @@
 
 class PatchListTree : public Component, private ChangeListener {
 public:
+	typedef std::function<void(String)> TSelectionHandler;
 
-	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths, std::function<void(String)> clickHandler);
+	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths, TSelectionHandler importListHandler, TSelectionHandler userListHandler);
 	virtual ~PatchListTree();
 
 	virtual void resized();
@@ -28,7 +29,7 @@ private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	midikraft::PatchDatabase& db_;
-	std::function<void(String)> clickHandler_;
+	TSelectionHandler importListHandler_, userListHandler_;
 
 	std::unique_ptr<TreeView> treeView_;
 };

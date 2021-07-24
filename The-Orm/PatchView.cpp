@@ -34,7 +34,7 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
 	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), 
-	patchListTree_(database, synths, [this](String id) { patchSearch_->selectImportByID(id); }),
+	patchListTree_(database, synths, [this](String id) { setImportListFilter(id); }, [this](String id) { setUserListFilter(id); }),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
@@ -124,7 +124,7 @@ void PatchView::retrieveFirstPageFromDatabase() {
 	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
 	if (patchSearch_->atLeastOneSynth()) {
 		// First, we need to find out how many patches there are (for the paging control)
-		int total = database_.getPatchesCount(patchSearch_->buildFilter());
+		int total = database_.getPatchesCount(currentFilter());
 		patchButtons_->setTotalCount(total);
 		patchButtons_->refresh(true); // This kicks of loading the first page
 	}
@@ -153,9 +153,9 @@ void PatchView::selectNextPatch()
 
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	database_.getPatchesAsync(patchSearch_->buildFilter(), [this, callback](midikraft::PatchDatabase::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+	database_.getPatchesAsync(currentFilter(), [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
 		// Discard the result when there is a newer filter - another thread will be working on a better result!
-		if (patchSearch_->buildFilter() != filter)
+		if (currentFilter() != filter)
 			return;
 
 		// Check if a client-side filter is active (python based)
@@ -222,6 +222,20 @@ void PatchView::saveCurrentPatchCategories() {
 		database_.putPatch(*currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
+}
+
+void PatchView::setImportListFilter(String filter)
+{
+	listFilterID_ = "";
+	patchSearch_->selectImportByID(filter);
+	retrieveFirstPageFromDatabase();
+}
+
+void PatchView::setUserListFilter(String filter)
+{
+	listFilterID_ = filter.toStdString();
+	patchSearch_->selectImportByID("***"); //TODO Hack needs fix
+	retrieveFirstPageFromDatabase();
 }
 
 class LibrarianProgressWindow : public ProgressHandlerWindow {
@@ -324,7 +338,7 @@ void PatchView::deletePatches()
 			"They will be gone forever, unless you use a backup!") % totalAffected).str())) {
 		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
 			"Are you sure?", "Yes", "No")) {
-			int deleted = database_.deletePatches(patchSearch_->buildFilter());
+			int deleted = database_.deletePatches(currentFilter());
 			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
 			patchSearch_->rebuildImportFilterBox();
 			retrieveFirstPageFromDatabase();
@@ -367,7 +381,7 @@ void PatchView::reindexPatches() {
 
 int PatchView::totalNumberOfPatches()
 {
-	return database_.getPatchesCount(patchSearch_->buildFilter());
+	return database_.getPatchesCount(currentFilter());
 }
 
 void PatchView::selectFirstPatch()
@@ -375,9 +389,11 @@ void PatchView::selectFirstPatch()
 	patchButtons_->selectFirst();
 }
 
-midikraft::PatchDatabase::PatchFilter PatchView::currentFilter()
+midikraft::PatchFilter PatchView::currentFilter()
 {
-	return patchSearch_->buildFilter();
+	auto filter = patchSearch_->buildFilter();
+	filter.listID = listFilterID_;
+	return filter;
 }
 
 class MergeManyPatchFiles : public ProgressHandlerWindow {

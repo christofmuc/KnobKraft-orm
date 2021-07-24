@@ -21,7 +21,7 @@ public:
 
 	virtual void resized() override;
 
-	midikraft::PatchDatabase::PatchFilter buildFilter();
+	midikraft::PatchFilter buildFilter();
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 

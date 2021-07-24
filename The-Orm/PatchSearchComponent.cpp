@@ -140,7 +140,7 @@ void PatchSearchComponent::resized()
 	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 }
 
-midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
+midikraft::PatchFilter PatchSearchComponent::buildFilter()
 {
 	// Transform into real category
 	std::set<midikraft::Category> catSelected;
@@ -173,6 +173,7 @@ midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
 	return { synthMap,
 		currentlySelectedSourceUUID(),
 		nameFilter,
+		"", // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
 		onlyFaves_.getToggleState(),
 		typeSelected,
 		filterType,

@@ -25,7 +25,7 @@ Bugs open in 1.11:
 
 LISTS release
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom
-
+* BUG: Importing from computer goes not refresh import list tree
 
 Release 2.0
 * Add Bank Management
