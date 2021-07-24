@@ -73,7 +73,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 {
 	currentPatch_ = patch;
 	if (patch && patch->patch()) {
-		name_.setButtonText(patch->name());
+		name_.setButtonData(patch->name(), patch->createDragInfoString());
 		refreshNameButtonColour();
 		if (patch->sourceInfo()) {
 			String position = (boost::format(" at %d") % patch->patchNumber().toZeroBased()).str();
@@ -116,7 +116,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		}
 	}
 	else {
-		name_.setButtonText("No patch loaded");
+		name_.setButtonData("No patch loaded", "");
 		synthName_.setText("", dontSendNotification);
 		patchType_.setText("", dontSendNotification);
 		import_.setText("", dontSendNotification);
@@ -129,7 +129,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 
 void CurrentPatchDisplay::reset()
 {
-	name_.setButtonText("No patch loaded");
+	name_.setButtonData("No patch loaded", "");
 	import_.setText("", dontSendNotification);
 	favorite_.setToggleState(false, dontSendNotification);
 	currentPatch_ = std::make_shared<midikraft::PatchHolder>();

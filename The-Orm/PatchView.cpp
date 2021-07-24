@@ -34,7 +34,7 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
 	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), 
-	patchListTree_(database, [this](String id) { patchSearch_->selectImportByID(id); }),
+	patchListTree_(database, synths, [this](String id) { patchSearch_->selectImportByID(id); }),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {

@@ -36,6 +36,7 @@ class PatchDiff;
 class PatchSearchComponent;
 
 class PatchView : public Component,
+	public DragAndDropContainer,
 	private ChangeListener
 {
 public:

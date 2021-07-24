@@ -14,11 +14,13 @@ class GroupNode : public TreeViewItem {
 public:
 	typedef std::function<std::vector<TreeViewItem *>()> TChildGenerator;
 	typedef std::function<void(String)>  TClickedHandler;
+	typedef std::function<void(juce::var)>  TDropHandler;
 
 	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasGenerated_(false), hasChildren_(false), handler_(handler) {
 	}
 
-	GroupNode(String text, TChildGenerator childGenerator) : text_(text), hasGenerated_(false), childGenerator_(childGenerator), hasChildren_(true) {
+	GroupNode(String text, TChildGenerator childGenerator, TDropHandler dropHandler) : text_(text), hasGenerated_(false), childGenerator_(childGenerator), hasChildren_(true) {
+		dropHandler_ = dropHandler;
 	}
 
 	bool mightContainSubItems() override
@@ -71,6 +73,19 @@ public:
 		}
 	}
 
+	bool isInterestedInDragSource(const DragAndDropTarget::SourceDetails&) override
+	{
+		return dropHandler_ != nullptr;
+	}
+
+
+	void itemDropped(const DragAndDropTarget::SourceDetails& dragSourceDetails, int insertIndex) override
+	{
+		String name = dragSourceDetails.description;
+		SimpleLogger::instance()->postMessage("Item dropped: " + name + " at " + String(insertIndex));
+		dropHandler_(dragSourceDetails.description);
+	}
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GroupNode)
 
 private:
@@ -80,14 +95,19 @@ private:
 	bool hasGenerated_;
 	TChildGenerator childGenerator_;
 	TClickedHandler handler_;
-
+	TDropHandler dropHandler_;
 };
 
-PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(String)> clickHandler) : db_(db), clickHandler_(clickHandler)
+PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths, std::function<void(String)> clickHandler) : db_(db), clickHandler_(clickHandler)
 {
 	treeView_ = std::make_unique<TreeView>();
 	treeView_->setOpenCloseButtonsVisible(true);
 	addAndMakeVisible(*treeView_);
+
+	// Build data structure to load patch lists
+	for (auto synth : synths) {
+		synths_[synth.getName()] = synth.synth();
+	}
 
 	TreeViewItem* all = new GroupNode("All patches", "***", [this](String id) {
 		clickHandler_(id);
@@ -104,7 +124,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 			}));
 		}
 		return result;
-	});
+	}, false);
 	TreeViewItem* lists = new GroupNode("User lists", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
@@ -112,14 +132,13 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 			return a.name < b.name;
 		});
 		for (auto const& list : userLists) {
-			result.push_back(new GroupNode(list.name, list.id, [this](String id) {				
-			}));
+			result.push_back(newTreeViewItemForPatchList(list));
 		}
 		result.push_back(new GroupNode("Add new list", "invalid", [this](String id) {
 		}));
 		return result;
-	});
-	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports, lists}); });
+	}, false);
+	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports, lists}); }, false);
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
@@ -138,6 +157,48 @@ void PatchListTree::resized()
 {
 	auto area = getLocalBounds();
 	treeView_->setBounds(area);
+}
+
+TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::PatchHolder patchHolder) {
+	return new GroupNode(patchHolder.name(), patchHolder.md5(), [patchHolder](String md5) {
+		// Clicking a patch in the list does the same thing as clicking it in the PatchView grid
+		SimpleLogger::instance()->postMessage("Patch clicked: " + md5);
+	});
+}
+
+TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
+	return new GroupNode(list.name, [this, list]() {
+		auto patchList = db_.getPatchList(list, synths_);
+		std::vector<TreeViewItem*> result;
+		for (auto patch : patchList.patches()) {
+			result.push_back(newTreeViewItemForPatch(patch));
+		}
+		return result;
+	}, [this, list](juce::var dropItem) {
+		String dropItemString = dropItem;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+
+		if (infos.size() != 3) {
+			jassertfalse;
+			return;
+		}
+		std::string synthname = infos[0];
+		if (synths_.find(synthname) == synths_.end()) {
+			SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
+			return;
+		}
+
+		// We are ignoring the data type (infos[1]) right now!
+		auto synth = synths_[synthname].lock();
+		std::string md5 = infos[2];
+		std::vector<midikraft::PatchHolder> patch;
+		if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
+			db_.addPatchToList(list, patch[0]);
+		}
+		else {
+			SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
+		}
+	});
 }
 
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
