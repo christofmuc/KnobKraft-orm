@@ -730,10 +730,17 @@ void MainComponent::resized()
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
-	auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
-		.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 
-	synthList_.setBounds(secondTopRow);
+	if (UIModel::instance()->synthList_.activeSynths().size() > 1) {
+		auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
+			.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
+		synthList_.setBounds(secondTopRow);
+		synthList_.setVisible(true);
+	}
+	else {
+		// Less than one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
+		synthList_.setVisible(false);
+	}
 	splitter_->setBounds(area);
 }
 
@@ -812,6 +819,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
+		resized();
 	}
 
 	auto synth = UIModel::currentSynth();
