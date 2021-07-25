@@ -186,7 +186,6 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		}
 		return result;
 	}, [this, list](String clicked) {
-		SimpleLogger::instance()->postMessage("List clicked: " + clicked + " with info " + list.id);
 		userListHandler_(list.id);
 	},
 		[this, list](juce::var dropItem) {
