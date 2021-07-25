@@ -66,13 +66,16 @@ BANK MANAGEMENT
 * Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
 * How do I do drag and drop from the Library into the bank?
 
+SINGLE SYNTH SETUP MODE
+* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
+* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
+
 UI/UX
 * Different log levels with error colors
-* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
-* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * The current patch per synth could be hidable
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
