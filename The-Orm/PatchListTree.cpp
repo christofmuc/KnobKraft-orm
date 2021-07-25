@@ -16,11 +16,11 @@ public:
 	typedef std::function<void(String)>  TClickedHandler;
 	typedef std::function<void(juce::var)>  TDropHandler;
 
-	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasGenerated_(false), hasChildren_(false), handler_(handler) {
+	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasChildren_(false), handler_(handler) {
 	}
 
 	GroupNode(String text, TChildGenerator childGenerator, TClickedHandler clickedHandler, TDropHandler dropHandler) 
-		: text_(text), hasGenerated_(false), handler_(clickedHandler), childGenerator_(childGenerator), hasChildren_(true) {
+		: text_(text), handler_(clickedHandler), childGenerator_(childGenerator), hasChildren_(true) {
 		dropHandler_ = dropHandler;
 	}
 
@@ -31,7 +31,7 @@ public:
 
 	void itemOpennessChanged(bool isNowOpen) override
 	{
-		if (hasChildren_ && isNowOpen && !hasGenerated_) {
+		if (hasChildren_ && isNowOpen) {
 			regenerate();
 		}
 	}
@@ -67,11 +67,20 @@ public:
 
 	void regenerate() {
 		if (childGenerator_) {
+			clearSubItems();
 			auto children = childGenerator_();
 			for (auto c : children) {
 				addSubItem(c);
 			}
-			hasGenerated_ = true;
+		}
+	}
+
+	virtual String getUniqueName() const override {
+		if (id_.isNotEmpty()) {
+			return id_;
+		}
+		else {
+			return text_;
 		}
 	}
 
@@ -94,7 +103,6 @@ private:
 	String text_;
 	String id_;
 	bool hasChildren_;
-	bool hasGenerated_;
 	TChildGenerator childGenerator_;
 	TClickedHandler handler_;
 	TDropHandler dropHandler_;
@@ -112,7 +120,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		synths_[synth.getName()] = synth.synth();
 	}
 
-	TreeViewItem* all = new GroupNode("All patches", "", [this](String id) {
+	allPatchesItem_ = new GroupNode("All patches", "", [this](String id) {
 		importListHandler_(id);
 	});
 	TreeViewItem* imports = new GroupNode("By import", [this]() {
@@ -141,7 +149,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		}));
 		return result;
 	}, nullptr, nullptr);
-	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({all, imports, lists}); }, nullptr, nullptr);
+	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, lists}); }, nullptr, nullptr);
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
@@ -212,6 +220,15 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->currentSynth_) {
 		// Synth has changed, we need to regenerate the tree!
+		
+		// Did we have a previous synth/state? Then store it!
+		if (!previousSynthName_.empty()) {
+			synthSpecificTreeState_[previousSynthName_].reset(treeView_->getOpennessState(true).release());
+			jassert(synthSpecificTreeState_[previousSynthName_]);
+		}
+		// Now the previous synth is the current synth
+		previousSynthName_ = UIModel::currentSynth()->getName();
+
 		// Iterate nodes and regenerate in case group node and open!
 		auto root = treeView_->getRootItem();
 		auto currentNode = root;
@@ -223,6 +240,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 					GroupNode *node = dynamic_cast<GroupNode*>(subItem);
 					if (node) {
 						node->regenerate();
+						node->treeHasChanged();
 					}
 					else {
 						jassertfalse;
@@ -230,6 +248,15 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 				}
 			}
 			currentNode = nullptr; // No recursion here, would it make sense?
+		}
+
+		// Try to restore the Tree state, if we had one stored for this synth!
+		if (synthSpecificTreeState_.find(previousSynthName_) != synthSpecificTreeState_.end() && synthSpecificTreeState_[previousSynthName_]) {
+			treeView_->restoreOpennessState(*synthSpecificTreeState_[previousSynthName_], true);
+		}
+		else {
+			// Nothing has been stored, we have not been here before - just select the "All Patches" node
+			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
 		}
 	}
 }

@@ -24,6 +24,8 @@ public:
 	
 private:
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths_; // The database needs this to load patch lists
+	std::map<std::string, std::unique_ptr<XmlElement>> synthSpecificTreeState_;
+
 	TreeViewItem* newTreeViewItemForPatch(midikraft::PatchHolder patchHolder);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
 	void changeListenerCallback(ChangeBroadcaster* source) override;
@@ -32,5 +34,7 @@ private:
 	TSelectionHandler importListHandler_, userListHandler_;
 
 	std::unique_ptr<TreeView> treeView_;
+	TreeViewItem* allPatchesItem_;
+	std::string previousSynthName_;
 };
 

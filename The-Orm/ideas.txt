@@ -24,8 +24,23 @@ Bugs open in 1.11:
 * Should be called Stream Load instead of DataFile
 
 LISTS release
-* Could allow stored filters (stored searches), which are "smart lists" in Lightroom
+* Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 * BUG: Importing from computer goes not refresh import list tree
+* DELETE should respect list filter as well, else you will just delete too many patches!
+* BUG: The By imports... function is synth specific, but should probably have sub categories per synth? -> multi mode yes. 
+* Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
+* How do we deal with the main synth button which is also a synth filter radio button, while we also have a multi selection??? -> Idea: "Multi-Synth Library Mode" button
+  Multi-synth-mode:
+     Would replace current "Advanced filter" mode
+	 Would make Single Synth mode the default, and each synth would have its own list tree and filter setting, so you could switch more quickly between the filters 
+	 Would make Multi-synth mode more complex, with a different filter stored (like an additional synth), and a slightly different tree view (import needs a layer more)
+	 Stored filters could be single or multi-synth
+	 Lists could be single synth list or multi list
+	   - The whole bank management doesn't make sense in multi-synth mode	
+	switching synth would reload tree, and reload filter
+* Missing - dialog to create a new list with name entering, can also be used to change a name (a bit similar to patch rename dialog)
+* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
+
 
 Release 2.0
 * Add Bank Management
@@ -53,7 +68,7 @@ BANK MANAGEMENT
 
 UI/UX
 * Different log levels with error colors
-* Store filter per synth!
+* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
