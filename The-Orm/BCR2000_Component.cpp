@@ -257,7 +257,9 @@ void BCR2000_Component::setRotaryParam(int knobNumber, TypedNamedValue* param)
 	jassert(knobNumber > 0 && knobNumber <= rotaryKnobs.size());
 	jassert(param != nullptr);
 
-	rotaryKnobs[knobNumber - 1]->setSynthParameter(param);
+	if (param) {
+		rotaryKnobs[knobNumber - 1]->setSynthParameter(param);
+	}
 }
 
 void BCR2000_Component::setButtonParam(int knobNumber, std::string const& name)
