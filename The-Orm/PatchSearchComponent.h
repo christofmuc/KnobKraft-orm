@@ -21,7 +21,8 @@ public:
 
 	virtual void resized() override;
 
-	midikraft::PatchFilter buildFilter();
+	void loadFilter(midikraft::PatchFilter filter);
+	midikraft::PatchFilter getFilter();
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
@@ -32,6 +33,11 @@ public:
 	String advancedTextSearch() const;
 	
 private:
+	void updateCurrentFilter(); 
+	midikraft::PatchFilter buildFilter() const;
+
+	std::map<std::string, midikraft::PatchFilter> synthSpecificFilter_; // We store one filter per synth
+
 	PatchView* patchView_;
 	PatchButtonPanel* patchButtons_;
 	TextSearchBox textSearch_;

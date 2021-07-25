@@ -391,7 +391,7 @@ void PatchView::selectFirstPatch()
 
 midikraft::PatchFilter PatchView::currentFilter()
 {
-	auto filter = patchSearch_->buildFilter();
+	auto filter = patchSearch_->getFilter();
 	filter.importID = sourceFilterID_;
 	filter.listID = listFilterID_;
 	return filter;
