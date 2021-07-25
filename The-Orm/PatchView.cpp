@@ -228,6 +228,7 @@ void PatchView::setImportListFilter(String filter)
 {
 	listFilterID_ = "";
 	sourceFilterID_ = filter.toStdString();
+	patchButtons_->setMultiSynthMode(false);
 	retrieveFirstPageFromDatabase();
 }
 
@@ -235,6 +236,7 @@ void PatchView::setUserListFilter(String filter)
 {
 	listFilterID_ = filter.toStdString();
 	sourceFilterID_ = "";
+	patchButtons_->setMultiSynthMode(true);
 	retrieveFirstPageFromDatabase();
 }
 

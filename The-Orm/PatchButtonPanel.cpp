@@ -17,7 +17,7 @@
 #include <algorithm>
 
 PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
-	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
+	handler_(handler), multiSynthMode_(false), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
 	gridSizeSlider_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
 	gridSizeSlider_.setRange(4.0, 8.0, 1.0);
@@ -165,6 +165,11 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	setupPageButtons();
 }
 
+void PatchButtonPanel::setMultiSynthMode(bool multiSynthMode)
+{
+	multiSynthMode_ = multiSynthMode;
+}
+
 String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {
 	File thumbnailCache = UIModel::getThumbnailDirectory().getChildFile(patch.md5() + ".kkc");
 	return thumbnailCache.getFullPathName();
@@ -212,13 +217,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 		return;
 	}
 
-	// Check if we have a multi-synth grid, then we turn on subtitles
-	std::set<std::string> synths;
-	for (int i = 0; i < (int)std::min(patchButtons_->size(), patches_.size()); i++) {
-		if (patches_[i].synth())
-			synths.insert(patches_[i].synth()->getName());
-	}
-	bool showSubtitles = synths.size() > 1;
+	bool showSubtitles = multiSynthMode_;
 
 	// Now set the button text and colors
 	int active = indexOfActive();
