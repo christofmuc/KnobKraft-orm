@@ -24,11 +24,10 @@ Bugs open in 1.11:
 * Should be called Stream Load instead of DataFile
 
 LISTS release
-* Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 * BUG: Importing from computer goes not refresh import list tree
 * DELETE should respect list filter as well, else you will just delete too many patches!
 * BUG: The By imports... function is synth specific, but should probably have sub categories per synth? -> multi mode yes. 
-* Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
+* Need to be able to delete a list (best from within the edit list dialog?)
 * How do we deal with the main synth button which is also a synth filter radio button, while we also have a multi selection??? -> Idea: "Multi-Synth Library Mode" button
   Multi-synth-mode:
      Would replace current "Advanced filter" mode
@@ -38,7 +37,10 @@ LISTS release
 	 Lists could be single synth list or multi list
 	   - The whole bank management doesn't make sense in multi-synth mode	
 	switching synth would reload tree, and reload filter
-* Missing - dialog to create a new list with name entering, can also be used to change a name (a bit similar to patch rename dialog)
+
+LISTS upgrades:
+* Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
+* Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 * How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
 
 

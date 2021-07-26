@@ -23,12 +23,14 @@ public:
 	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasChildren_(false), handler_(handler) {
 	}
 
-	GroupNode(String text, String id, TChildGenerator childGenerator, TClickedHandler clickedHandler, TDropHandler dropHandler) 
-		: text_(text), id_(id), handler_(clickedHandler), childGenerator_(childGenerator), hasChildren_(true) {
+	GroupNode(String text, String id, TChildGenerator childGenerator, TClickedHandler selectedHandler, TDropHandler dropHandler) 
+		: text_(text), id_(id), handler_(selectedHandler), childGenerator_(childGenerator), hasChildren_(true) {
 		dropHandler_ = dropHandler;
 	}
 
-	TClickedHandler onDoubleClick;
+	
+	TClickedHandler onSingleClick; 
+	TClickedHandler onDoubleClick;	
 
 	bool mightContainSubItems() override
 	{
@@ -87,6 +89,12 @@ public:
 		}
 		else {
 			return text_;
+		}
+	}
+
+	virtual void itemClicked(const MouseEvent&) override {
+		if (onSingleClick) {
+			onSingleClick(id_);
 		}
 	}
 
@@ -165,7 +173,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		for (auto const& list : userLists) {
 			result.push_back(newTreeViewItemForPatchList(list));
 		}
-		result.push_back(new GroupNode("Add new list", "invalid", [this](String id) {
+		auto addNewItem = new GroupNode("Add new list", "", nullptr);
+		addNewItem->onSingleClick = [this](String id) {
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
 					db_.putPatchList(*list);
@@ -173,7 +182,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 					regenerateUserLists();
 				}
 			});
-		}));
+		};
+		result.push_back(addNewItem);
 		return result;
 	}, nullptr, nullptr);
 	TreeViewItem *root = new GroupNode("ROOT", "", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, userListsItem_}); }, nullptr, nullptr);
