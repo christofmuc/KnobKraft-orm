@@ -35,6 +35,7 @@ private:
 
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewItem* allPatchesItem_;
+	TreeViewItem* userListsItem_;
 	std::string previousSynthName_;
 };
 

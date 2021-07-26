@@ -6,6 +6,8 @@
 
 #include "PatchListTree.h"
 
+#include "CreateListDialog.h"
+
 #include "UIModel.h"
 #include "Logger.h"
 #include "ColourHelpers.h"
@@ -136,7 +138,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		}
 		return result;
 	}, nullptr, nullptr);
-	TreeViewItem* lists = new GroupNode("User lists", [this]() {
+	userListsItem_ = new GroupNode("User lists", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
 		std::sort(userLists.begin(), userLists.end(), [](const midikraft::ListInfo& a, const midikraft::ListInfo& b) {
@@ -146,10 +148,22 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			result.push_back(newTreeViewItemForPatchList(list));
 		}
 		result.push_back(new GroupNode("Add new list", "invalid", [this](String id) {
+			CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>("new list"), TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
+				if (list) {
+					db_.putPatchList(*list);
+					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
+					// Need to refresh user lists
+					GroupNode* node = dynamic_cast<GroupNode*>(userListsItem_);
+					if (node) {
+						node->regenerate();
+						node->treeHasChanged();
+					}
+				}
+			});
 		}));
 		return result;
 	}, nullptr, nullptr);
-	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, lists}); }, nullptr, nullptr);
+	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, userListsItem_}); }, nullptr, nullptr);
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
@@ -162,6 +176,7 @@ PatchListTree::~PatchListTree()
 {
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
+	CreateListDialog::release();
 }
 
 void PatchListTree::resized()
