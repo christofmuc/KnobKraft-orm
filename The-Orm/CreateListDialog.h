@@ -16,7 +16,8 @@ class CreateListDialog : public Component, private TextButton::Listener {
 public:
 	typedef std::function<void(std::shared_ptr<midikraft::PatchList> result)> TCallback;
 
-	CreateListDialog(std::shared_ptr<midikraft::PatchList> list, TCallback& callback);
+	CreateListDialog(TCallback& callback);
+	void setList(std::shared_ptr<midikraft::PatchList> list);
 
 	virtual void resized() override;
 

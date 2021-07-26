@@ -7,7 +7,7 @@
 #include "CreateListDialog.h"
 
 
-CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::PatchList> list, TCallback &callback) : list_(list), callback_(callback)
+CreateListDialog::CreateListDialog(TCallback &callback) : callback_(callback)
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -24,8 +24,17 @@ CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::PatchList> list, T
 
 	PropertyEditor::TProperties props;
 	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
-	nameValue_.referTo(props[0]->value());
+	nameValue_ = Value(props[0]->value());
+	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
 	propertyEditor_.setProperties(props);
+}
+
+void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
+{
+	list_ = list;
+	if (list_) {
+		nameValue_.setValue(String(list->name()));
+	}
 }
 
 void CreateListDialog::resized()
@@ -47,13 +56,14 @@ static void dialogClosed(int modalResult, CreateListDialog* dialog)
 void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback)
 {
 	if (!sCreateListDialog_) {
-		sCreateListDialog_ = std::make_unique<CreateListDialog>(list, callback);
+		sCreateListDialog_ = std::make_unique<CreateListDialog>(callback);
 	}
+	sCreateListDialog_->setList(list);
 
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(sCreateListDialog_.get(), false);
 	launcher.componentToCentreAround = centeredAround;
-	launcher.dialogTitle = "Create user list";
+	launcher.dialogTitle = list ? "Edit user list" : "Create user list";
 	launcher.useNativeTitleBar = false;
 	launcher.dialogBackgroundColour = Colours::black;
 	sWindow_ = launcher.launchAsync();
@@ -68,7 +78,13 @@ void CreateListDialog::release()
 void CreateListDialog::notifyResult()
 {
 	String name = nameValue_.getValue();
-	list_->setName(name.toStdString());
+	if (list_) {
+		list_->setName(name.toStdString());
+	}
+	else {
+		// This was create mode!
+		list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
+	}
 	callback_(list_);
 }
 

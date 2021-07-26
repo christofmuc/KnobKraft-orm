@@ -12,6 +12,8 @@
 #include "Logger.h"
 #include "ColourHelpers.h"
 
+#include <boost/format.hpp>
+
 class GroupNode : public TreeViewItem {
 public:
 	typedef std::function<std::vector<TreeViewItem *>()> TChildGenerator;
@@ -21,10 +23,12 @@ public:
 	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasChildren_(false), handler_(handler) {
 	}
 
-	GroupNode(String text, TChildGenerator childGenerator, TClickedHandler clickedHandler, TDropHandler dropHandler) 
-		: text_(text), handler_(clickedHandler), childGenerator_(childGenerator), hasChildren_(true) {
+	GroupNode(String text, String id, TChildGenerator childGenerator, TClickedHandler clickedHandler, TDropHandler dropHandler) 
+		: text_(text), id_(id), handler_(clickedHandler), childGenerator_(childGenerator), hasChildren_(true) {
 		dropHandler_ = dropHandler;
 	}
+
+	TClickedHandler onDoubleClick;
 
 	bool mightContainSubItems() override
 	{
@@ -86,6 +90,12 @@ public:
 		}
 	}
 
+	virtual void itemDoubleClicked(const MouseEvent &) override {
+		if (onDoubleClick) {
+			onDoubleClick(id_);
+		}
+	}
+
 	bool isInterestedInDragSource(const DragAndDropTarget::SourceDetails&) override
 	{
 		return dropHandler_ != nullptr;
@@ -97,6 +107,14 @@ public:
 		String name = dragSourceDetails.description;
 		SimpleLogger::instance()->postMessage("Item dropped: " + name + " at " + String(insertIndex));
 		dropHandler_(dragSourceDetails.description);
+	}
+
+	String id() const {
+		return id_;
+	}
+
+	String text() const {
+		return text_;
 	}
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GroupNode)
@@ -125,7 +143,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	allPatchesItem_ = new GroupNode("All patches", "", [this](String id) {
 		importListHandler_(id);
 	});
-	TreeViewItem* imports = new GroupNode("By import", [this]() {
+	TreeViewItem* imports = new GroupNode("By import", "", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto importList = db_.getImportsList(UIModel::currentSynth());
 		std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
@@ -138,7 +156,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		}
 		return result;
 	}, nullptr, nullptr);
-	userListsItem_ = new GroupNode("User lists", [this]() {
+	userListsItem_ = new GroupNode("User lists", "", [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
 		std::sort(userLists.begin(), userLists.end(), [](const midikraft::ListInfo& a, const midikraft::ListInfo& b) {
@@ -148,22 +166,17 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			result.push_back(newTreeViewItemForPatchList(list));
 		}
 		result.push_back(new GroupNode("Add new list", "invalid", [this](String id) {
-			CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>("new list"), TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
+			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
 					db_.putPatchList(*list);
 					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
-					// Need to refresh user lists
-					GroupNode* node = dynamic_cast<GroupNode*>(userListsItem_);
-					if (node) {
-						node->regenerate();
-						node->treeHasChanged();
-					}
+					regenerateUserLists();
 				}
 			});
 		}));
 		return result;
 	}, nullptr, nullptr);
-	TreeViewItem *root = new GroupNode("ROOT", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, userListsItem_}); }, nullptr, nullptr);
+	TreeViewItem *root = new GroupNode("ROOT", "", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, userListsItem_}); }, nullptr, nullptr);
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
@@ -177,6 +190,15 @@ PatchListTree::~PatchListTree()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
 	CreateListDialog::release();
+}
+
+void PatchListTree::regenerateUserLists() {
+	// Need to refresh user lists
+	GroupNode* node = dynamic_cast<GroupNode*>(userListsItem_);
+	if (node) {
+		node->regenerate();
+		node->treeHasChanged();
+	}
 }
 
 void PatchListTree::resized()
@@ -193,7 +215,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::PatchHolder patc
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
-	return new GroupNode(list.name, [this, list]() {
+	auto node = new GroupNode(list.name, list.id, [this, list]() {
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
 		for (auto patch : patchList.patches()) {
@@ -228,6 +250,21 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
 		}
 	});
+	node->onDoubleClick = [node, this](String id) {
+		// Open rename dialog on double click
+		std::string oldname = node->text().toStdString();
+		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()), 
+			TopLevelWindow::getActiveTopLevelWindow(), 
+			[this, oldname](std::shared_ptr<midikraft::PatchList> list) {
+			jassert(list);
+			if (list) {
+				db_.putPatchList(*list);
+				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % list->name()).str());
+				regenerateUserLists();
+			}
+		});
+	};
+	return node;
 }
 
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
