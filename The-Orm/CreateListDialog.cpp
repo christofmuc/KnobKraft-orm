@@ -6,8 +6,9 @@
 
 #include "CreateListDialog.h"
 
+#include "LayoutConstants.h"
 
-CreateListDialog::CreateListDialog(TCallback &callback) : callback_(callback)
+CreateListDialog::CreateListDialog(TCallback &callback, TCallback &deleteCallback) : callback_(callback), deleteCallback_(deleteCallback)
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -18,6 +19,11 @@ CreateListDialog::CreateListDialog(TCallback &callback) : callback_(callback)
 	cancel_.setButtonText("Cancel");
 	cancel_.addListener(this);
 	addAndMakeVisible(cancel_);
+
+	delete_.setButtonText("Delete List");
+	delete_.addListener(this);
+	addAndMakeVisible(delete_);
+	delete_.setVisible(false);
 
 	// Finally we need a default size
 	setBounds(0, 0, 540, 200);
@@ -34,15 +40,22 @@ void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
 	list_ = list;
 	if (list_) {
 		nameValue_.setValue(String(list->name()));
+		delete_.setVisible(true);
+	}
+	else {
+		nameValue_.setValue("new list");
+		delete_.setVisible(false);
 	}
 }
 
 void CreateListDialog::resized()
 {
-	auto area = getLocalBounds();
-	auto buttonRow = area.removeFromBottom(40).withSizeKeepingCentre(220, 40);
-	ok_.setBounds(buttonRow.removeFromLeft(100).reduced(4));
-	cancel_.setBounds(buttonRow.removeFromLeft(100).reduced(4));
+	auto area = getLocalBounds().reduced(LAYOUT_INSET_NORMAL);
+	auto bottomRow = area.removeFromBottom(LAYOUT_LINE_SPACING);
+	auto buttonRow = bottomRow.withSizeKeepingCentre(2 * LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL, LAYOUT_LINE_SPACING);
+	ok_.setBounds(buttonRow.removeFromLeft(LAYOUT_BUTTON_WIDTH).reduced(LAYOUT_INSET_SMALL));
+	cancel_.setBounds(buttonRow.removeFromLeft(LAYOUT_BUTTON_WIDTH).reduced(LAYOUT_INSET_SMALL));
+	delete_.setBounds(area.removeFromBottom(2*LAYOUT_LINE_SPACING + LAYOUT_INSET_NORMAL).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_LINE_HEIGHT));
 	propertyEditor_.setBounds(area);
 }
 
@@ -53,10 +66,10 @@ static void dialogClosed(int modalResult, CreateListDialog* dialog)
 	}
 }
 
-void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback)
+void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback, TCallback deleteCallback)
 {
 	if (!sCreateListDialog_) {
-		sCreateListDialog_ = std::make_unique<CreateListDialog>(callback);
+		sCreateListDialog_ = std::make_unique<CreateListDialog>(callback, deleteCallback);
 	}
 	sCreateListDialog_->setList(list);
 
@@ -95,6 +108,14 @@ void CreateListDialog::buttonClicked(Button* button) {
 	}
 	else if (button == &cancel_) {
 		sWindow_->exitModalState(false);
+	}
+	else if (button == &delete_) {
+		if (list_ && AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Confirm deletion", "Do you really want to delete the list" + list_->name() + 
+			"?\n\nThis will leave all patches in the database, but delete the list definition.\n",
+			"Yes", "No, take me back!")) {
+			deleteCallback_(list_);
+			sWindow_->exitModalState(false);
+		}
 	}
 }
 

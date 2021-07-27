@@ -16,12 +16,12 @@ class CreateListDialog : public Component, private TextButton::Listener {
 public:
 	typedef std::function<void(std::shared_ptr<midikraft::PatchList> result)> TCallback;
 
-	CreateListDialog(TCallback& callback);
+	CreateListDialog(TCallback& callback, TCallback& deleteCallback);
 	void setList(std::shared_ptr<midikraft::PatchList> list);
 
 	virtual void resized() override;
 
-	static void showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback);
+	static void showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback, TCallback deleteCallback);
 	static void release();
 
 	void notifyResult();
@@ -37,7 +37,9 @@ private:
 	PropertyEditor propertyEditor_;
 	TextButton ok_;
 	TextButton cancel_;
+	TextButton delete_;
 	TCallback callback_;
+	TCallback deleteCallback_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CreateListDialog)
 };

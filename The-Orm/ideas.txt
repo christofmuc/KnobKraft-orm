@@ -15,7 +15,6 @@ Next release 1.11.1
 * Alpha implementation for the Yamaha DX7 (pure model, no detection or request codes, only manual receive)
 * Alpha implementation for the Yamaha DX7IID/FD/s and compatibles. I think this should already work, but only uses the original voice data and not the supplement data. Would be interested in getting feedback!
 
-
 Bugs open in 1.11:
 * Global Settings don't work for Matrix
 * DataFileLoad takes precedence over editbuffer, but shouldn'T
@@ -23,11 +22,10 @@ Bugs open in 1.11:
 * Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
 * Should be called Stream Load instead of DataFile
 
-LISTS release
-* BUG: Importing from computer goes not refresh import list tree
+1.14 LISTS release
 * DELETE should respect list filter as well, else you will just delete too many patches!
-* BUG: The By imports... function is synth specific, but should probably have sub categories per synth? -> multi mode yes. 
-* Need to be able to delete a list (best from within the edit list dialog?)
+* NEED to check that a patch can be in a list only once
+* Migration needs to be done (just create tables)
 * How do we deal with the main synth button which is also a synth filter radio button, while we also have a multi selection??? -> Idea: "Multi-Synth Library Mode" button
   Multi-synth-mode:
      Would replace current "Advanced filter" mode
@@ -37,11 +35,16 @@ LISTS release
 	 Lists could be single synth list or multi list
 	   - The whole bank management doesn't make sense in multi-synth mode	
 	switching synth would reload tree, and reload filter
+* BUG: Importing from computer goes not refresh import list tree
+* BUG: Deleting currently selected list foes not jump back to All Patches
 
 LISTS upgrades:
+* Add lists to PIF export
+* Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 * How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
+* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 
 
 Release 2.0

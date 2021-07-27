@@ -181,7 +181,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
 					regenerateUserLists();
 				}
-			});
+			}, nullptr);
 		};
 		result.push_back(addNewItem);
 		return result;
@@ -270,6 +270,12 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			if (list) {
 				db_.putPatchList(*list);
 				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % list->name()).str());
+				regenerateUserLists();
+			}
+		}, [this](std::shared_ptr<midikraft::PatchList> list) {
+			if (list) {
+				db_.deletePatchlist(midikraft::ListInfo({ list->id(), list->name() }));
+				SimpleLogger::instance()->postMessage("Deleted list " + list->name());
 				regenerateUserLists();
 			}
 		});
