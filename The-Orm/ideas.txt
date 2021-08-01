@@ -26,20 +26,16 @@ Bugs open in 1.11:
 * Should be called Stream Load instead of DataFile
 
 1.14 LISTS release
+* Need easy clear filter button
+* Clicking a heading should open/close (because otherwise it does nothing)
 * DELETE should respect list filter as well, else you will just delete too many patches!
-* NEED to check that a patch can be in a list only once
-* Migration needs to be done (just create tables)
 * How to remove a patch from a list?
-* Bug dropping on a list should refresh tree + grid
-* How do we deal with the main synth button which is also a synth filter radio button, while we also have a multi selection??? -> Idea: "Multi-Synth Library Mode" button
+* BUG: dropping on a list should refresh tree + grid
   Multi-synth-mode:
-     Would replace current "Advanced filter" mode
 	 Would make Single Synth mode the default, and each synth would have its own list tree and filter setting, so you could switch more quickly between the filters 
 	 Would make Multi-synth mode more complex, with a different filter stored (like an additional synth), and a slightly different tree view (import needs a layer more)
-	 Stored filters could be single or multi-synth
 	 Lists could be single synth list or multi list
 	   - The whole bank management doesn't make sense in multi-synth mode	
-	switching synth would reload tree, and reload filter
 * BUG: Importing from computer goes not refresh import list tree
 * BUG: Deleting currently selected list foes not jump back to All Patches
 
@@ -49,6 +45,7 @@ LISTS upgrades:
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
+	 Stored filters could be single or multi-synth
 * How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
 
 
