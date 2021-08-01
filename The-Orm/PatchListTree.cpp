@@ -178,6 +178,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		return result;
 	};
 	node->onSelected = [this, list](String clicked) {
+		UIModel::instance()->multiMode_.setMultiSynthMode(true);
 		userListHandler_(list.id);
 	};
 	node->onItemDropped = [this, list](juce::var dropItem) {
