@@ -16,21 +16,21 @@
 
 class GroupNode : public TreeViewItem {
 public:
-	typedef std::function<std::vector<TreeViewItem *>()> TChildGenerator;
+	typedef std::function<std::vector<TreeViewItem*>()> TChildGenerator;
 	typedef std::function<void(String)>  TClickedHandler;
 	typedef std::function<void(juce::var)>  TDropHandler;
 
 	GroupNode(String text, String id, TClickedHandler handler) : text_(text), id_(id), hasChildren_(false), handler_(handler) {
 	}
 
-	GroupNode(String text, String id, TChildGenerator childGenerator, TClickedHandler selectedHandler, TDropHandler dropHandler) 
+	GroupNode(String text, String id, TChildGenerator childGenerator, TClickedHandler selectedHandler, TDropHandler dropHandler)
 		: text_(text), id_(id), handler_(selectedHandler), childGenerator_(childGenerator), hasChildren_(true) {
 		dropHandler_ = dropHandler;
 	}
 
-	
-	TClickedHandler onSingleClick; 
-	TClickedHandler onDoubleClick;	
+
+	TClickedHandler onSingleClick;
+	TClickedHandler onDoubleClick;
 
 	bool mightContainSubItems() override
 	{
@@ -46,7 +46,7 @@ public:
 
 	void paintItem(Graphics& g, int width, int height) override
 	{
-		auto &lf = LookAndFeel::getDefaultLookAndFeel();
+		auto& lf = LookAndFeel::getDefaultLookAndFeel();
 		g.setColour(lf.findColour(Label::textColourId));
 		g.drawText(text_, 0, 0, width, height, Justification::centredLeft);
 	}
@@ -98,7 +98,7 @@ public:
 		}
 	}
 
-	virtual void itemDoubleClicked(const MouseEvent &) override {
+	virtual void itemDoubleClicked(const MouseEvent&) override {
 		if (onDoubleClick) {
 			onDoubleClick(id_);
 		}
@@ -151,16 +151,26 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	allPatchesItem_ = new GroupNode("All patches", "", [this](String id) {
 		importListHandler_(id);
 	});
-	TreeViewItem* imports = new GroupNode("By import", "", [this]() {
+	importListsItem_ = new GroupNode("By import", "", [this]() {
 		std::vector<TreeViewItem*> result;
-		auto importList = db_.getImportsList(UIModel::currentSynth());
-		std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
-			return a.description < b.description;
-		});
-		for (auto const& import : importList) {
-			result.push_back(new GroupNode(import.description, import.id, [this](String id) {
-				importListHandler_(id);
-			}));
+		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
+			std::string synthName = activeSynth->getName();
+			TreeViewItem* importsForSynth = new GroupNode(synthName, synthName + "import", [this, synthName]() {
+				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
+				std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
+					return a.description < b.description;
+				});
+				std::vector<TreeViewItem*> result;
+				for (auto const& import : importList) {
+					result.push_back(new GroupNode(import.description, import.id, [this](String id) {
+						importListHandler_(id);
+					}));
+				}
+				return result;
+			}, nullptr,
+				nullptr
+				);
+			result.push_back(importsForSynth);
 		}
 		return result;
 	}, nullptr, nullptr);
@@ -186,18 +196,22 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		result.push_back(addNewItem);
 		return result;
 	}, nullptr, nullptr);
-	TreeViewItem *root = new GroupNode("ROOT", "", [=]() { return std::vector<TreeViewItem *>({ allPatchesItem_, imports, userListsItem_}); }, nullptr, nullptr);
+	TreeViewItem* root = new GroupNode("ROOT", "", [=]() { return std::vector<TreeViewItem*>({ allPatchesItem_, importListsItem_, userListsItem_ }); }, nullptr, nullptr);
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
 
 	treeView_->setColour(TreeView::selectedItemBackgroundColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::highlightedFill));
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
+	UIModel::instance()->multiMode_.addChangeListener(this);
+	UIModel::instance()->synthList_.addChangeListener(this);
 }
 
 PatchListTree::~PatchListTree()
 {
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+	UIModel::instance()->multiMode_.removeChangeListener(this);
+	UIModel::instance()->synthList_.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
 	CreateListDialog::release();
 }
@@ -208,6 +222,21 @@ void PatchListTree::regenerateUserLists() {
 	if (node) {
 		node->regenerate();
 		node->treeHasChanged();
+		if (treeView_->getNumSelectedItems() == 0) {
+			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
+		}
+	}
+}
+
+void PatchListTree::regenerateImportLists() {
+	// Need to refresh user lists
+	GroupNode* node = dynamic_cast<GroupNode*>(importListsItem_);
+	if (node) {
+		node->regenerate();
+		node->treeHasChanged();
+		if (treeView_->getNumSelectedItems() == 0) {
+			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
+		}
 	}
 }
 
@@ -263,8 +292,8 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	node->onDoubleClick = [node, this](String id) {
 		// Open rename dialog on double click
 		std::string oldname = node->text().toStdString();
-		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()), 
-			TopLevelWindow::getActiveTopLevelWindow(), 
+		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()),
+			TopLevelWindow::getActiveTopLevelWindow(),
 			[this, oldname](std::shared_ptr<midikraft::PatchList> list) {
 			jassert(list);
 			if (list) {
@@ -287,7 +316,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->currentSynth_) {
 		// Synth has changed, we need to regenerate the tree!
-		
+
 		// Did we have a previous synth/state? Then store it!
 		if (!previousSynthName_.empty()) {
 			synthSpecificTreeState_[previousSynthName_].reset(treeView_->getOpennessState(true).release());
@@ -304,7 +333,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 				auto subItem = currentNode->getSubItem(child);
 				if (subItem->mightContainSubItems() && subItem->isOpen()) {
 					subItem->clearSubItems();
-					GroupNode *node = dynamic_cast<GroupNode*>(subItem);
+					GroupNode* node = dynamic_cast<GroupNode*>(subItem);
 					if (node) {
 						node->regenerate();
 						node->treeHasChanged();
@@ -325,5 +354,9 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 			// Nothing has been stored, we have not been here before - just select the "All Patches" node
 			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
 		}
+	}
+	else if (dynamic_cast<CurrentSynthList*>(source)) {
+		// List of synths changed - we need to regenerate the imports list subtree!
+		regenerateImportLists();
 	}
 }

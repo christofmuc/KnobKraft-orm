@@ -25,6 +25,7 @@ public:
 	
 private:
 	void regenerateUserLists();
+	void regenerateImportLists();
 
 	TreeViewItem* newTreeViewItemForPatch(midikraft::PatchHolder patchHolder);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
@@ -38,6 +39,7 @@ private:
 
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewItem* allPatchesItem_;
+	TreeViewItem* importListsItem_;
 	TreeViewItem* userListsItem_;
 	std::string previousSynthName_;
 };
