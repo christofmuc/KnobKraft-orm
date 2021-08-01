@@ -11,6 +11,8 @@
 #include "PatchDatabase.h"
 #include "SynthHolder.h"
 
+class GroupNode;
+
 class PatchListTree : public Component, private ChangeListener {
 public:
 	typedef std::function<void(String)> TSelectionHandler;
@@ -38,9 +40,9 @@ private:
 	TSelectionHandler importListHandler_, userListHandler_;
 
 	std::unique_ptr<TreeView> treeView_;
-	TreeViewItem* allPatchesItem_;
-	TreeViewItem* importListsItem_;
-	TreeViewItem* userListsItem_;
+	GroupNode* allPatchesItem_;
+	GroupNode* importListsItem_;
+	GroupNode* userListsItem_;
 	std::string previousSynthName_;
 };
 
