@@ -1,5 +1,8 @@
 ﻿Completely unprioritised list of things to do
 =============================================
+
+* Mac Python warning needs to be bigger, i.e. a dialog box
+
 Surf! Auto-Surf! Dive!
 
 AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
