@@ -815,67 +815,70 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 			auto myList = synthList;
 			autodetector_.quickconfigure(myList);
 		}, 2000);
-	}
-	if (source == &UIModel::instance()->synthList_) {
+	} else if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
 		resized();
 	}
-
-	auto synth = UIModel::currentSynth();
-	if (synth) {
-		// Persist current synth for next launch
-		Settings::instance().set("CurrentSynth", synth->getName());
-	}
-
-	// The active synth has been switched, make sure to refresh the tab name properly
-	int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
-	if (index != -1) {
-		// Rename tab to show settings of this synth
-		if (UIModel::currentSynth()) {
-			mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
+	else if (dynamic_cast<CurrentSynth*>(source)) {
+		auto synth = UIModel::currentSynth();
+		if (synth) {
+			// Persist current synth for next launch
+			Settings::instance().set("CurrentSynth", synth->getName());
 		}
-	}
-	else {
-		mainTabs_.setTabName(index, "Settings");
-	}
 
+		// Make sure to let the synth list reflect the selection state!
+		synthList_.setActiveListItem(synth->getName());
 
-	// The active synth has been switched, check if it is an adaptation and then refresh the adaptation view
-	auto adaptation = std::dynamic_pointer_cast<knobkraft::GenericAdaptation>(UIModel::instance()->currentSynth_.smartSynth());
-	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
-	if (adaptation) {
-		adaptationView_.setupForAdaptation(adaptation);
-		int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
-		if (i == -1) {
-			// Need to add the tab back in
-			mainTabs_.addTab("Adaptation", tabColour, &adaptationView_, false, 2);
-		}
-		i = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
-		if (i != -1) {
-			if (mainTabs_.getCurrentTabIndex() == i) {
-				mainTabs_.setCurrentTabIndex(2);
+		// The active synth has been switched, make sure to refresh the tab name properly
+		int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+		if (index != -1) {
+			// Rename tab to show settings of this synth
+			if (UIModel::currentSynth()) {
+				mainTabs_.setTabName(index, UIModel::currentSynth()->getName() + " settings");
 			}
-			mainTabs_.removeTab(i);
 		}
-	}
-	else {
-		int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
-		if (i != -1) {
-			int j = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
-			if (j == -1) {
-				if (UIModel::currentSynth()) {
-					mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
+		else {
+			mainTabs_.setTabName(index, "Settings");
+		}
+
+
+		// The active synth has been switched, check if it is an adaptation and then refresh the adaptation view
+		auto adaptation = std::dynamic_pointer_cast<knobkraft::GenericAdaptation>(UIModel::instance()->currentSynth_.smartSynth());
+		Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
+		if (adaptation) {
+			adaptationView_.setupForAdaptation(adaptation);
+			int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
+			if (i == -1) {
+				// Need to add the tab back in
+				mainTabs_.addTab("Adaptation", tabColour, &adaptationView_, false, 2);
+			}
+			i = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+			if (i != -1) {
+				if (mainTabs_.getCurrentTabIndex() == i) {
+					mainTabs_.setCurrentTabIndex(2);
 				}
-				else {
-					mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false, 1);
+				mainTabs_.removeTab(i);
+			}
+		}
+		else {
+			int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
+			if (i != -1) {
+				int j = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+				if (j == -1) {
+					if (UIModel::currentSynth()) {
+						mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
+					}
+					else {
+						mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false, 1);
+					}
 				}
+				i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
+				if (mainTabs_.getCurrentTabIndex() == i) {
+					mainTabs_.setCurrentTabIndex(i - 1);
+				}
+				mainTabs_.removeTab(i);
 			}
-			i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
-			if (mainTabs_.getCurrentTabIndex() == i) {
-				mainTabs_.setCurrentTabIndex(i - 1);
-			}
-			mainTabs_.removeTab(i);
 		}
 	}
 }

@@ -59,7 +59,9 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 				std::vector<TreeViewItem*> result;
 				for (auto const& import : importList) {
 					auto node = new TreeViewNode(import.description, import.id);
-					node->onSelected = [this](String id) {
+					node->onSelected = [this, synthName](String id) {
+						UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
+						UIModel::instance()->multiMode_.setMultiSynthMode(false);
 						importListHandler_(id);
 					};
 					result.push_back(node);
