@@ -53,7 +53,6 @@ public:
 		TreeViewItem::paintOpenCloseButton(g, area, LookAndFeel::getDefaultLookAndFeel().findColour(TreeView::backgroundColourId), isMouseOver);
 	}
 
-
 	bool canBeSelected() const override
 	{
 		return onSelected != nullptr;
@@ -143,7 +142,22 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 
 	allPatchesItem_ = new GroupNode("All patches", "");
 	allPatchesItem_->onSelected = [this](String id) {
+		UIModel::instance()->multiMode_.setMultiSynthMode(true);
 		importListHandler_(id);
+	};
+	allPatchesItem_->onGenerateChildren= [this]() {
+		std::vector<TreeViewItem*> result;
+		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
+			std::string synthName = activeSynth->getName();
+			auto node = new GroupNode(synthName + " Library", "library-" + synthName);
+			node->onSelected = [this, synthName](String id) {
+				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
+				UIModel::instance()->multiMode_.setMultiSynthMode(false);
+				importListHandler_("");
+			};
+			result.push_back(node);
+		}
+		return result;
 	};
 	importListsItem_ = new GroupNode("By import", "");
 	importListsItem_->onGenerateChildren = [this]() {
@@ -329,7 +343,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 			jassert(synthSpecificTreeState_[previousSynthName_]);
 		}*/
 		// Now the previous synth is the current synth
-		previousSynthName_ = UIModel::currentSynth()->getName();
+		/*previousSynthName_ = UIModel::currentSynth()->getName();
 
 		// Iterate nodes and regenerate in case group node and open!
 		auto root = treeView_->getRootItem();
@@ -350,7 +364,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 				}
 			}
 			currentNode = nullptr; // No recursion here, would it make sense?
-		}
+		}*/
 
 		// Try to restore the Tree state, if we had one stored for this synth!
 		/*if (synthSpecificTreeState_.find(previousSynthName_) != synthSpecificTreeState_.end() && synthSpecificTreeState_[previousSynthName_]) {
