@@ -26,6 +26,8 @@ Bugs open in 1.11:
 * DELETE should respect list filter as well, else you will just delete too many patches!
 * NEED to check that a patch can be in a list only once
 * Migration needs to be done (just create tables)
+* How to remove a patch from a list?
+* Bug dropping on a list should refresh tree + grid
 * How do we deal with the main synth button which is also a synth filter radio button, while we also have a multi selection??? -> Idea: "Multi-Synth Library Mode" button
   Multi-synth-mode:
      Would replace current "Advanced filter" mode
@@ -39,12 +41,12 @@ Bugs open in 1.11:
 * BUG: Deleting currently selected list foes not jump back to All Patches
 
 LISTS upgrades:
+* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 * Add lists to PIF export
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 * How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
-* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 
 
 Release 2.0
