@@ -27,7 +27,6 @@ Bugs open in 1.11:
 
 1.14 LISTS release
 * Need easy clear filter button
-* Clicking a heading should open/close (because otherwise it does nothing)
 * DELETE should respect list filter as well, else you will just delete too many patches!
 * How to remove a patch from a list?
 * BUG: dropping on a list should refresh tree + grid
@@ -36,7 +35,7 @@ Bugs open in 1.11:
 	 Would make Multi-synth mode more complex, with a different filter stored (like an additional synth), and a slightly different tree view (import needs a layer more)
 	 Lists could be single synth list or multi list
 	   - The whole bank management doesn't make sense in multi-synth mode	
-* BUG: Importing from computer goes not refresh import list tree
+* BUG: Importing from computer does not refresh import list tree
 * BUG: Deleting currently selected list foes not jump back to All Patches
 
 LISTS upgrades:
