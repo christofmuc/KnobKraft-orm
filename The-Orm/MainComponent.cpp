@@ -334,12 +334,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
 
 	addAndMakeVisible(synthList_);
-	multiModeButton_.setButtonText("All Synths");
-	multiModeButton_.setClickingTogglesState(true);
-	multiModeButton_.onClick = [this]() {
-		UIModel::instance()->multiMode_.setMultiSynthMode(multiModeButton_.getToggleState());
-	};
-	addAndMakeVisible(multiModeButton_);
 	addAndMakeVisible(patchList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
@@ -740,14 +734,11 @@ void MainComponent::resized()
 	if (UIModel::instance()->synthList_.activeSynths().size() > 1) {
 		auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
 			.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
-		multiModeButton_.setVisible(true);
-		multiModeButton_.setBounds(secondTopRow.removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 		synthList_.setBounds(secondTopRow);
 		synthList_.setVisible(true);
 	}
 	else {
 		// Less than one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
-		multiModeButton_.setVisible(false);
 		synthList_.setVisible(false);
 	}
 	splitter_->setBounds(area);

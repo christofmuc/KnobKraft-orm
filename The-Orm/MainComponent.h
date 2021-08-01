@@ -94,7 +94,6 @@ private:
 	MenuBarComponent menuBar_;
 
 	SynthList synthList_;
-	TextButton multiModeButton_;
 	PatchPerSynthList patchList_;
 	TabbedComponent mainTabs_;
 	LogView logView_;
