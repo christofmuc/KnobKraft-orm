@@ -175,3 +175,14 @@ bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverab
 	}
 	return false;
 }
+
+void CurrentMultiMode::setMultiSynthMode(bool multiMode)
+{
+	multiSynthMode_ = multiMode;
+	sendChangeMessage();
+}
+
+bool CurrentMultiMode::multiSynthMode() const
+{
+	return multiSynthMode_;
+}

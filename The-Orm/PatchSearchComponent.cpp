@@ -18,6 +18,20 @@ CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) 
 	return CategoryButtons::Category(name->getName(), Colours::black);
 }
 
+std::map<std::string, std::weak_ptr<midikraft::Synth>> allSynthsMap() {
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+		if (synth) {
+			midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(synth->getName());
+			if (synthFound.synth())
+				synthMap[synth->getName()] = synthFound.synth();
+		}
+	}
+	return synthMap;
+}
+
+
+
 class AdvancedFilterPanel : public Component {
 public:
 	AdvancedFilterPanel(PatchView* patchView) :
@@ -56,8 +70,6 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	textSearch_([this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  })
 
 {
-	advancedFilters_ = std::make_unique<AdvancedFilterPanel>(patchView_);
-
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
 	onlyFaves_.setButtonText("Only Faves");
@@ -72,13 +84,15 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	onlyUntagged_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyUntagged_);
 
-	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", advancedFilters_.get(), false);
-	addAndMakeVisible(*advancedSearch_);
 	addAndMakeVisible(categoryFilters_);
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
+	// Need to initialize multiModeFilter, else we get weird search results
+	multiModeFilter_ = midikraft::PatchDatabase::allPatchesFilter({});
+
 	UIModel::instance()->currentSynth_.addChangeListener(this);
+	UIModel::instance()->multiMode_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
 	UIModel::instance()->categoriesChanged.addChangeListener(this);
 }
@@ -87,6 +101,7 @@ PatchSearchComponent::~PatchSearchComponent()
 {
 	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+	UIModel::instance()->multiMode_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
 }
 
@@ -127,12 +142,8 @@ void PatchSearchComponent::resized()
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
 
 	area.removeFromTop(normalFilterHeight);
-	advancedSearch_->setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
-
 	// Patch Buttons get the rest
-	int advancedFilterHeight = advancedSearch_->isOpen() ? advancedFilters_->synthFilters_.usedHeight() + LAYOUT_LARGE_LINE_HEIGHT : LAYOUT_LARGE_LINE_HEIGHT;
-	area.removeFromTop(advancedFilterHeight);
-	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
+	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
 }
 
 void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
@@ -152,16 +163,22 @@ void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
 	textSearch_.setSearchText(filter.name);
 }
 
+bool PatchSearchComponent::isInMultiSynthMode() {
+	return !UIModel::currentSynth() || UIModel::instance()->multiMode_.multiSynthMode();
+}
+
 midikraft::PatchFilter PatchSearchComponent::getFilter() 
 {	
-	if (UIModel::currentSynth()) {
+	if (!isInMultiSynthMode()) {
 		auto name = UIModel::currentSynth()->getName();
 		if (synthSpecificFilter_.find(name) != synthSpecificFilter_.end()) {
 			return synthSpecificFilter_[name];
 		}
 	}
 	else {
-		//TODO - use multi-mode filter?
+		// Multi mode (or no synth) - user the stored multi mode filter
+		multiModeFilter_.synths = allSynthsMap();
+		return multiModeFilter_;
 	}
 	jassertfalse;
 	return buildFilter();
@@ -169,12 +186,12 @@ midikraft::PatchFilter PatchSearchComponent::getFilter()
 
 void PatchSearchComponent::updateCurrentFilter()
 {
-	if (UIModel::currentSynth()) {
+	if (!isInMultiSynthMode()) {
 		auto name = UIModel::currentSynth()->getName();
 		synthSpecificFilter_[name] = buildFilter();
 	}
 	else {
-		//TODO
+		multiModeFilter_ = buildFilter();
 	}
 }
 
@@ -192,20 +209,22 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 	}
 	bool typeSelected = false;
 	int filterType = 0;
-	if (advancedFilters_->dataTypeSelector_.getSelectedId() > 1) { // 0 is empty drop down, and 1 is "All data types"
+	/*if (advancedFilters_->dataTypeSelector_.getSelectedId() > 1) { // 0 is empty drop down, and 1 is "All data types"
 		typeSelected = true;
 		filterType = advancedFilters_->dataTypeSelector_.getSelectedId() - 2;
-	}
+	}*/
 	std::string nameFilter = "";
 	if (!textSearch_.searchText().startsWith("!")) {
 		nameFilter = textSearch_.searchText().toStdString();
 	}
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
-	// Build synth list
-	for (auto s : advancedFilters_->synthFilters_.selectedCategories()) {
-		midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(s.category);
-		if (synthFound.synth()) {
-			synthMap[synthFound.synth()->getName()] = synthFound.synth();
+	// Build synth list - either the selected synth or all active synths
+	if (isInMultiSynthMode()) {
+		synthMap = allSynthsMap();
+	}
+	else {
+		if (UIModel::currentSynth()) {
+			synthMap[UIModel::currentSynth()->getName()] = UIModel::instance()->currentSynth_.smartSynth();
 		}
 	}
 	return { synthMap,
@@ -222,32 +241,33 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 
 void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 {
-	auto currentSynth = dynamic_cast<CurrentSynth*>(source);
-	if (currentSynth) {
-		auto synthName = currentSynth->smartSynth()->getName();
+	if (dynamic_cast<CurrentSynth*>(source) || dynamic_cast<CurrentMultiMode*>(source)) {
+		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
+		auto synthName = currentSynth->getName();
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
-
-		// Select only the newly selected synth in the synth filters
-		if (UIModel::currentSynth()) {
-			advancedFilters_->synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
-		}
 
 		// Rebuild the other features
 		rebuildDataTypeFilterBox();
 
-		// Load the filter stored for this synth
-		if (synthSpecificFilter_.find(synthName) == synthSpecificFilter_.end()) {
-			// First time this synth is selected, store a new blank filter for this synth
-			synthSpecificFilter_[synthName] = midikraft::PatchDatabase::allForSynth(currentSynth->smartSynth());
+		if (isInMultiSynthMode()) {
+			loadFilter(multiModeFilter_);
 		}
-		loadFilter(synthSpecificFilter_[synthName]);
+		else {
+			// Load the filter stored for this synth
+			if (synthSpecificFilter_.find(synthName) == synthSpecificFilter_.end()) {
+				// First time this synth is selected, store a new blank filter for this synth
+				synthSpecificFilter_[synthName] = midikraft::PatchDatabase::allForSynth(currentSynth);
+			}
+			loadFilter(synthSpecificFilter_[synthName]);
+		}
 
 		patchView_->retrieveFirstPageFromDatabase();
 		resized();
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
-		rebuildSynthFilters();
-		resized();
+		multiModeFilter_.synths = allSynthsMap();
+		if (isInMultiSynthMode())
+			patchView_->retrieveFirstPageFromDatabase();
 	}
 	else if (source == &UIModel::instance()->categoriesChanged) {
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
@@ -256,22 +276,9 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 }
 
-void PatchSearchComponent::rebuildSynthFilters()
-{
-	// The available list of synths changed, reset the synth filters
-	std::vector<CategoryButtons::Category> synthFilter;
-	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
-		synthFilter.push_back(synthCategory(synth.get()));
-	}
-	advancedFilters_->synthFilters_.setCategories(synthFilter);
-	if (UIModel::currentSynth()) {
-		advancedFilters_->synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
-	}
-}
-
 void PatchSearchComponent::rebuildDataTypeFilterBox()
 {
-	advancedFilters_->dataTypeSelector_.clear();
+	/*advancedFilters_->dataTypeSelector_.clear();
 	auto dflc = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(UIModel::instance()->currentSynth_.smartSynth());
 	if (dflc) {
 		StringArray typeNameList;
@@ -283,12 +290,7 @@ void PatchSearchComponent::rebuildDataTypeFilterBox()
 			}
 		}
 		advancedFilters_->dataTypeSelector_.addItemList(typeNameList, 1);
-	}
-}
-
-bool PatchSearchComponent::atLeastOneSynth()
-{
-	return !advancedFilters_->synthFilters_.selectedCategories().empty();
+	}*/
 }
 
 juce::String PatchSearchComponent::advancedTextSearch() const

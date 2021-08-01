@@ -27,6 +27,15 @@ private:
 	std::weak_ptr<midikraft::Synth> currentSynth_;
 };
 
+class CurrentMultiMode : public ChangeBroadcaster {
+public:
+	void setMultiSynthMode(bool multiMode);
+	bool multiSynthMode() const;
+
+private:
+	bool multiSynthMode_;
+};
+
 class CurrentSequencer : public ChangeBroadcaster {
 public:
 	void changeCurrentSequencer(midikraft::StepSequencer *activeSequencer);
@@ -104,6 +113,7 @@ public:
 	static File getThumbnailDirectory();
 
 	CurrentSynth currentSynth_; // Listen to this to get updated when the active synth is switched
+	CurrentMultiMode multiMode_;
 	CurrentSequencer currentSequencer_;
 	CurrentPatch currentPatch_; // Listen to this to get updated when the current patch changes
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified

@@ -22,28 +22,27 @@ public:
 	virtual void resized() override;
 
 	void loadFilter(midikraft::PatchFilter filter);
+	
 	midikraft::PatchFilter getFilter();
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
-	void rebuildSynthFilters();
 	void rebuildDataTypeFilterBox();
 
-	bool atLeastOneSynth();
 	String advancedTextSearch() const;
 	
 private:
+	static bool isInMultiSynthMode();
 	void updateCurrentFilter(); 
 	midikraft::PatchFilter buildFilter() const;
 
 	std::map<std::string, midikraft::PatchFilter> synthSpecificFilter_; // We store one filter per synth
+	midikraft::PatchFilter multiModeFilter_; // The filter used when in multi synth mode
 
 	PatchView* patchView_;
 	PatchButtonPanel* patchButtons_;
 	TextSearchBox textSearch_;
 	CategoryButtons categoryFilters_;
-	std::unique_ptr<CollapsibleContainer> advancedSearch_;
-	std::unique_ptr<AdvancedFilterPanel> advancedFilters_;
 	ToggleButton onlyFaves_;
 	ToggleButton showHidden_;
 	ToggleButton onlyUntagged_;

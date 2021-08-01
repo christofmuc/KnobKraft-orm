@@ -88,8 +88,6 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		loadPage(skip, limit, callback);
 	});
 
-	patchSearch_->rebuildSynthFilters();
-
 	// Register for updates
 	UIModel::instance()->currentPatch_.addChangeListener(this);
 }
@@ -121,13 +119,10 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
-	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
-	if (patchSearch_->atLeastOneSynth()) {
-		// First, we need to find out how many patches there are (for the paging control)
-		int total = database_.getPatchesCount(currentFilter());
-		patchButtons_->setTotalCount(total);
-		patchButtons_->refresh(true); // This kicks of loading the first page
-	}
+	// First, we need to find out how many patches there are (for the paging control)
+	int total = database_.getPatchesCount(currentFilter());
+	patchButtons_->setTotalCount(total);
+	patchButtons_->refresh(true); // This kicks of loading the first page
 }
 
 void PatchView::hideCurrentPatch()
@@ -228,7 +223,6 @@ void PatchView::setImportListFilter(String filter)
 {
 	listFilterID_ = "";
 	sourceFilterID_ = filter.toStdString();
-	patchButtons_->setMultiSynthMode(false);
 	retrieveFirstPageFromDatabase();
 }
 
@@ -236,7 +230,6 @@ void PatchView::setUserListFilter(String filter)
 {
 	listFilterID_ = filter.toStdString();
 	sourceFilterID_ = "";
-	patchButtons_->setMultiSynthMode(true);
 	retrieveFirstPageFromDatabase();
 }
 
@@ -516,14 +509,11 @@ void PatchView::bulkImportPIP(File directory) {
 
 void PatchView::exportPatches()
 {
-	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
-	if (patchSearch_->atLeastOneSynth()) {
-		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-			ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
-				librarian_.saveSysexPatchesToDisk(params, patches);
-			});
+	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+		ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
+			librarian_.saveSysexPatchesToDisk(params, patches);
 		});
-	}
+	});
 }
 
 void PatchView::updateLastPath() {
@@ -539,18 +529,15 @@ void PatchView::updateLastPath() {
 
 void PatchView::createPatchInterchangeFile()
 {
-	// If at least one synth is selected, build and run the query. Never run a query against all synths from this code
-	if (patchSearch_->atLeastOneSynth()) {
-		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-			updateLastPath();
-			FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
-			if (pifChooser.browseForFileToSave(true)) {
-				midikraft::PatchInterchangeFormat::save(patches, pifChooser.getResult().getFullPathName().toStdString());
-				lastPathForPIF_ = pifChooser.getResult().getFullPathName().toStdString();
-				Settings::instance().set("lastPatchInterchangePath", lastPathForPIF_);
-			}
-		});
-	}
+	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+		updateLastPath();
+		FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
+		if (pifChooser.browseForFileToSave(true)) {
+			midikraft::PatchInterchangeFormat::save(patches, pifChooser.getResult().getFullPathName().toStdString());
+			lastPathForPIF_ = pifChooser.getResult().getFullPathName().toStdString();
+			Settings::instance().set("lastPatchInterchangePath", lastPathForPIF_);
+		}
+	});
 }
 
 StringArray PatchView::sourceNameList() {

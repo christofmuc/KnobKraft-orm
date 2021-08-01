@@ -17,7 +17,7 @@
 #include <algorithm>
 
 PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
-	handler_(handler), multiSynthMode_(false), pageBase_(0), pageNumber_(0), totalSize_(0)
+	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
 	gridSizeSlider_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
 	gridSizeSlider_.setRange(4.0, 8.0, 1.0);
@@ -165,11 +165,6 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	setupPageButtons();
 }
 
-void PatchButtonPanel::setMultiSynthMode(bool multiSynthMode)
-{
-	multiSynthMode_ = multiSynthMode;
-}
-
 String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {
 	File thumbnailCache = UIModel::getThumbnailDirectory().getChildFile(patch.md5() + ".kkc");
 	return thumbnailCache.getFullPathName();
@@ -217,7 +212,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 		return;
 	}
 
-	bool showSubtitles = multiSynthMode_;
+	bool showSubtitles = UIModel::instance()->multiMode_.multiSynthMode();
 
 	// Now set the button text and colors
 	int active = indexOfActive();

@@ -27,7 +27,6 @@ public:
 	void setTotalCount(int totalCount);
 	void changeGridSize(int newWidth, int newHeight);
 	void setPatches(std::vector<midikraft::PatchHolder> const& patches, int autoSelectTarget = -1);
-	void setMultiSynthMode(bool multiSynthMode);
 	
 	void refresh(bool async, int autoSelectTarget = -1);
 
@@ -65,7 +64,6 @@ private:
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
 	Slider gridSizeSlider_;
-	bool multiSynthMode_;
 	int pageBase_;
 	int pageNumber_;
 	int gridWidth_, gridHeight_;
