@@ -14,135 +14,6 @@
 
 #include <boost/format.hpp>
 
-class GroupNode : public TreeViewItem {
-public:
-	typedef std::function<std::vector<TreeViewItem*>()> TChildGenerator;
-	typedef std::function<void(String)>  TClickedHandler;
-	typedef std::function<void(juce::var)>  TDropHandler;
-
-	GroupNode(String text, String id) : text_(text), id_(id) {
-	}
-
-	TChildGenerator onGenerateChildren;
-	TClickedHandler onSelected;
-	TClickedHandler onSingleClick;
-	TClickedHandler onDoubleClick;
-	TDropHandler    onItemDropped;
-
-	void toggleOpenness() {
-		auto open = getOpenness();
-		switch (open) {
-		case Openness::opennessClosed:
-			setOpenness(TreeViewItem::opennessOpen);
-			break;
-		case Openness::opennessOpen:
-			setOpenness(TreeViewItem::opennessClosed);
-			break;
-		case Openness::opennessDefault:
-			// This only works as expected when the TreeView has default openness = closed
-			setOpenness(TreeViewItem::opennessOpen);
-			break;
-		}
-	}
-
-	bool mightContainSubItems() override
-	{
-		return onGenerateChildren != nullptr;
-	}
-
-	void itemOpennessChanged(bool isNowOpen) override
-	{
-		if (onGenerateChildren != nullptr && isNowOpen) {
-			regenerate();
-		}
-	}
-
-	void paintItem(Graphics& g, int width, int height) override
-	{
-		auto& lf = LookAndFeel::getDefaultLookAndFeel();
-		g.setColour(lf.findColour(Label::textColourId));
-		g.drawText(text_, 0, 0, width, height, Justification::centredLeft);
-	}
-
-	void paintOpenCloseButton(Graphics& g, const Rectangle<float>& area, Colour backgroundColour, bool isMouseOver) override {
-		ignoreUnused(backgroundColour);
-		TreeViewItem::paintOpenCloseButton(g, area, LookAndFeel::getDefaultLookAndFeel().findColour(TreeView::backgroundColourId), isMouseOver);
-	}
-
-	bool canBeSelected() const override
-	{
-		return onSelected != nullptr;
-	}
-
-	void itemSelectionChanged(bool isNowSelected) override
-	{
-		if (isNowSelected) {
-			onSelected(id_);
-		}
-	}
-
-	/*String getTooltip() override {
-		return text_;
-	}*/
-
-	void regenerate() {
-		if (onGenerateChildren) {
-			clearSubItems();
-			auto children = onGenerateChildren();
-			for (auto c : children) {
-				addSubItem(c);
-			}
-		}
-	}
-
-	virtual String getUniqueName() const override {
-		if (id_.isNotEmpty()) {
-			return id_;
-		}
-		else {
-			return text_;
-		}
-	}
-
-	virtual void itemClicked(const MouseEvent&) override {
-		if (onSingleClick) {
-			onSingleClick(id_);
-		}
-	}
-
-	virtual void itemDoubleClicked(const MouseEvent&) override {
-		if (onDoubleClick) {
-			onDoubleClick(id_);
-		}
-	}
-
-	bool isInterestedInDragSource(const DragAndDropTarget::SourceDetails&) override
-	{
-		return onItemDropped != nullptr;
-	}
-
-	void itemDropped(const DragAndDropTarget::SourceDetails& dragSourceDetails, int insertIndex) override
-	{
-		String name = dragSourceDetails.description;
-		SimpleLogger::instance()->postMessage("Item dropped: " + name + " at " + String(insertIndex));
-		onItemDropped(dragSourceDetails.description);
-	}
-
-	String id() const {
-		return id_;
-	}
-
-	String text() const {
-		return text_;
-	}
-
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GroupNode)
-
-private:
-	String text_;
-	String id_;
-};
-
 PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths, TSelectionHandler importListHandler, TSelectionHandler userListHandler)
 	: db_(db), importListHandler_(importListHandler), userListHandler_(userListHandler)
 {
@@ -155,7 +26,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		synths_[synth.getName()] = synth.synth();
 	}
 
-	allPatchesItem_ = new GroupNode("All patches", "");
+	allPatchesItem_ = new TreeViewNode("All patches", "");
 	allPatchesItem_->onSelected = [this](String id) {
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
 		importListHandler_(id);
@@ -164,7 +35,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		std::vector<TreeViewItem*> result;
 		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
 			std::string synthName = activeSynth->getName();
-			auto node = new GroupNode(synthName + " Library", "library-" + synthName);
+			auto node = new TreeViewNode(synthName + " Library", "library-" + synthName);
 			node->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
@@ -174,12 +45,12 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		}
 		return result;
 	};
-	importListsItem_ = new GroupNode("By import", "");
+	importListsItem_ = new TreeViewNode("By import", "");
 	importListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
 			std::string synthName = activeSynth->getName();
-			auto importsForSynth = new GroupNode(synthName, synthName + "import");
+			auto importsForSynth = new TreeViewNode(synthName, synthName + "import");
 			importsForSynth->onGenerateChildren = [this, synthName]() {
 				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 				std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
@@ -187,7 +58,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 				});
 				std::vector<TreeViewItem*> result;
 				for (auto const& import : importList) {
-					auto node = new GroupNode(import.description, import.id);
+					auto node = new TreeViewNode(import.description, import.id);
 					node->onSelected = [this](String id) {
 						importListHandler_(id);
 					};
@@ -206,7 +77,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		importListsItem_->toggleOpenness();
 	};
 
-	userListsItem_ = new GroupNode("User lists", "");
+	userListsItem_ = new TreeViewNode("User lists", "");
 	userListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
@@ -216,7 +87,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		for (auto const& list : userLists) {
 			result.push_back(newTreeViewItemForPatchList(list));
 		}
-		auto addNewItem = new GroupNode("Add new list", "");
+		auto addNewItem = new TreeViewNode("Add new list", "");
 		addNewItem->onSingleClick = [this](String id) {
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
@@ -232,7 +103,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_->onSingleClick = [this](String) {
 		userListsItem_->toggleOpenness();
 	};
-	GroupNode* root = new GroupNode("ROOT", "");
+	TreeViewNode* root = new TreeViewNode("ROOT", "");
 	root->onGenerateChildren = [=]() { 
 		return std::vector<TreeViewItem*>({ allPatchesItem_, importListsItem_, userListsItem_ }); 
 	};
@@ -257,7 +128,7 @@ PatchListTree::~PatchListTree()
 
 void PatchListTree::regenerateUserLists() {
 	// Need to refresh user lists
-	GroupNode* node = dynamic_cast<GroupNode*>(userListsItem_);
+	TreeViewNode* node = dynamic_cast<TreeViewNode*>(userListsItem_);
 	if (node) {
 		node->regenerate();
 		node->treeHasChanged();
@@ -269,7 +140,7 @@ void PatchListTree::regenerateUserLists() {
 
 void PatchListTree::regenerateImportLists() {
 	// Need to refresh user lists
-	GroupNode* node = dynamic_cast<GroupNode*>(importListsItem_);
+	TreeViewNode* node = dynamic_cast<TreeViewNode*>(importListsItem_);
 	if (node) {
 		node->regenerate();
 		node->treeHasChanged();
@@ -286,7 +157,7 @@ void PatchListTree::resized()
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::PatchHolder patchHolder) {
-	auto node = new GroupNode(patchHolder.name(), patchHolder.md5());
+	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
 	node->onSelected = [patchHolder](String md5) {
 		// Clicking a patch in the list does the same thing as clicking it in the PatchView grid
 		SimpleLogger::instance()->postMessage("Patch clicked: " + md5);
@@ -295,7 +166,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::PatchHolder patc
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
-	auto node = new GroupNode(list.name, list.id);
+	auto node = new TreeViewNode(list.name, list.id);
 	node->onGenerateChildren = [this, list]() {
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
@@ -376,7 +247,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 				auto subItem = currentNode->getSubItem(child);
 				if (subItem->mightContainSubItems() && subItem->isOpen()) {
 					subItem->clearSubItems();
-					GroupNode* node = dynamic_cast<GroupNode*>(subItem);
+					TreeViewNode* node = dynamic_cast<TreeViewNode*>(subItem);
 					if (node) {
 						node->regenerate();
 						node->treeHasChanged();
