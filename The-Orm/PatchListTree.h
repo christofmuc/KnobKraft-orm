@@ -34,7 +34,7 @@ private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths_; // The database needs this to load patch lists
-	std::map<std::string, std::unique_ptr<XmlElement>> synthSpecificTreeState_;
+	//std::map<std::string, std::unique_ptr<XmlElement>> synthSpecificTreeState_;
 
 	midikraft::PatchDatabase& db_;
 	TSelectionHandler importListHandler_, userListHandler_;

@@ -324,10 +324,10 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 		// Synth has changed, we need to regenerate the tree!
 
 		// Did we have a previous synth/state? Then store it!
-		if (!previousSynthName_.empty()) {
+		/*if (!previousSynthName_.empty()) {
 			synthSpecificTreeState_[previousSynthName_].reset(treeView_->getOpennessState(true).release());
 			jassert(synthSpecificTreeState_[previousSynthName_]);
-		}
+		}*/
 		// Now the previous synth is the current synth
 		previousSynthName_ = UIModel::currentSynth()->getName();
 
@@ -353,13 +353,13 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 		}
 
 		// Try to restore the Tree state, if we had one stored for this synth!
-		if (synthSpecificTreeState_.find(previousSynthName_) != synthSpecificTreeState_.end() && synthSpecificTreeState_[previousSynthName_]) {
+		/*if (synthSpecificTreeState_.find(previousSynthName_) != synthSpecificTreeState_.end() && synthSpecificTreeState_[previousSynthName_]) {
 			treeView_->restoreOpennessState(*synthSpecificTreeState_[previousSynthName_], true);
 		}
 		else {
 			// Nothing has been stored, we have not been here before - just select the "All Patches" node
 			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
-		}
+		}*/
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
 		// List of synths changed - we need to regenerate the imports list subtree!
