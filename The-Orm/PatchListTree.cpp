@@ -29,6 +29,22 @@ public:
 	TClickedHandler onDoubleClick;
 	TDropHandler    onItemDropped;
 
+	void toggleOpenness() {
+		auto open = getOpenness();
+		switch (open) {
+		case Openness::opennessClosed:
+			setOpenness(TreeViewItem::opennessOpen);
+			break;
+		case Openness::opennessOpen:
+			setOpenness(TreeViewItem::opennessClosed);
+			break;
+		case Openness::opennessDefault:
+			// This only works as expected when the TreeView has default openness = closed
+			setOpenness(TreeViewItem::opennessOpen);
+			break;
+		}
+	}
+
 	bool mightContainSubItems() override
 	{
 		return onGenerateChildren != nullptr;
@@ -105,7 +121,6 @@ public:
 		return onItemDropped != nullptr;
 	}
 
-
 	void itemDropped(const DragAndDropTarget::SourceDetails& dragSourceDetails, int insertIndex) override
 	{
 		String name = dragSourceDetails.description;
@@ -180,9 +195,15 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 				}
 				return result;
 			};
+			importsForSynth->onSingleClick = [importsForSynth](String) {
+				importsForSynth->toggleOpenness();
+			};
 			result.push_back(importsForSynth);
 		}
 		return result;
+	};
+	importListsItem_->onSingleClick = [this](String) {
+		importListsItem_->toggleOpenness();
 	};
 
 	userListsItem_ = new GroupNode("User lists", "");
@@ -207,8 +228,10 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		};
 		result.push_back(addNewItem);
 		return result;
-	}
-	;
+	};
+	userListsItem_->onSingleClick = [this](String) {
+		userListsItem_->toggleOpenness();
+	};
 	GroupNode* root = new GroupNode("ROOT", "");
 	root->onGenerateChildren = [=]() { 
 		return std::vector<TreeViewItem*>({ allPatchesItem_, importListsItem_, userListsItem_ }); 
