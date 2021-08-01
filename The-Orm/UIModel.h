@@ -18,13 +18,10 @@ class CurrentSynth : public ChangeBroadcaster {
 public:
 	void changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth);
 
-	midikraft::Synth *synth() {
-		return currentSynth_.expired() ? nullptr : currentSynth_.lock().get();
-	}
+	[[deprecated]]
+	midikraft::Synth *synth();
 
-	std::shared_ptr<midikraft::Synth> smartSynth() {
-		return currentSynth_.expired() ? nullptr : currentSynth_.lock();
-	}
+	std::shared_ptr<midikraft::Synth> smartSynth();
 
 private:
 	std::weak_ptr<midikraft::Synth> currentSynth_;

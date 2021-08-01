@@ -112,7 +112,7 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 		for (auto knob : rotaryKnobs) {
 			knob->setUnused();
 		}
-		auto supported = dynamic_cast<midikraft::SupportedByBCR2000*>(current->synth());
+		auto supported = std::dynamic_pointer_cast<midikraft::SupportedByBCR2000>(current->smartSynth());
 		if (supported) {
 			// Code to setup the BCR2000
 			auto setupBCR = [this, supported]() {
@@ -155,10 +155,10 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 			uiValueTree_.addListener(&updateControllerListener_);
 
 			// This is a new synth - if a patch is loaded, we need to reset it
-			auto initPatch = dynamic_cast<midikraft::CreateInitPatchDataCapability*>(current->synth());
+			auto initPatch = std::dynamic_pointer_cast<midikraft::CreateInitPatchDataCapability>(current->smartSynth());
 			if (initPatch) {
 				// This synth comes equipped with an init patch, how useful. let's use that.
-				auto newPatch = current->synth()->patchFromPatchData(initPatch->createInitPatch(), MidiProgramNumber::fromZeroBase(0));
+				auto newPatch = current->smartSynth()->patchFromPatchData(initPatch->createInitPatch(), MidiProgramNumber::fromZeroBase(0));
 				updateSynthListener_.updateAllKnobsFromPatch(newPatch);
 			}
 			else {
