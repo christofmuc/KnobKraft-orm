@@ -275,6 +275,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 				"Do you really want to delete the patch " + patchName + " from the database? There is no undo!")) {
 				database_.deletePatches(infos["synth"], { infos["md5"] });
 				SimpleLogger::instance()->postMessage("Deleted patch " + patchName + " from database");
+				patchListTree_.refreshAllUserLists();
 			}
 			return;
 		}

@@ -161,10 +161,7 @@ void PatchListTree::regenerateUserLists() {
 	TreeViewNode* node = dynamic_cast<TreeViewNode*>(userListsItem_);
 	if (node) {
 		node->regenerate();
-		node->treeHasChanged();
-		if (treeView_->getNumSelectedItems() == 0) {
-			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
-		}
+		selectAllIfNothingIsSelected();
 	}
 }
 
@@ -173,10 +170,7 @@ void PatchListTree::regenerateImportLists() {
 	TreeViewNode* node = dynamic_cast<TreeViewNode*>(importListsItem_);
 	if (node) {
 		node->regenerate();
-		node->treeHasChanged();
-		if (treeView_->getNumSelectedItems() == 0) {
-			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
-		}
+		selectAllIfNothingIsSelected();
 	}
 }
 
@@ -189,6 +183,7 @@ void PatchListTree::resized()
 void PatchListTree::refreshAllUserLists()
 {
 	userListsItem_->regenerate();
+	selectAllIfNothingIsSelected();
 }
 
 void PatchListTree::refreshUserList(std::string list_id)
@@ -204,6 +199,13 @@ void PatchListTree::refreshUserList(std::string list_id)
 void PatchListTree::refreshAllImports()
 {
 	importListsItem_->regenerate();
+}
+
+void PatchListTree::selectAllIfNothingIsSelected()
+{
+	if (treeView_->getNumSelectedItems() == 0) {
+		allPatchesItem_->setSelected(true, false, sendNotificationAsync);
+	}
 }
 
 void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
@@ -233,6 +235,9 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 	}
 	if (child) {
 		child->setSelected(true, true);
+	}
+	else {
+		selectAllIfNothingIsSelected();
 	}
 }
 
@@ -374,8 +379,6 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 		// List of synths changed - we need to regenerate the imports list and the library subtrees!
 		allPatchesItem_->regenerate();
 		importListsItem_->regenerate();
-		if (treeView_->getNumSelectedItems() == 0) {
-			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
-		}
+		selectAllIfNothingIsSelected();
 	}
 }
