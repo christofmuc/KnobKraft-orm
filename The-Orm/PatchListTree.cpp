@@ -14,6 +14,16 @@
 
 #include <boost/format.hpp>
 
+void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
+	for (auto& import : imports) {
+		if (import.description.rfind("Imported from file") == 0) {
+			import.description = import.description.substr(19);
+		} else if (import.description.rfind("Imported from synth") == 0) {
+			import.description = import.description.substr(20);
+		}
+	}
+}
+
 PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths, TSelectionHandler importListHandler, TSelectionHandler userListHandler)
 	: db_(db), importListHandler_(importListHandler), userListHandler_(userListHandler)
 {
@@ -53,6 +63,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			auto importsForSynth = new TreeViewNode(synthName, synthName + "import");
 			importsForSynth->onGenerateChildren = [this, synthName]() {
 				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
+				shortenImportNames(importList);
 				std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
 					return a.description < b.description;
 				});
