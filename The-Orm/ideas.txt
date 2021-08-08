@@ -13,12 +13,8 @@ Better marketing
 * Should have direct download link to latest release
 * Should have patreon/paypal link for donations?
 
-Next release 1.11.1
+Open since 1.11
 * Test and document PatchInterchangeFormat exprot
-* Alpha implementation for the Yamaha DX7 (pure model, no detection or request codes, only manual receive)
-* Alpha implementation for the Yamaha DX7IID/FD/s and compatibles. I think this should already work, but only uses the original voice data and not the supplement data. Would be interested in getting feedback!
-
-Bugs open in 1.11:
 * Global Settings don't work for Matrix
 * DataFileLoad takes precedence over editbuffer, but shouldn'T
 * How to load unknowns sysex data without creating duplicates?
@@ -28,15 +24,11 @@ Bugs open in 1.11:
 1.14 LISTS release
 * Need easy clear filter button
 * DELETE should respect list filter as well, else you will just delete too many patches!
-* How to remove a patch from a list?
+* How to remove a patch from a list? -> Drag onto a Pastebin.
 * BUG: dropping on a list should refresh tree + grid
-  Multi-synth-mode:
-	 Would make Single Synth mode the default, and each synth would have its own list tree and filter setting, so you could switch more quickly between the filters 
-	 Would make Multi-synth mode more complex, with a different filter stored (like an additional synth), and a slightly different tree view (import needs a layer more)
-	 Lists could be single synth list or multi list
-	   - The whole bank management doesn't make sense in multi-synth mode	
 * BUG: Importing from computer does not refresh import list tree
 * BUG: Deleting currently selected list foes not jump back to All Patches
+* BUG: Synth library tree is not refreshed when the synth list changes (e.g. adding a synth)
 
 LISTS upgrades:
 * Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
@@ -144,6 +136,9 @@ K3
 
 MKS80
 * how to deal with tones and patches
+
+Yamaha DX7II
+* I think this should already work, but only uses the original voice data and not the supplement data. Would be interested in getting feedback!
 
 BCR2000
 * Should allow to load BCL files. I think it works but the BCR and BCL extensions are not added to the open dialog
