@@ -21,32 +21,28 @@ Open since 1.11
 * Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
 * Should be called Stream Load instead of DataFile
 
-1.14 LISTS release
+Before 2.0
 * Need easy clear filter button
 * DELETE should respect list filter as well, else you will just delete too many patches!
-* BUG: When deleting a patch from the database, it is not deleted from any lists?
-
-
-SINGLE SYNTH SETUP MODE
-* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
-* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
+* SINGLE SYNTH SETUP MODE
+	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
+	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
+* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 
 LISTS upgrades:
-* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 * Add lists to PIF export
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 	 Stored filters could be single or multi-synth
 * How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
-
+* List folders / lists of lists?
 
 Release 2.0
 * Add Bank Management
 
 BUGS
-+ PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + When hiding the (last?) patch on a page, the page is advanced without necessity
 
@@ -58,20 +54,19 @@ User questions
 
 BANK MANAGEMENT
 * Bank management (github #9)
-* Could introduce collections/sessions/songs  = lists
 * Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
   a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
-* Database would just store reference to patch (name and ID, not the whole patch)
 * Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
 * Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
 * How do I do drag and drop from the Library into the bank?
+* Probably needs split screen
 
 UI/UX
 * Different log levels with error colors
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
 * Would expect to choose sort order of patches in grid
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
 * The current patch per synth could be hidable
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
 
@@ -324,6 +319,3 @@ Design einkaufen?
 Audio Routing (JammerNetz)
    + https://github.com/eiz/SynchronousAudioRouter/releases
    + https://alternativeto.net/software/virtual-audio-cable/
-
-Life Coding
-  + https://tidalcycles.org/Welcome
