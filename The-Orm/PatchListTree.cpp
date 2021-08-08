@@ -24,6 +24,23 @@ void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	}
 }
 
+template <class T>
+std::vector<T> sortLists(std::vector<T> const& lists, std::function<std::string(T const&)> key) {
+	// We use the JUCE natural language sort, but for that we need to build a StringArray of the names first...
+	std::map<std::string, T> byName;
+	StringArray names;
+	for (auto const& list : lists) {
+		byName[key(list)] = list;
+		names.add(key(list));
+	}
+	names.sortNatural();
+	std::vector<T> result;
+	for (auto const& name : names) {
+		result.push_back(byName[name.toStdString()]);
+	}
+	return result;
+}
+
 PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths)
 	: db_(db)
 {
@@ -66,9 +83,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			importsForSynth->onGenerateChildren = [this, synthName]() {
 				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 				shortenImportNames(importList);
-				std::sort(importList.begin(), importList.end(), [](const midikraft::ImportInfo& a, const midikraft::ImportInfo& b) {
-					return a.description < b.description;
-				});
+				importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.description;  });
 				std::vector<TreeViewItem*> result;
 				for (auto const& import : importList) {
 					auto node = new TreeViewNode(import.description, import.id);
@@ -97,9 +112,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
-		std::sort(userLists.begin(), userLists.end(), [](const midikraft::ListInfo& a, const midikraft::ListInfo& b) {
-			return a.name < b.name;
-		});
+		userLists = sortLists<midikraft::ListInfo>(userLists, [](const midikraft::ListInfo& info) { return info.name;  });
 		userLists_.clear();
 		for (auto const& list : userLists) {
 			result.push_back(newTreeViewItemForPatchList(list));

@@ -29,8 +29,8 @@ Open since 1.11
 * BUG: Synth library tree is not refreshed when the synth list changes (e.g. adding a synth)
 * BUG: When deleting a patch from the database, it is not deleted from any lists?
 * BUG: When deleting a patch from the database, the lists that contain it are not refreshed
-* BUG: Lists should be sorted case insensitive
 * BUG: Can drop lists onto lists
+* BUG: Opening a new database doesn't refresh the tree at all
 
 SINGLE SYNTH SETUP MODE
 * Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
