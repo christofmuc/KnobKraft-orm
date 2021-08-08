@@ -196,19 +196,19 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 
-		if (infos.size() != 3) {
-			jassertfalse;
+		if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
+			SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
 			return;
 		}
-		std::string synthname = infos[0];
+
+		std::string synthname = infos["synth"];
 		if (synths_.find(synthname) == synths_.end()) {
 			SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
 			return;
 		}
 
-		// We are ignoring the data type (infos[1]) right now!
 		auto synth = synths_[synthname].lock();
-		std::string md5 = infos[2];
+		std::string md5 = infos["md5"];
 		std::vector<midikraft::PatchHolder> patch;
 		if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
 			db_.addPatchToList(list, patch[0]);

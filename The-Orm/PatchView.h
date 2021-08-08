@@ -23,6 +23,7 @@
 #include "CurrentPatchDisplay.h"
 #include "CollapsibleContainer.h"
 #include "PatchListTree.h"
+#include "RecycleBin.h"
 
 #include "PatchDatabase.h"
 #include "PatchHolder.h"
@@ -94,6 +95,7 @@ private:
 	void saveCurrentPatchCategories();
 	void setImportListFilter(String filter);
 	void setUserListFilter(String filter);
+	void deleteSomething(nlohmann::json const &infos);
 
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
@@ -101,6 +103,8 @@ private:
 	std::string sourceFilterID_; // This is the old "import" combo box in new
 	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;
+
+	RecycleBin recycleBin_;
 
 	Label patchLabel_;
 	LambdaButtonStrip buttonStrip_;

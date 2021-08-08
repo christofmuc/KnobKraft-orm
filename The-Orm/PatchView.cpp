@@ -8,6 +8,7 @@
 
 #include "PatchSearchComponent.h"
 #include "InsetBox.h"
+#include "LambdaLayoutBox.h"
 
 #include "PatchHolder.h"
 #include "ImportFromSynthDialog.h"
@@ -52,11 +53,29 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
+	auto box = new LambdaLayoutBox();
+	box->onResized = [this](Component* box) {
+		auto area = box->getLocalBounds();
+		recycleBin_.setBounds(area.removeFromBottom(LAYOUT_LINE_HEIGHT).withTrimmedBottom(LAYOUT_INSET_NORMAL));
+		patchListTree_.setBounds(area.reduced(LAYOUT_INSET_NORMAL));
+	};
+	addAndMakeVisible(box);
+	box->addAndMakeVisible(&patchListTree_);
+	box->addAndMakeVisible(&recycleBin_);
+	recycleBin_.onItemDropped = [this](var item) {
+		String dropItemString = item;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		SimpleLogger::instance()->postMessage("Item dropped: " + dropItemString);
+		deleteSomething(infos);
+	};
+
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
-		SplitteredEntry{ new InsetBox(&patchListTree_, BorderSize<int>(LAYOUT_INSET_NORMAL)), 15, 5, 40 },
+		SplitteredEntry{ box, 15, 5, 40 },
 		SplitteredEntry{ patchSearch_.get(), 70, 40, 90 },
 		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
 	addAndMakeVisible(splitters_.get());
+
+	addAndMakeVisible(recycleBin_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
@@ -231,6 +250,24 @@ void PatchView::setUserListFilter(String filter)
 	listFilterID_ = filter.toStdString();
 	sourceFilterID_ = "";
 	retrieveFirstPageFromDatabase();
+}
+
+void PatchView::deleteSomething(nlohmann::json const& infos)
+{
+	if (infos.contains("drag_type") && infos["drag_type"].is_string()) {
+		std::string drag_type = infos["drag_type"];
+		if (drag_type == "PATCH") {
+			// A patch was dropped and is to be deleted - but ask the user!
+			std::string patchName = infos["patch_name"];
+			if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Delete patch from database",
+				"Do you really want to delete the patch " + patchName + " from the database? There is no undo!")) {
+				database_.deletePatches(infos["synth"], { infos["md5"] });
+				SimpleLogger::instance()->postMessage("Deleted patch " + patchName + " from database");
+			}
+			return;
+		}
+	}
+	SimpleLogger::instance()->postMessage("Program error - unknow drop type dropped on recycle bin!");
 }
 
 class LibrarianProgressWindow : public ProgressHandlerWindow {
