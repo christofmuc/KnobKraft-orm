@@ -615,40 +615,23 @@ void PatchView::createPatchInterchangeFile()
 	});
 }
 
-StringArray PatchView::sourceNameList() {
-	// Query the database to get a list of all imports that are available for this synth
-	auto sources = database_.getImportsList(UIModel::currentSynth());
-	imports_.clear();
-
-	StringArray sourceNameList;
-	for (const auto& source : sources) {
-		sourceNameList.add(source.description);
-		imports_.push_back(source);
-	}
-	sourceNameList.sortNatural();
-	sourceNameList.insert(0, kAllPatchesFilter);
-	return sourceNameList;
-}
-
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
 	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
 		// Back to UI thread
 		MessageManager::callAsync([this, outNewPatches]() {
 			if (outNewPatches.size() > 0) {
+				patchListTree_.refreshAllImports();
 				// Select this import
 				auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
 				if (info) {
-					for (int i = 0; i < (int)imports_.size(); i++) {
-						if ((imports_[i].id == info->md5(UIModel::currentSynth()))
-							|| (midikraft::SourceInfo::isEditBufferImport(info) && imports_[i].name == "Edit buffer imports")) // TODO this will break when the display text is changed
-						{
-							sourceFilterID_ = imports_[i].id;
-						}
+					if (midikraft::SourceInfo::isEditBufferImport(info)) {
+						patchListTree_.selectItemByPath({ "imports", UIModel::currentSynth()->getName() + "import", "EditBufferImport" });
+					}
+					else {
+						patchListTree_.selectItemByPath({ "imports", UIModel::currentSynth()->getName() + "import", info->md5(UIModel::currentSynth())});
 					}
 				}
 			}
-			//TODO refresh import filter
-			retrieveFirstPageFromDatabase();
 		});
 	});
 	backgroundThread.runThread();

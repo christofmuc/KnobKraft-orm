@@ -80,7 +80,6 @@ private:
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
-	StringArray sourceNameList();
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
@@ -117,7 +116,6 @@ private:
 	midikraft::Librarian librarian_;
 
 	std::vector<midikraft::SynthHolder> synths_;
-	std::vector<midikraft::ImportInfo> imports_;
 	int currentLayer_;
 
 	midikraft::PatchHolder compareTarget_;

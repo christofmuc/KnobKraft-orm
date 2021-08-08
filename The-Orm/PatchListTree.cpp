@@ -74,7 +74,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		}
 		return result;
 	};
-	importListsItem_ = new TreeViewNode("By import", "");
+	importListsItem_ = new TreeViewNode("By import", "imports");
 	importListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
@@ -108,7 +108,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		importListsItem_->toggleOpenness();
 	};
 
-	userListsItem_ = new TreeViewNode("User lists", "");
+	userListsItem_ = new TreeViewNode("User lists", "userlists");
 	userListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
@@ -198,6 +198,41 @@ void PatchListTree::refreshUserList(std::string list_id)
 	}
 	else {
 		jassertfalse;
+	}
+}
+
+void PatchListTree::refreshAllImports()
+{
+	importListsItem_->regenerate();
+}
+
+void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
+{
+	auto node = treeView_->getRootItem();
+	TreeViewNode* child = nullptr;
+	int index = 0;
+	while (index < path.size()) {
+		bool level_found = false;
+		for (int c = 0; c < node->getNumSubItems(); c++) {
+			child = dynamic_cast<TreeViewNode *>(node->getSubItem(c));
+			if (!level_found && child && child->id().toStdString() == path[index]) {
+				node = child;
+				if (!node->isOpen()) {
+					node->setOpen(true);
+				}
+				level_found = true;
+			}
+		}
+		if (!level_found) {
+			SimpleLogger::instance()->postMessage("Did not find item in tree");
+			return;
+		}
+		else {
+			index++;
+		}
+	}
+	if (child) {
+		child->setSelected(true, true);
 	}
 }
 

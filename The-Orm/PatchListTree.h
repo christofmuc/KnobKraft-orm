@@ -27,6 +27,9 @@ public:
 
 	void refreshAllUserLists();
 	void refreshUserList(std::string list_id);
+	void refreshAllImports();
+
+	void selectItemByPath(std::vector<std::string> const& path);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
 	
