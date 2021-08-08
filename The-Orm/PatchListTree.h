@@ -16,11 +16,17 @@ class PatchListTree : public Component, private ChangeListener {
 public:
 	typedef std::function<void(String)> TSelectionHandler;
 
-	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths, TSelectionHandler importListHandler, TSelectionHandler userListHandler);
+	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
 	virtual ~PatchListTree();
 
+	TSelectionHandler onImportListSelected;
+	TSelectionHandler onUserListSelected;
+	TSelectionHandler onUserListChanged;
 
 	virtual void resized();
+
+	void refreshAllUserLists();
+	void refreshUserList(std::string list_id);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
 	
@@ -36,12 +42,12 @@ private:
 	//std::map<std::string, std::unique_ptr<XmlElement>> synthSpecificTreeState_;
 
 	midikraft::PatchDatabase& db_;
-	TSelectionHandler importListHandler_, userListHandler_;
 
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewNode* allPatchesItem_;
 	TreeViewNode* importListsItem_;
 	TreeViewNode* userListsItem_;
+	std::map<std::string, TreeViewNode*> userLists_;
 	std::string previousSynthName_;
 };
 

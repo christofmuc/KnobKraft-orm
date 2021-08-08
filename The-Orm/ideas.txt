@@ -24,12 +24,13 @@ Open since 1.11
 1.14 LISTS release
 * Need easy clear filter button
 * DELETE should respect list filter as well, else you will just delete too many patches!
-* BUG: dropping on a list should refresh tree + grid
 * BUG: Importing from computer does not refresh import list tree
 * BUG: Deleting currently selected list foes not jump back to All Patches
 * BUG: Synth library tree is not refreshed when the synth list changes (e.g. adding a synth)
 * BUG: When deleting a patch from the database, it is not deleted from any lists?
-* BUG: Deleting patch in a list, list does not refresh
+* BUG: When deleting a patch from the database, the lists that contain it are not refreshed
+* BUG: Lists should be sorted case insensitive
+* BUG: Can drop lists onto lists
 
 SINGLE SYNTH SETUP MODE
 * Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!

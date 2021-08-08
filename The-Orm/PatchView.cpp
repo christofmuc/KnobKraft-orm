@@ -35,9 +35,21 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
 	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), 
-	patchListTree_(database, synths, [this](String id) { setImportListFilter(id); }, [this](String id) { setUserListFilter(id); }),
+	patchListTree_(database, synths),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
+	patchListTree_.onImportListSelected = [this](String id) {
+		setImportListFilter(id);
+	};
+	patchListTree_.onUserListSelected= [this](String id) {
+		setUserListFilter(id);
+	};
+	patchListTree_.onUserListChanged = [this](String id) {
+		if (listFilterID_ == id) {
+			retrieveFirstPageFromDatabase();
+		}
+	};
+
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
 		if (UIModel::currentSynth()) {
 			selectPatch(patch);
@@ -56,7 +68,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	auto box = new LambdaLayoutBox();
 	box->onResized = [this](Component* box) {
 		auto area = box->getLocalBounds();
-		recycleBin_.setBounds(area.removeFromBottom(LAYOUT_LINE_HEIGHT).withTrimmedBottom(LAYOUT_INSET_NORMAL));
+		recycleBin_.setBounds(area.removeFromBottom(LAYOUT_LINE_HEIGHT * 2).withTrimmedBottom(LAYOUT_INSET_NORMAL));
 		patchListTree_.setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 	};
 	addAndMakeVisible(box);
@@ -268,10 +280,28 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 		}
 		else if (drag_type == "PATCH_IN_LIST") {
 			// Just remove that patch from the list in question
+			std::string list_id = infos["list_id"];
 			std::string patch_name = infos["patch_name"];
 			std::string list_name = infos["list_name"];
-			database_.removePatchFromList(infos["list_id"], infos["synth"], infos["md5"]);
-			SimpleLogger::instance()->postMessage("Remove patch " + patch_name + " from list " + list_name);
+			database_.removePatchFromList(list_id, infos["synth"], infos["md5"]);
+			SimpleLogger::instance()->postMessage("Removed patch " + patch_name + " from list " + list_name);
+			patchListTree_.refreshUserList(list_id);
+			if (listFilterID_ == list_id) {
+				retrieveFirstPageFromDatabase();
+			}
+			return;
+		}
+		else if (drag_type == "LIST") {
+			std::string list_id = infos["list_id"];
+			std::string list_name = infos["list_name"];
+			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Delete list from database",
+				"Do you really want to delete the list " + list_name + " from the database? There is no undo!")) {
+				database_.deletePatchlist(midikraft::ListInfo{ list_id, list_name });
+				SimpleLogger::instance()->postMessage("Deleted list " + list_name);
+				if (listFilterID_ == list_id) {
+				}
+				patchListTree_.refreshAllUserLists();
+			}
 			return;
 		}
 	}

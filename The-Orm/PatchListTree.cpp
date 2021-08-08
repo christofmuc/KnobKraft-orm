@@ -24,8 +24,8 @@ void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	}
 }
 
-PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths, TSelectionHandler importListHandler, TSelectionHandler userListHandler)
-	: db_(db), importListHandler_(importListHandler), userListHandler_(userListHandler)
+PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths)
+	: db_(db)
 {
 	treeView_ = std::make_unique<TreeView>();
 	treeView_->setOpenCloseButtonsVisible(true);
@@ -39,7 +39,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	allPatchesItem_ = new TreeViewNode("All patches", "");
 	allPatchesItem_->onSelected = [this](String id) {
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
-		importListHandler_(id);
+		if (onImportListSelected)
+			onImportListSelected(id);
 	};
 	allPatchesItem_->onGenerateChildren= [this]() {
 		std::vector<TreeViewItem*> result;
@@ -49,7 +50,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			node->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
-				importListHandler_("");
+				if (onImportListSelected)
+					onImportListSelected("");
 			};
 			result.push_back(node);
 		}
@@ -73,7 +75,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 					node->onSelected = [this, synthName](String id) {
 						UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 						UIModel::instance()->multiMode_.setMultiSynthMode(false);
-						importListHandler_(id);
+						if (onImportListSelected)
+							onImportListSelected(id);
 					};
 					result.push_back(node);
 				}
@@ -97,6 +100,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		std::sort(userLists.begin(), userLists.end(), [](const midikraft::ListInfo& a, const midikraft::ListInfo& b) {
 			return a.name < b.name;
 		});
+		userLists_.clear();
 		for (auto const& list : userLists) {
 			result.push_back(newTreeViewItemForPatchList(list));
 		}
@@ -169,6 +173,21 @@ void PatchListTree::resized()
 	treeView_->setBounds(area);
 }
 
+void PatchListTree::refreshAllUserLists()
+{
+	userListsItem_->regenerate();
+}
+
+void PatchListTree::refreshUserList(std::string list_id)
+{
+	if (userLists_.find(list_id) != userLists_.end()) {
+		userLists_[list_id]->regenerate();
+	}
+	else {
+		jassertfalse;
+	}
+}
+
 TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
 	node->onSelected = [patchHolder](String md5) {
@@ -190,6 +209,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
 	auto node = new TreeViewNode(list.name, list.id);
+	userLists_[list.id] = node;
 	node->onGenerateChildren = [this, list]() {
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
@@ -200,9 +220,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	};
 	node->onSelected = [this, list](String clicked) {
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
-		userListHandler_(list.id);
+		if (onUserListSelected)
+			onUserListSelected(list.id);
 	};
-	node->onItemDropped = [this, list](juce::var dropItem) {
+	node->onItemDropped = [this, list, node](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 
@@ -222,6 +243,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		std::vector<midikraft::PatchHolder> patch;
 		if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
 			db_.addPatchToList(list, patch[0]);
+			SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+			node->regenerate();
+			if (onUserListChanged)
+				onUserListChanged(list.id);
 		}
 		else {
 			SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
