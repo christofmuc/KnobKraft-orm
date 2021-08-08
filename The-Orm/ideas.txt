@@ -24,11 +24,17 @@ Open since 1.11
 1.14 LISTS release
 * Need easy clear filter button
 * DELETE should respect list filter as well, else you will just delete too many patches!
-* How to remove a patch from a list? -> Drag onto a Pastebin.
 * BUG: dropping on a list should refresh tree + grid
 * BUG: Importing from computer does not refresh import list tree
 * BUG: Deleting currently selected list foes not jump back to All Patches
 * BUG: Synth library tree is not refreshed when the synth list changes (e.g. adding a synth)
+* BUG: When deleting a patch from the database, it is not deleted from any lists?
+* BUG: Deleting patch in a list, list does not refresh
+
+SINGLE SYNTH SETUP MODE
+* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
+* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
 
 LISTS upgrades:
 * Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
@@ -63,11 +69,6 @@ BANK MANAGEMENT
 * Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
 * Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
 * How do I do drag and drop from the Library into the bank?
-
-SINGLE SYNTH SETUP MODE
-* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
-* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
 
 UI/UX
 * Different log levels with error colors

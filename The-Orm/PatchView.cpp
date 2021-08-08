@@ -266,6 +266,14 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			}
 			return;
 		}
+		else if (drag_type == "PATCH_IN_LIST") {
+			// Just remove that patch from the list in question
+			std::string patch_name = infos["patch_name"];
+			std::string list_name = infos["list_name"];
+			database_.removePatchFromList(infos["list_id"], infos["synth"], infos["md5"]);
+			SimpleLogger::instance()->postMessage("Remove patch " + patch_name + " from list " + list_name);
+			return;
+		}
 	}
 	SimpleLogger::instance()->postMessage("Program error - unknow drop type dropped on recycle bin!");
 }

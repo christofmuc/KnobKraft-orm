@@ -169,11 +169,21 @@ void PatchListTree::resized()
 	treeView_->setBounds(area);
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::PatchHolder patchHolder) {
+TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
 	node->onSelected = [patchHolder](String md5) {
 		// Clicking a patch in the list does the same thing as clicking it in the PatchView grid
 		SimpleLogger::instance()->postMessage("Patch clicked: " + md5);
+	};
+	node->onItemDragged = [patchHolder, list]() {
+		nlohmann::json dragInfo{ { "drag_type", "PATCH_IN_LIST"}, 
+			{ "list_id", list.id},
+			{ "list_name", list.name},
+			{ "synth", patchHolder.smartSynth()->getName()}, 
+			{ "data_type", patchHolder.patch()->dataTypeID()},
+			{ "md5", patchHolder.md5()}, 
+			{ "patch_name", patchHolder.name() } };
+		return var(dragInfo.dump());
 	};
 	return node;
 }
@@ -184,7 +194,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
 		for (auto patch : patchList.patches()) {
-			result.push_back(newTreeViewItemForPatch(patch));
+			result.push_back(newTreeViewItemForPatch(list, patch));
 		}
 		return result;
 	};
@@ -216,6 +226,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		else {
 			SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
 		}
+	};
+	node->onItemDragged = [list]() {
+		nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", list.id }, { "list_name", list.name } };
+		return var(dragInfo.dump());
 	};
 	node->onDoubleClick = [node, this](String id) {
 		// Open rename dialog on double click
