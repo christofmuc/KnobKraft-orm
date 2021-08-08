@@ -143,7 +143,7 @@ void PatchSearchComponent::resized()
 
 	area.removeFromTop(normalFilterHeight);
 	// Patch Buttons get the rest
-	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
+	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL * 2));
 }
 
 void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
