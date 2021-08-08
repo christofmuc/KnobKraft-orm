@@ -23,7 +23,7 @@ Open since 1.11
 
 Before 2.0
 * Need easy clear filter button
-* DELETE should respect list filter as well, else you will just delete too many patches!
+* BUG: Deleting patches through the menu should also refresh patch list tree
 * SINGLE SYNTH SETUP MODE
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
 	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
