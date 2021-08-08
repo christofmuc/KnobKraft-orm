@@ -72,6 +72,8 @@ void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList
 		sCreateListDialog_ = std::make_unique<CreateListDialog>(callback, deleteCallback);
 	}
 	sCreateListDialog_->setList(list);
+	sCreateListDialog_->callback_ = callback;
+	sCreateListDialog_->deleteCallback_ = deleteCallback;
 
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(sCreateListDialog_.get(), false);
