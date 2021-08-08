@@ -276,6 +276,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		if (onUserListSelected)
 			onUserListSelected(list.id);
 	};
+	node->acceptsItem = [this, list](juce::var dropItem) {
+		String dropItemString = dropItem;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		return infos.contains("drag_type") && (infos["drag_type"] == "PATCH" || infos["drag_type"] == "PATCH_IN_LIST");
+	};
 	node->onItemDropped = [this, list, node](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());

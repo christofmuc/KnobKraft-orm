@@ -25,7 +25,6 @@ Open since 1.11
 * Need easy clear filter button
 * DELETE should respect list filter as well, else you will just delete too many patches!
 * BUG: When deleting a patch from the database, it is not deleted from any lists?
-* BUG: Can drop lists onto lists
 
 
 SINGLE SYNTH SETUP MODE
