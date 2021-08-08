@@ -25,7 +25,6 @@ Open since 1.11
 * Need easy clear filter button
 * DELETE should respect list filter as well, else you will just delete too many patches!
 * BUG: Deleting currently selected list foes not jump back to All Patches
-* BUG: Synth library tree is not refreshed when the synth list changes (e.g. adding a synth)
 * BUG: When deleting a patch from the database, it is not deleted from any lists?
 * BUG: When deleting a patch from the database, the lists that contain it are not refreshed
 * BUG: Can drop lists onto lists

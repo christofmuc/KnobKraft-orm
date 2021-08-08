@@ -371,7 +371,11 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 		}*/
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
-		// List of synths changed - we need to regenerate the imports list subtree!
-		regenerateImportLists();
+		// List of synths changed - we need to regenerate the imports list and the library subtrees!
+		allPatchesItem_->regenerate();
+		importListsItem_->regenerate();
+		if (treeView_->getNumSelectedItems() == 0) {
+			allPatchesItem_->setSelected(true, false, sendNotificationAsync);
+		}
 	}
 }
