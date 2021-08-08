@@ -386,4 +386,10 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 		importListsItem_->regenerate();
 		selectAllIfNothingIsSelected();
 	}
+	else if (source == &UIModel::instance()->databaseChanged) {
+		allPatchesItem_->regenerate();
+		importListsItem_->regenerate();
+		userListsItem_->regenerate();
+		selectAllIfNothingIsSelected();
+	}
 }

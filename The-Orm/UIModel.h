@@ -121,6 +121,7 @@ public:
 	ThumbnailChanges thumbnails_;
 	WindowTitleChanges windowTitle_;
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
+	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
 
 private:
 	UIModel() = default;
