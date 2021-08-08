@@ -523,6 +523,7 @@ void MainComponent::openDatabase(File& databaseFile)
 			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
 			// Refresh UI
 			UIModel::instance()->currentSynth_.sendChangeMessage();
+			UIModel::instance()->synthList_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
 		}
 	}
