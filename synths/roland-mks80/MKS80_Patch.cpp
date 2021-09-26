@@ -19,7 +19,7 @@ namespace midikraft {
 		if (data.find(section) == data.end()) {
 			throw std::runtime_error("Invalid argument: Missing section in APR data!");
 		}
-		if (data.find(section)->second.size() != expectedLength) {
+		if (data.find(section)->second.size() != (size_t) expectedLength) {
 			throw std::runtime_error("Invalid argument: APR section has invalid length!");
 		}
 		std::copy(data.find(section)->second.cbegin(), data.find(section)->second.cend(), std::back_inserter(result));
