@@ -19,7 +19,7 @@ namespace knobkraft {
 	public:
 		AdaptationView();
 
-		virtual void setupForAdaptation(std::shared_ptr<GenericAdaptation> adaptationSynth);
+		void setupForAdaptation(std::shared_ptr<GenericAdaptation> const& adaptationSynth);
 
 		virtual void resized() override;
 

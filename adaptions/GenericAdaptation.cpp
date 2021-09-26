@@ -23,8 +23,6 @@
 //#include <pybind11/pybind11.h>
 #include <memory>
 
-#include "Python.h"
-
 namespace py = pybind11;
 using namespace py::literals;
 
@@ -32,9 +30,7 @@ using namespace py::literals;
 
 namespace knobkraft {
 
-	const char *pythonMethodNames;
-	
-	const char 
+	const char
 		*kName = "name",
 		*kNumberOfBanks = "numberOfBanks",
 		*kNumberOfPatchesPerBank = "numberOfPatchesPerBank",
@@ -134,7 +130,7 @@ namespace knobkraft {
 			}
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
-			adaptationName_ = getName();
+			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
@@ -285,7 +281,7 @@ namespace knobkraft {
 		Settings::instance().set(kUserAdaptationsFolderSettingsKey, directory);
 	}
 
-	bool GenericAdaptation::createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+	[[nodiscard]] bool GenericAdaptation::createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
 		py::gil_scoped_acquire acquire;
 		auto newAdaptation = GenericAdaptation::fromBinaryCode(pythonModuleName, adaptationCode);
 		if (newAdaptation) {
@@ -300,6 +296,7 @@ namespace knobkraft {
 					}
 				}
 				outAddToThis.push_back(newAdaptation);
+                return true;
 			}
 			else {
 				jassertfalse;
@@ -337,7 +334,9 @@ namespace knobkraft {
 		// Then, iterate over the list of built-in adaptations and add those which are not present in the directory
 		auto adaptations = BundledAdaptations::getAll();
 		for (auto const &b : adaptations) {
-			createCompiledAdaptationModule(b.pythonModuleName, b.adaptationSourceCode, result);
+			if (!createCompiledAdaptationModule(b.pythonModuleName, b.adaptationSourceCode, result)) {
+                SimpleLogger::instance()->postMessage("Warning - error creating built-in module " + String(b.pythonModuleName));
+            }
 		}
 		return result;
 	}

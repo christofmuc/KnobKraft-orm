@@ -59,7 +59,7 @@ public:
 
 	bool isActive() override
 	{
-		return device() ? device()->wasDetected() : false;
+		return device() && device()->wasDetected();
 	}
 
 
