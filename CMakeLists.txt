@@ -140,7 +140,7 @@ ENDIF()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_ALL)
 
 # Adding JUCE 6.0
-add_subdirectory("third_party/JUCE")
+add_subdirectory("third_party/JUCE" EXCLUDE_FROM_ALL)
 
 # Adding JUCE modules
 add_subdirectory("third_party/")

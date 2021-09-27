@@ -57,3 +57,6 @@ else()
     # lots of warnings and all warnings as errors
     #target_compile_options(knobkraft-generic-adaptation PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
+
+# Define additional install files - in our case, the generic python modules need to be copied on Linux and on Mac!
+install(DIRECTORY sequential/ DESTINATION bin/sequential)
