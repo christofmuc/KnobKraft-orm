@@ -236,8 +236,9 @@ namespace knobkraft {
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
         File pathToTheOrm = File::getSpecialLocation (File::SpecialLocationType::currentExecutableFile).getParentDirectory();
         std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
-		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString()
-                + "\")\nsys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n";
+		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
+				+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
+				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
 		py::exec(command);
 #ifdef __APPLE__
 		// For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find 
