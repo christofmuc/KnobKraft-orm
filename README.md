@@ -48,6 +48,8 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
+| Sequential | Take 5 | beta | adaptation | |
+| Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
