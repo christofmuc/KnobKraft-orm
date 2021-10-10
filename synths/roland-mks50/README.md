@@ -12,7 +12,7 @@ MidiKraft are a set of base libraries to provide more helper classes to the awes
 
   * [MidiKraft-base](https://github.com/christofmuc/MidiKraft-base): Base library used by all others providing some common definitions
   * [MidiKraft-librarian](https://github.com/christofmuc/MidiKraft-librarian): Implementation of various different handshake and communication methods to retrieve and send data between the host computer and a MIDI device
-  * [MidiKraft-database](https://github.com/christofmuc/MidiKraft-database): Code to store MIDI data in a SQlite or AWS DynamoDB database
+  * [MidiKraft-database](https://github.com/christofmuc/MidiKraft-database): Code to store MIDI data in a SQLite database
 
 ## MidiKraft Synthesizer implementations
 
