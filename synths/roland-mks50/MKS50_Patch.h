@@ -33,7 +33,7 @@ namespace midikraft {
 		static std::shared_ptr<MKS50_Patch> createFromToneAPR(MidiMessage const& message);
 
 		// Name encoding lookup table
-		static const std::string MKS50_Patch::kPatchNameChar;
+		static const std::string kPatchNameChar;
 
 	private:
 		MidiProgramNumber programNumber_;
