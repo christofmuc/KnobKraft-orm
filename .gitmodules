@@ -83,3 +83,6 @@
 [submodule "third_party/Gin"]
 	path = third_party/Gin
 	url = https://github.com/FigBug/Gin.git
+[submodule "synths/MidiKraft-roland-mks50"]
+	path = synths/MidiKraft-roland-mks50
+	url = https://github.com/christofmuc/MidiKraft-roland-mks50.git
