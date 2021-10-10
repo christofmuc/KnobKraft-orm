@@ -16,7 +16,7 @@ sequential.GenericSequential(name="Sequential Take 5",
                              banks=8,
                              patches_per_bank=16,
                              name_len=20,
-                             name_position=321,
+                             name_position=195,
                              ).install(this_module)
 
 if __name__ == "__main__":
