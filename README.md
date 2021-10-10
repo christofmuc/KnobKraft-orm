@@ -129,9 +129,11 @@ See the azure-pipelines.yml file for some hints how the Ubuntu server is doing i
 
 and then can use CMake just like on Windows to compile the software:
 
-    cmake -S . -B builds && cmake --build builds
+    LDFLAGS="--disable-lto" cmake -S . -B builds && cmake --build builds
 
 This will produce a single executable `builds/The-Orm/KnobKraftOrm` that you can run.
+
+The LDFLAGS is required for a certain combination of gcc version/pybind11, else you will run into internal compiler errors. See issue #6 for a discussion.
 
 ## Building on macOS
 
