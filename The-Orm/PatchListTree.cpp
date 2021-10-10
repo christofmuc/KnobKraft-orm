@@ -112,11 +112,13 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::function<void(St
 	treeView_->setColour(TreeView::selectedItemBackgroundColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::highlightedFill));
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
+	UIModel::instance()->importListChanged_.addChangeListener(this);
 }
 
 PatchListTree::~PatchListTree()
 {
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+	UIModel::instance()->importListChanged_.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
 }
 
@@ -128,7 +130,7 @@ void PatchListTree::resized()
 
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == &UIModel::instance()->currentSynth_) {
+	if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->importListChanged_) {
 		// Synth has changed, we need to regenerate the tree!
 		// Iterate nodes and regenerate in case group node and open!
 		auto root = treeView_->getRootItem();

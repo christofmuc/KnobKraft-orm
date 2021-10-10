@@ -226,6 +226,7 @@ void PatchSearchComponent::rebuildImportFilterBox()
 {
 	importList_.clear();
 	importList_.addItemList(patchView_->sourceNameList(), 1);
+	UIModel::instance()->importListChanged_.sendChangeMessage();
 }
 
 void PatchSearchComponent::rebuildDataTypeFilterBox()
