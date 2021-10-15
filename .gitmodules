@@ -86,3 +86,6 @@
 [submodule "third_party/json"]
 	path = third_party/json
 	url = https://github.com/nlohmann/json.git
+[submodule "synths/MidiKraft-roland-mks50"]
+	path = synths/MidiKraft-roland-mks50
+	url = https://github.com/christofmuc/MidiKraft-roland-mks50.git

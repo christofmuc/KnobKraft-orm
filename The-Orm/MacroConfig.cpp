@@ -25,7 +25,9 @@ std::string KeyboardMacro::toText(KeyboardMacroEvent event)
 	case KeyboardMacroEvent::Favorite: return "Favorite";
 	case KeyboardMacroEvent::PreviousPatch: return "PreviousPatch"; 
 	case KeyboardMacroEvent::NextPatch: return "NextPatch"; 
-	case KeyboardMacroEvent::ImportEditBuffer: return "ImportEditBuffer"; 
+	case KeyboardMacroEvent::ImportEditBuffer: return "ImportEditBuffer";
+    case KeyboardMacroEvent::Unknown:
+        // fallthrough
 	default:
 		return "Unknown";
 	}
@@ -55,7 +57,7 @@ MacroConfig::MacroConfig(KeyboardMacroEvent event,
 	std::function<void(KeyboardMacroEvent)> recordHander,
 	std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event), 
 	recordHander_(recordHander),
-	showHandler_(showHandler), play_([this](TextButton *button) { buttonStateChanged(button);  })
+	showHandler_(showHandler), play_([this](TextButton *button) { buttonStateChanged(button);  }) // NOLINT
 {
 	addAndMakeVisible(name_);
 	name_.setText(KeyboardMacro::toText(event_), dontSendNotification);

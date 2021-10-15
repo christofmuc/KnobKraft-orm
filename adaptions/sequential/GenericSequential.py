@@ -21,6 +21,7 @@ import hashlib
 # Prophet X  - 0b00110000 0x30
 # Pro 3      - 0b00110001 0x31
 # Prophet 5  - 0b00110010 0x32 (this is the Rev 4 of course)
+# Take 5     -            0x35 (they left 2 empty - maybe the desktop Prophet 5 and...?)
 
 class GenericSequential:
 

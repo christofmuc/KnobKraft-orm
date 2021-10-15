@@ -14,8 +14,8 @@
 
 class AutoDetectProgressWindow : public ProgressHandlerWindow {
 public:
-	AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths);
-	AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths);
+	explicit AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths);
+    explicit AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths);
 
 	// Implement ThreadWithProgressWindow
 	virtual void run() override;

@@ -73,8 +73,8 @@ public:
     {
 		ignoreUnused(commandLine);
 
-		// This method is where you should put your application's initialization code..
-		char *applicationDataDirName = "KnobKraftOrm";
+		// This method is where you should put your application's initialization code...
+		auto applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
 
 #ifdef USE_SPARKLE
@@ -156,7 +156,7 @@ public:
 		// Unregister
 		UIModel::instance()->windowTitle_.removeChangeListener(this);
 
-        // Add your application's shutdown code here..
+        // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
 		// No more Python from here please
@@ -244,7 +244,7 @@ public:
 				centreWithSize(getWidth(), getHeight());
 			}
 #endif
-			setVisible(true);
+			setVisible(true); //NOLINT
 
 			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
         }
@@ -274,7 +274,7 @@ public:
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
 
 		OrmLookAndFeel ormLookAndFeel_;
-		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_;
+		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
     };
 
 

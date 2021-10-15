@@ -145,6 +145,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->multiMode_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
+	UIModel::instance()->importListChanged_.addChangeListener(this);
 }
 
 PatchListTree::~PatchListTree()
@@ -152,6 +153,7 @@ PatchListTree::~PatchListTree()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	UIModel::instance()->multiMode_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
+	UIModel::instance()->importListChanged_.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
 	CreateListDialog::release();
 }
@@ -339,7 +341,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == &UIModel::instance()->currentSynth_) {
+	if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->importListChanged_) {
 		// Synth has changed, we need to regenerate the tree!
 
 		// Did we have a previous synth/state? Then store it!

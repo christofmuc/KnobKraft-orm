@@ -93,6 +93,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-kawai-k3
 		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
+		midikraft-roland-mks50 
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
@@ -181,6 +182,13 @@ IF(WIN32)
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 
+# Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/sequential
+		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
+		)
+
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
@@ -233,4 +241,9 @@ IF(APPLE)
     SET(CPACK_BINARY_TGZ OFF)
     SET(CPACK_BINARY_STGZ OFF)
     INCLUDE(CPack)
+ELSE()
+	INSTALL(TARGETS KnobKraftOrm knobkraft-generic-adaptation
+			BUNDLE DESTINATION . COMPONENT Runtime
+			RUNTIME DESTINATION bin COMPONENT Runtime
+			)
 ENDIF()

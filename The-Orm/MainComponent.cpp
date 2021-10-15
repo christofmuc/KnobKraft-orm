@@ -26,6 +26,7 @@
 #include "RefaceDX.h"
 #include "BCR2000.h"
 #include "MKS80.h"
+#include "MKS50.h"
 
 #include "GenericAdaptation.h"
 #include "PatchInterchangeFormat.h"
@@ -59,7 +60,7 @@ public:
 
 	bool isActive() override
 	{
-		return device() ? device()->wasDetected() : false;
+		return device() && device()->wasDetected();
 	}
 
 
@@ -116,6 +117,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
