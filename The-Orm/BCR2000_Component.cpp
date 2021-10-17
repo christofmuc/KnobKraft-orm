@@ -292,6 +292,7 @@ BCR2000_Component::UpdateSynthListener::~UpdateSynthListener()
 void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 {
 	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
+	patch_ = UIModel::instance()->currentPatch_.patch().patch();
 	if (detailedParameters) {
 		std::string paramName = property.toString().toStdString();
 		for (auto param : detailedParameters->allParameterDefinitions()) {
@@ -313,7 +314,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 				auto liveUpdater = midikraft::Capability::hasCapability<midikraft::SynthParameterLiveEditCapability>(param);
 				if (liveUpdater) {
 					if (patch_) {
-						MidiBuffer messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
+						auto messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
 						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
 						if (location) {
 							SimpleLogger::instance()->postMessage((boost::format("Sending message to %s to update %s to new value %s")
@@ -325,12 +326,12 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 						}
 					}
 					else {
-						SimpleLogger::instance()->postMessage("Error: No patch loaded, can't calculate update messages");
+						//SimpleLogger::instance()->postMessage("Error: No patch loaded, can't calculate update messages");
 					}
 					return;
 				}
 				else {
-					SimpleLogger::instance()->postMessage("Error: Parameter does not implement SynthParameterLiveEditCapability, can't update synth");
+					//SimpleLogger::instance()->postMessage("Error: Parameter does not implement SynthParameterLiveEditCapability, can't update synth");
 					return;
 				}
 			}
@@ -438,7 +439,7 @@ void BCR2000_Component::UpdateControllerListener::valueTreePropertyChanged(Value
 				if (controllerSync) {
 					if (papa_->bcr2000_->wasDetected()) {
 						auto updateMessage = controllerSync->createParameterMessages(newValue, papa_->bcr2000_->channel());
-						papa_->bcr2000_->sendBlockOfMessagesToSynth(papa_->bcr2000_->midiOutput(), MidiHelpers::bufferFromMessages(updateMessage));
+						papa_->bcr2000_->sendBlockOfMessagesToSynth(papa_->bcr2000_->midiOutput(), updateMessage);
 					}
 					return;
 				}

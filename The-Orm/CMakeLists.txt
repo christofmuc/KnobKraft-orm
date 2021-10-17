@@ -6,10 +6,12 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.12.1)
+project(KnobKraftOrm VERSION 1.14.0)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
+# Output the weird string Azure pipeline uses to parse a value into a variable. I hope.
+MESSAGE("##vso[task.setvariable variable=ormVersionNumber]${KnobKraftOrm_VERSION}")
 
 OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
 OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
@@ -41,17 +43,22 @@ set(SOURCES
 	BCR2000_Component.cpp BCR2000_Component.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	EditCategoryDialog.cpp EditCategoryDialog.h
+	ElectraOneRouter.cpp ElectraOneRouter.h
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
+	OrmLookAndFeel.cpp OrmLookAndFeel.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
 	PatchHolderButton.cpp PatchHolderButton.h
+	PatchListTree.cpp PatchListTree.h
 	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
+	PatchSearchComponent.cpp PatchSearchComponent.h
+	PatchTextBox.cpp PatchTextBox.h
 	PatchView.cpp PatchView.h
 	ReceiveManualDumpWindow.cpp ReceiveManualDumpWindow.h
 	RecordingView.cpp RecordingView.h
@@ -85,6 +92,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-kawai-k3
 		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
+		midikraft-roland-mks50 
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
@@ -114,6 +122,7 @@ IF(WIN32)
 		icuuc
 		SQLiteCpp
 		sqlite3
+		gin
 		${SENTRY_LIB}
 		${SPARKLE_DEPENDENCY}
 		)
@@ -122,6 +131,7 @@ ELSEIF(APPLE)
 		ICU::data ICU::uc
 		SQLiteCpp
 		sqlite3
+		gin
 		${APPLE_BOOST}
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
@@ -136,6 +146,7 @@ ELSEIF(UNIX)
 		${MIDIKRAFT_LIBRARIES}
 		SQLiteCpp
 		sqlite3
+		gin
 		)
 	target_compile_options(KnobKraftOrm PRIVATE -pthread -I/usr/include/webkitgtk-4.0 -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/webkitgtk-4.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include)
 ENDIF()
@@ -170,6 +181,13 @@ IF(WIN32)
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 
+# Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/sequential
+		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
+		)
+
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
@@ -201,6 +219,8 @@ IF(APPLE)
     INSTALL(TARGETS KnobKraftOrm
         BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
+		)
+	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
         )
     
     INSTALL(CODE "include(BundleUtilities)
@@ -209,14 +229,20 @@ IF(APPLE)
     " COMPONENT Runtime)
     
     # Setup CPack variables
-    set(CPACK_PACKAGE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png)
+    set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
     set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
-    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt)
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
+	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
     
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)
     SET(CPACK_BINARY_TGZ OFF)
     SET(CPACK_BINARY_STGZ OFF)
     INCLUDE(CPack)
+ELSE()
+	INSTALL(TARGETS KnobKraftOrm knobkraft-generic-adaptation
+			BUNDLE DESTINATION . COMPONENT Runtime
+			RUNTIME DESTINATION bin COMPONENT Runtime
+			)
 ENDIF()

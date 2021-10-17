@@ -17,6 +17,10 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | native | |
 | Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
+| DSI | Evolver | alpha | adaptation | |
+| DSI | Mopho | beta | adaptation | |
+| DSI | Mopho X4 | beta | adaptation | |
+| DSI | Tetra | beta | adaptation | |
 | DSI | Pro 2 | beta | adaptation | |
 | DSI | Prophet 8 | beta | adaptation | |
 | DSI/Sequential | OB-6 | works | native | |
@@ -38,13 +42,17 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
-| Roland | MKS-50 | in progress | native | |
-| Roland | MKS-80 | in progress | native | |
+| Roland | MKS-50 | alpha | native | |
+| Roland | MKS-80 | works | native | |
 | Sequential| Pro 3 | works | adaptation | |
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
-| Waldorf | Blofeld | alpha | adaptation | |
+| Sequential | Take 5 | beta | adaptation | |
+| Studiologic | Sledge | beta | adaptation | |
+| Waldorf | Blofeld | beta | adaptation | |
+| Yamaha | DX7 | beta | adaptation | |
+| Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | native | |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
@@ -121,9 +129,11 @@ See the azure-pipelines.yml file for some hints how the Ubuntu server is doing i
 
 and then can use CMake just like on Windows to compile the software:
 
-    cmake -S . -B builds && cmake --build builds
+    LDFLAGS="--disable-lto" cmake -S . -B builds && cmake --build builds
 
 This will produce a single executable `builds/The-Orm/KnobKraftOrm` that you can run.
+
+The LDFLAGS is required for a certain combination of gcc version/pybind11, else you will run into internal compiler errors. See issue #6 for a discussion.
 
 ## Building on macOS
 

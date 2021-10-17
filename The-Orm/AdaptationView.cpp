@@ -28,7 +28,7 @@ namespace knobkraft {
 				if (adaptation_ && adaptation_->isFromFile()) {
 					adaptation_->reloadPython();
 					setupForAdaptation(adaptation_);
-	}
+				}
 				else {
 					AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Not a user defined adaptation", "Only Adaptation modules that are loaded from a Python script can be reloaded");
 				}
@@ -61,7 +61,7 @@ namespace knobkraft {
 		addAndMakeVisible(knobkraftWiki_);
 	}
 
-	void AdaptationView::setupForAdaptation(std::shared_ptr<GenericAdaptation> adaptationSynth)
+	void AdaptationView::setupForAdaptation(std::shared_ptr<GenericAdaptation> const& adaptationSynth)
 	{
 		adaptation_ = adaptationSynth;
 		std::string infoText;
@@ -122,7 +122,7 @@ namespace knobkraft {
 		FlexBox leftColumn;
 		leftColumn.flexDirection = FlexBox::Direction::column;
 		leftColumn.items.add(FlexItem(knobkraftWiki_).withHeight(30));
-		leftColumn.items.add(FlexItem(setupHelp_).withFlex(1.0f).withMargin({ 8, 0, 0, 0 }));;
+		leftColumn.items.add(FlexItem(setupHelp_).withFlex(1.0f).withMargin({ 8, 0, 0, 0 }));
 
 		// Two column view
 		FlexBox layout;

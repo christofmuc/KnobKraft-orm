@@ -15,7 +15,7 @@
 std::unique_ptr<PatchNameDialog> PatchNameDialog::sPatchNameDialog_;
 DialogWindow *PatchNameDialog::sWindow_ = nullptr;
 
-PatchNameDialog::PatchNameDialog(std::function<void(midikraft::PatchHolder *result) > callback) : callback_(callback), ok_("OK"), cancel_("Cancel")
+PatchNameDialog::PatchNameDialog(std::function<void(std::shared_ptr<midikraft::PatchHolder> result) > callback) : callback_(callback), ok_("OK"), cancel_("Cancel")
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -29,7 +29,7 @@ PatchNameDialog::PatchNameDialog(std::function<void(midikraft::PatchHolder *resu
 	setBounds(0, 0, 540, 200);
 }
 
-void PatchNameDialog::setPatch(midikraft::PatchHolder *patch)
+void PatchNameDialog::setPatch(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	patch_ = patch;
 
@@ -69,7 +69,7 @@ static void dialogClosed(int modalResult, PatchNameDialog* dialog)
 	}
 }
 
-void PatchNameDialog::showPatchNameDialog(midikraft::PatchHolder  *patch, Component *centeredAround, std::function<void(midikraft::PatchHolder *)> callback)
+void PatchNameDialog::showPatchNameDialog(std::shared_ptr<midikraft::PatchHolder> patch, Component *centeredAround, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> callback)
 {
 	if (!patch || !patch->patch()) {
 		return;

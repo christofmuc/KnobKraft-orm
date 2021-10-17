@@ -24,8 +24,6 @@
 //#include <pybind11/pybind11.h>
 #include <memory>
 
-#include "Python.h"
-
 namespace py = pybind11;
 using namespace py::literals;
 
@@ -33,7 +31,6 @@ using namespace py::literals;
 
 namespace knobkraft {
 
-	const char *pythonMethodNames;
 
 	const char
 		*kName = "name",
@@ -119,8 +116,8 @@ namespace knobkraft {
 	const char *kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;
+	std::unique_ptr<py::gil_scoped_release> sGenericAdaptationDontLockGIL;
 	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptationPyOutputRedirect;
-	CriticalSection GenericAdaptation::multiThreadGuard;
 
 	void checkForPythonOutputAndLog() {
 		sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
@@ -134,6 +131,7 @@ namespace knobkraft {
 
 	GenericAdaptation::GenericAdaptation(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
+		py::gil_scoped_acquire acquire;
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
@@ -149,10 +147,9 @@ namespace knobkraft {
 			if (!result["matches"].cast<bool>()) {
 				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Warning: file name %s is not a valid module identifier in Python, please use only lower case letters and numbers") % pythonModuleFilePath).str());
 			}
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
-			adaptationName_ = getName();
+			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
 		}
 		catch (py::error_already_set &ex) {
 			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
@@ -167,6 +164,7 @@ namespace knobkraft {
 
 	GenericAdaptation::GenericAdaptation(pybind11::module adaptationModule)
 	{
+		py::gil_scoped_acquire acquire;
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
@@ -176,14 +174,20 @@ namespace knobkraft {
 
 	std::shared_ptr<GenericAdaptation> GenericAdaptation::fromBinaryCode(std::string moduleName, std::string adaptationCode)
 	{
+		py::gil_scoped_acquire acquire;
 		try {
-			ScopedLock lock(GenericAdaptation::multiThreadGuard);
 			auto importlib = py::module::import("importlib.util");
 			checkForPythonOutputAndLog();
 			auto spec = importlib.attr("spec_from_loader")(moduleName, py::none()); // Create an empty module with the right name
 			auto adaptation_module = importlib.attr("module_from_spec")(spec);
 			auto builtins = py::module::import("builtins");
 			adaptation_module.attr("__builtins__") = builtins; // That seems to be implementation depend... https://docs.python.org/3/library/builtins.html
+			checkForPythonOutputAndLog();
+			auto locals = py::dict("adaptation_name"_a = moduleName, "this_module"_a = adaptation_module);
+			py::exec(R"(
+				import sys
+				sys.modules[adaptation_name] = this_module
+			)", py::globals(), locals);
 			checkForPythonOutputAndLog();
 			py::exec(adaptationCode, adaptation_module.attr("__dict__")); // Now run the define statements in the code, creating the defines within the right namespace
 			checkForPythonOutputAndLog();
@@ -203,6 +207,7 @@ namespace knobkraft {
 	}
 
 	void GenericAdaptation::logNamespace() {
+		py::gil_scoped_acquire acquire;
 		try {
 			auto name = py::cast<std::string>(adaptation_module.attr("__name__"));
 			auto moduleDict = adaptation_module.attr("__dict__");
@@ -249,9 +254,31 @@ namespace knobkraft {
 #endif
 		sGenericAdaptationPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
-		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n";
+        File pathToTheOrm = File::getSpecialLocation (File::SpecialLocationType::currentExecutableFile).getParentDirectory();
+        std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
+		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
+				+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
+				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
 		py::exec(command);
+#ifdef __APPLE__
+		// For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find 
+		// python code we are installing, e.g. the generic sequential module which is used by all Sequential synths
+		File pythonPath2 = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory().getChildFile("python");
+		command = "import sys\nsys.path.append(R\"" + pythonPath2.getFullPathName().toStdString() + "\")\n";
+		py::exec(command);
+#endif
 		checkForPythonOutputAndLog();
+		sGenericAdaptationDontLockGIL = std::make_unique<py::gil_scoped_release>();
+		// From this point on, whenever you want to call into python you need to acquire the GIL 
+		// with:
+		// 
+		// py::gil_scoped_acquire acquire;
+	}
+
+	void GenericAdaptation::shutdownGenericAdaptation()
+	{
+		// Remove the global release on Python, else the destruction code will fail!
+		sGenericAdaptationDontLockGIL.reset();
 	}
 
 	bool GenericAdaptation::hasPython()
@@ -278,7 +305,8 @@ namespace knobkraft {
 		Settings::instance().set(kUserAdaptationsFolderSettingsKey, directory);
 	}
 
-	bool GenericAdaptation::createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+	[[nodiscard]] bool GenericAdaptation::createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+		py::gil_scoped_acquire acquire;
 		auto newAdaptation = GenericAdaptation::fromBinaryCode(pythonModuleName, adaptationCode);
 		if (newAdaptation) {
 			// Now we need to check the name of the compiled adaptation just created, and if it is already present. If yes, don't add it but rather issue a warning
@@ -292,6 +320,7 @@ namespace knobkraft {
 					}
 				}
 				outAddToThis.push_back(newAdaptation);
+                return true;
 			}
 			else {
 				jassertfalse;
@@ -329,13 +358,15 @@ namespace knobkraft {
 		// Then, iterate over the list of built-in adaptations and add those which are not present in the directory
 		auto adaptations = BundledAdaptations::getAll();
 		for (auto const &b : adaptations) {
-			createCompiledAdaptationModule(b.pythonModuleName, b.adaptationSourceCode, result);
+			if (!createCompiledAdaptationModule(b.pythonModuleName, b.adaptationSourceCode, result)) {
+                SimpleLogger::instance()->postMessage("Warning - error creating built-in module " + String(b.pythonModuleName));
+            }
 		}
 		return result;
 	}
 
 	bool GenericAdaptation::pythonModuleHasFunction(std::string const &functionName) const {
-		ScopedLock lock(GenericAdaptation::multiThreadGuard);
+		py::gil_scoped_acquire acquire;
 		if (!adaptation_module) {
 			return false;
 		}
@@ -349,11 +380,13 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::getSourceFilePath() const
 	{
+		py::gil_scoped_acquire acquire;
 		return adaptation_module.attr("__file__").cast<std::string>();
 	}
 
 	void GenericAdaptation::reloadPython()
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			adaptation_module.reload();
 			logNamespace();
@@ -369,6 +402,7 @@ namespace knobkraft {
 
 	int GenericAdaptation::numberOfBanks() const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			py::object result = callMethod(kNumberOfBanks);
 			return result.cast<int>();
@@ -385,6 +419,7 @@ namespace knobkraft {
 
 	int GenericAdaptation::numberOfPatches() const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			py::object result = callMethod(kNumberOfPatchesPerBank);
 			return result.cast<int>();
@@ -401,6 +436,7 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::friendlyBankName(MidiBankNumber bankNo) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (!pythonModuleHasFunction(kFriendlyBankName)) {
 			return (boost::format("Bank %d") % bankNo.toOneBased()).str();
 		}
@@ -421,6 +457,7 @@ namespace knobkraft {
 
 	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
+		py::gil_scoped_acquire acquire;
 		ignoreUnused(place);
 		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module &>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 		return patch;
@@ -428,14 +465,16 @@ namespace knobkraft {
 
 	bool GenericAdaptation::isOwnSysex(MidiMessage const &message) const
 	{
+		py::gil_scoped_acquire acquire;
 		//TODO - if we delegate this to the python code, the "sniff synth" method of the Librarian can be used. But this is currently disabled anyway,
 		// even if I forgot why
 		ignoreUnused(message);
 		return false;
 	}
 
-	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, MidiBuffer const& buffer)
+	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
+		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kGeneralMessageDelay)) {
 			try {
 				auto result = callMethod(kGeneralMessageDelay);
@@ -459,6 +498,7 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::friendlyProgramName(MidiProgramNumber programNo) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kFriendlyProgramName)) {
 			try {
 				int zerobased = programNo.toZeroBased();
@@ -478,6 +518,7 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::setupHelpText() const
 	{
+		py::gil_scoped_acquire acquire;
 		if (!pythonModuleHasFunction("setupHelp")) {
 			return Synth::setupHelpText();
 		}
@@ -498,6 +539,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			py::object result = callMethod(kCreateDeviceDetectMessage, channel);
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
@@ -516,6 +558,7 @@ namespace knobkraft {
 
 	int GenericAdaptation::deviceDetectSleepMS()
 	{
+		py::gil_scoped_acquire acquire;
 		if (!pythonModuleHasFunction(kDeviceDetectWaitMilliseconds)) {
 			return 200;
 		}
@@ -537,6 +580,7 @@ namespace knobkraft {
 
 	MidiChannel GenericAdaptation::channelIfValidDeviceResponse(const MidiMessage &message)
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			auto vector = messageToVector(message);
 			py::object result = callMethod(kChannelIfValidDeviceResponse, vector);
@@ -560,6 +604,7 @@ namespace knobkraft {
 
 	bool GenericAdaptation::needsChannelSpecificDetection()
 	{
+		py::gil_scoped_acquire acquire;
 		if (!pythonModuleHasFunction(kNeedsChannelSpecificDetection)) {
 			return true;
 		}
@@ -580,6 +625,7 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::getName() const
 	{
+		py::gil_scoped_acquire acquire;
 		try {
 			py::object result = callMethod(kName);
 			return result.cast<std::string>();
@@ -596,16 +642,17 @@ namespace knobkraft {
 
 	std::string GenericAdaptation::calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const
 	{
+		py::gil_scoped_acquire acquire;
 		// This is an optional function to allow ignoring bytes that do not define the identity of the patch
 		if (!pythonModuleHasFunction(kCalculateFingerprint)) {
 			return Synth::calculateFingerprint(patch);
 		}
-
+		
 		try {
 			std::vector<int> data(patch->data().data(), patch->data().data() + patch->data().size());
 			py::object result = callMethod(kCalculateFingerprint, data);
-			return result.cast<std::string>();
-		}
+				return result.cast<std::string>();
+			}			
 		catch (py::error_already_set &ex) {
 			logAdaptationError(kCalculateFingerprint, ex);
 			ex.restore();
@@ -641,6 +688,7 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kIsEditBufferDump)
 			&& pythonModuleHasFunction(kCreateEditBufferRequest)
 			&& pythonModuleHasFunction(kConvertToEditBuffer)) {
@@ -662,6 +710,7 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability  **outCapability) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kIsSingleProgramDump)
 			&& pythonModuleHasFunction(kCreateProgramDumpRequest)
 			&& pythonModuleHasFunction(kConvertToProgramDump)) {
@@ -683,6 +732,7 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability  **outCapability) const
 	{
+		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kCreateBankDumpRequest)
 			&& pythonModuleHasFunction(kExtractPatchesFromBank)
 			&& pythonModuleHasFunction(kIsPartOfBankDump)

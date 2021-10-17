@@ -140,7 +140,7 @@ ENDIF()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_ALL)
 
 # Adding JUCE 6.0
-add_subdirectory("third_party/JUCE")
+add_subdirectory("third_party/JUCE" EXCLUDE_FROM_ALL)
 
 # Adding JUCE modules
 add_subdirectory("third_party/")
@@ -203,6 +203,7 @@ add_subdirectory(synths/MidiKraft-BCR2000)
 add_subdirectory(synths/MidiKraft-kawai-k3)
 add_subdirectory(synths/MidiKraft-korg-dw8000)
 add_subdirectory(synths/MidiKraft-oberheim-matrix1000)
+add_subdirectory(synths/MidiKraft-roland-mks50)
 add_subdirectory(synths/MidiKraft-roland-mks80)
 add_subdirectory(synths/MidiKraft-sequential-rev2)
 add_subdirectory(synths/MidiKraft-sequential-ob6)

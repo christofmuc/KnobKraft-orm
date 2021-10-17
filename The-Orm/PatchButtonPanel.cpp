@@ -10,15 +10,33 @@
 #include "UIModel.h"
 
 #include "ColourHelpers.h"
+#include "LayoutConstants.h"
+#include "Settings.h"
 
 #include <boost/format.hpp>
 #include <algorithm>
 
 PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
-	handler_(handler), pageBase_(0), pageNumber_(0), pageSize_(64), totalSize_(0)
+	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
-	// We want 64 patch buttons
-	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(8, 8, [this](int index) { buttonClicked(index); });
+	gridSizeSlider_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
+	gridSizeSlider_.setRange(4.0, 8.0, 1.0);
+
+	// Load the last size of the slider position
+	auto storedSlider = Settings::instance().get("gridSizeSlider", "8");
+	int slider = atoi(storedSlider.c_str());
+	if (slider != 0) {
+		gridWidth_ = gridHeight_ = slider;
+		gridSizeSlider_.setValue(slider, dontSendNotification);
+	}
+	else {
+		gridWidth_ = 8;
+		gridHeight_ = 8; 
+		gridSizeSlider_.setValue(8.0, dontSendNotification);
+	}
+	pageSize_ = gridWidth_ * gridHeight_;
+
+	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index); });
 	addAndMakeVisible(patchButtons_.get());
 
 	addAndMakeVisible(pageUp_); 
@@ -27,6 +45,13 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	addAndMakeVisible(pageDown_); 
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
+
+	gridSizeSlider_.onValueChange = [this]() {
+		int newX = (int) gridSizeSlider_.getValue();
+		Settings::instance().set("gridSizeSlider", String(newX).toStdString());
+		this->changeGridSize(newX, newX);		
+	};
+	addAndMakeVisible(gridSizeSlider_);
 
 	for (int i = 0; i < 2; i++) {
 		auto e = new Label();
@@ -66,6 +91,23 @@ void PatchButtonPanel::setTotalCount(int totalCount)
 	totalSize_ = totalCount;
 	numPages_ = totalCount / pageSize_;
 	if (totalCount % pageSize_ != 0) numPages_++;
+}
+
+void PatchButtonPanel::changeGridSize(int newWidth, int newHeight) {
+	// Remove old patch grid
+	removeChildComponent(patchButtons_.get());
+
+	// Install new patch grid
+	gridWidth_ = newWidth;
+	gridHeight_ = newHeight;
+	pageSize_ = gridWidth_ * gridHeight_;
+	numPages_ = totalSize_ / pageSize_;
+	if (totalSize_ % pageSize_ != 0) numPages_++;
+	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index); });
+	addAndMakeVisible(patchButtons_.get());
+
+	resized();
+	refresh(true, indexOfActive());
 }
 
 void PatchButtonPanel::setupPageButtons() {
@@ -198,7 +240,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 void PatchButtonPanel::resized()
 {
 	Rectangle<int> area(getLocalBounds());
-	auto pageNumberStrip = area.removeFromBottom(40).withTrimmedTop(8);
+	auto pageNumberStrip = area.removeFromBottom(LAYOUT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_NORMAL);
 	FlexBox pageNumberBox;
 	pageNumberBox.flexDirection = FlexBox::Direction::row;
 	pageNumberBox.justifyContent = FlexBox::JustifyContent::center;
@@ -209,16 +251,17 @@ void PatchButtonPanel::resized()
 		auto page = pageNumbers_[i];
 		if (page->isVisible()) {
 			if (i > 0 && pageButtonMap_[i] != pageButtonMap_[i - 1] + 1) {
-				pageNumberBox.items.add(FlexItem(*ellipsis_[ecounter]).withHeight(32).withWidth(32));
+				pageNumberBox.items.add(FlexItem(*ellipsis_[ecounter]).withHeight(LAYOUT_SMALL_ICON_HEIGHT).withWidth(LAYOUT_SMALL_ICON_WIDTH));
 				ellipsis_[ecounter++]->setVisible(true);
 			}
-			pageNumberBox.items.add(FlexItem(*page).withHeight(32).withWidth((float)page->getBestWidthForHeight(32)));
+			pageNumberBox.items.add(FlexItem(*page).withHeight(LAYOUT_LINE_HEIGHT).withWidth((float)page->getBestWidthForHeight(LAYOUT_LINE_HEIGHT)));
 		}
 	}
 	pageNumberBox.performLayout(pageNumberStrip);
+	gridSizeSlider_.setBounds(pageNumberStrip.removeFromRight(LAYOUT_BUTTON_WIDTH));
 
-	pageDown_.setBounds(area.removeFromLeft(32).withTrimmedRight(8));
-	pageUp_.setBounds(area.removeFromRight(32).withTrimmedLeft(8));
+	pageDown_.setBounds(area.removeFromLeft(LAYOUT_SMALL_ICON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
+	pageUp_.setBounds(area.removeFromRight(LAYOUT_SMALL_ICON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 
 	patchButtons_->setBounds(area);
 }

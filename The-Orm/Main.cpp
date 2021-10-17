@@ -10,6 +10,7 @@
 
 #include "Settings.h"
 #include "UIModel.h"
+#include "OrmLookAndFeel.h"
 
 #include "GenericAdaptation.h"
 #include "embedded_module.h"
@@ -24,6 +25,7 @@
 #endif
 #endif
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 #include "sentry.h"
 #include "sentry-config.h"
@@ -53,6 +55,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 	}
 }
 #endif
+#endif
 
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication, private ChangeListener
@@ -70,8 +73,8 @@ public:
     {
 		ignoreUnused(commandLine);
 
-		// This method is where you should put your application's initialization code..
-		char *applicationDataDirName = "KnobKraftOrm";
+		// This method is where you should put your application's initialization code...
+		auto applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
 
 #ifdef USE_SPARKLE
@@ -86,6 +89,7 @@ public:
 
 		// Init python with the embedded pytschirp module, if the Python init was successful
 		if (knobkraft::GenericAdaptation::hasPython()) {
+			pybind11::gil_scoped_acquire acquire;
 			globalImportEmbeddedModules();
 		}
 
@@ -97,6 +101,7 @@ public:
 		}
 		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 		// Initialize sentry for error crash reporting
 		sentry_options_t *options = sentry_options_new();
@@ -125,6 +130,7 @@ public:
 		// Fire a test event to see if Sentry actually works
 		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_INFO,"custom","Launching KnobKraft Orm"));
 #endif
+#endif
 
 		// Window Title Refresher
 		UIModel::instance()->windowTitle_.addChangeListener(this);
@@ -150,10 +156,13 @@ public:
 		// Unregister
 		UIModel::instance()->windowTitle_.removeChangeListener(this);
 
-        // Add your application's shutdown code here..
+        // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
-        mainWindow = nullptr; // (deletes our window)
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
+
+		mainWindow = nullptr; // (deletes our window)
 
 		// The UI is gone, we don't need the UIModel anymore
 		UIModel::shutdown();
@@ -165,9 +174,11 @@ public:
 		Settings::instance().saveAndClose();
 		Settings::shutdown();
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 		// Sentry shutdown
 		sentry_shutdown();
+#endif
 #endif
     }
 
@@ -211,6 +222,10 @@ public:
         {
 			setResizable(true, true);
             setUsingNativeTitleBar (true);
+
+			// Select colour scheme
+			ormLookAndFeel_.setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
+			setLookAndFeel(&ormLookAndFeel_);
 			
 #if JUCE_IOS || JUCE_ANDROID
 			setFullScreen(true);
@@ -229,8 +244,14 @@ public:
 				centreWithSize(getWidth(), getHeight());
 			}
 #endif
-			setVisible(true);
+			setVisible(true); //NOLINT
+
+			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
         }
+
+		virtual ~MainWindow() {
+			setLookAndFeel(nullptr);
+		}
 
         void closeButtonPressed() override
         {
@@ -250,7 +271,10 @@ public:
         */
 
     private:
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
+		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
+
+		OrmLookAndFeel ormLookAndFeel_;
+		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
     };
 
 

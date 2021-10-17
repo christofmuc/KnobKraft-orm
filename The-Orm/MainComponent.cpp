@@ -13,6 +13,7 @@
 #include "AutoCategorizeWindow.h"
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
+#include "ExportDialog.h"
 
 #include "Settings.h"
 
@@ -25,12 +26,17 @@
 #include "RefaceDX.h"
 #include "BCR2000.h"
 #include "MKS80.h"
+#include "MKS50.h"
 
 #include "GenericAdaptation.h"
+#include "PatchInterchangeFormat.h"
 
+#include "LayoutConstants.h"
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 #include "sentry.h"
+#endif
 #endif
 
 #ifdef USE_SPARKLE
@@ -43,7 +49,7 @@
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
-	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const &color) : midikraft::SynthHolder(synth, color) {
+	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(synth, color) {
 	}
 
 	std::string getName() override
@@ -54,7 +60,7 @@ public:
 
 	bool isActive() override
 	{
-		return device() ? device()->wasDetected() : false;
+		return device() && device()->wasDetected();
 	}
 
 
@@ -67,7 +73,7 @@ public:
 
 Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet) {
 	auto lAF = &getLookAndFeel();
-	auto v4 = dynamic_cast<LookAndFeel_V4 *>(lAF);
+	auto v4 = dynamic_cast<LookAndFeel_V4*>(lAF);
 	if (v4) {
 		auto colorScheme = v4->getCurrentColourScheme();
 		return colorScheme.getUIColour(colourToGet);
@@ -78,8 +84,8 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
+	globalScaling_(1.0f),
 	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-	resizerBar_(&stretchableManager_, 1, false),
 	logArea_(&logView_, BorderSize<int>(8)),
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	buttons_(301)
@@ -89,7 +95,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	auto customDatabase = Settings::instance().get("LastDatabase");
 	File databaseFile(customDatabase);
 	if (databaseFile.existsAsFile()) {
-		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase);
+		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	}
 	else {
 		database_ = std::make_unique<midikraft::PatchDatabase>();
@@ -103,7 +109,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
-	// Create the list of all synthesizers!
+	// Create the list of all synthesizers!	
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
@@ -111,7 +117,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	//synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
+	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
@@ -145,8 +152,16 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	autodetector_.addChangeListener(&synthList_);
 
 	// Prepare for resizing the UI to fit on the screen. Crash on headless devices
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
-	setAcceptableGlobalScaleFactor();
+	globalScaling_ = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
+	float scale = calcAcceptableGlobalScaleFactor();
+	auto persistedZoom = Settings::instance().get("zoom", "0");
+	if (persistedZoom != "0") {
+		float stored = (float)atof(persistedZoom.c_str());
+		if (stored >= 0.5f && stored <= 3.0f) {
+			scale = stored;
+		}
+	}
+	setZoomFactor(scale);
 
 	// Create the menu bar structure
 	LambdaMenuModel::TMenuStructure menuStructure = {
@@ -155,15 +170,19 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Open database..." },
 				{ "Save database as..." },
 				{ "Open recent...", true, 3333, [this]() {  return recentFileMenu(); }, [this](int selected) {  recentFileSelected(selected); }  },
+				{ "Export multiple databases..."  },
+				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Delete patches..." }, { "Reindex patches..." } } } },
+		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
 		{3, { "Categories", { { "Edit auto-categories" }, { "Edit category import mapping" },  { "Rerun auto categorize" } } } },
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 			{ "Crash software.."},
 			{ "Crash reporting consent" },
+#endif
 #endif
 			{ "Check for updates..." },
 			{ "About" } } } }
@@ -177,71 +196,101 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
-			// This will create the file on demand, copying out the built-in information!
-			EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const &newDefinitions) {
-				database_->updateCategories(newDefinitions);
-				UIModel::instance()->categoriesChanged.sendChangeMessage();
+		// This will create the file on demand, copying out the built-in information!
+		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
+			database_->updateCategories(newDefinitions);
+			UIModel::instance()->categoriesChanged.sendChangeMessage();
+		});
+		/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			automaticCategories_->getAutoCategoryFile().revealToUser();
+		}*/
+	} } },
+	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
+		// This will create the file on demand, copying out the built-in information!
+		if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
+			automaticCategories_->getAutoCategoryMappingFile().revealToUser();
+		}
+	} } },
+	{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
+		auto currentFilter = patchView_->currentFilter();
+		int affected = database_->getPatchesCount(currentFilter);
+		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
+			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
+			"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
+			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
+			)) {
+			AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
+				patchView_->retrieveFirstPageFromDatabase();
 			});
-			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-				automaticCategories_->getAutoCategoryFile().revealToUser();
-			}*/
-		} } },
-		{ "Edit category import mapping", { "Edit category import mapping", [this]() {
-			// This will create the file on demand, copying out the built-in information!
-			if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
-				automaticCategories_->getAutoCategoryMappingFile().revealToUser();
-			}
-		} } },
-		{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
-			auto currentFilter = patchView_->buildFilter();
-			int affected = database_->getPatchesCount(currentFilter);
-			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
-				"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
-				"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
-				"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
-				)) {
-				AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
-					patchView_->retrieveFirstPageFromDatabase();
-				});
-				window.runThread();
-			}
-		} } },
-		{ "About", { "About", [this]() {
-			aboutBox();
+			window.runThread();
+		}
+	} } },
+	{ "About", { "About", [this]() {
+		aboutBox();
+	}}},
+	{ "Quit", { "Quit", [this]() {
+		JUCEApplicationBase::quit();
+	}}},
+		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+		{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
+		{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
+		{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
+		{ "Scale 150%", { "Scale 150%", [this]() { setZoomFactor(1.5f); }}},
+		{ "Scale 175%", { "Scale 175%", [this]() { setZoomFactor(1.75f); }}},
+		{ "Scale 200%", { "Scale 200%", [this]() { setZoomFactor(2.0f); }}},
+		{ "New database...", { "New database...", [this] {
+			createNewDatabase();
 		}}},
-		{ "Quit", { "Quit", [this]() {
-			JUCEApplicationBase::quit();
+		{ "Open database...", { "Open database...", [this] {
+			openDatabase();
 		}}},
-			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-			{ "Scale 100%", { "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-			{ "Scale 125%", { "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-			{ "Scale 150%", { "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-			{ "Scale 175%", { "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-			{ "Scale 200%", { "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-			{ "New database...", { "New database...", [this] {
-				createNewDatabase();
-			}}},
-			{ "Open database...", { "Open database...", [this] {
-				openDatabase();
-			}}},
-			{ "Save database as...", { "Save database as...", [this] {
-				saveDatabaseAs();
-			}}},
-			{ "Delete patches...", { "Delete patches...", [this] {
-				patchView_->deletePatches();
-			}}},
-			{ "Reindex patches...", { "Reindex patches...", [this] {
-				patchView_->reindexPatches();
-			}}},
-		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { "Crash reporting consent", [this] {
-				checkUserConsent();
-			}}},
-			{ "Crash software...", { "Crash software..", [this] {
-				crashTheSoftware();
-			}}},
-		#endif 
+		{ "Save database as...", { "Save database as...", [this] {
+			saveDatabaseAs();
+		}}},
+		{ "Export multiple databases...", { "Export multiple databases...", [this]() {
+			exportDatabases();
+		}}},
+		{ "Merge multiple databases...", { "Merge multiple databases...", [this]() {
+			mergeDatabases();
+		}}},
+		{ "Delete patches...", { "Delete patches...", [this] {
+			patchView_->deletePatches();
+		}}},
+		{ "Reindex patches...", { "Reindex patches...", [this] {
+			patchView_->reindexPatches();
+		}}},
+		{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [this] {
+			auto patch = UIModel::currentPatch();
+			if (patch.patch() && patch.synth()) {
+				std::stringstream buffer;
+				buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
+				bool first = true;
+				auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
+				for (const auto& m : messages) {
+					for (int i = 0; i < m.getRawDataSize(); i++) {
+						if (!first) {
+							buffer << ", ";
+						}
+						else {
+							first = false;
+						}
+						buffer << (int)m.getRawData()[i];
+					}
+				}
+				buffer << "]";
+				SystemClipboard::copyTextToClipboard(buffer.str());
+			}
+		}}},
+	#ifndef _DEBUG
+	#ifdef USE_SENTRY
+		{ "Crash reporting consent...", { "Crash reporting consent", [this] {
+			checkUserConsent();
+		}}},
+		{ "Crash software...", { "Crash software..", [this] {
+			crashTheSoftware();
+		}}},
+	#endif 
+	#endif
 #ifdef USE_SPARKLE
 			{ "Check for updates...", { "Check for updates...", [this] {
 #ifdef WIN32
@@ -297,10 +346,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
 	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 
-	addAndMakeVisible(mainTabs_);
 	addAndMakeVisible(menuBar_);
-	addAndMakeVisible(resizerBar_);
-	addAndMakeVisible(logArea_);
+	splitter_ = std::make_unique<SplitteredComponent>("LogSplitter", SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
+	addAndMakeVisible(splitter_.get());
 
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -322,12 +370,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}
 		}
 	}
-
-	// Setup the rest of the UI
-	// Resizer bar allows to enlarge the log area
-	stretchableManager_.setItemLayout(0, -0.1, -0.9, -0.8); // The editor tab window prefers to get 80%
-	stretchableManager_.setItemLayout(1, 5, 5, 5);  // The resizer is hard-coded to 5 pixels
-	stretchableManager_.setItemLayout(2, -0.1, -0.9, -0.2);
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
@@ -372,6 +414,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 #endif
 	});
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 	auto consentAlreadyGiven = Settings::instance().get("SentryConsent", "unknown");
 	if (consentAlreadyGiven == "unknown") {
@@ -386,12 +429,14 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}
 	}
 #endif
+#endif
 }
 
 MainComponent::~MainComponent()
 {
 	// Prevent memory leaks being reported on shutdown
 	EditCategoryDialog::shutdown();
+	ExportDialog::shutdown();
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -401,6 +446,7 @@ MainComponent::~MainComponent()
 	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+
 	Logger::setCurrentLogger(nullptr);
 }
 
@@ -441,7 +487,7 @@ void MainComponent::createNewDatabase()
 			databaseFile.deleteFile();
 		}
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			persistRecentFileList();
 			// That worked, new database file is in use!
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
@@ -467,11 +513,11 @@ void MainComponent::openDatabase()
 	}
 }
 
-void MainComponent::openDatabase(File &databaseFile)
+void MainComponent::openDatabase(File& databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString())) {
+		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			recentFiles_.removeFile(databaseFile);
 			persistRecentFileList();
 			// That worked, new database file is in use!
@@ -499,6 +545,110 @@ void MainComponent::saveDatabaseAs()
 	}
 }
 
+class MergeAndExport : public ThreadWithProgressWindow {
+public:
+	MergeAndExport(Array<File> databases) : ThreadWithProgressWindow("Exporting databases...", true, true), databases_(databases) {
+	}
+
+	void run() override
+	{
+		// Build synth list
+		std::vector<std::shared_ptr<midikraft::Synth>> allSynths;
+		for (auto & synth : UIModel::instance()->synthList_.allSynths()) {
+			allSynths.push_back(synth.synth());
+		}
+
+		double done = 0.0f;
+		int count = 0;
+		for (auto file : databases_) {
+			if (threadShouldExit()) {
+				break;
+			}
+			File exported = file.withFileExtension(".json");
+			if (!exported.exists()) {
+				std::vector<midikraft::PatchHolder> allPatches;
+				try {
+					midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
+					auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+					SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+					allPatches = mergeSource.getPatches(filter, 0, -1);
+				}
+				catch (midikraft::PatchDatabaseReadonlyException& e) {
+					ignoreUnused(e);
+					// This exception is thrown when opening the database caused a write operation. Most likely this is an old database needing to run migration code first.
+					// We'll do this by creating a backup as temporary file.
+					File tempfile = File::createTempFile("db3");
+					try {
+						midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
+						midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
+						auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+						SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+						allPatches = mergeSource.getPatches(filter, 0, -1);
+					}
+					catch (midikraft::PatchDatabaseException& e) {
+						SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
+					}
+					tempfile.deleteFile();
+				}
+				catch (midikraft::PatchDatabaseException& e) {
+					SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
+				}
+
+				// We have all patches in memory - write them into a pip file
+				if (allPatches.size() > 0) {
+					midikraft::PatchInterchangeFormat::save(allPatches, exported.getFullPathName().toStdString());
+				}
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Not exporting because file already exists: " + exported.getFullPathName());
+			}
+
+			done += 1.0;
+			setProgress(done / databases_.size());
+			count++;
+		}
+		SimpleLogger::instance()->postMessage("Done, exported " + String(count) + " databases to pip files for reimport and merge");
+	}
+
+private:
+	Array<File> databases_;
+
+};
+
+void MainComponent::exportDatabases()
+{
+	std::string lastPath = Settings::instance().get("LastDatabaseMergePath", "");
+	if (lastPath.empty()) {
+		lastPath = File(midikraft::PatchDatabase::generateDefaultDatabaseLocation()).getParentDirectory().getFullPathName().toStdString();
+	}
+
+	File lastDirectory(lastPath);
+	FileChooser databaseChooser("Please choose a directory with KnobKraft database files that will be exported...", lastDirectory);
+	if (databaseChooser.browseForDirectory()) {
+		Settings::instance().set("LastDatabaseMergePath", databaseChooser.getResult().getFullPathName().toStdString());
+		// Find all databases
+		Array<File> databases;
+		databaseChooser.getResult().findChildFiles(databases, File::TypesOfFileToFind::findFiles, false, "*.db3");
+		MergeAndExport mergeDialog(databases);
+		mergeDialog.runThread();
+	}
+}
+
+void MainComponent::mergeDatabases()
+{
+	std::string lastPath = Settings::instance().get("LastDatabaseMergePath", "");
+	if (lastPath.empty()) {
+		lastPath = File(midikraft::PatchDatabase::generateDefaultDatabaseLocation()).getParentDirectory().getFullPathName().toStdString();
+	}
+
+	File lastDirectory(lastPath);
+	FileChooser databaseChooser("Please choose a directory with KnobKraft json files that will be imported and merged...", lastDirectory);
+	if (databaseChooser.browseForDirectory()) {
+		Settings::instance().set("LastDatabaseMergePath", databaseChooser.getResult().getFullPathName().toStdString());
+		patchView_->bulkImportPIP(databaseChooser.getResult());
+	}
+}
+
 PopupMenu MainComponent::recentFileMenu() {
 	PopupMenu menu;
 	recentFiles_.createPopupMenuItems(menu, 3333, true, false);
@@ -523,6 +673,7 @@ void MainComponent::persistRecentFileList()
 	Settings::instance().set("RecentFiles", recentFiles_.toString().toStdString());
 }
 
+#ifndef _DEBUG
 #ifdef USE_SENTRY
 void MainComponent::checkUserConsent()
 {
@@ -544,30 +695,35 @@ void MainComponent::checkUserConsent()
 	}
 }
 #endif
+#endif
 
 void MainComponent::crashTheSoftware()
 {
 	if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Test software crash", "This function is to check if the crash information upload works. When you press ok, the software will crash.\n\n"
 		"Do you feel like it?")) {
-		char *bad_idea = nullptr;
+		char* bad_idea = nullptr;
 		(*bad_idea) = 0;
 	}
 }
 
-void MainComponent::setAcceptableGlobalScaleFactor() {
+void MainComponent::setZoomFactor(float newZoomInPercentage) {
+	Desktop::getInstance().setGlobalScaleFactor(newZoomInPercentage / globalScaling_);
+	Settings::instance().set("zoom", String(newZoomInPercentage).toStdString());
+}
+
+float MainComponent::calcAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
-	float globalScaling = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
 	auto availableHeight = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
-	std::vector<float> scales = { 0.75f / globalScaling, 1.0f / globalScaling, 1.25f / globalScaling, 1.50f / globalScaling, 1.75f / globalScaling, 2.00f / globalScaling };
-	float goodScale = 0.75f / globalScaling;
+	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
+	float goodScale = 0.75f;
 	for (auto scale : scales) {
 		if (availableHeight > 1024 * scale) {
 			goodScale = scale;
 		}
 	}
-	Desktop::getInstance().setGlobalScaleFactor(goodScale);
+	return goodScale;
 }
 
 void MainComponent::resized()
@@ -576,18 +732,11 @@ void MainComponent::resized()
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
-	auto secondTopRow = area.removeFromTop(60).reduced(8);
+	auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
+		.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
+
 	synthList_.setBounds(secondTopRow);
-	//menuBar_.setBounds(area.removeFromTop(30));
-
-	// make a list of two of our child components that we want to reposition
-	Component* comps[] = { &mainTabs_, &resizerBar_, &logArea_ };
-
-	// this will position the 3 components, one above the other, to fit
-	// vertically into the rectangle provided.
-	stretchableManager_.layOutComponents(comps, 3,
-		area.getX(), area.getY(), area.getWidth(), area.getHeight(),
-		true, true);
+	splitter_->setBounds(area);
 }
 
 void MainComponent::shutdown()
@@ -725,7 +874,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 }
 
-int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name) {
+int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, String const& name) {
 	StringArray tabnames = mainTabs->getTabNames();
 	for (int i = 0; i < mainTabs->getNumTabs(); i++) {
 		if (tabnames[i].endsWithIgnoreCase(name)) {

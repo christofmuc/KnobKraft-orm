@@ -25,7 +25,8 @@ public:
 
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);
-	void setPatches(std::vector<midikraft::PatchHolder> const &patches, int autoSelectTarget = -1);
+	void changeGridSize(int newWidth, int newHeight);
+	void setPatches(std::vector<midikraft::PatchHolder> const& patches, int autoSelectTarget = -1);
 	
 	void refresh(bool async, int autoSelectTarget = -1);
 
@@ -50,7 +51,6 @@ private:
 	File findPrehearFile(midikraft::PatchHolder const &patch);
 	void refreshThumbnail(int i);
 	int indexOfActive() const;
-	void resizePageNumbers();
 	void setupPageButtons();
 
 	std::vector<midikraft::PatchHolder> patches_;
@@ -63,8 +63,10 @@ private:
 	TextButton pageUp_, pageDown_;
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
+	Slider gridSizeSlider_;
 	int pageBase_;
 	int pageNumber_;
+	int gridWidth_, gridHeight_;
 	int pageSize_;
 	int totalSize_;
 	int numPages_;
