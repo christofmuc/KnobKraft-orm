@@ -12,7 +12,7 @@ set(adaptation_files
 	"Behringer Deepmind 12.py" "DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" 
 	"DSI Prophet 12.py" "ElectraOne.py" "KawaiK1.py" "KawaiK3.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMS2000.py" "Matrix 6.py"
 	"Matrix1000.py" "OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "PioneerToraiz-AS1.py" "QuasimidiCyber6.py" "Roland JX-8P.py" "RolandD50.py" "Sequential Pro 3.py"
-	"Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Waldorf Blofeld.py"
+	"Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" "Studiologic Sledge.py" "Waldorf Blofeld.py"
 )
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
