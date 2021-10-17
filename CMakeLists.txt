@@ -175,6 +175,7 @@ target_compile_definitions(juce-static
 		JUCE_COREGRAPHICS_DRAW_ASYNC=1
 		JUCE_WIN_PER_MONITOR_DPI_AWARE=1
 		JUCE_USE_FLAC=1
+		JUCE_MODAL_LOOPS_PERMITTED=1
 		# JUCE_USE_WINRT_MIDI=1 # So much doesn't work when activating this that this is really scary
 	INTERFACE
 		$<TARGET_PROPERTY:juce-static,COMPILE_DEFINITIONS>)
