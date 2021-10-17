@@ -59,29 +59,25 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(splitters_.get());
 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
+	{ "retrieveActiveSynthPatches", { "Import patches from synth", [this]() {
 		retrievePatches();
 	} } },
 	{ "fetchEditBuffer",{ "Import edit buffer from synth", [this]() {
 		retrieveEditBuffer();
 	} } },
-	{ "receiveManualDump",{ 2, "Receive manual dump", [this]() {
+	{ "receiveManualDump",{ "Receive manual dump", [this]() {
 		receiveManualDump();
 	} } },
-	{ "loadsysEx", { 3, "Import sysex files from computer", [this]() {
-	},  } },
 	{ "loadsysEx", { "Import sysex files from computer", [this]() {
 		loadPatches();
 	} } },
-	{ "exportSysex", { 4, "Export into sysex files", [this]() {
+	{ "exportSysex", { "Export into sysex files", [this]() {
 		exportPatches();
 	}}},
 	{ "exportPIF", { "Export into PIF", [this]() {
-	} } },
-	{ "exportPIF", { 5, "Export into PIF", [this]() {
 		createPatchInterchangeFile();
 	} } },
-	{ "showDiff", { 6, "Show patch comparison", [this]() {
+	{ "showDiff", { "Show patch comparison", [this]() {
 		showPatchDiffDialog();
 	} } },
 	};
@@ -273,7 +269,7 @@ void PatchView::retrievePatches() {
 							auto enhanced = autoCategorize(patchesLoaded);
 							mergeNewPatches(enhanced);
 						});
-					});
+					}, automaticCategories_); //ToDo - this seems to be duplicate.
 				}
 				else {
 					// Old, standard version. This is just a list of bank numbers
@@ -578,20 +574,6 @@ StringArray PatchView::sourceNameList() {
 	sourceNameList.sortNatural();
 	sourceNameList.insert(0, kAllPatchesFilter);
 	return sourceNameList;
-}
-
-void PatchView::rebuildDataTypeFilterBox() {
-	advancedFilters_.dataTypeSelector_.clear();
-	auto dflc = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(UIModel::instance()->currentSynth_.smartSynth());
-	if (dflc) {
-		StringArray typeNameList;
-		typeNameList.add(kAllDataTypesFilter);
-		for (size_t i = 0; i < dflc->dataTypeNames().size(); i++) {
-			auto typeName = dflc->dataTypeNames()[i];
-			typeNameList.add(typeName.name);
-		}
-		advancedFilters_.dataTypeSelector_.addItemList(typeNameList, 1);
-	}
 }
 
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {

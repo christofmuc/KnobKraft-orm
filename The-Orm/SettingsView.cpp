@@ -91,7 +91,7 @@ void SettingsView::loadGlobals() {
 				propertyEditor_.setProperties(settings);
 				resized();
 			});
-		});
+		}, nullptr); // global settings don't need an autocategorizer
 	}
 }
 
