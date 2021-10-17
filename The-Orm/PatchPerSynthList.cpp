@@ -61,7 +61,7 @@ void PatchPerSynthList::changeListenerCallback(ChangeBroadcaster* source)
 			buttonForSynth_[synthName]->setPatchHolder(&tempHolder, false, false);
 		}
 		else {
-			jassertfalse;
+			//jassertfalse;
 		}
 	}
 }

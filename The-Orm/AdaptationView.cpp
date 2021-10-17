@@ -24,16 +24,16 @@ namespace knobkraft {
 		addAndMakeVisible(adaptationInfo_);
 
 		LambdaButtonStrip::TButtonMap buttons = {
-			{ "ReloadAdaptation", { 0, "Reload python file", [this]() {
+			{ "ReloadAdaptation", { "Reload python file", [this]() {
 				if (adaptation_ && adaptation_->isFromFile()) {
 					adaptation_->reloadPython();
 					setupForAdaptation(adaptation_);
-				}
+	}
 				else {
 					AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Not a user defined adaptation", "Only Adaptation modules that are loaded from a Python script can be reloaded");
 				}
 			}}},
-			{ "EditAdaptation", { 1, "Edit python file", [this]() {
+			{ "EditAdaptation", { "Edit python file", [this]() {
 				if (adaptation_) {
 					if (!adaptation_->isFromFile()) {
 						// Not possible yet, but offer to break out from binary

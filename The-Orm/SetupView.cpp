@@ -77,20 +77,20 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 
 	// Define function buttons
 	functionButtons_.setButtonDefinitions({
-			{ "synthDetection", {0, "Quick check connectivity", [this]() {
+			{ "synthDetection", { "Quick check connectivity", [this]() {
 				quickConfigure();
 			} } },
-			{ "loopDetection", {1, "Check for MIDI loops", [this]() {
+			{ "loopDetection", { "Check for MIDI loops", [this]() {
 				loopDetection();
 			} } },
-			{"selectAdaptationDirectory", {2, "Set User Adaptation Dir", [this]() {
+			{"selectAdaptationDirectory", { "Set User Adaptation Dir", [this]() {
 				FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
 				if (directoryChooser.browseForDirectory()) {
 					knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
 					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
 				}
 			} } },
-			{"createNewAdaptation", {3, "Create new adaptation", [this]() {
+			{"createNewAdaptation", { "Create new adaptation", [this]() {
 				knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
 			} } }
 		});

@@ -154,7 +154,8 @@ def calculateFingerprint(message):
         data_block[2:2 + 16] = [0] * 16
         return hashlib.md5(bytearray(data_block)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
     # Don't know why we should come here, but to be safe, just hash all bytes
-    return hashlib.md5(bytearray(message)).hexdigest()
+    raise  Exception("This is not an Andromeda program")
+    #return hashlib.md5(bytearray(message)).hexdigest()
 
 
 def getDataBlock(message):

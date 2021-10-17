@@ -22,6 +22,7 @@ namespace knobkraft {
 			{ "DSI Prophet 12", "DSI_Prophet_12", std::string(DSI_Prophet_12_py, DSI_Prophet_12_py + DSI_Prophet_12_py_size) },
 			{ "Electra One", "Electra_one", std::string(ElectraOne_py, ElectraOne_py + ElectraOne_py_size) },
 			{ "Kawai K1", "Kawai_K1", std::string(KawaiK1_py, KawaiK1_py + KawaiK1_py_size) },
+			{ "Korg 03R/W", "Korg_03RW", std::string(Korg_03RW_py, Korg_03RW_py + Korg_03RW_py_size) },
 			{ "Korg DW-6000", "Korg_DW_6000", std::string(KorgDW6000_py, KorgDW6000_py + KorgDW6000_py_size) },
 			{ "Korg MS2000", "Korg_MS2000", std::string(KorgMS2000_py, KorgMS2000_py + KorgMS2000_py_size) },
 			{ "Matrix 6", "Matrix_6", std::string(Matrix_6_py, Matrix_6_py + Matrix_6_py_size) },
@@ -42,6 +43,8 @@ namespace knobkraft {
 			{ "Sequential Prophet 6", "Sequential_Prophet_6", std::string(Sequential_Prophet_6_py, Sequential_Prophet_6_py + Sequential_Prophet_6_py_size) },
 			{ "Sequential Prophet X", "Sequential_Prophet_X", std::string(Sequential_Prophet_X_py, Sequential_Prophet_X_py + Sequential_Prophet_X_py_size) },
 			{ "Waldorf Blofeld", "Waldorf_Blofeld", std::string(Waldorf_Blofeld_py, Waldorf_Blofeld_py + Waldorf_Blofeld_py_size) },
+			{ "Yamaha DX7", "Yamaha_DX7", std::string(YamahaDX7_py, YamahaDX7_py+ YamahaDX7_py_size) },
+			{ "Yamaha DX7II", "Yamaha_DX7II", std::string(YamahaDX7II_py, YamahaDX7II_py+ YamahaDX7II_py_size) },
 		};
 	}
 

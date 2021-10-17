@@ -61,6 +61,16 @@ IF (WIN32)
 		URL https://www.python.org/ftp/python/3.8.7/python-3.8.7-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
+
+	FetchContent_Declare(
+		winsparkle
+		URL https://github.com/vslavik/winsparkle/releases/download/v0.7.0/WinSparkle-0.7.0.zip
+	)
+	FetchContent_MakeAvailable(winsparkle)
+	#set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
+	#set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
+	set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/include")
+	set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/x64/Debug")
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
 
@@ -131,6 +141,9 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_AL
 
 # Adding JUCE 6.0
 add_subdirectory("third_party/JUCE")
+
+# Adding JUCE modules
+add_subdirectory("third_party/")
 
 # Build a static library from juce 
 add_library(juce-static STATIC)

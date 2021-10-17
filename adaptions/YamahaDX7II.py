@@ -315,10 +315,9 @@ def run_tests():
                     blocks = getDataBlocksFromUniversalBulkDump(message)
                     system_data = blocks[0][10:]
                     print("MIDI transmit channel", system_data[0])
-                    print("MIDI receive channel 1", system_data[0])
-                    print("MIDI receive channel 2", system_data[0])
-                    print("MIDI receive channel 2", system_data[0])
-                    if system_data[14] != (message[2] & 0x0f):
+                    print("MIDI receive channel 1", system_data[2])
+                    print("MIDI receive channel 2", system_data[3])
+                    print("MIDI device ID", system_data[14])
 
 
 if __name__ == "__main__":

@@ -10,10 +10,9 @@
 #include "MidiController.h"
 #include "UIModel.h"
 
-#include "HorizontalLayoutContainer.h"
-
 #include "AutoCategorizeWindow.h"
 #include "AutoDetectProgressWindow.h"
+#include "EditCategoryDialog.h"
 
 #include "Settings.h"
 
@@ -29,8 +28,16 @@
 
 #include "GenericAdaptation.h"
 
+
 #ifdef USE_SENTRY
 #include "sentry.h"
+#endif
+
+#ifdef USE_SPARKLE
+#include "BinaryData.h"
+#ifdef WIN32
+#include <winsparkle.h>
+#endif
 #endif
 
 
@@ -92,7 +99,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		recentFiles_.restoreFromString(Settings::instance().get("RecentFiles"));
 	}
 
-	automaticCategories_ = std::make_shared<midikraft::AutomaticCategory>(); // Load the automatic category definitions
+	automaticCategories_ = std::make_shared<midikraft::AutomaticCategory>(database_->getCategories()); // Load the automatic category definitions
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
@@ -155,31 +162,37 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
 #ifdef USE_SENTRY
+			{ "Crash software.."},
 			{ "Crash reporting consent" },
 #endif
+			{ "Check for updates..." },
 			{ "About" } } } }
 	};
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { 0, "Auto-detect synths", [this, synths]() {
+	{ "Auto-detect synths", { "Auto-detect synths", [this, synths]() {
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
-		{ "Edit auto-categories", { 1, "Edit auto-categories", [this]() {
-		// This will create the file on demand, copying out the built-in information!
-			if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
+			// This will create the file on demand, copying out the built-in information!
+			EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const &newDefinitions) {
+				database_->updateCategories(newDefinitions);
+				UIModel::instance()->categoriesChanged.sendChangeMessage();
+			});
+			/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryFile().revealToUser();
-			}
+			}*/
 		} } },
-		{ "Edit category import mapping", { 2, "Edit category import mapping", [this]() {
+		{ "Edit category import mapping", { "Edit category import mapping", [this]() {
 			// This will create the file on demand, copying out the built-in information!
 			if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
 				automaticCategories_->getAutoCategoryMappingFile().revealToUser();
 			}
 		} } },
-		{ "Rerun auto categorize...", { 3, "Rerun auto categorize", [this]() {
+		{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
 			auto currentFilter = patchView_->buildFilter();
 			int affected = database_->getPatchesCount(currentFilter);
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
@@ -193,39 +206,50 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				window.runThread();
 			}
 		} } },
-		{ "About", { 4, "About", [this]() {
+		{ "About", { "About", [this]() {
 			aboutBox();
 		}}},
-		{ "Quit", { 5, "Quit", [this]() {
+		{ "Quit", { "Quit", [this]() {
 			JUCEApplicationBase::quit();
 		}}},
 			//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
-			{ "Scale 75%", { 6, "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
-			{ "Scale 100%", { 7, "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
-			{ "Scale 125%", { 8, "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
-			{ "Scale 150%", { 9, "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
-			{ "Scale 175%", { 10, "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
-			{ "Scale 200%", { 11, "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
-			{ "New database...", { 12, "New database...", [this] {
+			{ "Scale 75%", { "Scale 75%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(0.75f / globalScaling); }}},
+			{ "Scale 100%", { "Scale 100%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.0f / globalScaling); }}},
+			{ "Scale 125%", { "Scale 125%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.25f / globalScaling); }}},
+			{ "Scale 150%", { "Scale 150%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.5f / globalScaling); }}},
+			{ "Scale 175%", { "Scale 175%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(1.75f / globalScaling); }}},
+			{ "Scale 200%", { "Scale 200%", [this, globalScaling]() { Desktop::getInstance().setGlobalScaleFactor(2.0f / globalScaling); }}},
+			{ "New database...", { "New database...", [this] {
 				createNewDatabase();
 			}}},
-			{ "Open database...", { 13, "Open database...", [this] {
+			{ "Open database...", { "Open database...", [this] {
 				openDatabase();
 			}}},
-			{ "Save database as...", { 14, "Save database as...", [this] {
+			{ "Save database as...", { "Save database as...", [this] {
 				saveDatabaseAs();
 			}}},
-			{ "Delete patches...", { 15, "Delete patches...", [this] {
+			{ "Delete patches...", { "Delete patches...", [this] {
 				patchView_->deletePatches();
 			}}},
-			{ "Reindex patches...", { 16, "Reindex patches...", [this] {
+			{ "Reindex patches...", { "Reindex patches...", [this] {
 				patchView_->reindexPatches();
 			}}},
 		#ifdef USE_SENTRY
-			{ "Crash reporting consent...", { 17, "Crash reporting consent", [this] {
+			{ "Crash reporting consent...", { "Crash reporting consent", [this] {
 				checkUserConsent();
 			}}},
-		#endif
+			{ "Crash software...", { "Crash software..", [this] {
+				crashTheSoftware();
+			}}},
+		#endif 
+#ifdef USE_SPARKLE
+			{ "Check for updates...", { "Check for updates...", [this] {
+#ifdef WIN32
+				win_sparkle_check_update_with_ui();
+#endif
+			}}},
+#endif
+
 	};
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
@@ -239,6 +263,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Create the patch view
 	patchView_ = std::make_unique<PatchView>(*database_, synths, automaticCategories_);
+	//patchView_ = std::make_unique<PatchView>(commandManager_, *database_, synths, automaticCategories_);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
 	//recordingView_ = std::make_unique<RecordingView>(*patchView_);
@@ -339,9 +364,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}
 	}
 
-	// Refresh Window title
-	MessageManager::callAsync([]() {
+	// Refresh Window title and other things to do when the MainComponent is displayed
+	MessageManager::callAsync([this]() {
 		UIModel::instance()->windowTitle_.sendChangeMessage();
+#ifdef WIN32
+		checkForUpdatesOnStartup();
+#endif
 	});
 
 #ifdef USE_SENTRY
@@ -362,10 +390,42 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+	// Prevent memory leaks being reported on shutdown
+	EditCategoryDialog::shutdown();
+
+#ifdef USE_SPARKLE
+#ifdef WIN32
+	win_sparkle_cleanup();
+#endif
+#endif
 	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	Logger::setCurrentLogger(nullptr);
+}
+
+#ifdef USE_SPARKLE
+void logSparkleError() {
+	SimpleLogger::instance()->postMessage("Error encountered in WinSparkle");
+}
+
+void sparkleInducedShutdown() {
+	MessageManager::callAsync([]() {
+		JUCEApplicationBase::quit();
+	});
+}
+#endif
+
+void MainComponent::checkForUpdatesOnStartup() {
+#ifdef USE_SPARKLE
+#ifdef WIN32
+	win_sparkle_set_appcast_url("https://raw.githubusercontent.com/christofmuc/appcasts/master/KnobKraft-Orm/appcast.xml");
+	win_sparkle_set_dsa_pub_pem(BinaryData::dsa_pub_pem);
+	win_sparkle_set_error_callback(logSparkleError);
+	win_sparkle_set_shutdown_request_callback(sparkleInducedShutdown);
+	win_sparkle_init();
+#endif
+#endif
 }
 
 void MainComponent::createNewDatabase()
@@ -484,6 +544,15 @@ void MainComponent::checkUserConsent()
 	}
 }
 #endif
+
+void MainComponent::crashTheSoftware()
+{
+	if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Test software crash", "This function is to check if the crash information upload works. When you press ok, the software will crash.\n\n"
+		"Do you feel like it?")) {
+		char *bad_idea = nullptr;
+		(*bad_idea) = 0;
+	}
+}
 
 void MainComponent::setAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%

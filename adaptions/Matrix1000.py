@@ -93,7 +93,7 @@ def renamePatch(message, new_name):
     if isSingleProgramDump(message) or isEditBufferDump(message):
         # The Matrix 1000 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
         valid_name = [ord(x) if ord(x) < 0x60 else (ord(x) - 0x20) for x in new_name]
-        new_name_nibbles = nibble([(valid_name[i] & 0x3f) if i < len(new_name) else 0x20 for i in range(8)])
+        new_name_nibbles = nibble([(valid_name[i] & 0x7f) if i < len(new_name) else 0x20 for i in range(8)])
         return rebuildChecksum(message[0:5] + new_name_nibbles + message[21:])
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
@@ -141,7 +141,17 @@ def nibble(message):
     return result
 
 
-# Testing patch renaming
-# message = [0xf0, 0x10, 0x06, 0x01, 99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-# renamed = renamePatch(message, "test")
-# print(nameFromDump(renamed))
+import binascii
+
+
+def run_tests():
+    patch_from_device = "f01006011002040e040b0402030a0300020103060302000c0000000901030001000c00000000000300020000000f0101000000010000000000040600000000010000000000020302000000080200000100060000000d000f030a03000000000000000009000f0300000000000000000f030d020f030000000000000000000000000f030d0204010000000000000f03080200000f030203080200000000090008020f000f010f020f03000000000000000000000000000000000f03000005000e0102030f030f03000000000000000000000000000000000000000001000f030b0003000f03040000000000000002000f030b000b000f030c000400010209000400020004000a00090c01000a000f03040057f7"
+    patch_message = list(binascii.unhexlify(patch_from_device))
+    print(nameFromDump(patch_message))
+    patch_renamed = renamePatch(patch_message, nameFromDump(patch_message))
+    assert nameFromDump(patch_renamed) == nameFromDump(patch_message)
+    assert patch_renamed == patch_message
+
+
+if __name__ == "__main__":
+    run_tests()

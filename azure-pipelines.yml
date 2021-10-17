@@ -35,6 +35,7 @@ jobs:
     - script: git submodule update --init --recursive
       displayName: Checking out submodules
     - task: UsePythonVersion@0
+      name: UsePython
       inputs:
         versionSpec: '3.8' 
         addToPath: true 
@@ -54,13 +55,21 @@ jobs:
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
+<<<<<<< HEAD
         cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.8.7\x64\python.exe'
+=======
+        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\python.exe'
+>>>>>>> master
       condition: variables.isWindows2017
     - task: CMake@1
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
+<<<<<<< HEAD
         cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=C:\hostedtoolcache\windows\Python\3.8.7\x64\python.exe'
+=======
+        cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\python.exe'
+>>>>>>> master
       condition: variables.isWindows2019
     - task: CMake@1
       displayName: Running CMake build for Windows
@@ -69,7 +78,11 @@ jobs:
         cmakeArgs: '--build . --config RelWithDebInfo'
       condition: variables.isWindows
 
+<<<<<<< HEAD
     - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.11.0.exe
+=======
+    - publish: $(System.DefaultWorkingDirectory)/build/The-Orm/knobkraft_orm_setup_1.12.0.exe
+>>>>>>> master
       displayName: Publish Windows Installer
       artifact: WindowsInstaller
       condition: variables.isWindows2019
@@ -91,7 +104,11 @@ jobs:
       displayName: Build with CMake for Mac
       condition: variables.isMac
       
+<<<<<<< HEAD
     - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.11.0-Darwin.dmg
+=======
+    - publish: $(System.DefaultWorkingDirectory)/builds/release/KnobKraft_Orm-1.12.0-Darwin.dmg
+>>>>>>> master
       displayName: Publish Mac Installer
       artifact: MacInstaller
       condition: variables.isMac

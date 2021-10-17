@@ -14,9 +14,9 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Access  | Virus C  | beta | native | Thanks to guavadude@gs |
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
-| Behringer | Deepmind 12 | alpha | adaptation | |
+| Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | native | |
-| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont|
+| Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
 | DSI | Pro 2 | beta | adaptation | |
 | DSI | Prophet 8 | beta | adaptation | |
 | DSI/Sequential | OB-6 | works | native | |
@@ -25,6 +25,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Electra | one | works | adaptation |
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
+| Korg | 03R/W | beta | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | beta | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
@@ -33,7 +34,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
 | Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
-| Prioneer | Toraiz AS-1 | beta | adaptation | |
+| Pioneer | Toraiz AS-1 | beta | adaptation | |
 | Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |

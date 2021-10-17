@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.11.0)
+project(KnobKraftOrm VERSION 1.12.1)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
@@ -15,6 +15,7 @@ OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
 OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
 set(SENTRY_DSN "Sentry DSN URL" CACHE STRING "https://YYYYYYYYYYYYYYYYYY@ZZZZZ.ingest.sentry.io/XXXX")
 set(D_LOG_SENTRY "")
+OPTION(SPARKLE_UPDATES "Turn on WinSparkle update service")
 
 configure_file("version.cpp.in" "version.cpp")
 
@@ -26,6 +27,12 @@ IF(CRASH_REPORTING)
 	SET(SENTRY_DISTRIBUTION_FILES "${SENTRY_INSTALL_PATH}/bin/sentry.dll" "${SENTRY_INSTALL_PATH}/bin/crashpad_handler.exe")
 ENDIF()
 
+IF(SPARKLE_UPDATES)
+	message("Sparkle and WinSparkle updates are turned on, the executable will be linked against WinSparkle")
+	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem") 
+	SET(WINSPARKLE_DISTRIBUTION_FILES "${WINSPARKLE_LIBDIR}/WinSparkle.dll")
+ENDIF()
+
 set(SOURCES
 	AdaptationView.cpp AdaptationView.h
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
@@ -33,6 +40,8 @@ set(SOURCES
 	AutoThumbnailingDialog.cpp AutoThumbnailingDialog.h
 	BCR2000_Component.cpp BCR2000_Component.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
+	EditCategoryDialog.cpp EditCategoryDialog.h
+	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
 	MacroConfig.cpp MacroConfig.h
@@ -87,7 +96,7 @@ set(MIDIKRAFT_LIBRARIES
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
-	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
+	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)
@@ -96,12 +105,17 @@ IF(WIN32)
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY ${D_LOG_SENTRY})
 		set(SENTRY_LIB sentry)
 	ENDIF()
-	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib")
+	IF(SPARKLE_UPDATES)
+		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SPARKLE)
+		set(SPARKLE_DEPENDENCY CodeSigning)
+	ENDIF()
+	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib" "${WINSPARKLE_LIBDIR}")
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
 		sqlite3
 		${SENTRY_LIB}
+		${SPARKLE_DEPENDENCY}
 		)
 ELSEIF(APPLE)
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
@@ -146,7 +160,7 @@ IF(WIN32)
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
 					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
-					${SENTRY_DISTRIBUTION_FILES}
+					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(
