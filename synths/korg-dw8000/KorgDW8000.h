@@ -36,9 +36,9 @@ namespace midikraft {
 		virtual bool needsChannelSpecificDetection() override;
 
 		// Edit Buffer Capability
-		virtual MidiMessage requestEditBufferDump() const override;
-		virtual bool isEditBufferDump(const MidiMessage& message) const override;
-		virtual std::shared_ptr<DataFile> patchFromSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> requestEditBufferDump() const override;
+		virtual bool isEditBufferDump(const std::vector<MidiMessage>& message) const override;
+		virtual std::shared_ptr<DataFile> patchFromSysex(const std::vector<MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const override;
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
