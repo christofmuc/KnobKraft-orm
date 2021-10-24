@@ -144,9 +144,10 @@ namespace midikraft {
 		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
 	}
 
-	std::shared_ptr<DataFile> OB6::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> OB6::patchFromSysex(const std::vector<MidiMessage>& messages) const
 	{
-		if (isOwnSysex(message)) {
+		if (messages.size() == 1 && isOwnSysex(messages[0])) {
+			auto& message = messages[0];
 			if (message.getSysExDataSize() > 2) {
 				uint8 messageCode = message.getSysExData()[2];
 				if (messageCode == 0x02 /* program data dump */ || messageCode == 0x03 /* edit buffer dump */) {
@@ -285,7 +286,7 @@ namespace midikraft {
 			switch (dataTypeID)
 			{
 			case PATCH:
-				return isEditBufferDump(message);
+				return isEditBufferDump({ message });
 			case GLOBAL_SETTINGS:
 				return isGlobalSettingsDump(message);
 			case ALTERNATE_TUNING:
@@ -373,7 +374,7 @@ namespace midikraft {
 		return kOB6GlobalSettings();
 	}
 
-	std::shared_ptr<DataFile> OB6::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> OB6::patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const
 	{
 		return patchFromSysex(message);
 	}
