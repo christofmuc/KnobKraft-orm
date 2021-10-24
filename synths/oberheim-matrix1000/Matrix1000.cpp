@@ -93,9 +93,9 @@ namespace midikraft {
 		return gMatrix1000GlobalSettings;
 	}
 
-	juce::MidiMessage Matrix1000::requestEditBufferDump() const
+	std::vector<MidiMessage> Matrix1000::requestEditBufferDump() const
 	{
-		return createRequest(EDIT_BUFFER, 0x00);
+		return { createRequest(EDIT_BUFFER, 0x00) };
 	}
 
 	MidiMessage Matrix1000::createRequest(REQUEST_TYPE typeNo, uint8 number) const
@@ -196,37 +196,37 @@ namespace midikraft {
 		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
 	}
 
-	bool Matrix1000::isEditBufferDump(const MidiMessage& message) const
+	bool Matrix1000::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
 		// The Matrix1000 either sends Edit Buffers as Program Dumps, or it is a Single Patch Data to Edit Buffer message, which the M1k will never generate on its own, 
 		// but we will when we save data to disk.
 		return isSingleProgramDump(message) || 
-			(isOwnSysex(message) && MidiHelpers::isSysexMessageMatching(message, { {2, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER}, { 3, (uint8)0x00} }));
+			(message.size() == 1 && isOwnSysex(message[0]) && MidiHelpers::isSysexMessageMatching(message[0], { {2, MIDI_COMMAND.SINGLE_PATCH_TO_EDIT_BUFFER}, { 3, (uint8)0x00} }));
 	}
 
 
-	bool Matrix1000::isSingleProgramDump(const MidiMessage& message) const
+	bool Matrix1000::isSingleProgramDump(const std::vector<MidiMessage>& message) const
 	{
-		return isOwnSysex(message)
-			&& message.getSysExDataSize() > 3
-			&& message.getSysExData()[2] == MIDI_COMMAND.SINGLE_PATCH_DATA
-			&& message.getSysExData()[3] >= 0x00
-			&& message.getSysExData()[3] < 100; // Should be a valid program number in this bank
+		return message.size() == 1 && isOwnSysex(message[0])
+			&& message[0].getSysExDataSize() > 3
+			&& message[0].getSysExData()[2] == MIDI_COMMAND.SINGLE_PATCH_DATA
+			&& message[0].getSysExData()[3] >= 0x00
+			&& message[0].getSysExData()[3] < 100; // Should be a valid program number in this bank
 	}
 
-	MidiProgramNumber Matrix1000::getProgramNumber(const MidiMessage &message) const
+	MidiProgramNumber Matrix1000::getProgramNumber(const std::vector<MidiMessage>&message) const
 	{
 		if (isSingleProgramDump(message)) {
-			return MidiProgramNumber::fromZeroBase(message.getSysExData()[3]);
+			return MidiProgramNumber::fromZeroBase(message[0].getSysExData()[3]);
 		}
 		return MidiProgramNumber::fromZeroBase(0);
 	}
 
-	std::shared_ptr<DataFile> Matrix1000::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Matrix1000::patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const
 	{
 		if (isSingleProgramDump(message)) {
 			//TODO doesn't check length of data provided
-			auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(&message.getSysExData()[4], message.getSysExDataSize() - 4), getProgramNumber(message));
+			auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(&message[0].getSysExData()[4], message[0].getSysExDataSize() - 4), getProgramNumber(message));
 			return matrixPatch;
 		}
 		return nullptr;
@@ -275,9 +275,9 @@ namespace midikraft {
 	{
 		switch (streamType) {
 		case StreamLoadCapability::StreamType::BANK_DUMP:
-			return isSingleProgramDump(message) || isSplitPatch(message) || globalSettingsLoader_->isDataFile(message, 0);
+			return isSingleProgramDump({ message }) || isSplitPatch(message) || globalSettingsLoader_->isDataFile(message, 0);
 		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
-			return isEditBufferDump(message);
+			return isEditBufferDump({ message });
 		default:
 			return false;
 		}
@@ -293,7 +293,7 @@ namespace midikraft {
 		for (auto message : messages) {
 			switch (streamType) {
 			case midikraft::StreamLoadCapability::StreamType::BANK_DUMP:
-				if (isSingleProgramDump(message)) {
+				if (isSingleProgramDump({ message })) {
 					found++;
 				}
 				else if (isSplitPatch(message)) {
@@ -304,7 +304,7 @@ namespace midikraft {
 				}
 				break;
 			case midikraft::StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
-				if (isEditBufferDump(message)) {
+				if (isEditBufferDump({ message })) {
 					editbuffer++;
 				}
 				break;
@@ -336,12 +336,12 @@ namespace midikraft {
 	{
 		TPatchVector result;
 		for (auto message : sysexMessages) {
-			if (isSingleProgramDump(message)) {
-				result.push_back(patchFromProgramDumpSysex(message));
+			if (isSingleProgramDump({ message })) {
+				result.push_back(patchFromProgramDumpSysex({ message }));
 			}
-			else if (isEditBufferDump(message)) {
+			else if (isEditBufferDump({ message })) {
 				// This code will be reached for the message format "single patch data to edit buffer", which the M1k will never generate, but I will
-				result.push_back(patchFromSysex(message));
+				result.push_back(patchFromSysex({ message }));
 			}
 			else if (isSplitPatch(message) || globalSettingsLoader_->isDataFile(message, 0)) {
 				// Ignore other messages like global settings and fake split patches
@@ -380,7 +380,7 @@ namespace midikraft {
 		return result;
 	}
 
-	std::shared_ptr<DataFile> Matrix1000::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Matrix1000::patchFromSysex(const std::vector<MidiMessage>& message) const
 	{
 		if (!isEditBufferDump(message)) {
 			jassert(false);
@@ -388,8 +388,8 @@ namespace midikraft {
 		}
 
 		// Decode the data
-		const uint8 *startOfData = &message.getSysExData()[4];
-		auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(startOfData, message.getSysExDataSize() - 4), getProgramNumber(message));
+		const uint8 *startOfData = &message[0].getSysExData()[4];
+		auto matrixPatch = std::make_shared<Matrix1000Patch>(unescapeSysex(startOfData, message[0].getSysExDataSize() - 4), getProgramNumber(message));
 		return matrixPatch;
 	}
 
