@@ -166,19 +166,19 @@ namespace midikraft {
 		}
 	}
 
-	bool KawaiK3::isSingleProgramDump(const MidiMessage& message) const
+	bool KawaiK3::isSingleProgramDump(const std::vector<MidiMessage>& message) const
 	{
-		if (sysexFunction(message) == ONE_BLOCK_DATA_DUMP) {
-			uint8 patchNo = sysexSubcommand(message);
+		if (message.size() == 1 && sysexFunction(message[0]) == ONE_BLOCK_DATA_DUMP) {
+			uint8 patchNo = sysexSubcommand(message[0]);
 			return patchNo < 100;
 		}
 		return false;
 	}
 
-	MidiProgramNumber KawaiK3::getProgramNumber(const MidiMessage &message) const
+	MidiProgramNumber KawaiK3::getProgramNumber(const std::vector<MidiMessage>& message) const
 	{
 		if (isSingleProgramDump(message)) {
-			return MidiProgramNumber::fromZeroBase(sysexSubcommand(message));
+			return MidiProgramNumber::fromZeroBase(sysexSubcommand(message[0]));
 		}
 		return MidiProgramNumber::fromZeroBase(0);
 	}
@@ -255,10 +255,10 @@ namespace midikraft {
 		return {};
 	}
 
-	std::shared_ptr<DataFile> KawaiK3::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> KawaiK3::patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const
 	{
 		if (isSingleProgramDump(message)) {
-			return k3PatchFromSysex(message, 0);
+			return k3PatchFromSysex(message[0], 0);
 		}
 		return {};
 	}
@@ -270,7 +270,7 @@ namespace midikraft {
 
 	std::shared_ptr<Patch> KawaiK3::k3PatchFromSysex(const MidiMessage& message, int indexIntoBankDump /* = 0 */) const {
 		// Parse the sysex and build a patch class that allows access to the individual params in that patch
-		if (isSingleProgramDump(message) || isBankDumpAndNotWaveDump(message)) {
+		if (isSingleProgramDump({ message }) || isBankDumpAndNotWaveDump(message)) {
 			// Build the patch data ("tone data") from the nibbles
 			std::vector<uint8> data;
 			auto rawData = message.getSysExData();
@@ -296,8 +296,8 @@ namespace midikraft {
 				if (data[34] == (sum & 0xff)) {
 					// CRC check successful
 					jassert(toneData.size() == 34);
-					if (isSingleProgramDump(message)) {
-						return std::make_shared<KawaiK3Patch>(getProgramNumber(message), toneData);
+					if (isSingleProgramDump({ message })) {
+						return std::make_shared<KawaiK3Patch>(getProgramNumber({ message }), toneData);
 					}
 					else {
 						return std::make_shared<KawaiK3Patch>(MidiProgramNumber::fromZeroBase(indexIntoBankDump), toneData);
@@ -438,8 +438,8 @@ namespace midikraft {
 					}
 				}
 			}
-			else if (isSingleProgramDump(message)) {
-				auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(patchFromProgramDumpSysex(message));
+			else if (isSingleProgramDump({ message })) {
+				auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(patchFromProgramDumpSysex({ message }));
 				if (newPatch) {
 					result.push_back(newPatch);
 					if (newPatch->needsUserWave()) {
@@ -494,7 +494,7 @@ namespace midikraft {
 	{
 		switch (dataTypeID) {
 		case K3_PATCH:
-			return isSingleProgramDump(message);
+			return isSingleProgramDump({ message });
 		case K3_WAVE:
 			return isWaveBufferDump(message);
 		default:
@@ -510,7 +510,7 @@ namespace midikraft {
 				switch (dataTypeID)
 				{
 				case K3_PATCH:
-					result.push_back(patchFromProgramDumpSysex(message));
+					result.push_back(patchFromProgramDumpSysex({ message }));
 					break;
 				case K3_WAVE:
 					result.push_back(waveFromSysex(message));
@@ -702,7 +702,7 @@ namespace midikraft {
 			if (MidiHelpers::isEmptySysex(message)) continue;
 
 			// Special handling required for patch dumps and wave dumps!
-			if (isSingleProgramDump(message)) {
+			if (isSingleProgramDump({ message })) {
 				patchToSend = std::make_shared<MidiMessage>(message);
 			}
 			else if (isWaveBufferDump(message)) {
