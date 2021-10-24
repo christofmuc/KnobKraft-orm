@@ -98,9 +98,9 @@ namespace midikraft {
 		return false;
 	}
 
-	MidiMessage DSISynth::requestEditBufferDump() const
+	std::vector<MidiMessage> DSISynth::requestEditBufferDump() const
 	{
-		return MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00000110 });
+		return { MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00000110 }) };
 	}
 
 	std::vector<juce::MidiMessage> DSISynth::requestPatch(int patchNo) const
@@ -110,23 +110,23 @@ namespace midikraft {
 		return std::vector<juce::MidiMessage>({ MidiHelpers::sysexMessage({ 0b00000001, midiModelID_, 0b00000101 /* Request program dump */, bank, program }) });
 	}
 
-	bool DSISynth::isEditBufferDump(const MidiMessage& message) const
+	bool DSISynth::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
 		// Again identical for Rev2 and OB-6
-		return isOwnSysex(message) && message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0x03;
+		return message.size() == 1 && isOwnSysex(message[0]) && message[0].getSysExDataSize() > 2 && message[0].getSysExData()[2] == 0x03;
 	}
 
-	bool DSISynth::isSingleProgramDump(const MidiMessage& message) const
+	bool DSISynth::isSingleProgramDump(const std::vector<MidiMessage>& message) const
 	{
 		// Again identical for Rev2 and OB-6
-		return isOwnSysex(message) && message.getSysExDataSize() > 2 && message.getSysExData()[2] == 0x02;
+		return message.size() == 1 && isOwnSysex(message[0]) && message[0].getSysExDataSize() > 2 && message[0].getSysExData()[2] == 0x02;
 	}
 
-	MidiProgramNumber DSISynth::getProgramNumber(const MidiMessage &message) const
+	MidiProgramNumber DSISynth::getProgramNumber(const std::vector<MidiMessage>&message) const
 	{
 		if (isSingleProgramDump(message)) {
 			// Bank is stored in position 3, program number in position 4
-			return MidiProgramNumber::fromZeroBase(message.getSysExData()[3] * numberOfPatches() + message.getSysExData()[4]);
+			return MidiProgramNumber::fromZeroBase(message[0].getSysExData()[3] * numberOfPatches() + message[0].getSysExData()[4]);
 		}
 		return MidiProgramNumber::fromZeroBase(0);
 	}

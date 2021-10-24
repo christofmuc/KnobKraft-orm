@@ -41,14 +41,14 @@ namespace midikraft {
 		virtual bool needsChannelSpecificDetection() override;
 
 		// Edit Buffer Capability
-		virtual MidiMessage requestEditBufferDump() const override;
-		virtual bool isEditBufferDump(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> requestEditBufferDump() const override;
+		virtual bool isEditBufferDump(const std::vector<MidiMessage>& message) const override;
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
 		// Program Dump Capability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
-		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
-		virtual MidiProgramNumber getProgramNumber(const MidiMessage &message) const override;
+		virtual bool isSingleProgramDump(const std::vector<MidiMessage>& message) const override;
+		virtual MidiProgramNumber getProgramNumber(const std::vector<MidiMessage>&message) const override;
 
 		// MasterkeyboadCapability, common
 		virtual MidiChannel getOutputChannel() const override;
