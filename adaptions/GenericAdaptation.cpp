@@ -42,9 +42,11 @@ namespace knobkraft {
 		*kRenamePatch = "renamePatch",
 		*kIsDefaultName = "isDefaultName",
 		*kIsEditBufferDump = "isEditBufferDump",
+		*kIsPartOfEditBufferDump = "isPartOfEditBufferDump",
 		*kCreateEditBufferRequest = "createEditBufferRequest",
 		*kConvertToEditBuffer = "convertToEditBuffer",
 		*kIsSingleProgramDump = "isSingleProgramDump",
+		*kIsPartOfSingleProgramDump = "isPartOfSingleProgramDump",
 		*kCreateProgramDumpRequest = "createProgramDumpRequest",
 		*kConvertToProgramDump = "convertToProgramDump",
 		*kNumberFromDump = "numberFromDump",
@@ -70,9 +72,11 @@ namespace knobkraft {
 		kIsDefaultName,
 		kRenamePatch,
 		kIsEditBufferDump,
+		kIsPartOfEditBufferDump,
 		kCreateEditBufferRequest,
 		kConvertToEditBuffer,
 		kIsSingleProgramDump,
+		kIsPartOfSingleProgramDump,
 		kCreateProgramDumpRequest,
 		kConvertToProgramDump,
 		kNumberFromDump,
@@ -647,7 +651,16 @@ namespace knobkraft {
 		return std::vector<int>(message.getRawData(), message.getRawData() + message.getRawDataSize());
 	}
 
-	std::vector<uint8> GenericAdaptation::intVectorToByteVector(std::vector<int> const &data) {
+	std::vector<int> GenericAdaptation::midiMessagesToVector(std::vector<MidiMessage> const& message)
+	{
+		std::vector<int> result;
+		for (auto const& m : message) {
+			std::copy(m.getRawData(), m.getRawData() + m.getRawDataSize(), std::back_inserter(result));
+		}
+		return result;
+	}
+
+	std::vector<uint8> GenericAdaptation::intVectorToByteVector(std::vector<int> const& data) {
 		std::vector<uint8> byteData;
 		for (int byte : data) {
 			if (byte >= 0 && byte < 256) {
@@ -666,7 +679,14 @@ namespace knobkraft {
 		return MidiMessage(byteData.data(), (int)byteData.size());
 	}
 
-	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability) const
+	std::vector<juce::MidiMessage> GenericAdaptation::vectorToMessages(std::vector<int> const& data)
+	{
+		//TODO this could be accelerated
+		auto byteData = intVectorToByteVector(data);
+		return Sysex::vectorToMessages(byteData);
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability** outCapability) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kIsEditBufferDump)

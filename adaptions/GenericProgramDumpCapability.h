@@ -17,9 +17,10 @@ namespace knobkraft {
 	public:
 		GenericProgramDumpCapability(GenericAdaptation *me) : me_(me) {}
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
-		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
-		virtual MidiProgramNumber getProgramNumber(const MidiMessage &message) const override;
-		virtual std::shared_ptr<midikraft::DataFile> patchFromProgramDumpSysex(const MidiMessage& message) const override;
+		virtual bool isSingleProgramDump(const std::vector<MidiMessage>& message) const override;
+		virtual bool isMessagePartOfProgramDump(const MidiMessage& message) const override;
+		virtual MidiProgramNumber getProgramNumber(const std::vector<MidiMessage>&message) const override;
+		virtual std::shared_ptr<midikraft::DataFile> patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<midikraft::DataFile> patch, MidiProgramNumber programNumber) const override;
 
 	private:

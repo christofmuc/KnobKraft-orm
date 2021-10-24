@@ -25,9 +25,9 @@ namespace knobkraft {
 	class GenericBankDumpCapability;
 	void checkForPythonOutputAndLog();
 
-	extern const char *kIsEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
+	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
-		*kIsSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
+		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
 
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;
@@ -91,8 +91,10 @@ namespace knobkraft {
 		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptations();
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
+		static std::vector<int> midiMessagesToVector(std::vector<MidiMessage> const& message);
 		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
 		static MidiMessage vectorToMessage(std::vector<int> const &data);
+		static std::vector<MidiMessage> vectorToMessages(std::vector<int> const &data);
 
 		// Implement runtime capabilities		
 		virtual bool hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) const override;
