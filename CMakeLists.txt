@@ -189,6 +189,10 @@ set_target_properties(juce-static PROPERTIES
 	C_VISIBILITY_PRESET hidden
 	CXX_VISIBILITY_PRESET hidden)
 
+# Add more third party libraries
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(third_party/json)
+add_subdirectory(third_party/json-schema-validator)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
