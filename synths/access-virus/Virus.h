@@ -30,17 +30,17 @@ namespace midikraft {
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// Edit Buffer Capability
-		virtual MidiMessage requestEditBufferDump() const override;
-		virtual bool isEditBufferDump(const MidiMessage& message) const override;
-		virtual std::shared_ptr<DataFile> patchFromSysex(const MidiMessage& message) const override;
+		virtual std::vector<MidiMessage> requestEditBufferDump() const override;
+		virtual bool isEditBufferDump(const std::vector<MidiMessage>& message) const override;
+		virtual std::shared_ptr<DataFile> patchFromSysex(const std::vector <MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const override;
 		virtual MidiMessage saveEditBufferToProgram(int programNumber) override;
 
 		// Program Dump Capability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
-		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
-		virtual MidiProgramNumber getProgramNumber(const MidiMessage &message) const override;
-		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const MidiMessage& message) const override;
+		virtual bool isSingleProgramDump(const std::vector<MidiMessage>& message) const override;
+		virtual MidiProgramNumber getProgramNumber(const std::vector<MidiMessage> &message) const override;
+		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const std::vector <MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
 
 		// Bank Dump Capability

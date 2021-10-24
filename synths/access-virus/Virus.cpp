@@ -65,10 +65,10 @@ namespace midikraft {
 		return 8;
 	}
 
-	juce::MidiMessage Virus::requestEditBufferDump() const
+	std::vector<MidiMessage> Virus::requestEditBufferDump() const
 	{
 		std::vector<uint8> message({ 0x30 /* Single request */, 0x00 /* Single Buffer */, 0x40 /* Single mode single buffer */ });
-		return createSysexMessage(message);
+		return { createSysexMessage(message) };
 	}
 
 	std::vector<juce::MidiMessage> Virus::requestPatch(int patchNo) const
@@ -97,43 +97,44 @@ namespace midikraft {
 		return MidiMessage();
 	}
 
-	bool Virus::isEditBufferDump(const MidiMessage& message) const
+	bool Virus::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
-		if (isOwnSysex(message)) {
-			if (message.getSysExData()[5] == 0x10 /* Single dump */) {
-				uint8 bank = message.getSysExData()[6];
-				uint8 program = message.getSysExData()[7];
+		// The Virus uses a single message for an edit buffer dump
+		if (message.size() == 1 && isOwnSysex(message[0])) {
+			if (message[0].getSysExData()[5] == 0x10 /* Single dump */) {
+				uint8 bank = message[0].getSysExData()[6];
+				uint8 program = message[0].getSysExData()[7];
 				return bank == 0x00 && (program == 0x40 || program == 0x7f); // See requestEditBuffer. The 7f seems to appear with the Virus C?
 			}
 		}
 		return false;
 	}
 
-	bool Virus::isSingleProgramDump(const MidiMessage& message) const
+	bool Virus::isSingleProgramDump(const std::vector<MidiMessage>& message) const
 	{
-		if (isOwnSysex(message)) {
-			if (message.getSysExData()[5] == 0x10 /* Single dump */) {
-				uint8 bank = message.getSysExData()[6];
+		if (message.size() == 1 && isOwnSysex(message[0])) {
+			if (message[0].getSysExData()[5] == 0x10 /* Single dump */) {
+				uint8 bank = message[0].getSysExData()[6];
 				return bank >= 0x01 && bank <= 0x08;
 			}
 		}
 		return false;
 	}
 
-	MidiProgramNumber Virus::getProgramNumber(const MidiMessage &message) const
+	MidiProgramNumber Virus::getProgramNumber(const std::vector<MidiMessage> &message) const
 	{
 		if (isSingleProgramDump(message)) {
-			uint8 bank = message.getSysExData()[6];
+			uint8 bank = message[0].getSysExData()[6];
 			if (bank > 0) bank -= 1; // bank is 1-based, but in case of edit buffer this will be 0 already
-			uint8 program = message.getSysExData()[7];
+			uint8 program = message[0].getSysExData()[7];
 			return MidiProgramNumber::fromZeroBase(bank * numberOfPatches() + program);
 		}
 		return MidiProgramNumber::fromZeroBase(0);
 	}
 
-	std::shared_ptr<DataFile> Virus::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Virus::patchFromProgramDumpSysex(const std::vector<MidiMessage>& messages) const
 	{
-		return patchFromSysex(message);
+		return patchFromSysex(messages);
 	}
 
 	std::vector<juce::MidiMessage> Virus::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
@@ -159,7 +160,7 @@ namespace midikraft {
 		// Count the number of patch dumps in that stream
 		int found = 0;
 		for (auto message : bankDump) {
-			if (isSingleProgramDump(message)) found++;
+			if (isSingleProgramDump({ message })) found++;
 		}
 		return found == 128;
 	}
@@ -189,10 +190,10 @@ namespace midikraft {
 		throw std::logic_error("The method or operation is not implemented.");
 	}
 
-	std::shared_ptr<DataFile> Virus::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Virus::patchFromSysex(const std::vector <MidiMessage>& message) const
 	{
 		if (isEditBufferDump(message) || isSingleProgramDump(message)) {
-			auto pages = getPagesFromMessage(message, 8);
+			auto pages = getPagesFromMessage(message[0], 8);
 			if (pages.size() == 256) {
 				// That should be Page A and Page B from the manual
 				MidiProgramNumber place;
