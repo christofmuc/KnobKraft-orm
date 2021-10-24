@@ -111,34 +111,35 @@ namespace midikraft {
 		return "Roland MKS-80";
 	}
 
-	MidiMessage MKS80::requestEditBufferDump() const
+	std::vector<MidiMessage> MKS80::requestEditBufferDump() const
 	{
 		// This is actually an empty message - as we don't have a requestProgramDump, we will issue a program change before
 		// sending this (non) message - and this will trigger an PGR and 4 APR messages by the MKS80 anyway. How minimalistic!
-		return MidiMessage();
+		return {};
 	}
 
-	bool MKS80::isEditBufferDump(const MidiMessage& message) const
+	bool MKS80::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
 		//TODO - problematic, the MKS80 needs 5 messages for an edit buffer dump?
-		if (isOwnSysex(message)) {
-			return getSysexOperationCode(message) == MKS80_Operation_Code::APR;
+		//TODO, could this done be better now with the new interface allowing for vectors of messages?
+		if (message.size() == 1 && isOwnSysex(message[0])) {
+			return getSysexOperationCode(message[0]) == MKS80_Operation_Code::APR;
 		}
 		return false;
 	}
 
-	std::shared_ptr<DataFile> MKS80::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> MKS80::patchFromSysex(const std::vector<MidiMessage>& message) const
 	{
-		//TODO - not sure if this is proper. It seems the patch needs multiple MIDI messages just like in the Yamaha Reface DX
 		if (isEditBufferDump(message)) {
-			switch (message.getSysExData()[4])
+			switch (message[0].getSysExData()[4])
 			{
 			case 0b00100000: /* Level 1 */
-				if (message.getSysExData()[5] == 1 /* Group ID*/) {
+				if (message[0].getSysExData()[5] == 1 /* Group ID*/) {
 					//return MKS50_Patch::createFromToneAPR(message);
+					jassertfalse;
 				}
 				else {
-					jassert(false);
+					jassertfalse;
 					SimpleLogger::instance()->postMessage("ERROR - Group ID is not 1, probably corrupt file. Ignoring this APR package.");
 				}
 			case 0b00110000: /* Level 2 */
