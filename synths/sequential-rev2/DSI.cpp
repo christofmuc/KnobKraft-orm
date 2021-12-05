@@ -88,6 +88,10 @@ namespace midikraft {
 				//Omni seems to be 0b01111111 at DSI
 				return MidiChannel::omniChannel();
 			}
+			if (data[1] == 0x10) {
+				// This is new MPE mode for OB-6 and Prophet-6. Accept it as valid
+				return MidiChannel::MPEmode(0);
+			}
 			return MidiChannel::fromZeroBase(data[1]); // MIDI Channel of reply 
 		}
 		return MidiChannel::invalidChannel();
