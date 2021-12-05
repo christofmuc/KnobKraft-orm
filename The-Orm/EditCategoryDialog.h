@@ -20,6 +20,7 @@ public:
 
 	static void showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, TCallback callback);
 
+	void refreshCategories(midikraft::PatchDatabase& db);
 	void provideResult(TCallback callback);
 
 	static void shutdown();
@@ -30,8 +31,10 @@ private:
 	static std::unique_ptr<EditCategoryDialog> sEditCategoryDialog_;
 	static DialogWindow *sWindow_;
 
+	int nextId_;
+
 	ListBox parameters_;
-	TypedNamedValueSet props_;
+	ValueTree propsTree_;
 	TextButton add_;
 	TextButton ok_;
 	TextButton cancel_;

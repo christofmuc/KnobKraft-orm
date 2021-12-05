@@ -14,21 +14,14 @@ static EditCategoryDialog::TCallback sCallback_;
 class CategoryRow : public Component {
 public:
 	typedef std::shared_ptr<TypedNamedValue> TProp;
-	CategoryRow(TProp a, TProp n, TProp c) : color(c->value(), "Color") {
+	CategoryRow(ValueTree catItem) : color(catItem.getPropertyAsValue("color", nullptr), "Color") {
+		name.getTextValue().referTo(catItem.getPropertyAsValue("name", nullptr));
+		active.getToggleStateValue().referTo(catItem.getPropertyAsValue("active", nullptr));
 		active.setClickingTogglesState(true);
 		addAndMakeVisible(active);
 		active.setEnabled(true);
 		addAndMakeVisible(name);
-		name.getTextValue().referTo(n->value());
 		addAndMakeVisible(color);
-		active.onClick = [a, this]() {
-			a->value() = active.getToggleState();
-		};
-		setProps(a, n, c);
-	}
-
-	void setProps(TProp a, TProp n, TProp c) {
-		active.setToggleState(a->value().getValue(), dontSendNotification);
 	}
 
 	virtual void resized() override {
@@ -46,12 +39,12 @@ private:
 
 class CategoryListModel: public ListBoxModel {
 public:
-	CategoryListModel(PropertyEditor::TProperties const &props) : props_(props) {
+	CategoryListModel(ValueTree categoryTree) : categoryTree_(categoryTree) {
 	}
 
 	int getNumRows() override
 	{
-		return ((int)props_.size()) / 4;
+		return categoryTree_.getNumChildren();
 	}
 
 	void paintListBoxItem(int rowNumber, Graphics& g, int width, int height, bool rowIsSelected) override
@@ -63,14 +56,15 @@ public:
 	{
 		ignoreUnused(isRowSelected, existingComponentToUpdate);
 		if (rowNumber < getNumRows()) {
-			if (existingComponentToUpdate) {
+			/*if (existingComponentToUpdate) {
 				auto existing = dynamic_cast<CategoryRow *>(existingComponentToUpdate);
 				if (existing) {
 					existing->setProps(props_[rowNumber * 4], props_[rowNumber * 4 + 1], props_[rowNumber * 4 + 2]);
 					return existing;
 				}
-			}
-			return new CategoryRow(props_[rowNumber * 4], props_[rowNumber * 4 + 1], props_[rowNumber * 4 + 2]);
+			}*/
+			//delete existingComponentToUpdate;
+			return new CategoryRow(categoryTree_.getChild(rowNumber));
 		}
 		else {
 			return nullptr;
@@ -78,27 +72,19 @@ public:
 	}
 
 private:
-	PropertyEditor::TProperties props_;
+	ValueTree categoryTree_;
 };
 
 
-EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) 
-{
-	// Make a list of the categories we have...
-	auto cats = database.getCategories();
-
-	for (auto cat : cats) {
-		addCategory(*cat.def());
-	}
-
-	parameters_.setModel(new CategoryListModel(props_));
+EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) : propsTree_("categoryTree")
+{	
 	//parameters_.setRowHeight(60);
 	addAndMakeVisible(parameters_);
 
 	add_.onClick = [this, &database]() {
-		int nextID = database.getNextBitindex();
+		int nextID = nextId_++;
 		addCategory({ nextID, true, "New category", Colours::aquamarine});
-		parameters_.setModel(new CategoryListModel(props_));
+		//parameters_.setModel(new CategoryListModel(props_));
 	};
 	add_.setButtonText("Add new category");
 	addAndMakeVisible(add_);
@@ -115,12 +101,13 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database)
 	setBounds(0, 0, 540, 600);
 }
 
-void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const &def) {
-	std::string header = "Define categories";
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Active", header, def.isActive)));
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Name", header, def.name, 30)));
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Color", header, def.color)));
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("ID", header, def.id, 0, 62)));
+void EditCategoryDialog::refreshCategories(midikraft::PatchDatabase& db) {
+	// Make a list of the categories we have...
+	auto cats = db.getCategories();
+	for (auto cat : cats) {
+		addCategory(*cat.def());
+	}
+	parameters_.setModel(new CategoryListModel(propsTree_)); // To refresh
 }
 
 void EditCategoryDialog::resized()
@@ -148,6 +135,8 @@ void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component 
 		sEditCategoryDialog_= std::make_unique<EditCategoryDialog>(db);
 	}
 	sCallback_ = callback;
+	sEditCategoryDialog_->nextId_ = db.getNextBitindex(); // This is where we'll continue, but the user could press cancel using none of the newly made IDs
+	sEditCategoryDialog_->refreshCategories(db);
 
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(sEditCategoryDialog_.get(), false);
@@ -163,11 +152,12 @@ void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component 
 void EditCategoryDialog::provideResult(TCallback callback)
 {
 	std::vector<midikraft::CategoryDefinition> result;
-	for (int i = 0; i < props_.size(); i += 4) {
-		int id = props_[i + 3]->value().getValue();
-		bool active = props_[i]->value().getValue();
-		String name = props_[i + 1]->value().getValue();
-		Colour color = Colour::fromString(props_[i + 2]->value().getValue().operator juce::String());
+	for (int i = 0; i < propsTree_.getNumChildren(); i++) {
+		auto child = propsTree_.getChild(i);
+		int id = child.getProperty("id");
+		bool active = child.getProperty("active");
+		String name = child.getProperty("name");
+		Colour color = Colour::fromString(child.getProperty("color").toString());
 		result.push_back({ id, active, name.toStdString(), color});
 	}
 	callback(result);
@@ -176,6 +166,28 @@ void EditCategoryDialog::provideResult(TCallback callback)
 void EditCategoryDialog::shutdown()
 {
 	sEditCategoryDialog_.reset();
+}
+
+void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const& def)
+{
+	// Search the tree for this category
+	for (int i = 0; i < propsTree_.getNumChildren(); i++) {
+		auto child = propsTree_.getChild(i);
+		if (child.hasProperty("id") && def.id == ((int)child.getProperty("id"))) {
+			// Found, update
+			child.setProperty("name", String(def.name), nullptr);
+			child.setProperty("active", def.isActive, nullptr);
+			child.setProperty("color", def.color.toString(), nullptr);
+			return;
+		}
+	}
+	// Not found - add a new child
+	ValueTree newCategory("Category" + String(def.id));
+	newCategory.setProperty("id", def.id, nullptr);
+	newCategory.setProperty("name", String(def.name), nullptr);
+	newCategory.setProperty("active", def.isActive, nullptr);
+	newCategory.setProperty("color", def.color.toString(), nullptr);
+	propsTree_.addChild(newCategory, -1, nullptr);
 }
 
 std::unique_ptr<EditCategoryDialog> EditCategoryDialog::sEditCategoryDialog_;
