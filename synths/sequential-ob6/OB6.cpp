@@ -116,7 +116,13 @@ namespace midikraft {
 
 	OB6::OB6() : DSISynth(0b00101110 /* OB-6 ID */)
 	{
-		initGlobalSettings();
+	    initGlobalSettings();
+
+		// This was the test for the MPE mode
+		//MemoryBlock memory;
+		//memory.loadFromHexString("f0 01 2e 0f 0c 32 11 02 00 02 02 01 00 00 00 00 02 00 00 00 00 00 00 00 01 2f 00 01 01 f7");
+		//MidiMessage syx(memory.getData(), (int) memory.getSize());
+		//jassert(channelIfValidDeviceResponse(syx).isValid());
 	}
 
 	std::string OB6::getName() const
@@ -195,17 +201,21 @@ namespace midikraft {
 		if (isGlobalSettingsDump(message)) {
 			localControl_ = message.getSysExData()[3 + LOCAL_CONTROL] == 1;
 			midiControl_ = message.getSysExData()[3 + MIDI_CONTROL] == 1;
-			int midiChannel = message.getSysExData()[MIDI_CHANNEL + 3];
-			if (midiChannel == 0) {
-				return MidiChannel::omniChannel();
-
-			}
 			// Can you use this to init the global settings!
 			auto dataFile = loadData({ message }, GLOBAL_SETTINGS);
 			if (dataFile.size() > 0) {
 				setGlobalSettingsFromDataFile(dataFile[0]);
 			}
 
+			int midiChannel = message.getSysExData()[MIDI_CHANNEL + 3];
+			if (midiChannel == 0) {
+				return MidiChannel::omniChannel();
+			}
+			if (midiChannel == 17) {
+				// Now that is very Sequential, make sure this is a valid channel as well!
+				// To noe, the OB-6's 6 voices operate on channels 2-7 in MPE mode.
+				return MidiChannel::MPEmode(1);
+			}
 			return  MidiChannel::fromOneBase(midiChannel);
 		}
 		return MidiChannel::invalidChannel();
