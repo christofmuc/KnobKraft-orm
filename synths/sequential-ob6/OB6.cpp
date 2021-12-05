@@ -37,7 +37,12 @@ namespace midikraft {
 		VELOCITY_RESPONSE = 15,
 		AFTERTOUCH_RESPONSE = 16,
 		STEREO_MONO = 17,
-		ARP_BEAT_SYNC = 18 // Sadly this is not stored in the byte 18 of the sysex data package
+		ARP_BEAT_SYNC = 19, // Sadly this is not stored in the byte 18 of the sysex data package. Found it in 19 in firmware 1.6.6. What is in 18?
+		MASTER_PITCHBEND_RANGE = 20,
+		VOICE_PITCHBEND_RANGE = 21, 
+		Y_AXIS_DESTINATION = 22, 
+		Y_AXIS_MODE = 23,
+		VINTAGE_MODE = 24
 	};
 
 	// Warnings for the user
@@ -72,7 +77,7 @@ namespace midikraft {
 		std::vector<DSIGlobalSettingDefinition> definitions = {
 			{ TRANSPOSE, 1025, { "Transpose", "Tuning", 12, -12, 12 },  -12 }, // Default 12, displayed as 0
 			{ MASTER_TUNE, 1024, { "Master Tune", "Tuning", 25, -50, 50 }, -50 }, // Default 50, displayed as 0
-			{ MIDI_CHANNEL, 1026, { "MIDI Channel", "MIDI", 1, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }} } },
+			{ MIDI_CHANNEL, 1026, { "MIDI Channel", "MIDI", 1, { {0, "Omni"}, {1, "1" }, {2, "2" }, {3, "3" }, {4, "4" }, {5, "5" }, {6, "6" }, {7, "7" }, {8, "8" }, {9, "9" }, {10, "10" }, {11, "11" }, {12, "12" }, {13, "13" }, {14, "14" }, {15, "15" }, {16, "16" }, {17, "MPE"}} } },
 			{ MIDI_CLOCK, 1027, { "MIDI Clock Mode", "MIDI", 1, { {0, "Off"}, { 1, "Master" }, { 2, "Slave" }, { 3, "Slave Thru" }, { 4, "Slave No S/S"} } } },
 			{ CLOCK_PORT, 1028, { "Clock Port", "MIDI", 0, { {0, "MIDI"}, { 1, "USB" } } } },
 			{ PARAM_TRANSMIT, 1029, { "MIDI Param Xmit", "MIDI", 2, { {0, "Off"}, { 1, "CC" }, { 2, "NRPN"}, {3, "CC with sequencer"}, {4, "NRPN with sequencer"} } } },
@@ -80,7 +85,7 @@ namespace midikraft {
 			{ MIDI_CONTROL, 1035, { "MIDI Control", "MIDI", true } },
 			{ MIDI_SYSEX, 1032, { "MIDI SysEx", "MIDI", 0, { {0, "MIDI"}, { 1, "USB" } } } },
 			{ MIDI_OUT, 1033, { "MIDI Out", "MIDI", 0, { { 0, "MIDI" }, { 1, "USB"}, { 2, "MIDI+USB" }, { 3, "Ply" } } } },
-			{ ARP_BEAT_SYNC, 1036 /* undocumented */, { "Arp Beat Sync", "MIDI", 0, { {0, "Off"}, { 1, "Quantize" } } } },
+			{ ARP_BEAT_SYNC, 1036 /* undocumented */, { "Arp Beat Sync", "MIDI", false } },
 			{ LOCAL_CONTROL, 1031, { "Local Control Enabled", "MIDI", true } },
 			{ VELOCITY_RESPONSE, 1041, { "Velocity Response", "Keyboard", 0, 0, 7 }  },
 			{ AFTERTOUCH_RESPONSE, 1042, { "Aftertouch Response", "Keyboard", 0, 0, 3 } },
@@ -88,7 +93,11 @@ namespace midikraft {
 			{ POT_MODE, 1037, { "Pot Mode", "Front controls", 2, { {0, "Relative"}, { 1, "Pass Thru" }, { 2, "Jump" } } } },
 			{ SEQ_JACK, 1039, { "Seq jack", "Pedals", 0, { {0, "Normal"}, { 1, "Tri" }, { 2, "Gate" }, { 3, "Gate/Trigger" } } } },
 			{ ALT_TUNING, 1044, { "Alternative Tuning", "Scales", 0, kDSIAlternateTunings() } },
-			{ SUSTAIN_POLARITY, 1040, { "Sustain polarity", "Controls", 0, { {0, "Normal"}, { 1, "Reversed" }, { 2, "n-r" }, { 3, "r-n" } } } },
+			{ MASTER_PITCHBEND_RANGE, 1046 /* 0x416 */, { "Master PB range", "MPE", 2, 1, 96 }, +1 },
+			{ VOICE_PITCHBEND_RANGE, 0x417, { "Voice PB range", "MPE", 48, 1, 96 }, +1 },
+			{ Y_AXIS_DESTINATION, 0x418, { "Y-Axis Dest", "MPE", 0, { {0, "LPF"}, { 1, "PW1" }, { 2, "PW2" }, { 3, "PW12" } } } },
+			{ Y_AXIS_MODE, 0x419, { "Y-Axis Mode", "MPE", 0, { {0, "Unipolar"}, { 1, "Bipolar" } } } },
+			{ VINTAGE_MODE, 0x41a, { "Vintage Mode", "Controls", 0, { {0, "Off"}, { 1, "On" } } } },
 		};
 	};
 	std::unique_ptr<gOB6GlobalSettings> sOB6GlobalSettings;
