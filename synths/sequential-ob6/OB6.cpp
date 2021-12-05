@@ -151,7 +151,7 @@ namespace midikraft {
 
 	std::string OB6::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		return (boost::format("#%03d") % programNo.toOneBased()).str();
+		return (boost::format("#%03d") % programNo.toZeroBased()).str();
 	}
 
 	std::string OB6::friendlyBankName(MidiBankNumber bankNo) const
