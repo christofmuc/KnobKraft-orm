@@ -606,7 +606,7 @@ namespace midikraft {
 		int bank = programNo.toZeroBased() / 128;
 		int section = bank / 4;
 		int program = programNo.toZeroBased() % 128;
-		return (boost::format("%s%d P%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1) % program).str();
+		return (boost::format("%s%d P%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1) % (program+1)).str();
 	}
 
 }
