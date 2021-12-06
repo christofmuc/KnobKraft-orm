@@ -105,7 +105,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		recentFiles_.restoreFromString(Settings::instance().get("RecentFiles"));
 	}
 
-	automaticCategories_ = std::make_shared<midikraft::AutomaticCategory>(database_->getCategories()); // Load the automatic category definitions
+	automaticCategories_ = database_->getCategorizer();
 
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
