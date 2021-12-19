@@ -259,7 +259,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 			{ "data_type", patchHolder.patch()->dataTypeID()},
 			{ "md5", patchHolder.md5()}, 
 			{ "patch_name", patchHolder.name() } };
-		return var(dragInfo.dump());
+		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	return node;
 }
@@ -316,7 +316,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	};
 	node->onItemDragged = [list]() {
 		nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", list.id }, { "list_name", list.name } };
-		return var(dragInfo.dump());
+		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	node->onDoubleClick = [node, this](String id) {
 		// Open rename dialog on double click
