@@ -37,7 +37,14 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 		else {
 			setButtonData(holder->name(), holder->createDragInfoString());
 		}
-		setSubtitle((showSynthName && holder->synth()) ? holder->synth()->getName() : "");
+
+		std::string subtitle = "";
+		// Later, we can add a UI switch for this?
+		if (true) {
+			subtitle = holder->synth()->friendlyProgramName(holder->patchNumber());
+		}
+
+		setSubtitle((showSynthName && holder->synth()) ? holder->synth()->getName() : subtitle);
 		setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(*holder, this));
 		setFavorite(holder->isFavorite());
 		setHidden(holder->isHidden());

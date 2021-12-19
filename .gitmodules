@@ -89,3 +89,6 @@
 [submodule "synths/MidiKraft-roland-mks50"]
 	path = synths/MidiKraft-roland-mks50
 	url = https://github.com/christofmuc/MidiKraft-roland-mks50.git
+[submodule "third_party/fmt"]
+	path = third_party/fmt
+	url = https://github.com/fmtlib/fmt.git

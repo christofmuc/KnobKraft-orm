@@ -384,6 +384,10 @@ void PatchView::retrieveEditBuffer()
 			// There should only be one edit buffer, just check that this is true here
 			jassert(patchesLoaded.size() == 1);
 
+			if (patchesLoaded.size() == 1) {
+				SimpleLogger::instance()->postMessage((boost::format("Edit buffer from synth is program %s") % patchesLoaded[0].name()).str());
+			}
+
 			patchesLoaded = autoCategorize(patchesLoaded);
 
 			// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
