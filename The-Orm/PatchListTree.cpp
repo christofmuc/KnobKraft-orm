@@ -146,6 +146,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	UIModel::instance()->multiMode_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
 	UIModel::instance()->importListChanged_.addChangeListener(this);
+	UIModel::instance()->databaseChanged.addChangeListener(this);
 }
 
 PatchListTree::~PatchListTree()
@@ -154,6 +155,7 @@ PatchListTree::~PatchListTree()
 	UIModel::instance()->multiMode_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
 	UIModel::instance()->importListChanged_.removeChangeListener(this);
+	UIModel::instance()->databaseChanged.removeChangeListener(this);
 	treeView_->deleteRootItem(); // Deletes the rest as well
 	CreateListDialog::release();
 }
