@@ -247,9 +247,9 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
-	node->onSelected = [patchHolder](String md5) {
-		// Clicking a patch in the list does the same thing as clicking it in the PatchView grid
-		SimpleLogger::instance()->postMessage("Patch clicked: " + md5);
+	node->onSelected = [this, patchHolder](String md5) {
+		if (onPatchSelected)
+			onPatchSelected(patchHolder);
 	};
 	node->onItemDragged = [patchHolder, list]() {
 		nlohmann::json dragInfo{ { "drag_type", "PATCH_IN_LIST"}, 
