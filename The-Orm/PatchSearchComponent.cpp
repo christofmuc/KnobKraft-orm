@@ -180,7 +180,6 @@ midikraft::PatchFilter PatchSearchComponent::getFilter()
 		multiModeFilter_.synths = allSynthsMap();
 		return multiModeFilter_;
 	}
-	jassertfalse;
 	return buildFilter();
 }
 
