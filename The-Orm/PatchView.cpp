@@ -49,9 +49,8 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 			retrieveFirstPageFromDatabase();
 		}
 	};
-	patchListTree_.onPatchSelected = [this](std::shared_ptr<midikraft::PatchHolder> patch) {
-		if (patch)
-			selectPatch(*patch);
+	patchListTree_.onPatchSelected = [this](midikraft::PatchHolder patch) {
+		selectPatch(patch);
 	};
 
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
