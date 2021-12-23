@@ -97,9 +97,13 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 				}
 				return result;
 			};
-			importsForSynth->onSingleClick = [importsForSynth](String) {
-				importsForSynth->toggleOpenness();
+			importsForSynth->onSelected = [this, synthName](String id) {
+				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
+				UIModel::instance()->multiMode_.setMultiSynthMode(false);
 			};
+			/*importsForSynth->onSingleClick = [importsForSynth](String) {
+				importsForSynth->toggleOpenness();
+			};*/
 			result.push_back(importsForSynth);
 		}
 		return result;
