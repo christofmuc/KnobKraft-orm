@@ -84,6 +84,10 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	onlyUntagged_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyUntagged_);
 
+	onlyDuplicates_.setButtonText("Only duplicate Names");
+	onlyDuplicates_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
+	addAndMakeVisible(onlyDuplicates_);
+
 	addAndMakeVisible(categoryFilters_);
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
@@ -130,6 +134,7 @@ void PatchSearchComponent::resized()
 	fb.items.add(createFlexButton(&onlyFaves_));
 	fb.items.add(createFlexButton(&showHidden_));
 	fb.items.add(createFlexButton(&onlyUntagged_));
+	fb.items.add(createFlexButton(&onlyDuplicates_));
 	fb.performLayout(favRow);
 
 	auto filterRow = normalFilter; 
@@ -158,6 +163,7 @@ void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
 	onlyFaves_.setToggleState(filter.onlyFaves, dontSendNotification);
 	onlyUntagged_.setToggleState(filter.onlyUntagged, dontSendNotification);
 	showHidden_.setToggleState(filter.showHidden, dontSendNotification);
+	onlyDuplicates_.setToggleState(filter.onlyDuplicateNames, dontSendNotification);
 
 	// Set name filter
 	textSearch_.setSearchText(filter.name);
@@ -235,7 +241,9 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 		filterType,
 		showHidden_.getToggleState(),
 		onlyUntagged_.getToggleState(),
-		catSelected };
+		catSelected,
+		onlyDuplicates_.getToggleState()
+	};
 }
 
 void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
