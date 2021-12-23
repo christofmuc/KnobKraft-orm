@@ -1,6 +1,19 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
+1.14.0:
+Should not allow to insert a patch multiple times into a list
+Should lists have order indexes?
+Should merge All patches and by import top level node, this is duplicate
+Selector for display on patch button (combo box upper right)
+better attribute entry for patch name
+Duplicate filter should ignore hidden?
+
+
+* Would expect to choose sort order of patches in grid
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
+
+
 * Mac Python warning needs to be bigger, i.e. a dialog box
 
 Surf! Auto-Surf! Dive!
@@ -28,9 +41,9 @@ Before 2.0
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
 	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
 	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
-* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 
 LISTS upgrades:
+* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
 * Add lists to PIF export
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
@@ -65,8 +78,6 @@ UI/UX
 * Different log levels with error colors
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
-* Would expect to choose sort order of patches in grid
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
 * The current patch per synth could be hidable
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
 
