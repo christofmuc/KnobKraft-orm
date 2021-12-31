@@ -41,7 +41,7 @@ private:
 	void regenerateUserLists();
 	void regenerateImportLists();
 
-	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder);
+	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 

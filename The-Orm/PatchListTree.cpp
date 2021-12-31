@@ -249,16 +249,17 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 	}
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder) {
+TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
 	node->onSelected = [this, patchHolder](String md5) {
 		if (onPatchSelected)
 			onPatchSelected(patchHolder);
 	};
-	node->onItemDragged = [patchHolder, list]() {
+	node->onItemDragged = [patchHolder, list, index]() {
 		nlohmann::json dragInfo{ { "drag_type", "PATCH_IN_LIST"}, 
 			{ "list_id", list.id},
 			{ "list_name", list.name},
+			{ "order_num", index }, 
 			{ "synth", patchHolder.smartSynth()->getName()}, 
 			{ "data_type", patchHolder.patch()->dataTypeID()},
 			{ "md5", patchHolder.md5()}, 
@@ -274,8 +275,9 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	node->onGenerateChildren = [this, list]() {
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
+		int index = 0;
 		for (auto patch : patchList.patches()) {
-			result.push_back(newTreeViewItemForPatch(list, patch));
+			result.push_back(newTreeViewItemForPatch(list, patch, index++));
 		}
 		return result;
 	};
@@ -289,10 +291,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 		return infos.contains("drag_type") && (infos["drag_type"] == "PATCH" || infos["drag_type"] == "PATCH_IN_LIST");
 	};
-	node->onItemDropped = [this, list, node](juce::var dropItem) {
+	node->onItemDropped = [this, list, node](juce::var dropItem, int insertIndex) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-
+		int position = insertIndex;
+		ignoreUnused(position);
 		if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
 			SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
 			return;
@@ -308,8 +311,15 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		std::string md5 = infos["md5"];
 		std::vector<midikraft::PatchHolder> patch;
 		if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
-			db_.addPatchToList(list, patch[0]);
-			SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+			if (infos.contains("list_id") && infos["list_id"] == list.id && infos.contains("order_num")) {
+				// Special case - this is a patch reference from the same list, this is effectively just a reordering operation!
+				db_.movePatchInList(list, patch[0], infos["order_num"], insertIndex);
+			}
+			else {
+				// Simple case - new patch (or patch reference) added to list
+				db_.addPatchToList(list, patch[0], insertIndex);
+				SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+			}
 			node->regenerate();
 			if (onUserListChanged)
 				onUserListChanged(list.id);
