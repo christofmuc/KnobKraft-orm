@@ -77,10 +77,15 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(box);
 	box->addAndMakeVisible(&patchListTree_);
 	box->addAndMakeVisible(&recycleBin_);
+	recycleBin_.onClicked = [this]() {
+		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Delete functionality", "The trash can is a drag and drop target you can use to delete patches or patch list entries - "
+			"just drag a patch or a list entry onto the trash can and drop it.\nDeleting patch list entries will be done immediately,"
+			" but deleting patches will ask for confirmation, as this is a destructive operation.");
+	};
 	recycleBin_.onItemDropped = [this](var item) {
 		String dropItemString = item;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-		SimpleLogger::instance()->postMessage("Item dropped: " + dropItemString);
+		//SimpleLogger::instance()->postMessage("Item dropped: " + dropItemString);
 		deleteSomething(infos);
 	};
 
