@@ -120,12 +120,17 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_->onSingleClick = [this](String) {
 		userListsItem_->toggleOpenness();
 	};
+	
 	TreeViewNode* root = new TreeViewNode("ROOT", "");
 	root->onGenerateChildren = [=]() { 
 		return std::vector<TreeViewItem*>({ allPatchesItem_, userListsItem_ }); 
 	};
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
+
+	// Initial openness
+	allPatchesItem_->setOpenness(TreeViewItem::opennessOpen);
+	userListsItem_->setOpenness(TreeViewItem::opennessOpen);
 
 	treeView_->setColour(TreeView::selectedItemBackgroundColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::highlightedFill));
 
