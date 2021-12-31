@@ -52,7 +52,6 @@ private:
 
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewNode* allPatchesItem_;
-	TreeViewNode* importListsItem_;
 	TreeViewNode* userListsItem_;
 	std::map<std::string, TreeViewNode*> userLists_;
 	std::string previousSynthName_;

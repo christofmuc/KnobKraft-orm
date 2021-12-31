@@ -59,27 +59,11 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		if (onImportListSelected)
 			onImportListSelected(id);
 	};
-	allPatchesItem_->onGenerateChildren= [this]() {
+	allPatchesItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
 			std::string synthName = activeSynth->getName();
-			auto node = new TreeViewNode(synthName + " Library", "library-" + synthName);
-			node->onSelected = [this, synthName](String id) {
-				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
-				UIModel::instance()->multiMode_.setMultiSynthMode(false);
-				if (onImportListSelected)
-					onImportListSelected("");
-			};
-			result.push_back(node);
-		}
-		return result;
-	};
-	importListsItem_ = new TreeViewNode("By import", "imports");
-	importListsItem_->onGenerateChildren = [this]() {
-		std::vector<TreeViewItem*> result;
-		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
-			std::string synthName = activeSynth->getName();
-			auto importsForSynth = new TreeViewNode(synthName, synthName + "import");
+			auto importsForSynth = new TreeViewNode(synthName, "library-" + synthName);
 			importsForSynth->onGenerateChildren = [this, synthName]() {
 				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 				shortenImportNames(importList);
@@ -100,6 +84,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			importsForSynth->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
+				if (onImportListSelected)
+					onImportListSelected("");
 			};
 			/*importsForSynth->onSingleClick = [importsForSynth](String) {
 				importsForSynth->toggleOpenness();
@@ -107,9 +93,6 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			result.push_back(importsForSynth);
 		}
 		return result;
-	};
-	importListsItem_->onSingleClick = [this](String) {
-		importListsItem_->toggleOpenness();
 	};
 
 	userListsItem_ = new TreeViewNode("User lists", "userlists");
@@ -139,7 +122,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	};
 	TreeViewNode* root = new TreeViewNode("ROOT", "");
 	root->onGenerateChildren = [=]() { 
-		return std::vector<TreeViewItem*>({ allPatchesItem_, importListsItem_, userListsItem_ }); 
+		return std::vector<TreeViewItem*>({ allPatchesItem_, userListsItem_ }); 
 	};
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
@@ -175,7 +158,7 @@ void PatchListTree::regenerateUserLists() {
 
 void PatchListTree::regenerateImportLists() {
 	// Need to refresh user lists
-	TreeViewNode* node = dynamic_cast<TreeViewNode*>(importListsItem_);
+	TreeViewNode* node = dynamic_cast<TreeViewNode*>(allPatchesItem_);
 	if (node) {
 		node->regenerate();
 		selectAllIfNothingIsSelected();
@@ -206,7 +189,7 @@ void PatchListTree::refreshUserList(std::string list_id)
 
 void PatchListTree::refreshAllImports()
 {
-	importListsItem_->regenerate();
+	allPatchesItem_->regenerate();
 }
 
 void PatchListTree::selectAllIfNothingIsSelected()
@@ -401,12 +384,10 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
 		// List of synths changed - we need to regenerate the imports list and the library subtrees!
 		allPatchesItem_->regenerate();
-		importListsItem_->regenerate();
 		selectAllIfNothingIsSelected();
 	}
 	else if (source == &UIModel::instance()->databaseChanged) {
 		allPatchesItem_->regenerate();
-		importListsItem_->regenerate();
 		userListsItem_->regenerate();
 		selectAllIfNothingIsSelected();
 	}
