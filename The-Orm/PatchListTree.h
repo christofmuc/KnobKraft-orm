@@ -41,8 +41,14 @@ private:
 	void regenerateUserLists();
 	void regenerateImportLists();
 
+	void selectSynthLibrary(std::string const& synthName);
+	std::string getSelectedSynth() const;
+	bool isUserListSelected() const;
+	std::list<std::string> pathOfSelectedItem() const;
+
 	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
+
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths_; // The database needs this to load patch lists
@@ -54,6 +60,5 @@ private:
 	TreeViewNode* allPatchesItem_;
 	TreeViewNode* userListsItem_;
 	std::map<std::string, TreeViewNode*> userLists_;
-	std::string previousSynthName_;
 };
 

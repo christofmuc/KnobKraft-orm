@@ -53,11 +53,11 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		synths_[synth.getName()] = synth.synth();
 	}
 
-	allPatchesItem_ = new TreeViewNode("All patches", "");
+	allPatchesItem_ = new TreeViewNode("All patches", "allpatches");
 	allPatchesItem_->onSelected = [this](String id) {
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
 		if (onImportListSelected)
-			onImportListSelected(id);
+			onImportListSelected("");
 	};
 	allPatchesItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
@@ -211,14 +211,15 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 	int index = 0;
 	while (index < path.size()) {
 		bool level_found = false;
+		if (!node->isOpen()) {
+			node->setOpen(true);
+		}
 		for (int c = 0; c < node->getNumSubItems(); c++) {
 			child = dynamic_cast<TreeViewNode *>(node->getSubItem(c));
 			if (!level_found && child && child->id().toStdString() == path[index]) {
 				node = child;
-				if (!node->isOpen()) {
-					node->setOpen(true);
-				}
 				level_found = true;
+				break;
 			}
 		}
 		if (!level_found) {
@@ -229,8 +230,8 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 			index++;
 		}
 	}
-	if (child) {
-		child->setSelected(true, true);
+	if (node) {
+		node->setSelected(true, true);
 	}
 	else {
 		selectAllIfNothingIsSelected();
@@ -343,11 +344,46 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	return node;
 }
 
+void PatchListTree::selectSynthLibrary(std::string const& synthName) {
+	selectItemByPath({ "allpatches", "library-" + synthName });
+}
+
+std::string PatchListTree::getSelectedSynth() const {
+	auto selectedPath = pathOfSelectedItem();
+	for (auto item : selectedPath) {
+		if (item.rfind("library-", 0) == 0) {
+			return item.substr(strlen("library-"));
+		}
+	}
+	return "";
+}
+
+bool PatchListTree::isUserListSelected() const {
+	auto selectedPath = pathOfSelectedItem();
+	return std::any_of(selectedPath.cbegin(), selectedPath.cend(), [](std::string const& item) { return item == "userlists"; });
+}
+
+std::list<std::string> PatchListTree::pathOfSelectedItem() const {
+	std::list<std::string> result;
+	if (treeView_->getNumSelectedItems() > 0) {
+		auto item = dynamic_cast<TreeViewNode*>(treeView_->getSelectedItem(0));
+		while (item != nullptr) {
+			result.push_front(item->id().toStdString());
+			item = dynamic_cast<TreeViewNode*>(item->getParentItem());
+		}
+	}
+	return result;
+}
+
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->importListChanged_) {
-		// Synth has changed, we need to regenerate the tree!
-
+	if (source == &UIModel::instance()->currentSynth_) {
+		// Synth has changed, we may need to switch to the synth library item - if and only if a synth-specific list of another synth is selected
+		if (!isUserListSelected() && getSelectedSynth() != UIModel::currentSynth()->getName()) {
+			selectSynthLibrary(UIModel::currentSynth()->getName());
+		}
+	}
+	else if (source == &UIModel::instance()->importListChanged_) {
 		// Did we have a previous synth/state? Then store it!
 		/*if (!previousSynthName_.empty()) {
 			synthSpecificTreeState_[previousSynthName_].reset(treeView_->getOpennessState(true).release());
