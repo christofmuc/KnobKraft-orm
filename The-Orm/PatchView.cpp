@@ -287,7 +287,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string list_id = infos["list_id"];
 			std::string patch_name = infos["patch_name"];
 			std::string list_name = infos["list_name"];
-			database_.removePatchFromList(list_id, infos["synth"], infos["md5"]);
+			database_.removePatchFromList(list_id, infos["synth"], infos["md5"], infos["order_num"]);
 			SimpleLogger::instance()->postMessage("Removed patch " + patch_name + " from list " + list_name);
 			patchListTree_.refreshUserList(list_id);
 			if (listFilterID_ == list_id) {
