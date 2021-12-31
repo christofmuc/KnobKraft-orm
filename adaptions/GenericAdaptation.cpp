@@ -452,7 +452,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	void GenericAdaptation::sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer)
+	void GenericAdaptation::sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kGeneralMessageDelay)) {

@@ -29,7 +29,7 @@ void ReceiveManualDumpWindow::run()
 	auto incomingHandler = midikraft::MidiController::makeOneHandle();
 	midikraft::MidiController::instance()->addMessageHandler(incomingHandler, [this, locationCap](MidiInput *source, MidiMessage const &received) {
 		// Just capture all messages incoming from the devices' input port. That might be too many...
-		if (!locationCap || locationCap->midiInput() == source->getName()) {
+		if (!locationCap || locationCap->midiInput() == source->getDeviceInfo()) {
 			midiLog_->addMessageToList(received, source->getName(), false);
 			receivedMessages_.push_back(received);
 		}

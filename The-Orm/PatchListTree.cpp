@@ -129,8 +129,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	treeView_->setRootItemVisible(false);
 
 	// Initial openness
-	allPatchesItem_->setOpenness(TreeViewItem::opennessOpen);
-	userListsItem_->setOpenness(TreeViewItem::opennessOpen);
+	allPatchesItem_->setOpenness(TreeViewItem::Openness::opennessOpen);
+	userListsItem_->setOpenness(TreeViewItem::Openness::opennessOpen);
 
 	treeView_->setColour(TreeView::selectedItemBackgroundColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::highlightedFill));
 
