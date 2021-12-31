@@ -690,7 +690,7 @@ namespace midikraft {
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(messages);
 	}
 
-	void KawaiK3::sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer)
+	void KawaiK3::sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		// We need to inspect if in there are any patch dumps are wave dump messages
 		auto midiOut = MidiController::instance()->getMidiOutput(midiOutput);
