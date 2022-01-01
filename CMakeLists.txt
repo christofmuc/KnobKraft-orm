@@ -9,6 +9,9 @@ cmake_minimum_required(VERSION 3.14)
 # Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
 
+# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
+add_compile_definitions(JSON_HAS_CPP_14)
+
 project(KnobKraft_Orm)
 
 #set(USE_ASIO true)
