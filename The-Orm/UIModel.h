@@ -18,16 +18,22 @@ class CurrentSynth : public ChangeBroadcaster {
 public:
 	void changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth);
 
-	midikraft::Synth *synth() {
-		return currentSynth_.expired() ? nullptr : currentSynth_.lock().get();
-	}
+	[[deprecated]]
+	midikraft::Synth *synth();
 
-	std::shared_ptr<midikraft::Synth> smartSynth() {
-		return currentSynth_.expired() ? nullptr : currentSynth_.lock();
-	}
+	std::shared_ptr<midikraft::Synth> smartSynth();
 
 private:
 	std::weak_ptr<midikraft::Synth> currentSynth_;
+};
+
+class CurrentMultiMode : public ChangeBroadcaster {
+public:
+	void setMultiSynthMode(bool multiMode);
+	bool multiSynthMode() const;
+
+private:
+	bool multiSynthMode_;
 };
 
 class CurrentSequencer : public ChangeBroadcaster {
@@ -107,6 +113,7 @@ public:
 	static File getThumbnailDirectory();
 
 	CurrentSynth currentSynth_; // Listen to this to get updated when the active synth is switched
+	CurrentMultiMode multiMode_;
 	CurrentSequencer currentSequencer_;
 	CurrentPatch currentPatch_; // Listen to this to get updated when the current patch changes
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified
@@ -115,6 +122,7 @@ public:
 	ThumbnailChanges thumbnails_;
 	WindowTitleChanges windowTitle_;
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
+	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
 
 private:
 	UIModel() = default;

@@ -212,13 +212,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 		return;
 	}
 
-	// Check if we have a multi-synth grid, then we turn on subtitles
-	std::set<std::string> synths;
-	for (int i = 0; i < (int)std::min(patchButtons_->size(), patches_.size()); i++) {
-		if (patches_[i].synth())
-			synths.insert(patches_[i].synth()->getName());
-	}
-	bool showSubtitles = synths.size() > 1;
+	bool showSubtitles = UIModel::instance()->multiMode_.multiSynthMode();
 
 	// Now set the button text and colors
 	int active = indexOfActive();

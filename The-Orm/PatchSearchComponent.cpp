@@ -18,6 +18,20 @@ CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) 
 	return CategoryButtons::Category(name->getName(), Colours::black);
 }
 
+std::map<std::string, std::weak_ptr<midikraft::Synth>> allSynthsMap() {
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+		if (synth) {
+			midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(synth->getName());
+			if (synthFound.synth())
+				synthMap[synth->getName()] = synthFound.synth();
+		}
+	}
+	return synthMap;
+}
+
+
+
 class AdvancedFilterPanel : public Component {
 public:
 	AdvancedFilterPanel(PatchView* patchView) :
@@ -52,38 +66,37 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	patchView_(patchView),
 	patchButtons_(patchButtons),
 	database_(database),
-	categoryFilters_({}, [this](CategoryButtons::Category) { patchView_->retrieveFirstPageFromDatabase(); }, true, true),
-	textSearch_([this]() { patchView_->retrieveFirstPageFromDatabase();  })
+	categoryFilters_({}, [this](CategoryButtons::Category) { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); }, true, true),
+	textSearch_([this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  })
 
 {
-	advancedFilters_ = std::make_unique<AdvancedFilterPanel>(patchView_);
-
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
-	addAndMakeVisible(importList_); //TODO - this is actually no longer visible, but still used!?
-	importList_.setTextWhenNoChoicesAvailable("No previous import data found");
-	importList_.setTextWhenNothingSelected("Click here to filter for a specific import");
-	importList_.onChange = [this]() { patchView_->retrieveFirstPageFromDatabase(); };
-
 	onlyFaves_.setButtonText("Only Faves");
-	onlyFaves_.onClick = [this]() { patchView_->retrieveFirstPageFromDatabase();  };
+	onlyFaves_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyFaves_);
 
 	showHidden_.setButtonText("Also Hidden");
-	showHidden_.onClick = [this]() { patchView_->retrieveFirstPageFromDatabase();  };
+	showHidden_.onClick = [this]() { updateCurrentFilter(); patchView_ ->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(showHidden_);
 
 	onlyUntagged_.setButtonText("Only Untagged");
-	onlyUntagged_.onClick = [this]() { patchView_->retrieveFirstPageFromDatabase();  };
+	onlyUntagged_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyUntagged_);
 
-	advancedSearch_ = std::make_unique<CollapsibleContainer>("Advanced filters", advancedFilters_.get(), false);
-	addAndMakeVisible(*advancedSearch_);
+	onlyDuplicates_.setButtonText("Only duplicate Names");
+	onlyDuplicates_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
+	addAndMakeVisible(onlyDuplicates_);
+
 	addAndMakeVisible(categoryFilters_);
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
+	// Need to initialize multiModeFilter, else we get weird search results
+	multiModeFilter_ = midikraft::PatchDatabase::allPatchesFilter({});
+
 	UIModel::instance()->currentSynth_.addChangeListener(this);
+	UIModel::instance()->multiMode_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
 	UIModel::instance()->categoriesChanged.addChangeListener(this);
 }
@@ -92,6 +105,7 @@ PatchSearchComponent::~PatchSearchComponent()
 {
 	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
+	UIModel::instance()->multiMode_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
 }
 
@@ -120,6 +134,7 @@ void PatchSearchComponent::resized()
 	fb.items.add(createFlexButton(&onlyFaves_));
 	fb.items.add(createFlexButton(&showHidden_));
 	fb.items.add(createFlexButton(&onlyUntagged_));
+	fb.items.add(createFlexButton(&onlyDuplicates_));
 	fb.performLayout(favRow);
 
 	auto filterRow = normalFilter; 
@@ -132,15 +147,60 @@ void PatchSearchComponent::resized()
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
 
 	area.removeFromTop(normalFilterHeight);
-	advancedSearch_->setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
-
 	// Patch Buttons get the rest
-	int advancedFilterHeight = advancedSearch_->isOpen() ? advancedFilters_->synthFilters_.usedHeight() + LAYOUT_LARGE_LINE_HEIGHT : LAYOUT_LARGE_LINE_HEIGHT;
-	area.removeFromTop(advancedFilterHeight);
-	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
+	patchButtons_->setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL * 2));
 }
 
-midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
+void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
+	// Set category buttons
+	std::set<CategoryButtons::Category> activeCategories;
+	for (auto const& c : filter.categories) {
+		activeCategories.insert(CategoryButtons::Category(c.category(), c.color()));
+	}
+	categoryFilters_.setActive(activeCategories);
+
+	// Set fav, show hidden button
+	onlyFaves_.setToggleState(filter.onlyFaves, dontSendNotification);
+	onlyUntagged_.setToggleState(filter.onlyUntagged, dontSendNotification);
+	showHidden_.setToggleState(filter.showHidden, dontSendNotification);
+	onlyDuplicates_.setToggleState(filter.onlyDuplicateNames, dontSendNotification);
+
+	// Set name filter
+	textSearch_.setSearchText(filter.name);
+}
+
+bool PatchSearchComponent::isInMultiSynthMode() {
+	return !UIModel::currentSynth() || UIModel::instance()->multiMode_.multiSynthMode();
+}
+
+midikraft::PatchFilter PatchSearchComponent::getFilter() 
+{	
+	if (!isInMultiSynthMode()) {
+		auto name = UIModel::currentSynth()->getName();
+		if (synthSpecificFilter_.find(name) != synthSpecificFilter_.end()) {
+			return synthSpecificFilter_[name];
+		}
+	}
+	else {
+		// Multi mode (or no synth) - user the stored multi mode filter
+		multiModeFilter_.synths = allSynthsMap();
+		return multiModeFilter_;
+	}
+	return buildFilter();
+}
+
+void PatchSearchComponent::updateCurrentFilter()
+{
+	if (!isInMultiSynthMode()) {
+		auto name = UIModel::currentSynth()->getName();
+		synthSpecificFilter_[name] = buildFilter();
+	}
+	else {
+		multiModeFilter_ = buildFilter();
+	}
+}
+
+midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 {
 	// Transform into real category
 	std::set<midikraft::Category> catSelected;
@@ -154,53 +214,67 @@ midikraft::PatchDatabase::PatchFilter PatchSearchComponent::buildFilter()
 	}
 	bool typeSelected = false;
 	int filterType = 0;
-	if (advancedFilters_->dataTypeSelector_.getSelectedId() > 1) { // 0 is empty drop down, and 1 is "All data types"
+	/*if (advancedFilters_->dataTypeSelector_.getSelectedId() > 1) { // 0 is empty drop down, and 1 is "All data types"
 		typeSelected = true;
 		filterType = advancedFilters_->dataTypeSelector_.getSelectedId() - 2;
-	}
+	}*/
 	std::string nameFilter = "";
 	if (!textSearch_.searchText().startsWith("!")) {
 		nameFilter = textSearch_.searchText().toStdString();
 	}
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
-	// Build synth list
-	for (auto s : advancedFilters_->synthFilters_.selectedCategories()) {
-		midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(s.category);
-		if (synthFound.synth()) {
-			synthMap[synthFound.synth()->getName()] = synthFound.synth();
+	// Build synth list - either the selected synth or all active synths
+	if (isInMultiSynthMode()) {
+		synthMap = allSynthsMap();
+	}
+	else {
+		if (UIModel::currentSynth()) {
+			synthMap[UIModel::currentSynth()->getName()] = UIModel::instance()->currentSynth_.smartSynth();
 		}
 	}
 	return { synthMap,
-		currentlySelectedSourceUUID(),
+		"", // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
+		"", // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
 		nameFilter,
 		onlyFaves_.getToggleState(),
 		typeSelected,
 		filterType,
 		showHidden_.getToggleState(),
 		onlyUntagged_.getToggleState(),
-		catSelected };
+		catSelected,
+		onlyDuplicates_.getToggleState()
+	};
 }
 
 void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 {
-	auto currentSynth = dynamic_cast<CurrentSynth*>(source);
-	if (currentSynth) {
+	if (dynamic_cast<CurrentSynth*>(source) || dynamic_cast<CurrentMultiMode*>(source)) {
+		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
+		auto synthName = currentSynth->getName();
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
 
-		// Select only the newly selected synth in the synth filters
-		if (UIModel::currentSynth()) {
-			advancedFilters_->synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
+		// Rebuild the other features
+		rebuildDataTypeFilterBox();
+
+		if (isInMultiSynthMode()) {
+			loadFilter(multiModeFilter_);
+		}
+		else {
+			// Load the filter stored for this synth
+			if (synthSpecificFilter_.find(synthName) == synthSpecificFilter_.end()) {
+				// First time this synth is selected, store a new blank filter for this synth
+				synthSpecificFilter_[synthName] = midikraft::PatchDatabase::allForSynth(currentSynth);
+			}
+			loadFilter(synthSpecificFilter_[synthName]);
 		}
 
-		// Rebuild the other features
-		rebuildImportFilterBox();
-		rebuildDataTypeFilterBox();
 		patchView_->retrieveFirstPageFromDatabase();
 		resized();
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
-		rebuildSynthFilters();
-		resized();
+		multiModeFilter_.synths = allSynthsMap();
+		if (isInMultiSynthMode())
+			patchView_->retrieveFirstPageFromDatabase();
 	}
 	else if (source == &UIModel::instance()->categoriesChanged) {
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
@@ -209,29 +283,9 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 	}
 }
 
-void PatchSearchComponent::rebuildSynthFilters()
-{
-	// The available list of synths changed, reset the synth filters
-	std::vector<CategoryButtons::Category> synthFilter;
-	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
-		synthFilter.push_back(synthCategory(synth.get()));
-	}
-	advancedFilters_->synthFilters_.setCategories(synthFilter);
-	if (UIModel::currentSynth()) {
-		advancedFilters_->synthFilters_.setActive({ synthCategory(UIModel::currentSynth()) });
-	}
-}
-
-void PatchSearchComponent::rebuildImportFilterBox()
-{
-	importList_.clear();
-	importList_.addItemList(patchView_->sourceNameList(), 1);
-	UIModel::instance()->importListChanged_.sendChangeMessage();
-}
-
 void PatchSearchComponent::rebuildDataTypeFilterBox()
 {
-	advancedFilters_->dataTypeSelector_.clear();
+	/*advancedFilters_->dataTypeSelector_.clear();
 	auto dflc = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(UIModel::instance()->currentSynth_.smartSynth());
 	if (dflc) {
 		StringArray typeNameList;
@@ -243,54 +297,7 @@ void PatchSearchComponent::rebuildDataTypeFilterBox()
 			}
 		}
 		advancedFilters_->dataTypeSelector_.addItemList(typeNameList, 1);
-	}
-}
-
-void PatchSearchComponent::selectImportByID(String id)
-{
-	std::string description = "All patches"; // Hackish - if the ID is not found, select the All patches item. This needs to be fixed once we have a more general List type
-	for (auto import : patchView_->imports_) {
-		if (import.id == id) {
-			description = import.description;
-			break;
-		}
-	}
-	for (int j = 0; j < importList_.getNumItems(); j++) {
-		if (importList_.getItemText(j).toStdString() == description) {
-			importList_.setSelectedItemIndex(j, sendNotificationAsync);
-			break;
-		}
-	}
-}
-
-void PatchSearchComponent::selectImportByDescription(std::string const& description)
-{
-	// Search for the import in the sorted list
-	for (int j = 0; j < importList_.getNumItems(); j++) {
-		if (importList_.getItemText(j).toStdString() == description) {
-			importList_.setSelectedItemIndex(j, dontSendNotification);
-			break;
-		}
-	}
-}
-
-std::string PatchSearchComponent::currentlySelectedSourceUUID()
-{
-	if (importList_.getSelectedItemIndex() > 0) {
-		std::string selectedItemText = importList_.getText().toStdString();
-		for (auto import : patchView_->imports_) {
-			if (import.description == selectedItemText) {
-				return import.id;
-			}
-		}
-		jassertfalse;
-	}
-	return "";
-}
-
-bool PatchSearchComponent::atLeastOneSynth()
-{
-	return !advancedFilters_->synthFilters_.selectedCategories().empty();
+	}*/
 }
 
 juce::String PatchSearchComponent::advancedTextSearch() const

@@ -23,6 +23,7 @@
 #include "CurrentPatchDisplay.h"
 #include "CollapsibleContainer.h"
 #include "PatchListTree.h"
+#include "RecycleBin.h"
 
 #include "PatchDatabase.h"
 #include "PatchHolder.h"
@@ -36,6 +37,7 @@ class PatchDiff;
 class PatchSearchComponent;
 
 class PatchView : public Component,
+	public DragAndDropContainer,
 	private ChangeListener
 {
 public:
@@ -65,7 +67,7 @@ public:
 	void selectFirstPatch();
 
 	// Hand through from PatchSearch
-	midikraft::PatchDatabase::PatchFilter currentFilter();
+	midikraft::PatchFilter currentFilter();
 
 	// Special functions
 	void bulkImportPIP(File directory);
@@ -78,7 +80,6 @@ private:
 	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
-	StringArray sourceNameList();
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
@@ -88,14 +89,21 @@ private:
 	void updateLastPath();
 	void createPatchInterchangeFile();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
-	void selectPatch(midikraft::PatchHolder &patch);
+	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
+	void setImportListFilter(String filter);
+	void setUserListFilter(String filter);
+	void deleteSomething(nlohmann::json const &infos);
 
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
 	PatchListTree patchListTree_;
+	std::string sourceFilterID_; // This is the old "import" combo box in new
+	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;
+
+	RecycleBin recycleBin_;
 
 	Label patchLabel_;
 	LambdaButtonStrip buttonStrip_;
@@ -108,7 +116,6 @@ private:
 	midikraft::Librarian librarian_;
 
 	std::vector<midikraft::SynthHolder> synths_;
-	std::vector<midikraft::ImportInfo> imports_;
 	int currentLayer_;
 
 	midikraft::PatchHolder compareTarget_;
