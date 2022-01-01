@@ -92,6 +92,7 @@ private:
 	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
+	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setImportListFilter(String filter);
 	void setUserListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);

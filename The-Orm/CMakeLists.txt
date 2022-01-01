@@ -48,6 +48,7 @@ set(SOURCES
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
+	LibrarianProgressWindow.h
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp

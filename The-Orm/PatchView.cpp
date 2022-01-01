@@ -21,7 +21,7 @@
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
 #include "ScriptedQuery.h"
-#include "ProgressHandlerWindow.h"
+#include "LibrarianProgressWindow.h"
 
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
@@ -30,6 +30,7 @@
 #include "Settings.h"
 #include "ReceiveManualDumpWindow.h"
 #include "ExportDialog.h"
+#include "SynthBank.h"
 
 const char *kAllPatchesFilter = "All patches";
 
@@ -38,6 +39,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	patchListTree_(database, synths),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
+	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
+		setSynthBankFilter(synth, bank);
+	};
 	patchListTree_.onImportListSelected = [this](String id) {
 		setImportListFilter(id);
 	};
@@ -258,6 +262,52 @@ void PatchView::saveCurrentPatchCategories() {
 	}
 }
 
+void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
+	midikraft::SynthBank bankList(synth, bank);
+	// Check if this synth bank has ever been loaded
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+	synths[synth->getName()] = synth;
+	if (database_.doesListExist(bankList.id())) {
+		// It does, so we can safely load and display it
+		listFilterID_ = bankList.id();
+		sourceFilterID_ = "";
+		retrieveFirstPageFromDatabase();
+	}
+	else {
+		// No, first time ever - offer the user to download from the synth if connected
+		auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
+		auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+		if (location) {
+			if (location->channel().isValid() && device->wasDetected()) {
+				// We can offer to download the bank from the synth, or rather just do it!
+				auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+				if (synth /*&& device->wasDetected()*/) {
+					midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
+					progressWindow->launchThread();
+					librarian_.startDownloadingAllPatches(
+						midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
+						synth,
+						bank,
+						progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow->signalThreadShouldExit();
+						MessageManager::callAsync([this, patchesLoaded]() {
+							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
+							/*auto enhanced = autoCategorize(patchesLoaded);
+							mergeNewPatches(enhanced);*/
+						});
+					});
+				}
+			}
+			else {
+				AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
+			}
+		}
+		else {
+			SimpleLogger::instance()->postMessage("Invalid operation - cannot retrieve bank from synth that has no MIDI connectivity implemented");
+		}
+	}
+}
+
 void PatchView::setImportListFilter(String filter)
 {
 	listFilterID_ = "";
@@ -316,23 +366,6 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 	}
 	SimpleLogger::instance()->postMessage("Program error - unknow drop type dropped on recycle bin!");
 }
-
-class LibrarianProgressWindow : public ProgressHandlerWindow {
-public:
-	LibrarianProgressWindow(midikraft::Librarian &librarian) : ProgressHandlerWindow("Import patches from Synth", "..."), librarian_(librarian) {
-	}
-
-	// Override this from the ThreadWithProgressWindow to understand closing with cancel button!
-	virtual void threadComplete(bool userPressedCancel) override {
-		if (userPressedCancel) {
-			// Make sure to destroy any stray MIDI callback handlers, else we'll get into trouble when we retry the operation
-			librarian_.clearHandlers();
-		}
-	}
-
-private:
-	midikraft::Librarian &librarian_;
-};
 
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();

@@ -253,6 +253,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 			std::vector<TreeViewItem*> result;
 			for (int i = 0; i < synth->numberOfBanks(); i++) {
 				auto bank = new TreeViewNode(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)), String(synthName) + "-bank-" + String(i));
+				bank->onSelected = [synth, i, this](String) {
+					if (onSynthBankSelected) {
+						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i));
+					}
+				};
 				result.push_back(bank);
 			}
 			return result;
