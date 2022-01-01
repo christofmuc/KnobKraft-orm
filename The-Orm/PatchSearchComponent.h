@@ -47,6 +47,7 @@ private:
 	ToggleButton showHidden_;
 	ToggleButton onlyUntagged_;
 	ToggleButton onlyDuplicates_;
+	ToggleButton andCategories_;
 
 	midikraft::PatchDatabase& database_;
 };

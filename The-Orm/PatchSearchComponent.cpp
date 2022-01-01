@@ -88,6 +88,10 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	onlyDuplicates_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
 	addAndMakeVisible(onlyDuplicates_);
 
+	andCategories_.setButtonText("All must match");
+	andCategories_.onClick = [this]() {updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
+	addAndMakeVisible(andCategories_);
+
 	addAndMakeVisible(categoryFilters_);
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
@@ -126,22 +130,26 @@ void PatchSearchComponent::resized()
 	auto normalFilter = area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 	auto leftHalf = normalFilter.removeFromLeft(leftPart);
 
-	auto favRow = normalFilter.removeFromTop(LAYOUT_LINE_HEIGHT);
+	
 	FlexBox fb;
 	fb.flexWrap = FlexBox::Wrap::wrap;
 	fb.flexDirection = FlexBox::Direction::row;
 	fb.justifyContent = FlexBox::JustifyContent::center;
+	fb.alignContent = FlexBox::AlignContent::flexStart; // This is cross axis, up
 	fb.items.add(createFlexButton(&onlyFaves_));
 	fb.items.add(createFlexButton(&showHidden_));
 	fb.items.add(createFlexButton(&onlyUntagged_));
 	fb.items.add(createFlexButton(&onlyDuplicates_));
-	fb.performLayout(favRow);
+	fb.items.add(createFlexButton(&andCategories_));
+	fb.performLayout(normalFilter);
+	auto flexBoxSize = FlexBoxHelper::computeFlexBoxSize(fb);
+	auto favRow = normalFilter.removeFromTop((int) flexBoxSize.getHeight());
 
 	auto filterRow = normalFilter; 
-	auto catFilterMin = categoryFilters_.determineSubAreaForButtonLayout(this, filterRow.withTrimmedTop(LAYOUT_INSET_NORMAL));
+	auto catFilterMin = categoryFilters_.determineSubAreaForButtonLayout(this, filterRow);
 	categoryFilters_.setBounds(catFilterMin.toNearestInt());
 
-	int normalFilterHeight = LAYOUT_LINE_HEIGHT + LAYOUT_INSET_NORMAL + categoryFilters_.getHeight();
+	int normalFilterHeight = (int) flexBoxSize.getHeight() + categoryFilters_.getHeight();
 
 	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
@@ -164,6 +172,7 @@ void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
 	onlyUntagged_.setToggleState(filter.onlyUntagged, dontSendNotification);
 	showHidden_.setToggleState(filter.showHidden, dontSendNotification);
 	onlyDuplicates_.setToggleState(filter.onlyDuplicateNames, dontSendNotification);
+	andCategories_.setToggleState(filter.andCategories, dontSendNotification);
 
 	// Set name filter
 	textSearch_.setSearchText(filter.name);
@@ -242,6 +251,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 		showHidden_.getToggleState(),
 		onlyUntagged_.getToggleState(),
 		catSelected,
+		andCategories_.getToggleState(),
 		onlyDuplicates_.getToggleState()
 	};
 }
