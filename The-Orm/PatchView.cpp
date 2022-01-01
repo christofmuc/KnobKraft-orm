@@ -50,12 +50,12 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 	patchListTree_.onPatchSelected = [this](midikraft::PatchHolder patch) {
-		selectPatch(patch);
+		selectPatch(patch, false);
 	};
 
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
 		if (UIModel::currentSynth()) {
-			selectPatch(patch);
+			selectPatch(patch, true);
 		}
 	});
 
@@ -650,7 +650,7 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 	backgroundThread.runThread();
 }
 
-void PatchView::selectPatch(midikraft::PatchHolder &patch)
+void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 {
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
@@ -662,29 +662,33 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch)
 		UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
 		currentLayer_ = 0;
 
-		// Send out to Synth
-		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+		if (alsoSendToSynth) {
+			// Send out to Synth
+			patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+		}
 	}
 	else {
-		// Toggle through the layers, if the patch is a layered patch...
-		auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
-		if (layers) {
-			currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
-		}
-		auto layerSynth = midikraft::Capability::hasCapability<midikraft::LayerCapability>(patch.smartSynth());
-		if (layerSynth) {
-			SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
-			//layerSynth->switchToLayer(currentLayer_);
-			auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
-			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
-			if (location) {
-				int totalSize = 0;
-				totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const &m) { return m.getRawDataSize() + acc; });
-				SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.size() % totalSize).str());
-				patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
+		if (alsoSendToSynth) {
+			// Toggle through the layers, if the patch is a layered patch...
+			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
+			if (layers) {
+				currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
 			}
-			else {
-				jassertfalse;
+			auto layerSynth = midikraft::Capability::hasCapability<midikraft::LayerCapability>(patch.smartSynth());
+			if (layerSynth) {
+				SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
+				//layerSynth->switchToLayer(currentLayer_);
+				auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
+				auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+				if (location) {
+					int totalSize = 0;
+					totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const& m) { return m.getRawDataSize() + acc; });
+					SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.size() % totalSize).str());
+					patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
+				}
+				else {
+					jassertfalse;
+				}
 			}
 		}
 	}

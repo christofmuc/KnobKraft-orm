@@ -89,7 +89,7 @@ private:
 	void updateLastPath();
 	void createPatchInterchangeFile();
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
-	void selectPatch(midikraft::PatchHolder &patch);
+	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 	void setImportListFilter(String filter);
