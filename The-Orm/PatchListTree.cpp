@@ -240,10 +240,12 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
-	node->onSelected = [this, patchHolder](String md5) {
+	//TODO - this doesn't work. The TreeView from JUCE has no handlers for selected or clicked that do not fire if a drag is started, so 
+	// you can do either the one thing or the other.
+	/*node->onMouseUp = [this, patchHolder](String md5) {
 		if (onPatchSelected)
 			onPatchSelected(patchHolder);
-	};
+	};*/
 	node->onItemDragged = [patchHolder, list, index]() {
 		nlohmann::json dragInfo{ { "drag_type", "PATCH_IN_LIST"}, 
 			{ "list_id", list.id},
