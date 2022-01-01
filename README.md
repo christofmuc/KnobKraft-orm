@@ -130,7 +130,8 @@ See the azure-pipelines.yml file for some hints how the Ubuntu server is doing i
 
 and then can use CMake just like on Windows to compile the software:
 
-    LDFLAGS="--disable-lto" cmake -S . -B builds && cmake --build builds
+    cmake -D CMAKE_INTERPROCEDURAL_OPTIMIZATION=off -S . -B builds
+    cmake --build builds
 
 This will produce a single executable `builds/The-Orm/KnobKraftOrm` that you can run.
 
