@@ -2,19 +2,13 @@
 =============================================
 
 1.14.0:
-Should not allow to insert a patch multiple times into a list
-Should lists have order indexes?
-Should merge All patches and by import top level node, this is duplicate
+Mac Python warning needs to be bigger, i.e. a dialog box
+
+1.15.0 (Meta data)
 Selector for display on patch button (combo box upper right)
 better attribute entry for patch name
-Duplicate filter should ignore hidden?
-
-
-* Would expect to choose sort order of patches in grid
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
-
-
-* Mac Python warning needs to be bigger, i.e. a dialog box
+* Would expect to choose sort order of patches in grid
 
 Surf! Auto-Surf! Dive!
 
