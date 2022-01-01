@@ -47,6 +47,7 @@ private:
 	std::list<std::string> pathOfSelectedItem() const;
 
 	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
+	TreeViewItem* newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;

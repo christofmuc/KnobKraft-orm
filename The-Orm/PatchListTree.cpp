@@ -63,34 +63,18 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		std::vector<TreeViewItem*> result;
 		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
 			std::string synthName = activeSynth->getName();
-			auto importsForSynth = new TreeViewNode(synthName, "library-" + synthName);
-			importsForSynth->onGenerateChildren = [this, synthName]() {
-				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
-				shortenImportNames(importList);
-				importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.description;  });
-				std::vector<TreeViewItem*> result;
-				for (auto const& import : importList) {
-					auto node = new TreeViewNode(import.description, import.id);
-					node->onSelected = [this, synthName](String id) {
-						UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
-						UIModel::instance()->multiMode_.setMultiSynthMode(false);
-						if (onImportListSelected)
-							onImportListSelected(id);
-					};
-					result.push_back(node);
-				}
-				return result;
+			auto synthLibrary = new TreeViewNode(synthName, "library-" + synthName);
+			synthLibrary->onGenerateChildren = [activeSynth, this]() {
+				return std::vector<TreeViewItem*>({ newTreeViewItemForImports(activeSynth) });
 			};
-			importsForSynth->onSelected = [this, synthName](String id) {
+			synthLibrary->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
 				if (onImportListSelected)
 					onImportListSelected("");
 			};
-			/*importsForSynth->onSingleClick = [importsForSynth](String) {
-				importsForSynth->toggleOpenness();
-			};*/
-			result.push_back(importsForSynth);
+
+			result.push_back(synthLibrary);
 		}
 		return result;
 	};
@@ -258,6 +242,32 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	return node;
+}
+
+TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
+	std::string synthName = synth->getName();
+	auto importsForSynth = new TreeViewNode("By import", "imports-" + synthName);
+	importsForSynth->onGenerateChildren = [this, synthName]() {
+		auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
+		shortenImportNames(importList);
+		importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.description;  });
+		std::vector<TreeViewItem*> result;
+		for (auto const& import : importList) {
+			auto node = new TreeViewNode(import.description, import.id);
+			node->onSelected = [this, synthName](String id) {
+				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
+				UIModel::instance()->multiMode_.setMultiSynthMode(false);
+				if (onImportListSelected)
+					onImportListSelected(id);
+			};
+			result.push_back(node);
+		}
+		return result;
+	};
+	importsForSynth->onSingleClick = [importsForSynth](String) {
+		importsForSynth->toggleOpenness();
+	};
+	return importsForSynth;
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
