@@ -65,7 +65,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			std::string synthName = activeSynth->getName();
 			auto synthLibrary = new TreeViewNode(synthName, "library-" + synthName);
 			synthLibrary->onGenerateChildren = [activeSynth, this]() {
-				return std::vector<TreeViewItem*>({ newTreeViewItemForImports(activeSynth) });
+				return std::vector<TreeViewItem*>({ newTreeViewItemForSynthBanks(activeSynth), newTreeViewItemForImports(activeSynth) });
 			};
 			synthLibrary->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
@@ -242,6 +242,23 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	return node;
+}
+
+TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
+	std::string synthName = device->getName();
+	auto synthBanksNode = new TreeViewNode("In synth", "banks-" + synthName);
+	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
+	if (synth) {
+		synthBanksNode->onGenerateChildren = [this, synth, synthName] {
+			std::vector<TreeViewItem*> result;
+			for (int i = 0; i < synth->numberOfBanks(); i++) {
+				auto bank = new TreeViewNode(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)), String(synthName) + "-bank-" + String(i));
+				result.push_back(bank);
+			}
+			return result;
+		};
+	}
+	return synthBanksNode;
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
