@@ -312,6 +312,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
 			}
 			node->regenerate();
+			node->setOpenness(TreeViewItem::Openness::opennessOpen);
 			if (onUserListChanged)
 				onUserListChanged(list.id);
 		}
