@@ -19,7 +19,7 @@ jobs:
 
     - name: Prepare build machine with homebrew
       run: |
-        brew install boost python3
+        brew install boost
         
     - name: CMake configure
       shell: bash
@@ -27,4 +27,4 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
     - name: CMake build
-      run: VERBOSE=1 cmake --build build --target package -- -j8
+      run: cmake --build build --target package --parallel
