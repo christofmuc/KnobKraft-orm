@@ -116,7 +116,7 @@ Using CMake and building is a simple step if the prerequisites are fulfilled. Si
 
     cmake -S . -B builds -G "Visual Studio 15 2017 Win64"
 
-This will generate a solution file for Visual Studio in the builds subdirctory. You can build the software to run it immediately with the command
+This will generate a solution file for Visual Studio in the builds subdirectory. You can build the software to run it immediately with the command
 
     cmake --build builds --config Release
 
