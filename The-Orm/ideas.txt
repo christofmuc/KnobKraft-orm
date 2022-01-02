@@ -1,14 +1,36 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
-1.14.0:
-Mac Python warning needs to be bigger, i.e. a dialog box
+
+BANK MANAGEMENT
+* Bank List needs a header - "Synth name + Bank name". last synched at <date>. <Send>/<Retrieve> Button.
+* Bank List should show which entries are "dirty"
+* Bank List needs to accept drops -> overwrite list item at same position. Mark as dirty.
+
+* Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Needs to have concept of ROM banks. 
+* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
+* Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
+* How do I do drag and drop from the Library into the bank? - Probably needs split screen
+* Bank lists should not be shown in user lists.
+* Can drag bank into user lists to create a user list from a bank 
+* Should a click on the In Synth button toggle the download? I guess so
+* The Normal download should then go away?
+* Bug: download from synth should also auto-categorize
 
 1.15.0 (Meta data)
+History stack!
+
+Retry logic - the OB-6 and Rev2 seem to be pretty unstable now?
+
 Selector for display on patch button (combo box upper right)
 better attribute entry for patch name
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
 * Would expect to choose sort order of patches in grid
+
+More ideas
+* migrate imports into lists
+* migrate categories into a m:n relationship
 
 Surf! Auto-Surf! Dive!
 
@@ -58,15 +80,6 @@ User questions
 * How to sync two computers?
 * How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
 * Backup behavior!?	
-
-BANK MANAGEMENT
-* Bank management (github #9)
-* Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
-  a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
-* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
-* Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
-* How do I do drag and drop from the Library into the bank?
-* Probably needs split screen
 
 UI/UX
 * Different log levels with error colors
