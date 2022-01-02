@@ -31,6 +31,9 @@ jobs:
       - name: Install Innosetup with NuGet
         run: nuget install Tools.InnoSetup
 
+      - name: Setup msbuild to build Winsparkle
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Build Winsparkle
         working-directory: third_party/winsparkle
         run: |
