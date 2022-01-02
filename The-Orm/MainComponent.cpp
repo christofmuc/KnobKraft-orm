@@ -495,6 +495,7 @@ void MainComponent::createNewDatabase()
 			// Refresh UI
 			UIModel::instance()->currentSynth_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
+			UIModel::instance()->databaseChanged.sendChangeMessage();
 		}
 	}
 }
