@@ -31,6 +31,12 @@ jobs:
       - name: Install Innosetup with NuGet
         run: nuget install Tools.InnoSetup
 
+      - name: Build Winsparkle
+        working-directory: third_party/winsparkle
+        run: |
+          nuget install packages.config -OutputDirectory packages
+          msbuild WinSparkle-2017.sln /t:Build /p:Configuration=Release;Platform=x64
+
       - name: Build and install Sentry
         working-directory: third_party/sentry-native
         run: |
@@ -42,7 +48,7 @@ jobs:
         env: # We get the SENTRY DSN from the repository's secret store
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         shell: bash
-        run: cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
+        run: cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
 
       - name: CMake build
         run: cmake --build Builds --config RelWithDebInfo --parallel
