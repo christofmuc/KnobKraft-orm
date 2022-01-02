@@ -69,6 +69,7 @@ set(SOURCES
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	UIModel.cpp UIModel.h
+	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
 	win_resources.rc
 	version.cpp.in
 	setup.iss

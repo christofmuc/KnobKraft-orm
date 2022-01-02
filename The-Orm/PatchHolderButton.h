@@ -9,9 +9,9 @@
 #include "PatchButton.h"
 #include "PatchHolder.h"
 
-class PatchHolderButton : public PatchButton {
+class PatchHolderButton : public PatchButtonWithDropTarget {
 public:
-	using PatchButton::PatchButton;
+	using PatchButtonWithDropTarget::PatchButtonWithDropTarget;
 	
 	void setPatchHolder(midikraft::PatchHolder *holder, bool active, bool showSynthName);
 

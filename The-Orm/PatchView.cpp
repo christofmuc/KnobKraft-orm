@@ -32,6 +32,8 @@
 #include "ExportDialog.h"
 #include "SynthBank.h"
 
+#include "LayoutConstants.h"
+
 const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
@@ -70,6 +72,8 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	}
 	);
 
+	bankList_ = std::make_unique<VerticalPatchButtonList>();
+
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
 	auto box = new LambdaLayoutBox();
@@ -92,10 +96,19 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		//SimpleLogger::instance()->postMessage("Item dropped: " + dropItemString);
 		deleteSomething(infos);
 	};
+	
+	auto centerBox = new LambdaLayoutBox();
+	centerBox->onResized = [this](Component* box) {
+		auto area = box->getLocalBounds();
+		patchSearch_->setBounds(area.removeFromLeft(area.getWidth() / 4 * 3));
+		bankList_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
+	};
+	centerBox->addAndMakeVisible(*bankList_);
+	centerBox->addAndMakeVisible(*patchSearch_);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
 		SplitteredEntry{ box, 15, 5, 40 },
-		SplitteredEntry{ patchSearch_.get(), 70, 40, 90 },
+		SplitteredEntry{ centerBox, 50, 40, 90 },
 		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
 	addAndMakeVisible(splitters_.get());
 
@@ -271,7 +284,9 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 		// It does, so we can safely load and display it
 		listFilterID_ = bankList.id();
 		sourceFilterID_ = "";
-		retrieveFirstPageFromDatabase();
+		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+			bankList_->setPatches(patches);
+		});
 	}
 	else {
 		// No, first time ever - offer the user to download from the synth if connected
@@ -288,12 +303,19 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 						midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
 						synth,
 						bank,
-						progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow.get(), [this, progressWindow, synth, bank](std::vector<midikraft::PatchHolder> patchesLoaded) {
 						progressWindow->signalThreadShouldExit();
-						MessageManager::callAsync([this, patchesLoaded]() {
+						MessageManager::callAsync([this, patchesLoaded, synth, bank]() {
 							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
-							/*auto enhanced = autoCategorize(patchesLoaded);
-							mergeNewPatches(enhanced);*/
+							// First make sure all patches are stored in the database
+							auto enhanced = autoCategorize(patchesLoaded);
+							mergeNewPatches(enhanced);
+							// Then store the list of them in the database
+							midikraft::SynthBank retrievedBank(synth, bank);
+							retrievedBank.setPatches(patchesLoaded);
+							database_.putPatchList(retrievedBank);
+							patchListTree_.refreshAllUserLists();
+							bankList_->setPatches(patchesLoaded);
 						});
 					});
 				}
@@ -628,6 +650,11 @@ void PatchView::bulkImportPIP(File directory) {
 	retrieveFirstPageFromDatabase();
 }
 
+void PatchView::setBankPatches(std::vector<midikraft::PatchHolder> const& patches)
+{
+	bankList_->setPatches(patches);
+}
+
 void PatchView::exportPatches()
 {
 	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
@@ -670,11 +697,12 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 				// Select this import
 				auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
 				if (info) {
+					auto name = UIModel::currentSynth()->getName();
 					if (midikraft::SourceInfo::isEditBufferImport(info)) {
-						patchListTree_.selectItemByPath({ "allpatches", "library-" + UIModel::currentSynth()->getName(), "EditBufferImport" });
+						patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, "EditBufferImport" });
 					}
 					else {
-						patchListTree_.selectItemByPath({ "allpatches", "library-" + UIModel::currentSynth()->getName(), info->md5(UIModel::currentSynth())});
+						patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, info->md5(UIModel::currentSynth())});
 					}
 				}
 			}

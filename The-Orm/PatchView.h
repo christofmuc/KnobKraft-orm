@@ -30,6 +30,7 @@
 #include "AutomaticCategory.h"
 
 #include "ImportFromSynthDialog.h"
+#include "VerticalPatchButtonList.h"
 
 #include <map>
 
@@ -72,6 +73,9 @@ public:
 	// Special functions
 	void bulkImportPIP(File directory);
 
+	// Bank management
+	void setBankPatches(std::vector<midikraft::PatchHolder> const& patches);
+
 private:
 	friend class PatchSearchComponent;
 
@@ -111,6 +115,7 @@ private:
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
+	std::unique_ptr<VerticalPatchButtonList> bankList_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 
