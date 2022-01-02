@@ -16,6 +16,12 @@ jobs:
       - name: Additionally checkout submodules - don't use checkout action as it will overwrite refs
         run: |
           git submodule update --recursive --init --depth 1
+
+      - name: Select proper Python version
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8' 
+          architecture: 'x64' 
         
       - name: Install NuGet
         uses: nuget/setup-nuget@v1        
