@@ -34,11 +34,16 @@ jobs:
       - name: Setup msbuild to build Winsparkle
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Setup known version of Windows SDK for the WinSparkle build
+        uses: fbactions/setup-winsdk@v1
+        with:
+          winsdk-build-version: 18362      
+
       - name: Build Winsparkle
         working-directory: third_party/winsparkle
         run: |
           nuget install packages.config -OutputDirectory packages
-          msbuild WinSparkle-2017.sln /t:Build /p:Configuration=Release;Platform=x64
+          msbuild WinSparkle-2017.sln /t:Build /p:Configuration=Release;WindowsTargetPlatformVersion=10.0.18362.0;Platform=x64
 
       - name: Build and install Sentry
         working-directory: third_party/sentry-native
