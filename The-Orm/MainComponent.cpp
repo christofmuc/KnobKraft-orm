@@ -199,6 +199,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		// This will create the file on demand, copying out the built-in information!
 		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
 			database_->updateCategories(newDefinitions);
+			automaticCategories_ = database_->getCategorizer(); // Need to reload the automatic Categories!
 			UIModel::instance()->categoriesChanged.sendChangeMessage();
 		});
 		/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
@@ -219,6 +220,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
 			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
 			)) {
+			automaticCategories_ = database_->getCategorizer(); // Need to reload the automatic Categories!
 			AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
 				patchView_->retrieveFirstPageFromDatabase();
 			});
