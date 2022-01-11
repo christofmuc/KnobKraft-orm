@@ -234,8 +234,8 @@ void PatchView::showPatchDiffDialog() {
 	if (compareTarget_.synth()->getName() != UIModel::currentPatch().synth()->getName()) {
 		// Should have come either
 		SimpleLogger::instance()->postMessage((boost::format("Can't compare patch %s of synth %s with patch %s of synth %s") %
-			UIModel::currentPatch().patch()->name() % UIModel::currentPatch().synth()->getName()
-			% compareTarget_.patch()->name() % compareTarget_.synth()->getName()).str());
+			UIModel::currentPatch().name() % UIModel::currentPatch().synth()->getName()
+			% compareTarget_.name() % compareTarget_.synth()->getName()).str());
 		return;
 	}
 

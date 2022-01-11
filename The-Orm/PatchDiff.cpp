@@ -236,13 +236,7 @@ String PatchDiff::makeHexDocument(midikraft::PatchHolder *patch)
 }
 
 String PatchDiff::makeTextDocument(midikraft::PatchHolder *patch) {
-	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
-	if (realPatch) {
-		return patchToTextRaw(realPatch, false);
-	}
-	else {
-		return "makeTextDocument not implemented yet";
-	}
+	return patchToTextRaw(patch->patch(), false);
 }
 
 std::vector<Range<int>> PatchDiff::diffFromText(String &doc1, String &doc2) {
@@ -295,7 +289,7 @@ std::vector<Range<int>> PatchDiff::diffFromData(std::shared_ptr<midikraft::DataF
 	return diffRanges;
 }
 
-std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
+std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::DataFile> patch, bool onlyActive)
 {
 	std::string result;
 

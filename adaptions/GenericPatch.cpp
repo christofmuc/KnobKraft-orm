@@ -30,26 +30,6 @@ namespace knobkraft {
 		return py::hasattr(*adaptation_, functionName.c_str());
 	}
 
-	std::string GenericPatch::name() const
-	{
-		py::gil_scoped_acquire acquire;
-		try {
-			std::vector<int> v(data().data(), data().data() + data().size());
-			auto result = adaptation_.attr(kNameFromDump)(v);
-			checkForPythonOutputAndLog();
-			return result.cast<std::string>();
-		}
-		catch (py::error_already_set &ex) {
-			std::string errorMessage = (boost::format("Error calling %s: %s") % kNameFromDump % ex.what()).str();
-			ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
-			SimpleLogger::instance()->postMessage(errorMessage);
-		}
-		catch (std::exception &ex) {
-			logAdaptationError(kNameFromDump, ex);
-		}
-		return "invalid";
-	}
-
 	void GenericPatch::logAdaptationError(const char *methodName, std::exception &ex) const
 	{
 		// This hoop is required to properly process Python created exceptions
@@ -61,7 +41,29 @@ namespace knobkraft {
 		});
 	}
 
-	void GenericStoredPatchNameCapability::setName(std::string const &name)
+	std::string GenericStoredPatchNameCapability::name() const
+	{
+		py::gil_scoped_acquire acquire;
+		if (!me_.expired()) {
+			try {
+				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+				auto result = me_.lock()->callMethod(kNameFromDump, v);
+				return result.cast<std::string>();
+			}
+			catch (py::error_already_set& ex) {
+				std::string errorMessage = (boost::format("Error calling %s: %s") % kNameFromDump % ex.what()).str();
+				ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
+				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+			catch (std::exception& ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kNameFromDump, ex);
+			}
+		}
+		return "invalid";
+	}
+
+	void GenericStoredPatchNameCapability::setName(std::string const& name)
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
@@ -173,5 +175,51 @@ namespace knobkraft {
 		}
 		return false;
 	}
+
+	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredPatchNumberCapability>& outCapability) const
+	{
+		midikraft::StoredPatchNumberCapability* impl;
+		if (hasCapability(&impl)) {
+			if (!genericStoredPatchNumberCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericStoredPatchNumberCapabilityImpl_ = std::make_shared<GenericStoredPatchNumberCapability>(non_const->shared_from_this());
+			}
+			outCapability = genericStoredPatchNumberCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(midikraft::StoredPatchNumberCapability** outCapability) const
+	{
+		if (pythonModuleHasFunction(kIsDefaultName)) {
+			if (!genericStoredPatchNumberCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericStoredPatchNumberCapabilityImpl_ = std::make_shared<GenericStoredPatchNumberCapability>(non_const->shared_from_this());
+			}
+			*outCapability = genericStoredPatchNumberCapabilityImpl_.get();
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericStoredPatchNumberCapability::hasStoredPatchNumber() const
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	MidiProgramNumber GenericStoredPatchNumberCapability::getStoredPatchNumber() const
+	{
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
+	void GenericStoredPatchNumberCapability::setStoredPatchNumber(MidiProgramNumber newNumber) const
+	{
+		ignoreUnused(newNumber);
+		throw std::logic_error("The method or operation is not implemented.");
+	}
+
 }
 

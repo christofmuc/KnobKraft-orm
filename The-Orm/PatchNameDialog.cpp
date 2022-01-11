@@ -110,7 +110,7 @@ void PatchNameDialog::buttonClicked(Button *button)
 				//SimpleLogger::instance()->postMessage("Layer " + String(i) + " is " + names_[i].getValue());
 				layers->setLayerName(i, newName.toStdString());
 			}
-			patch_->setName(patch_->patch()->name());
+			patch_->setName(patch_->synth()->nameForPatch(patch_->patch()));
 		}
 		else {
 			String newName = names_[0].getValue().toString();

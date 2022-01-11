@@ -12,6 +12,7 @@
 
 #include "Capability.h"
 #include "StoredPatchNameCapability.h"
+#include "StoredPatchNumberCapability.h"
 
 #include <pybind11/embed.h>
 
@@ -25,7 +26,20 @@ namespace knobkraft {
 	public:
 		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
 
-		void setName(std::string const &name) override;
+		virtual std::string name() const override;
+		virtual void setName(std::string const &name) override;
+
+	private:
+		std::weak_ptr<GenericPatch> me_;
+	};
+
+	class GenericStoredPatchNumberCapability : public midikraft::StoredPatchNumberCapability {
+	public:
+		GenericStoredPatchNumberCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
+
+		bool hasStoredPatchNumber() const override;
+		MidiProgramNumber getStoredPatchNumber() const override;
+		void setStoredPatchNumber(MidiProgramNumber newNumber) const override;
 
 	private:
 		std::weak_ptr<GenericPatch> me_;
@@ -41,8 +55,10 @@ namespace knobkraft {
 		std::weak_ptr<GenericPatch> me_;
 	};
 
-	class GenericPatch : public midikraft::DataFile, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
+	class GenericPatch : public midikraft::DataFile
+		, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
 		, public midikraft::RuntimeCapability<midikraft::DefaultNameCapability>
+		, public midikraft::RuntimeCapability<midikraft::StoredPatchNumberCapability>
 		, public std::enable_shared_from_this<GenericPatch>
 	{
 	public:
@@ -86,8 +102,6 @@ namespace knobkraft {
 			}
 		}
 
-		std::string name() const override;
-
 		// For error handling
 		void logAdaptationError(const char *methodName, std::exception &e) const;
 
@@ -96,10 +110,13 @@ namespace knobkraft {
 		bool hasCapability(midikraft::StoredPatchNameCapability **outCapability) const override;
 		bool hasCapability(std::shared_ptr<midikraft::DefaultNameCapability> &outCapability) const override;
 		bool hasCapability(midikraft::DefaultNameCapability **outCapability) const override;
+		bool hasCapability(std::shared_ptr<midikraft::StoredPatchNumberCapability>& outCapability) const override;
+		bool hasCapability(midikraft::StoredPatchNumberCapability** outCapability) const override;
 
 	private:
 		std::shared_ptr<GenericStoredPatchNameCapability> genericStoredPatchNameCapabilityImpl_;
 		std::shared_ptr<GenericDefaultNameCapability> genericDefaultNameCapabilityImp_;
+		std::shared_ptr<GenericStoredPatchNumberCapability> genericStoredPatchNumberCapabilityImpl_;
 
 		GenericAdaptation const *me_;
 		pybind11::module &adaptation_;

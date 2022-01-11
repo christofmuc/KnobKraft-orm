@@ -1,8 +1,9 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
-1.14.0:
-Mac Python warning needs to be bigger, i.e. a dialog box
+Bug: need to introduce StoredPatchNumber capability!
+That's the last thing that the old Patch class still has over the DataFile class!
+
 
 1.15.0 (Meta data)
 Selector for display on patch button (combo box upper right)

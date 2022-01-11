@@ -116,16 +116,10 @@ String PatchTextBox::makeTextDocument(std::shared_ptr<midikraft::PatchHolder> pa
 	if (!patch || !patch->patch())
 		return "No patch active";
 
-	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
-	if (realPatch) {
-		return patchToTextRaw(realPatch, false);
-	}
-	else {
-		return "makeTextDocument not implemented yet";
-	}
+	return patchToTextRaw(patch->patch(), false);
 }
 
-std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
+std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::DataFile> patch, bool onlyActive)
 {
 	std::string result;
 
