@@ -828,10 +828,10 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		if (synth) {
 			// Persist current synth for next launch
 			Settings::instance().set("CurrentSynth", synth->getName());
+            // Make sure to let the synth list reflect the selection state!
+            synthList_.setActiveListItem(synth->getName());
 		}
 
-		// Make sure to let the synth list reflect the selection state!
-		synthList_.setActiveListItem(synth->getName());
 
 		// The active synth has been switched, make sure to refresh the tab name properly
 		int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
