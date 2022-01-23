@@ -9,23 +9,56 @@
 #include "JuceHeader.h"
 
 #include "PatchDatabase.h"
+#include "SynthHolder.h"
+#include "TreeViewNode.h"
 
 class PatchListTree : public Component, private ChangeListener {
 public:
+	typedef std::function<void(String)> TSelectionHandler;
+	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
 
-	PatchListTree(midikraft::PatchDatabase &db, std::function<void(String)> clickHandler);
+	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
 	virtual ~PatchListTree();
+
+	TSelectionHandler onImportListSelected;
+	TSelectionHandler onUserListSelected;
+	TSelectionHandler onUserListChanged;
+
+	TPatchSelectionHandler onPatchSelected;
 
 	virtual void resized();
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
+	void refreshAllUserLists();
+	void refreshUserList(std::string list_id);
+	void refreshAllImports();
 
+	void selectAllIfNothingIsSelected();
+	void selectItemByPath(std::vector<std::string> const& path);
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
+	
 private:
+	void regenerateUserLists();
+	void regenerateImportLists();
+
+	void selectSynthLibrary(std::string const& synthName);
+	std::string getSelectedSynth() const;
+	bool isUserListSelected() const;
+	std::list<std::string> pathOfSelectedItem() const;
+
+	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
+	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
+
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths_; // The database needs this to load patch lists
+	//std::map<std::string, std::unique_ptr<XmlElement>> synthSpecificTreeState_;
+
 	midikraft::PatchDatabase& db_;
-	std::function<void(String)> clickHandler_;
 
 	std::unique_ptr<TreeView> treeView_;
+	TreeViewNode* allPatchesItem_;
+	TreeViewNode* userListsItem_;
+	std::map<std::string, TreeViewNode*> userLists_;
 };
 

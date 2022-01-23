@@ -28,22 +28,29 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 		auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatchCapability>(holder->patch());
 		if (layers) {
 			if (layers->layerName(0) != layers->layerName(1)) {
-				setButtonText(layers->layerName(0), layers->layerName(1));
+				setButtonData(layers->layerName(0), layers->layerName(1), holder->createDragInfoString());
 			}
 			else {
-				setButtonText(layers->layerName(0));
+				setButtonData(layers->layerName(0), holder->createDragInfoString());
 			}
 		}
 		else {
-			setButtonText(holder->name());
+			setButtonData(holder->name(), holder->createDragInfoString());
 		}
-		setSubtitle((showSynthName && holder->synth()) ? holder->synth()->getName() : "");
+
+		std::string subtitle = "";
+		// Later, we can add a UI switch for this?
+		if (true) {
+			subtitle = holder->synth()->friendlyProgramName(holder->patchNumber());
+		}
+
+		setSubtitle((showSynthName && holder->synth()) ? holder->synth()->getName() : subtitle);
 		setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(*holder, this));
 		setFavorite(holder->isFavorite());
 		setHidden(holder->isHidden());
 	}
 	else {
-		setButtonText("");
+		setButtonData("", "");
 		setSubtitle("");
 		setColour(TextButton::ColourIds::buttonColourId, color);
 		setFavorite(false);

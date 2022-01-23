@@ -92,6 +92,17 @@ public:
 			pybind11::gil_scoped_acquire acquire;
 			globalImportEmbeddedModules();
 		}
+		else {
+			if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
+				SimpleLogger::instance()->postMessage("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
+			}
+			else {
+				AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "No Python installation found",
+					"No matching version of Python was found on this computer - only native synth implementations will work, adaptations will not be available. "
+					"You will have only a limited set of synths supported. Check the log window for more information. If this is ok with you and you want to use "
+					"only the build in synths, you can set the environment variable 'set ORM_NO_PYTHON=OK' to suppress this message on startup.");
+			}
+		}
 
 		// Select colour scheme
 		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();

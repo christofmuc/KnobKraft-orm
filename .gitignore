@@ -7,6 +7,5 @@ builds6/
 The-Orm/sentry-config.h
 adaptions/CompiledAdaptations.h
 codesigning/dsa_priv.pem
-codesigning/dsa_pub.pem
 builds.old/
 cmake-build-debug/

@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Windows KnobKraft Orm
+
+on: push
+
+jobs:
+  build-windows:
+      runs-on: windows-latest
+      steps:
+      - name: Checkout repository with tags
+        uses: actions/checkout@v2        
+        with:
+          fetch-depth: 0
+
+      - name: Additionally checkout submodules - don't use checkout action as it will overwrite refs
+        run: |
+          git submodule update --recursive --init --depth 1
+
+      - name: Select proper Python version
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8' 
+          architecture: 'x64' 
+        
+      - name: Install NuGet
+        uses: nuget/setup-nuget@v1        
+        with:
+          nuget-version: latest
+
+      - name: Install Innosetup with NuGet
+        run: nuget install Tools.InnoSetup
+
+      - name: Setup msbuild to build Winsparkle
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Setup known version of Windows SDK for the WinSparkle build
+        uses: fbactions/setup-winsdk@v1
+        with:
+          winsdk-build-version: 18362      
+
+      - name: Build Winsparkle
+        working-directory: third_party/winsparkle
+        run: |
+          nuget install packages.config -OutputDirectory packages
+          msbuild WinSparkle-2017.sln /t:Build /p:Configuration=Release;WindowsTargetPlatformVersion=10.0.18362.0;Platform=x64
+
+      - name: Build and install Sentry
+        working-directory: third_party/sentry-native
+        run: |
+          cmake -B build
+          cmake --build build --parallel --config RelWithDebInfo
+          cmake --install build --prefix install --config RelWithDebInfo
+
+      - name: CMake configure
+        env: # We get the SENTRY DSN from the repository's secret store
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        shell: bash
+        run: cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+
+      - name: CMake build
+        run: cmake --build Builds --config RelWithDebInfo --parallel
+
+      - name: Setup Sentry CLI        
+        uses: mathieu-bour/setup-sentry-cli@1.2.0
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          organization: knobkraft
+          project: knobkraft
+
+      - name: Upload PDB files to Sentry for stack unwinding when this is a tagged build
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: Builds/RelWithDebInfo
+        run: |
+          sentry-cli upload-dif . --log-level=debug
+        

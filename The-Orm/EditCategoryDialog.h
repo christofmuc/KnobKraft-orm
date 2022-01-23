@@ -11,18 +11,27 @@
 #include "PatchDatabase.h"
 #include "TypedNamedValue.h"
 
-class EditCategoryDialog : public Component {
+class EditCategoryDialog : public Component, private ValueTree::Listener {
 public:
 	typedef std::function<void(std::vector < midikraft::CategoryDefinition> const &)> TCallback;
 	EditCategoryDialog(midikraft::PatchDatabase &database);
+	virtual ~EditCategoryDialog() override;
 
 	virtual void resized() override;
 
 	static void showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, TCallback callback);
 
+	void refreshCategories(midikraft::PatchDatabase& db);
+	void refreshData();
 	void provideResult(TCallback callback);
 
+	void clearData();
 	static void shutdown();
+
+	// ValueTree::Listener
+	void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
+	void valueTreeChildAdded(ValueTree& parentTree, ValueTree& childWhichHasBeenAdded) override;
+	void valueTreeChildRemoved(ValueTree& parentTree, ValueTree& childWhichHasBeenRemoved, int indexFromWhichChildWasRemoved) override;
 
 private:
 	void addCategory(midikraft::CategoryDefinition const &def);
@@ -30,8 +39,10 @@ private:
 	static std::unique_ptr<EditCategoryDialog> sEditCategoryDialog_;
 	static DialogWindow *sWindow_;
 
-	ListBox parameters_;
-	TypedNamedValueSet props_;
+	int nextId_;
+
+	std::unique_ptr<ListBox> parameters_;
+	ValueTree propsTree_;
 	TextButton add_;
 	TextButton ok_;
 	TextButton cancel_;

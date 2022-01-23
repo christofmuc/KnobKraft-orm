@@ -7,12 +7,8 @@ jobs:
     strategy:
       matrix:
         mac:
-          imageName: 'macos-10.14'
+          imageName: 'macos-10.15'
           isMac: True
-        win2017:
-          imageName: 'vs2017-win2016'
-          isWindows2017: True
-          isWindows: True
         win2019:
           imageName: 'windows-2019'
           isWindows2019: True
@@ -52,12 +48,6 @@ jobs:
         restoreSolution: $(System.DefaultWorkingDirectory)/packages.config
         restoreDirectory: third_party
       condition: variables.isWindows
-    - task: CMake@1
-      displayName: Configuring CMake for Windows
-      inputs:
-        workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\python.exe'
-      condition: variables.isWindows2017
     - task: CMake@1
       displayName: Configuring CMake for Windows
       inputs:

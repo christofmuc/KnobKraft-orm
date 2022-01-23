@@ -92,3 +92,6 @@
 [submodule "third_party/json-schema-validator"]
 	path = third_party/json-schema-validator
 	url = https://github.com/pboettch/json-schema-validator.git
+[submodule "third_party/fmt"]
+	path = third_party/fmt
+	url = https://github.com/fmtlib/fmt.git

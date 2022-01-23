@@ -14,6 +14,15 @@ void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynt
 	sendChangeMessage();
 }
 
+midikraft::Synth* CurrentSynth::synth()
+{
+	return currentSynth_.expired() ? nullptr : currentSynth_.lock().get();
+}
+
+std::shared_ptr<midikraft::Synth> CurrentSynth::smartSynth()
+{
+	return currentSynth_.expired() ? nullptr : currentSynth_.lock();
+}
 
 void CurrentSequencer::changeCurrentSequencer(midikraft::StepSequencer *activeSequencer)
 {
@@ -59,7 +68,7 @@ void UIModel::shutdown()
 
 midikraft::Synth * UIModel::currentSynth()
 {
-	return instance_->currentSynth_.synth();
+	return instance_->currentSynth_.smartSynth().get();
 }
 
 midikraft::Synth* UIModel::currentSynthOfPatch()
@@ -165,4 +174,15 @@ bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverab
 		}
 	}
 	return false;
+}
+
+void CurrentMultiMode::setMultiSynthMode(bool multiMode)
+{
+	multiSynthMode_ = multiMode;
+	sendChangeMessage();
+}
+
+bool CurrentMultiMode::multiSynthMode() const
+{
+	return multiSynthMode_;
 }

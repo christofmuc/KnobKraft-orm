@@ -27,6 +27,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet Rev2 | works | native | |
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
+| Ensoniq | ESQ-1/SQ-80 | beta | adaptation | Contributed by @Mostelin! |
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
 | Korg | 03R/W | beta | adaptation | Thanks to Philippe! |
@@ -129,7 +130,8 @@ See the azure-pipelines.yml file for some hints how the Ubuntu server is doing i
 
 and then can use CMake just like on Windows to compile the software:
 
-    LDFLAGS="--disable-lto" cmake -S . -B builds && cmake --build builds
+    cmake -D CMAKE_INTERPROCEDURAL_OPTIMIZATION=off -S . -B builds
+    cmake --build builds
 
 This will produce a single executable `builds/The-Orm/KnobKraftOrm` that you can run.
 
@@ -167,7 +169,9 @@ The app icon is courtesy of W07 at the Sequential forums, thanks for your contri
 
 For the restless Prophet 12 testing thanks and a medal for most comments on a ticket go to @Andy2No!
 
-Thanks also go to @gnidorah and @dukzcry for reporting bugs with the RefaceDX implementation, which were fixed! Thanks to @GriffReborn for bug reports with the Virus B implementation! Big shout out over to gearslutz' @Behrmoog, who did the first three synth adaptations on his own, brave and fearless! Special thanks to @windo who spent nights testing the Korg MS2000 to make it work, despite me being too stupid to understand a quite clear sysex documentation! Also many thanks to @markusschloesser for great feedback and inquisitive persistence! 
+Thanks also go to @gnidorah and @dukzcry for reporting bugs with the RefaceDX implementation, which were fixed! Thanks to @GriffReborn for bug reports with the Virus B implementation! Big shout out over to gearslutz' @Behrmoog, who did the first three synth adaptations on his own, brave and fearless! Special thanks to @windo who spent nights testing the Korg MS2000 to make it work, despite me being too stupid to understand a quite clear sysex documentation! Also many thanks to @markusschloesser for great feedback and inquisitive persistence! Many thanks to @Mostelin for contributing the Ensoniq ESQ-1 adaptation.
+
+I am also grateful for all comments and suggestions in the various forums and Facebook groups where the KnobKraft Orm is discussed - thank you all, you know who you are!
 
 For bug reports, thanks to Iulian from the Facebook M1000 group!
 

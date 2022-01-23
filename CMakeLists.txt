@@ -9,6 +9,9 @@ cmake_minimum_required(VERSION 3.14)
 # Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
 
+# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
+add_compile_definitions(JSON_HAS_CPP_14)
+
 project(KnobKraft_Orm)
 
 #set(USE_ASIO true)
@@ -62,15 +65,8 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 
-	FetchContent_Declare(
-		winsparkle
-		URL https://github.com/vslavik/winsparkle/releases/download/v0.7.0/WinSparkle-0.7.0.zip
-	)
-	FetchContent_MakeAvailable(winsparkle)
-	#set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
-	#set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
 	set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/include")
-	set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/x64/Debug")
+	set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/x64/Release")
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
 

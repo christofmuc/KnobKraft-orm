@@ -1,5 +1,15 @@
 ﻿Completely unprioritised list of things to do
 =============================================
+
+1.14.0:
+Mac Python warning needs to be bigger, i.e. a dialog box
+
+1.15.0 (Meta data)
+Selector for display on patch button (combo box upper right)
+better attribute entry for patch name
+* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
+* Would expect to choose sort order of patches in grid
+
 Surf! Auto-Surf! Dive!
 
 AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
@@ -10,25 +20,36 @@ Better marketing
 * Should have direct download link to latest release
 * Should have patreon/paypal link for donations?
 
-Next release 1.11.1
+Open since 1.11
 * Test and document PatchInterchangeFormat exprot
-* Alpha implementation for the Yamaha DX7 (pure model, no detection or request codes, only manual receive)
-* Alpha implementation for the Yamaha DX7IID/FD/s and compatibles. I think this should already work, but only uses the original voice data and not the supplement data. Would be interested in getting feedback!
-
-
-Bugs open in 1.11:
 * Global Settings don't work for Matrix
 * DataFileLoad takes precedence over editbuffer, but shouldn'T
 * How to load unknowns sysex data without creating duplicates?
 * Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
 * Should be called Stream Load instead of DataFile
 
+Before 2.0
+* Need easy clear filter button
+* BUG: Deleting patches through the menu should also refresh patch list tree
+* SINGLE SYNTH SETUP MODE
+	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
+	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
+
+LISTS upgrades:
+* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
+* Add lists to PIF export
+* Openness and selection state could be persisted in the database
+* Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
+* Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
+	 Stored filters could be single or multi-synth
+* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
+* List folders / lists of lists?
 
 Release 2.0
 * Add Bank Management
 
 BUGS
-+ PatchButtons show subtitles only when there are two different synths, not when there is more than one selected
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + When hiding the (last?) patch on a page, the page is advanced without necessity
 
@@ -36,38 +57,26 @@ User questions
 * Where are the files? 
 * How to sync two computers?
 * How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
-	
+* Backup behavior!?	
 
 BANK MANAGEMENT
 * Bank management (github #9)
-* Could introduce collections/sessions/songs  = lists
 * Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
   a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
-* Database would just store reference to patch (name and ID, not the whole patch)
 * Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
 * Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
 * How do I do drag and drop from the Library into the bank?
+* Probably needs split screen
 
 UI/UX
 * Different log levels with error colors
-* Store filter per synth!
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
 * Edit field should be focused of Change Patch Name box
-* Would expect to choose sort order of patches in grid
-* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?)
 * The current patch per synth could be hidable
-* The current patch should go to the right of the screen
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
-* Better responsiveness for the patch grid - if not enough vertical space, use less rows instead of shrinking the buttons
-* Page buttons should be clickable?
-* Better responsiveness for the page buttons - should abbreviate
-* Make page number clickable to switch to that page, show less page numbers if these are really many
-* Save Window-layout for restart, including splitter position
 
 STARTED FEATURES TO BE FINISHED AND ANNOUNCED
 * Audio prehear
-* MKS-80
 * Behringer RD-8
 * Scripted Query
 * Editor
@@ -124,7 +133,9 @@ K3
 
 MKS80
 * how to deal with tones and patches
-* I guess just like the Wave in the K3?
+
+Yamaha DX7II
+* I think this should already work, but only uses the original voice data and not the supplement data. Would be interested in getting feedback!
 
 BCR2000
 * Should allow to load BCL files. I think it works but the BCR and BCL extensions are not added to the open dialog
@@ -225,7 +236,6 @@ Better fonts with Freetype. This is old.
 
 Big things
 	* Adding spectrogram display, this needs to keep the current patch above the tab row!
-	* Allow for free list of tags? This requires storing the tags properly in the database, I think, and allowing to delete no longer used tags.
 	* Follow program change on synth so we know which patch is playing. This seems to be quite hard on the Rev2, as it does not send program change when set to NRPN transmit.
 	  * Record notes played (duration) a specific patch
 	  * Allow to sort by playing time
@@ -314,6 +324,3 @@ Design einkaufen?
 Audio Routing (JammerNetz)
    + https://github.com/eiz/SynchronousAudioRouter/releases
    + https://alternativeto.net/software/virtual-audio-cable/
-
-Life Coding
-  + https://tidalcycles.org/Welcome

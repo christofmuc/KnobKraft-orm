@@ -300,7 +300,7 @@ namespace knobkraft {
 					if (existing->getName() == newAdaptationName) {
 						SimpleLogger::instance()->postMessage((boost::format("Overriding built-in adaptation %s (found in user directory %s)")
 							% newAdaptationName % getAdaptationDirectory().getFullPathName().toStdString()).str());
-						return false;
+						return true; // Was created successfully, but still is ignored.
 					}
 				}
 				outAddToThis.push_back(newAdaptation);
