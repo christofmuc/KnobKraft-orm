@@ -163,7 +163,7 @@ All pull requests and issues welcome, I will try to get back to you as soon as I
 
 Really big thanks to everybody who contributes and comments on YouTube, here on Github, or any of the other forums out in the Internet to motivate me to continue this work!
 
-Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaption to work with restless tests and trials!
+Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaptation to work with restless tests and trials!
 
 The app icon is courtesy of W07 at the Sequential forums, thanks for your contribution!
 
