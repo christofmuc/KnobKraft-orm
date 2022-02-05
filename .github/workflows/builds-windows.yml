@@ -62,7 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: Builds/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
+          file: Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
           tags: true
           prerelease: true
 

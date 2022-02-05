@@ -40,6 +40,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: build/KnobKraft_Orm-_${{env.ORM_VERSION}}-Darwin.dmg
+        file: build/KnobKraft_Orm-${{env.ORM_VERSION}}-Darwin.dmg
         tags: true
         prerelease: true
