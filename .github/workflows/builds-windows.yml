@@ -43,7 +43,6 @@ jobs:
         working-directory: third_party/conan-winsparkle
         run: |
           conan create . -s build_type=Release
-          conan export-pkg .
 
       - name: Install dependencies from conan
         run: |
