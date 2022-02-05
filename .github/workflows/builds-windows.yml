@@ -20,7 +20,7 @@ jobs:
       - name: Select proper Python version
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8' 
+          python-version: '3.10' 
           architecture: 'x64' 
         
       - name: Install NuGet
@@ -30,27 +30,24 @@ jobs:
 
       - name: Install Innosetup with NuGet
         run: nuget install Tools.InnoSetup
+        
+      - name: Install conan
+        run:  |
+          pip3 install wheel setuptools
+          pip3 install conan
+          conan --version
+          conan config set general.revisions_enabled=1
+          conan remote add bincrafters https://bincrafters.jfrog.io/artifactory/api/conan/public-conan
 
-      - name: Setup msbuild to build Winsparkle
-        uses: microsoft/setup-msbuild@v1.1
-
-      - name: Setup known version of Windows SDK for the WinSparkle build
-        uses: fbactions/setup-winsdk@v1
-        with:
-          winsdk-build-version: 18362      
-
-      - name: Build Winsparkle
-        working-directory: third_party/winsparkle
+      - name: Build Winsparkle with conan and publish locally, because it is not hosted in conancenter or bincrafters, export it for immediate use
+        working-directory: third_party/conan-winsparkle
         run: |
-          nuget install packages.config -OutputDirectory packages
-          msbuild WinSparkle-2017.sln /t:Build /p:Configuration=Release;WindowsTargetPlatformVersion=10.0.18362.0;Platform=x64
+          conan create . -s build_type=Release
+          conan export-pkg .
 
-      - name: Build and install Sentry
-        working-directory: third_party/sentry-native
+      - name: Install dependencies from conan
         run: |
-          cmake -B build
-          cmake --build build --parallel --config RelWithDebInfo
-          cmake --install build --prefix install --config RelWithDebInfo
+          conan install . -if Builds -s build_type=Release
 
       - name: CMake configure
         env: # We get the SENTRY DSN from the repository's secret store
