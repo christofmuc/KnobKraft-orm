@@ -4,7 +4,7 @@
 #  Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.16)
 
 # Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
@@ -23,6 +23,9 @@ add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
+
+# Allow to find Find<>.cmake files in our CMAKE_BINARY_DIR, placed there by a prerun with conan
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}")
 
 # On Windows, we need to download external dependencies
 IF (WIN32)
@@ -65,8 +68,6 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 
-	set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/include")
-	set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/winsparkle/x64/Release")
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
 

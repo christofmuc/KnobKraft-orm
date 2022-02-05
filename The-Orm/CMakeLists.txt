@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.14.1)
+project(KnobKraftOrm VERSION 1.14.2)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
@@ -22,17 +22,19 @@ OPTION(SPARKLE_UPDATES "Turn on WinSparkle update service")
 configure_file("version.cpp.in" "version.cpp")
 
 IF(CRASH_REPORTING)
+	find_package(sentry REQUIRED)
 	message("Internet-based crash reporting is turned on, using Sentry endpoint authorization from SENTRY_DSN CMake variable")
 	configure_file("${CMAKE_CURRENT_LIST_DIR}/sentry-config.h.in" "${CMAKE_CURRENT_LIST_DIR}/sentry-config.h")
 	SET(SENTRY_INSTALL_PATH "${CMAKE_CURRENT_LIST_DIR}/../third_party/sentry-native/install")
 	SET(SENTRY_CONFIG_HEADER sentry-config.h.in)
-	SET(SENTRY_DISTRIBUTION_FILES "${SENTRY_INSTALL_PATH}/bin/sentry.dll" "${SENTRY_INSTALL_PATH}/bin/crashpad_handler.exe")
+	SET(SENTRY_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/crashpad_handler.exe")
 ENDIF()
 
 IF(SPARKLE_UPDATES)
+	find_package(winsparkle REQUIRED)
 	message("Sparkle and WinSparkle updates are turned on, the executable will be linked against WinSparkle")
 	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem") 
-	SET(WINSPARKLE_DISTRIBUTION_FILES "${WINSPARKLE_LIBDIR}/WinSparkle.dll")
+	SET(WINSPARKLE_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/WinSparkle.dll")
 ENDIF()
 
 set(SOURCES
@@ -105,20 +107,19 @@ set(MIDIKRAFT_LIBRARIES
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
-	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+	PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)
 			set(D_LOG_SENTRY "-DLOG_SENTRY")
 		ENDIF()
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY ${D_LOG_SENTRY})
-		set(SENTRY_LIB sentry)
+		set(SENTRY_LIB sentry::sentry)
 	ENDIF()
 	IF(SPARKLE_UPDATES)
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SPARKLE)
-		set(SPARKLE_DEPENDENCY CodeSigning)
+		set(SPARKLE_DEPENDENCY CodeSigning winsparkle::winsparkle)
 	ENDIF()
-	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib" "${WINSPARKLE_LIBDIR}")
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
