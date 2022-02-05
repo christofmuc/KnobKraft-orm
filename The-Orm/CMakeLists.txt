@@ -220,14 +220,12 @@ ENDIF()
 IF(APPLE)
     # This is supposed to build a relocatable macOS DMG installer when you specify the
     # --target package
-    SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
     SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
     SET(DIRS ${CMAKE_BINARY_DIR})
     INSTALL(TARGETS KnobKraftOrm
-        BUNDLE DESTINATION . COMPONENT Runtime
-        RUNTIME DESTINATION bin COMPONENT Runtime
+        BUNDLE DESTINATION .
 		)
-	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
+	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential
         )
     
     INSTALL(CODE "include(BundleUtilities)
