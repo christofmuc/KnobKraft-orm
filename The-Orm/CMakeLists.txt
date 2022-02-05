@@ -8,6 +8,11 @@ cmake_minimum_required(VERSION 3.14)
 
 project(KnobKraftOrm VERSION 1.14.2)
 
+# Append the version number to the github action environment file to be used by subsequent steps 
+if(DEFINED ENV{GITHUB_ENV})
+file(APPEND $ENV{GITHUB_ENV} "ORM_VERSION=${KnobKraftOrm_VERSION}")
+endif()
+
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
 # Output the weird string Azure pipeline uses to parse a value into a variable. I hope.
