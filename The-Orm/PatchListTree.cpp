@@ -381,10 +381,12 @@ std::list<std::string> PatchListTree::pathOfSelectedItem() const {
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->currentSynth_) {
-		// Synth has changed, we may need to switch to the synth library item - if and only if a synth-specific list of another synth is selected
-		if (!isUserListSelected() && getSelectedSynth() != UIModel::currentSynth()->getName()) {
-			selectSynthLibrary(UIModel::currentSynth()->getName());
-		}
+        if (UIModel::currentSynth()) {
+            // Synth has changed, we may need to switch to the synth library item - if and only if a synth-specific list of another synth is selected
+            if (!isUserListSelected() && getSelectedSynth() != UIModel::currentSynth()->getName()) {
+                selectSynthLibrary(UIModel::currentSynth()->getName());
+            }
+        }
 	}
 	else if (source == &UIModel::instance()->importListChanged_) {
 		// Did we have a previous synth/state? Then store it!

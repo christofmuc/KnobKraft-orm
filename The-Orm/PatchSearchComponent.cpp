@@ -260,7 +260,10 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (dynamic_cast<CurrentSynth*>(source) || dynamic_cast<CurrentMultiMode*>(source)) {
 		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
-		auto synthName = currentSynth->getName();
+        std::string synthName = "none";
+        if (currentSynth) {
+            synthName = currentSynth->getName();
+        }
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
 
 		// Rebuild the other features
