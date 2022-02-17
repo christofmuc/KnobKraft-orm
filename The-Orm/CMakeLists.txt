@@ -225,7 +225,7 @@ IF(APPLE)
     INSTALL(TARGETS KnobKraftOrm
         BUNDLE DESTINATION .
 		)
-	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential COMPONENT RUNTIME
+	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION .
         )
     
     INSTALL(CODE "include(BundleUtilities)
