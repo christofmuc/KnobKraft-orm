@@ -22,7 +22,6 @@ OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
 OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
 set(SENTRY_DSN "Sentry DSN URL" CACHE STRING "https://YYYYYYYYYYYYYYYYYY@ZZZZZ.ingest.sentry.io/XXXX")
 set(D_LOG_SENTRY "")
-OPTION(SPARKLE_UPDATES "Turn on WinSparkle update service")
 
 configure_file("version.cpp.in" "version.cpp")
 
@@ -36,10 +35,16 @@ IF(CRASH_REPORTING)
 ENDIF()
 
 IF(SPARKLE_UPDATES)
+if(WIN32)
 	find_package(winsparkle REQUIRED)
+	SET(WINSPARKLE_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/WinSparkle.dll")
+else()
+	set(SPARKLE_FRAMEWORK_PATH ${sparkleframework_SOURCE_DIR})
+	message("Using Sparkle Framework from ${SPARKLE_FRAMEWORK_PATH}")
+	set(SPARKLE_LINK "-F${SPARKLE_FRAMEWORK_PATH} -framework Sparkle")
+endif()
 	message("Sparkle and WinSparkle updates are turned on, the executable will be linked against WinSparkle")
 	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem") 
-	SET(WINSPARKLE_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/WinSparkle.dll")
 ENDIF()
 
 set(SOURCES
@@ -134,12 +139,16 @@ IF(WIN32)
 		${SPARKLE_DEPENDENCY}
 		)
 ELSEIF(APPLE)
+	if(SPARKLE_UPDATES)
+		target_compile_options(KnobKraftOrm PRIVATE -F${SPARKLE_FRAMEWORK_PATH})
+	endif()
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		ICU::data ICU::uc
 		SQLiteCpp
 		sqlite3
 		gin
 		${APPLE_BOOST}
+		${SPARKLE_LINK}
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns

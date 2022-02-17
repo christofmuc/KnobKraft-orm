@@ -23,6 +23,12 @@
 #ifdef WIN32
 #include <winsparkle.h>
 #endif
+#ifdef __APPLE__
+#include "Sparkle/Spakle.h"
+#include <Sparkle/SUUpdater.h>
+
+static SUUpdate* updater = [[SUUpdater sharedUpdater] retain]
+#endif
 #endif
 
 #ifndef _DEBUG

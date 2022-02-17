@@ -14,6 +14,8 @@ add_compile_definitions(JSON_HAS_CPP_14)
 
 project(KnobKraft_Orm)
 
+OPTION(SPARKLE_UPDATES "Turn on Sparkle/WinSparkle update service")
+
 #set(USE_ASIO true)
 
 # Since we also build MacOS, we need C++ 17. Which is not a bad thing.
@@ -27,10 +29,11 @@ option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF)
 # Allow to find Find<>.cmake files in our CMAKE_BINARY_DIR, placed there by a prerun with conan
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}")
 
+# Include useful scripts for CMake
+include(FetchContent REQUIRED)
+
 # On Windows, we need to download external dependencies
 IF (WIN32)
-	# Include useful scripts for CMake    
-	include(FetchContent REQUIRED)
 
     FetchContent_Declare(
 	  boost
@@ -80,8 +83,15 @@ ELSEIF(APPLE)
 	if (NOT CMAKE_BUILD_TYPE MATCHES Release)
 		add_compile_definitions(DEBUG)
 	endif()
- 
-    
+
+	if (SPARKLE_UPDATES)
+		FetchContent_Declare(
+				sparkleframework
+				URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
+		)
+		FetchContent_MakeAvailable(sparkleframework)
+    ENDIF()
+
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
