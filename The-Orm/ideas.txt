@@ -21,7 +21,7 @@ Better marketing
 * Should have patreon/paypal link for donations?
 
 Open since 1.11
-* Test and document PatchInterchangeFormat exprot
+* Test and document PatchInterchangeFormat export
 * Global Settings don't work for Matrix
 * DataFileLoad takes precedence over editbuffer, but shouldn'T
 * How to load unknowns sysex data without creating duplicates?
@@ -110,6 +110,7 @@ Behringer RD-8
 
 RefaceDX
 * Parameter set missing
+* C++ had set Input Channel, set Output Channel, set Local Control. Wasn't used by the Orm though.
 
 Virus
 * Patch renaming has to be implemented

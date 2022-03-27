@@ -62,6 +62,20 @@ def nameFromDump(message):
     return "Invalid"
 
 
+def renamePatch(message, new_name):
+    if isLegacyFormat(message):
+        message = convertFromLegacyFormat(0, message)
+    messages = splitSysexMessage(message)
+    common_voice_data = dataBlockFromMessage(messages[1])[3:]
+    used_char = min(10, len(new_name))
+    for i in range(used_char):
+        common_voice_data[i] = ord(new_name[i])
+    for i in range(used_char, 10):
+        common_voice_data[i] = ord(" ")
+    messages[1] = buildBulkDumpMessage(0, commonVoiceAddress, common_voice_data)
+    return [item for sublist in messages for item in sublist]  # flatten again
+
+
 def createEditBufferRequest(channel):
     # Use the address of the bulk header, this will give us the current program
     return buildRequest(channel, bulkHeaderAddress)
@@ -167,6 +181,12 @@ def friendlyBankName(bank):
     return "Banks 1-4"
 
 
+def friendlyProgramName(programNo):
+    bank = programNo // 8
+    patch = programNo % 8
+    return f"Bank{bank}-{patch}"
+
+
 def addressFromMessage(message):
     if isOwnSysex(message) and len(message) > 10:
         return message[8], message[9], message[10]
@@ -249,6 +269,11 @@ def run_tests():
         assert back_to_normal == raw_data
         assert convertToEditBuffer(0, raw_data) == raw_data
         assert convertToEditBuffer(0, legacy_format) == raw_data
+
+        same_patch = renamePatch(raw_data, "Piano 1")
+        assert same_patch == raw_data
+        new_patch = renamePatch(raw_data, "Piano 2")
+        assert(nameFromDump(new_patch)) == "Piano 2   "
 
 
 if __name__ == "__main__":
