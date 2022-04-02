@@ -65,6 +65,7 @@ IF (WIN32)
 		#URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
+	set(PYTHON_EMBEDDED_PATH "${pythonembedded_SOURCE_DIR}")
 
 	FetchContent_Declare(
         winsparkle
