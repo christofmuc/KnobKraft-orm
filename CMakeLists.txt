@@ -61,7 +61,8 @@ IF (WIN32)
 
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
+		URL https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip
+		#URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 
@@ -107,7 +108,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
 # Setup pybind11
-set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+if(WIN32)
+	set(PYTHON_VERSION_TO_EMBED "3.8" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+else()
+	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+endif()
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
