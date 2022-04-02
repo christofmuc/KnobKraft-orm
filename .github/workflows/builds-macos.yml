@@ -32,3 +32,13 @@ jobs:
 
     - name: CMake build
       run: cmake --build build --target package --parallel
+
+    - name: Publish release
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: build/KnobKraft_Orm-${{env.ORM_VERSION}}-Darwin.dmg
+        tags: true
+        draft: true
+
