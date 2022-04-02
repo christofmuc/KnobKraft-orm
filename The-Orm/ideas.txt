@@ -1,6 +1,8 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
+Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
+
 1.14.0:
 Mac Python warning needs to be bigger, i.e. a dialog box
 
