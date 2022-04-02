@@ -42,7 +42,9 @@ jobs:
         env: # We get the SENTRY DSN from the repository's secret store
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         shell: bash
-        run: cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+        run: |
+          cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+          find .
 
       - name: CMake build
         run: cmake --build Builds --config RelWithDebInfo --parallel
