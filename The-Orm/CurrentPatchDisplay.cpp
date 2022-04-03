@@ -24,6 +24,7 @@ MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, st
 	categories_(categories, categoryUpdateHandler, false, false)
 {
 	addAndMakeVisible(categories_);
+	categories_.setButtonSize(LAYOUT_BUTTON_WIDTH, LAYOUT_TOUCHBUTTON_HEIGHT);
 }
 
 void MetaDataArea::setActive(std::set<CategoryButtons::Category> const& activeCategories) 
@@ -191,8 +192,8 @@ void CurrentPatchDisplay::resized()
 		fb.flexWrap = FlexBox::Wrap::wrap;
 		fb.flexDirection = FlexBox::Direction::row;
 		fb.justifyContent = FlexBox::JustifyContent::center;
-		fb.items.add(FlexItem(favorite_).withMinHeight(LAYOUT_LINE_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
-		fb.items.add(FlexItem(hide_).withMinHeight(LAYOUT_LINE_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
+		fb.items.add(FlexItem(favorite_).withMinHeight(LAYOUT_TOUCHBUTTON_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
+		fb.items.add(FlexItem(hide_).withMinHeight(LAYOUT_TOUCHBUTTON_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
 		auto spaceNeeded = FlexBoxHelper::determineSizeForButtonLayout(this, this, { &favorite_, &hide_ }, nextRow);
 		fb.performLayout(spaceNeeded.toNearestInt());
 		area.removeFromTop((int) spaceNeeded.getHeight());
