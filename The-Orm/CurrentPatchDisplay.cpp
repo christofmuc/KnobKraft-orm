@@ -20,22 +20,59 @@
 
 #include <boost/format.hpp>
 
+MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
+	categories_(categories, categoryUpdateHandler, false, false)
+{
+	addAndMakeVisible(categories_);
+}
+
+void MetaDataArea::setActive(std::set<CategoryButtons::Category> const& activeCategories) 
+{
+	categories_.setActive(activeCategories);
+}
+
+void MetaDataArea::setCategories(std::vector<CategoryButtons::Category> const& categories) 
+{
+	categories_.setCategories(categories);
+}
+
+std::vector<CategoryButtons::Category> MetaDataArea::selectedCategories() const 
+{
+	return categories_.selectedCategories();
+}
+
+void MetaDataArea::resized()
+{
+	auto area = getLocalBounds();
+
+	// Make sure our component is large enough!
+	categories_.setBounds(area); 
+	//categories_.setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL)); // Leave room for the scrollbar on the right
+}
+
+int MetaDataArea::getDesiredHeight(int width) 
+{
+	// Given the width, determine the required height of the flex box button layout
+	auto desiredBounds = categories_.determineSubAreaForButtonLayout(this, Rectangle<int>(0, 0, width, 10000));
+	return static_cast<int>(desiredBounds.getHeight());
+}
+
 CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
 	: Component(), database_(database), favoriteHandler_(favoriteHandler)
-	, categories_(categories, [this](CategoryButtons::Category categoryClicked) { 
-		categoryUpdated(categoryClicked);
-	}, false, false),
-	name_(0, false, [this](int) { 		
+	, name_(0, false, [this](int) { 		
 		PatchNameDialog::showPatchNameDialog(currentPatch_, getTopLevelComponent(), [this](std::shared_ptr<midikraft::PatchHolder> result) {
 			setCurrentPatch(result);
 			favoriteHandler_(result);
 		}); 
-	}),
-	currentSession_("Current Session"), 
-	favorite_("Fav!"),
-	hide_("Hide"),
-	import_("IMPORT", "No import information")
-{
+	})
+	, currentSession_("Current Session")
+	, favorite_("Fav!")
+	, hide_("Hide")
+	, import_("IMPORT", "No import information")
+	, metaData_(categories, [this](CategoryButtons::Category categoryClicked) {
+		categoryUpdated(categoryClicked);
+	})
+	{
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(patchType_);
 
@@ -55,7 +92,8 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	currentSession_.addListener(this);
 	//addAndMakeVisible(currentSession_);
 
-	addAndMakeVisible(categories_);
+	metaDataScroller_.setViewedComponent(&metaData_, false);
+	addAndMakeVisible(metaDataScroller_);
 	addAndMakeVisible(import_);
 	addAndMakeVisible(patchAsText_);
 
@@ -89,7 +127,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		for (const auto& cat : patch->categories()) {
 			buttonCategories.insert({ cat.category(), cat.color() });
 		}
-		categories_.setActive(buttonCategories);
+		metaData_.setActive(buttonCategories);
 
 		if (patch->synth()) {
 			synthName_.setText(patch->synth()->getName(), dontSendNotification);
@@ -122,7 +160,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		import_.setText("", dontSendNotification);
 		favorite_.setToggleState(false, dontSendNotification);
 		hide_.setToggleState(false, dontSendNotification);
-		categories_.setActive({});
+		metaData_.setActive({});
 		patchAsText_.fillTextBox(nullptr);
 	}
 }
@@ -167,7 +205,9 @@ void CurrentPatchDisplay::resized()
 		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
 		patchType_.setBounds(nextRow);
 		
-		categories_.setBounds(area.withTrimmedTop(LAYOUT_INSET_NORMAL));
+		auto metaDataWidth = area.getWidth() - LAYOUT_INSET_NORMAL; // Allow for the vertical scrollbar on the right hand side!
+		metaData_.setSize(metaDataWidth, metaData_.getDesiredHeight(metaDataWidth));
+		metaDataScroller_.setBounds(area.withTrimmedTop(LAYOUT_INSET_NORMAL));
 
 		//SimpleLogger::instance()->postMessage("Height is " + String(categories_.getChildComponent(categories_.getNumChildComponents() - 1)->getBottom()));
 		// Upper 25% of rest, tag buttons
@@ -199,7 +239,7 @@ void CurrentPatchDisplay::resized()
 		name_.setBounds(topRow);
 
 		auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
-		categories_.setBounds(bottomRow);
+		metaDataScroller_.setBounds(bottomRow);
 	}
 }
 
@@ -271,7 +311,7 @@ void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 			result.emplace_back(c.category(), c.color());
 		}
 	}
-	categories_.setCategories(result);
+	metaData_.setCategories(result);
 	refreshNameButtonColour();
 }
 
@@ -281,7 +321,7 @@ void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
 		for (auto realCat: database_.getCategories()) {
 			if (realCat.category() == clicked.category) {
 				currentPatch_->setUserDecision(realCat);
-				auto categories = categories_.selectedCategories();
+				auto categories = metaData_.selectedCategories();
 				currentPatch_->clearCategories();
 				for (const auto& cat : categories) {
 					// Have to convert into juce-widget version of Category here
