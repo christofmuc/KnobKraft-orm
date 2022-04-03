@@ -15,6 +15,7 @@
 #include "PatchHolder.h"
 #include "PatchTextBox.h"
 #include "PatchDatabase.h"
+#include "PropertyEditor.h"
 
 class MetaDataArea: public Component {
 public:
@@ -35,7 +36,7 @@ private:
 };
 
 class CurrentPatchDisplay : public Component,
-	private TextButton::Listener, private ChangeListener
+	private TextButton::Listener, private ChangeListener, private Value::Listener
 {
 public:
 	CurrentPatchDisplay(midikraft::PatchDatabase &database,
@@ -59,16 +60,15 @@ public:
 	virtual void paint(Graphics& g) override;
 
 private:
+	void setupPatchProperties(std::shared_ptr<midikraft::PatchHolder> patch);
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 	void refreshNameButtonColour();
 	void categoryUpdated(CategoryButtons::Category clicked);
+	virtual void valueChanged(Value& value) override; // This gets called when the property editor is used
 
 	midikraft::PatchDatabase &database_;
-	Label synthName_;
-	Label patchType_;
 	PatchButton name_;
-	Label import_;
-	TextButton currentSession_;
+	PropertyEditor propertyEditor_;
 	TextButton favorite_;
 	TextButton hide_;
 	Viewport metaDataScroller_;
@@ -77,6 +77,8 @@ private:
 	PatchTextBox patchAsText_;
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler_;
 	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
+
+	TypedNamedValueSet metaDataValues_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)
 };

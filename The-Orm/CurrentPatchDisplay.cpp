@@ -18,6 +18,8 @@
 #include "UIModel.h"
 #include "FlexBoxHelper.h"
 
+#include "LayeredPatchCapability.h"
+
 #include <boost/format.hpp>
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
@@ -60,24 +62,20 @@ int MetaDataArea::getDesiredHeight(int width)
 
 CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
 	: Component(), database_(database), favoriteHandler_(favoriteHandler)
-	, name_(0, false, [this](int) { 		
+	, name_(0, false, [this](int) {
 		PatchNameDialog::showPatchNameDialog(currentPatch_, getTopLevelComponent(), [this](std::shared_ptr<midikraft::PatchHolder> result) {
 			setCurrentPatch(result);
 			favoriteHandler_(result);
 		}); 
 	})
-	, currentSession_("Current Session")
 	, favorite_("Fav!")
 	, hide_("Hide")
-	, import_("IMPORT", "No import information")
 	, metaData_(categories, [this](CategoryButtons::Category categoryClicked) {
 		categoryUpdated(categoryClicked);
 	})
 	{
-	addAndMakeVisible(synthName_);
-	addAndMakeVisible(patchType_);
-
 	addAndMakeVisible(&name_);
+	addAndMakeVisible(&propertyEditor_);
 
 	favorite_.setClickingTogglesState(true);
 	favorite_.addListener(this);
@@ -89,13 +87,8 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	hide_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::indianred);
 	addAndMakeVisible(hide_);
 
-	currentSession_.setClickingTogglesState(true);
-	currentSession_.addListener(this);
-	//addAndMakeVisible(currentSession_);
-
 	metaDataScroller_.setViewedComponent(&metaData_, false);
 	addAndMakeVisible(metaDataScroller_);
-	addAndMakeVisible(import_);
 	addAndMakeVisible(patchAsText_);
 
 	// We need to recolor in case the categories are changed
@@ -113,14 +106,8 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 	currentPatch_ = patch;
 	if (patch && patch->patch()) {
 		name_.setButtonData(patch->name(), patch->createDragInfoString());
+		setupPatchProperties(patch);
 		refreshNameButtonColour();
-		if (patch->sourceInfo()) {
-			String position = (boost::format(" at %d") % patch->patchNumber().toZeroBased()).str();
-			import_.setText(String(patch->sourceInfo()->toDisplayString(patch->synth(), false)) + position, dontSendNotification);
-		}
-		else {
-			import_.setText("No import information", dontSendNotification);
-		}
 		favorite_.setToggleState(patch->isFavorite(), dontSendNotification);
 		hide_.setToggleState(patch->isHidden(), dontSendNotification);
 		
@@ -130,61 +117,120 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		}
 		metaData_.setActive(buttonCategories);
 
-		if (patch->synth()) {
-			synthName_.setText(patch->synth()->getName(), dontSendNotification);
-			auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch->smartSynth());
-			if (dataFileCap) {
-				int datatype = patch->patch()->dataTypeID();
-				if (datatype < dataFileCap->dataTypeNames().size()) {
-					patchType_.setText(dataFileCap->dataTypeNames()[patch->patch()->dataTypeID()].name, dontSendNotification);
-				}
-				else {
-					jassertfalse;
-				}
-			}
-			else {
-				patchType_.setText("Patch", dontSendNotification);
-			}
-		}
-		else {
-			synthName_.setText("Invalid synth", dontSendNotification);
-			patchType_.setText("Unknown", dontSendNotification);
-		}
 		if (patchAsText_.isVisible()) {
 			patchAsText_.fillTextBox(patch);
 		}
 	}
 	else {
-		name_.setButtonData("No patch loaded", "");
-		synthName_.setText("", dontSendNotification);
-		patchType_.setText("", dontSendNotification);
-		import_.setText("", dontSendNotification);
-		favorite_.setToggleState(false, dontSendNotification);
-		hide_.setToggleState(false, dontSendNotification);
-		metaData_.setActive({});
-		patchAsText_.fillTextBox(nullptr);
+		reset();
+		currentPatch_ = patch; // Keep the patch anyway, even if it was empty
+		jassertfalse;
 	}
 }
 
+String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
+{
+	auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch->smartSynth());
+	if (dataFileCap) {
+		int datatype = patch->patch()->dataTypeID();
+		if (datatype < dataFileCap->dataTypeNames().size()) {
+			return dataFileCap->dataTypeNames()[patch->patch()->dataTypeID()].name;
+		}
+		else {
+			return "unknown";
+		}
+	}
+	// This without datafile capa only have patches
+	return "Patch";
+}
+
+String getImportName(std::shared_ptr<midikraft::PatchHolder> patch)
+{
+	if (patch->sourceInfo()) {
+		String position = (boost::format(" at %d") % patch->patchNumber().toZeroBased()).str();
+		return String(patch->sourceInfo()->toDisplayString(patch->synth(), false)) + position;
+	}
+	else
+	{
+		return "No import information";
+	}
+}
+
+
+void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchHolder> patch)
+{
+	metaDataValues_.clear();
+
+	// Check if the patch is a layered patch
+	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch->patch());
+	if (layers) {
+		for (int i = 0; i < layers->numberOfLayers(); i++) {
+			TypedNamedValue v("Layer " + String(i), "Patch name", String(layers->layerName(i)).trim(), 20);
+			metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
+		}
+	}
+	else if (patch->patch()) {
+		TypedNamedValue v("Patch name", "Patch name", String(patch->name()).trim(), 20);
+		metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
+	}
+
+	// More read only data
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Synth", "Meta data", patch->synth()->getName(), 100));
+	metaDataValues_.back()->setEnabled(false);
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Type", "Meta data", getTypeName(patch), 100));
+	metaDataValues_.back()->setEnabled(false);
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Import", "Meta data", getImportName(patch), 100));
+	metaDataValues_.back()->setEnabled(false);
+
+	// We need to learn about updates
+	for (auto tnv : metaDataValues_) {
+		tnv->value().addListener(this);
+	}
+	propertyEditor_.setProperties(metaDataValues_);
+}
+
+void CurrentPatchDisplay::valueChanged(Value& value)
+{
+	if (value.refersToSameSourceAs(metaDataValues_.valueByName("Patch name"))) {
+		// Name was changed - do this in the database!
+		if (currentPatch_) {
+			currentPatch_->setName(value.getValue().toString().toStdString());
+			setCurrentPatch(currentPatch_);
+			favoriteHandler_(currentPatch_);
+		}
+		else {
+			jassertfalse;
+		}
+	}
+}
+
+
 void CurrentPatchDisplay::reset()
 {
-	name_.setButtonData("No patch loaded", "");
-	import_.setText("", dontSendNotification);
-	favorite_.setToggleState(false, dontSendNotification);
 	currentPatch_ = std::make_shared<midikraft::PatchHolder>();
+	propertyEditor_.setProperties({});
+	name_.setButtonData("No patch loaded", "");
+	metaDataValues_.clear();
+	favorite_.setToggleState(false, dontSendNotification);
+	hide_.setToggleState(false, dontSendNotification);
+	metaData_.setActive({});
+	patchAsText_.fillTextBox(nullptr);
 }
 
 void CurrentPatchDisplay::resized()
 {	
 	Rectangle<int> area(getLocalBounds().reduced(LAYOUT_INSET_NORMAL)); 
-	auto topRow = area.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT);
 
 	if (area.getWidth() < area.getHeight() * 1.5) {
 		// Portrait
 		patchAsText_.setVisible(true);
 
-		// Only patch name in top row
+		auto topRow = area.removeFromTop(LAYOUT_TOUCHBUTTON_HEIGHT);
 		name_.setBounds(topRow);
+
+		// Property Editor at the top
+		auto top = area.removeFromTop(LAYOUT_LINE_HEIGHT * 7);
+		propertyEditor_.setBounds(top);
 
 		// Next row fav and hide
 		auto nextRow = area.removeFromTop(LAYOUT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_NORMAL);
@@ -198,14 +244,6 @@ void CurrentPatchDisplay::resized()
 		fb.performLayout(spaceNeeded.toNearestInt());
 		area.removeFromTop((int) spaceNeeded.getHeight());
 
-		// Next row, Synth name. These lines are spaced only inset small apart as they are pure text
-		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
-		import_.setBounds(nextRow);
-		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
-		synthName_.setBounds(nextRow);
-		nextRow = area.removeFromTop(LAYOUT_TEXT_LINE_SPACING).withTrimmedTop(LAYOUT_INSET_SMALL);
-		patchType_.setBounds(nextRow);
-		
 		auto metaDataWidth = area.getWidth() - LAYOUT_INSET_NORMAL; // Allow for the vertical scrollbar on the right hand side!
 		metaData_.setSize(metaDataWidth, metaData_.getDesiredHeight(metaDataWidth));
 		metaDataScroller_.setBounds(area.withTrimmedTop(LAYOUT_INSET_NORMAL));
@@ -221,6 +259,7 @@ void CurrentPatchDisplay::resized()
 		patchAsText_.setVisible(false);
 
 		// Split the top row in three parts, with the centered one taking 240 px (the patch name)
+		auto topRow = area.removeFromTop(LAYOUT_TOUCHBUTTON_HEIGHT);
 		int side = (topRow.getWidth() - 240) / 2;
 		auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
 		auto leftCornerUpper = leftCorner.removeFromTop(20);
@@ -231,15 +270,14 @@ void CurrentPatchDisplay::resized()
 		hide_.setBounds(rightCorner.removeFromRight(100));
 		favorite_.setBounds(rightCorner.removeFromRight(100));
 
-		// Left side - synth patch
-		synthName_.setBounds(leftCornerUpper.removeFromLeft(100));
-		patchType_.setBounds(leftCornerUpper.removeFromLeft(100).withTrimmedLeft(8));
-		import_.setBounds(leftCornerLower);
+		//TODO - Need to setup property table
 
 		// Center - patch name
 		name_.setBounds(topRow);
 
 		auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
+		auto metaDataWidth = bottomRow.getWidth() - LAYOUT_INSET_NORMAL; // Allow for the vertical scrollbar on the right hand side!
+		metaData_.setSize(metaDataWidth, metaData_.getDesiredHeight(metaDataWidth));
 		metaDataScroller_.setBounds(bottomRow);
 	}
 }
@@ -258,14 +296,6 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 				currentPatch_->setHidden(hide_.getToggleState());
 				favoriteHandler_(currentPatch_);
 			}
-		}
-		else if (button == &currentSession_) {
-			/*	if (currentPatch_) {
-					Session session("1");
-					SessionDatabase::instance()->storePatchInSession(currentSynth_,
-						std::make_shared<SessionPatch>(session, currentSynth_->getName(), currentPatch_->patch()->patchName(), *currentPatch_));
-					sessionHandler_(*currentPatch_);
-				}*/
 		}
 	}
 }
