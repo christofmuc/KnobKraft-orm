@@ -187,19 +187,39 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 		tnv->value().addListener(this);
 	}
 	propertyEditor_.setProperties(metaDataValues_);
+	resized();
 }
 
 void CurrentPatchDisplay::valueChanged(Value& value)
 {
-	if (value.refersToSameSourceAs(metaDataValues_.valueByName("Patch name"))) {
-		// Name was changed - do this in the database!
-		if (currentPatch_) {
-			currentPatch_->setName(value.getValue().toString().toStdString());
-			setCurrentPatch(currentPatch_);
-			favoriteHandler_(currentPatch_);
+	for (auto property : metaDataValues_) {
+		if (property->name() == "Patch name" && value.refersToSameSourceAs(property->value())) {
+			// Name was changed - do this in the database!
+			if (currentPatch_) {
+				currentPatch_->setName(value.getValue().toString().toStdString());
+				setCurrentPatch(currentPatch_);
+				favoriteHandler_(currentPatch_);
+				return;
+			}
+			else {
+				jassertfalse;
+			}
 		}
-		else {
-			jassertfalse;
+		else if (property->name().startsWith("Layer") && value.refersToSameSourceAs(property->value())) {
+			if (currentPatch_) {
+				// A layer name was changed
+				auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(currentPatch_->patch());
+				if (layers) {
+					int i = atoi(property->name().substring(6).toStdString().c_str());
+					layers->setLayerName(i, value.getValue().toString().toStdString());
+					setCurrentPatch(currentPatch_);
+					favoriteHandler_(currentPatch_);
+					return;
+				}
+			}
+			else {
+				jassertfalse;
+			}
 		}
 	}
 }
@@ -215,6 +235,7 @@ void CurrentPatchDisplay::reset()
 	hide_.setToggleState(false, dontSendNotification);
 	metaData_.setActive({});
 	patchAsText_.fillTextBox(nullptr);
+	resized();
 }
 
 void CurrentPatchDisplay::resized()
@@ -229,7 +250,8 @@ void CurrentPatchDisplay::resized()
 		name_.setBounds(topRow);
 
 		// Property Editor at the top
-		auto top = area.removeFromTop(LAYOUT_LINE_HEIGHT * 7);
+		int desiredHeight = propertyEditor_.getTotalContentHeight();
+		auto top = area.removeFromTop(desiredHeight);
 		propertyEditor_.setBounds(top);
 
 		// Next row fav and hide
@@ -344,6 +366,7 @@ void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	metaData_.setCategories(result);
 	refreshNameButtonColour();
+	resized();
 }
 
 void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
