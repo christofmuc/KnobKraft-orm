@@ -3,15 +3,11 @@
 
 Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
-before release
+bugs:
 meta data editor needs to persist layout
-meta data editor needs to grow and shrink 
-need to be able to edit layer names
-need to turn off rename dialog and turn on send to synth
+meta data editor needs to grow and shrink better (section headers don't sent data?)
 
 
-
-Could do better layer switch
 
 1.14.0:
 Mac Python warning needs to be bigger, i.e. a dialog box
@@ -21,6 +17,7 @@ Selector for display on patch button (combo box upper right)
 better attribute entry for patch name
 * Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
 * Would expect to choose sort order of patches in grid
+Could do better layer switch
 
 Surf! Auto-Surf! Dive!
 

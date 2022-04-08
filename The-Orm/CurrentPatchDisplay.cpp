@@ -8,7 +8,6 @@
 
 #include "Capability.h"
 
-#include "PatchNameDialog.h"
 #include "PatchButtonPanel.h"
 #include "PatchHolderButton.h"
 #include "DataFileLoadCapability.h"
@@ -97,7 +96,6 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 CurrentPatchDisplay::~CurrentPatchDisplay()
 {
 	UIModel::instance()->categoriesChanged.removeChangeListener(this);
-	PatchNameDialog::release();
 }
 
 void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder> patch)

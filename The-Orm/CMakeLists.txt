@@ -61,7 +61,6 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
-	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
 	PatchSearchComponent.cpp PatchSearchComponent.h
 	PatchTextBox.cpp PatchTextBox.h
