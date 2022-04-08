@@ -71,6 +71,7 @@ private:
 	midikraft::PatchDatabase &database_;
 	PatchButton name_;
 	PropertyEditor propertyEditor_;
+	String lastOpenState_;
 	TextButton favorite_;
 	TextButton hide_;
 	Viewport metaDataScroller_;

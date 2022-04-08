@@ -19,6 +19,8 @@
 
 #include "LayeredPatchCapability.h"
 
+#include "Settings.h"
+
 #include <boost/format.hpp>
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
@@ -66,6 +68,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 			onCurrentPatchClicked(currentPatch_);
 		}
 	})
+	, propertyEditor_(true)
 	, favorite_("Fav!")
 	, hide_("Hide")
 	, metaData_(categories, [this](CategoryButtons::Category categoryClicked) {
@@ -89,6 +92,10 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	addAndMakeVisible(metaDataScroller_);
 	addAndMakeVisible(patchAsText_);
 
+	if (Settings::instance().keyIsSet("MetaDataLayout")) {
+		lastOpenState_ = Settings::instance().get("MetaDataLayout");
+	}
+
 	// We need to recolor in case the categories are changed
 	UIModel::instance()->categoriesChanged.addChangeListener(this);
 }
@@ -96,10 +103,14 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 CurrentPatchDisplay::~CurrentPatchDisplay()
 {
 	UIModel::instance()->categoriesChanged.removeChangeListener(this);
+	Settings::instance().set("MetaDataLayout", propertyEditor_.getLayout().toStdString());
 }
 
 void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder> patch)
 {
+	if (lastOpenState_.isEmpty()) {
+		lastOpenState_ = propertyEditor_.getLayout();
+	}
 	currentPatch_ = patch;
 	if (patch && patch->patch()) {
 		name_.setButtonData(patch->name(), patch->createDragInfoString());
@@ -122,6 +133,12 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		reset();
 		currentPatch_ = patch; // Keep the patch anyway, even if it was empty
 		jassertfalse;
+	}
+
+	if (lastOpenState_.isNotEmpty()) {
+		propertyEditor_.fromLayout(lastOpenState_);
+		lastOpenState_.clear();
+		resized();
 	}
 }
 
