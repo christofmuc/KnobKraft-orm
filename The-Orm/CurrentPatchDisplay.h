@@ -44,6 +44,8 @@ public:
 		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler);
 	virtual ~CurrentPatchDisplay();
 
+	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> onCurrentPatchClicked;
+
 	void setCurrentPatch(std::shared_ptr<midikraft::PatchHolder> patch);
 	void reset();
 

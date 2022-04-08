@@ -63,10 +63,9 @@ int MetaDataArea::getDesiredHeight(int width)
 CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
 	: Component(), database_(database), favoriteHandler_(favoriteHandler)
 	, name_(0, false, [this](int) {
-		PatchNameDialog::showPatchNameDialog(currentPatch_, getTopLevelComponent(), [this](std::shared_ptr<midikraft::PatchHolder> result) {
-			setCurrentPatch(result);
-			favoriteHandler_(result);
-		}); 
+		if (onCurrentPatchClicked) {
+			onCurrentPatchClicked(currentPatch_);
+		}
 	})
 	, favorite_("Fav!")
 	, hide_("Hide")
