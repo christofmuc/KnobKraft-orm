@@ -9,13 +9,16 @@ jobs:
         mac:
           imageName: 'macos-10.15'
           isMac: True
+          python-version: 3.10
         win2019:
           imageName: 'windows-2019'
           isWindows2019: True
           isWindows: True
+          python-version: 3.8
         linux:
           imageName: 'ubuntu-18.04'
           isLinux: True
+          python-version: 3.8
     pool:
       vmImage: $(imageName)
     steps:
@@ -34,7 +37,7 @@ jobs:
     - task: UsePythonVersion@0
       name: UsePython
       inputs:
-        versionSpec: '3.10' 
+        versionSpec: variables.python-version 
         addToPath: true 
         architecture: 'x64' 
     #- script: cinst innosetup
@@ -52,7 +55,7 @@ jobs:
       displayName: Configuring CMake for Windows
       inputs:
         workingDirectory: 'build'
-        cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\python.exe'
+        cmakeArgs: '-S .. -G "Visual Studio 16 2019" -A x64 -DPYTHON_EXECUTABLE=$(UsePython.pythonLocation)\python.exe -DPYTHON_VERSION_TO_EMBED=$(python-version)'
       condition: variables.isWindows2019
     - task: CMake@1
       displayName: Running CMake build for Windows
