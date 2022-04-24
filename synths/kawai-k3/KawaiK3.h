@@ -79,9 +79,9 @@ namespace midikraft {
 
 		// Program Dump Capability
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
-		virtual bool isSingleProgramDump(const MidiMessage& message) const override;
-		virtual MidiProgramNumber getProgramNumber(const MidiMessage &message) const override;
-		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const MidiMessage& message) const override;
+		virtual bool isSingleProgramDump(const std::vector<MidiMessage>& message) const override;
+		virtual MidiProgramNumber getProgramNumber(const std::vector<MidiMessage> &message) const override;
+		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
 		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
 
