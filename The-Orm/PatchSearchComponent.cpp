@@ -11,25 +11,35 @@
 
 #include "UIModel.h"
 
-const char* kAllDataTypesFilter = "All types";
+namespace {
 
-// A little helper
-CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) {
-	return CategoryButtons::Category(name->getName(), Colours::black);
-}
+	const char* kAllDataTypesFilter = "All types";
 
-std::map<std::string, std::weak_ptr<midikraft::Synth>> allSynthsMap() {
-	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
-	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
-		if (synth) {
-			midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(synth->getName());
-			if (synthFound.synth())
-				synthMap[synth->getName()] = synthFound.synth();
-		}
+	std::vector<std::pair<String, int>> kDisplayChoices = {
+		{ "Name and #", static_cast<int>(PatchButtonInfo::NameDisplay)},
+		{ "Name", static_cast<int>(PatchButtonInfo::NameDisplay) & static_cast<int>(PatchButtonInfo::CenterMask)},
+		{ "Program #", static_cast<int>(PatchButtonInfo::ProgramDisplay)},
+		{ "Layers and #", static_cast<int>(PatchButtonInfo::LayerDisplay)},
+	};
+
+	// A little helper
+	CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) {
+		return CategoryButtons::Category(name->getName(), Colours::black);
 	}
-	return synthMap;
-}
 
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> allSynthsMap() {
+		std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+		for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+			if (synth) {
+				midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(synth->getName());
+				if (synthFound.synth())
+					synthMap[synth->getName()] = synthFound.synth();
+			}
+		}
+		return synthMap;
+	}
+
+}
 
 
 class AdvancedFilterPanel : public Component {
@@ -96,6 +106,24 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
+	int id = 1;
+	for (auto displayChoice : kDisplayChoices) {
+		buttonDisplayType_.addItem(displayChoice.first, id++);
+	}
+	buttonDisplayType_.setTextWhenNothingSelected("Choose button info");
+	buttonDisplayType_.onChange = [this]() {
+		auto synthName = currentSynthNameWithMulti();
+		int selected = buttonDisplayType_.getSelectedId() - 1;
+		if (selected >= 0 && selected < kDisplayChoices.size()) {
+			PatchHolderButton::setCurrentInfoForSynth(synthName, static_cast<PatchButtonInfo>(kDisplayChoices[selected].second));
+		}
+		else {
+			jassertfalse;
+		}
+		patchView_->retrieveFirstPageFromDatabase();
+	};
+	addAndMakeVisible(buttonDisplayType_);
+
 	// Need to initialize multiModeFilter, else we get weird search results
 	multiModeFilter_ = midikraft::PatchDatabase::allPatchesFilter({});
 
@@ -113,6 +141,12 @@ PatchSearchComponent::~PatchSearchComponent()
 	UIModel::instance()->synthList_.removeChangeListener(this);
 }
 
+std::string PatchSearchComponent::currentSynthNameWithMulti() {
+	if (isInMultiSynthMode()) return "MultiSynth";
+	if (!UIModel::currentSynth()) return "none";
+	return UIModel::currentSynth()->getName();
+}
+
 FlexItem createFlexButton(ToggleButton *button) {
 	button->setSize(LAYOUT_CHECKBOX_WIDTH, LAYOUT_LINE_HEIGHT);
 	button->changeWidthToFitText();
@@ -127,9 +161,11 @@ void PatchSearchComponent::resized()
 	int leftPart = area.getWidth() / 4;
 
 	// Determine the reserved place for the filter
+	auto sortAndDisplayTypeWidth = LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL;
 	auto normalFilter = area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
-	auto leftHalf = normalFilter.removeFromLeft(leftPart);
+	auto sortAndDisplayTypeArea = normalFilter.removeFromRight(sortAndDisplayTypeWidth).withTrimmedLeft(LAYOUT_INSET_NORMAL);
 
+	auto leftHalf = normalFilter.removeFromLeft(leftPart);
 	
 	FlexBox fb;
 	fb.flexWrap = FlexBox::Wrap::wrap;
@@ -153,6 +189,8 @@ void PatchSearchComponent::resized()
 
 	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
+
+	buttonDisplayType_.setBounds(sortAndDisplayTypeArea.removeFromTop(normalFilterHeight).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 
 	area.removeFromTop(normalFilterHeight);
 	// Patch Buttons get the rest
@@ -265,6 +303,16 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
             synthName = currentSynth->getName();
         }
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
+
+		// Set display type selected for this synth!
+		auto synthNameForUI = currentSynthNameWithMulti();
+		auto displayType = PatchHolderButton::getCurrentInfoForSynth(synthNameForUI);
+		buttonDisplayType_.setSelectedId(0, dontSendNotification);
+		for (int id = 0; id < kDisplayChoices.size(); id++) {
+			if (kDisplayChoices[id].second == static_cast<int>(displayType)) {
+				buttonDisplayType_.setSelectedId(id+1, dontSendNotification);
+			}
+		}
 
 		// Rebuild the other features
 		rebuildDataTypeFilterBox();

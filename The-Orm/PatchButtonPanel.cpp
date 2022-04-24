@@ -212,19 +212,25 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 		return;
 	}
 
-	bool showSubtitles = UIModel::instance()->multiMode_.multiSynthMode();
+	bool multiSynthMode = UIModel::instance()->multiMode_.multiSynthMode();
 
 	// Now set the button text and colors
 	int active = indexOfActive();
 	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
 			auto button = patchButtons_->buttonWithIndex(i);
-			if (i < patches_.size()) {
-				button->setPatchHolder(&patches_[i], i == active, showSubtitles);
+			if (i < patches_.size() && patches_[i].patch() && patches_[i].synth()) {
+				auto displayMode = PatchHolderButton::getCurrentInfoForSynth(patches_[i].synth()->getName());
+				if (multiSynthMode) {
+					displayMode = static_cast<PatchButtonInfo>(
+						static_cast<int>(PatchButtonInfo::SubtitleSynth) | (static_cast<int>(displayMode) & static_cast<int>(PatchButtonInfo::CenterMask))
+						);
+				}
+				button->setPatchHolder(&patches_[i], i == active, displayMode);
 				refreshThumbnail(i);
 			}
 			else {
-				button->setPatchHolder(nullptr, false, showSubtitles);
+				button->setPatchHolder(nullptr, false, PatchButtonInfo::CenterName);
 				button->clearThumbnailFile();
 			}
 		}

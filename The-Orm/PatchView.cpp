@@ -65,6 +65,11 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		patchButtons_->refresh(true);
 	}
 	);
+	currentPatchDisplay_->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {
+		if (patch) {
+			selectPatch(*patch, true);
+		}
+	};
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -284,6 +289,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 				database_.deletePatches(infos["synth"], { infos["md5"] });
 				SimpleLogger::instance()->postMessage("Deleted patch " + patchName + " from database");
 				patchListTree_.refreshAllUserLists();
+				patchButtons_->refresh(true);
 			}
 			return;
 		}
@@ -652,10 +658,11 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 
 void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 {
+	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
 	// It could be that we clicked on the patch that is already loaded?
-	if (patch.patch() != UIModel::currentPatch().patch()) {
+	if (patch.patch() != UIModel::currentPatch().patch() || !layers) {
 		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
 		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
 
@@ -670,7 +677,6 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 	else {
 		if (alsoSendToSynth) {
 			// Toggle through the layers, if the patch is a layered patch...
-			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
 			if (layers) {
 				currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
 			}

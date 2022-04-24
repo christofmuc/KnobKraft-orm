@@ -6,12 +6,17 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.14.1)
+project(KnobKraftOrm VERSION 1.15.0)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
 # Output the weird string Azure pipeline uses to parse a value into a variable. I hope.
 MESSAGE("##vso[task.setvariable variable=ormVersionNumber]${KnobKraftOrm_VERSION}")
+
+# Append the version number to the github action environment file to be used by subsequent steps 
+if(DEFINED ENV{GITHUB_ENV})
+file(APPEND $ENV{GITHUB_ENV} "ORM_VERSION=${KnobKraftOrm_VERSION}")
+endif()
 
 OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
 OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
@@ -56,7 +61,6 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
-	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
 	PatchSearchComponent.cpp PatchSearchComponent.h
 	PatchTextBox.cpp PatchTextBox.h
@@ -174,11 +178,10 @@ IF(WIN32)
 					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
 					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
-	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${PYTHONPATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
+					"${PYTHON_EMBEDDED_PATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 

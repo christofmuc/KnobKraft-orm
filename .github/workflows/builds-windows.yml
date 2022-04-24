@@ -6,7 +6,7 @@ on: push
 
 jobs:
   build-windows:
-      runs-on: windows-latest
+      runs-on: windows-2019
       steps:
       - name: Checkout repository with tags
         uses: actions/checkout@v2        
@@ -31,20 +31,6 @@ jobs:
       - name: Install Innosetup with NuGet
         run: nuget install Tools.InnoSetup
 
-      - name: Setup msbuild to build Winsparkle
-        uses: microsoft/setup-msbuild@v1.1
-
-      - name: Setup known version of Windows SDK for the WinSparkle build
-        uses: fbactions/setup-winsdk@v1
-        with:
-          winsdk-build-version: 18362      
-
-      - name: Build Winsparkle
-        working-directory: third_party/winsparkle
-        run: |
-          nuget install packages.config -OutputDirectory packages
-          msbuild WinSparkle-2017.sln /t:Build /p:Configuration=Release;WindowsTargetPlatformVersion=10.0.18362.0;Platform=x64
-
       - name: Build and install Sentry
         working-directory: third_party/sentry-native
         run: |
@@ -56,10 +42,20 @@ jobs:
         env: # We get the SENTRY DSN from the repository's secret store
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         shell: bash
-        run: cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+        run: |
+          cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
 
       - name: CMake build
         run: cmake --build Builds --config RelWithDebInfo --parallel
+
+      - name: Publish release
+        uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
+          tags: true
+          draft: true
 
       - name: Setup Sentry CLI        
         uses: mathieu-bour/setup-sentry-cli@1.2.0
