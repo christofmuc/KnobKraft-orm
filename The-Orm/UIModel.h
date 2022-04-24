@@ -14,6 +14,8 @@
 #include "SynthHolder.h"
 #include "Session.h"
 
+#include "Data.h"
+
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
 
@@ -130,10 +132,8 @@ public:
 	static ValueTree ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 	static Value getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 
-	ValueTree valueTree; // Modern UI Properties go in here. Welcome 2022, I finally groked Jules' ValueTree class.
-
 private:
-	UIModel();
+	UIModel() = default;
 
 	static std::unique_ptr<UIModel> instance_;
 };

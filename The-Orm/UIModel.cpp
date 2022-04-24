@@ -7,6 +7,7 @@
 #include "UIModel.h"
 
 #include "FileHelpers.h"
+#include "Data.h"
 
 void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth)
 {
@@ -187,15 +188,14 @@ bool CurrentMultiMode::multiSynthMode() const
 	return multiSynthMode_;
 }
 
-UIModel::UIModel() : valueTree("UIModel") {
-}
-
 ValueTree UIModel::ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) {
-	auto synths = instance()->valueTree.getOrCreateChildWithName(PROPERTY_SYNTH_LIST, nullptr);
-	auto synth = synths.getChildWithName(synthName.c_str());
+	
+	auto synths = Data::instance().get().getOrCreateChildWithName(PROPERTY_SYNTH_LIST, nullptr);
+	auto synth = synths.getChildWithProperty("synthName", synthName.c_str());
 	if (!synth.isValid()) {
-		synths.addChild(ValueTree(synthName.c_str()), -1, nullptr);
-		synth = synths.getChildWithName(synthName.c_str());
+		synth = ValueTree("Synth");
+		synth.setProperty("synthName", synthName.c_str(), nullptr);
+		synths.addChild(synth, -1, nullptr);
 	}
 	if (!synth.hasProperty(property)) {
 		synth.setProperty(property, defaultValue, nullptr);
@@ -208,3 +208,4 @@ Value UIModel::getSynthSpecificPropertyAsValue(std::string const& synthName, juc
 	auto synth = ensureSynthSpecificPropertyExists(synthName, property, defaultValue);
 	return synth.getPropertyAsValue(property, nullptr);
 }
+
