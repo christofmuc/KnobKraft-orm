@@ -14,6 +14,9 @@
 #include "SynthHolder.h"
 #include "Session.h"
 
+juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
+juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
+
 class CurrentSynth : public ChangeBroadcaster {
 public:
 	void changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth);
@@ -124,8 +127,12 @@ public:
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
 	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
 
+	static Value getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
+
+	ValueTree valueTree; // Modern UI Properties go in here. Welcome 2022, I finally groked Jules' ValueTree class.
+
 private:
-	UIModel() = default;
+	UIModel();
 
 	static std::unique_ptr<UIModel> instance_;
 };

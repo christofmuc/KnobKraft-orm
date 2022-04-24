@@ -186,3 +186,20 @@ bool CurrentMultiMode::multiSynthMode() const
 {
 	return multiSynthMode_;
 }
+
+UIModel::UIModel() : valueTree("UIModel") {
+}
+
+Value UIModel::getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) 
+{
+	auto synths = instance()->valueTree.getOrCreateChildWithName(PROPERTY_SYNTH_LIST, nullptr);
+	auto synth = synths.getChildWithName(synthName.c_str());
+	if (!synth.isValid()) {
+		synths.addChild(ValueTree(synthName.c_str()), -1, nullptr);
+		synth = synths.getChildWithName(synthName.c_str());
+	}
+	if (!synth.hasProperty(property)) {
+		synth.setProperty(property, defaultValue, nullptr);
+	}
+	return synth.getPropertyAsValue(property, nullptr);
+}
