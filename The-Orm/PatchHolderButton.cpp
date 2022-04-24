@@ -55,7 +55,7 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 		}
 
 		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::SubtitleMask))) {
-		case PatchButtonInfo::SubtitleNone:
+		case PatchButtonInfo::NoneMasked:
 			setSubtitle("");
 			break;
 		case PatchButtonInfo::SubtitleNumber:

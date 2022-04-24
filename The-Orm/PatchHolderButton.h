@@ -10,11 +10,11 @@
 #include "PatchHolder.h"
 
 enum class PatchButtonInfo {
+	NoneMasked = 0b0,
 	CenterName = 0b001,
 	CenterLayers = 0b011,
 	CenterNumber = 0b111,
 	CenterMask = 0b111,
-	SubtitleNone = 0b1000,
 	SubtitleNumber = 0b11000,
 	SubtitleSynth = 0b111000,
 	SubtitleMask = 0b111000,
