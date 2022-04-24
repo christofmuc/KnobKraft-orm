@@ -36,11 +36,11 @@ namespace midikraft {
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 
 		// Edit Buffer Capability
-		virtual std::shared_ptr<DataFile> patchFromSysex(const MidiMessage& message) const override;
+		virtual std::shared_ptr<DataFile> patchFromSysex(const std::vector<MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> patch) const override;
 
 		// Program Dump Capability
-		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const MidiMessage& message) const override;
+		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
 
 		MidiMessage patchPolySequenceToGatedTrack(const MidiMessage& message, int gatedSeqTrack);

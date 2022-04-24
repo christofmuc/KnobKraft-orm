@@ -228,7 +228,7 @@ namespace midikraft {
 
 		// Set data
 		Rev2 rev2;
-		auto initpatch = rev2.patchFromSysex(initPatch);
+		auto initpatch = rev2.patchFromSysex({ initPatch });
 		setData(initpatch->data());
 	}
 

@@ -103,7 +103,7 @@ namespace midikraft {
 		return (boost::format("%s%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1)).str();
 	}
 
-	std::shared_ptr<DataFile> Rev2::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Rev2::patchFromSysex(const std::vector<MidiMessage>& message) const
 	{
 		int startIndex = -1;
 
@@ -122,12 +122,12 @@ namespace midikraft {
 		}
 
 		// Decode the data
-		const uint8 *startOfData = &message.getSysExData()[startIndex];
-		auto patchData = unescapeSysex(startOfData, message.getSysExDataSize() - startIndex, 2048);
+		const uint8 *startOfData = &message[0].getSysExData()[startIndex];
+		auto patchData = unescapeSysex(startOfData, message[0].getSysExDataSize() - startIndex, 2048);
 		MidiProgramNumber place;
 		if (isSingleProgramDump(message)) {
-			int bank = message.getSysExData()[3];
-			int program = message.getSysExData()[4];
+			int bank = message[0].getSysExData()[3];
+			int program = message[0].getSysExData()[4];
 			place = MidiProgramNumber::fromZeroBase(bank * 128 + program);
 		}
 		auto patch = std::make_shared<Rev2Patch>(patchData, place);
@@ -170,7 +170,7 @@ namespace midikraft {
 	}
 
 	juce::MidiMessage Rev2::filterProgramEditBuffer(const MidiMessage &programEditBuffer, std::function<void(std::vector<uint8> &)> filterExpressionInPlace) {
-		if (!isEditBufferDump(programEditBuffer)) {
+		if (!isEditBufferDump({ programEditBuffer })) {
 			jassert(false);
 			return MidiMessage(); // Empty sysex message so it doesn't crash
 		}
@@ -262,7 +262,7 @@ namespace midikraft {
 	juce::MidiMessage Rev2::copySequencersFromOther(const MidiMessage& currentProgram, const MidiMessage &lockedProgram)
 	{
 		// Decode locked data as well
-		jassert(isEditBufferDump(lockedProgram));
+		jassert(isEditBufferDump({ lockedProgram }));
 		const uint8 *startOfData = &lockedProgram.getSysExData()[3];
 		std::vector<uint8> lockedProgramBufferDecoded = unescapeSysex(startOfData, lockedProgram.getSysExDataSize() - 3, 2048);
 		return filterProgramEditBuffer(currentProgram, [lockedProgramBufferDecoded](std::vector<uint8> &programEditBuffer) {
@@ -550,7 +550,7 @@ namespace midikraft {
 		localControl_ = localControlOn;
 	}
 
-	std::shared_ptr<DataFile> Rev2::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> Rev2::patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const
 	{
 		return patchFromSysex(message);
 	}
