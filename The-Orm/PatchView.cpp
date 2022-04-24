@@ -289,6 +289,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 				database_.deletePatches(infos["synth"], { infos["md5"] });
 				SimpleLogger::instance()->postMessage("Deleted patch " + patchName + " from database");
 				patchListTree_.refreshAllUserLists();
+				patchButtons_->refresh(true);
 			}
 			return;
 		}
