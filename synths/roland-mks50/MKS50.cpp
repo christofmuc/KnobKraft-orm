@@ -109,29 +109,29 @@ namespace midikraft {
 		return "Roland MKS-50";
 	}
 
-	juce::MidiMessage MKS50::requestEditBufferDump() const
+	std::vector<MidiMessage> MKS50::requestEditBufferDump() const
 	{
 		// This is actually an empty message - as we don't have a requestProgramDump, we will issue a program change before
 		// sending this (non) message - and this will trigger an APR message by the MKS50 anyway. How minimalistic!
-		return MidiMessage();
+		return {};
 	}
 
-	bool MKS50::isEditBufferDump(const MidiMessage& message) const
+	bool MKS50::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
-		if (isOwnSysex(message)) {
-			return getSysexOperationCode(message) == MKS50_Operation_Code::APR;
+		if (message.size() == 1 && isOwnSysex(message[0])) {
+			return getSysexOperationCode(message[0]) == MKS50_Operation_Code::APR;
 		}
 		return false;
 	}
 
-	std::shared_ptr<DataFile> MKS50::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> MKS50::patchFromSysex(const std::vector<MidiMessage>& message) const
 	{
 		if (isEditBufferDump(message)) {
-			switch (message.getSysExData()[4])
+			switch (message[0].getSysExData()[4])
 			{
 			case 0b00100000: /* Level 1 */
-				if (message.getSysExData()[5] == 1 /* Group ID*/) {
-					return MKS50_Patch::createFromToneAPR(message);
+				if (message[0].getSysExData()[5] == 1 /* Group ID*/) {
+					return MKS50_Patch::createFromToneAPR(message[0]);
 				}
 				else {
 					jassert(false);
@@ -436,7 +436,7 @@ namespace midikraft {
 					break;
 				case MKS50_Operation_Code::APR:
 					// APR packages are the default and I call them "editBuffer", because it behaves like one.
-					auto newPatch = patchFromSysex(message);
+					auto newPatch = patchFromSysex({ message });
 					if (newPatch) {
 						result.push_back(newPatch);
 						SimpleLogger::instance()->postMessage("Found tone " + newPatch->name());
