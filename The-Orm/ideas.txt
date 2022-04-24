@@ -3,20 +3,17 @@
 
 Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
-1.14.0:
-Mac Python warning needs to be bigger, i.e. a dialog box
-
-1.15.0 (Meta data)
-Selector for display on patch button (combo box upper right)
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
+Carry over:
+* Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
 * Would expect to choose sort order of patches in grid
+* Could do better layer switch
 
-Could do better layer switch
+Inspiration:
+	Surf! Auto-Surf! Dive!
 
-Surf! Auto-Surf! Dive!
+	AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
+	AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
 
-AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
-AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
 
 Better marketing
 * Should setup github project page
@@ -33,7 +30,6 @@ Open since 1.11
 
 Before 2.0
 * Need easy clear filter button
-* BUG: Deleting patches through the menu should also refresh patch list tree
 * SINGLE SYNTH SETUP MODE
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
 	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
