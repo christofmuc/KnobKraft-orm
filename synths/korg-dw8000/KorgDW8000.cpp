@@ -67,10 +67,10 @@ namespace midikraft {
 		return 1;
 	}
 
-	juce::MidiMessage KorgDW8000::requestEditBufferDump() const
+	std::vector<MidiMessage> KorgDW8000::requestEditBufferDump() const
 	{
 		// This is called a "Data Save Request" in the Service Manual (p. 6)
-		return MidiHelpers::sysexMessage({ 0x42 /* Korg */, uint8(0x30 | channel().toZeroBasedInt()), 0x03 /* Model ID = DW 8000 */, DATA_SAVE_REQUEST });
+		return { MidiHelpers::sysexMessage({ 0x42 /* Korg */, uint8(0x30 | channel().toZeroBasedInt()), 0x03 /* Model ID = DW 8000 */, DATA_SAVE_REQUEST }) };
 	}
 
 	/*
@@ -123,25 +123,23 @@ namespace midikraft {
 		return { (boost::format("Knobkraft %s") % getName()).str() };
 	}*/
 
-	bool KorgDW8000::isEditBufferDump(const MidiMessage& message) const
+	bool KorgDW8000::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
-		auto data = message.getSysExData();
-		return isOwnSysex(message)
-			&& data[3] == DATA_DUMP;
+		return message.size() == 1 && isOwnSysex(message[0])
+			&& message[0].getSysExData()[3] == DATA_DUMP;
 	}
 
-	std::shared_ptr<DataFile> KorgDW8000::patchFromSysex(const MidiMessage& message) const
+	std::shared_ptr<DataFile> KorgDW8000::patchFromSysex(const std::vector<MidiMessage>& message) const
 	{
 		// The DW8000 is so primitive that it does do nothing to the few bytes of data it needs per patch
 		if (!isEditBufferDump(message)) {
-			jassert(false);
 			return {};
 		}
 
 		// Extract the data
-		auto data = message.getSysExData();
+		auto data = message[0].getSysExData();
 		Synth::PatchData patchdata;
-		for (int index = 4; index < message.getSysExDataSize(); index++) {
+		for (int index = 4; index < message[0].getSysExDataSize(); index++) {
 			patchdata.push_back(data[index]);
 		}
 		return {std::make_shared<KorgDW8000Patch>(patchdata, MidiProgramNumber::fromZeroBase(0))};
