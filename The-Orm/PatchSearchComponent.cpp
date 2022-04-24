@@ -97,6 +97,22 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(patchButtons_);
 
 	buttonDisplayType_.addItemList({ "Name", "Program", "Layers" }, 1);
+	buttonDisplayType_.onChange = [this]() {
+		auto synthName = currentSynthNameWithMulti();
+		switch (buttonDisplayType_.getSelectedId()) {
+		case 1:
+			PatchHolderButton::setCurrentInfoForSynth(synthName, PatchButtonInfo::NameDisplay);
+			jassert(PatchHolderButton::getCurrentInfoForSynth(synthName) == PatchButtonInfo::NameDisplay);
+			break;
+		case 2:
+			PatchHolderButton::setCurrentInfoForSynth(synthName, PatchButtonInfo::ProgramDisplay);
+			break;
+		case 3:
+			PatchHolderButton::setCurrentInfoForSynth(synthName, PatchButtonInfo::LayerDisplay);
+			break;
+		}
+		patchView_->retrieveFirstPageFromDatabase();
+	};
 	addAndMakeVisible(buttonDisplayType_);
 
 	// Need to initialize multiModeFilter, else we get weird search results
@@ -114,6 +130,12 @@ PatchSearchComponent::~PatchSearchComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	UIModel::instance()->multiMode_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
+}
+
+std::string PatchSearchComponent::currentSynthNameWithMulti() {
+	if (isInMultiSynthMode()) return "MultiSynth";
+	if (!UIModel::currentSynth()) return "none";
+	return UIModel::currentSynth()->getName();
 }
 
 FlexItem createFlexButton(ToggleButton *button) {
@@ -272,6 +294,24 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
             synthName = currentSynth->getName();
         }
 		categoryFilters_.setCategories(patchView_->predefinedCategories());
+
+		// Set display type selected for this synth!
+		auto synthNameForUI = currentSynthNameWithMulti();
+		auto displayType = PatchHolderButton::getCurrentInfoForSynth(synthNameForUI);
+		switch (displayType) {
+		case PatchButtonInfo::LayerDisplay:
+			buttonDisplayType_.setSelectedId(3, dontSendNotification);
+			break;
+		case PatchButtonInfo::ProgramDisplay:
+			buttonDisplayType_.setSelectedId(2, dontSendNotification);
+			break;
+		case PatchButtonInfo::NameDisplay:
+			buttonDisplayType_.setSelectedId(1, dontSendNotification);
+			break;
+		default:
+			jassertfalse;
+			buttonDisplayType_.setSelectedId(1, dontSendNotification);
+		}
 
 		// Rebuild the other features
 		rebuildDataTypeFilterBox();

@@ -127,6 +127,7 @@ public:
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
 	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
 
+	static ValueTree ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 	static Value getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 
 	ValueTree valueTree; // Modern UI Properties go in here. Welcome 2022, I finally groked Jules' ValueTree class.

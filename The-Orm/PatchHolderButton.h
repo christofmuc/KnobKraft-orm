@@ -18,7 +18,10 @@ enum class PatchButtonInfo {
 	SubtitleNumber = 0b11000,
 	SubtitleSynth = 0b111000,
 	SubtitleMask = 0b111000,
-	DefaultDisplay = CenterLayers | SubtitleNumber
+	DefaultDisplay = CenterLayers | SubtitleNumber,
+	ProgramDisplay = CenterNumber, 
+	NameDisplay = CenterName | SubtitleNumber,
+	LayerDisplay = DefaultDisplay
 };
 
 class PatchHolderButton : public PatchButton {
@@ -29,5 +32,6 @@ public:
 
 	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
 	static PatchButtonInfo getCurrentInfoForSynth(std::string const& synthname);
+	static void setCurrentInfoForSynth(std::string const& synthname, PatchButtonInfo newValue);
 };
 

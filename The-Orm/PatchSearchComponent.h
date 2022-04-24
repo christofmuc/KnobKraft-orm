@@ -32,6 +32,7 @@ public:
 	String advancedTextSearch() const;
 	
 private:
+	std::string currentSynthNameWithMulti();
 	static bool isInMultiSynthMode();
 	void updateCurrentFilter(); 
 	midikraft::PatchFilter buildFilter() const;

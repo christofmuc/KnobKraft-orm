@@ -190,8 +190,7 @@ bool CurrentMultiMode::multiSynthMode() const
 UIModel::UIModel() : valueTree("UIModel") {
 }
 
-Value UIModel::getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) 
-{
+ValueTree UIModel::ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) {
 	auto synths = instance()->valueTree.getOrCreateChildWithName(PROPERTY_SYNTH_LIST, nullptr);
 	auto synth = synths.getChildWithName(synthName.c_str());
 	if (!synth.isValid()) {
@@ -201,5 +200,11 @@ Value UIModel::getSynthSpecificPropertyAsValue(std::string const& synthName, juc
 	if (!synth.hasProperty(property)) {
 		synth.setProperty(property, defaultValue, nullptr);
 	}
+	return synth;
+}
+
+Value UIModel::getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) 
+{
+	auto synth = ensureSynthSpecificPropertyExists(synthName, property, defaultValue);
 	return synth.getPropertyAsValue(property, nullptr);
 }
