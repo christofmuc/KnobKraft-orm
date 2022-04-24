@@ -11,25 +11,35 @@
 
 #include "UIModel.h"
 
-const char* kAllDataTypesFilter = "All types";
+namespace {
 
-// A little helper
-CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) {
-	return CategoryButtons::Category(name->getName(), Colours::black);
-}
+	const char* kAllDataTypesFilter = "All types";
 
-std::map<std::string, std::weak_ptr<midikraft::Synth>> allSynthsMap() {
-	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
-	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
-		if (synth) {
-			midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(synth->getName());
-			if (synthFound.synth())
-				synthMap[synth->getName()] = synthFound.synth();
-		}
+	std::vector<std::pair<String, int>> kDisplayChoices = {
+		{ "Name and #", static_cast<int>(PatchButtonInfo::NameDisplay)},
+		{ "Name", static_cast<int>(PatchButtonInfo::NameDisplay) & static_cast<int>(PatchButtonInfo::CenterMask)},
+		{ "Program #", static_cast<int>(PatchButtonInfo::ProgramDisplay)},
+		{ "Layers and #", static_cast<int>(PatchButtonInfo::LayerDisplay)},
+	};
+
+	// A little helper
+	CategoryButtons::Category synthCategory(midikraft::NamedDeviceCapability* name) {
+		return CategoryButtons::Category(name->getName(), Colours::black);
 	}
-	return synthMap;
-}
 
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> allSynthsMap() {
+		std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+		for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+			if (synth) {
+				midikraft::SynthHolder synthFound = UIModel::instance()->synthList_.synthByName(synth->getName());
+				if (synthFound.synth())
+					synthMap[synth->getName()] = synthFound.synth();
+			}
+		}
+		return synthMap;
+	}
+
+}
 
 
 class AdvancedFilterPanel : public Component {
@@ -96,20 +106,19 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
-	buttonDisplayType_.addItemList({ "Name", "Program", "Layers" }, 1);
+	int id = 1;
+	for (auto displayChoice : kDisplayChoices) {
+		buttonDisplayType_.addItem(displayChoice.first, id++);
+	}
+	buttonDisplayType_.setTextWhenNothingSelected("Choose button info");
 	buttonDisplayType_.onChange = [this]() {
 		auto synthName = currentSynthNameWithMulti();
-		switch (buttonDisplayType_.getSelectedId()) {
-		case 1:
-			PatchHolderButton::setCurrentInfoForSynth(synthName, PatchButtonInfo::NameDisplay);
-			jassert(PatchHolderButton::getCurrentInfoForSynth(synthName) == PatchButtonInfo::NameDisplay);
-			break;
-		case 2:
-			PatchHolderButton::setCurrentInfoForSynth(synthName, PatchButtonInfo::ProgramDisplay);
-			break;
-		case 3:
-			PatchHolderButton::setCurrentInfoForSynth(synthName, PatchButtonInfo::LayerDisplay);
-			break;
+		int selected = buttonDisplayType_.getSelectedId() - 1;
+		if (selected >= 0 && selected < kDisplayChoices.size()) {
+			PatchHolderButton::setCurrentInfoForSynth(synthName, static_cast<PatchButtonInfo>(kDisplayChoices[selected].second));
+		}
+		else {
+			jassertfalse;
 		}
 		patchView_->retrieveFirstPageFromDatabase();
 	};
@@ -298,19 +307,11 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 		// Set display type selected for this synth!
 		auto synthNameForUI = currentSynthNameWithMulti();
 		auto displayType = PatchHolderButton::getCurrentInfoForSynth(synthNameForUI);
-		switch (displayType) {
-		case PatchButtonInfo::LayerDisplay:
-			buttonDisplayType_.setSelectedId(3, dontSendNotification);
-			break;
-		case PatchButtonInfo::ProgramDisplay:
-			buttonDisplayType_.setSelectedId(2, dontSendNotification);
-			break;
-		case PatchButtonInfo::NameDisplay:
-			buttonDisplayType_.setSelectedId(1, dontSendNotification);
-			break;
-		default:
-			jassertfalse;
-			buttonDisplayType_.setSelectedId(1, dontSendNotification);
+		buttonDisplayType_.setSelectedId(0, dontSendNotification);
+		for (int id = 0; id < kDisplayChoices.size(); id++) {
+			if (kDisplayChoices[id].second == static_cast<int>(displayType)) {
+				buttonDisplayType_.setSelectedId(id+1, dontSendNotification);
+			}
 		}
 
 		// Rebuild the other features
