@@ -96,6 +96,9 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
+	buttonDisplayType_.addItemList({ "Name", "Program", "Layers" }, 1);
+	addAndMakeVisible(buttonDisplayType_);
+
 	// Need to initialize multiModeFilter, else we get weird search results
 	multiModeFilter_ = midikraft::PatchDatabase::allPatchesFilter({});
 
@@ -127,9 +130,11 @@ void PatchSearchComponent::resized()
 	int leftPart = area.getWidth() / 4;
 
 	// Determine the reserved place for the filter
+	auto sortAndDisplayTypeWidth = LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL;
 	auto normalFilter = area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
-	auto leftHalf = normalFilter.removeFromLeft(leftPart);
+	auto sortAndDisplayTypeArea = normalFilter.removeFromRight(sortAndDisplayTypeWidth).withTrimmedLeft(LAYOUT_INSET_NORMAL);
 
+	auto leftHalf = normalFilter.removeFromLeft(leftPart);
 	
 	FlexBox fb;
 	fb.flexWrap = FlexBox::Wrap::wrap;
@@ -153,6 +158,8 @@ void PatchSearchComponent::resized()
 
 	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
+
+	buttonDisplayType_.setBounds(sortAndDisplayTypeArea.removeFromTop(normalFilterHeight).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 
 	area.removeFromTop(normalFilterHeight);
 	// Patch Buttons get the rest
