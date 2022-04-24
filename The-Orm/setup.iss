@@ -29,6 +29,7 @@ OutputBaseFilename=knobkraft_orm_setup_${KnobKraftOrm_VERSION}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+DisableFinishedPage=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
