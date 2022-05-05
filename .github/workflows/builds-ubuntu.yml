@@ -25,7 +25,7 @@ jobs:
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       shell: bash
       run: |
-        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.9 -DPYTHON_VERSION_TO_EMBED=3.9 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
+        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.8 -DPYTHON_VERSION_TO_EMBED=3.8 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
 
     - name: CMake build
       run: cmake --build builds --target package -- -j4
