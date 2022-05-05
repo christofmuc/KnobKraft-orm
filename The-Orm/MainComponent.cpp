@@ -85,10 +85,10 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
 	globalScaling_(1.0f),
-	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-	logArea_(&logView_, BorderSize<int>(8)),
-	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
-	buttons_(301)
+        buttons_(301),
+        mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
+        midiLogArea_(&midiLogView_, BorderSize<int>(10)),
+        logArea_(&logView_, BorderSize<int>(8))
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
 
@@ -112,21 +112,21 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// Create the list of all synthesizers!	
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
-	//synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptations
 	auto adaptations = knobkraft::GenericAdaptation::allAdaptations();
-	for (auto adaptation : adaptations) {
-		synths.push_back(midikraft::SynthHolder(adaptation, buttonColour));
+	for (auto const& adaptation : adaptations) {
+		synths.emplace_back(midikraft::SynthHolder(adaptation, buttonColour));
 	}
 
 	UIModel::instance()->synthList_.setSynthList(synths);
