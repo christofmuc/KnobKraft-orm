@@ -400,12 +400,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// you add any child components.
 	if (makeYourOwnSize) {
 		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-		if (mainScreenSize.getHeight() >= 1024) {
-			setSize(1536 / 2, 2048 / 2);
-		}
-		else {
-			setSize(1536 / 2, mainScreenSize.getHeight());
-		}
+                auto initialSize = mainScreenSize.reduced(100);
+                setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
@@ -737,13 +733,14 @@ void MainComponent::resized()
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
 
-	if (UIModel::instance()->synthList_.activeSynths().size() > 1) {
+	if (UIModel::instance()->synthList_.activeSynths().size() > 0) {
 		auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
 			.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 		synthList_.setBounds(secondTopRow);
 		synthList_.setVisible(true);
 	}
 	else {
+                //TODO - one synth needs to be implemented differently.
 		// Less than one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
