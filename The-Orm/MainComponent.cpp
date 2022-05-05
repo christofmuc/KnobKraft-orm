@@ -407,7 +407,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
-	MessageManager::callAsync([]() {
+	MessageManager::callAsync([this]() {
 		UIModel::instance()->windowTitle_.sendChangeMessage();
 #ifdef WIN32
 		checkForUpdatesOnStartup();
