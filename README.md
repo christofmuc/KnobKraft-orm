@@ -34,6 +34,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | DW-6000 | beta | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
+| Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
 | Oberheim | Matrix 1000 | works | native | |
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
@@ -55,6 +56,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | native | |
+| Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
 
