@@ -30,7 +30,7 @@ namespace midikraft {
 	{
 	public:
 		Matrix1000();
-		virtual ~Matrix1000();
+		virtual ~Matrix1000() override;
 
 		// Basic Synth implementation
 		virtual std::string getName() const override;
