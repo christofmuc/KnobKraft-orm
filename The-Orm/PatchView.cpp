@@ -71,6 +71,8 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 
+    addAndMakeVisible(currentPatchDisplay_.get());
+
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
 	auto box = new LambdaLayoutBox();
@@ -81,7 +83,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	};
 	addAndMakeVisible(box);
 	box->addAndMakeVisible(&patchListTree_);
-	//box->addAndMakeVisible(&recycleBin_);
+	box->addAndMakeVisible(&recycleBin_);
 	recycleBin_.onClicked = []() {
 		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Delete functionality", "The trash can is a drag and drop target you can use to delete patches or patch list entries - "
 			"just drag a patch or a list entry onto the trash can and drop it.\nDeleting patch list entries will be done immediately,"
@@ -122,8 +124,6 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
         leftSidePanel_->showOrHide(showSources_.getToggleState());
     };
     addAndMakeVisible(showSources_);
-
-	addAndMakeVisible(recycleBin_);
 
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
@@ -246,6 +246,7 @@ void PatchView::resized()
         showSources_.setBounds(area.withHeight(LAYOUT_SMALL_ICON_HEIGHT).withWidth(LAYOUT_SMALL_ICON_WIDTH));
         auto copy = area;
         showPatchData_.setBounds(copy.removeFromTop(LAYOUT_SMALL_ICON_HEIGHT).removeFromRight(LAYOUT_SMALL_ICON_WIDTH));
+        showPatchData_.toFront(false);
         if (showPatchData_.getToggleState()) {
             currentPatchDisplay_->setBounds(area.removeFromRight(area.getWidth()/3));
         }
