@@ -42,7 +42,7 @@ class PatchView : public Component,
 {
 public:
 	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector);
-	virtual ~PatchView();
+	virtual ~PatchView() override;
 
 	void resized() override;
 

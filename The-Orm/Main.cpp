@@ -265,7 +265,7 @@ public:
 			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
         }
 
-		virtual ~MainWindow() {
+		virtual ~MainWindow() override {
 			setLookAndFeel(nullptr);
 		}
 

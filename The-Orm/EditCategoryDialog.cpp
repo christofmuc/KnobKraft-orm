@@ -100,7 +100,7 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) : pro
 
 	propsTree_.addListener(this);
 
-	add_.onClick = [this, &database]() {
+	add_.onClick = [this]() {
 		int nextID = nextId_++;
 		addCategory({ nextID, true, "New category", Colour::fromString("191926")});
 		//parameters_.setModel(new CategoryListModel(props_));
@@ -108,11 +108,11 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) : pro
 	add_.setButtonText("Add new category");
 	addAndMakeVisible(add_);
 
-	ok_.onClick = [this]() { sWindow_->exitModalState(true);  };
+	ok_.onClick = []() { sWindow_->exitModalState(true);  };
 	ok_.setButtonText("Save");
 	addAndMakeVisible(ok_);
 
-	cancel_.onClick = [this]() { sWindow_->exitModalState(false); };
+	cancel_.onClick = []() { sWindow_->exitModalState(false); };
 	cancel_.setButtonText("Cancel");
 	addAndMakeVisible(cancel_);
 

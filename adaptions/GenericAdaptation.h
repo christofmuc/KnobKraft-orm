@@ -68,8 +68,8 @@ namespace knobkraft {
 
 		// This generic synth method is overridden to allow throttling of messages for older synths like the Korg MS2000
 		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer) override;
-		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const;  //TODO this looks like a capability
-		virtual std::string setupHelpText() const;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;  //TODO this looks like a capability
+		virtual std::string setupHelpText() const override;
 
 		// Internal workings of the Generic Adaptation module
 		bool pythonModuleHasFunction(std::string const &functionName) const;

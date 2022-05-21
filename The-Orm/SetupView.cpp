@@ -166,7 +166,7 @@ void SetupView::refreshSynthActiveness() {
 }
 
 void SetupView::refreshData() {
-	int prop = 0;
+	size_t prop = 0;
 	
 	for (auto &synth : sortedSynthList_) {
 		if (!synth.device()) continue;

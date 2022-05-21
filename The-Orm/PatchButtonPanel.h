@@ -21,7 +21,7 @@ public:
 	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
 
 	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler);
-	virtual ~PatchButtonPanel();
+	virtual ~PatchButtonPanel() override;
 
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);

@@ -16,7 +16,11 @@
 
 #include <algorithm>
 #include <boost/format.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "dtl/dtl.hpp"
+#pragma GCC diagnostic pop
+
 
 class DiffTokenizer : public CodeTokeniser {
 public:

@@ -13,7 +13,7 @@
 class PatchPerSynthList : public Component, private ChangeListener {
 public:
 	PatchPerSynthList();
-	virtual ~PatchPerSynthList();
+	virtual ~PatchPerSynthList() override;
 
 	virtual void resized() override;
 

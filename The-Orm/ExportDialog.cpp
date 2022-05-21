@@ -20,11 +20,11 @@ ExportDialog::ExportDialog()
 	parameters_.setProperties(props_);
 	addAndMakeVisible(parameters_);
 
-	ok_.onClick = [this]() { sWindow_->exitModalState(true);  };
+	ok_.onClick = []() { sWindow_->exitModalState(true);  };
 	ok_.setButtonText("Export");
 	addAndMakeVisible(ok_);
 
-	cancel_.onClick = [this]() { sWindow_->exitModalState(false); };
+	cancel_.onClick = []() { sWindow_->exitModalState(false); };
 	cancel_.setButtonText("Cancel");
 	addAndMakeVisible(cancel_);
 
