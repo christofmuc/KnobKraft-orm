@@ -102,6 +102,9 @@ private:
 	std::string sourceFilterID_; // This is the old "import" combo box in new
 	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;
+    std::unique_ptr<SidePanel> leftSidePanel_;
+    TextButton showSources_;
+    TextButton showPatchData_;
 
 	RecycleBin recycleBin_;
 

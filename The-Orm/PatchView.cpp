@@ -74,15 +74,15 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
 	auto box = new LambdaLayoutBox();
-	box->onResized = [this](Component* box) {
-		auto area = box->getLocalBounds();
+	box->onResized = [this](Component* parent) {
+		auto area = parent->getLocalBounds();
 		recycleBin_.setBounds(area.removeFromBottom(LAYOUT_LINE_HEIGHT * 2).withTrimmedBottom(LAYOUT_INSET_NORMAL));
 		patchListTree_.setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 	};
 	addAndMakeVisible(box);
 	box->addAndMakeVisible(&patchListTree_);
-	box->addAndMakeVisible(&recycleBin_);
-	recycleBin_.onClicked = [this]() {
+	//box->addAndMakeVisible(&recycleBin_);
+	recycleBin_.onClicked = []() {
 		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Delete functionality", "The trash can is a drag and drop target you can use to delete patches or patch list entries - "
 			"just drag a patch or a list entry onto the trash can and drop it.\nDeleting patch list entries will be done immediately,"
 			" but deleting patches will ask for confirmation, as this is a destructive operation.");
@@ -94,11 +94,34 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		deleteSomething(infos);
 	};
 
-	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
-		SplitteredEntry{ box, 15, 5, 40 },
-		SplitteredEntry{ patchSearch_.get(), 70, 40, 90 },
-		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
-	addAndMakeVisible(splitters_.get());
+	//splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
+	//	SplitteredEntry{ box, 15, 5, 40 },
+	//	SplitteredEntry{ patchSearch_.get(), 70, 40, 90 },
+	//	SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
+	//addAndMakeVisible(splitters_.get());
+    leftSidePanel_ = std::make_unique<SidePanel>("Source", 256, true, box);
+    leftSidePanel_->onPanelShowHide = [this](bool show){
+        showSources_.setVisible(!show);
+        showSources_.setToggleState(show, juce::dontSendNotification);
+    };
+    patchSearch_->addAndMakeVisible(leftSidePanel_.get());
+
+    showPatchData_.setClickingTogglesState(true);
+    showPatchData_.setButtonText("Patch");
+    showPatchData_.onClick = [this](){
+        currentPatchDisplay_->setVisible(showPatchData_.getToggleState());
+        resized();
+    };
+    addAndMakeVisible(showPatchData_);
+
+    addAndMakeVisible(patchSearch_.get());
+    showSources_.setButtonText("Src");
+    showSources_.setClickingTogglesState(true);
+    showSources_.onClick = [this](){
+        showSources_.setVisible(false);
+        leftSidePanel_->showOrHide(showSources_.getToggleState());
+    };
+    addAndMakeVisible(showSources_);
 
 	addAndMakeVisible(recycleBin_);
 
@@ -219,7 +242,15 @@ void PatchView::resized()
 	/*if (area.getWidth() > area.getHeight() * 1.5)*/ {
 		// Landscape layout		
 		buttonStrip_.setBounds(area.removeFromBottom(LAYOUT_LARGE_LINE_SPACING + LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
-		splitters_->setBounds(area);
+        // Side panel right
+        showSources_.setBounds(area.withHeight(LAYOUT_SMALL_ICON_HEIGHT).withWidth(LAYOUT_SMALL_ICON_WIDTH));
+        auto copy = area;
+        showPatchData_.setBounds(copy.removeFromTop(LAYOUT_SMALL_ICON_HEIGHT).removeFromRight(LAYOUT_SMALL_ICON_WIDTH));
+        if (showPatchData_.getToggleState()) {
+            currentPatchDisplay_->setBounds(area.removeFromRight(area.getWidth()/3));
+        }
+		patchSearch_->setBounds(area);
+        //splitters_->setBounds(area);
 	}
 	/*else {
 		// Portrait
