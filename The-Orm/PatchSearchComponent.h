@@ -17,7 +17,7 @@ class PatchSearchComponent : public Component, private ChangeListener
 public:
 	PatchSearchComponent(PatchView* patchView, PatchButtonPanel* patchButtons, midikraft::PatchDatabase& database);
 		
-	virtual ~PatchSearchComponent();
+	virtual ~PatchSearchComponent() override;
 
 	virtual void resized() override;
 

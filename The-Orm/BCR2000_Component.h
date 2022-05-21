@@ -21,7 +21,7 @@ class Synth;
 class BCR2000_Component: public Component, public midikraft::BCR2000Proxy, private ChangeListener {
 public:
 	BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr);
-	virtual ~BCR2000_Component();
+	virtual ~BCR2000_Component() override;
 
 	virtual void resized() override;
 
@@ -62,7 +62,7 @@ private:
 	class UpdateSynthListener : public ValueTree::Listener {
 	public:
 		UpdateSynthListener(BCR2000_Component* papa);
-		~UpdateSynthListener();
+		virtual ~UpdateSynthListener() override;
 
 		void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
 		void listenForMidiMessages(MidiInput* source, MidiMessage message);
@@ -77,7 +77,7 @@ private:
 	class UpdateControllerListener : public ValueTree::Listener {
 	public:
 		UpdateControllerListener(BCR2000_Component* papa);
-		~UpdateControllerListener();
+		virtual ~UpdateControllerListener() override;
 
 		void listenForMidiMessages(MidiInput* source, MidiMessage message);
 		void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;

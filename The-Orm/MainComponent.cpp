@@ -268,7 +268,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				std::stringstream buffer;
 				buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
 				bool first = true;
-				auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
+				auto messages = patch.synth()->dataFileToSysex(patch.patch(), nullptr);
 				for (const auto& m : messages) {
 					for (int i = 0; i < m.getRawDataSize(); i++) {
 						if (!first) {

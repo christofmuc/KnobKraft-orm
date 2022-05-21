@@ -92,7 +92,7 @@ private:
 };
 
 
-EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) : propsTree_("categoryTree")
+EditCategoryDialog::EditCategoryDialog() : propsTree_("categoryTree")
 {	
 	//parameters_.setRowHeight(60);
 	parameters_ = std::make_unique<ListBox>();
@@ -100,7 +100,7 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) : pro
 
 	propsTree_.addListener(this);
 
-	add_.onClick = [this, &database]() {
+	add_.onClick = [this]() {
 		int nextID = nextId_++;
 		addCategory({ nextID, true, "New category", Colour::fromString("191926")});
 		//parameters_.setModel(new CategoryListModel(props_));
@@ -108,11 +108,11 @@ EditCategoryDialog::EditCategoryDialog(midikraft::PatchDatabase &database) : pro
 	add_.setButtonText("Add new category");
 	addAndMakeVisible(add_);
 
-	ok_.onClick = [this]() { sWindow_->exitModalState(true);  };
+	ok_.onClick = []() { sWindow_->exitModalState(true);  };
 	ok_.setButtonText("Save");
 	addAndMakeVisible(ok_);
 
-	cancel_.onClick = [this]() { sWindow_->exitModalState(false); };
+	cancel_.onClick = []() { sWindow_->exitModalState(false); };
 	cancel_.setButtonText("Cancel");
 	addAndMakeVisible(cancel_);
 
@@ -163,7 +163,7 @@ static void dialogClosed(int modalResult, EditCategoryDialog* dialog)
 void EditCategoryDialog::showEditDialog(midikraft::PatchDatabase &db, Component *centeredAround, TCallback callback)
 {
 	if (!sEditCategoryDialog_) {
-		sEditCategoryDialog_= std::make_unique<EditCategoryDialog>(db);
+		sEditCategoryDialog_= std::make_unique<EditCategoryDialog>();
 	}
 	sCallback_ = callback;
 	sEditCategoryDialog_->nextId_ = db.getNextBitindex(); // This is where we'll continue, but the user could press cancel using none of the newly made IDs

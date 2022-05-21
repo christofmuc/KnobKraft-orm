@@ -91,8 +91,8 @@ void RecordingView::sampleNote() {
 	// b) send a MIDI note to the current synth
 	// register a callback that the recorder will call when the signal is done, and then refresh the Thumbnail
 	recorder_.startRecording(filename ,true, [this]() {
-		String filename = recorder_.getFilename();
-		thumbnail_.loadFromFile(filename.toStdString(), "");
+		String recorder_filename = recorder_.getFilename();
+		thumbnail_.loadFromFile(recorder_filename.toStdString(), "");
 		UIModel::instance()->thumbnails_.sendChangeMessage();
 	});
 

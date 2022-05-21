@@ -203,7 +203,7 @@ void PatchButtonPanel::setupPageButtons() {
 	}
 	// Any more buttons unused?
 	for (int i = 0; i < maxPageButtons_; i++) {
-		if (i >= pageButtonMap_.size()) {
+		if (static_cast<size_t>(i) >= pageButtonMap_.size()) {
 			pageNumbers_[i]->setVisible(false);
 		}
 	}
@@ -276,9 +276,9 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 
 	// Now set the button text and colors
 	int active = indexOfActive();
-	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
+	for (size_t i = 0; i < std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
-			auto button = patchButtons_->buttonWithIndex(i);
+			auto button = patchButtons_->buttonWithIndex((int) i);
 			if (i < patches_.size() && patches_[i].patch() && patches_[i].synth()) {
 				auto displayMode = PatchHolderButton::getCurrentInfoForSynth(patches_[i].synth()->getName());
 				if (multiSynthMode) {
@@ -287,7 +287,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 						);
 				}
 				button->setPatchHolder(&patches_[i], i == active, displayMode);
-				refreshThumbnail(i);
+				refreshThumbnail((int)i);
 			}
 			else {
 				button->setPatchHolder(nullptr, false, PatchButtonInfo::CenterName);

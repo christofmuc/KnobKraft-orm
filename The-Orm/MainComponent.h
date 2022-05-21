@@ -39,7 +39,7 @@ class MainComponent : public Component, private ChangeListener
 {
 public:
 	MainComponent(bool makeYourOwnSize);
-    ~MainComponent();
+    virtual ~MainComponent() override;
 
 	virtual void resized() override;
 
@@ -66,7 +66,7 @@ private:
 	static void crashTheSoftware();
 
 	void setZoomFactor(float newZoomInPercentage) const;
-	static float calcAcceptableGlobalScaleFactor();
+    float calcAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
 	static void aboutBox();
