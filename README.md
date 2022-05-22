@@ -1,7 +1,6 @@
 # A free MIDI Sysex Librarian - The KnobKraft Orm
 
 [![release](https://img.shields.io/github/v/release/christofmuc/KnobKraft-orm?style=plastic)](https://github.com/christofmuc/KnobKraft-orm/releases)
-[![Build Status](https://dev.azure.com/christof0759/KnobKraft/_apis/build/status/christofmuc.KnobKraft-orm?branchName=master)](https://dev.azure.com/christof0759/KnobKraft/_build/latest?definitionId=1&branchName=master)
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
@@ -34,6 +33,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | DW-6000 | beta | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
+| Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
 | Oberheim | Matrix 1000 | works | native | |
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
@@ -55,6 +55,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | native | |
+| Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
 
@@ -116,7 +117,7 @@ Using CMake and building is a simple step if the prerequisites are fulfilled. Si
 
     cmake -S . -B builds -G "Visual Studio 15 2017 Win64"
 
-This will generate a solution file for Visual Studio in the builds subdirctory. You can build the software to run it immediately with the command
+This will generate a solution file for Visual Studio in the builds subdirectory. You can build the software to run it immediately with the command
 
     cmake --build builds --config Release
 
@@ -163,7 +164,7 @@ All pull requests and issues welcome, I will try to get back to you as soon as I
 
 Really big thanks to everybody who contributes and comments on YouTube, here on Github, or any of the other forums out in the Internet to motivate me to continue this work!
 
-Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaption to work with restless tests and trials!
+Special thanks to @tsantilis for getting the Oberheim Matrix 6/6R adaptation to work with restless tests and trials!
 
 The app icon is courtesy of W07 at the Sequential forums, thanks for your contribution!
 

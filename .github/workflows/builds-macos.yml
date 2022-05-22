@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: macOS KnobKraft Orm
+
+on: push
+
+jobs:
+  build-macos:
+    runs-on: macos-10.15
+    steps:
+    - name: Checkout repository with tags
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Additionally checkout submodules - don't use checkout action as it will overwrite refs
+      run: |
+        git submodule update --recursive --init --depth 1
+
+    - name: Prepare build machine with homebrew
+      run: |
+        brew install boost
+
+    - uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+        
+    - name: CMake configure
+      shell: bash
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+    - name: CMake build
+      run: cmake --build build --target package --parallel
+
+    - name: Publish release
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: build/KnobKraft_Orm-${{env.ORM_VERSION}}-Darwin.dmg
+        tags: true
+        draft: true
+

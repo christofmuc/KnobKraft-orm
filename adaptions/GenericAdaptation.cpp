@@ -42,9 +42,11 @@ namespace knobkraft {
 		*kRenamePatch = "renamePatch",
 		*kIsDefaultName = "isDefaultName",
 		*kIsEditBufferDump = "isEditBufferDump",
+		*kIsPartOfEditBufferDump = "isPartOfEditBufferDump",
 		*kCreateEditBufferRequest = "createEditBufferRequest",
 		*kConvertToEditBuffer = "convertToEditBuffer",
 		*kIsSingleProgramDump = "isSingleProgramDump",
+		*kIsPartOfSingleProgramDump = "isPartOfSingleProgramDump",
 		*kCreateProgramDumpRequest = "createProgramDumpRequest",
 		*kConvertToProgramDump = "convertToProgramDump",
 		*kNumberFromDump = "numberFromDump",
@@ -70,9 +72,11 @@ namespace knobkraft {
 		kIsDefaultName,
 		kRenamePatch,
 		kIsEditBufferDump,
+		kIsPartOfEditBufferDump,
 		kCreateEditBufferRequest,
 		kConvertToEditBuffer,
 		kIsSingleProgramDump,
+		kIsPartOfSingleProgramDump,
 		kCreateProgramDumpRequest,
 		kConvertToProgramDump,
 		kNumberFromDump,
@@ -212,13 +216,13 @@ namespace knobkraft {
 		}
 
 #ifdef __APPLE__
-		// The Apple might not have a Python 3.8 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
-		// First, check the location where the Python 3.8 Mac installer will put it (taken from python.org/downloads)
-		String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.8";
+		// The Apple might not have a Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
+		// First, check the location where the Python 3.10 Mac installer will put it (taken from python.org/downloads)
+		String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.10";
 		File python38(python38_macHome);
 		if (!python38.exists()) {
 			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
-			python38_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.8";
+			python38_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10";
 			File python38_alternative(python38_macHome);
 			if (!python38_alternative.exists()) {
 				// No Python3.8 found, don't set path
@@ -315,9 +319,9 @@ namespace knobkraft {
 		std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> result;
 		if (!hasPython()) {
 #ifdef __APPLE__
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.8 installation. Please install using 'brew install python3' or from https://www.python.org/ftp/python/. Turning off all adaptations.");
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install using 'brew install python3' or from https://www.python.org/ftp/python/. Turning off all adaptations.");
 #else
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.8 installation. Please install from https://www.python.org/downloads/release/python-387/. Turning off all adaptations.");
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install from https://www.python.org/downloads/. Turning off all adaptations.");
 #endif
 			return result;
 		}
@@ -647,7 +651,16 @@ namespace knobkraft {
 		return std::vector<int>(message.getRawData(), message.getRawData() + message.getRawDataSize());
 	}
 
-	std::vector<uint8> GenericAdaptation::intVectorToByteVector(std::vector<int> const &data) {
+	std::vector<int> GenericAdaptation::midiMessagesToVector(std::vector<MidiMessage> const& message)
+	{
+		std::vector<int> result;
+		for (auto const& m : message) {
+			std::copy(m.getRawData(), m.getRawData() + m.getRawDataSize(), std::back_inserter(result));
+		}
+		return result;
+	}
+
+	std::vector<uint8> GenericAdaptation::intVectorToByteVector(std::vector<int> const& data) {
 		std::vector<uint8> byteData;
 		for (int byte : data) {
 			if (byte >= 0 && byte < 256) {
@@ -666,7 +679,14 @@ namespace knobkraft {
 		return MidiMessage(byteData.data(), (int)byteData.size());
 	}
 
-	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability **outCapability) const
+	std::vector<juce::MidiMessage> GenericAdaptation::vectorToMessages(std::vector<int> const& data)
+	{
+		//TODO this could be accelerated
+		auto byteData = intVectorToByteVector(data);
+		return Sysex::vectorToMessages(byteData);
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability** outCapability) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kIsEditBufferDump)

@@ -32,6 +32,7 @@ public:
 	String advancedTextSearch() const;
 	
 private:
+	std::string currentSynthNameWithMulti();
 	static bool isInMultiSynthMode();
 	void updateCurrentFilter(); 
 	midikraft::PatchFilter buildFilter() const;
@@ -48,6 +49,7 @@ private:
 	ToggleButton onlyUntagged_;
 	ToggleButton onlyDuplicates_;
 	ToggleButton andCategories_;
+	ComboBox buttonDisplayType_;
 
 	midikraft::PatchDatabase& database_;
 };

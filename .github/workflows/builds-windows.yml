@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Windows KnobKraft Orm
+
+on: push
+
+jobs:
+  build-windows:
+      runs-on: windows-2019
+      steps:
+      - name: Checkout repository with tags
+        uses: actions/checkout@v2        
+        with:
+          fetch-depth: 0
+
+      - name: Additionally checkout submodules - don't use checkout action as it will overwrite refs
+        run: |
+          git submodule update --recursive --init --depth 1
+
+      - name: Select proper Python version
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8' 
+          architecture: 'x64' 
+        
+      - name: Install NuGet
+        uses: nuget/setup-nuget@v1        
+        with:
+          nuget-version: latest
+
+      - name: Install Innosetup with NuGet
+        run: nuget install Tools.InnoSetup
+
+      - name: Build and install Sentry
+        working-directory: third_party/sentry-native
+        run: |
+          cmake -B build
+          cmake --build build --parallel --config RelWithDebInfo
+          cmake --install build --prefix install --config RelWithDebInfo
+
+      - name: CMake configure
+        env: # We get the SENTRY DSN from the repository's secret store
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        shell: bash
+        run: |
+          cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+
+      - name: CMake build
+        run: cmake --build Builds --config RelWithDebInfo --parallel
+
+      - name: Publish release
+        uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
+          tags: true
+          draft: true
+
+      - name: Setup Sentry CLI        
+        uses: mathieu-bour/setup-sentry-cli@1.2.0
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          organization: knobkraft
+          project: knobkraft
+
+      - name: Upload PDB files to Sentry for stack unwinding when this is a tagged build
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: Builds/The-Orm/RelWithDebInfo
+        run: |
+          sentry-cli upload-dif . --log-level=debug
+        
+        # Thanks to https://svrooij.io/2021/08/17/github-actions-secret-file/
+      - name: Extract update private key from secret
+        if: startsWith(github.ref, 'refs/tags/')
+        id: extract_pem
+        run: |
+          $secretFile = Join-Path -Path $env:RUNNER_TEMP -ChildPath "key.pem"; 
+          $encodedBytes = [System.Convert]::FromBase64String($env:SPARKLE_KEY); 
+          Set-Content $secretFile -Value $encodedBytes -AsByteStream;
+          $secretFileHash = Get-FileHash $secretFile;
+          Write-Output "::set-output name=SECRET_FILE::$secretFile";
+          Write-Output "::set-output name=SECRET_FILE_HASH::$($secretFileHash.Hash)";
+          Write-Output "Secret file $secretFile has hash $($secretFileHash.Hash)";
+        shell: pwsh
+        env:
+          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}          
+
+      - name: Prepare update key and generate code signature
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          builds\_deps\winsparkle-src\bin\sign_update.bat Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe ${{ steps.extract_pem.outputs.SECRET_FILE }} > update.sig
+          type update.sig
+
+      - name: Delete key file
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          Remove-Item -Path ${{ steps.extract_pem.outputs.SECRET_FILE }};
+        shell: pwsh

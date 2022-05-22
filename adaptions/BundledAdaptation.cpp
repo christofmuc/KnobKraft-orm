@@ -30,6 +30,7 @@ namespace knobkraft {
 			{ "Korg DW-6000", "Korg_DW_6000", std::string(KorgDW6000_py, KorgDW6000_py + KorgDW6000_py_size) },
 			{ "Korg MS2000", "Korg_MS2000", std::string(KorgMS2000_py, KorgMS2000_py + KorgMS2000_py_size) },
 			{ "Matrix 6", "Matrix_6", std::string(Matrix_6_py, Matrix_6_py + Matrix_6_py_size) },
+			{ "Novation UltraNova", "Novation UltraNova", std::string(Novation_UltraNova_py, Novation_UltraNova_py + Novation_UltraNova_py_size) },
 			{ "Oberheim OB-8", "Oberheim_OB8", std::string(OberheimOB8_py, OberheimOB8_py + OberheimOB8_py_size) },
 			{ "Oberheim OB-X", "Oberheim_OB_X", std::string(OberheimOBX_py, OberheimOBX_py + OberheimOBX_py_size) },
 			{ "Oberheim OB-Xa", "Oberheim_OB_Xa", std::string(OberheimOBXa_py, OberheimOBXa_py + OberheimOBXa_py_size) },
@@ -45,11 +46,12 @@ namespace knobkraft {
 			{ "Sequential Prophet 5 Rev4", "Sequential_Prophet_5_Rev4", std::string(Sequential_Prophet_5_Rev4_py, Sequential_Prophet_5_Rev4_py + Sequential_Prophet_5_Rev4_py_size) },
 			{ "Sequential Prophet 6", "Sequential_Prophet_6", std::string(Sequential_Prophet_6_py, Sequential_Prophet_6_py + Sequential_Prophet_6_py_size) },
 			{ "Sequential Prophet X", "Sequential_Prophet_X", std::string(Sequential_Prophet_X_py, Sequential_Prophet_X_py + Sequential_Prophet_X_py_size) },
-            { "Sequential Take 5", "Sequential_Take_5", std::string(Sequential_Take_5_py, Sequential_Take_5_py + Sequential_Take_5_py_size) },
+                        { "Sequential Take 5", "Sequential_Take_5", std::string(Sequential_Take_5_py, Sequential_Take_5_py + Sequential_Take_5_py_size) },
 			{ "Studiologic Sledge", "Studiologic_Sledge", std::string(Studiologic_Sledge_py, Studiologic_Sledge_py + Studiologic_Sledge_py_size) },
 			{ "Waldorf Blofeld", "Waldorf_Blofeld", std::string(Waldorf_Blofeld_py, Waldorf_Blofeld_py + Waldorf_Blofeld_py_size) },
 			{ "Yamaha DX7", "Yamaha_DX7", std::string(YamahaDX7_py, YamahaDX7_py+ YamahaDX7_py_size) },
 			{ "Yamaha DX7II", "Yamaha_DX7II", std::string(YamahaDX7II_py, YamahaDX7II_py+ YamahaDX7II_py_size) },
+			{ "Zoom MS Series", "Zoom_MS", std::string(Zoom_MS_py, Zoom_MS_py+ Zoom_MS_py_size) },
 		};
 	}
 

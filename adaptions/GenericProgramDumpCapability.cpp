@@ -18,11 +18,14 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	std::shared_ptr<midikraft::DataFile> GenericProgramDumpCapability::patchFromProgramDumpSysex(const MidiMessage& message) const
+	std::shared_ptr<midikraft::DataFile> GenericProgramDumpCapability::patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const
 	{
 		py::gil_scoped_acquire acquire;
 		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
-		midikraft::Synth::PatchData data(message.getRawData(), message.getRawData() + message.getRawDataSize());
+		midikraft::Synth::PatchData data;
+		for (auto const& m : message) {
+			std::copy(m.getRawData(), m.getRawData() + m.getRawDataSize(), std::back_inserter(data));
+		}
 		return std::make_shared<GenericPatch>(me_, const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 	}
 
@@ -45,11 +48,11 @@ namespace knobkraft {
 		return {};
 	}
 
-	bool GenericProgramDumpCapability::isSingleProgramDump(const MidiMessage& message) const
+	bool GenericProgramDumpCapability::isSingleProgramDump(const std::vector<MidiMessage>& message) const
 	{
 		py::gil_scoped_acquire acquire;
 		try {
-			auto vector = me_->messageToVector(message);
+			auto vector = GenericAdaptation::midiMessagesToVector(message);
 			py::object result = me_->callMethod(kIsSingleProgramDump, vector);
 			return result.cast<bool>();
 		}
@@ -63,12 +66,37 @@ namespace knobkraft {
 		return false;
 	}
 
-	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const MidiMessage &message) const
+	bool GenericProgramDumpCapability::isMessagePartOfProgramDump(const MidiMessage& message) const
+	{
+		py::gil_scoped_acquire acquire;
+		// This is an optional function that can be implemented for multi message edit buffers like in the DSI Evolver
+		if (me_->pythonModuleHasFunction(kIsPartOfSingleProgramDump)) {
+			try {
+				auto vectorForm = me_->messageToVector(message);
+				py::object result = me_->callMethod(kIsPartOfSingleProgramDump, vectorForm);
+				return result.cast<bool>();
+			}
+			catch (py::error_already_set& ex) {
+				me_->logAdaptationError(kIsPartOfSingleProgramDump, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				me_->logAdaptationError(kIsPartOfSingleProgramDump, ex);
+			}
+			return false;
+		}
+		else {
+			// Default implementation is to just to call isSingleProgramDump() with a single message vector
+			return isSingleProgramDump({ message });
+		}
+	}
+
+	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const std::vector<MidiMessage>& message) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (me_->pythonModuleHasFunction("numberFromDump")) {
 			try {
-				auto vector = me_->messageToVector(message);
+				auto vector = GenericAdaptation::midiMessagesToVector(message);
 				py::object result = me_->callMethod(kNumberFromDump, vector);
 				return MidiProgramNumber::fromZeroBase(result.cast<int>());
 			}
