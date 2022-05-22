@@ -77,7 +77,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 
-	bankList_ = std::make_unique<VerticalPatchButtonList>();
+	bankList_ = std::make_unique<VerticalPatchButtonList>(true);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -290,7 +290,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 		listFilterID_ = bankList.id();
 		sourceFilterID_ = "";
 		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-			bankList_->setPatches(patches);
+			bankList_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
 		});
 	}
 	else {
@@ -320,7 +320,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 							retrievedBank.setPatches(patchesLoaded);
 							database_.putPatchList(retrievedBank);
 							patchListTree_.refreshAllUserLists();
-							bankList_->setPatches(patchesLoaded);
+							bankList_->setPatches(patchesLoaded, PatchButtonInfo::DefaultDisplay);
 						});
 					});
 				}
@@ -658,7 +658,7 @@ void PatchView::bulkImportPIP(File directory) {
 
 void PatchView::setBankPatches(std::vector<midikraft::PatchHolder> const& patches)
 {
-	bankList_->setPatches(patches);
+	bankList_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
 }
 
 void PatchView::exportPatches()

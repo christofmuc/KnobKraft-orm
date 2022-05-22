@@ -20,7 +20,7 @@ public:
 			button_->setBounds(area);
 	}
 
-	void setRow(int rowNo, midikraft::PatchHolder const &patch) {
+	void setRow(int rowNo, midikraft::PatchHolder const &patch, PatchButtonInfo info) {
 		// This changes the row to be displayed with this component (reusing components within a list box)
 		if (!button_) {
 			button_ = std::make_unique<PatchHolderButton>(rowNo, false, clickHandler_);
@@ -28,7 +28,7 @@ public:
 			resized();
 		}
 		thePatch_ = patch; // Need a copy to keep the pointer alive
-		button_->setPatchHolder(&thePatch_, false, false);
+		button_->setPatchHolder(&thePatch_, false, info);
 	}
 
 	void clearRow() {
@@ -46,7 +46,7 @@ private:
 
 class PatchListModel : public ListBoxModel {
 public:
-	PatchListModel(std::vector<midikraft::PatchHolder> const &patches, std::function<void(int)> onRowSelected) : patches_(patches), onRowSelected_(onRowSelected) {
+	PatchListModel(std::vector<midikraft::PatchHolder> const &patches, std::function<void(int)> onRowSelected, PatchButtonInfo info) : patches_(patches), onRowSelected_(onRowSelected), info_(info) {
 	}
 
 	int getNumRows() override
@@ -67,13 +67,13 @@ public:
 			if (existingComponentToUpdate) {
 				auto existing = dynamic_cast<PatchButtonRow*>(existingComponentToUpdate);
 				if (existing) {
-					existing->setRow(rowNumber, patches_[rowNumber]);
+					existing->setRow(rowNumber, patches_[rowNumber], info_);
 					return existing;
 				}
 				throw std::runtime_error("This was not the correct row type, can't continue");
 			}
 			auto newComponent = new PatchButtonRow(onRowSelected_);
-			newComponent->setRow(rowNumber, patches_[rowNumber]);
+			newComponent->setRow(rowNumber, patches_[rowNumber], info_);
 			return newComponent;
 		}
 		else {
@@ -94,11 +94,13 @@ public:
 private:
 	std::vector<midikraft::PatchHolder> patches_;
 	std::function<void(int)> onRowSelected_;
+	PatchButtonInfo info_;
 };
 
 
 VerticalPatchButtonList::VerticalPatchButtonList(bool isDropTarget)
 {
+	ignoreUnused(isDropTarget);
 	addAndMakeVisible(list_);
 	list_.setRowHeight(LAYOUT_LARGE_LINE_SPACING);
 }
@@ -109,9 +111,9 @@ void VerticalPatchButtonList::resized()
 	list_.setBounds(bounds);
 }
 
-void VerticalPatchButtonList::setPatches(std::vector<midikraft::PatchHolder> const& patches)
+void VerticalPatchButtonList::setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info)
 {
 	list_.setModel(new PatchListModel(patches, [this](int row) {
 		SimpleLogger::instance()->postMessage("Row " + String(row) + "selected");
-	}));
+	}, info));
 }

@@ -82,15 +82,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			auto synthLibrary = new TreeViewNode(synthName, "library-" + synthName);
 			synthLibrary->onGenerateChildren = [this, activeSynth]() {
 				return std::vector<TreeViewItem*>({ newTreeViewItemForSynthBanks(activeSynth), newTreeViewItemForImports(activeSynth) });
-					};
-			importsForSynth->onSelected = [this, synthName](String id) {
-			synthLibrary->onSelected = [this, synthName](String id) {
-					node->textValue.addListener(new ImportNameListener(db_, import.id));
-					result.push_back(node);
-				}
-				return result;
 			};
-			importsForSynth->onSelected = [this, synthName](String id) {
+			synthLibrary->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
 				if (onImportListSelected)
@@ -295,10 +288,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 	importsForSynth->onGenerateChildren = [this, synthName]() {
 		auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 		shortenImportNames(importList);
-		importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.description;  });
+		importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.name;  });
 		std::vector<TreeViewItem*> result;
 		for (auto const& import : importList) {
-			auto node = new TreeViewNode(import.description, import.id);
+			auto node = new TreeViewNode(import.name, import.id);
 			node->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);

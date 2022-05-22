@@ -8,6 +8,7 @@
 
 
 #include "PatchHolder.h"
+#include "PatchHolderButton.h"
 
 class VerticalPatchButtonList : public Component {
 public:
@@ -15,7 +16,7 @@ public:
 
 	virtual void resized() override;
 
-	void setPatches(std::vector<midikraft::PatchHolder> const& patches);
+	void setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info);
 
 private:
 	ListBox list_;
