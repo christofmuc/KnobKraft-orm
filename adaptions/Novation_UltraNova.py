@@ -1,5 +1,5 @@
 #   Copyright (c) 2021 Christof Ruch. All rights reserved.
-#   Novation Mini/Ultranova Adaptation version 0.5 by Cedric Tessier, 2022.
+#   Novation Mini/Ultranova Adaptation version 0.6 by Cedric Tessier, 2022.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 # based on my own (partial) reverse engineering of Novation UltraNova librarian.
@@ -80,7 +80,7 @@ def isEditBufferDump(message):
             and message[4] == 0x03
             and message[5] == 0x01
             and message[6] == 0x7f
-            and message[7] == 0x00  # Edit Buffer
+            and message[7] == 0x00  # ?
             # and message[8] == 0x00  # ?
             # and message[9] == 0x10  # ?
             # and message[10] == 0x00  # ?
@@ -112,12 +112,13 @@ def isSingleProgramDump(message):
             and message[4] == 0x03
             and message[5] == 0x01
             and message[6] == 0x7f
-            and message[7] == 0x01  # Program
+            and message[7] in [0x00, 0x01]
             # and message[8] == 0x00  # ?
             # and message[9] == 0x10  # ?
             # and message[10] == 0x00  # ?
             and 0x00 <= message[11] <= numberOfBanks()  # Bank number [1-4] (can be 0 for an unknown reason...)
             and 0x00 <= message[12] < numberOfPatchesPerBank()  # Slot number [0-127]
+            and not message[7] == message[11] == 0  # make sure this is NOT an edit buffer
             )
 
 
