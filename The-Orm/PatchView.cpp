@@ -314,11 +314,13 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
 							// First make sure all patches are stored in the database
 							auto enhanced = autoCategorize(patchesLoaded);
-							mergeNewPatches(enhanced);
+							mergeNewPatches(enhanced); //This is actually async!, should be reflected in the name. Maybe I should open a progress dialog here?
 							// Then store the list of them in the database
 							midikraft::SynthBank retrievedBank(synth, bank);
 							retrievedBank.setPatches(patchesLoaded);
-							database_.putPatchList(retrievedBank);
+							database_.putPatchList(retrievedBank); // This needs to be done as "putSynthBank"; because we want to save the program place and the timestamp of last sync!
+							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
+							// instead of sending the sysex
 							patchListTree_.refreshAllUserLists();
 							bankList_->setPatches(patchesLoaded, PatchButtonInfo::DefaultDisplay);
 						});
