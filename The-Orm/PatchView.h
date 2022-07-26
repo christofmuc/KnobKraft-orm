@@ -73,9 +73,6 @@ public:
 	// Special functions
 	void bulkImportPIP(File directory);
 
-	// Bank management
-	void setBankPatches(std::vector<midikraft::PatchHolder> const& patches);
-
 private:
 	friend class PatchSearchComponent;
 

@@ -683,11 +683,6 @@ void PatchView::bulkImportPIP(File directory) {
 	retrieveFirstPageFromDatabase();
 }
 
-void PatchView::setBankPatches(std::vector<midikraft::PatchHolder> const& patches)
-{
-	synthBank_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
-}
-
 void PatchView::exportPatches()
 {
 	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
