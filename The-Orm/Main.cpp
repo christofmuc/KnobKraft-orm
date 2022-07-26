@@ -174,14 +174,14 @@ public:
         // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
-		// No more Python from here please
-		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
-
-		mainWindow = nullptr; // (deletes our window)
-
 		// Save UIModel for next run
 		Data::instance().saveToSettings();
 		UIModel::shutdown();
+
+		mainWindow = nullptr; // (deletes our window)
+
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
 
 		// Shutdown MIDI subsystem after all windows are gone
 		midikraft::MidiController::shutdown();

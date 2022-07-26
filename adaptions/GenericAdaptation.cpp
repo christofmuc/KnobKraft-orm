@@ -262,7 +262,9 @@ namespace knobkraft {
 	void GenericAdaptation::shutdownGenericAdaptation()
 	{
 		// Remove the global release on Python, else the destruction code will fail!
+		sGenericAdaptationPyOutputRedirect.reset();
 		sGenericAdaptationDontLockGIL.reset();
+		sGenericAdaptationPythonEmbeddedGuard.reset();
 	}
 
 	bool GenericAdaptation::hasPython()
