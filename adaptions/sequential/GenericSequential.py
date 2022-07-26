@@ -13,6 +13,7 @@ import hashlib
 # Mopho      - 0x25 (used in f0f7)
 # Tetra      - 0b00100110 0x26
 # Mopho KB   - 0b00100111 0x27 (Mopho Keyboard and Mopho SE) or 0b00101001 0x29 (Mopho X4)
+# Tempest    - 0x28 (according to Sequential forum)
 # Prophet 12 - 0b00101010 0x2a or 0b00101011 0x2b for module/special edition?
 # Pro 2      - 0b00101100 0x2c
 # Prophet 6  - 0b00101101 0x2d
