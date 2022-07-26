@@ -27,6 +27,9 @@ public:
 			addAndMakeVisible(*button_);
 			resized();
 		}
+		else {
+			button_->updateId(rowNo);
+		}
 		thePatch_ = patch; // Need a copy to keep the pointer alive
 		button_->setPatchHolder(&thePatch_, false, info);
 	}
@@ -35,6 +38,10 @@ public:
 		if (button_) {
 			button_.reset();
 		}
+	}
+
+	midikraft::PatchHolder patch() const {
+		return thePatch_;
 	}
 
 private:
@@ -114,6 +121,12 @@ void VerticalPatchButtonList::resized()
 void VerticalPatchButtonList::setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info)
 {
 	list_.setModel(new PatchListModel(patches, [this](int row) {
-		SimpleLogger::instance()->postMessage("Row " + String(row) + "selected");
+		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
+		if (patchRow) {
+			SimpleLogger::instance()->postMessage("Patch " + patchRow->patch().name()  + "selected");
+		}
+		else {
+			SimpleLogger::instance()->postMessage("No patch known for row " + String(row));
+		}
 	}, info));
 }
