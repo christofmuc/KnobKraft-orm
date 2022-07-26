@@ -177,6 +177,25 @@ bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverab
 	return false;
 }
 
+void CurrentSynthBank::setSynthBank(std::shared_ptr<midikraft::SynthBank> synthBank) 
+{
+	synthBank_ = synthBank;
+	modified_ = false;
+	sendChangeMessage();
+}
+
+std::shared_ptr<midikraft::SynthBank> CurrentSynthBank::synthBank()
+{
+	return synthBank_;
+}
+
+void CurrentSynthBank::flagModified()
+{
+	modified_ = true;
+	sendChangeMessage();
+}
+
+
 void CurrentMultiMode::setMultiSynthMode(bool multiMode)
 {
 	multiSynthMode_ = multiMode;

@@ -7,6 +7,7 @@
 #include "SynthBankPanel.h"
 
 #include "LayoutConstants.h"
+#include "UIModel.h"
 
 #include "fmt/format.h"
 
@@ -20,6 +21,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase)
 			std::vector<midikraft::PatchHolder> result;
 			if (patchDatabase_.getSinglePatch(synthBank_->synth(), md5, result)) {
 				synthBank_->changePatchAtPosition(programPlace, result[0]);
+				UIModel::instance()->synthBank.flagModified();
 			}
 			else {
 				SimpleLogger::instance()->postMessage("Program error - dropped patch that cannot be found in the database");
@@ -29,7 +31,15 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase)
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);
+	addAndMakeVisible(modified_);
 	addAndMakeVisible(*bankList_);
+
+	UIModel::instance()->synthBank.addChangeListener(this);
+}
+
+SynthBankPanel::~SynthBankPanel()
+{
+	UIModel::instance()->synthBank.removeChangeListener(this);
 }
 
 void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info)
@@ -49,7 +59,15 @@ void SynthBankPanel::resized()
 
 	resyncButton_.setBounds(header.removeFromRight(LAYOUT_BUTTON_WIDTH).withHeight(LAYOUT_BUTTON_HEIGHT));
 	synthName_.setBounds(header.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT));
-	bankNameAndDate_.setBounds(header.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT));
+	bankNameAndDate_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
+	modified_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
 
 	bankList_->setBounds(bounds);
+}
+
+void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
+{
+	ignoreUnused(source);
+	setBank(UIModel::instance()->synthBank.synthBank(), PatchButtonInfo::DefaultDisplay);
+	modified_.setText(UIModel::instance()->synthBank.modified() ? "modified" : "", dontSendNotification);
 }

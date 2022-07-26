@@ -304,6 +304,8 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 				auto fullInfo = database_.getPatchList(list, synths);
 				auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
 				if (bankList) {
+					UIModel::instance()->synthBank.setSynthBank(bankList);
+					//TODO could be transported via UIModel?
 					synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
 					found = true;
 				} 
