@@ -81,9 +81,13 @@ private:
 
 	std::vector<CategoryButtons::Category> predefinedCategories();
 
-	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
+	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
+
+	// New for bank management
+	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
+	void loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId);
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 

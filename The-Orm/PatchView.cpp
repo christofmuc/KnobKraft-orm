@@ -26,6 +26,7 @@
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
 #include <boost/format.hpp>
+#include "fmt/format.h"
 #include "PatchInterchangeFormat.h"
 #include "Settings.h"
 #include "ReceiveManualDumpWindow.h"
@@ -146,7 +147,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(buttonStrip_);
 	
 	patchButtons_->setPatchLoader([this](int skip, int limit, std::function<void(std::vector< midikraft::PatchHolder>)> callback) {
-		loadPage(skip, limit, callback);
+		loadPage(skip, limit, currentFilter(), callback);
 	});
 
 	// Register for updates
@@ -207,12 +208,12 @@ void PatchView::selectNextPatch()
 	patchButtons_->selectNext();
 }
 
-void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
+void PatchView::loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	database_.getPatchesAsync(currentFilter(), [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+	database_.getPatchesAsync(filter, [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
 		// Discard the result when there is a newer filter - another thread will be working on a better result!
-		if (currentFilter() != filter)
-			return;
+		/*if (currentFilter() != filter)
+			return;*/
 
 		// Check if a client-side filter is active (python based)
 		String advancedQuery = patchSearch_->advancedTextSearch();
@@ -280,6 +281,23 @@ void PatchView::saveCurrentPatchCategories() {
 	}
 }
 
+void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId)
+{
+	loadPage(0, -1, bankFilter(synth, bankId), [this, bank](std::vector<midikraft::PatchHolder> patches) {
+		SimpleLogger::instance()->postMessage(fmt::format("Bank of {} patches retrieved from database", patches.size()));
+
+		// We need to patch the patches' position, so they represent the bank loaded and not their original position on import whenever that was!
+		//TODO - this should possible go into the PatchDatabase code. But it is a load option?
+		int i = 0;
+		for (auto& patch : patches) {
+			patch.setBank(bank);
+			patch.setPatchNumber(MidiProgramNumber::fromZeroBase(i++));
+		}
+
+		bankList_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
+	});
+}
+
 void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 	midikraft::SynthBank bankList(synth, bank, juce::Time());
 	// Check if this synth bank has ever been loaded
@@ -287,11 +305,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 	synths[synth->getName()] = synth;
 	if (database_.doesListExist(bankList.id())) {
 		// It does, so we can safely load and display it
-		listFilterID_ = bankList.id();
-		sourceFilterID_ = "";
-		loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-			bankList_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
-		});
+		loadSynthBankFromDatabase(synth, bank, bankList.id());
 	}
 	else {
 		// No, first time ever - offer the user to download from the synth if connected
@@ -543,6 +557,17 @@ midikraft::PatchFilter PatchView::currentFilter()
 	return filter;
 }
 
+midikraft::PatchFilter PatchView::bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID)
+{
+	// We want to load all patches for this synth that are in the bank list given
+	auto filter = database_.allForSynth(synth);
+	filter.showHidden = true; // If there are hidden patches, we need to know!
+	filter.importID = "";
+	filter.listID = listID;
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+	return filter;
+}
+
 class MergeManyPatchFiles : public ProgressHandlerWindow {
 public:
 	MergeManyPatchFiles(midikraft::PatchDatabase &database, std::vector<midikraft::PatchHolder> &patchesLoaded, std::function<void(std::vector<midikraft::PatchHolder>)> successHandler) :
@@ -665,7 +690,7 @@ void PatchView::setBankPatches(std::vector<midikraft::PatchHolder> const& patche
 
 void PatchView::exportPatches()
 {
-	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
 		ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
 			librarian_.saveSysexPatchesToDisk(params, patches);
 		});
@@ -685,7 +710,7 @@ void PatchView::updateLastPath() {
 
 void PatchView::createPatchInterchangeFile()
 {
-	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
 		updateLastPath();
 		FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
 		if (pifChooser.browseForFileToSave(true)) {
