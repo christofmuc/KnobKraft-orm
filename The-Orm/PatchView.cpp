@@ -283,7 +283,7 @@ void PatchView::saveCurrentPatchCategories() {
 
 void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId)
 {
-	loadPage(0, -1, bankFilter(synth, bankId), [this, bank](std::vector<midikraft::PatchHolder> patches) {
+	loadPage(0, -1, bankFilter(synth, bankId), [this, synth, bank, bankId](std::vector<midikraft::PatchHolder> patches) {
 		SimpleLogger::instance()->postMessage(fmt::format("Bank of {} patches retrieved from database", patches.size()));
 
 		// We need to patch the patches' position, so they represent the bank loaded and not their original position on import whenever that was!
@@ -294,6 +294,27 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 			patch.setPatchNumber(MidiProgramNumber::fromZeroBase(i++));
 		}
 
+		// Load the bank info from the database as well for the timestamp
+		auto lists = database_.allPatchLists();
+		auto found = false;
+		for (auto& list : lists) {
+			if (list.id == bankId) {
+				std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+				synths[synth->getName()] = synth;
+				auto fullInfo = database_.getPatchList(list, synths);
+				auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
+				if (bankList) {
+					synthBank_->setBank(synth, bank, bankList->lastSynced());
+					found = true;
+				} 
+				break;
+			}
+		}
+
+		if (!found) {
+			SimpleLogger::instance()->postMessage("Program Error: Invalid synth bank, not stored in database. Can't load into panel");
+			return;
+		}
 		synthBank_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
 	});
 }

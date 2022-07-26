@@ -17,8 +17,12 @@ public:
 
 	virtual void resized() override;
 
+	void setBank(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, juce::Time timestamp);
 	void setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info);
 
 private:
+	Label synthName_;
+	Label bankNameAndDate_;
+	TextButton resyncButton_;
 	std::unique_ptr<VerticalPatchButtonList> bankList_;
 };
