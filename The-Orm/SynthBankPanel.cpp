@@ -10,27 +10,35 @@
 
 #include "fmt/format.h"
 
-SynthBankPanel::SynthBankPanel() 
+SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase)
+	: patchDatabase_(patchDatabase)
 {
 	resyncButton_.setButtonText("Import again");
 
-	bankList_ = std::make_unique<VerticalPatchButtonList>(true);
+	bankList_ = std::make_unique<VerticalPatchButtonList>([this](MidiProgramNumber programPlace, std::string md5) {
+		if (synthBank_) {
+			std::vector<midikraft::PatchHolder> result;
+			if (patchDatabase_.getSinglePatch(synthBank_->synth(), md5, result)) {
+				synthBank_->changePatchAtPosition(programPlace, result[0]);
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Program error - dropped patch that cannot be found in the database");
+			}
+		}
+	});
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);
 	addAndMakeVisible(*bankList_);
 }
 
-void SynthBankPanel::setBank(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, juce::Time timestamp)
+void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info)
 {
-	synthName_.setText(synth->getName(), dontSendNotification);
-    auto timeAgo = (juce::Time::getCurrentTime() - timestamp).getApproximateDescription();
-	bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", synth->friendlyBankName(bank), timeAgo.toStdString()), dontSendNotification);
-}
-
-void SynthBankPanel::setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info)
-{
-	bankList_->setPatches(patches, info);
+	synthBank_ = synthBank;
+	synthName_.setText(synthBank->synth()->getName(), dontSendNotification);
+    auto timeAgo = (juce::Time::getCurrentTime() - synthBank_->lastSynced()).getApproximateDescription();
+	bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", synthBank_->synth()->friendlyBankName(synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
+	bankList_->setPatches(synthBank, info);
 }
 
 void SynthBankPanel::resized()

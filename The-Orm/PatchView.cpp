@@ -78,7 +78,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 
-	synthBank_ = std::make_unique<SynthBankPanel>();
+	synthBank_ = std::make_unique<SynthBankPanel>(database_);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -304,7 +304,7 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 				auto fullInfo = database_.getPatchList(list, synths);
 				auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
 				if (bankList) {
-					synthBank_->setBank(synth, bank, bankList->lastSynced());
+					synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
 					found = true;
 				} 
 				break;
@@ -315,7 +315,6 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 			SimpleLogger::instance()->postMessage("Program Error: Invalid synth bank, not stored in database. Can't load into panel");
 			return;
 		}
-		synthBank_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
 	});
 }
 

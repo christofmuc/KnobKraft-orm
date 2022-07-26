@@ -9,15 +9,17 @@
 
 #include "PatchHolder.h"
 #include "PatchHolderButton.h"
+#include "SynthBank.h"
 
 class VerticalPatchButtonList : public Component {
 public:
-	VerticalPatchButtonList(bool isDropTarget);
+	VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler);
 
 	virtual void resized() override;
 
-	void setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info);
+	void setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info);
 
 private:
+	std::function<void(MidiProgramNumber, std::string)> dropHandler_;
 	ListBox list_;
 };

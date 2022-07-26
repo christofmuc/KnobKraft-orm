@@ -11,7 +11,10 @@
 
 class PatchButtonRow: public Component {
 public:
-	PatchButtonRow(std::function<void(int)> clickHandler) : clickHandler_(clickHandler) {
+	PatchButtonRow(std::function<void(int)> clickHandler, std::function<void(MidiProgramNumber, std::string)> patchChangeHandler) 
+		: clickHandler_(clickHandler) 
+		, patchChangeHandler_(patchChangeHandler)
+	{
 	}
 
 	virtual void resized() override {
@@ -25,6 +28,23 @@ public:
 		if (!button_) {
 			button_ = std::make_unique<PatchHolderButton>(rowNo, false, clickHandler_);
 			addAndMakeVisible(*button_);
+			button_->acceptsItem = [this](juce::var dropItem) {
+				String dropItemString = dropItem;
+				auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+				return midikraft::PatchHolder::dragItemIsPatch(infos) && infos.contains("synth") && infos["synth"] == thePatch_.synth()->getName();
+			};
+			button_->onItemDropped = [this](juce::var dropped) {
+				String dropItemString = dropped;
+				auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+				if (patchChangeHandler_ && infos.contains("md5")) {
+					patchChangeHandler_(thePatch_.patchNumber(), infos["md5"]);
+				}
+				else {
+					jassertfalse;
+					SimpleLogger::instance()->postMessage("Program error - drag info has no md5 or no handler");
+				}
+			}; 
+		
 			resized();
 		}
 		else {
@@ -47,18 +67,21 @@ public:
 private:
 	std::unique_ptr<PatchHolderButton> button_;
 	std::function<void(int)> clickHandler_;
+	std::function<void(MidiProgramNumber, std::string)> patchChangeHandler_;
 	midikraft::PatchHolder thePatch_;
 };
 
 
 class PatchListModel : public ListBoxModel {
 public:
-	PatchListModel(std::vector<midikraft::PatchHolder> const &patches, std::function<void(int)> onRowSelected, PatchButtonInfo info) : patches_(patches), onRowSelected_(onRowSelected), info_(info) {
+	PatchListModel(std::shared_ptr<midikraft::SynthBank> bank, std::function<void(int)> onRowSelected,
+			std::function<void(MidiProgramNumber, std::string)> patchChangeHandler, PatchButtonInfo info)
+		: bank_(bank), onRowSelected_(onRowSelected), patchChangeHandler_(patchChangeHandler), info_(info) {
 	}
 
 	int getNumRows() override
 	{
-		return (int) patches_.size();
+		return (int) bank_->patches().size();
 	}
 
 	void paintListBoxItem(int rowNumber, Graphics& g, int width, int height, bool rowIsSelected) override
@@ -74,13 +97,13 @@ public:
 			if (existingComponentToUpdate) {
 				auto existing = dynamic_cast<PatchButtonRow*>(existingComponentToUpdate);
 				if (existing) {
-					existing->setRow(rowNumber, patches_[rowNumber], info_);
+					existing->setRow(rowNumber, bank_->patches()[rowNumber], info_);
 					return existing;
 				}
 				throw std::runtime_error("This was not the correct row type, can't continue");
 			}
-			auto newComponent = new PatchButtonRow(onRowSelected_);
-			newComponent->setRow(rowNumber, patches_[rowNumber], info_);
+			auto newComponent = new PatchButtonRow(onRowSelected_, patchChangeHandler_);
+			newComponent->setRow(rowNumber, bank_->patches()[rowNumber], info_);
 			return newComponent;
 		}
 		else {
@@ -99,15 +122,15 @@ public:
 	
 
 private:
-	std::vector<midikraft::PatchHolder> patches_;
+	std::shared_ptr<midikraft::SynthBank> bank_;
 	std::function<void(int)> onRowSelected_;
+	std::function<void(MidiProgramNumber, std::string)> patchChangeHandler_;
 	PatchButtonInfo info_;
 };
 
 
-VerticalPatchButtonList::VerticalPatchButtonList(bool isDropTarget)
+VerticalPatchButtonList::VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler) : dropHandler_(dropHandler)
 {
-	ignoreUnused(isDropTarget);
 	addAndMakeVisible(list_);
 	list_.setRowHeight(LAYOUT_LARGE_LINE_SPACING);
 }
@@ -118,9 +141,9 @@ void VerticalPatchButtonList::resized()
 	list_.setBounds(bounds);
 }
 
-void VerticalPatchButtonList::setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info)
+void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info)
 {
-	list_.setModel(new PatchListModel(patches, [this](int row) {
+	list_.setModel(new PatchListModel(bank, [this](int row) {
 		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
 		if (patchRow) {
 			SimpleLogger::instance()->postMessage("Patch " + patchRow->patch().name()  + "selected");
@@ -128,5 +151,12 @@ void VerticalPatchButtonList::setPatches(std::vector<midikraft::PatchHolder> con
 		else {
 			SimpleLogger::instance()->postMessage("No patch known for row " + String(row));
 		}
-	}, info));
+	},
+		[this](MidiProgramNumber programPlace, std::string md5) {
+		if (dropHandler_) {
+			dropHandler_(programPlace, md5);
+			list_.updateContent();
+		}
+	}
+	, info));
 }

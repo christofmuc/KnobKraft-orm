@@ -9,18 +9,21 @@
 #include "JuceHeader.h"
 
 #include "VerticalPatchButtonList.h"
+#include "SynthBank.h"
+#include "PatchDatabase.h"
 
 class SynthBankPanel : public Component
 {
 public:
-	SynthBankPanel();
+	SynthBankPanel(midikraft::PatchDatabase& patchDatabase);
 
 	virtual void resized() override;
 
-	void setBank(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, juce::Time timestamp);
-	void setPatches(std::vector<midikraft::PatchHolder> const& patches, PatchButtonInfo info);
+	void setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info);
 
 private:
+	midikraft::PatchDatabase& patchDatabase_;
+	std::shared_ptr<midikraft::SynthBank> synthBank_;
 	Label synthName_;
 	Label bankNameAndDate_;
 	TextButton resyncButton_;
