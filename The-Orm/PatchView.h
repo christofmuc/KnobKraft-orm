@@ -30,7 +30,7 @@
 #include "AutomaticCategory.h"
 
 #include "ImportFromSynthDialog.h"
-#include "VerticalPatchButtonList.h"
+#include "SynthBankPanel.h"
 
 #include <map>
 
@@ -119,7 +119,7 @@ private:
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
-	std::unique_ptr<VerticalPatchButtonList> bankList_;
+	std::unique_ptr<SynthBankPanel> synthBank_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 

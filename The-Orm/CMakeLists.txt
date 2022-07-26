@@ -72,6 +72,7 @@ set(SOURCES
 	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
+	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
 	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
 	win_resources.rc

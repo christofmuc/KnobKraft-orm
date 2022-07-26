@@ -78,7 +78,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 
-	bankList_ = std::make_unique<VerticalPatchButtonList>(true);
+	synthBank_ = std::make_unique<SynthBankPanel>();
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -107,9 +107,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	centerBox->onResized = [this](Component* box) {
 		auto area = box->getLocalBounds();
 		patchSearch_->setBounds(area.removeFromLeft(area.getWidth() / 4 * 3));
-		bankList_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
+		synthBank_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 	};
-	centerBox->addAndMakeVisible(*bankList_);
+	centerBox->addAndMakeVisible(*synthBank_);
 	centerBox->addAndMakeVisible(*patchSearch_);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
@@ -294,7 +294,7 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 			patch.setPatchNumber(MidiProgramNumber::fromZeroBase(i++));
 		}
 
-		bankList_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
+		synthBank_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
 	});
 }
 
@@ -322,9 +322,9 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 						midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
 						synth,
 						bank,
-						progressWindow.get(), [this, progressWindow, synth, bank](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow.get(), [this, progressWindow, synth, bank, bankList](std::vector<midikraft::PatchHolder> patchesLoaded) {
 						progressWindow->signalThreadShouldExit();
-						MessageManager::callAsync([this, patchesLoaded, synth, bank]() {
+						MessageManager::callAsync([this, patchesLoaded, synth, bank, bankList]() {
 							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
 							// First make sure all patches are stored in the database
 							auto enhanced = autoCategorize(patchesLoaded);
@@ -332,11 +332,11 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 							// Then store the list of them in the database
 							auto retrievedBank = std::make_shared<midikraft::SynthBank>(synth, bank, juce::Time::getCurrentTime());
 							retrievedBank->setPatches(patchesLoaded);
-							database_.putPatchList(retrievedBank); // This needs to be done as "putSynthBank"; because we want to save the program place and the timestamp of last sync!
+							database_.putPatchList(retrievedBank);
 							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
 							// instead of sending the sysex
 							patchListTree_.refreshAllUserLists();
-							bankList_->setPatches(patchesLoaded, PatchButtonInfo::DefaultDisplay);
+							loadSynthBankFromDatabase(synth, bank, bankList.id());
 						});
 					});
 				}
@@ -685,7 +685,7 @@ void PatchView::bulkImportPIP(File directory) {
 
 void PatchView::setBankPatches(std::vector<midikraft::PatchHolder> const& patches)
 {
-	bankList_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
+	synthBank_->setPatches(patches, PatchButtonInfo::DefaultDisplay);
 }
 
 void PatchView::exportPatches()
