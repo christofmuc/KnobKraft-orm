@@ -286,14 +286,6 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 	loadPage(0, -1, bankFilter(synth, bankId), [this, synth, bank, bankId](std::vector<midikraft::PatchHolder> patches) {
 		SimpleLogger::instance()->postMessage(fmt::format("Bank of {} patches retrieved from database", patches.size()));
 
-		// We need to patch the patches' position, so they represent the bank loaded and not their original position on import whenever that was!
-		//TODO - this should possible go into the PatchDatabase code. But it is a load option?
-		int i = 0;
-		for (auto& patch : patches) {
-			patch.setBank(bank);
-			patch.setPatchNumber(MidiProgramNumber::fromZeroBase(i++));
-		}
-
 		// Load the bank info from the database as well for the timestamp
 		auto lists = database_.allPatchLists();
 		auto found = false;
