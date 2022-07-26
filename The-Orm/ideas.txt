@@ -17,17 +17,20 @@ BANK MANAGEMENT
 * Bank List needs a header - "Synth name + Bank name". last synched at <date>. <Send>/<Retrieve> Button.
 * Bank List should show which entries are "dirty"
 * Bank List needs to accept drops -> overwrite list item at same position. Mark as dirty.
+* Has send button to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
+* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
 
 * Click on a button would not send to edit buffer, but just a bank select/program change message. 
 * Needs to have concept of ROM banks. 
-* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
-* Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
+* Bug - Bank lists should not be shown in user lists.
+
 * How do I do drag and drop from the Library into the bank? - Probably needs split screen
-* Bank lists should not be shown in user lists.
-* Can drag bank into user lists to create a user list from a bank 
+* Can drag bank into user lists to create a user list from a bank!
 * Should a click on the In Synth button toggle the download? I guess so
 * The Normal download should then go away?
-* Bug: download from synth should also auto-categorize
+* Bug: After import, the new bank is not selected in the tree.
+* Bug: The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
+* Need window management of Bank window. Close/hide button when no longer needed.
 
 1.15.0 (Meta data)
 History stack!
