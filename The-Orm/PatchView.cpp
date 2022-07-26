@@ -281,7 +281,7 @@ void PatchView::saveCurrentPatchCategories() {
 }
 
 void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
-	midikraft::SynthBank bankList(synth, bank);
+	midikraft::SynthBank bankList(synth, bank, juce::Time());
 	// Check if this synth bank has ever been loaded
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
 	synths[synth->getName()] = synth;
@@ -316,8 +316,8 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 							auto enhanced = autoCategorize(patchesLoaded);
 							mergeNewPatches(enhanced); //This is actually async!, should be reflected in the name. Maybe I should open a progress dialog here?
 							// Then store the list of them in the database
-							midikraft::SynthBank retrievedBank(synth, bank);
-							retrievedBank.setPatches(patchesLoaded);
+							auto retrievedBank = std::make_shared<midikraft::SynthBank>(synth, bank, juce::Time::getCurrentTime());
+							retrievedBank->setPatches(patchesLoaded);
 							database_.putPatchList(retrievedBank); // This needs to be done as "putSynthBank"; because we want to save the program place and the timestamp of last sync!
 							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
 							// instead of sending the sysex

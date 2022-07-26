@@ -108,7 +108,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		addNewItem->onSingleClick = [this](String id) {
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
-					db_.putPatchList(*list);
+					db_.putPatchList(list);
 					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
 					regenerateUserLists();
 				}
@@ -315,9 +315,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	node->onGenerateChildren = [this, list]() {
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
-		int index = 0;
-		for (auto patch : patchList.patches()) {
-			result.push_back(newTreeViewItemForPatch(list, patch, index++));
+		if (patchList) {
+			int index = 0;
+			for (auto patch : patchList->patches()) {
+				result.push_back(newTreeViewItemForPatch(list, patch, index++));
+			}
 		}
 		return result;
 	};
@@ -381,7 +383,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			[this, oldname](std::shared_ptr<midikraft::PatchList> list) {
 			jassert(list);
 			if (list) {
-				db_.putPatchList(*list);
+				db_.putPatchList(list);
 				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % list->name()).str());
 				regenerateUserLists();
 			}
