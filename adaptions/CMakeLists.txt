@@ -16,8 +16,8 @@ set(adaptation_files
 		"Zoom_MS.py"
 )
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
-	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h
+	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
 	DEPENDS ${adaptation_files}
 	COMMENT "Compiling binary resources"
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
@@ -26,7 +26,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
 # Define the sources for the static library
 set(Sources
 	BundledAdaptation.cpp BundledAdaptation.h
-	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h
+	${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h
 	CreateNewAdaptationDialog.cpp CreateNewAdaptationDialog.h
 	GenericAdaptation.cpp GenericAdaptation.h
 	GenericBankDumpCapability.cpp GenericBankDumpCapability.h
@@ -38,13 +38,13 @@ set(Sources
 )
 
 set_source_files_properties(
-	${CMAKE_CURRENT_LIST_DIR}/CompiledAdaptations.h	
+	${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h	
 	PROPERTIES GENERATED TRUE
 )
 
 # Setup library
 add_library(knobkraft-generic-adaptation ${Sources})
-target_include_directories(knobkraft-generic-adaptation PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
+target_include_directories(knobkraft-generic-adaptation PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(knobkraft-generic-adaptation PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
