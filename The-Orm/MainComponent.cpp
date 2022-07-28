@@ -313,7 +313,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(*database_, synths, automaticCategories_);
+	patchView_ = std::make_unique<PatchView>(*database_, synths);
 	//patchView_ = std::make_unique<PatchView>(commandManager_, *database_, synths, automaticCategories_);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);

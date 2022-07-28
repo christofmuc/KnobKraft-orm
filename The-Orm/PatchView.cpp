@@ -33,8 +33,8 @@
 
 const char *kAllPatchesFilter = "All patches";
 
-PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector)
-	: database_(database), librarian_(synths), synths_(synths), automaticCategories_(detector), 
+PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
+	: database_(database), librarian_(synths), synths_(synths), 
 	patchListTree_(database, synths),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
@@ -138,10 +138,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 
 PatchView::~PatchView()
 {
-	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
-	UIModel::instance()->currentSynth_.removeChangeListener(this);
-	UIModel::instance()->synthList_.removeChangeListener(this);
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
@@ -380,7 +377,7 @@ void PatchView::retrievePatches() {
 
 std::vector<midikraft::PatchHolder> PatchView::autoCategorize(std::vector<midikraft::PatchHolder> const &patches) {
 	for (auto p : patches) {
-		p.autoCategorizeAgain(automaticCategories_);
+		p.autoCategorizeAgain(database_.getCategorizer());
 	}
 	return patches;
 }
@@ -535,7 +532,7 @@ void PatchView::receiveManualDump() {
 		auto messagesReceived = receiveDumpBox.result();
 		if (messagesReceived.size() > 0) {
 			// Try to load via Librarian
-			auto patches = librarian_.loadSysexPatchesManualDump(synthToReceiveFrom, messagesReceived, automaticCategories_);
+			auto patches = librarian_.loadSysexPatchesManualDump(synthToReceiveFrom, messagesReceived, database_.getCategorizer());
 			if (patches.size() > 0) {
 				auto enhanced = autoCategorize(patches);
 				mergeNewPatches(enhanced);
@@ -546,7 +543,7 @@ void PatchView::receiveManualDump() {
 
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
-		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), automaticCategories_);
+		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), database_.getCategorizer());
 		if (patches.size() > 0) {
 			auto enhanced = autoCategorize(patches);
 			mergeNewPatches(enhanced);
@@ -594,7 +591,7 @@ private:
 };
 
 void PatchView::bulkImportPIP(File directory) {
-	BulkImportPIP bulk(directory, database_, automaticCategories_);
+	BulkImportPIP bulk(directory, database_, database_.getCategorizer());
 
 	bulk.runThread();
 
