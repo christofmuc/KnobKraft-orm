@@ -51,6 +51,7 @@ public:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	void retrieveFirstPageFromDatabase();
+	void retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve);
 
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();

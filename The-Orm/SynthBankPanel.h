@@ -12,10 +12,12 @@
 #include "SynthBank.h"
 #include "PatchDatabase.h"
 
+class PatchView;
+
 class SynthBankPanel : public Component, private ChangeListener
 {
 public:
-	SynthBankPanel(midikraft::PatchDatabase& patchDatabase);
+	SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchView *patchView);
 	virtual ~SynthBankPanel() override;
 
 	virtual void resized() override;
@@ -26,10 +28,12 @@ private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	midikraft::PatchDatabase& patchDatabase_;
+	PatchView* patchView_;
 	std::shared_ptr<midikraft::SynthBank> synthBank_;
 	Label synthName_;
 	Label bankNameAndDate_;
 	Label modified_;
 	TextButton resyncButton_;
+	TextButton sendButton_;
 	std::unique_ptr<VerticalPatchButtonList> bankList_;
 };

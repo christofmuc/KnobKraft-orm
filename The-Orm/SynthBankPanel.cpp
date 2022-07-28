@@ -8,13 +8,24 @@
 
 #include "LayoutConstants.h"
 #include "UIModel.h"
+#include "PatchView.h"
 
 #include "fmt/format.h"
 
-SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase)
-	: patchDatabase_(patchDatabase)
+SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchView *patchView)
+	: patchDatabase_(patchDatabase), patchView_(patchView)
 {
 	resyncButton_.setButtonText("Import again");
+	resyncButton_.onClick = [this]() {
+		if (patchView_ && synthBank_) {
+			if (!UIModel::instance()->synthBank.modified() ||
+				AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "You have unsaved changes!",
+					"You have modified the synth bank but not saved it back to the synth. Reimporting the bank will make you lose your changes! Do you want to re-import the bank from the synth?",
+					"Yes", "Cancel")) {
+				patchView_->retrieveBankFromSynth(*synthBank_);
+			}
+		}
+	};
 
 	bankList_ = std::make_unique<VerticalPatchButtonList>([this](MidiProgramNumber programPlace, std::string md5) {
 		if (synthBank_) {

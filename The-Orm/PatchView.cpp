@@ -78,7 +78,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 
-	synthBank_ = std::make_unique<SynthBankPanel>(database_);
+	synthBank_ = std::make_unique<SynthBankPanel>(database_, this);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -320,6 +320,49 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 	});
 }
 
+void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve)
+{
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToRetrieve.synth());
+	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToRetrieve.synth());
+	if (location) {
+		if (location->channel().isValid() && device->wasDetected()) {
+			// We can offer to download the bank from the synth, or rather just do it!
+			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+			if (bankToRetrieve.synth() /*&& device->wasDetected()*/) {
+				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
+				progressWindow->launchThread();
+				librarian_.startDownloadingAllPatches(
+					midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
+					bankToRetrieve.synth(),
+					bankToRetrieve.bankNumber(),
+					progressWindow.get(), [this, progressWindow, bankToRetrieve](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow->signalThreadShouldExit();
+						MessageManager::callAsync([this, patchesLoaded, bankToRetrieve]() {
+							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
+							// First make sure all patches are stored in the database
+							auto enhanced = autoCategorize(patchesLoaded);
+							mergeNewPatches(enhanced); //This is actually async!, should be reflected in the name. Maybe I should open a progress dialog here?
+							// Then store the list of them in the database
+							auto retrievedBank = std::make_shared<midikraft::SynthBank>(bankToRetrieve.synth(), bankToRetrieve.bankNumber(), juce::Time::getCurrentTime());
+							retrievedBank->setPatches(patchesLoaded);
+							database_.putPatchList(retrievedBank);
+							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
+							// instead of sending the sysex
+							patchListTree_.refreshAllUserLists();
+							loadSynthBankFromDatabase(bankToRetrieve.synth(), bankToRetrieve.bankNumber(), bankToRetrieve.id());
+							});
+					});
+			}
+		}
+		else {
+			AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
+		}
+	}
+	else {
+		SimpleLogger::instance()->postMessage("Invalid operation - cannot retrieve bank from synth that has no MIDI connectivity implemented");
+	}
+}
+
 void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 	midikraft::SynthBank bankList(synth, bank, juce::Time());
 	// Check if this synth bank has ever been loaded
@@ -331,45 +374,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 	}
 	else {
 		// No, first time ever - offer the user to download from the synth if connected
-		auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
-		auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
-		if (location) {
-			if (location->channel().isValid() && device->wasDetected()) {
-				// We can offer to download the bank from the synth, or rather just do it!
-				auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
-				if (synth /*&& device->wasDetected()*/) {
-					midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
-					progressWindow->launchThread();
-					librarian_.startDownloadingAllPatches(
-						midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
-						synth,
-						bank,
-						progressWindow.get(), [this, progressWindow, synth, bank, bankList](std::vector<midikraft::PatchHolder> patchesLoaded) {
-						progressWindow->signalThreadShouldExit();
-						MessageManager::callAsync([this, patchesLoaded, synth, bank, bankList]() {
-							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
-							// First make sure all patches are stored in the database
-							auto enhanced = autoCategorize(patchesLoaded);
-							mergeNewPatches(enhanced); //This is actually async!, should be reflected in the name. Maybe I should open a progress dialog here?
-							// Then store the list of them in the database
-							auto retrievedBank = std::make_shared<midikraft::SynthBank>(synth, bank, juce::Time::getCurrentTime());
-							retrievedBank->setPatches(patchesLoaded);
-							database_.putPatchList(retrievedBank);
-							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
-							// instead of sending the sysex
-							patchListTree_.refreshAllUserLists();
-							loadSynthBankFromDatabase(synth, bank, bankList.id());
-						});
-					});
-				}
-			}
-			else {
-				AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
-			}
-		}
-		else {
-			SimpleLogger::instance()->postMessage("Invalid operation - cannot retrieve bank from synth that has no MIDI connectivity implemented");
-		}
+		retrieveBankFromSynth(bankList);
 	}
 }
 
