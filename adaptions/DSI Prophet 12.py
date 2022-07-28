@@ -19,7 +19,9 @@ synth = sequential.GenericSequential(name="DSI Prophet 12",
                                      name_len=20,
                                      name_position=402,
                                      id_list=[0b00101010, 0x2b],  # The Pro12 Desktop module calls itself 0x2b,
-                                     blank_out_zones=[(914, 20)]  # Make sure to blank out the layer B name as well
+                                     blank_out_zones=[(914, 20)],  # Make sure to blank out the layer B name as well
+                                     friendlyBankName=lambda x: f"bank {x+1}",  # 1-based bank names
+                                     friendlyProgramName=lambda x: f"bank {(x//99)+1} - {(x % 99)+1:02d}",  # 1-based program names with leading zero
                                      ).install(this_module)
 
 
@@ -41,4 +43,5 @@ if __name__ == "__main__":
     messages = sequential.load_sysex("testData/P12_Programs_v1.1c.syx")
     unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
                                                                          program_dump=messages[5],
-                                                                         program_name='Wurly Trem ModWheel'))
+                                                                         program_name='Wurly Trem ModWheel',
+                                                                         number=5))

@@ -16,7 +16,9 @@ sequential.GenericSequential(name="DSI Tetra",
                              banks=4,
                              patches_per_bank=128,
                              name_position=184,
-                             name_len=16
+                             name_len=16,
+                             friendlyBankName=lambda x: f"bank {x+1}",
+                             friendlyProgramName=lambda x: f"bank {(x//128)+1} - {(x%128)+1}"
                              ).install(this_module)
 
 #

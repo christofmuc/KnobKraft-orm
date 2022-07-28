@@ -31,7 +31,9 @@ class GenericSequential:
                  name_position=0,
                  file_version=None,
                  id_list=None,
-                 blank_out_zones=None):
+                 blank_out_zones=None,
+                 friendlyBankName=None,
+                 friendlyProgramName=None):
         self.__id = device_id
         self.__name = name
         if id_list is None:
@@ -47,6 +49,8 @@ class GenericSequential:
             self.__blank_out_zones = [(name_position, name_len)]
         else:
             self.__blank_out_zones = blank_out_zones + [(name_position, name_len)]
+        self.friendly_bank_name = friendlyBankName
+        self.friendly_program_name = friendlyProgramName
 
     def name(self):
         return self.__name
@@ -157,6 +161,11 @@ class GenericSequential:
             return message[0:3 + self.extraOffset()] + [0b00000010] + [bank, program] + message[6 + self.extraOffset():]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
+    def friendlyBankName(self, bank):
+        if self.friendly_bank_name is not None:
+            return self.friendly_bank_name(bank)
+        raise Exception("Program error - friendlyBankName not defined but code reached in GenericSequential module!")
+
     def calculateFingerprint(self, message):
         raw = self.getDataBlock(message)
         data = self.unescapeSysex(raw)
@@ -236,4 +245,7 @@ class GenericSequential:
         setattr(module, 'convertToProgramDump', self.convertToProgramDump)
         setattr(module, 'calculateFingerprint', self.calculateFingerprint)
         setattr(module, 'renamePatch', self.renamePatch)
-
+        if self.friendly_bank_name is not None:
+            setattr(module, 'friendlyBankName', self.friendlyBankName)
+        if self.friendly_program_name is not None:
+            setattr(module, 'friendlyProgramName', self.friendly_program_name)
