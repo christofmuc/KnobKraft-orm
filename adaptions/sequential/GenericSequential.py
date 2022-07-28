@@ -133,6 +133,13 @@ class GenericSequential:
             return layer_a_name
         return "Invalid"
 
+    def numberFromDump(self, message):
+        if self.isEditBufferDump(message):
+            return 0
+        elif self.isSingleProgramDump(message):
+            return message[4 + self.extraOffset()] * self.numberOfPatchesPerBank() + message[5 + self.extraOffset()]
+        raise "Data is neither edit buffer nor program dump, can't extract number"
+
     def convertToEditBuffer(self, channel, message):
         if self.isEditBufferDump(message):
             return message
@@ -224,6 +231,7 @@ class GenericSequential:
         setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
         setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
         setattr(module, 'nameFromDump', self.nameFromDump)
+        setattr(module, 'numberFromDump', self.numberFromDump)
         setattr(module, 'convertToEditBuffer', self.convertToEditBuffer)
         setattr(module, 'convertToProgramDump', self.convertToProgramDump)
         setattr(module, 'calculateFingerprint', self.calculateFingerprint)
