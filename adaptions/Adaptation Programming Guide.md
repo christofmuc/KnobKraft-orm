@@ -275,7 +275,7 @@ To enable the Program Dump Capability for your adaptation, which will be used in
 
 The third function currently is not used, but is the basis for the upcoming feature of bank mangement - to send a patch into a specific position in the synths memory, not just the edit buffer or a hard-coded "pseudo edit buffer" like slot 100. 
 
-Additionally, when you have implement all three functions to enabel the ProgramDumpCapability on the adaptation, you can also add the following optional function:
+Additionally, when you have implement all three functions to enable the ProgramDumpCapability on the adaptation, you can also add the following optional function:
 
     def numberFromDump(message)
 
@@ -283,7 +283,7 @@ which will be used if present to detect the original program slot location store
 
 ### Requesting a specific program at a specific memory position
 
-The first function looks familar:
+The first function looks familiar:
 
     def createProgramDumpRequest(channel, patchNo):
 
@@ -338,7 +338,7 @@ Here is an example for the Prophet 12. Actually all Sequential/DSI synths have t
 
 ## Bank Dump Capability
 
-Some synths do no work with individual MIDI messages per patch, or even multiple MIDI messages for one patch, but rather with one big MIDI message which contains all patches of a bank. If your synth is of this type, you want to implement the following 4 functions to enable the Bank Dump Capability. Also, if you have onyl a single request to make, but the synth will reply with a stream of MIDI messages, this is the right capability to implement.
+Some synths do no work with individual MIDI messages per patch, or even multiple MIDI messages for one patch, but rather with one big MIDI message which contains all patches of a bank. If your synth is of this type, you want to implement the following 4 functions to enable the Bank Dump Capability. Also, if you have only a single request to make, but the synth will reply with a stream of MIDI messages, this is the right capability to implement.
 
     def createBankDumpRequest(channel, bank)
     def isPartOfBankDump(message)
@@ -346,7 +346,7 @@ Some synths do no work with individual MIDI messages per patch, or even multiple
 
 ### Requesting a full bank dump
 
-You guessed it by now, you need to create a MIDI message that will make the synth send us the requested bank. Here is an example for the Korg MS2000/microKorg, where the operation is called Program Data Dump Request. We can ignore the bank parameter here, as the MS2000 effectivly has only one bank:
+You guessed it by now, you need to create a MIDI message that will make the synth send us the requested bank. Here is an example for the Korg MS2000/microKorg, where the operation is called Program Data Dump Request. We can ignore the bank parameter here, as the MS2000 effectively has only one bank:
 
     def createBankDumpRequest(channel, bank):        
         return [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x1c, 0xf7]
@@ -421,7 +421,7 @@ and it should return a string. To implement a dummy function just return a fixed
 
 but for complex synths you will want to extract the real name. This actually can be more involved than it appears, because some synths might have some sysex escaping algorithm, needed because sysex data is 7 bits only but the synth might want to use 8 bits for the patch data, or because it uses a character set that is not the same as the ASCII set on the computer. The Access Virus is a good example for a custom character set.
 
-If you want to see some examples, I recommend to look at the implementation of the DSI Prophet 12, which also contains code to go from 7 bit packed sysex to 8 bit data, or the Matrix 6 Adaptation, which contains code to denibble data from 4 bit used to 8 bit data.
+If you want to see some examples, I recommend to look at the implementation of the DSI Prophet 12, which also contains code to go from 7 bit packed sysex to 8-bit data, or the Matrix 6 Adaptation, which contains code to denibble data from 4 bit used to 8-bit data.
 
 This is the code for the Matrix 6 `nameFromDump()`:
 
@@ -473,7 +473,7 @@ Some synths make naming hard. Mainly they fall into two categories:
 
 For category two, we can run into problems when reimporting already known patches, either because we reimport a sysex file by accident or the patches are retrieved again from the synth.
 
-When a patch is encountered again, the database tries to keep "the better name". By default it will just take the newer name. But if you have renamed a patch, you might want to keep the new name.
+When a patch is encountered again, the database tries to keep "the better name". By default, it will just take the newer name. But if you have renamed a patch, you might want to keep the new name.
 
 To teach the database logic what is a better name, you can implement the following function:
 
@@ -495,7 +495,7 @@ For case number 2, let's look at the implementation of this function for the Obe
             program = numberFromDump(message)            
             return "OB-8: %s" % friendlyProgramName(program)
 
-And this will produce strings like `OB8: AB9` or `OB8: ACD7`. Now to detect all of the possibly generated names and decide whether they are default or not becomes more complex, and we will use the regular expression library from Python to setup a general detector to decide if the name given was actually generated by the above function (needs an `import re` statement at the top of the file):
+And this will produce strings like `OB8: AB9` or `OB8: ACD7`. Now to detect all of the possibly generated names and decide whether they are default or not becomes more complex, and we will use the regular expression library from Python to set up a general detector to decide if the name given was actually generated by the above function (needs an `import re` statement at the top of the file):
 
     def isDefaultName(patchName):
         return re.match("OB-8: [A-D]*[1-8]", patchName) is not None
@@ -505,7 +505,7 @@ If this looks scary to you, then probably only because you have not used regular
 
 ## Better duplicate detection
 
-The Orm will by default check all bytes from the MIDI message for a patch to see if it has a duplicate in the database. But most often, not all bytes are relavant to check for duplicates. Much to the contrary, you probably want to prevent a duplicate from being created just because the patch data contains the program place or bank number, or just the name changed but the sound-relevant patch data is still the same.
+The Orm will by default check all bytes from the MIDI message for a patch to see if it has a duplicate in the database. But most often, not all bytes are relevant to check for duplicates. Much to the contrary, you probably want to prevent a duplicate from being created just because the patch data contains the program place or bank number, or just the name changed but the sound-relevant patch data is still the same.
 
 To enable better duplicate detection, you need to implement a single optional function that takes a patch MIDI message as input, and shall return a unique key calculated from the relevant bytes of the patch.
 
