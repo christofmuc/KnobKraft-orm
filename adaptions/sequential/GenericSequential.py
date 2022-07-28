@@ -33,7 +33,9 @@ class GenericSequential:
                  id_list=None,
                  blank_out_zones=None,
                  friendlyBankName=None,
-                 friendlyProgramName=None):
+                 friendlyProgramName=None,
+                 numberOfLayers=None,
+                 layerNameIndex=None):
         self.__id = device_id
         self.__name = name
         if id_list is None:
@@ -51,6 +53,8 @@ class GenericSequential:
             self.__blank_out_zones = blank_out_zones + [(name_position, name_len)]
         self.friendly_bank_name = friendlyBankName
         self.friendly_program_name = friendlyProgramName
+        self.number_of_layers = numberOfLayers
+        self.__layer_name_index = layerNameIndex
 
     def name(self):
         return self.__name
@@ -181,6 +185,28 @@ class GenericSequential:
             data[self.__name_position + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
         return message[:header_len] + self.escapeSysex(data) + [0xf7]
 
+    def numberOfLayers(self, messages):
+        return self.number_of_layers
+
+    def layerName(self, messages, layerNo):
+        dataBlock = self.getDataBlock(messages)
+        if len(dataBlock) > 0:
+            patchData = self.unescapeSysex(dataBlock)
+            layer_name = ''.join([chr(x) for x in patchData[
+                                                  self.__layer_name_index[layerNo][0]
+                                                  :self.__layer_name_index[layerNo][0]
+                                                   + self.__layer_name_index[layerNo][1]]]).strip()
+            return layer_name
+        return "Invalid"
+
+    def setLayerName(self, messages, layerNo, new_name):
+        # Just a variant of renamePatch()
+        header_len = self.headerLen(messages)
+        data = self.unescapeSysex(messages[header_len:-1])
+        for i in range(self.__layer_name_index[layerNo][1]):
+            data[self.__layer_name_index[layerNo][0] + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
+        return messages[:header_len] + self.escapeSysex(data) + [0xf7]
+
     def getDataBlock(self, message):
         return message[self.headerLen(message):-1]
 
@@ -249,3 +275,7 @@ class GenericSequential:
             setattr(module, 'friendlyBankName', self.friendlyBankName)
         if self.friendly_program_name is not None:
             setattr(module, 'friendlyProgramName', self.friendly_program_name)
+        if self.number_of_layers is not None:
+            setattr(module, 'numberOfLayers', self.numberOfLayers)
+            setattr(module, 'layerName', self.layerName)
+            setattr(module, 'setLayerName', self.setLayerName)

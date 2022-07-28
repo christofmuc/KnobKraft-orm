@@ -22,6 +22,8 @@ synth = sequential.GenericSequential(name="DSI Prophet 12",
                                      blank_out_zones=[(914, 20)],  # Make sure to blank out the layer B name as well
                                      friendlyBankName=lambda x: f"bank {x+1}",  # 1-based bank names
                                      friendlyProgramName=lambda x: f"bank {(x//99)+1} - {(x % 99)+1:02d}",  # 1-based program names with leading zero
+                                     numberOfLayers=2,
+                                     layerNameIndex=[(402, 20), (402+512, 20)]
                                      ).install(this_module)
 
 
@@ -45,3 +47,6 @@ if __name__ == "__main__":
                                                                          program_dump=messages[5],
                                                                          program_name='Wurly Trem ModWheel',
                                                                          number=5))
+    assert(this_module.layerName(messages[5], 1) == 'Electric Standard')
+    new_messages = this_module.setLayerName(messages[5], 1, 'changed layer')
+    assert(this_module.layerName(new_messages, 1) == 'changed layer')

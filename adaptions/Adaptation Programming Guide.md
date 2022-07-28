@@ -549,6 +549,31 @@ For example, the good old Korg DW8000 has 64 slots, but has banks 1 to 8 and in 
     def friendlyProgramName(program):
         return "%d%d" % (program // 8 + 1, (program % 8) + 1)
 
+## Exposing layers/splits of a patch
+
+Many synths have more than one "tone" or "layer", and some might even offer different layer modes like split or stack. And most will have more than one name for the while sound, e.g. many DSI synths have layers and will actually not name the whole patch, but rather each layer individually.
+
+To expose this information, there is a capability called "LayeredPatchCapability", and in order to utilize this we must implement at least two functions:
+
+    def numberOfLayers(messages):
+
+inspect the patch/data given, and return the number of layers in it. Most often than not, this is not dynamic but rather a fixed architecture of the synth. So the implementation for the DSI Prophet 12 would look like this:
+
+    def numberOfLayers(messages):
+        return 2
+
+Secondly, you need to implement the function that returns the name of a given layer (numbered starting with layer 0):
+
+    def layerName(messages, layerNo):
+
+Again, process the message(s) given and return a string with the layer name.
+
+Optionally, if you want to allow the user to change a layer name, implement the function to set the layer's name like this:
+
+    def setLayerName(self, messages, layerNo, new_name):
+
+This work like renamePatch, just with the added layerNo parameter.
+
 ## Leaving helpful setup information specific for a synth
 
 Especially some of our more vintage synths require some preset done, sometimes after every power on, before they can be accessed by the KnobKraft Orm. You can implement the following optional function to return a text displayed to the user in the synth's settings tab:

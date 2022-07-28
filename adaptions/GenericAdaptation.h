@@ -28,7 +28,11 @@ namespace knobkraft {
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
-		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
+		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,
+		*kNumberOfLayers,
+		*kLayerName,
+		*kSetLayerName
+		;
 
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
