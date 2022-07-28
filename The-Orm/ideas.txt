@@ -148,6 +148,7 @@ BCR2000
 Adaptation Tab
 + Could watch files and hot reload module when changed on disk (for easier development) https://github.com/FigBug/Gin
 + Could add python editor with hot reload function -> RATHER, launch editor. And if internal, ask if to break out
++ Doesn't show which of the patch capabilities are implemented, because it cannot create a generic patch for an adaptatation to query...
 
 Generic Module/Adaptations
 + Add missing capabilities: StreamLoadCapability (RefaceDX, Matrix1000, BCR2000), DataFileLoadCapability, HandshakeLoadingCapability (MKS80)  
