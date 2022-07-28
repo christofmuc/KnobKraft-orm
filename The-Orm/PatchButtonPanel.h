@@ -46,6 +46,7 @@ public:
 
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
+	void refreshGridSize();
 
 	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
 	File findPrehearFile(midikraft::PatchHolder const &patch);
@@ -63,7 +64,10 @@ private:
 	TextButton pageUp_, pageDown_;
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
-	Slider gridSizeSlider_;
+	Label sliderXLabel_;
+	Slider gridSizeSliderX_;
+	Label sliderYLabel_;
+	Slider gridSizeSliderY_;
 	int pageBase_;
 	int pageNumber_;
 	int gridWidth_, gridHeight_;
