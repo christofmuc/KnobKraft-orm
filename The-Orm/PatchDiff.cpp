@@ -16,7 +16,15 @@
 
 #include <algorithm>
 #include <boost/format.hpp>
+// Turn off warning on unknown pragmas for VC++
+#pragma warning(push)
+#pragma warning(disable: 4068)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "dtl/dtl.hpp"
+#pragma GCC diagnostic pop
+#pragma warning(pop)
+
 
 class DiffTokenizer : public CodeTokeniser {
 public:

@@ -16,25 +16,56 @@
 #include <boost/format.hpp>
 #include <algorithm>
 
+namespace {
+
+	enum class SliderAxis {
+		X_AXIS, Y_AXIS
+	};
+
+	std::string settingName(SliderAxis axis)
+	{
+		if (UIModel::instance()->currentSynth() == nullptr || (UIModel::instance()->multiMode_.multiSynthMode())) {
+			return std::string("gridSizeSlider") + (axis == SliderAxis::Y_AXIS ? "Y" : "X"); 
+		}
+		else {
+			return UIModel::currentSynth()->getName() + "-gridSizeSlider" + (axis == SliderAxis::Y_AXIS ? "Y" : "X");
+		}
+	}
+}
+
 PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
 	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
-	gridSizeSlider_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
-	gridSizeSlider_.setRange(4.0, 8.0, 1.0);
+	gridSizeSliderX_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
+	gridSizeSliderX_.setRange(4.0, 10.0, 1.0);
+	gridSizeSliderY_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
+	gridSizeSliderY_.setRange(4.0, 10.0, 1.0);
+	gridWidth_ = 8;
+	gridHeight_ = 8;
+	gridSizeSliderX_.setValue(8.0, dontSendNotification);
+	gridSizeSliderY_.setValue(8.0, dontSendNotification);
 
 	// Load the last size of the slider position
-	auto storedSlider = Settings::instance().get("gridSizeSlider", "8");
-	int slider = atoi(storedSlider.c_str());
-	if (slider != 0) {
-		gridWidth_ = gridHeight_ = slider;
-		gridSizeSlider_.setValue(slider, dontSendNotification);
-	}
-	else {
-		gridWidth_ = 8;
-		gridHeight_ = 8; 
-		gridSizeSlider_.setValue(8.0, dontSendNotification);
+	if (UIModel::currentSynth()) {
+		auto sliderX = Settings::instance().get(settingName(SliderAxis::X_AXIS), 8);
+		auto sliderY = Settings::instance().get(settingName(SliderAxis::Y_AXIS), 8);
+		if (sliderX != 0) {
+			gridWidth_ = sliderX;
+			gridSizeSliderX_.setValue(sliderX, dontSendNotification);
+		}
+		if (sliderY != 0) {
+			gridHeight_ = sliderY;
+			gridSizeSliderY_.setValue(sliderY, dontSendNotification);
+		}
 	}
 	pageSize_ = gridWidth_ * gridHeight_;
+
+	sliderXLabel_.setText("X", dontSendNotification);
+	addAndMakeVisible(sliderXLabel_);
+	sliderXLabel_.attachToComponent(&gridSizeSliderX_, true);
+	sliderYLabel_.setText("Y", dontSendNotification);
+	addAndMakeVisible(sliderYLabel_);
+	sliderYLabel_.attachToComponent(&gridSizeSliderY_, true);
 
 	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index); });
 	addAndMakeVisible(patchButtons_.get());
@@ -46,12 +77,22 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	pageDown_.setButtonText("<");
 	pageDown_.addListener(this);
 
-	gridSizeSlider_.onValueChange = [this]() {
-		int newX = (int) gridSizeSlider_.getValue();
-		Settings::instance().set("gridSizeSlider", String(newX).toStdString());
-		this->changeGridSize(newX, newX);		
+	gridSizeSliderX_.onValueChange = [this]() {
+		int newX = (int) gridSizeSliderX_.getValue();
+		if (UIModel::currentSynth()) {
+			Settings::instance().set(settingName(SliderAxis::X_AXIS), String(newX).toStdString());
+		}
+		this->changeGridSize(newX, gridHeight_);
 	};
-	addAndMakeVisible(gridSizeSlider_);
+	gridSizeSliderY_.onValueChange = [this]() {
+		int newY = (int)gridSizeSliderY_.getValue();
+		if (UIModel::currentSynth()) {
+			Settings::instance().set(settingName(SliderAxis::Y_AXIS), String(newY).toStdString());
+		}
+		this->changeGridSize(gridWidth_, newY);
+	};
+	addAndMakeVisible(gridSizeSliderX_);
+	addAndMakeVisible(gridSizeSliderY_);
 
 	for (int i = 0; i < 2; i++) {
 		auto e = new Label();
@@ -73,11 +114,30 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 		pageNumbers_.add(std::move(b));
 	}
 
+	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->thumbnails_.addChangeListener(this);
+	UIModel::instance()->multiMode_.addChangeListener(this);
 }
 
-PatchButtonPanel::~PatchButtonPanel() {
+PatchButtonPanel::~PatchButtonPanel()
+{
+	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	UIModel::instance()->thumbnails_.removeChangeListener(this);
+	UIModel::instance()->multiMode_.removeChangeListener(this);
+}
+
+void PatchButtonPanel::refreshGridSize()
+{
+	if (UIModel::currentSynth()) {
+		int newX = Settings::instance().get(settingName(SliderAxis::X_AXIS), 8);
+		int newY = Settings::instance().get(settingName(SliderAxis::Y_AXIS), 8);
+		changeGridSize(newX, newY);
+		gridSizeSliderX_.setValue(newX, dontSendNotification);
+		gridSizeSliderY_.setValue(newY, dontSendNotification);
+	}
+	else {
+		changeGridSize(8, 8);
+	}
 }
 
 void PatchButtonPanel::setPatchLoader(TPageLoader pageGetter)
@@ -143,7 +203,7 @@ void PatchButtonPanel::setupPageButtons() {
 	}
 	// Any more buttons unused?
 	for (int i = 0; i < maxPageButtons_; i++) {
-		if (i >= pageButtonMap_.size()) {
+		if (static_cast<size_t>(i) >= pageButtonMap_.size()) {
 			pageNumbers_[i]->setVisible(false);
 		}
 	}
@@ -216,9 +276,9 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 
 	// Now set the button text and colors
 	int active = indexOfActive();
-	for (int i = 0; i < (int) std::max(patchButtons_->size(), patches_.size()); i++) {
+	for (size_t i = 0; i < std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
-			auto button = patchButtons_->buttonWithIndex(i);
+			auto button = patchButtons_->buttonWithIndex((int) i);
 			if (i < patches_.size() && patches_[i].patch() && patches_[i].synth()) {
 				auto displayMode = PatchHolderButton::getCurrentInfoForSynth(patches_[i].synth()->getName());
 				if (multiSynthMode) {
@@ -227,7 +287,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 						);
 				}
 				button->setPatchHolder(&patches_[i], i == active, displayMode);
-				refreshThumbnail(i);
+				refreshThumbnail((int)i);
 			}
 			else {
 				button->setPatchHolder(nullptr, false, PatchButtonInfo::CenterName);
@@ -258,7 +318,8 @@ void PatchButtonPanel::resized()
 		}
 	}
 	pageNumberBox.performLayout(pageNumberStrip);
-	gridSizeSlider_.setBounds(pageNumberStrip.removeFromRight(LAYOUT_BUTTON_WIDTH));
+	gridSizeSliderY_.setBounds(pageNumberStrip.removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));
+	gridSizeSliderX_.setBounds(pageNumberStrip.withTrimmedRight(LAYOUT_SMALL_ICON_WIDTH).removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));
 
 	pageDown_.setBounds(area.removeFromLeft(LAYOUT_SMALL_ICON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
 	pageUp_.setBounds(area.removeFromRight(LAYOUT_SMALL_ICON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
@@ -318,10 +379,14 @@ void PatchButtonPanel::jumpToPage(int pagenumber) {
 
 void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-	// Some Thumbnail has changed, most likely it is visible...
-	for (int i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
-		refreshThumbnail(i);
+	if (source == &UIModel::instance()->thumbnails_) {
+		// Some Thumbnail has changed, most likely it is visible...
+		for (int i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
+			refreshThumbnail(i);
+		}
+	}
+	else if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->multiMode_) {
+		refreshGridSize();
 	}
 }
 

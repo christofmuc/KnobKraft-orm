@@ -42,7 +42,7 @@ public:
 	CurrentPatchDisplay(midikraft::PatchDatabase &database,
 		std::vector<CategoryButtons::Category>  categories, 
 		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler);
-	virtual ~CurrentPatchDisplay();
+	virtual ~CurrentPatchDisplay() override;
 
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> onCurrentPatchClicked;
 

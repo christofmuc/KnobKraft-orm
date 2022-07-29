@@ -21,7 +21,7 @@ public:
 	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
 
 	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler);
-	virtual ~PatchButtonPanel();
+	virtual ~PatchButtonPanel() override;
 
 	void setPatchLoader(TPageLoader pageGetter);
 	void setTotalCount(int totalCount);
@@ -46,6 +46,7 @@ public:
 
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
+	void refreshGridSize();
 
 	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
 	File findPrehearFile(midikraft::PatchHolder const &patch);
@@ -63,7 +64,10 @@ private:
 	TextButton pageUp_, pageDown_;
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
-	Slider gridSizeSlider_;
+	Label sliderXLabel_;
+	Slider gridSizeSliderX_;
+	Label sliderYLabel_;
+	Slider gridSizeSliderY_;
 	int pageBase_;
 	int pageNumber_;
 	int gridWidth_, gridHeight_;

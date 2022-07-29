@@ -19,7 +19,7 @@ public:
 	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
 
 	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
-	virtual ~PatchListTree();
+	virtual ~PatchListTree() override;
 
 	TSelectionHandler onImportListSelected;
 	TBankSelectionHandler onSynthBankSelected;
@@ -28,7 +28,7 @@ public:
 
 	TPatchSelectionHandler onPatchSelected;
 
-	virtual void resized();
+	virtual void resized() override;
 
 	void refreshAllUserLists();
 	void refreshUserList(std::string list_id);

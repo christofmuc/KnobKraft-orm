@@ -18,7 +18,7 @@ public:
 	typedef std::function<void(std::vector<MidiBankNumber> bankNo)> TSuccessHandler;
 
 	ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk);
-	virtual ~ImportFromSynthDialog() = default;
+	virtual ~ImportFromSynthDialog() override = default;
 
 	void resized() override;
 	void buttonClicked(Button*) override;

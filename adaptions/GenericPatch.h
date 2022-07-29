@@ -12,6 +12,7 @@
 
 #include "Capability.h"
 #include "StoredPatchNameCapability.h"
+#include "LayeredPatchCapability.h"
 
 #include <pybind11/embed.h>
 
@@ -41,8 +42,22 @@ namespace knobkraft {
 		std::weak_ptr<GenericPatch> me_;
 	};
 
+	class GenericLayeredPatchCapability : public midikraft::LayeredPatchCapability {
+	public:
+		GenericLayeredPatchCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
+
+		virtual LayerMode layerMode() const override;
+		virtual int numberOfLayers() const override;
+		virtual std::string layerName(int layerNo) const override;
+		virtual void setLayerName(int layerNo, std::string const& layerName) override;
+
+	private:
+		std::weak_ptr<GenericPatch> me_;
+	};
+
 	class GenericPatch : public midikraft::DataFile, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
 		, public midikraft::RuntimeCapability<midikraft::DefaultNameCapability>
+		, public midikraft::RuntimeCapability<midikraft::LayeredPatchCapability>
 		, public std::enable_shared_from_this<GenericPatch>
 	{
 	public:
@@ -96,10 +111,13 @@ namespace knobkraft {
 		bool hasCapability(midikraft::StoredPatchNameCapability **outCapability) const override;
 		bool hasCapability(std::shared_ptr<midikraft::DefaultNameCapability> &outCapability) const override;
 		bool hasCapability(midikraft::DefaultNameCapability **outCapability) const override;
+		bool hasCapability(std::shared_ptr<midikraft::LayeredPatchCapability>& outCapability) const override;
+		bool hasCapability(midikraft::LayeredPatchCapability** outCapability) const override;
 
 	private:
 		std::shared_ptr<GenericStoredPatchNameCapability> genericStoredPatchNameCapabilityImpl_;
 		std::shared_ptr<GenericDefaultNameCapability> genericDefaultNameCapabilityImp_;
+		std::shared_ptr<GenericLayeredPatchCapability> genericLayeredPatchCapabilityImpl_;
 
 		GenericAdaptation const *me_;
 		pybind11::module &adaptation_;

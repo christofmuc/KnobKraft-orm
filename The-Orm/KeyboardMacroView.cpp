@@ -30,7 +30,7 @@ public:
 	{
 	}
 
-	virtual ~RecordProgress() {
+	virtual ~RecordProgress() override {
 		state_.removeListener(this);
 	}
 

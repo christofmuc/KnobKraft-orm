@@ -50,7 +50,7 @@ public:
 		SimpleLogger::instance()->postMessage("Changed name of import to " + value.getValue().toString());
 		String newValue = value.getValue();
 		db_.renameImport(importID_, newValue.toStdString());
-	};
+	}
 
 private:
 	midikraft::PatchDatabase& db_;
@@ -328,7 +328,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		if (onUserListSelected)
 			onUserListSelected(list.id);
 	};
-	node->acceptsItem = [this, list](juce::var dropItem) {
+	node->acceptsItem = [list](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 		return midikraft::PatchHolder::dragItemIsPatch(infos);
@@ -380,17 +380,17 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		std::string oldname = node->text().toStdString();
 		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()),
 			TopLevelWindow::getActiveTopLevelWindow(),
-			[this, oldname](std::shared_ptr<midikraft::PatchList> list) {
-			jassert(list);
-			if (list) {
-				db_.putPatchList(list);
-				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % list->name()).str());
+			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list) {
+			jassert(new_list);
+			if (new_list) {
+				db_.putPatchList(new_list);
+				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
 				regenerateUserLists();
 			}
-		}, [this](std::shared_ptr<midikraft::PatchList> list) {
-			if (list) {
-				db_.deletePatchlist(midikraft::ListInfo({ list->id(), list->name() }));
-				SimpleLogger::instance()->postMessage("Deleted list " + list->name());
+		}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
+			if (new_list) {
+				db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
+				SimpleLogger::instance()->postMessage("Deleted list " + new_list->name());
 				regenerateUserLists();
 			}
 		});

@@ -57,9 +57,19 @@ class IsProgramDumpTest(AdaptationTestBase):
         data = self.synth.calculateFingerprint(self.program_dump)
 
 
+class NumberTest(AdaptationTestBase):
+    def __init__(self, synth, program_dump, number):
+        super().__init__(synth)
+        self.program_dump = program_dump
+        self.number = number
+
+    def runTest(self):
+        self.assertEqual(self.synth.numberFromDump(self.program_dump), self.number)
+
+
 # This is needed to dynamically create the test cases as we parametrize them with the module to test and
 # additional data like an example patch
-def create_tests(synth, program_dump=None, program_name=None):
+def create_tests(synth, program_dump=None, program_name=None, number=None):
     suite = unittest.TestSuite()
     suite.addTest(NameTest(synth))
     if hasattr(synth, "nameFromDump") and program_dump is not None and program_name is not None:
@@ -68,6 +78,8 @@ def create_tests(synth, program_dump=None, program_name=None):
         suite.addTest(RenameTest(synth, program_dump))
     if hasattr(synth, "isSingleProgramDump") and program_dump is not None:
         suite.addTest(IsProgramDumpTest(synth, program_dump))
+    if hasattr(synth, "numberFromDump"):
+        suite.addTest(NumberTest(synth, program_dump, number))
     return suite
 
 

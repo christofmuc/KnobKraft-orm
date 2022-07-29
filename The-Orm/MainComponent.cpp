@@ -175,7 +175,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
-		{3, { "Categories", { { "Edit auto-categories" }, { "Edit category import mapping" },  { "Rerun auto categorize" } } } },
+		{3, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
 #ifndef _DEBUG
@@ -195,18 +195,19 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		window.runThread();
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
-		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
-		// This will create the file on demand, copying out the built-in information!
+		{ "Edit categories", { "Edit categories", [this]() {
 		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
 			database_->updateCategories(newDefinitions);
 			automaticCategories_ = database_->getCategorizer(); // Need to reload the automatic Categories!
 			UIModel::instance()->categoriesChanged.sendChangeMessage();
 		});
-		/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-			automaticCategories_->getAutoCategoryFile().revealToUser();
-		}*/
 	} } },
-	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
+		{ "Show category naming rules file", { "Show category naming rules file", [this]() {
+		// This will create the file on demand, copying out the built-in information!
+		if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			automaticCategories_->getAutoCategoryFile().revealToUser();
+		}
+	} } },	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
 		// This will create the file on demand, copying out the built-in information!
 		if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
 			automaticCategories_->getAutoCategoryMappingFile().revealToUser();
@@ -267,7 +268,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				std::stringstream buffer;
 				buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
 				bool first = true;
-				auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
+				auto messages = patch.synth()->dataFileToSysex(patch.patch(), nullptr);
 				for (const auto& m : messages) {
 					for (int i = 0; i < m.getRawDataSize(); i++) {
 						if (!first) {
@@ -313,7 +314,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(*database_, synths, automaticCategories_);
+	patchView_ = std::make_unique<PatchView>(*database_, synths);
 	//patchView_ = std::make_unique<PatchView>(commandManager_, *database_, synths, automaticCategories_);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
@@ -735,7 +736,7 @@ void MainComponent::resized()
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
 
-	if (!UIModel::instance()->synthList_.activeSynths().empty()) {
+	if (UIModel::instance()->synthList_.activeSynths().size() > 1) {
 		auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
 			.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 		synthList_.setBounds(secondTopRow);
@@ -743,7 +744,7 @@ void MainComponent::resized()
 	}
 	else {
                 //TODO - one synth needs to be implemented differently.
-		// Less than one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
+		// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
 	splitter_->setBounds(area);

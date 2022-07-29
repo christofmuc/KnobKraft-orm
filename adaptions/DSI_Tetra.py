@@ -13,10 +13,12 @@ this_module = sys.modules[__name__]
 #
 sequential.GenericSequential(name="DSI Tetra",
                              device_id=0b00100110,
-                             banks=2,
+                             banks=4,
                              patches_per_bank=128,
                              name_position=184,
-                             name_len=16
+                             name_len=16,
+                             friendlyBankName=lambda x: f"bank {x+1}",
+                             friendlyProgramName=lambda x: f"bank {(x//128)+1} - {(x%128)+1}"
                              ).install(this_module)
 
 #

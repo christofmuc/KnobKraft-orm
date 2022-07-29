@@ -25,7 +25,7 @@ class SetupView : public Component,
 {
 public:
 	SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/);
-	virtual ~SetupView();
+	virtual ~SetupView() override;
 
 	virtual void resized() override;
 	

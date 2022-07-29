@@ -30,7 +30,7 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 		auto dragInfo = holder->createDragInfoString();
 		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::CenterMask))) {
 		case PatchButtonInfo::CenterLayers: {
-			auto layers = std::dynamic_pointer_cast<midikraft::LayeredPatchCapability>(holder->patch());
+			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(holder->patch());
 			if (layers) {
 				if (layers->layerName(0) != layers->layerName(1)) {
 					setButtonData(layers->layerName(0), layers->layerName(1), dragInfo);

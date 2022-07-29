@@ -31,7 +31,11 @@ class GenericSequential:
                  name_position=0,
                  file_version=None,
                  id_list=None,
-                 blank_out_zones=None):
+                 blank_out_zones=None,
+                 friendlyBankName=None,
+                 friendlyProgramName=None,
+                 numberOfLayers=None,
+                 layerNameIndex=None):
         self.__id = device_id
         self.__name = name
         if id_list is None:
@@ -47,6 +51,10 @@ class GenericSequential:
             self.__blank_out_zones = [(name_position, name_len)]
         else:
             self.__blank_out_zones = blank_out_zones + [(name_position, name_len)]
+        self.friendly_bank_name = friendlyBankName
+        self.friendly_program_name = friendlyProgramName
+        self.number_of_layers = numberOfLayers
+        self.__layer_name_index = layerNameIndex
 
     def name(self):
         return self.__name
@@ -133,6 +141,13 @@ class GenericSequential:
             return layer_a_name
         return "Invalid"
 
+    def numberFromDump(self, message):
+        if self.isEditBufferDump(message):
+            return 0
+        elif self.isSingleProgramDump(message):
+            return message[4 + self.extraOffset()] * self.numberOfPatchesPerBank() + message[5 + self.extraOffset()]
+        raise "Data is neither edit buffer nor program dump, can't extract number"
+
     def convertToEditBuffer(self, channel, message):
         if self.isEditBufferDump(message):
             return message
@@ -150,6 +165,11 @@ class GenericSequential:
             return message[0:3 + self.extraOffset()] + [0b00000010] + [bank, program] + message[6 + self.extraOffset():]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
+    def friendlyBankName(self, bank):
+        if self.friendly_bank_name is not None:
+            return self.friendly_bank_name(bank)
+        raise Exception("Program error - friendlyBankName not defined but code reached in GenericSequential module!")
+
     def calculateFingerprint(self, message):
         raw = self.getDataBlock(message)
         data = self.unescapeSysex(raw)
@@ -164,6 +184,28 @@ class GenericSequential:
         for i in range(self.__name_len):
             data[self.__name_position + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
         return message[:header_len] + self.escapeSysex(data) + [0xf7]
+
+    def numberOfLayers(self, messages):
+        return self.number_of_layers
+
+    def layerName(self, messages, layerNo):
+        dataBlock = self.getDataBlock(messages)
+        if len(dataBlock) > 0:
+            patchData = self.unescapeSysex(dataBlock)
+            layer_name = ''.join([chr(x) for x in patchData[
+                                                  self.__layer_name_index[layerNo][0]
+                                                  :self.__layer_name_index[layerNo][0]
+                                                   + self.__layer_name_index[layerNo][1]]]).strip()
+            return layer_name
+        return "Invalid"
+
+    def setLayerName(self, messages, layerNo, new_name):
+        # Just a variant of renamePatch()
+        header_len = self.headerLen(messages)
+        data = self.unescapeSysex(messages[header_len:-1])
+        for i in range(self.__layer_name_index[layerNo][1]):
+            data[self.__layer_name_index[layerNo][0] + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
+        return messages[:header_len] + self.escapeSysex(data) + [0xf7]
 
     def getDataBlock(self, message):
         return message[self.headerLen(message):-1]
@@ -224,8 +266,16 @@ class GenericSequential:
         setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
         setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
         setattr(module, 'nameFromDump', self.nameFromDump)
+        setattr(module, 'numberFromDump', self.numberFromDump)
         setattr(module, 'convertToEditBuffer', self.convertToEditBuffer)
         setattr(module, 'convertToProgramDump', self.convertToProgramDump)
         setattr(module, 'calculateFingerprint', self.calculateFingerprint)
         setattr(module, 'renamePatch', self.renamePatch)
-
+        if self.friendly_bank_name is not None:
+            setattr(module, 'friendlyBankName', self.friendlyBankName)
+        if self.friendly_program_name is not None:
+            setattr(module, 'friendlyProgramName', self.friendly_program_name)
+        if self.number_of_layers is not None:
+            setattr(module, 'numberOfLayers', self.numberOfLayers)
+            setattr(module, 'layerName', self.layerName)
+            setattr(module, 'setLayerName', self.setLayerName)
