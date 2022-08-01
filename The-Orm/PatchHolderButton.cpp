@@ -21,6 +21,49 @@ Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Co
 	return color;
 }
 
+PatchHolderButton::PatchHolderButton(int id, bool isToggle, std::function<void(int)> clickHandler) : PatchButtonWithDropTarget(id, isToggle, clickHandler)
+	, isDirty_(false)
+{
+}
+
+void PatchHolderButton::setDirty(bool isDirty)
+{
+	isDirty_ = isDirty;
+	setGlow(false);
+}
+
+
+void PatchHolderButton::setGlow(bool shouldGlow)
+{
+	if (shouldGlow) {
+		// The drop indication colour overrides the isDirty background
+		glow.setGlowProperties(4.0, Colours::gold.withAlpha(0.5f));
+		setComponentEffect(&glow);
+	}
+	else {
+		if (isDirty_) {
+			glow.setGlowProperties(4.0, Colours::darkred);
+			setComponentEffect(&glow);
+		}
+		else {
+			// Neither
+			setComponentEffect(nullptr);
+		}
+	}
+	repaint();
+}
+
+void PatchHolderButton::itemDragEnter(const SourceDetails& dragSourceDetails)
+{
+	setGlow(acceptsItem(dragSourceDetails.description));
+}
+
+void PatchHolderButton::itemDragExit(const SourceDetails& dragSourceDetails)
+{
+	ignoreUnused(dragSourceDetails);
+	setGlow(false);
+}
+
 void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool active, PatchButtonInfo info)
 {
 	setActive(active);

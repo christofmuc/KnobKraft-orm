@@ -23,7 +23,7 @@ public:
 			button_->setBounds(area);
 	}
 
-	void setRow(int rowNo, midikraft::PatchHolder const &patch, PatchButtonInfo info) {
+	void setRow(int rowNo, midikraft::PatchHolder const &patch, bool dirty, PatchButtonInfo info) {
 		// This changes the row to be displayed with this component (reusing components within a list box)
 		if (!button_) {
 			button_ = std::make_unique<PatchHolderButton>(rowNo, false, clickHandler_);
@@ -52,6 +52,7 @@ public:
 		}
 		thePatch_ = patch; // Need a copy to keep the pointer alive
 		button_->setPatchHolder(&thePatch_, false, info);
+		button_->setDirty(dirty);
 	}
 
 	void clearRow() {
@@ -97,13 +98,13 @@ public:
 			if (existingComponentToUpdate) {
 				auto existing = dynamic_cast<PatchButtonRow*>(existingComponentToUpdate);
 				if (existing) {
-					existing->setRow(rowNumber, bank_->patches()[rowNumber], info_);
+					existing->setRow(rowNumber, bank_->patches()[rowNumber], bank_->isPositionDirty(rowNumber), info_);
 					return existing;
 				}
 				throw std::runtime_error("This was not the correct row type, can't continue");
 			}
 			auto newComponent = new PatchButtonRow(onRowSelected_, patchChangeHandler_);
-			newComponent->setRow(rowNumber, bank_->patches()[rowNumber], info_);
+			newComponent->setRow(rowNumber, bank_->patches()[rowNumber], bank_->isPositionDirty(rowNumber), info_);
 			return newComponent;
 		}
 		else {
