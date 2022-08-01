@@ -3,59 +3,54 @@
 
 Carry over:
 * Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
-* Would expect to choose sort order of patches in grid
 * Could do better layer switch
 
 Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
-1.15.0 (Meta data)
-Selector for display on patch button (combo box upper right)
-better attribute entry for patch name
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
+Release 2.0
+* Add Bank Management
 
 BANK MANAGEMENT
 * Clicking the button should select the patch, as usual
-* Has send button to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
+* Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Has send button to send full bank into synth (or just delta?). 
 * Bug - Bank lists should not be shown in user lists.
 * Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
-* Can drag a list into the bank to put in multiple patches at the same time - filtered for the synth, of course.
-* Drop should highlight which parts of the bank will accept
-* Highlight button to show which ones are dirty
-* What should happen when you click on "In Synth"?
 * Needs to have concept of ROM banks. 
-* Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
-
-* Click on a button would not send to edit buffer, but just a bank select/program change message. 
-
-* Can drag bank into user lists to create a user list from a bank!
-* Should a click on the In Synth button toggle the download? I guess so
-* The Normal download should then go away?
+* Dirty banks should not be deleted by just changing the view... want to come back to them
+* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
+* Need window management of Bank window. Close/hide button when no longer needed.
 * Bug: After import, the new bank is not selected in the tree.
 * Bug: The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
-* Need window management of Bank window. Close/hide button when no longer needed.
 * Never synced banks should be red coloured in the tree
+
+BANKS IMPROVEMENT
+* This should also allow for requesting single patches from the synth,
+* What should happen when you click on "In Synth"?
+* Can drag a list into the bank to put in multiple patches at the same time - filtered for the synth, of course.
+* Drop should highlight which parts of the bank will accept - for multidrags also multiple positions
+* Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
+* Can drag bank into user lists to create a user list from a bank!
+* The Normal download button should then go away? But then have no download all banks. It certainly needs to be synced somehow
+
 
 Layer logic
 - need pretty layer names!
 
-1.15.0 (Meta data)
+Idea:
 History stack!
 
 Retry logic - the OB-6 and Rev2 seem to be pretty unstable now?
 
-Selector for display on patch button (combo box upper right)
-better attribute entry for patch name
-* Better patch name display - the Rev2 patch names are too long. Make it two rows anyway (with two layers?). Switchable, Choice of storage place 
-
 More ideas
 * migrate imports into lists
 * migrate categories into a m:n relationship
+
 Inspiration:
 	Surf! Auto-Surf! Dive!
 
 	AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
 	AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
-
 
 Better marketing
 * Should setup github project page
@@ -74,21 +69,19 @@ Before 2.0
 * Need easy clear filter button
 * SINGLE SYNTH SETUP MODE
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
-	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
+	* Half done: The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth !!!
 
 LISTS upgrades:
-* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
+* Reorder patches in a list - needs dragging within the grid! With insert position indicator...
 * Add lists to PIF export
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 	 Stored filters could be single or multi-synth
-* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
+* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where? Load the list into the bank window?
+* Create a list of the currently loaded patches in all synths (store in list)
 * List folders / lists of lists?
-
-Release 2.0
-* Add Bank Management
 
 BUGS
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
@@ -103,7 +96,6 @@ User questions
 UI/UX
 * Different log levels with error colors
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
-* Edit field should be focused of Change Patch Name box
 * The current patch per synth could be hidable
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
 
