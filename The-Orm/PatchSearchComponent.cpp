@@ -158,7 +158,7 @@ void PatchSearchComponent::resized()
 	Rectangle<int> area(getLocalBounds());
 
 	// The left part with the search box gets 25% of the screen
-	int leftPart = 0; //area.getWidth() / 4;
+	int leftPart = area.getWidth() / 4;
 
 	// Determine the reserved place for the filter
 	auto sortAndDisplayTypeWidth = LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL;
@@ -187,8 +187,8 @@ void PatchSearchComponent::resized()
 
 	int normalFilterHeight = (int) flexBoxSize.getHeight() + categoryFilters_.getHeight();
 
-	//auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
-	//textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
+	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
+	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
 
 	buttonDisplayType_.setBounds(sortAndDisplayTypeArea.removeFromTop(normalFilterHeight).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 
