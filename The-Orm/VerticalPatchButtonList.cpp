@@ -19,8 +19,9 @@ public:
 
 	virtual void resized() override {
 		auto area = getLocalBounds();
-		if (button_)
+		if (button_) {
 			button_->setBounds(area);
+		}
 	}
 
 	void setRow(int rowNo, midikraft::PatchHolder const &patch, bool dirty, PatchButtonInfo info) {
