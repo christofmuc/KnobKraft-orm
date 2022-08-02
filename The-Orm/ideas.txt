@@ -11,8 +11,6 @@ Release 2.0
 * Add Bank Management
 
 BANK MANAGEMENT
-* Clicking the button should select the patch, as usual
-* Click on a button would not send to edit buffer, but just a bank select/program change message. 
 * Has send button to send full bank into synth (or just delta?). 
 * Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
 * Needs to have concept of ROM banks. 
@@ -21,8 +19,9 @@ BANK MANAGEMENT
 * Need window management of Bank window. Close/hide button when no longer needed.
 * Bug: After import, the new bank is not selected in the tree.
 * Bug: The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
-* Bug: Dropping a patch on itself sets the dirty flag...
 * Never synced banks should be red coloured in the tree
+* Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Clicking the button should select the patch, as usual
 
 BANKS IMPROVEMENT
 * This should also allow for requesting single patches from the synth,
