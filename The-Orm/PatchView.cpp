@@ -292,25 +292,21 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 		}
 
 		// Load the bank info from the database as well for the timestamp
-		auto lists = database_.allPatchLists();
-		auto found = false;
-		for (auto& list : lists) {
-			if (list.id == bankId) {
-				std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
-				synths[synth->getName()] = synth;
-				auto fullInfo = database_.getPatchList(list, synths);
-				auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
-				if (bankList) {
-					UIModel::instance()->synthBank.setSynthBank(bankList);
-					//TODO could be transported via UIModel?
-					synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
-					found = true;
-				} 
-				break;
-			}
+		std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+		synths[synth->getName()] = synth;
+		midikraft::ListInfo info;
+		info.id = bankId; 
+		info.name = ""; // Don't care for the name
+		auto fullInfo = database_.getPatchList(info, synths);
+		if (fullInfo) {
+			auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
+			if (bankList) {
+				UIModel::instance()->synthBank.setSynthBank(bankList);
+				//TODO could be transported via UIModel?
+				synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
+			} 
 		}
-
-		if (!found) {
+		else {
 			SimpleLogger::instance()->postMessage("Program Error: Invalid synth bank, not stored in database. Can't load into panel");
 			return;
 		}
