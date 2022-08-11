@@ -118,7 +118,7 @@ namespace midikraft {
 		}
 	};
 
-	std::vector<Range<int>> kOB6BlankOutZones = {
+	std::vector<Range<size_t>> kOB6BlankOutZones = {
 		{ 107, 127 }, // 20 Characters for the name
 	};
 
