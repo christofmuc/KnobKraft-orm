@@ -30,12 +30,12 @@ public:
 	MidiChannelPropertyEditorWithOldDevices(std::string const &title, std::string const &sectionName, bool inputInsteadOutput) : MidiDevicePropertyEditor(title, sectionName, inputInsteadOutput) {
 		if (inputInsteadOutput) {
 			auto set = midikraft::MidiController::instance()->currentInputs(true);
-			std::vector<std::string> list(set.begin(), set.end());
+			std::vector<juce::MidiDeviceInfo> list(set.begin(), set.end());
 			refreshDropdownList(list);
 		}
 		else {
 			auto set = midikraft::MidiController::instance()->currentOutputs(true);
-			std::vector<std::string> list(set.begin(), set.end());
+			std::vector<juce::MidiDeviceInfo> list(set.begin(), set.end());
 			refreshDropdownList(list);
 		}
 	}
@@ -174,9 +174,9 @@ void SetupView::refreshData() {
 		// Load
 		midikraft::AutoDetection::loadSettings(synth.device().get());
 		// Set output, input, and channel
-		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput().identifier.toStdString()));
 		prop++;
-		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiInput()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiInput().identifier.toStdString()));
 		prop++;
 		if (!synth.device()->channel().isValid()) {
 			setValueWithoutListeners(properties_[prop++]->value(), 18);
@@ -214,10 +214,10 @@ void SetupView::valueChanged(Value& value)
 			auto synthFound = UIModel::instance()->synthList_.synthByName(prop->sectionName().toStdString());
 			if (synthFound.device()) {
 				if (prop->name() == "Sent to device") {
-					synthFound.device()->setOutput(prop->lookup()[value.getValue()]);
+					synthFound.device()->setOutput(midikraft::MidiController::instance()->getMidiOutputByIdentifier(prop->lookup()[value.getValue()]));
 				}
 				else if (prop->name() == "Receive from device") {
-					synthFound.device()->setInput(prop->lookup()[value.getValue()]);
+					synthFound.device()->setInput(midikraft::MidiController::instance()->getMidiInputByIdentifier(prop->lookup()[value.getValue()]));
 				}
 				else if (prop->name() == "MIDI channel") {
 					synthFound.device()->setChannel(MidiChannel::fromOneBase(value.getValue()));
@@ -297,7 +297,7 @@ void SetupView::loopDetection()
 		case midikraft::MidiLoopType::Note: typeName = "MIDI Note"; break;
 		case midikraft::MidiLoopType::Sysex: typeName = "Sysex"; break;
 		}
-		SimpleLogger::instance()->postMessage((boost::format("Warning: %s loop detected. Sending sysex to %s is returned on %s") % typeName % loop.midiOutput % loop.midiInput).str());
+		SimpleLogger::instance()->postMessage((boost::format("Warning: %s loop detected. Sending sysex to %s is returned on %s") % typeName % loop.midiOutput.name.toStdString() % loop.midiInput.name.toStdString()).str());
 	}
 	if (modalWindow->loops.empty()) {
 		SimpleLogger::instance()->postMessage("All clear, no MIDI loops detected when sending to all available MIDI outputs");

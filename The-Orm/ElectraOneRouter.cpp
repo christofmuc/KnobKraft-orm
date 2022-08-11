@@ -47,13 +47,13 @@ void ElectraOneRouter::enable(bool enabled)
 			});
 		}
 		// Make sure to listen to the Electra One if found!
-		midikraft::MidiController::instance()->enableMidiInput("Electra Controller");
-		SimpleLogger::instance()->postMessage("Listening to messages from USB input Electra Controller");
+		//midikraft::MidiController::instance()->enableMidiInput("Electra Controller");
+		//SimpleLogger::instance()->postMessage("Listening to messages from USB input Electra Controller");
 	}
 	else {
 		// Stop listening!
 		enabled_ = false;
-		midikraft::MidiController::instance()->disableMidiInput("Electra Controller");
-		SimpleLogger::instance()->postMessage("Turning off USB input Electra Controller");
+		//midikraft::MidiController::instance()->disableMidiInput("Electra Controller");
+		//SimpleLogger::instance()->postMessage("Turning off USB input Electra Controller");
 	}
 }

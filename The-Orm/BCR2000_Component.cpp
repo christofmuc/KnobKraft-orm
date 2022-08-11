@@ -349,7 +349,7 @@ void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* so
 {
 	auto synth = UIModel::currentSynthOfPatch();
 	auto location = dynamic_cast<midikraft::MidiLocationCapability*>(synth);
-	if (!location || location->midiInput() == source->getName().toStdString()) {
+	if (!location || location->midiInput() == source->getDeviceInfo()) {
 		auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
 		if (syncCap) {
 			int outValue;
@@ -411,7 +411,7 @@ BCR2000_Component::UpdateControllerListener::~UpdateControllerListener()
 
 void BCR2000_Component::UpdateControllerListener::listenForMidiMessages(MidiInput* source, MidiMessage message) {
 	// Check if that is a message we need to take seriously
-	if (source->getName().toStdString() == papa_->bcr2000_->midiInput()) {
+	if (source->getDeviceInfo() == papa_->bcr2000_->midiInput()) {
 		// This at least is a message from our controller
 		auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
 		for (auto param : detailedParameters->allParameterDefinitions()) {
