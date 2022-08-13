@@ -11,19 +11,26 @@ Release 2.0
 * Add Bank Management
 
 BANK MANAGEMENT
-* Has send button to send full bank into synth (or just delta?). 
-* Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
+* Librarian Bank send for MKS80, K3M
+* Clicking the button should select the patch, as usual
+
 * Dirty banks should not be deleted by just changing the view... want to come back to them
-* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
-* Need window management of Bank window. Close/hide button when no longer needed.
+* Never synced banks should be red coloured in the tree
+
+* Bug - scrolling the list is really choppy
+* Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
 * Bug: After import, the new bank is not selected in the tree.
 * Bug: The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
-* Never synced banks should be red coloured in the tree
-* Click on a button would not send to edit buffer, but just a bank select/program change message. 
-* Clicking the button should select the patch, as usual
+
+* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
+* Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
+
 
 BANKS IMPROVEMENT
 * Needs to have concept of ROM banks. 
+* Could display per patch if it is in Synth or not
+* Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Could allow for single patch retrieval instead of whole bank synth (if mode is available)
 * This should also allow for requesting single patches from the synth,
 * What should happen when you click on "In Synth"?
 * Can drag a list into the bank to put in multiple patches at the same time - filtered for the synth, of course.

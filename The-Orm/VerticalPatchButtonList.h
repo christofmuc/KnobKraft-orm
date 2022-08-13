@@ -18,6 +18,7 @@ public:
 	virtual void resized() override;
 
 	void setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info);
+	void refreshContent();
 
 private:
 	std::function<void(MidiProgramNumber, std::string)> dropHandler_;

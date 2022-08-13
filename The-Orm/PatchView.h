@@ -51,7 +51,8 @@ public:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	void retrieveFirstPageFromDatabase();
-	void retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve);
+	void retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve, std::function<void()> finishedHandler);
+	void sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, std::function<void()> finishedHandler);
 
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();

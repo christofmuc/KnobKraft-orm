@@ -313,7 +313,7 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 	});
 }
 
-void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve)
+void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve, std::function<void()> finishedHandler)
 {
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToRetrieve.synth());
 	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToRetrieve.synth());
@@ -324,13 +324,14 @@ void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve)
 			if (bankToRetrieve.synth() /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
+				progressWindow->setMessage((boost::format("Importing %s from %s...") % bankToRetrieve.synth()->friendlyBankName(bankToRetrieve.bankNumber()) % bankToRetrieve.synth()->getName()).str());
 				librarian_.startDownloadingAllPatches(
 					midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
 					bankToRetrieve.synth(),
 					bankToRetrieve.bankNumber(),
-					progressWindow.get(), [this, progressWindow, bankToRetrieve](std::vector<midikraft::PatchHolder> patchesLoaded) {
+					progressWindow.get(), [this, progressWindow, bankToRetrieve, finishedHandler](std::vector<midikraft::PatchHolder> patchesLoaded) {
 						progressWindow->signalThreadShouldExit();
-						MessageManager::callAsync([this, patchesLoaded, bankToRetrieve]() {
+						MessageManager::callAsync([this, patchesLoaded, bankToRetrieve, finishedHandler]() {
 							SimpleLogger::instance()->postMessage("Retrieved " + String(patchesLoaded.size()) + " patches from synth");
 							// First make sure all patches are stored in the database
 							auto enhanced = autoCategorize(patchesLoaded);
@@ -343,6 +344,9 @@ void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve)
 							// instead of sending the sysex
 							patchListTree_.refreshAllUserLists();
 							loadSynthBankFromDatabase(bankToRetrieve.synth(), bankToRetrieve.bankNumber(), bankToRetrieve.id());
+							if (finishedHandler) {
+								finishedHandler();
+							}
 							});
 					});
 			}
@@ -353,6 +357,40 @@ void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve)
 	}
 	else {
 		SimpleLogger::instance()->postMessage("Invalid operation - cannot retrieve bank from synth that has no MIDI connectivity implemented");
+	}
+}
+
+void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, std::function<void()> finishedHandler)
+{
+	if (!bankToSend) return;
+
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToSend->synth());
+	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToSend->synth());
+	if (location) {
+		if (location->channel().isValid() && device->wasDetected()) {
+			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+			if (bankToSend->synth() /*&& device->wasDetected()*/) {
+				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
+				progressWindow->launchThread();
+				librarian_.sendBankToSynth(*bankToSend, false, progressWindow.get(), [this, bankToSend, finishedHandler](bool completed) {
+					if (completed) {
+						bankToSend->clearDirty();
+						if (finishedHandler) {
+							finishedHandler();
+						}
+					}
+					else {
+						AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::WarningIcon, "Incomplete bank update", "The bank update did not finish, you might or not have a partial bank transferred!");
+					}
+				});
+			}
+		}
+		else {
+			AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
+		}
+	}
+	else {
+		SimpleLogger::instance()->postMessage("Invalid operation - cannot send bank to synth that has no MIDI connectivity implemented");
 	}
 }
 
@@ -367,7 +405,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 	}
 	else {
 		// No, first time ever - offer the user to download from the synth if connected
-		retrieveBankFromSynth(bankList);
+		retrieveBankFromSynth(bankList, {});
 	}
 }
 

@@ -22,8 +22,19 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "You have unsaved changes!",
 					"You have modified the synth bank but not saved it back to the synth. Reimporting the bank will make you lose your changes! Do you want to re-import the bank from the synth?",
 					"Yes", "Cancel")) {
-				patchView_->retrieveBankFromSynth(*synthBank_);
+				patchView_->retrieveBankFromSynth(*synthBank_, {});
 			}
+		}
+	};
+
+	sendButton_.setButtonText("Send to synth");
+	sendButton_.onClick = [this]() {
+		if (patchView_ && synthBank_) {
+			patchView_->sendBankToSynth(synthBank_, [this]() {
+				if (bankList_) {
+					bankList_->refreshContent();
+				}
+			});
 		}
 	};
 
@@ -42,6 +53,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);
+	addAndMakeVisible(sendButton_);
 	addAndMakeVisible(modified_);
 	addAndMakeVisible(*bankList_);
 
@@ -68,7 +80,10 @@ void SynthBankPanel::resized()
 
 	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 2);
 
-	resyncButton_.setBounds(header.removeFromRight(LAYOUT_BUTTON_WIDTH).withHeight(LAYOUT_BUTTON_HEIGHT));
+	auto headerRightSide = header.removeFromRight(LAYOUT_BUTTON_WIDTH);
+
+	resyncButton_.setBounds(headerRightSide.removeFromTop(LAYOUT_BUTTON_HEIGHT));
+	sendButton_.setBounds(headerRightSide.removeFromTop(LAYOUT_BUTTON_HEIGHT + LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
 	synthName_.setBounds(header.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT));
 	bankNameAndDate_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
 	modified_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));

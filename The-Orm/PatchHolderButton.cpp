@@ -69,7 +69,7 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 	setActive(active);
 	Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 	if (holder) {
-		auto number = holder->synth()->friendlyProgramName(holder->patchNumber());
+		auto number = holder->synth()->friendlyProgramAndBankName(holder->bankNumber(), holder->patchNumber());
 		auto dragInfo = holder->createDragInfoString();
 		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::CenterMask))) {
 		case PatchButtonInfo::CenterLayers: {
