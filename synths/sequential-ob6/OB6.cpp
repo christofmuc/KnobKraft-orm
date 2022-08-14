@@ -151,7 +151,7 @@ namespace midikraft {
 
 	std::string OB6::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		return (boost::format("#%03d") % programNo.toZeroBased()).str();
+		return (boost::format("#%03d") % programNo.toZeroBasedWithBank()).str();
 	}
 
 	std::string OB6::friendlyBankName(MidiBankNumber bankNo) const
@@ -171,7 +171,7 @@ namespace midikraft {
 					auto globalDumpData = unescapeSysex(startOfData, message.getSysExDataSize() - startIndex, 1024);
 					MidiProgramNumber place;
 					if (messageCode == 0x02) {
-						place = MidiProgramNumber::fromZeroBase(message.getSysExData()[3] * 100 + message.getSysExData()[4]);
+						place = MidiProgramNumber::fromZeroBaseWithBank(MidiBankNumber::fromZeroBase(message.getSysExData()[3], 100),  message.getSysExData()[4]);
 					}
 					auto patch = std::make_shared<OB6Patch>(OB6::PATCH, globalDumpData, place);
 					return patch;
@@ -401,7 +401,7 @@ namespace midikraft {
 	std::vector<juce::MidiMessage> OB6::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		// Create a program data dump message
-		int programPlace = programNumber.toZeroBased();
+		int programPlace = programNumber.toZeroBasedWithBank();
 		std::vector<uint8> programDataDump({ 0x01 /* DSI */, midiModelID_, 0x02 /* Program Data */, (uint8)(programPlace / numberOfPatches()), (uint8)(programPlace % numberOfPatches()) });
 		auto escaped = escapeSysex(patch->data(), patch->data().size());
 		std::copy(escaped.begin(), escaped.end(), std::back_inserter(programDataDump));
