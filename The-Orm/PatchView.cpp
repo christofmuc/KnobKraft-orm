@@ -288,7 +288,7 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 		int i = 0;
 		for (auto& patch : patches) {
 			patch.setBank(bank);
-			patch.setPatchNumber(MidiProgramNumber::fromZeroBase(i++));
+			patch.setPatchNumber(MidiProgramNumber::fromZeroBaseWithBank(bank, i++));
 		}
 
 		// Load the bank info from the database as well for the timestamp
@@ -476,7 +476,7 @@ void PatchView::retrievePatches() {
 	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
 	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
-		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
+		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
 			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
 			if (!bankNo.empty()) {
 				progressWindow->launchThread();

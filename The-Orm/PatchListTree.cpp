@@ -268,10 +268,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 		synthBanksNode->onGenerateChildren = [this, synth, synthName] {
 			std::vector<TreeViewItem*> result;
 			for (int i = 0; i < synth->numberOfBanks(); i++) {
-				auto bank = new TreeViewNode(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)), String(synthName) + "-bank-" + String(i));
+				auto bank = new TreeViewNode(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i, synth->numberOfPatches())), String(synthName) + "-bank-" + String(i));
 				bank->onSelected = [synth, i, this](String) {
 					if (onSynthBankSelected) {
-						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i));
+						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
 					}
 				};
 				result.push_back(bank);

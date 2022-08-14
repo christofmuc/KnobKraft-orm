@@ -102,6 +102,7 @@ class CurrentSynthBank : public ChangeBroadcaster {
 public:
 	void setSynthBank(std::shared_ptr<midikraft::SynthBank> synthBank);
 	void flagModified();
+	void clearModified();
 
 	std::shared_ptr<midikraft::SynthBank> synthBank();
 	bool modified() const { return modified_;  }

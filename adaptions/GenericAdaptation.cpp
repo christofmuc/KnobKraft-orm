@@ -493,7 +493,7 @@ namespace knobkraft {
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kFriendlyProgramName)) {
 			try {
-				int zerobased = programNo.toZeroBased();
+				int zerobased = programNo.toZeroBasedWithBank();
 				auto result = callMethod(kFriendlyProgramName, zerobased);
 				return py::cast<std::string>(result);
 			}

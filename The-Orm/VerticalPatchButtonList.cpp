@@ -9,6 +9,8 @@
 #include "PatchHolderButton.h"
 #include "LayoutConstants.h"
 
+#include "UIModel.h"
+
 class PatchButtonRow: public Component {
 public:
 	PatchButtonRow(std::function<void(int)> clickHandler, std::function<void(MidiProgramNumber, std::string)> patchChangeHandler) 
@@ -153,6 +155,7 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 	list_.setModel(new PatchListModel(bank, [this](int row) {
 		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
 		if (patchRow) {
+			UIModel::instance()->currentPatch_.changeCurrentPatch(patchRow->patch());
 			SimpleLogger::instance()->postMessage("Patch " + patchRow->patch().name()  + "selected");
 		}
 		else {

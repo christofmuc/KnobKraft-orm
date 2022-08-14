@@ -12,16 +12,15 @@
 #include "MidiBankNumber.h"
 #include "ProgressHandler.h"
 
-class ImportFromSynthDialog : public Component, private Button::Listener
+class ImportFromSynthDialog : public Component
 {
 public:
 	typedef std::function<void(std::vector<MidiBankNumber> bankNo)> TSuccessHandler;
 
-	ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk);
+	ImportFromSynthDialog(std::shared_ptr<midikraft::Synth> synth, TSuccessHandler onOk);
 	virtual ~ImportFromSynthDialog() override = default;
 
 	void resized() override;
-	void buttonClicked(Button*) override;
 
 private:
 	TSuccessHandler onOk_;

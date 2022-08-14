@@ -7,25 +7,54 @@
 #include "ImportFromSynthDialog.h"
 
 
-ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : onOk_(onOk)
+ImportFromSynthDialog::ImportFromSynthDialog(std::shared_ptr<midikraft::Synth> synth, TSuccessHandler onOk) : onOk_(onOk)
 {
 	addAndMakeVisible(propertyPanel_);
 	addAndMakeVisible(cancel_);
 	addAndMakeVisible(ok_);
 	addAndMakeVisible(all_);
 	ok_.setButtonText("Import selected");
-	ok_.addListener(this);
+	ok_.onClick = [this, synth]() {
+		// Close Window
+		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
+			dw->exitModalState(1);
+		}
+		std::vector<MidiBankNumber> result;
+		var selected = bankValue_.getValue();
+		for (auto bank : *selected.getArray()) {
+			if ((int)bank < numBanks_) {
+				result.push_back(MidiBankNumber::fromZeroBase((int)bank, synth->numberOfPatches()));
+			}
+			else {
+				// All selected, just add all banks into the array
+				jassertfalse;
+			}
+		}
+
+		onOk_(result);
+	};
 	all_.setButtonText("Import all");
-	all_.addListener(this);
+	all_.onClick = [this, synth]() {
+		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
+			dw->exitModalState(1);
+		}
+		std::vector<MidiBankNumber> result;
+		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
+		onOk_(result);
+	};
 	cancel_.setButtonText("Cancel");
-	cancel_.addListener(this);
+	cancel_.onClick = [this]() {
+		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
+			dw->exitModalState(-1);
+		}
+	};
 
 	// Populate the bank selector
 	numBanks_ = synth->numberOfBanks();
 	StringArray choices;
 	Array<var> choiceValues;
 	for (int i = 0; i < numBanks_; i++) {
-		choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
+		choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i, synth->numberOfPatches())));
 		choiceValues.add(i);
 	}
 	bankValue_ = Array<var>();
@@ -45,41 +74,5 @@ void ImportFromSynthDialog::resized()
 	all_.setBounds(bottom.removeFromLeft(width).withTrimmedRight(8));
 	cancel_.setBounds(bottom);
 	propertyPanel_.setBounds(area.reduced(8));
-}
-
-void ImportFromSynthDialog::buttonClicked(Button *button)
-{
-	if (button == &ok_) {
-		// Close Window
-		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
-			dw->exitModalState(1);
-		}
-		std::vector<MidiBankNumber> result;
-		var selected = bankValue_.getValue();
-		for (auto bank : *selected.getArray()) {
-			if ((int)bank < numBanks_) {
-				result.push_back(MidiBankNumber::fromZeroBase((int)bank));
-			}
-			else {
-				// All selected, just add all banks into the array
-				jassertfalse;
-			}
-		}
-
-		onOk_(result);
-	}
-	else if (button == &all_) {
-		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
-			dw->exitModalState(1);
-		}
-		std::vector<MidiBankNumber> result;
-		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i));
-		onOk_(result);
-	}
-	else if (button == &cancel_) {
-		if (DialogWindow* dw = findParentComponentOfClass<DialogWindow>()) {
-			dw->exitModalState(-1);
-		}
-	}
 }
 

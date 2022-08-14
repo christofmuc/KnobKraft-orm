@@ -195,6 +195,11 @@ void CurrentSynthBank::flagModified()
 	sendChangeMessage();
 }
 
+void CurrentSynthBank::clearModified()
+{
+	modified_ = false;
+	sendChangeMessage();
+}
 
 void CurrentMultiMode::setMultiSynthMode(bool multiMode)
 {

@@ -31,6 +31,10 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	sendButton_.onClick = [this]() {
 		if (patchView_ && synthBank_) {
 			patchView_->sendBankToSynth(synthBank_, [this]() {
+				// Save it in the database now that we have successfully sent it to the synth
+				patchDatabase_.putPatchList(synthBank_);
+				// Mark the bank as not modified
+				UIModel::instance()->synthBank.clearModified();
 				if (bankList_) {
 					bankList_->refreshContent();
 				}
