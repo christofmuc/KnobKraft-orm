@@ -271,16 +271,23 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 		synthBanksNode->onGenerateChildren = [this, synth, synthName] {
 			std::vector<TreeViewItem*> result;
 			for (int i = 0; i < synth->numberOfBanks(); i++) {
-				auto bank = new TreeViewNode(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i, synth->numberOfPatches())), String(synthName) + "-bank-" + String(i));
+				auto bank_id = midikraft::SynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
+				auto bank_name = synth->friendlyBankName(MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
+				auto bank = new TreeViewNode(bank_name, bank_id);
 				bank->onSelected = [synth, i, this](String) {
 					if (onSynthBankSelected) {
 						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
 					}
 				};
+				bank->onItemDragged = [bank_id, bank_name]() {
+					nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", bank_id}, { "list_name", bank_name } };
+					return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
+				};
 				result.push_back(bank);
 			}
 			return result;
 		};
+
 	}
 	return synthBanksNode;
 }
