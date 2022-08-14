@@ -418,7 +418,11 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 	}
 	else {
 		// No, first time ever - offer the user to download from the synth if connected
-		retrieveBankFromSynth(bankList, {});
+		retrieveBankFromSynth(bankList, [this, synth, bank]() {
+			// After it has been loaded successfully, make sure to select it in the tree 
+			std::string synthName = synth->getName();
+			patchListTree_.selectItemByPath({ "allpatches", "library-" + synthName, "banks-" + synthName, midikraft::SynthBank::makeId(synth, bank) });
+		});
 	}
 }
 

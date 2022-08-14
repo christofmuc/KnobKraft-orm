@@ -12,12 +12,13 @@ Release 2.0
 
 BANK MANAGEMENT
 * Librarian Bank send for MKS80, K3M
-* Clicking the button should select the patch, as usual
+* Clicking the button should send the patch, as usual
 
 * Dirty banks should not be deleted by just changing the view... want to come back to them
 * Never synced banks should be red coloured in the tree
 * Deleting patches that are in a bank will remove them from the bank... should rather hide them?
 
+* Bug - lists are ordered incorrectly in the Library, no longer with order_num
 * Bug - scrolling the list is really choppy
 * Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
 * Bug: After import, the new bank is not selected in the tree.
@@ -26,7 +27,6 @@ BANK MANAGEMENT
 * Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
 * Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
 
-* Trashcan should light up when drag target works
 
 
 BANKS IMPROVEMENT
@@ -35,13 +35,16 @@ BANKS IMPROVEMENT
 * Click on a button would not send to edit buffer, but just a bank select/program change message. 
 * Could allow for single patch retrieval instead of whole bank synth (if mode is available)
 * Could allow for single patch send into program place (if more is available)
-* This should also allow for requesting single patches from the synth,
 * What should happen when you click on "In Synth"?
-* Can drag a list into the bank to put in multiple patches at the same time - filtered for the synth, of course.
-* Drop should highlight which parts of the bank will accept - for multidrags also multiple positions
 * Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
 * Can drag bank into user lists to create a user list from a bank!
 * The Normal download button should then go away? But then have no download all banks. It certainly needs to be synced somehow
+* Trashcan should light up when drag target works
+
+
+LISTS IMPROVEMENT
+Imports sind auch lists, und sollten immer alle patches enthalten (auch mit anderen Namen etc.). In der Library ist de Patch natürlich nur einmal. Macht das Sinn?
+Import als Liste auch draggen können
 
 
 Layer logic
