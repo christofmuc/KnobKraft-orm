@@ -161,7 +161,8 @@ String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
 String getImportName(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	if (patch->sourceInfo()) {
-		String position = (boost::format(" at %d") % patch->patchNumber().toZeroBased()).str();
+		auto friendlyName = patch->synth()->friendlyProgramName(patch->patchNumber());
+		String position = (boost::format(" at %s") % friendlyName).str();
 		return String(patch->sourceInfo()->toDisplayString(patch->synth(), false)) + position;
 	}
 	else
