@@ -335,7 +335,7 @@ namespace midikraft {
 		if (programNumber.isBankKnown()) {
 			bankChar = char(programNumber.bank().toZeroBased() + 'a');
 		}
-		int progNo = programNumber.toZeroBasedWithBank();
+		int progNo = programNumber.toZeroBased() % numberOfPatches();
 		return (boost::format("%c%d") % bankChar % progNo).str();
 	}
 
