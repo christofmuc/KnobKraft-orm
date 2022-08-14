@@ -184,6 +184,19 @@ void PatchView::retrieveFirstPageFromDatabase() {
 	patchButtons_->refresh(true); // This kicks of loading the first page
 }
 
+std::shared_ptr<midikraft::PatchList>  PatchView::retrieveListFromDatabase(midikraft::ListInfo const& info)
+{
+	if (info.id.empty()) {
+		return nullptr;
+	}
+
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+	for (auto synth : synths_) {
+		synths.emplace(synth.getName(), synth.synth());
+	}
+	return database_.getPatchList(info, synths);
+}
+
 void PatchView::hideCurrentPatch()
 {
 	selectNextPatch();

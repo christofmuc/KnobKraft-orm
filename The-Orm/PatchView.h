@@ -51,6 +51,7 @@ public:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	void retrieveFirstPageFromDatabase();
+	std::shared_ptr<midikraft::PatchList> retrieveListFromDatabase(midikraft::ListInfo const& info);
 	void retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve, std::function<void()> finishedHandler);
 	void sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, std::function<void()> finishedHandler);
 

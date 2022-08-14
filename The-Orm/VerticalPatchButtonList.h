@@ -13,7 +13,9 @@
 
 class VerticalPatchButtonList : public Component {
 public:
-	VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler);
+	typedef std::function<void(MidiProgramNumber, std::string const&, std::string const&)> TListDropHandler;
+
+	VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler, TListDropHandler listDropHandler, std::function<int(std::string const&, std::string const&)> listResolver);
 
 	virtual void resized() override;
 
@@ -22,5 +24,7 @@ public:
 
 private:
 	std::function<void(MidiProgramNumber, std::string)> dropHandler_;
+	TListDropHandler listDropHandler_;
 	ListBox list_;
+	std::function<int(std::string const&, std::string const&)> listResolver_;
 };

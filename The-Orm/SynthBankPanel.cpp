@@ -53,7 +53,26 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				SimpleLogger::instance()->postMessage("Program error - dropped patch that cannot be found in the database");
 			}
 		}
-	});
+		}
+		, [this](MidiProgramNumber program, std::string const& list_id, std::string const& list_name) {
+			if (patchView_) {
+				auto list = patchView_->retrieveListFromDatabase({ list_id, list_name });
+				if (list) {
+					// Insert the list into the bank...
+					synthBank_->copyListToPosition(program, *list);
+					UIModel::instance()->synthBank.flagModified();
+				}
+			}
+		}
+		, [this](std::string const& list_id, std::string const& list_name) {
+			if (patchView_) {
+				auto list = patchView_->retrieveListFromDatabase({ list_id, list_name });
+				if (list) {
+					return (int) list->patches().size();
+				}
+			}
+			return 1;
+		});
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);

@@ -11,11 +11,54 @@
 
 #include "UIModel.h"
 
+typedef std::function<void(int, std::string const&, std::string const&)> TDragHighlightHandler;
+
+
+class PatchListButtonWithMultiDrag : public PatchHolderButton
+{
+public:
+	PatchListButtonWithMultiDrag(int id, bool isToggle, std::function<void(int)> clickHandler, TDragHighlightHandler dragHighlightHandler)
+		: PatchHolderButton(id, isToggle, clickHandler)
+		, dragHighlightHandler_(dragHighlightHandler)
+	{
+	}
+
+	virtual void itemDragEnter(const SourceDetails& dragSourceDetails) override {
+		String dropItemString = dragSourceDetails.description;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
+			PatchHolderButton::itemDragEnter(dragSourceDetails);
+		}
+		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
+			if (dragHighlightHandler_) {
+				dragHighlightHandler_(0, infos["list_id"], infos["list_name"]);
+			}
+		}
+	}
+
+	virtual void itemDragExit(const SourceDetails& dragSourceDetails) override {
+		String dropItemString = dragSourceDetails.description;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
+			PatchHolderButton::itemDragExit(dragSourceDetails);
+		} else if (midikraft::PatchHolder::dragItemIsList(infos)) {
+			if (dragHighlightHandler_) {
+				dragHighlightHandler_(-1, "", "");
+			}
+		}
+	}
+
+private:
+	TDragHighlightHandler dragHighlightHandler_;
+};
+
 class PatchButtonRow: public Component {
 public:
-	PatchButtonRow(std::function<void(int)> clickHandler, std::function<void(MidiProgramNumber, std::string)> patchChangeHandler) 
+	PatchButtonRow(std::function<void(int)> clickHandler, std::function<void(MidiProgramNumber, std::string)> patchChangeHandler, VerticalPatchButtonList::TListDropHandler listDropHandler, TDragHighlightHandler dragHighlightHandler)
 		: clickHandler_(clickHandler) 
 		, patchChangeHandler_(patchChangeHandler)
+		, listDropHandler_(listDropHandler)
+		, dragHighlightHandler_(dragHighlightHandler)
 	{
 	}
 
@@ -29,25 +72,33 @@ public:
 	void setRow(int rowNo, midikraft::PatchHolder const &patch, bool dirty, PatchButtonInfo info) {
 		// This changes the row to be displayed with this component (reusing components within a list box)
 		if (!button_) {
-			button_ = std::make_unique<PatchHolderButton>(rowNo, false, clickHandler_);
+			button_ = std::make_unique<PatchListButtonWithMultiDrag>(rowNo, false, clickHandler_, [this, rowNo](int zeroOrMinusOne, std::string const& list_id, std::string const& list_name) {
+				dragHighlightHandler_(zeroOrMinusOne == -1 ? -1 : rowNo, list_id, list_name);
+			});
 			addAndMakeVisible(*button_);
 			button_->acceptsItem = [this](juce::var dropItem) {
 				String dropItemString = dropItem;
 				auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-				return midikraft::PatchHolder::dragItemIsPatch(infos) && infos.contains("synth") && infos["synth"] == thePatch_.synth()->getName();
+				return (midikraft::PatchHolder::dragItemIsPatch(infos) && infos.contains("synth") && infos["synth"] == thePatch_.synth()->getName())
+					|| midikraft::PatchHolder::dragItemIsList(infos);
 			};
 			button_->onItemDropped = [this](juce::var dropped) {
 				String dropItemString = dropped;
 				auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-				if (patchChangeHandler_ && infos.contains("md5")) {
-					patchChangeHandler_(thePatch_.patchNumber(), infos["md5"]);
+				if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
+					if (patchChangeHandler_ && infos.contains("md5")) {
+						patchChangeHandler_(thePatch_.patchNumber(), infos["md5"]);
+					}
+					else {
+						jassertfalse;
+							SimpleLogger::instance()->postMessage("Program error - drag info has no md5 or no handler");
+					}
 				}
-				else {
-					jassertfalse;
-					SimpleLogger::instance()->postMessage("Program error - drag info has no md5 or no handler");
+				else if (midikraft::PatchHolder::dragItemIsList(infos)) {
+					listDropHandler_(thePatch_.patchNumber(), infos["list_id"], infos["list_name"]);
 				}
 			}; 
-		
+
 			resized();
 		}
 		else {
@@ -68,10 +119,22 @@ public:
 		return thePatch_;
 	}
 
+	// For custom highlighting
+	PatchHolderButton* button() {
+		if (button_) {
+			return button_.get();
+		}
+		else {
+			return nullptr;
+		}
+	}
+
 private:
 	std::unique_ptr<PatchHolderButton> button_;
 	std::function<void(int)> clickHandler_;
 	std::function<void(MidiProgramNumber, std::string)> patchChangeHandler_;
+	VerticalPatchButtonList::TListDropHandler listDropHandler_;
+	TDragHighlightHandler dragHighlightHandler_;
 	midikraft::PatchHolder thePatch_;
 };
 
@@ -79,8 +142,14 @@ private:
 class PatchListModel : public ListBoxModel {
 public:
 	PatchListModel(std::shared_ptr<midikraft::SynthBank> bank, std::function<void(int)> onRowSelected,
-			std::function<void(MidiProgramNumber, std::string)> patchChangeHandler, PatchButtonInfo info)
-		: bank_(bank), onRowSelected_(onRowSelected), patchChangeHandler_(patchChangeHandler), info_(info) {
+			std::function<void(MidiProgramNumber, std::string)> patchChangeHandler, VerticalPatchButtonList::TListDropHandler listDropHandler, PatchButtonInfo info
+			, TDragHighlightHandler dragHighlightHandler)
+		: bank_(bank)
+		, onRowSelected_(onRowSelected)
+		, patchChangeHandler_(patchChangeHandler)
+		, listDropHandler_(listDropHandler)
+		, info_(info)
+		, dragHighlightHandler_(dragHighlightHandler) {
 	}
 
 	int getNumRows() override
@@ -106,7 +175,7 @@ public:
 				}
 				throw std::runtime_error("This was not the correct row type, can't continue");
 			}
-			auto newComponent = new PatchButtonRow(onRowSelected_, patchChangeHandler_);
+			auto newComponent = new PatchButtonRow(onRowSelected_, patchChangeHandler_, listDropHandler_, dragHighlightHandler_);
 			newComponent->setRow(rowNumber, bank_->patches()[rowNumber], bank_->isPositionDirty(rowNumber), info_);
 			return newComponent;
 		}
@@ -123,17 +192,20 @@ public:
 		}
 	}
 
-	
-
 private:
 	std::shared_ptr<midikraft::SynthBank> bank_;
 	std::function<void(int)> onRowSelected_;
 	std::function<void(MidiProgramNumber, std::string)> patchChangeHandler_;
+	VerticalPatchButtonList::TListDropHandler listDropHandler_;
 	PatchButtonInfo info_;
+	TDragHighlightHandler dragHighlightHandler_;
 };
 
 
-VerticalPatchButtonList::VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler) : dropHandler_(dropHandler)
+VerticalPatchButtonList::VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler, TListDropHandler listDropHandler, std::function<int(std::string const&, std::string const&)> listResolver) :
+	dropHandler_(dropHandler)
+	, listDropHandler_(listDropHandler)
+	, listResolver_(listResolver)
 {
 	addAndMakeVisible(list_);
 	list_.setRowHeight(LAYOUT_LARGE_LINE_SPACING);
@@ -168,5 +240,29 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 			list_.updateContent();
 		}
 	}
-	, info));
+	, [this](MidiProgramNumber program, std::string const&list_id, std::string const&list_name) {
+		if (listDropHandler_) {
+			listDropHandler_(program, list_id, list_name);
+		}
+	}
+	, info
+	, [this, bank](int startrow, std::string const& list_id, std::string const& list_name) {
+		// This is a bit heavy, but the list itself has never been loaded...
+		int rowCount = listResolver_(list_id, list_name);;
+		for (int i = 0; i < list_.getModel()->getNumRows(); i++) {
+			auto button = list_.getComponentForRowNumber(i);
+			if (button != nullptr) {
+				// This better be a PatchButton!
+				auto pb = dynamic_cast<PatchButtonRow*>(button);
+				if (pb) {
+					if (pb->button()) {
+						pb->button()->setGlow((i >= startrow && i < startrow + rowCount) && (startrow != -1));
+					}
+				}
+				else {
+					jassertfalse;
+				}
+			}
+		}
+	}));
 }
