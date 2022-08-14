@@ -127,7 +127,7 @@ namespace midikraft {
 			uint8 bank = message[0].getSysExData()[6];
 			if (bank > 0) bank -= 1; // bank is 1-based, but in case of edit buffer this will be 0 already
 			uint8 program = message[0].getSysExData()[7];
-			return MidiProgramNumber::fromZeroBase(bank * numberOfPatches() + program);
+			return MidiProgramNumber::fromZeroBaseWithBank(MidiBankNumber::fromZeroBase(bank, numberOfPatches()), program);
 		}
 		return MidiProgramNumber::fromZeroBase(0);
 	}
@@ -139,9 +139,12 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Virus::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
-		//TODO this might be too much of a shortcut
-		ignoreUnused(programNumber);
-		return patchToSysex(patch);
+		int bank = programNumber.toZeroBasedWithBank() / numberOfPatches();
+		std::vector<uint8> message({ 0x10 /* Single program dump */, (uint8) (bank + 1) /* 1-based bank number */, (uint8) (programNumber.toZeroBasedWithBank()) /* Program Number 0 to 127 */ });
+		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(message));
+		uint8 checksum = (MidiHelpers::checksum7bit(message) + deviceID_) & 0x7f;
+		message.push_back(checksum);
+		return std::vector<MidiMessage>({ createSysexMessage(message) });		
 	}
 
 	bool Virus::isBankDump(const MidiMessage& message) const
@@ -328,8 +331,11 @@ namespace midikraft {
 
 	std::string Virus::friendlyProgramName(MidiProgramNumber programNumber) const
 	{
-		char bankChar(char(programNumber.toZeroBased() / 128 + 'a'));
-		uint8 progNo = programNumber.toZeroBased() % 128;
+		char bankChar = 'a';
+		if (programNumber.isBankKnown()) {
+			bankChar = char(programNumber.bank().toZeroBased() + 'a');
+		}
+		int progNo = programNumber.toZeroBasedWithBank();
 		return (boost::format("%c%d") % bankChar % progNo).str();
 	}
 
