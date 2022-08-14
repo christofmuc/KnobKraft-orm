@@ -68,7 +68,14 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 			if (patchView_) {
 				auto list = patchView_->retrieveListFromDatabase({ list_id, list_name });
 				if (list) {
-					return (int) list->patches().size();
+					// Count how many patches are for our synth in that list
+					int count = 0;
+					for (auto const& patch : list->patches()) {
+						if (patch.synth()->getName() == synthBank_->synth()->getName()) {
+							count++;
+						}
+					}
+					return count;
 				}
 			}
 			return 1;
