@@ -111,6 +111,8 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 					db_.putPatchList(list);
 					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
 					regenerateUserLists();
+					// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
+					//selectItemByPath({ "userlists", list->id() });
 				}
 			}, nullptr);
 		};
