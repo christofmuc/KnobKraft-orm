@@ -26,6 +26,8 @@ BANK MANAGEMENT
 * Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
 * Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
 
+* Trashcan should light up when drag target works
+
 
 BANKS IMPROVEMENT
 * Needs to have concept of ROM banks. 

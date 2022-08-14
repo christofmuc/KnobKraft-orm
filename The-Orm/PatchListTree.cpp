@@ -13,6 +13,7 @@
 #include "ColourHelpers.h"
 
 #include <boost/format.hpp>
+#include <fmt/format.h>
 
 void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	for (auto& import : imports) {
@@ -333,44 +334,64 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	node->acceptsItem = [list](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-		return midikraft::PatchHolder::dragItemIsPatch(infos);
+		return midikraft::PatchHolder::dragItemIsPatch(infos) || (midikraft::PatchHolder::dragItemIsList(infos) && infos["list_id"] != list.id);
 	};
 	node->onItemDropped = [this, list, node](juce::var dropItem, int insertIndex) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-		int position = insertIndex;
-		ignoreUnused(position);
-		if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
-			SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
-			return;
-		}
+		if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
+			int position = insertIndex;
+			ignoreUnused(position);
+			if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
+				SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
+				return;
+			}
 
-		std::string synthname = infos["synth"];
-		if (synths_.find(synthname) == synths_.end()) {
-			SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
-			return;
-		}
+			std::string synthname = infos["synth"];
+			if (synths_.find(synthname) == synths_.end()) {
+				SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
+				return;
+			}
 
-		auto synth = synths_[synthname].lock();
-		std::string md5 = infos["md5"];
-		std::vector<midikraft::PatchHolder> patch;
-		if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
-			if (infos.contains("list_id") && infos["list_id"] == list.id && infos.contains("order_num")) {
-				// Special case - this is a patch reference from the same list, this is effectively just a reordering operation!
-				db_.movePatchInList(list, patch[0], infos["order_num"], insertIndex);
+			auto synth = synths_[synthname].lock();
+			std::string md5 = infos["md5"];
+			std::vector<midikraft::PatchHolder> patch;
+			if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
+				if (infos.contains("list_id") && infos["list_id"] == list.id && infos.contains("order_num")) {
+					// Special case - this is a patch reference from the same list, this is effectively just a reordering operation!
+					db_.movePatchInList(list, patch[0], infos["order_num"], insertIndex);
+				}
+				else {
+					// Simple case - new patch (or patch reference) added to list
+					db_.addPatchToList(list, patch[0], insertIndex);
+					SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+				}
 			}
 			else {
-				// Simple case - new patch (or patch reference) added to list
-				db_.addPatchToList(list, patch[0], insertIndex);
-				SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+				SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
 			}
-			node->regenerate();
-			node->setOpenness(TreeViewItem::Openness::opennessOpen);
-			if (onUserListChanged)
-				onUserListChanged(list.id);
 		}
-		else {
-			SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
+		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
+			if (infos.contains("list_id") && infos.contains("list_name")) {
+				// Add all patches of the dragged list to the target ist
+				auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
+				if (AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "Add list to list?"
+					, fmt::format("This will add all {} patches of the list '{}' to the list '{}' at the given position. Continue?", loaded_list->patches().size(), infos["list_name"], list.name
+						))) {
+					for (auto& patch : loaded_list->patches()) {
+						db_.addPatchToList(list, patch, insertIndex++);
+							SimpleLogger::instance()->postMessage("Patch " + patch.name() + " added to list " + list.name);
+					}
+				}
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Program error - dropped list does not contain name and id!");
+			}
+		}
+		node->regenerate();
+		node->setOpenness(TreeViewItem::Openness::opennessOpen);
+		if (onUserListChanged) {
+			onUserListChanged(list.id);
 		}
 	};
 	node->onItemDragged = [list]() {
