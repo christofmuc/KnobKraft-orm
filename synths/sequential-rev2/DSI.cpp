@@ -130,7 +130,7 @@ namespace midikraft {
 	{
 		if (isSingleProgramDump(message)) {
 			// Bank is stored in position 3, program number in position 4
-			return MidiProgramNumber::fromZeroBase(message[0].getSysExData()[3] * numberOfPatches() + message[0].getSysExData()[4]);
+			return MidiProgramNumber::fromZeroBaseWithBank(MidiBankNumber::fromZeroBase(message[0].getSysExData()[3], numberOfPatches()),  message[0].getSysExData()[4]);
 		}
 		return MidiProgramNumber::fromZeroBase(0);
 	}

@@ -128,7 +128,7 @@ namespace midikraft {
 		if (isSingleProgramDump(message)) {
 			int bank = message[0].getSysExData()[3];
 			int program = message[0].getSysExData()[4];
-			place = MidiProgramNumber::fromZeroBase(bank * 128 + program);
+			place = MidiProgramNumber::fromZeroBaseWithBank(MidiBankNumber::fromZeroBase(bank, 128), program);
 		}
 		auto patch = std::make_shared<Rev2Patch>(patchData, place);
 
@@ -559,7 +559,11 @@ namespace midikraft {
 	{
 		// Create a program data dump message
 		int programPlace = programNumber.toZeroBased();
-		std::vector<uint8> programDataDump({ 0x01 /* DSI */, midiModelID_, 0x02 /* Program Data */, (uint8) (programPlace / 128), (uint8) (programPlace % 128) });
+		int bank = programPlace / 128;
+		if (programNumber.bank().isValid()) {
+			bank = programNumber.bank().toZeroBased();
+		}
+		std::vector<uint8> programDataDump({ 0x01 /* DSI */, midiModelID_, 0x02 /* Program Data */, (uint8) (bank), (uint8) (programPlace % 128) });
 		auto patchData = escapeSysex(patch->data(), 2046);
 		jassert(patchData.size() == 2339);
 		std::copy(patchData.begin(), patchData.end(), std::back_inserter(programDataDump));
@@ -604,6 +608,9 @@ namespace midikraft {
 	{
 		// The Rev2 has 8 banks of 128 patches, in two sections U and F called U1 to U4 and F1 to F4
 		int bank = programNo.toZeroBased() / 128;
+		if (programNo.bank().isValid()) {
+			bank = programNo.bank().toZeroBased();
+		}
 		int section = bank / 4;
 		int program = programNo.toZeroBased() % 128;
 		return (boost::format("%s%d P%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1) % (program+1)).str();
