@@ -5,7 +5,6 @@
 #
 import sys
 import sequential
-import hashlib
 
 this_module = sys.modules[__name__]
 
@@ -60,8 +59,7 @@ def channelIfValidDeviceResponse(message):
 
 
 def createEditBufferRequest(channel):
-    # Modern style
-    return [0xf0, 0x01, tempest["device_id"], 0b00000110, 0xf7]
+    raise Exception("Tempest cannot be queried, use the manual dump window!")
 
 
 def isEditBufferDump(message):
@@ -69,7 +67,7 @@ def isEditBufferDump(message):
             and message[0] == 0xf0
             and message[1] == 0x01  # Sequential
             and message[2] == tempest["device_id"]
-            and message[3] == 0x63)  # Sound Data
+            and message[3] == 0x60)  # Sound Data in RAM
 
 
 def numberOfBanks():
@@ -81,10 +79,7 @@ def numberOfPatchesPerBank():
 
 
 def createProgramDumpRequest(channel, patchNo):
-    bank = patchNo // numberOfPatchesPerBank()
-    program = patchNo % numberOfPatchesPerBank()
-    # Modern style
-    return [0xf0, 0x01, tempest["device_id"], 0b00000101, bank, program, 0xf7]
+    raise Exception("Tempest cannot be queried, use the manual dump window!")
 
 
 def isSingleProgramDump(message):
@@ -92,76 +87,42 @@ def isSingleProgramDump(message):
             and message[0] == 0xf0
             and message[1] == 0x01  # Sequential
             and message[2] == tempest["device_id"]
-            and message[3] == 0b00000010)  # Program Data
+            and message[3] == 0x63)  # Sound from FLASH memory
 
 
 def nameFromDump(message):
-    # Tempest names are 0 terminated and not fixed length
-    dataBlock = unescapeSysex(message[6:-1])
-    if len(dataBlock) > 0:
-        sound_name = ''
-        i = 0
-        while dataBlock[i] != 0:
-            sound_name += chr(dataBlock[i])
-            i += 1
-        return sound_name
+    if isSingleProgramDump(message):
+        # Tempest names are 0 terminated and not fixed length
+        dataBlock = unescapeSysex(message[6:-1])
+        if len(dataBlock) > 0:
+            sound_name = ''
+            i = 0
+            while dataBlock[i] != 0:
+                sound_name += chr(dataBlock[i])
+                i += 1
+            return sound_name
+    elif isEditBufferDump(message):
+        return f"RAM sound {message[4]:02X}"
     return "Invalid"
 
 
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message
-    elif isSingleProgramDump(message):
-        # Have to strip out bank and program, and set command to edit buffer dump
-        return message[0:3 + extraOffset()] + [0b00000011] + message[6 + extraOffset():]
+    if isSingleProgramDump(message):
+        print("We actually cannot convert the flash sound to a RAM sound, sending it into original position instead")
+        return message
     raise Exception("Neither edit buffer nor program dump - can't be converted")
 
 
 def convertToProgramDump(channel, message, program_number):
-    bank = program_number // numberOfPatchesPerBank()
-    program = program_number % numberOfPatchesPerBank()
     if isEditBufferDump(message):
-        return message[0:3 + extraOffset()] + [0b00000010] + [bank, program] + message[4 + extraOffset():]
+        print("We actually cannot convert the RAM sound to a flash sound, sending it into original RAM position instead")
+        return message
     elif isSingleProgramDump(message):
-        return message[0:3 + extraOffset()] + [0b00000010] + [bank, program] + message[6 + extraOffset():]
+        print("Cannot change position of Tempest FLASH sound, sending it into original position instead")
+        return message
     raise Exception("Neither edit buffer nor program dump - can't be converted")
-
-
-def calculateFingerprint(message):
-    raw = getDataBlock(message)
-    data = unescapeSysex(raw)
-    # Blank out all blank out zones, normally this is the name (or layer names)
-    blank_out = [(tempest["name_position"], tempest["name_len"])]
-    for zone in blank_out:
-        data[zone[0]:zone[0] + zone[1]] = [0] * zone[1]
-    return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
-
-
-def renamePatch(message, new_name):
-    header_len = headerLen(message)
-    data = message[header_len:-1]
-    data_as_text = "".join([chr(x) for x in message])
-    # Name seems to be tilde delimited...
-    for i in range(tempest["name_len"]):
-        data[tempest["name_position"] + i] = ord(new_name[i]) if i < len(new_name) else ord(' ')
-    return message[:header_len] + data + [0xf7]
-
-
-def getDataBlock(message):
-    return message[headerLen(message) + 2:-1]
-
-
-def headerLen(message):
-    if isEditBufferDump(message):
-        return 4 + extraOffset()
-    elif isSingleProgramDump(message):
-        return 6 + extraOffset()
-    else:
-        raise Exception("Can only work on edit buffer or single program dumps")
-
-
-def extraOffset():
-    return 0
 
 
 def unescapeSysex(sysex):
@@ -179,52 +140,45 @@ def unescapeSysex(sysex):
     return result
 
 
-def unescapeSysex2(sysex):
-    # The Tempest has the same scheme for the high bit as all other DSIs, but with the MSB being transmitted after
-    # the 7 LSB bytes, not before...
-    result = []
-    dataIndex = 0
-    while dataIndex < len(sysex):
-        msbits = sysex[dataIndex + 7] if dataIndex + 7 < len(sysex) else sysex[-1]
-        checksum = 0
-        for i in range(7):
-            checksum += sysex[dataIndex]
-            if dataIndex < len(sysex):
-                result.append(sysex[dataIndex])  # | ((msbits & (1 << (7-i))) << (i)))
-            dataIndex += 1
-        if checksum != msbits:
-            print("checksum was ", msbits)
-        dataIndex += 1
-    return result
-
-
-def escapeSysex(data):
-    raise Exception("fix me")
-    result = []
-    dataIndex = 0
-    while dataIndex < len(data):
-        ms_bits = 0
-        for i in range(7):
-            if dataIndex + i < len(data):
-                ms_bits = ms_bits | ((data[dataIndex + i] & 0x80) >> (7 - i))
-        result.append(ms_bits)
-        for i in range(7):
-            if dataIndex + i < len(data):
-                result.append(data[dataIndex + i] & 0x7f)
-        dataIndex += 7
-    return result
-
-
 #
 # If this is not loaded as a module, but called as a script, run our unit tests
 #
+
+
 if __name__ == "__main__":
     import unittest
 
     messages = sequential.load_sysex("testData/Tempest_Factory_Sounds_1.0.syx")
-    for message in messages:
-        print(nameFromDump(message))
-    print(len(messages))
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[1],
-                                                                         program_name='Tom Sawyer'))
+    #for message in messages:
+        #print(nameFromDump(message))
+    #print(len(messages))
+
+    flash_sound = sequential.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from FLASH.syx")
+    assert(isSingleProgramDump(flash_sound[0]))
+    assert(nameFromDump(flash_sound[0]) == "/S/Kicks/Basic")
+
+    ram_sound = sequential.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from RAM.syx")[0]
+    assert(not isSingleProgramDump(ram_sound))
+    assert(isEditBufferDump(ram_sound))
+    assert(nameFromDump(ram_sound) == "RAM sound 12")
+
+    as1_sound = sequential.load_sysex("testData/Tempest 909 AS1 RAM.syx")[0]
+    assert(isEditBufferDump(as1_sound))
+    assert(nameFromDump(as1_sound) == "RAM sound 02")
+
+    flash_sound = sequential.load_sysex("testData/Tempest 909 AS1 FLASH.syx")[0]
+    assert(isSingleProgramDump(flash_sound))
+    assert(nameFromDump(flash_sound) == "/S/Kicks/909 AS 1")
+
+    as1_sound = sequential.load_sysex("testData/Tempest Analog 808 Kick v01 RAM.syx")[0]
+    assert(isEditBufferDump(as1_sound))
+    assert(nameFromDump(as1_sound) == "RAM sound 01")
+
+    flash_sound = sequential.load_sysex("testData/Tempest Analog 808 Kick v01 FLASH.syx")[0]
+    assert(isSingleProgramDump(flash_sound))
+    assert(nameFromDump(flash_sound) == "/S/Kicks/ANALOG 808 KICK V1")
+
+
+    #unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
+    #                                                                     program_dump=messages[1],
+    #                                                                     program_name='/S/Toms/Zap~~Lo'))
