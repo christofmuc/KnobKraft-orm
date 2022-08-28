@@ -10,6 +10,9 @@ Bug: When you open the export to sysex dialog in an adaptation and then cancel a
 Release 2.0
 * Add Bank Management
 
+Duplicate name search sorts wrong I think
+Bug - cannot name search through only duplicate names result
+
 BANK MANAGEMENT
 * Librarian Bank send for MKS80, K3M
 * Clicking the button should send the patch, as usual
@@ -28,6 +31,19 @@ BANK MANAGEMENT
 * Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
 
 
+PatchNumbers
+Altes System: Patch Daten von Program Platz trennen. Programm Platz speichern in der Tabelle, Nutzdaten sind egal ob Edit Buffer oder Program Dump
+Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich evtl der Speicherplatz
+
+Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
+Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
+
+Migration: Wo file source oder bulk source mit file source ist und keine BankNumber + ProgramNumber sind, diese erzeugen
+SourceInfo sollte vor der Datenbank Info stehen
+MidiBankNumber null sollte sich eigentlich immer aus der import source füllen lassen?
+From Synth source hat keine Program Number! Das ist ein Problem!
+
+Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
 
 BANKS IMPROVEMENT
 * Needs to have concept of ROM banks. 
@@ -40,11 +56,15 @@ BANKS IMPROVEMENT
 * Can drag bank into user lists to create a user list from a bank!
 * The Normal download button should then go away? But then have no download all banks. It certainly needs to be synced somehow
 * Trashcan should light up when drag target works
+* Export into file wäre nice.
 
 
 LISTS IMPROVEMENT
 Imports sind auch lists, und sollten immer alle patches enthalten (auch mit anderen Namen etc.). In der Library ist de Patch natürlich nur einmal. Macht das Sinn?
 Import als Liste auch draggen können
+
+Sollte irgendwo anzeigen können, für welche Synths in der Datenbank Patches sind, auch wenn sie ausgeschaltet sind. Vielleicht eine Database statistik Seite mit Anzahl der Patches pro Synth, Listen, ?
+
 
 
 Layer logic
@@ -105,6 +125,10 @@ User questions
 * How to sync two computers?
 * How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
 * Backup behavior!?	
+
+NETWORK SYNC
+Hook up Firebase - what to sync? always?
+Public folders where people can publish patches?
 
 UI/UX
 * Different log levels with error colors
