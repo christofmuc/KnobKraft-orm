@@ -143,6 +143,12 @@ Here is the example implementation for the Korg DW6000:
 
 Basically I just check the first 4 bytes of the message. The `len()` check only prevents an index out of bounds exception should the message be shorter. When the first 4 bytes of the message match my expectations, I return 1 as a valid MIDI channel. In the case of the DW6000 there is no way to detect the channel, but that doesn't prevent the Librarian from working. The DW6000 as a low-budget synth simply was not equipped for the situation when somebody had two DW6000s!
 
+### Confusion about MIDI channel and "Device ID".
+
+ Note that many synths call the individual setting its Device ID and not the MIDI channel. Think of the Device ID as a channel used only for sysex messages. The idea was if you have more than one device of the same type, you still want to be able to communicate with each device separately, so you would set them to different device IDs in their setup and then the computer. In many documents (and the Orm) this gets confused/mixed up/used interchangingly with MIDI channel, so please be aware there are subtle differences.
+
+ Note that also many synths while allowing to specify a device ID actually will ignore it when being addressed. Many implementations are incomplete.
+
 ### Optionally specifying to not to channel specific detection
 
     def needsChannelSpecificDetection():
@@ -225,6 +231,51 @@ Here is the implementation for the DW6000:
 Important here is that in the third byte index by `message[2]` I want to only check the upper 4 bits and ignore the lower 4 bits, as they contain the MIDI channel and might be any value from 0..15. So with a binary and operator `&` I mask the upper 4 bits, and compare only those.
 
 *And yes, if you followed so far you see now that I should rather use the edit buffer request message to detect if a DW6000 is connected, because its reply reveals the channel.*
+
+### What about edit buffer dumps that consist of more than one MIDI message?
+
+Until Orm 1.15, the parameter message really was just a single message. But now we can deal with multi-message type synths: The parameter message basically just becomes a parameter messages, which is the same as before, a list of bytes, and the adaptation has to do the work to split into multiple MIDI messages if that is of any relevance.
+
+The logic now works like this: An additional method `isPartOfEditBufferDump(message)` can be implemented, signaling by returning true that the message presented should be part of the messages parameter to the isEditBufferDump() message. In turn, the isEditBufferDump() should return only true if it has enough messages to complete the full edit buffer.
+
+As an example, we can look at a typical Yamaha Sysex implementation. Let's take the Yamaha reface DX, a 4 operator FM synth which has multiple messages per edit buffer dump.
+
+The isPartOfEditBufferDump is implemented like this:
+
+    def isPartOfEditBufferDump(message):
+        # Accept a certain set of addresses
+        return isBulkHeader(message) or isBulkFooter(message) or isCommonVoice(message) or isOperator(message)
+
+with the isBulkHeader etc functions checking this single MIDI message for certain bytes (their implementation can be found in the YamahaRefaceDX.py file in the repository.)
+
+Now isEditBufferDump(messages) gets presented all messages which have been received where isPartOfEditBufferDump() returned true. To check that all required messages have been received and the "messages" parameter really is a full edit buffer dump, we do:
+
+    def isEditBufferDump(data):
+        messages = splitSysexMessage(data)
+        headers = sum([1 if isBulkHeader(m) else 0 for m in messages])
+        footers = sum([1 if isBulkFooter(m) else 0 for m in messages])
+        common = sum([1 if isCommonVoice(m) else 0 for m in messages])
+        operators = sum([1 if isOperator(m) else 0 for m in messages])
+
+        return headers == 1 and footers == 1 and common == 1 and operators == 4
+
+so basically we split the data or messages parameter into individual messages with the function presented below, and then count that we received exactly 1 header, 1 footer, 1 common and 4 operator messages. Those 7 messages together will then be stored as one patch in the Orm's database.
+
+Here is the splitSysexMessage function used:
+
+    def splitSysexMessage(messages):
+        result = []
+        start = 0
+        read = 0
+        while read < len(messages):
+            if messages[read] == 0xf0:
+                start = read
+            elif messages[read] == 0xf7:
+                result.append(messages[start:read + 1])
+            read = read + 1
+        return result
+
+this expects a list of bytes, and will return a list of byte lists, with each byte list starting with 0xf0 and ending with 0xf7. bytes outside of the first 0xf0 and the last matching 0xf7 will be ignored.
 
 ### Creating the edit buffer to send
 
@@ -314,6 +365,8 @@ This is very similar to the `isEditBufferDump()` described before, and actually 
     def isSingleProgramDump(message):
         # The DW-6000 does not differentiate - you need to send program change messages in between to get other programs
         return isEditBufferDump(message)
+
+Note that the program dump capability can handle multi-MIDI message dump types exactly like the edit buffer capability (see above) by implementing a predicate function 'isPartOfSingleProgramDump'.
 
 ### Creating a message that stores a patch in a specific memory location
 
