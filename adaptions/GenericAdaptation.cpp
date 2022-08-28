@@ -224,7 +224,7 @@ namespace knobkraft {
 #ifdef __APPLE__
 		// The Apple might not have a Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
 		// First, check the location where the Python 3.10 Mac installer will put it (taken from python.org/downloads)
-		String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.10";
+	/*	String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.10";
 		File python38(python38_macHome);
 		if (!python38.exists()) {
 			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
@@ -240,23 +240,28 @@ namespace knobkraft {
 		}
 		else {
 			Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
-		}
+		}*/
 #endif
 		sGenericAdaptationPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
         File pathToTheOrm = File::getSpecialLocation (File::SpecialLocationType::currentExecutableFile).getParentDirectory();
         std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
+#ifdef __APPLE__
+        // For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find
+        // python code we are installing, e.g. the generic sequential module which is used by all Sequential synths
+        File pythonPath2 = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory();
+        std::string resetSysPath = "import sys\nsys.path = [R\"" + pythonPath2.getFullPathName().toStdString()
+                + "\"]\n"
+                + "sys.path.append(R\"" + pathToTheOrm.getChildFile("base_library.zip").getFullPathName().toStdString() + "\")\n"
+                + "sys.path.append(R\"" + pathToTheOrm.getChildFile("python_modules.zip").getFullPathName().toStdString() + "\")\n"
+                + "sys.path.append(R\"" + pathToTheOrm.getChildFile("lib-dynload").getFullPathName().toStdString() + "\")\n";
+        py::exec(resetSysPath);
+#endif
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
 				+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
 				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
 		py::exec(command);
-#ifdef __APPLE__
-		// For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find 
-		// python code we are installing, e.g. the generic sequential module which is used by all Sequential synths
-		File pythonPath2 = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory().getChildFile("python");
-		command = "import sys\nsys.path.append(R\"" + pythonPath2.getFullPathName().toStdString() + "\")\n";
-		py::exec(command);
-#endif
+        py::exec("import sys\nprint(sys.path)\n");
 		checkForPythonOutputAndLog();
 		sGenericAdaptationDontLockGIL = std::make_unique<py::gil_scoped_release>();
 		// From this point on, whenever you want to call into python you need to acquire the GIL 

@@ -1,0 +1,17 @@
+Very helpful:
+
+DYLD_PRINT_LIBRARIES=1 DYLD_PRINT_LIBRARIES_POST_LAUNCH=1 DYLD_PRINT_RPATHS=1 ./builds-py3.9/The-Orm/KnobKraftOrm.app/Contents/MacOS/KnobKraftOrm
+shows runtime dynlib resolution
+
+otool -l ./builds-py3.9/The-Orm/KnobKraftOrm.app/Contents/MacOS/KnobKraftOrm
+shows full linking info
+
+otool -L ./builds-py3.9/The-Orm/KnobKraftOrm.app/Contents/MacOS/KnobKraftOrm
+shows short link info
+
+install_name_tool -change  /opt/homebrew/opt/python@3.9/Frameworks/Python.framework/Versions/3.9/Python @loader_path/Python ./builds-py3.9/The-Orm/KnobKraftOrm.app/Contents/MacOS/KnobKraftOrm
+changes link info in executable
+
+more output for pyinstaller
+pyinstaller KnobKraft\ Orm.spec --log-level=DEBUG
+

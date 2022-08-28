@@ -24,11 +24,10 @@ add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
 
-# On Windows, we need to download external dependencies
+# Include useful scripts for CMake
+include(FetchContent REQUIRED)
 IF (WIN32)
-	# Include useful scripts for CMake    
-	include(FetchContent REQUIRED)
-
+	# On Windows, we need to download external dependencies
     FetchContent_Declare(
 	  boost
 	  URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.zip"
@@ -90,6 +89,13 @@ ELSEIF(APPLE)
     
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
+
+	# We use pyinstaller extractor to create our own frozen Python for MacOS
+	FetchContent_Declare(
+			pyinstxtractor
+			URL https://github.com/extremecoders-re/pyinstxtractor/archive/refs/tags/2022.8.zip
+	)
+	FetchContent_MakeAvailable(pyinstxtractor)
 ELSEIF(UNIX)
 	# Include useful scripts for CMake
 	find_package(PkgConfig REQUIRED) 
