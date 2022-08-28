@@ -14,7 +14,7 @@ legacyDataLength = 38 + 4 * 28  # The old format stored only the required bytes,
 
 def name():
     # This is the same name as the C++ implementation, so it'd better be compatible!
-    return "Yamaha Reface DX"
+    return "Yamaha Reface DX adaption"
 
 
 def createDeviceDetectMessage(channel):
