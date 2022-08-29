@@ -11,6 +11,7 @@
 #include "SimpleDiscoverableDevice.h"
 #include "MidiController.h"
 #include "MidiChannel.h"
+#include "HasBanksCapability.h"
 #include "StreamLoadCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DataFileSendCapability.h"
@@ -24,7 +25,7 @@ namespace midikraft {
 
 	class BCRdefinition;
 
-	class BCR2000 : public Synth, public SimpleDiscoverableDevice, public StreamLoadCapability, public DataFileSendCapability {
+	class BCR2000 : public Synth, public HasBanksCapability, public SimpleDiscoverableDevice, public StreamLoadCapability, public DataFileSendCapability {
 	public:
 		struct BCRError {
 			uint8 errorCode;
