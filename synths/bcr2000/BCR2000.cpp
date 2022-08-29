@@ -539,7 +539,7 @@ namespace midikraft {
 		return message.isSysEx() && isSysexFromBCR2000(message);
 	}
 
-	std::vector<juce::MidiMessage> BCR2000::patchToSysex(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target)
+	std::vector<juce::MidiMessage> BCR2000::dataFileToSysex(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target)
 	{
 		ignoreUnused(target);
 		return Sysex::vectorToMessages(dataFile->data());
@@ -548,7 +548,7 @@ namespace midikraft {
 	void BCR2000::sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target)
 	{
 		if (wasDetected()) {
-			auto messages = patchToSysex(dataFile, target);
+			auto messages = dataFileToSysex(dataFile, target);
 			sendSysExToBCR(MidiController::instance()->getMidiOutput(midiOutput()), messages, [](std::vector<BCRError> const &errors) {
 				if (!errors.empty()) {
 					SimpleLogger::instance()->postMessage("Preset contains errors");

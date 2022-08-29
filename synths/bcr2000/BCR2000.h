@@ -11,6 +11,7 @@
 #include "SimpleDiscoverableDevice.h"
 #include "MidiController.h"
 #include "MidiChannel.h"
+#include "HasBanksCapability.h"
 #include "StreamLoadCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DataFileSendCapability.h"
@@ -24,7 +25,7 @@ namespace midikraft {
 
 	class BCRdefinition;
 
-	class BCR2000 : public Synth, public SimpleDiscoverableDevice, public StreamLoadCapability, public DataFileSendCapability {
+	class BCR2000 : public Synth, public HasBanksCapability, public SimpleDiscoverableDevice, public StreamLoadCapability, public DataFileSendCapability {
 	public:
 		struct BCRError {
 			uint8 errorCode;
@@ -88,7 +89,7 @@ namespace midikraft {
 		bool isOwnSysex(MidiMessage const &message) const override;
 
 		// Override generic message generation hander because we have our own way to store the data
-		virtual std::vector<MidiMessage> patchToSysex(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
+		virtual std::vector<MidiMessage> dataFileToSysex(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
 		// Override the generic send handler so we can do the proper error handling for the BCR2000
 		virtual void sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;
 
