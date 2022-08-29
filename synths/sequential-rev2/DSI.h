@@ -8,6 +8,7 @@
 
 #include "Synth.h"
 
+#include "HasBanksCapability.h"
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 #include "SoundExpanderCapability.h"
@@ -28,7 +29,7 @@ namespace midikraft {
 		int displayOffset = 0;
 	};
 
-	class DSISynth : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability,
+	class DSISynth : public Synth, public SimpleDiscoverableDevice, public HasBanksCapability, public EditBufferCapability, public ProgramDumpCabability,
 		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability, public GlobalSettingsCapability {
 	public:
 		// Basic Synth
