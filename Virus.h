@@ -8,22 +8,25 @@
 
 #include "Synth.h"
 #include "EditBufferCapability.h"
+#include "HasBanksCapability.h"
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 #include "SoundExpanderCapability.h"
 
 namespace midikraft {
 
-	class Virus : public Synth, public SimpleDiscoverableDevice, public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, public SoundExpanderCapability {
+	class Virus : public Synth, public SimpleDiscoverableDevice, public HasBanksCapability, public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, public SoundExpanderCapability {
 	public:
 		Virus();
 
 		// Basic Synth implementation
 		virtual std::string getName() const override;
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
+
+		// HasBanksCapability
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
-		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 
 		// This needs to be overridden because the Virus contains a lot of noise in the patch data that is not really relevant
