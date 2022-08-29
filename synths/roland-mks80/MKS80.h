@@ -9,6 +9,7 @@
 #include "JuceHeader.h"
 
 #include "Synth.h"
+#include "HasBanksCapability.h"
 #include "EditBufferCapability.h"
 #include "HandshakeLoadingCapability.h"
 #include "DetailedParametersCapability.h"
@@ -21,20 +22,19 @@
 
 namespace midikraft {
 
-	class MKS80 : public Synth, public EditBufferCapability, public HandshakeLoadingCapability,
+	class MKS80 : public Synth, public EditBufferCapability, public HasBanksCapability, public HandshakeLoadingCapability,
 		public SimpleDiscoverableDevice, public DetailedParametersCapability,
 		public LegacyLoaderCapability, public SoundExpanderCapability, public SupportedByBCR2000 {
 	public:
 		MKS80();
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const override;
+		virtual bool isOwnSysex(MidiMessage const& message) const override;
 
+		// HasBanksCapability
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
-		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
-
-		virtual bool isOwnSysex(MidiMessage const &message) const override;
 
 		virtual std::vector<MidiMessage> deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;
