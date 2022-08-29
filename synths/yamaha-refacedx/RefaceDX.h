@@ -8,6 +8,7 @@
 
 #include "Synth.h"
 #include "RefaceDXDiscovery.h"
+#include "HasBanksCapability.h"
 #include "StreamLoadCapability.h"
 #include "DataFileSendCapability.h"
 #include "MasterkeyboardCapability.h"
@@ -15,18 +16,20 @@
 
 namespace midikraft {
 
-	class RefaceDX : public Synth, public RefaceDXDiscovery, public StreamLoadCapability, public DataFileSendCapability, public SoundExpanderCapability, public MasterkeyboardCapability {
+	class RefaceDX : public Synth, public RefaceDXDiscovery, public HasBanksCapability, public StreamLoadCapability, public DataFileSendCapability, public SoundExpanderCapability, public MasterkeyboardCapability {
 	public:
 		virtual std::string getName() const override;
 
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
 		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
+		Synth::PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
+
+		// HasBanksCapability
+		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
-		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
-		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-		Synth::PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
 		// StreamLoadCapability
 		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) const override;
