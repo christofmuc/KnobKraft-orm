@@ -9,17 +9,19 @@
 #include "JuceHeader.h"
 
 #include "Synth.h"
+#include "HasBanksCapability.h"
 #include "EditBufferCapability.h"
 #include "HandshakeLoadingCapability.h"
 #include "DetailedParametersCapability.h"
 
 namespace midikraft {
 
-	class MKS50 : public Synth, public EditBufferCapability, public HandshakeLoadingCapability,
+	class MKS50 : public Synth, public HasBanksCapability, public EditBufferCapability, public HandshakeLoadingCapability,
 		public SimpleDiscoverableDevice, public DetailedParametersCapability {
 	public:
 		MKS50();
 
+		// HasBanksCapability
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
