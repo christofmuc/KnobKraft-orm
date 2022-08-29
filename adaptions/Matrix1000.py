@@ -50,16 +50,14 @@ def isEditBufferDump(message):
             and message[3] == 0x0d)  # Single Program to Edit Buffer message
 
 
-def numberOfBanks():
-    return 10
-
-
-def numberOfPatchesPerBank():
-    return 100
+def bankDescriptors():
+    banks = [{"bank": x, "name": bankName(x), "size": 100, "isROM": x >= 2, "type": "Patch" } for x in range(10)]
+    print(banks)
+    return banks
 
 
 def bankAndProgramFromPatchNumber(patchNo):
-    return patchNo // numberOfPatchesPerBank(), patchNo % numberOfPatchesPerBank()
+    return patchNo // 100, patchNo % 100
 
 
 def createBankSelect(bank):
@@ -117,7 +115,7 @@ def convertToProgramDump(channel, message, patchNo):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
-def friendlyBankName(bank_number):
+def bankName(bank_number):
     return "%03d-%03d" % (bank_number * 100, (bank_number+1)*100-1)
 
 

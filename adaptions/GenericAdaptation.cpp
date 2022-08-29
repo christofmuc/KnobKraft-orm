@@ -18,9 +18,10 @@
 #include "GenericEditBufferCapability.h"
 #include "GenericProgramDumpCapability.h"
 #include "GenericBankDumpCapability.h"
+#include "GenericHasBanksCapability.h"
+#include "GenericHasBankDescriptorsCapability.h"
 
 #include <pybind11/stl.h>
-//#include <pybind11/pybind11.h>
 #include <memory>
 
 namespace py = pybind11;
@@ -34,6 +35,7 @@ namespace knobkraft {
 		*kName = "name",
 		*kNumberOfBanks = "numberOfBanks",
 		*kNumberOfPatchesPerBank = "numberOfPatchesPerBank",
+		*kBankDescriptors = "bankDescriptors",
 		*kCreateDeviceDetectMessage = "createDeviceDetectMessage",
 		*kChannelIfValidDeviceResponse = "channelIfValidDeviceResponse",
 		*kNeedsChannelSpecificDetection = "needsChannelSpecificDetection",
@@ -67,6 +69,7 @@ namespace knobkraft {
 		kName,
 		kNumberOfBanks,
 		kNumberOfPatchesPerBank,
+		kBankDescriptors,
 		kCreateDeviceDetectMessage,
 		kChannelIfValidDeviceResponse,
 		kNeedsChannelSpecificDetection,
@@ -99,8 +102,6 @@ namespace knobkraft {
 
 	std::vector<const char *> kMinimalRequiredFunctionNames = {
 		kName,
-		kNumberOfBanks,
-		kNumberOfPatchesPerBank,
 		kCreateDeviceDetectMessage,
 		kChannelIfValidDeviceResponse,
 	};
@@ -120,13 +121,14 @@ namespace knobkraft {
 		using std::runtime_error::runtime_error;
 	};
 
-
 	GenericAdaptation::GenericAdaptation(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
 		py::gil_scoped_acquire acquire;
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
+		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
+		hasBankDescriptorsCapabilityImpl_= std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -388,61 +390,6 @@ namespace knobkraft {
 		catch (std::exception &ex) {
 			logAdaptationError(kNumberOfBanks, ex);
 		}
-	}
-
-	int GenericAdaptation::numberOfBanks() const
-	{
-		py::gil_scoped_acquire acquire;
-		try {
-			py::object result = callMethod(kNumberOfBanks);
-			return result.cast<int>();
-		}
-		catch (py::error_already_set &ex) {
-			logAdaptationError(kNumberOfBanks, ex);
-			ex.restore();
-		}
-		catch (std::exception &ex) {
-			logAdaptationError(kNumberOfBanks, ex);
-		}
-		return 1;
-	}
-
-	int GenericAdaptation::numberOfPatches() const
-	{
-		py::gil_scoped_acquire acquire;
-		try {
-			py::object result = callMethod(kNumberOfPatchesPerBank);
-			return result.cast<int>();
-		}
-		catch (py::error_already_set &ex) {
-			logAdaptationError(kNumberOfPatchesPerBank, ex);
-			ex.restore();
-		}
-		catch (std::exception &ex) {
-			logAdaptationError(kNumberOfPatchesPerBank, ex);
-		}
-		return 0;
-	}
-
-	std::string GenericAdaptation::friendlyBankName(MidiBankNumber bankNo) const
-	{
-		py::gil_scoped_acquire acquire;
-		if (!pythonModuleHasFunction(kFriendlyBankName)) {
-			return (boost::format("Bank %d") % bankNo.toOneBased()).str();
-		}
-		try {
-			int bankAsInt = bankNo.toZeroBased();
-			py::object result = callMethod(kFriendlyBankName, bankAsInt);
-			return result.cast<std::string>();
-		}
-		catch (py::error_already_set &ex) {
-			logAdaptationError(kFriendlyBankName, ex);
-			ex.restore();
-		}
-		catch (std::exception &ex) {
-			logAdaptationError(kFriendlyBankName, ex);
-		}
-		return "invalid name";
 	}
 
 	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
@@ -754,6 +701,49 @@ namespace knobkraft {
 		midikraft::BankDumpCapability *cap;
 		if (hasCapability(&cap)) {
 			outCapability = bankDumpCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::HasBanksCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kNumberOfBanks)
+			&& pythonModuleHasFunction(kNumberOfPatchesPerBank))
+		{
+			*outCapability = dynamic_cast<midikraft::HasBanksCapability*>(hasBanksCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::HasBanksCapability>& outCapability) const
+	{
+		midikraft::HasBanksCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = hasBanksCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kBankDescriptors))
+		{
+			*outCapability = dynamic_cast<midikraft::HasBankDescriptorsCapability*>(hasBankDescriptorsCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::HasBankDescriptorsCapability>& outCapability) const
+	{
+		midikraft::HasBankDescriptorsCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = hasBankDescriptorsCapabilityImpl_;
 			return true;
 		}
 		return false;

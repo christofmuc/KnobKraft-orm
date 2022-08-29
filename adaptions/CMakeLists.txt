@@ -31,6 +31,8 @@ set(Sources
 	GenericAdaptation.cpp GenericAdaptation.h
 	GenericBankDumpCapability.cpp GenericBankDumpCapability.h
 	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
+	GenericHasBankDescriptorsCapability.cpp GenericHasBankDescriptorsCapability.h
+	GenericHasBanksCapability.cpp GenericHasBanksCapability.h
 	GenericPatch.cpp GenericPatch.h
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
