@@ -10,6 +10,7 @@
 
 #include "Synth.h"
 #include "Patch.h"
+#include "HasBanksCapability.h"
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 #include "StreamLoadCapability.h"
@@ -25,6 +26,7 @@ namespace midikraft {
 
 	class Matrix1000 : public Synth, /* public SupportedByBCR2000, */
 		public SimpleDiscoverableDevice,
+		public HasBanksCapability, 
 		public EditBufferCapability, public ProgramDumpCabability, public StreamLoadCapability, // pretty complete MIDI implementation of the Matrix1000
 		public SoundExpanderCapability, public GlobalSettingsCapability
 	{
@@ -35,13 +37,15 @@ namespace midikraft {
 		// Basic Synth implementation
 		virtual std::string getName() const override;
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
-		virtual int numberOfBanks() const override;
-		virtual int numberOfPatches() const override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
-		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
+		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const override;
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;
 
+		// HasBanksCapability
+		virtual int numberOfBanks() const override;
+		virtual int numberOfPatches() const override;
+		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
+		
 		// Edit Buffer Capability
 		virtual std::vector<MidiMessage> requestEditBufferDump() const override;
 		virtual bool isEditBufferDump(const std::vector<MidiMessage>& message) const override;
