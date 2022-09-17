@@ -36,6 +36,7 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 			choices.add(bank.name);
 			choiceValues.add(bank.bank.toZeroBased());
 		}
+		numBanks_ = choices.size();
 	}
 	else {
 		auto bankList = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
@@ -47,8 +48,7 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 			}
 		}
 		else {
-			SimpleLogger::instance()->postMessage(fmt::format("Error: Synth {} has neither HasBankDescriptorsCapability nor HasBanksCapability implemented, can't open import banks dialog.", synth->getName()));
-			return;
+			SimpleLogger::instance()->postMessage(fmt::format("Error: Synth {} has neither HasBankDescriptorsCapability nor HasBanksCapability implemented, can't fill import banks dialog.", synth->getName()));
 		}
 	}
 	bankValue_ = Array<var>();
