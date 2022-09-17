@@ -5,6 +5,7 @@
 #
 
 # Finally owning a classic Roland so I can make a working and tested example on how to implement the Roland Synths
+from roland import *
 import knobkraft
 
 roland_id = 0x41  # Roland
@@ -19,33 +20,46 @@ command_dt1 = 0x12
 device_id = 0x10  # The Roland can have a device ID from 0x00 to 0x1f
 # - this finally kills my channel/device ID confusion
 
+edit_buffer_addresses_jv1080 = RolandData("JV-1080 Temporary Patch", 1, 4, 4,
+                                          [DataBlock((0x03, 0x00, 0x00, 0x00), 0x48, "Patch common"),
+                                           DataBlock((0x03, 0x00, 0x10, 0x00), (0x01, 0x01), "Patch tone 1"),
+                                           DataBlock((0x03, 0x00, 0x12, 0x00), (0x01, 0x01), "Patch tone 2"),
+                                           DataBlock((0x03, 0x00, 0x14, 0x00), (0x01, 0x01), "Patch tone 3"),
+                                           DataBlock((0x03, 0x00, 0x16, 0x00), (0x01, 0x01), "Patch tone 4")])
+
+program_buffer_addresses_jv1080 = RolandData("JV-1080 User Patches", 128, 4, 4,
+                                             [DataBlock((0x11, 0x00, 0x00, 0x00), 0x48, "Patch common"),
+                                              DataBlock((0x11, 0x00, 0x10, 0x00), (0x01, 0x01), "Patch tone 1"),
+                                              DataBlock((0x11, 0x00, 0x12, 0x00), (0x01, 0x01), "Patch tone 2"),
+                                              DataBlock((0x11, 0x00, 0x14, 0x00), (0x01, 0x01), "Patch tone 3"),
+                                              DataBlock((0x11, 0x00, 0x16, 0x00), (0x01, 0x01), "Patch tone 4")])
+
+edit_buffer_addresses_xv3080 = RolandData("XV-3080 Temporary Patch", 1, 4, 4,
+                                          [DataBlock((0x1f, 0x00, 0x00, 0x00), 0x4f, "Patch common"),
+                                           DataBlock((0x1f, 0x00, 0x02, 0x00), (0x01, 0x11), "Patch common MFX"),
+                                           DataBlock((0x1f, 0x00, 0x04, 0x00), 0x34, "Patch common Chorus"),
+                                           DataBlock((0x1f, 0x00, 0x06, 0x00), 0x53, "Patch common Reverb"),
+                                           DataBlock((0x1f, 0x00, 0x10, 0x00), 0x29, "Patch common Tone Mix Table"),
+                                           DataBlock((0x1f, 0x00, 0x20, 0x00), (0x01, 0x09), "Tone 1"),
+                                           DataBlock((0x1f, 0x00, 0x22, 0x00), (0x01, 0x09), "Tone 2"),
+                                           DataBlock((0x1f, 0x00, 0x24, 0x00), (0x01, 0x09), "Tone 3"),
+                                           DataBlock((0x1f, 0x00, 0x26, 0x00), (0x01, 0x09), "Tone 4")])
+
+program_buffer_addresses_xv3080 = RolandData("XV-3080 User Patches", 128, 4, 4,
+                                             [DataBlock((0x30, 0x00, 0x00, 0x00), 0x4f, "Patch common"),
+                                              DataBlock((0x30, 0x00, 0x02, 0x00), (0x01, 0x11), "Patch common MFX"),
+                                              DataBlock((0x30, 0x00, 0x04, 0x00), 0x34, "Patch common Chorus"),
+                                              DataBlock((0x30, 0x00, 0x06, 0x00), 0x53, "Patch common Reverb"),
+                                              DataBlock((0x30, 0x00, 0x10, 0x00), 0x29, "Patch common Tone Mix Table"),
+                                              DataBlock((0x30, 0x00, 0x20, 0x00), (0x01, 0x09), "Tone 1"),
+                                              DataBlock((0x30, 0x00, 0x22, 0x00), (0x01, 0x09), "Tone 2"),
+                                              DataBlock((0x30, 0x00, 0x24, 0x00), (0x01, 0x09), "Tone 3"),
+                                              DataBlock((0x30, 0x00, 0x26, 0x00), (0x01, 0x09), "Tone 4")])
+
 # Construct the Roland character set as specified in the MIDI implementation
 character_set = [' '] + [chr(x) for x in range(ord('A'), ord('Z') + 1)] + \
                 [chr(x) for x in range(ord('a'), ord('z') + 1)] + \
                 [chr(x) for x in range(ord('1'), ord('9') + 1)] + ['0', '-']
-
-
-class DataBlock:
-
-    def __init__(self, address: tuple, size, block_name: str):
-        self.address = address
-        self.block_name = block_name
-        self.size = DataBlock.size_to_number(size)
-
-    @staticmethod
-    def size_as_7bit_list(size, number_of_values):
-        return [(size >> ((number_of_values - 1 - i) * 7)) & 0x7f for i in range(number_of_values)]
-
-    @staticmethod
-    def size_to_number(size):
-        if isinstance(size, tuple):
-            num_values = len(size)
-            result = 0
-            for i in range(num_values):
-                result += size[i] << (7 * (num_values - 1 - i))
-            return result
-        else:
-            return size
 
 
 def name():
@@ -54,10 +68,6 @@ def name():
 
 def setupHelp():
     return "Make sure the Receive Exclusive parameter (SYSTEM/COMMON) is ON."
-
-
-# def generalMessageDelay():
-#    return 250
 
 
 def createDeviceDetectMessage(channel):
@@ -86,48 +96,37 @@ def needsChannelSpecificDetection():
 
 
 def bankDescriptors():
-    return [{"bank": 0, "name": "User Patches built-in", "size": 128, "type": "User Patch"}]
+    return [{"bank": 0, "name": "User Patches", "size": 128, "type": "User Patch"}]
 
 
-def createEditBufferRequest(channel):
+def createEditBufferRequest(_channel):
     # The edit buffer is called Patch mode temporary patch address
-    return [buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, [0x03, 0x00, 0x00, 0x00], []),
-            buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, [0x03, 0x00, 0x10, 0x00], []),
-            buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, [0x03, 0x00, 0x12, 0x00], []),
-            buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, [0x03, 0x00, 0x14, 0x00], []),
-            buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, [0x03, 0x00, 0x16, 0x00], [])]
-
-
-edit_buffer_addresses_jv1080 = [(0x03, 0x00, 0x00, 0x00),
-                                (0x03, 0x00, 0x10, 0x00),
-                                (0x03, 0x00, 0x12, 0x00),
-                                (0x03, 0x00, 0x14, 0x00),
-                                (0x03, 0x00, 0x16, 0x00)]
-
-edit_buffer_addresses_xv3080 = [(0x1f, 0x00, 0x00, 0x00),
-                                (0x1f, 0x00, 0x10, 0x00),
-                                (0x1f, 0x00, 0x12, 0x00),
-                                (0x1f, 0x00, 0x14, 0x00),
-                                (0x1f, 0x00, 0x16, 0x00)]
+    result = []
+    for i in range(len(edit_buffer_addresses_xv3080.data_blocks)):
+        address, size = edit_buffer_addresses_xv3080.address_and_size_for_sub_request(i, 0)
+        result += buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, address, size)
+    return result
 
 
 def isPartOfEditBufferDump(message):
     # Accept a certain set of addresses
     if isOwnSysex(message):
         model, command, address, data = parseRolandMessage(message)
-        return command == command_dt1 and (tuple(address) in set(edit_buffer_addresses_xv3080))
+        return command == command_dt1 and tuple(ignoreProgramPosition(address)) in set([x.address for x in edit_buffer_addresses_xv3080.data_blocks])
     return False
 
 
 def isEditBufferDump(data):
     addresses = set()
     for message in knobkraft.sysex.splitSysexMessage(data):
-        model, command, address, data = parseRolandMessage(message)
-        addresses.add(tuple(address))
-    return all(a in addresses for a in edit_buffer_addresses_xv3080)
+        if isOwnSysex(message):
+            model, command, address, data = parseRolandMessage(message)
+            addresses.add(tuple(address))
+    return all(a.address in addresses for a in edit_buffer_addresses_xv3080.data_blocks)
 
 
-def convertToEditBuffer(channel, message):
+def convertToEditBuffer(_channel, message):
+    print("Calling convert to edit buffer")
     editBuffer = []
     if isEditBufferDump(message) or isSingleProgramDump(message):
         # We need to poke the device ID and the edit buffer address into the 5 messages
@@ -138,43 +137,22 @@ def convertToEditBuffer(channel, message):
     raise Exception("Can only convert edit buffers to edit buffers!")
 
 
-program_buffer_addresses_jv1080 = [(0x11, 0x00, 0x00, 0x00),
-                                   (0x11, 0x00, 0x10, 0x00),
-                                   (0x11, 0x00, 0x12, 0x00),
-                                   (0x11, 0x00, 0x14, 0x00),
-                                   (0x11, 0x00, 0x16, 0x00)]
-
-program_buffer_addresses_xv3080 = [DataBlock((0x30, 0x00, 0x00, 0x00), 0x4f, "Patch common"),
-                                   DataBlock((0x30, 0x00, 0x02, 0x00), (0x01, 0x11), "Patch common MFX"),
-                                   DataBlock((0x30, 0x00, 0x04, 0x00), 0x34, "Patch common Chorus"),
-                                   DataBlock((0x30, 0x00, 0x06, 0x00), 0x53, "Patch common Reverb"),
-                                   DataBlock((0x30, 0x00, 0x10, 0x00), 0x29, "Patch common Tone Mix Table"),
-                                   DataBlock((0x30, 0x00, 0x20, 0x00), (0x01, 0x09), "Tone 1"),
-                                   DataBlock((0x30, 0x00, 0x22, 0x00), (0x01, 0x09), "Tone 2"),
-                                   DataBlock((0x30, 0x00, 0x24, 0x00), (0x01, 0x09), "Tone 3"),
-                                   DataBlock((0x30, 0x00, 0x26, 0x00), (0x01, 0x09), "Tone 4")]
-program_buffer_total_size_xv3080 = sum([f.size for f in program_buffer_addresses_xv3080])
-program_buffer_total_length = DataBlock.size_as_7bit_list(program_buffer_total_size_xv3080*8, 4)  # Why times 8?. You can't cross border
-#print("Sizes are " + ",".join([str(f.size) for f in program_buffer_addresses_xv3080]))
-#print(f"Total size is {program_buffer_total_size_xv3080} expressed as {program_buffer_total_length}")
-
-
 def ignoreProgramPosition(address):
     # The address[1] part is where the program number. To compare addresses we set it to 0
-    return (address[0], 0x00, address[2], address[3])
+    return address[0], 0x00, address[2], address[3]
 
 
-def createProgramDumpRequest(channel, patchNo):
+def createProgramDumpRequest(_channel, patchNo):
     # Patches are called User Patch USER: 001 to USER: 128 on the JV1080
-    program = patchNo % 128
-    return buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, [0x30, program, 0x00, 0x00], program_buffer_total_length)
+    address, size = program_buffer_addresses_xv3080.address_and_size_for_all_request(patchNo % 128)
+    return buildRolandMessage(models_supported["XV3080"], device_id, command_rq1, address, size)
 
 
 def isPartOfSingleProgramDump(message):
     # Accept a certain set of addresses
     if isOwnSysex(message):
         model, command, address, data = parseRolandMessage(message)
-        matches = tuple(ignoreProgramPosition(address)) in set([x.address for x in program_buffer_addresses_xv3080])
+        matches = tuple(ignoreProgramPosition(address)) in set([x.address for x in program_buffer_addresses_xv3080.data_blocks])
         return command == command_dt1 and matches
     return False
 
@@ -186,10 +164,10 @@ def isSingleProgramDump(data):
         model, command, address, data = parseRolandMessage(message)
         addresses.add(ignoreProgramPosition(address))
         programs.add(address[1])
-    return len(programs) == 1 and all(a.address in addresses for a in program_buffer_addresses_xv3080)
+    return len(programs) == 1 and all(a.address in addresses for a in program_buffer_addresses_xv3080.data_blocks)
 
 
-def convertToProgramDump(channel, message, program_number):
+def convertToProgramDump(_channel, message, program_number):
     programDump = []
     if isSingleProgramDump(message) or isEditBufferDump(message):
         # We need to poke the device ID and the program number into the 5 messages
@@ -212,8 +190,8 @@ def nameFromDump(message):
     if isSingleProgramDump(message) or isEditBufferDump(message):
         messages = knobkraft.sysex.splitSysexMessage(message)
         model, command, address, data = parseRolandMessage(messages[0])
-        name = ''.join([chr(x) for x in data[0:12]])
-        return name.strip()
+        patch_name = ''.join([chr(x) for x in data[0:12]])
+        return patch_name.strip()
     return 'Invalid'
 
 
@@ -260,29 +238,9 @@ def roland_checksum(data_block):
     return sum([-x for x in data_block]) & 0x7f
 
 
-def address_to_index(model, address):
-    # Addresses can be 3 or 4 bytes long with 7 relevant bits, Most Significant first
-    # For the XV-3080 and 4 bytes this gives an address space of 28bit or 256 MBytes
-    address_size = model["address_size"]
-    return sum([address[i] << ((address_size - 1) * 7) for i in range(address_size)])
-
-
-def index_to_address(model, index):
-    result = []
-    address_size = model["address_size"]
-    for i in range(address_size):
-        result = [((index >> (7 * i)) & 0x7f)] + result
-    return result
-
-
 def test():
     # First test the address calculations
     model = models_supported["XV3080"]
-    temporary_performance = [0x10, 0x00, 0x00, 0x00]
-    index1 = address_to_index(model, temporary_performance)
-    assert (index1 == 0x2000000)
-    address2 = index_to_address(model, index1)
-    assert (address2 == temporary_performance)
 
     # Example 1
     set_chorus_performance_common = [0xf0, 0x41, 0x10, 0x00, 0x10, 0x12, 0x10, 0x00, 0x04, 0x00, 0x02, 0x6a, 0xf7]
@@ -295,10 +253,10 @@ def test():
     assert (composed6 == set_chorus_performance_common)
 
     # Test weird address arithmetic
-    assert(DataBlock.size_to_number((0x1, 0x1, 0x1)) == (16384+128+1))
+    assert (DataBlock.size_to_number((0x1, 0x1, 0x1)) == (16384 + 128 + 1))
     for i in range(1200):
-        list = DataBlock.size_as_7bit_list(i, 4)
-        and_back = DataBlock.size_to_number(tuple(list))
+        list_address = DataBlock.size_as_7bit_list(i, 4)
+        and_back = DataBlock.size_to_number(tuple(list_address))
         assert (i == and_back)
 
     # Read a bank file
