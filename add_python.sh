@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # python3 /opt/homebrew/lib/python3.9/site-packages/pyinstaller/utils/cliutils/archive_viewer.py -h
-export CMAKE_BINARY_DIR=./builds-py3.9
+export CMAKE_BINARY_DIR=./builds-new
 
 # rm -rf build
 # rm -rf dist

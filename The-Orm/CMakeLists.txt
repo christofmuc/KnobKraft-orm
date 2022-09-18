@@ -226,14 +226,21 @@ IF(APPLE)
 		)
 	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
         )
-    
+
+	SET(CODESIGN_CERTIFICATE_NAME "-")
+
     INSTALL(CODE "include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+	execute_process(COMMAND codesign --force --deep --options runtime --timestamp
+			--entitlements \"${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements\"
+			--sign \"${CODESIGN_CERTIFICATE_NAME}\"
+			\"${APPS}\"
+			)
     " COMPONENT Runtime)
-    
+
     # Setup CPack variables
-    set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
+    set(CPACK_PACKAGE_ICON  "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
     set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
