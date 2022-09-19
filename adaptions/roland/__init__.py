@@ -122,22 +122,20 @@ class RolandSynth:
                  category_index: Optional[int] = None):
         self.name = name
         self.model_id = model_id
+        self._model_id_len = len(model_id)
         self.address_size = address_size
         self.edit_buffer = edit_buffer
         self.program_dump = program_dump
         self.category_index = category_index
 
     def isOwnSysex(self, message) -> bool:
-        if len(message) > (2 + self._model_id_len()):
-            if message[0] == 0xf0 and message[1] == roland_id and message[3:3 + self._model_id_len()] == self.model_id:
+        if len(message) > (2 + self._model_id_len):
+            if message[0] == 0xf0 and message[1] == roland_id and message[3:3 + self._model_id_len] == self.model_id:
                 return True
         return False
 
-    def _model_id_len(self) -> int:
-        return len(self.model_id)
-
     def _checksum_start(self) -> int:
-        return 4 + self._model_id_len()
+        return 4 + self._model_id_len
 
     def _ignoreProgramPosition(self, address) -> Tuple:
         # The address[1] part is where the program number is stored. To compare addresses we set it to 0
@@ -152,10 +150,14 @@ class RolandSynth:
         checksum_start = self._checksum_start()
         checksum = self.roland_checksum(message[checksum_start:-2])
         if checksum == message[-2]:
-            command = message[3 + self._model_id_len()]
+            command = message[3 + self._model_id_len]
             address = message[checksum_start:checksum_start + self.address_size]
             return command, address, message[checksum_start + self.address_size:-2]
         raise Exception("Checksum error in Roland message parsing, expected", message[-2], "but got", checksum)
+
+    def getCommandAndAddressFromRolandMessage(self, message: list) -> Tuple[int, List[int]]:
+        checksum_start = self._checksum_start()
+        return message[3 + self._model_id_len], message[checksum_start:checksum_start + self.address_size]
 
     @staticmethod
     def roland_checksum(data_block) -> int:
@@ -170,15 +172,18 @@ class RolandSynth:
         return result
 
     def isPartOfEditBufferDump(self, message):
-        # Accept a certain set of addresses
-        command, address, data = self.parseRolandMessage(message)
-        return command == command_dt1 and tuple(self._ignoreProgramPosition(address)) in self.edit_buffer.allowed_addresses
+        # Accept a certain set of addresses. This does not verify the checksum, for speed reasons, or check the size
+        if self.isOwnSysex(message):
+            command, address = self.getCommandAndAddressFromRolandMessage(message)
+            return command == command_dt1 and tuple(self._ignoreProgramPosition(address)) in self.edit_buffer.allowed_addresses
+        else:
+            return False
 
     def isEditBufferDump(self, messages):
         addresses = set()
-        for message in knobkraft.sysex.splitSysexMessage(messages):
-            if self.isOwnSysex(message):
-                command, address, data = self.parseRolandMessage(message)
+        for message in knobkraft.sysex.findSysexDelimiters(messages):
+            if self.isOwnSysex(messages[message[0]:message[1]]):
+                _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
                 addresses.add(tuple(self._ignoreProgramPosition(address)))
         return all(a in addresses for a in self.edit_buffer.allowed_addresses)
 
@@ -201,15 +206,18 @@ class RolandSynth:
 
     def isPartOfSingleProgramDump(self, message):
         # Accept a certain set of addresses
-        command, address, data = self.parseRolandMessage(message)
-        matches = tuple(self._ignoreProgramPosition(address)) in self.program_dump.allowed_addresses
-        return command == command_dt1 and matches
+        if self.isOwnSysex(message):
+            command, address = self.getCommandAndAddressFromRolandMessage(message)
+            matches = tuple(self._ignoreProgramPosition(address)) in self.program_dump.allowed_addresses
+            return command == command_dt1 and matches
+        else:
+            return False
 
-    def isSingleProgramDump(self, data):
+    def isSingleProgramDump(self, messages):
         addresses = set()
         programs = set()
-        for message in knobkraft.sysex.splitSysexMessage(data):
-            command, address, data = self.parseRolandMessage(message)
+        for message in knobkraft.sysex.findSysexDelimiters(messages):
+            _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
             addresses.add(self._ignoreProgramPosition(address))
             programs.add(address[1])
         return len(programs) == 1 and all(a in addresses for a in self.program_dump.allowed_addresses)
@@ -226,6 +234,21 @@ class RolandSynth:
                 msg_no += 1
             return programDump
         raise Exception("Can only convert single program dumps to program dumps!")
+
+    def numberFromDump(self, message) -> int:
+        if not self.isSingleProgramDump(message):
+            return 0
+        messages = knobkraft.sysex.findSysexDelimiters(message, 1)
+        _, address = self.getCommandAndAddressFromRolandMessage(message[messages[0][0]:messages[0][1]])
+        return address[1]
+
+    def nameFromDump(self, message) -> str:
+        if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
+            messages = knobkraft.sysex.findSysexDelimiters(message, 1)
+            _, _, data = self.parseRolandMessage(message[messages[0][0]:messages[0][1]])
+            patch_name = ''.join([chr(x) for x in data[0:12]])
+            return patch_name.strip()
+        return 'Invalid'
 
     def storedTags(self, message) -> List[str]:
         if self.category_index is not None:
@@ -254,21 +277,37 @@ _jv80_program_buffer_addresses = RolandData("JV-80 Internal Patch", 0x40, 4, 4,
 jv_80 = RolandSynth("JV-80", model_id=[0x46], address_size=4, edit_buffer=_jv80_edit_buffer_addresses, program_dump=_jv80_program_buffer_addresses)
 
 # JV-1080/JV-2080 are identical, only that the JV-2080 has 2 more bytes in the patch common section
-_jv1080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x48, "Patch common"),  # 0x4a, 2 bytes more than the JV-1080 for the JV-2080
+_jv1080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x48, "Patch common"),
                       DataBlock((0x00, 0x00, 0x10, 0x00), (0x01, 0x01), "Patch tone 1"),
                       DataBlock((0x00, 0x00, 0x12, 0x00), (0x01, 0x01), "Patch tone 2"),
                       DataBlock((0x00, 0x00, 0x14, 0x00), (0x01, 0x01), "Patch tone 3"),
                       DataBlock((0x00, 0x00, 0x16, 0x00), (0x01, 0x01), "Patch tone 4")]
-_jv1080_edit_buffer_addresses_jv1080 = RolandData("JV-1080 Temporary Patch", 1, 4, 4,
-                                                  (0x03, 0x00, 0x00, 0x00),
-                                                  _jv1080_patch_data)
+_jv1080_edit_buffer_addresses = RolandData("JV-1080 Temporary Patch", 1, 4, 4,
+                                           (0x03, 0x00, 0x00, 0x00),
+                                           _jv1080_patch_data)
 _jv1080_program_buffer_addresses = RolandData("JV-1080 User Patches", 128, 4, 4,
                                               (0x11, 0x00, 0x00, 0x00),
                                               _jv1080_patch_data)
-jv_1080 = RolandSynth("JV-1080", model_id=[0x6a], address_size=4, edit_buffer=_jv1080_edit_buffer_addresses_jv1080,
+jv_1080 = RolandSynth("JV-1080", model_id=[0x6a], address_size=4, edit_buffer=_jv1080_edit_buffer_addresses,
                       program_dump=_jv1080_program_buffer_addresses)
 
-# XV-3080
+# JV-2080
+_jv2080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x4a, "Patch common"),  # 0x4a, 2 bytes more than the JV-1080 for the JV-2080
+                      DataBlock((0x00, 0x00, 0x10, 0x00), (0x01, 0x01), "Patch tone 1"),
+                      DataBlock((0x00, 0x00, 0x12, 0x00), (0x01, 0x01), "Patch tone 2"),
+                      DataBlock((0x00, 0x00, 0x14, 0x00), (0x01, 0x01), "Patch tone 3"),
+                      DataBlock((0x00, 0x00, 0x16, 0x00), (0x01, 0x01), "Patch tone 4")]
+_jv2080_edit_buffer_addresses = RolandData("JV-2080 Temporary Patch", 1, 4, 4,
+                                           (0x03, 0x00, 0x00, 0x00),
+                                           _jv2080_patch_data)
+_jv2080_program_buffer_addresses = RolandData("JV-2080 User Patches", 128, 4, 4,
+                                              (0x11, 0x00, 0x00, 0x00),
+                                              _jv2080_patch_data)
+jv_2080 = RolandSynth("JV-2080", model_id=[0x6a], address_size=4, edit_buffer=_jv2080_edit_buffer_addresses,
+                      program_dump=_jv2080_program_buffer_addresses,
+                      category_index=0x49)
+
+# XV-3080 and XV-5080. But the XV-5080 has these Patch Split Key messages as well!? We can ignore them?
 _xv3080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x4f, "Patch common"),
                       DataBlock((0x00, 0x00, 0x02, 0x00), (0x01, 0x11), "Patch common MFX"),
                       DataBlock((0x00, 0x00, 0x04, 0x00), 0x34, "Patch common Chorus"),
@@ -285,7 +324,8 @@ _xv3080_program_buffer_addresses = RolandData("XV-3080 User Patches", 128, 4, 4,
                                               (0x30, 0x00, 0x00, 0x00),
                                               _xv3080_patch_data)
 xv_3080 = RolandSynth("XV-3080", model_id=[0x00, 0x10], address_size=4, edit_buffer=_xv3080_edit_buffer_addresses,
-                      program_dump=_xv3080_program_buffer_addresses)
+                      program_dump=_xv3080_program_buffer_addresses,
+                      category_index=0x0c)
 #  and XV-5080 and XV-5050?
 
 

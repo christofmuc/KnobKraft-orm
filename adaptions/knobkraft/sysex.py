@@ -3,6 +3,8 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List, Tuple
+
 
 def load_sysex(filename):
     with open(filename, mode="rb") as midi_messages:
@@ -19,13 +21,25 @@ def load_sysex(filename):
 def splitSysexMessage(messages):
     result = []
     start = 0
-    read = 0
-    while read < len(messages):
+    for read in range(len(messages)):
         if messages[read] == 0xf0:
             start = read
         elif messages[read] == 0xf7:
             result.append(messages[start:read + 1])
-        read = read + 1
+    return result
+
+
+def findSysexDelimiters(messages, max_no=None) -> List[Tuple[int, int]]:
+    result = []
+    start = 0
+    for read in range(len(messages)):
+        if messages[read] == 0xf0:
+            start = read
+        elif messages[read] == 0xf7:
+            result.append((start, read + 1))
+            if max_no is not None and len(result) >= max_no:
+                # Early abort when we only want the first max_no messages
+                return result
     return result
 
 

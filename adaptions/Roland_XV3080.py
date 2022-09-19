@@ -18,11 +18,6 @@ models_supported = [
     jv_1080, xv_3080
 ]
 
-# Construct the Roland character set as specified in the MIDI implementation
-character_set = [' '] + [chr(x) for x in range(ord('A'), ord('Z') + 1)] + \
-                [chr(x) for x in range(ord('a'), ord('z') + 1)] + \
-                [chr(x) for x in range(ord('1'), ord('9') + 1)] + ['0', '-']
-
 
 def model_from_message(message) -> Optional[RolandSynth]:
     for synth in models_supported:
@@ -118,23 +113,25 @@ def convertToProgramDump(_channel, message, program_number):
     raise Exception("Can only convert edit buffers and program dumps of one of the compatible synths!")
 
 
-def numberFromDump(message):
-    if not isSingleProgramDump(message):
-        return 0
-    messages = knobkraft.sysex.splitSysexMessage(message)
+def numberFromDump(message) -> int:
     model = model_from_message(message)
-    command, address, data = model.parseRolandMessage(messages[0])
-    return address[1]
+    if model is not None:
+        return model.numberFromDump(message)
+    return 0
 
 
-def nameFromDump(message):
-    if isSingleProgramDump(message) or isEditBufferDump(message):
-        model = model_from_message(message)
-        messages = knobkraft.sysex.splitSysexMessage(message)
-        command, address, data = model.parseRolandMessage(messages[0])
-        patch_name = ''.join([chr(x) for x in data[0:12]])
-        return patch_name.strip()
+def nameFromDump(message) -> str:
+    model = model_from_message(message)
+    if model is not None:
+        return model.nameFromDump(message)
     return 'Invalid'
+
+
+def storedTags(message) -> List[str]:
+    model = model_from_message(message)
+    if model is not None:
+        return model.storedTags(message)
+    return []
 
 
 def test():
