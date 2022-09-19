@@ -63,7 +63,8 @@ namespace knobkraft {
 		*kCalculateFingerprint = "calculateFingerprint",
 		*kFriendlyBankName = "friendlyBankName",
 		*kFriendlyProgramName = "friendlyProgramName",
-		*kSetupHelp = "setupHelp";
+		*kSetupHelp = "setupHelp",
+		*kGetStoredTags = "storedTags";
 
 	std::vector<const char *> kAdapatationPythonFunctionNames = {
 		kName,
@@ -98,6 +99,7 @@ namespace knobkraft {
 		kFriendlyBankName,
 		kFriendlyProgramName,
 		kSetupHelp,
+		kGetStoredTags
 	};
 
 	std::vector<const char *> kMinimalRequiredFunctionNames = {

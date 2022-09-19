@@ -28,6 +28,13 @@ Open since 1.11
 * Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
 * Should be called Stream Load instead of DataFile
 
+Roland Synths
+* Should display Metadata item "size in bytes"
+* Could display "Type" which is calculated by adaptation
+* Sysex dissector with more color highlighting in hex display
+* Need still implement calcFingerprint, friendlyProgramName, renamePatch()
+* Need to figure out how to work with the backward compatible synths
+
 Before 2.0
 * Need easy clear filter button
 * SINGLE SYNTH SETUP MODE

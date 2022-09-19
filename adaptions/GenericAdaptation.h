@@ -35,7 +35,8 @@ namespace knobkraft {
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,
 		*kNumberOfLayers,
 		*kLayerName,
-		*kSetLayerName
+		*kSetLayerName,
+		*kGetStoredTags
 		;
 
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;

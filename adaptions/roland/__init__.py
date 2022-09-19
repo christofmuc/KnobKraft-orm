@@ -4,12 +4,60 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import knobkraft
 
 roland_id = 0x41  # Roland
 command_rq1 = 0x11
 command_dt1 = 0x12
+
+# Construct the Roland character set as specified in the MIDI implementation
+character_set = [' '] + [chr(x) for x in range(ord('A'), ord('Z') + 1)] + \
+                [chr(x) for x in range(ord('a'), ord('z') + 1)] + \
+                [chr(x) for x in range(ord('1'), ord('9') + 1)] + ['0', '-']
+
+# Roland categories (first defined for XV-2080)
+categories = {
+    0: ("-", "NO ASSIGN", "No assign"),
+    1: ("PNO", "AC. PIANO", "Acoustic Piano"),
+    2: ("EP", "EL. PIANO", "Electric Piano"),
+    3: ("KEY", "KEYBOARDS", "Other Keyboards"),
+    4: ("BEL", "BELL", "Bell"),
+    5: ("MLT", "MALLET", "Mallet"),
+    6: ("ORG", "ORGAN", "Electric and Church Organ"),
+    7: ("ACD", "ACCORDION", "Accordion"),
+    8: ("HRM", "HARMONICA", "Harmonica, Blues Harp"),
+    9: ("AGT", "AC.GUITAR", "Acoustic Guitar"),
+    10: ("EGT", "EL.GUITAR", "Electric Guitar"),
+    11: ("DGT", "DIST.GUITAR", "Distortion Guitar"),
+    12: ("BS", "BASS", "Acoustic & Electric Bass"),
+    13: ("SBS", "SYNTH BASS", "Synth Bass"),
+    14: ("STR", "STRINGS", "Strings"),
+    15: ("ORC", "ORCHESTRA", "Orchestra Ensemble"),
+    16: ("HIT", "HIT&STAB", "Orchestra Hit, Hit"),
+    17: ("WND", "WIND", "Winds (Oboe, Clarinet etc.)"),
+    18: ("FLT", "FLUTE", "Flute, Piccolo"),
+    19: ("BRS", "AC.BRASS", "Acoustic Brass"),
+    20: ("SBR", "SYNTH BRASS", "Synth Brass"),
+    21: ("SAX", "SAX", "Sax"),
+    22: ("HLD", "HARD LEAD", "Hard Synth Lead"),
+    23: ("SLD", "SOFT LEAD", "Soft Synth Lead"),
+    24: ("TEK", "TECHNO SYNTH", "Techno Synth"),
+    25: ("PLS", "PULSATING", "Pulsating Synth"),
+    26: ("FX", "SYNTH FX", "Synth FX (Noise etc.)"),
+    27: ("SYN", "OTHER SYNTH", "Poly Synth"),
+    28: ("BPD", "BRIGHT PAD", "Bright Pad Synth"),
+    29: ("SPD", "SOFT PAD", "Soft Pad Synth"),
+    30: ("VOX", "VOX", "Vox, Choir"),
+    31: ("PLK" "PLUCKED", "Plucked (Harp etc.)"),
+    32: ("ETH", "ETHNIC", "Other Ethnic"),
+    33: ("FRT", "FRETTED", "Fretted Inst (Mandolin etc.)"),
+    34: ("PRC", "PERCUSSION", "Percussion"),
+    35: ("SFX", "SOUND FX", "Sound FX"),
+    36: ("BTS", "BEAT&GROOVE", "Beat and Groove"),
+    37: ("DRM", "DRUMS", "Drum Set"),
+    38: ("CMB", "COMBINATION", "Other Patches which use Split and Layer"),
+}
 
 
 class DataBlock:
@@ -70,12 +118,14 @@ class RolandData:
 
 
 class RolandSynth:
-    def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData):
+    def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
+                 category_index: Optional[int] = None):
         self.name = name
         self.model_id = model_id
         self.address_size = address_size
         self.edit_buffer = edit_buffer
         self.program_dump = program_dump
+        self.category_index = category_index
 
     def isOwnSysex(self, message) -> bool:
         if len(message) > (2 + self._model_id_len()):
@@ -176,6 +226,17 @@ class RolandSynth:
                 msg_no += 1
             return programDump
         raise Exception("Can only convert single program dumps to program dumps!")
+
+    def storedTags(self, message) -> List[str]:
+        if self.category_index is not None:
+            if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
+                messages = knobkraft.sysex.findSysexDelimiters(message, 1)
+                _, _, data = self.parseRolandMessage(message[messages[0][0]:messages[0][1]])
+                category = data[self.category_index]
+                if 0 <= category < len(categories):
+                    return [categories[category][1]]
+                print(f"Warning - encountered invalid category number {category} for which no text is defined, ignoring")
+        return []
 
 
 # JV-80. The JV-90/JV-1000 share the model ID of the JV-80, but have two bytes more size than the JV-80. How do I handle that?
