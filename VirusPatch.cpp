@@ -84,11 +84,6 @@ namespace midikraft {
 		return page * 128 + index;
 	}
 
-	int VirusPatch::getNumTagsStored() const
-	{
-		return 2;
-	}
-
 	bool VirusPatch::setTags(std::set<Tag> const &tags)
 	{
 		ignoreUnused(tags);
