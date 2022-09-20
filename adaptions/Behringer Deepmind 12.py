@@ -118,3 +118,13 @@ def unescapeSysex(sysex):
                 result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
             dataIndex += 1
     return result
+
+
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[0], "name": "Brass Set 1     ", "number": 1}
+
+    return {"sysex": "testData/DM12_-_Juno_106_Presets_H.syx", "program_generator": programs}
+
+
