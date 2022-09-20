@@ -4,7 +4,6 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import sys
-import sequential
 import hashlib
 
 this_module = sys.modules[__name__]
@@ -215,16 +214,9 @@ def escapeSysex(data):
     return result
 
 
+# Test data picked up by test_adaptation.py
+#def test_data():
+#    def programs(messages):
+#        yield {"message": messages[1], "name": '/S/Toms/Zap~~Lo', "number": 0}
 #
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
-if __name__ == "__main__":
-    import unittest
-
-    messages = sequential.load_sysex("testData/Tempest_Factory_Sounds_1.0.syx")
-    for message in messages:
-        print(nameFromDump(message))
-    print(len(messages))
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[1],
-                                                                         program_name='Tom Sawyer'))
+#    return {"sysex": "testData/Tempest_Factory_Sounds_1.0.syx", "program_generator": programs}

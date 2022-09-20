@@ -19,8 +19,10 @@ sequential.GenericSequential(name="Sequential Take 5",
                              name_position=195,
                              ).install(this_module)
 
-if __name__ == "__main__":
-    import sys
-    import unittest
 
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(sys.modules[__name__]))
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[2], "name": 'Prophetic Sync', "number": 2}
+
+    return {"sysex": "testData/Take5_Factory_Set1_v1.0.syx", "program_generator": programs}

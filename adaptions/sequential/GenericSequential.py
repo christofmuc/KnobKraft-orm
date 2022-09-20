@@ -27,8 +27,8 @@ import hashlib
 class GenericSequential:
 
     def __init__(self, name, device_id, banks, patches_per_bank,
-                 name_len=0,
-                 name_position=0,
+                 name_len=None,
+                 name_position=None,
                  file_version=None,
                  id_list=None,
                  blank_out_zones=None,
@@ -265,7 +265,8 @@ class GenericSequential:
         setattr(module, 'numberOfPatchesPerBank', self.numberOfPatchesPerBank)
         setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
         setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
-        setattr(module, 'nameFromDump', self.nameFromDump)
+        if self.__name_len is not None and self.__name_position is not None:
+            setattr(module, 'nameFromDump', self.nameFromDump)
         setattr(module, 'numberFromDump', self.numberFromDump)
         setattr(module, 'convertToEditBuffer', self.convertToEditBuffer)
         setattr(module, 'convertToProgramDump', self.convertToProgramDump)

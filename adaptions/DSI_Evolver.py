@@ -22,8 +22,12 @@ sequential.GenericSequential(name="DSI Evolver",
                              patches_per_bank=128,
                              file_version=0x01
                              ).install(this_module)
-if __name__ == "__main__":
-    import sys
-    import unittest
 
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(sys.modules[__name__]))
+
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[5], "number": 261}  # It is bank 3, so it starts at 256 + 5 = 261
+
+    return {"sysex": "testData/Evolver_bank3_1-0.syx", "program_generator": programs}
+

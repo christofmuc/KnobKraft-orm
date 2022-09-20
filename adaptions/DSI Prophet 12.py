@@ -40,13 +40,9 @@ def setupHelp():
            "Both settings are accessible via the GLOBALS menu."
 
 
-if __name__ == "__main__":
-    import unittest
-    messages = sequential.load_sysex("testData/P12_Programs_v1.1c.syx")
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[5],
-                                                                         program_name='Wurly Trem ModWheel',
-                                                                         number=5))
-    assert(this_module.layerName(messages[5], 1) == 'Electric Standard')
-    new_messages = this_module.setLayerName(messages[5], 1, 'changed layer')
-    assert(this_module.layerName(new_messages, 1) == 'changed layer')
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[5], "name": 'Wurly Trem ModWheel', "number": 5, "second_layer_name": "Electric Standard"}
+
+    return {"sysex": "testData/P12_Programs_v1.1c.syx", "program_generator": programs}

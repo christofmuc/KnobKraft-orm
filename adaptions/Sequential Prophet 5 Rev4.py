@@ -22,13 +22,10 @@ synth = sequential.GenericSequential(name="Sequential Prophet-5",
                                      name_position=65,
                                      ).install(this_module)
 
-#
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
-if __name__ == "__main__":
-    import unittest
-    messages = sequential.load_sysex("testData/P5_Factory_Programs_v1.02.syx")
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[2],
-                                                                         program_name='Forever Keys'))
 
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[2], "name": 'Forever Keys', "number": 2}
+
+    return {"sysex": "testData/P5_Factory_Programs_v1.02.syx", "program_generator": programs}
