@@ -15,7 +15,7 @@ Note that not all synths need to implement all functions, so it is not necessari
 |DSI Pro 2|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|-|-|-|X|
 |DSI Prophet 08|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|-|-|-|-|
 |DSI Prophet 12|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|X|X|X|X|X|
-|DSI Evolver|X|X|X|X|X|X|X|-|X|-|-|X|-|-|X|-|X|-|-|-|-|-|
+|DSI Evolver|X|X|X|X|X|X|X|-|X|-|-|X|-|-|-|-|X|-|-|-|-|-|
 |DSI Mopho|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|-|-|-|-|
 |DSI Mopho X4|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|-|-|-|-|
 |DSI Tempest|X|X|X|X|X|X|X|-|X|-|-|-|X|-|X|-|X|-|-|-|-|-|

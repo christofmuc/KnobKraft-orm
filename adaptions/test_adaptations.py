@@ -100,10 +100,13 @@ def test_convert_to_edit_buffer(adaptation, test_data: TestData):
                 previous_number = 0
                 if hasattr(adaptation, "numberFromDump"):
                     previous_number = adaptation.numberFromDump(program)
-                idempotent = adaptation.convertToProgramDump(0x00, program, previous_number)
-                assert knobkraft.list_compare(idempotent, program)
                 edit_buffer = adaptation.convertToEditBuffer(0x00, program)
                 assert adaptation.isEditBufferDump(edit_buffer)
+                if not hasattr(adaptation, "convertToProgramDump"):
+                    # Not much more we can test here
+                    return
+                idempotent = adaptation.convertToProgramDump(0x00, program, previous_number)
+                assert knobkraft.list_compare(idempotent, program)
                 program_buffer = adaptation.convertToProgramDump(0x00, edit_buffer, 11)
             elif adaptation.isEditBufferDump(program):
                 program_buffer = adaptation.convertToProgramDump(program, 11)
@@ -136,3 +139,16 @@ def test_layer_name(adaptation, test_data: TestData):
             assert adaptation.isSingleProgramDump(new_messages)
 
 
+@skip_targets("test_data")
+def test_fingerprinting(adaptation, test_data: TestData):
+    if hasattr(adaptation, "calculateFingerprint"):
+        for program in test_data.programs:
+            md5 = adaptation.calculateFingerprint(program["message"])
+            if hasattr(adaptation, "isSingleProgramDump") and hasattr(adaptation, "convertToProgramDump") and adaptation.isSingleProgramDump(program["message"]):
+                # Change program place and make sure the fingerprint didn't change
+                changed_position = adaptation.convertToProgramDump(0x09, program["message"], 0x21)
+                assert adaptation.calculateFingerprint(changed_position) == md5
+            # Change name and make sure the fingerprint didn't change
+            if hasattr(adaptation, "renamePatch"):
+                renamed = adaptation.renamePatch(program["message"], "iixxoo")
+                assert adaptation.calculateFingerprint(renamed) == md5
