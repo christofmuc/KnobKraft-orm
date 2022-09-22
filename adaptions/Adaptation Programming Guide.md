@@ -261,7 +261,7 @@ Now isEditBufferDump(messages) gets presented all messages which have been recei
 
 so basically we split the data or messages parameter into individual messages with the function presented below, and then count that we received exactly 1 header, 1 footer, 1 common and 4 operator messages. Those 7 messages together will then be stored as one patch in the Orm's database.
 
-Here is the splitSysexMessage function used:
+Here is the splitSysexMessage function used, you can also use it from the common Python package knobkraft found in the adaptation folder:
 
     def splitSysexMessage(messages):
         result = []
@@ -396,6 +396,7 @@ Some synths do no work with individual MIDI messages per patch, or even multiple
     def createBankDumpRequest(channel, bank)
     def isPartOfBankDump(message)
     def isBankDumpFinished(messages)
+    def extractPatchesFromBank(messages)
 
 ### Requesting a full bank dump
 

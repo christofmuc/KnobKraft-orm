@@ -36,6 +36,7 @@ Roland Synths
 * Need to figure out how to work with the backward compatible synths
 
 Before 2.0
+* Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
 * Need easy clear filter button
 * SINGLE SYNTH SETUP MODE
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!

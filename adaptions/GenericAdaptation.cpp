@@ -341,7 +341,9 @@ namespace knobkraft {
 		if (adaptationDirectory.exists()) {
 			for (auto f : adaptationDirectory.findChildFiles(File::findFiles, false, "*.py")) {
 				try {
-					result.push_back(std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString()));
+					if (!f.getFileName().startsWith("test_") && f.getFileName() != "conftest.py") {
+						result.push_back(std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString()));
+					}
 				}
 				catch (FatalAdaptationException &) {
 					SimpleLogger::instance()->postMessage("Unloading adaptation module " + String(f.getFullPathName()));
@@ -386,11 +388,11 @@ namespace knobkraft {
 			logNamespace();
 		}
 		catch (py::error_already_set &ex) {
-			logAdaptationError(kNumberOfBanks, ex);
+			logAdaptationError("reload module", ex);
 			ex.restore();
 		}
 		catch (std::exception &ex) {
-			logAdaptationError(kNumberOfBanks, ex);
+			logAdaptationError("reload module", ex);
 		}
 	}
 
