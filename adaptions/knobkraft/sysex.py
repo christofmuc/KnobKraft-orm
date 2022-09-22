@@ -60,3 +60,20 @@ def splitSysex(byte_list):
             print("Skipping invalid byte", byte_list[index])
             index += 1
     return result
+
+
+def unescapeSysex_deepmind(sysex):
+    # This implements the algorithm defined on page 141 of the Deepmind user manual. I think it is the same as DSI uses
+    result = []
+    dataIndex = 0
+    while dataIndex < len(sysex):
+        msbits = sysex[dataIndex]
+        dataIndex += 1
+        for i in range(7):
+            if dataIndex < len(sysex):
+                result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
+            dataIndex += 1
+    return result
+
+
+
