@@ -19,7 +19,7 @@ models_supported = [
 ]
 
 
-def model_from_message(message) -> Optional[RolandSynth]:
+def model_from_message(message) -> Optional[GenericRoland]:
     for synth in models_supported:
         if synth.isOwnSysex(message):
             return synth
@@ -125,6 +125,13 @@ def nameFromDump(message) -> str:
     if model is not None:
         return model.nameFromDump(message)
     return 'Invalid'
+
+
+def calculateFingerprint(message) -> int:
+    model = model_from_message(message)
+    if model is not None:
+        return model.calculateFingerprint(message)
+    raise Exception("Can't fingerprint data that is not of one of the defined Roland Synths")
 
 
 def storedTags(message) -> List[str]:

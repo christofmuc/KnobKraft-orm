@@ -3,7 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
-
+import hashlib
 from typing import List, Tuple, Optional
 import knobkraft
 
@@ -92,6 +92,21 @@ class RolandData:
         self.data_blocks = blocks
         self.size = self.total_size()
         self.allowed_addresses = set([self.absolute_address(x.address) for x in self.data_blocks])
+        self.blank_out_zones = None
+
+    def make_black_out_zones(self, model_id_length: int, program_position: int = None, name_blankout: Tuple[int, int, int] = None):
+        # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
+        # message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
+        data_block_overhead = 3 + model_id_length + 1 + 2
+        self.blank_out_zones = []
+        if program_position is not None:
+            # We want the fingerprint to ignore the program position
+            self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
+        if name_blankout is not None:
+            self.blank_out_zones += [(self._start_index_of_block(name_blankout[0], data_block_overhead) + name_blankout[1], name_blankout[2])]
+
+    def _start_index_of_block(self, block_no, data_block_overhead):
+        return sum((self.data_blocks[i].size + data_block_overhead) for i in range(block_no + 1))
 
     def total_size(self) -> int:
         return sum([f.size for f in self.data_blocks])
@@ -117,7 +132,7 @@ class RolandData:
         return concrete_address, self.total_size_as_list()
 
 
-class RolandSynth:
+class GenericRoland:
     def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
                  category_index: Optional[int] = None):
         self.name = name
@@ -127,6 +142,10 @@ class RolandSynth:
         self.edit_buffer = edit_buffer
         self.program_dump = program_dump
         self.category_index = category_index
+        # Calculate the fingerprint blank out zones for edit buffer (just the name) and program dump (program position and name)
+        edit_buffer.make_black_out_zones(self._model_id_len, 5 + self._model_id_len)
+        program_dump.make_black_out_zones(self._model_id_len, 5 + self._model_id_len,
+                                          (0, 0, 12))  # name always is in block 0 with index 0 and length 12
 
     def isOwnSysex(self, message) -> bool:
         if len(message) > (2 + self._model_id_len):
@@ -235,6 +254,23 @@ class RolandSynth:
             return programDump
         raise Exception("Can only convert single program dumps to program dumps!")
 
+    @staticmethod
+    def _apply_blankout(data: List[int], blankout: List[Tuple[int, int]]):
+        result = data
+        for blank in blankout:
+            for i in range(blank[1]):
+                result[blank[0] + i] = 0
+        return result
+
+    def calculateFingerprint(self, message):
+        # Use the prepared blank out zones to clear out a) program place and b) patch name
+        if self.isEditBufferDump(message):
+            return hashlib.md5(bytearray(self._apply_blankout(message, self.edit_buffer.blank_out_zones))).hexdigest()
+        elif self.isSingleProgramDump(message):
+            return hashlib.md5(bytearray(self._apply_blankout(message, self.program_dump.blank_out_zones))).hexdigest()
+        else:
+            return hashlib.md5(bytearray(message)).hexdigest()
+
     def numberFromDump(self, message) -> int:
         if not self.isSingleProgramDump(message):
             return 0
@@ -274,7 +310,7 @@ _jv80_edit_buffer_addresses = RolandData("JV-80 Temporary Patch", 1, 4, 4,
 _jv80_program_buffer_addresses = RolandData("JV-80 Internal Patch", 0x40, 4, 4,
                                             (0x01, 0x40, 0x20, 0x00),  # This is start address, needs offset address added!
                                             _jv80_patch_data)
-jv_80 = RolandSynth("JV-80", model_id=[0x46], address_size=4, edit_buffer=_jv80_edit_buffer_addresses, program_dump=_jv80_program_buffer_addresses)
+jv_80 = GenericRoland("JV-80", model_id=[0x46], address_size=4, edit_buffer=_jv80_edit_buffer_addresses, program_dump=_jv80_program_buffer_addresses)
 
 # JV-1080/JV-2080 are identical, only that the JV-2080 has 2 more bytes in the patch common section
 _jv1080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x48, "Patch common"),
@@ -288,8 +324,8 @@ _jv1080_edit_buffer_addresses = RolandData("JV-1080 Temporary Patch", 1, 4, 4,
 _jv1080_program_buffer_addresses = RolandData("JV-1080 User Patches", 128, 4, 4,
                                               (0x11, 0x00, 0x00, 0x00),
                                               _jv1080_patch_data)
-jv_1080 = RolandSynth("JV-1080", model_id=[0x6a], address_size=4, edit_buffer=_jv1080_edit_buffer_addresses,
-                      program_dump=_jv1080_program_buffer_addresses)
+jv_1080 = GenericRoland("JV-1080", model_id=[0x6a], address_size=4, edit_buffer=_jv1080_edit_buffer_addresses,
+                        program_dump=_jv1080_program_buffer_addresses)
 
 # JV-2080
 _jv2080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x4a, "Patch common"),  # 0x4a, 2 bytes more than the JV-1080 for the JV-2080
@@ -303,9 +339,9 @@ _jv2080_edit_buffer_addresses = RolandData("JV-2080 Temporary Patch", 1, 4, 4,
 _jv2080_program_buffer_addresses = RolandData("JV-2080 User Patches", 128, 4, 4,
                                               (0x11, 0x00, 0x00, 0x00),
                                               _jv2080_patch_data)
-jv_2080 = RolandSynth("JV-2080", model_id=[0x6a], address_size=4, edit_buffer=_jv2080_edit_buffer_addresses,
-                      program_dump=_jv2080_program_buffer_addresses,
-                      category_index=0x49)
+jv_2080 = GenericRoland("JV-2080", model_id=[0x6a], address_size=4, edit_buffer=_jv2080_edit_buffer_addresses,
+                        program_dump=_jv2080_program_buffer_addresses,
+                        category_index=0x49)
 
 # XV-3080 and XV-5080. But the XV-5080 has these Patch Split Key messages as well!? We can ignore them?
 _xv3080_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x4f, "Patch common"),
@@ -323,9 +359,9 @@ _xv3080_edit_buffer_addresses = RolandData("XV-3080 Temporary Patch", 1, 4, 4,
 _xv3080_program_buffer_addresses = RolandData("XV-3080 User Patches", 128, 4, 4,
                                               (0x30, 0x00, 0x00, 0x00),
                                               _xv3080_patch_data)
-xv_3080 = RolandSynth("XV-3080", model_id=[0x00, 0x10], address_size=4, edit_buffer=_xv3080_edit_buffer_addresses,
-                      program_dump=_xv3080_program_buffer_addresses,
-                      category_index=0x0c)
+xv_3080 = GenericRoland("XV-3080", model_id=[0x00, 0x10], address_size=4, edit_buffer=_xv3080_edit_buffer_addresses,
+                        program_dump=_xv3080_program_buffer_addresses,
+                        category_index=0x0c)
 #  and XV-5080 and XV-5050?
 
 
