@@ -4,7 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 from typing import List, Tuple
-
+import binascii
 
 def load_sysex(filename):
     with open(filename, mode="rb") as midi_messages:
@@ -27,6 +27,10 @@ def splitSysexMessage(messages):
         elif messages[read] == 0xf7:
             result.append(messages[start:read + 1])
     return result
+
+
+def stringToSyx(string):
+    return list(binascii.unhexlify(string.replace(' ', '')))
 
 
 def findSysexDelimiters(messages, max_no=None) -> List[Tuple[int, int]]:

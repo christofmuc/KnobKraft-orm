@@ -154,3 +154,11 @@ def test_fingerprinting(adaptation, test_data: TestData):
             if hasattr(adaptation, "renamePatch"):
                 renamed = adaptation.renamePatch(program["message"], "iixxoo")
                 assert adaptation.calculateFingerprint(renamed) == md5
+
+
+@skip_targets("test_data")
+def test_device_detection(adaptation, test_data: TestData):
+    if "device_detect_call" in test_data.test_dict:
+        assert adaptation.createDeviceDetectMessage(0x00) == knobkraft.stringToSyx(test_data.test_dict["device_detect_call"])
+    if "device_detect_reply" in test_data.test_dict:
+        assert adaptation.channelIfValidDeviceResponse(knobkraft.stringToSyx(test_data.test_dict["device_detect_reply"])) == 0x00

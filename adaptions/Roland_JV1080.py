@@ -21,7 +21,7 @@ _jv1080_edit_buffer_addresses = RolandData("JV-1080 Temporary Patch", 1, 4, 4,
 _jv1080_program_buffer_addresses = RolandData("JV-1080 User Patches", 128, 4, 4,
                                               (0x11, 0x00, 0x00, 0x00),
                                               _jv1080_patch_data)
-jv_1080 = GenericRoland("JV-1080", model_id=[0x6a], address_size=4, edit_buffer=_jv1080_edit_buffer_addresses,
+jv_1080 = GenericRoland("JV-1080", model_id=[0x6a], device_family=None, address_size=4, edit_buffer=_jv1080_edit_buffer_addresses,
                         program_dump=_jv1080_program_buffer_addresses)
 jv_1080.install(this_module)
 

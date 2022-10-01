@@ -142,10 +142,11 @@ def knobkraft_api(func):
 
 
 class GenericRoland:
-    def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
+    def __init__(self, name: str, model_id: List[int], device_family: Optional[List[int]], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
                  category_index: Optional[int] = None):
         self._name = name
         self.model_id = model_id
+        self.device_family = device_family  # This is only used in the Identity Reply Message
         self.device_id = 0x10  # The Roland can have a device ID from 0x00 to 0x1f
         self._model_id_len = len(model_id)
         self.address_size = address_size
@@ -175,7 +176,7 @@ class GenericRoland:
                 and message[3] == 0x06  # Device request
                 and message[4] == 0x02  # Device request reply
                 and message[5] == 0x41  # Roland
-                and message[6:6 + self._model_id_len] == self.model_id):  # Family code expected
+                and message[6:6 + self._model_id_len] == self.device_family):  # Family code expected, this is *not* the model ID
             # and message[8:10] == [0x00, 0x00]):  # Family code
             self.device_id = message[2]  # Store the device ID for later, we'll need it
             return message[2] & 0x0f  # Simulate MIDI channel, but of course this is stupid
@@ -358,7 +359,7 @@ class GenericRoland:
 
 class GenericRolandWithBackwardCompatibility:
     def __init__(self, main_model: GenericRoland, compatible_models: List[GenericRoland]):
-        self.main_model = GenericRoland(main_model.name(), main_model.model_id, main_model.address_size, main_model.edit_buffer
+        self.main_model = GenericRoland(main_model.name(), main_model.model_id, main_model.device_family, main_model.address_size, main_model.edit_buffer
                                         , main_model.program_dump
                                         , category_index=main_model.category_index)
         self.models_supported = [main_model] + compatible_models

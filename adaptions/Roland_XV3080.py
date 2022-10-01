@@ -28,7 +28,11 @@ _xv3080_edit_buffer_addresses = RolandData("XV-3080 Temporary Patch", 1, 4, 4,
 _xv3080_program_buffer_addresses = RolandData("XV-3080 User Patches", 128, 4, 4,
                                               (0x30, 0x00, 0x00, 0x00),
                                               _xv3080_patch_data)
-xv_3080_main = GenericRoland("Roland XV-3080", model_id=[0x00, 0x10], address_size=4, edit_buffer=_xv3080_edit_buffer_addresses,
+xv_3080_main = GenericRoland("Roland XV-3080",
+                             model_id=[0x00, 0x10],
+                             device_family=[0x10, 0x01],  # Interestingly, the XV-3080 seems the first model to support the generic device inquiry
+                             address_size=4,
+                             edit_buffer=_xv3080_edit_buffer_addresses,
                              program_dump=_xv3080_program_buffer_addresses,
                              category_index=0x0c)
 xv_3080 = GenericRolandWithBackwardCompatibility(xv_3080_main, [jv_80, jv_1080])
@@ -56,7 +60,9 @@ def test_data():
                     if i >= len(names):
                         break
 
-    return {"sysex": "testData/AGSOUND1.SYX", "program_generator": programs}
+    return {"sysex": "testData/jv1080_AGSOUND1.SYX", "program_generator": programs,
+            "device_detect_call": "f0 7e 00 06 01 f7",
+            "device_detect_reply": "f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7"}
 
 
 def test():
