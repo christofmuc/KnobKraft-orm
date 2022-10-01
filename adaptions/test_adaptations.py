@@ -53,7 +53,9 @@ def test_data(adaptation):
 # These are generic tests every adaptation must pass
 #
 def test_name_is_not_none(adaptation):
-    assert adaptation.name() is not None
+    name = adaptation.name()
+    assert name is not None
+    assert isinstance(name, str)
 
 
 @skip_targets("test_data")

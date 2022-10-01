@@ -35,6 +35,16 @@ Roland Synths
 * Need still implement calcFingerprint, friendlyProgramName, renamePatch()
 * Need to figure out how to work with the backward compatible synths
 
+
+Code signing bundling
+https://cmake.org/cmake/help/latest/prop_tgt/XCODE_EMBED_type.html
+https://cmake.org/cmake/help/latest/prop_tgt/XCODE_EMBED_type_CODE_SIGN_ON_COPY.html#prop_tgt:XCODE_EMBED_%3Ctype%3E_CODE_SIGN_ON_COPY
+https://stackoverflow.com/questions/60329646/xcode-how-to-embed-a-framework-with-code-sign-on-copy-using-cmake#60421039
+Remember these are also for dylibs
+
+JD-800
+
+
 Before 2.0
 * Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
 * Need easy clear filter button
@@ -55,6 +65,10 @@ LISTS upgrades:
 
 Release 2.0
 * Add Bank Management
+
+Historical 
+https://www.mossgrabers.de/Software/ChangeIt/ChangeIt.html
+
 
 BUGS
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
