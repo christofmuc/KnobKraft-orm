@@ -16,6 +16,10 @@ set(adaptation_files
 		"Zoom_MS.py"
 )
 
+set(adaptation_support_files
+	"roland/__init__.py" "sequential/__init__.py" "sequential/GenericSequential.py"
+)
+
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h
 	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
 	DEPENDS ${adaptation_files}
@@ -37,6 +41,7 @@ set(Sources
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
+	${adaptation_support_files}
 )
 
 set_source_files_properties(
