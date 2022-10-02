@@ -31,7 +31,7 @@ Note that not all synths need to implement all functions, so it is not necessari
 |Korg 03R/W|X|X|X|X|X|X|X|-|-|-|X|-|X|X|-|-|-|-|-|-|-|-|
 |Matrix 6/6R|X|X|X|X|X|-|X|-|X|-|-|-|X|-|-|-|-|-|-|-|-|-|
 |Matrix 1000 Adaptation|-|-|X|X|X|-|X|-|X|-|-|-|X|-|X|-|-|-|-|-|-|-|
-|Novation Summit|-|-|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|X|-|-|-|
+|Novation Summit|-|-|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|X|X|-|-|-|
 |Novation UltraNova|X|X|X|X|X|X|X|-|X|-|-|X|X|X|X|X|X|X|-|-|-|X|
 |Oberheim OB-8|X|X|X|X|X|X|-|-|X|-|-|X|X|-|-|X|X|X|X|-|-|-|
 |Oberheim OB-X (Encore)|X|X|X|X|X|X|-|-|X|-|-|X|X|-|-|X|X|-|-|-|-|-|
@@ -41,6 +41,8 @@ Note that not all synths need to implement all functions, so it is not necessari
 |Roland JX-8P|X|X|X|X|X|X|X|-|-|-|-|-|X|-|-|-|-|-|-|-|-|-|
 |Roland D-50|-|-|X|X|-|-|-|-|-|-|-|-|X|-|-|-|-|-|-|-|-|-|
 |Roland S-10|-|-|X|X|-|-|-|-|-|-|-|-|X|-|-|-|-|-|-|-|-|-|
+|Roland JV-1080|-|-|X|X|X|-|X|X|X|X|-|X|X|-|-|-|X|-|-|-|-|-|
+|Roland JV-80|-|-|X|X|X|-|X|X|X|X|-|X|X|-|-|-|X|-|-|-|-|-|
 |Roland XV-3080|-|-|X|X|X|-|X|X|X|X|-|X|X|-|-|-|X|-|-|-|-|X|
 |Sequential Pro 3|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|-|-|-|-|
 |Sequential Prophet-5|X|X|X|X|X|X|X|-|X|-|-|X|X|-|X|-|X|-|-|-|-|-|

@@ -115,12 +115,12 @@ def renamePatch(message, new_name):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
-def bankName(bank):
+def friendlyBankName(bank):
     return f"Bank {chr(ord('A')+(bank % 4))}"
 
 
 def friendlyProgramName(program):
-    return "%s%d" % (bankName(program // 128), program % 128)
+    return "%s%d" % (friendlyBankName(program // 128), program % 128)
 
 
 def calculateFingerprint(message):
@@ -129,29 +129,9 @@ def calculateFingerprint(message):
     return hashlib.md5(bytearray(data)).hexdigest()
 
 
-def run_tests():
-    with open("testData/NovationPeak-Reflections.syx", "rb") as sysex:
-        raw_data = list(sysex.read())
-        assert isEditBufferDump(raw_data)
-        assert numberFromDump(raw_data) == 0
-
-        buffer = convertToEditBuffer(0, raw_data)
-        assert isEditBufferDump(buffer)
-        assert numberFromDump(buffer) == 0
-
-        back_dump = convertToProgramDump(1, buffer, 130)
-        assert numberFromDump(back_dump) == 130
-
-        assert nameFromDump(raw_data) == "Reflections"
-        assert nameFromDump(buffer) == nameFromDump(back_dump)
-        same_patch = renamePatch(raw_data, "Different")
-        assert nameFromDump(same_patch) == "Different"
-        same_same = renamePatch(same_patch, "Cr4zy Name°$    overflow")
-        assert nameFromDump(same_same) == "Cr4zy Name_$"
-
-        assert calculateFingerprint(same_same) == calculateFingerprint(raw_data)
-        assert bankName(2) == 'Bank C'
-
-
-if __name__ == "__main__":
-    run_tests()
+def test_data():
+    def programs(messages):
+        yield {"message": messages[0], "name": "Reflections", "number": 0, "is_edit_buffer": True}
+    return {"sysex": "testData/NovationPeak-Reflections.syx", "program_generator": programs,
+            "rename_name": "Cr4zy Name_$",
+            "friendly_bank_name": (2, 'Bank C')}

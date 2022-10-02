@@ -95,7 +95,10 @@ def test_rename(adaptation, test_data: TestData):
 @skip_targets("test_data")
 def test_is_program_dump(adaptation, test_data: TestData):
     for program in test_data.programs:
-        assert adaptation.isSingleProgramDump(program["message"])
+        if "is_edit_buffer" in program:
+            assert adaptation.isEditBufferDump(program["message"])
+        else:
+            assert adaptation.isSingleProgramDump(program["message"])
 
 
 @skip_targets("test_data")
@@ -116,9 +119,9 @@ def test_convert_to_edit_buffer(adaptation, test_data: TestData):
                 assert knobkraft.list_compare(idempotent, program)
                 program_buffer = adaptation.convertToProgramDump(0x00, edit_buffer, 11)
             elif adaptation.isEditBufferDump(program):
-                program_buffer = adaptation.convertToProgramDump(program, 11)
+                program_buffer = adaptation.convertToProgramDump(0x00, program, 11)
                 assert adaptation.isSingleProgramDump(program_buffer)
-                edit_buffer = adaptation.convertToEditBuffer(program_buffer)
+                edit_buffer = adaptation.convertToEditBuffer(0x00, program_buffer)
             else:
                 program_buffer = program
                 edit_buffer = None
@@ -173,3 +176,10 @@ def test_device_detection(adaptation, test_data: TestData):
 def test_program_dump_request(adaptation, test_data: TestData):
     if "program_dump_request" in test_data.test_dict:
         assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00), knobkraft.stringToSyx(test_data.test_dict["program_dump_request"]))
+
+
+@skip_targets("test_data")
+def test_friendly_bank_name(adaptation, test_data: TestData):
+    if "friendly_bank_name" in test_data.test_dict:
+        bank_data = test_data.test_dict["friendly_bank_name"]
+        assert adaptation.friendlyBankName(bank_data[0]) == bank_data[1]
