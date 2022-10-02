@@ -142,11 +142,16 @@ def knobkraft_api(func):
 
 
 class GenericRoland:
-    def __init__(self, name: str, model_id: List[int], device_family: Optional[List[int]], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
-                 category_index: Optional[int] = None):
+    def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
+                 category_index: Optional[int] = None,
+                 device_family: Optional[List[int]] = None,
+                 device_detect_message: Optional[RolandData] = None,
+                 device_detect_ids: Optional[List[int]] = None):
         self._name = name
         self.model_id = model_id
-        self.device_family = device_family  # This is only used in the Identity Reply Message
+        self.device_family = device_family  # This is only used in the Identity Reply Message.
+        self.device_detect_message = device_detect_message
+        self.device_detect_ids = None if device_detect_ids is None else set(device_detect_ids)
         self.device_id = 0x10  # The Roland can have a device ID from 0x00 to 0x1f
         self._model_id_len = len(model_id)
         self.address_size = address_size
@@ -164,27 +169,45 @@ class GenericRoland:
 
     @knobkraft_api
     def createDeviceDetectMessage(self, channel: int) -> List[int]:
-        # This is a sysex generic device detect message
-        return [0xf0, 0x7e, channel, 0x06, 0x01, 0xf7]
+        if self.device_family is not None:
+            # Detecting the Roland via an Identity Request message
+            # This is a sysex generic device detect message
+            return [0xf0, 0x7e, channel, 0x06, 0x01, 0xf7]
+        elif self.device_detect_message is not None:
+            # Might be an older (pre XV-3080) Roland, try to query for the system common first data block and see if it answers
+            address, size = self.device_detect_message.address_and_size_for_sub_request(0, 0)
+            return self.buildRolandMessage((channel + 0x10) & 0x1f, command_rq1, address, size)
+        else:
+            print(f"{self._name} adaptation: No auto detection implemented. Specify either device family for identity reply, or data block")
+            return []
 
     @knobkraft_api
     def channelIfValidDeviceResponse(self, message: List[int]) -> int:
-        # The Roland usually will reply on a Universal Device Identity Reply message
-        if (len(message) > 6 + self._model_id_len
-                and message[0] == 0xf0  # Sysex
-                and message[1] == 0x7e  # Non-realtime
-                and message[3] == 0x06  # Device request
-                and message[4] == 0x02  # Device request reply
-                and message[5] == 0x41  # Roland
-                and message[6:6 + self._model_id_len] == self.device_family):  # Family code expected, this is *not* the model ID
-            # and message[8:10] == [0x00, 0x00]):  # Family code
-            self.device_id = message[2]  # Store the device ID for later, we'll need it
-            return message[2] & 0x0f  # Simulate MIDI channel, but of course this is stupid
+        if self.device_family is not None:
+            # The Roland usually will reply on a Universal Device Identity Reply message
+            if (len(message) > 6 + self._model_id_len
+                    and message[0] == 0xf0  # Sysex
+                    and message[1] == 0x7e  # Non-realtime
+                    and message[3] == 0x06  # Device request
+                    and message[4] == 0x02  # Device request reply
+                    and message[5] == 0x41  # Roland
+                    and message[6:6 + self._model_id_len] == self.device_family):  # Family code expected, this is *not* the model ID
+                # and message[8:10] == [0x00, 0x00]):  # Family code
+                self.device_id = message[2]  # Store the device ID for later, we'll need it
+                return message[2] & 0x0f  # Simulate MIDI channel, but of course this is stupid
+        elif self.device_detect_message is not None:
+            # Check if the message is our own, and at the address we were expecting
+            if self.isOwnSysex(message):
+                command, address, reply = self.parseRolandMessage(message)
+                if command == command_dt1 and address == list(self.device_detect_message.absolute_address(self.device_detect_message.data_blocks[0].address)):
+                    self.device_id = message[2]
+                    return message[2] & 0x0f
         return -1
 
     @knobkraft_api
     def needsChannelSpecificDetection(self) -> bool:
-        return False
+        # When using a standard message, we actually need to iterate over all device IDs (not implemented yet, only channels 0 to 15)
+        return self.device_family is None
 
     @knobkraft_api
     def bankDescriptors(self):
@@ -359,9 +382,12 @@ class GenericRoland:
 
 class GenericRolandWithBackwardCompatibility:
     def __init__(self, main_model: GenericRoland, compatible_models: List[GenericRoland]):
-        self.main_model = GenericRoland(main_model.name(), main_model.model_id, main_model.device_family, main_model.address_size, main_model.edit_buffer
-                                        , main_model.program_dump
-                                        , category_index=main_model.category_index)
+        self.main_model = GenericRoland(main_model.name(), main_model.model_id, main_model.address_size, main_model.edit_buffer,
+                                        main_model.program_dump,
+                                        category_index=main_model.category_index,
+                                        device_family=main_model.device_family,
+                                        device_detect_message=main_model.device_detect_message,
+                                        device_detect_ids=main_model.device_detect_ids)
         self.models_supported = [main_model] + compatible_models
 
     def model_from_message(self, message) -> Optional[GenericRoland]:
