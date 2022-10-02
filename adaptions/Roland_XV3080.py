@@ -6,6 +6,7 @@
 
 # Finally owning a classic Roland so I can make a working and tested example on how to implement the Roland Synths
 import sys
+
 from roland import DataBlock, RolandData, GenericRoland, GenericRolandWithBackwardCompatibility
 from Roland_JV1080 import jv_1080
 from Roland_JV80 import jv_80
@@ -29,7 +30,7 @@ _xv3080_program_buffer_addresses = RolandData("XV-3080 User Patches", 128, 4, 4,
                                               (0x30, 0x00, 0x00, 0x00),
                                               _xv3080_patch_data)
 # This can be used as an alternative way to detect the XV-3080
-#_xv3080_system_common = RolandData("XV-3080 System Common", 1, 4, 4, (0x00, 0x00, 0x00, 0x00),
+# _xv3080_system_common = RolandData("XV-3080 System Common", 1, 4, 4, (0x00, 0x00, 0x00, 0x00),
 #                                   [DataBlock((0x00, 0x00, 0x00, 0x00), 0x28, "System common")])
 xv_3080_main = GenericRoland("Roland XV-3080",
                              model_id=[0x00, 0x10],
@@ -44,7 +45,7 @@ xv_3080.install(this_module)
 
 
 def setupHelp():
-    return "Make sure the Receive Exclusive parameter (SYSTEM/COMMON) is ON."
+    return "Make sure the Receive Exclusive parameter (SYSTEM/COMMON) is ON, and the synth is set to Patch Mode"
 
 
 # Test data picked up by test_adaptation.py
@@ -67,26 +68,3 @@ def test_data():
             "program_dump_request": "f0 41 10 00 10 11 30 00 00 00 00 00 3b 20 75 f7",
             "device_detect_call": "f0 7e 00 06 01 f7",
             "device_detect_reply": "f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7"}
-
-
-def test():
-    # Example 1
-    set_chorus_performance_common = [0xf0, 0x41, 0x10, 0x00, 0x10, 0x12, 0x10, 0x00, 0x04, 0x00, 0x02, 0x6a, 0xf7]
-    assert (roland.xv_3080.isOwnSysex(set_chorus_performance_common))
-    command3, address4, data5 = roland.xv_3080.parseRolandMessage(set_chorus_performance_common)
-    assert (command3 == 0x12)
-    assert (address4 == [0x10, 0x00, 0x04, 0x00])
-    assert (data5 == [0x02])
-    composed6 = roland.xv_3080.buildRolandMessage(0x10, roland.command_dt1, [0x10, 0x00, 0x04, 0x00], [0x02])
-    assert (composed6 == set_chorus_performance_common)
-
-    # Test weird address arithmetic
-    assert (roland.DataBlock.size_to_number((0x1, 0x1, 0x1)) == (16384 + 128 + 1))
-    for i in range(1200):
-        list_address = roland.DataBlock.size_as_7bit_list(i, 4)
-        and_back = roland.DataBlock.size_to_number(tuple(list_address))
-        assert (i == and_back)
-
-
-if __name__ == "__main__":
-    test()
