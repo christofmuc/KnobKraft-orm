@@ -124,7 +124,8 @@ class RolandData:
 
     def address_and_size_for_sub_request(self, sub_request, sub_address) -> Tuple[List[int], List[int]]:
         # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-        concrete_address = [(self.data_blocks[sub_request].address[i] + self.base_address[i]) if i != 1 else sub_address
+        concrete_address = [(self.data_blocks[sub_request].address[i] + self.base_address[i]) if i != 1
+                            else (sub_address + self.base_address[i])
                             for i in range(len(self.data_blocks[sub_request].address))]
         return concrete_address, DataBlock.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
 
@@ -137,7 +138,9 @@ class RolandData:
         # Somehow that does work, but not as expected. To get all messages from a single patch on an XV-3080, I need to multiply the size by 8???
 
         # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-        concrete_address = [self.data_blocks[0].address[i] if i != 1 else sub_address for i in range(len(self.data_blocks[0].address))]
+        concrete_address = [(self.data_blocks[0].address[i] + self.base_address[i]) if i != 1
+                            else (sub_address + self.base_address[i])
+                            for i in range(len(self.data_blocks[0].address))]
         return concrete_address, self.total_size_as_list()
 
 
@@ -353,7 +356,7 @@ class GenericRoland:
             return 0
         messages = knobkraft.sysex.findSysexDelimiters(message, 1)
         _, address = self.getCommandAndAddressFromRolandMessage(message[messages[0][0]:messages[0][1]])
-        return address[1]
+        return address[1] - self.program_dump.base_address[1]
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:

@@ -51,6 +51,9 @@ def test_data():
                             "F0 41 10 46 12 00 08 2B 00 00 02 0E 00 00 00 00 7F 01 01 00 40 00 40 00 40 00 40 00 40 00 40 03 7F 00 40 00 40 00 40 00 40 04 46 00 02 01 3C 00 00 00 00 40 40 40 05 02 00 3C 00 00 00 00 40 40 40 34 40 00 0C 40 07 07 07 40 00 40 00 40 00 40 00 40 01 7F 00 00 05 00 40 07 07 07 40 00 00 00 00 00 00 00 00 7F 07 04 00 07 00 00 00 00 60 07 07 07 36 6A 13 79 1A 7F 50 4A 7F 7F 00 00 5C F7"
         test_data = stringToSyx(xv_90_edit_buffer)
         program_dump = jv_80.convertToProgramDump(0x00, test_data, 0x22)
+        messages = knobkraft.splitSysex(program_dump)
+        command, address, message = jv_80.parseRolandMessage(messages[0])
+        assert address == [0x01, 0x40 + 0x22, 0x20, 0x00]
         yield {"message": program_dump, "name": "Crystal Vox", "number": 0x22}
 
     return {"program_generator": programs}
