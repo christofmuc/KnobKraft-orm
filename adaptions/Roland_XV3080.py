@@ -28,13 +28,16 @@ _xv3080_edit_buffer_addresses = RolandData("XV-3080 Temporary Patch", 1, 4, 4,
 _xv3080_program_buffer_addresses = RolandData("XV-3080 User Patches", 128, 4, 4,
                                               (0x30, 0x00, 0x00, 0x00),
                                               _xv3080_patch_data)
+# This can be used as an alternative way to detect the XV-3080
+#_xv3080_system_common = RolandData("XV-3080 System Common", 1, 4, 4, (0x00, 0x00, 0x00, 0x00),
+#                                   [DataBlock((0x00, 0x00, 0x00, 0x00), 0x28, "System common")])
 xv_3080_main = GenericRoland("Roland XV-3080",
                              model_id=[0x00, 0x10],
-                             device_family=[0x10, 0x01],  # Interestingly, the XV-3080 seems the first model to support the generic device inquiry
                              address_size=4,
                              edit_buffer=_xv3080_edit_buffer_addresses,
                              program_dump=_xv3080_program_buffer_addresses,
-                             category_index=0x0c)
+                             category_index=0x0c,
+                             device_family=[0x10, 0x01])  # Interestingly, the XV-3080 seems the first model to support the generic device inquiry
 xv_3080 = GenericRolandWithBackwardCompatibility(xv_3080_main, [jv_80, jv_1080])
 xv_3080.install(this_module)
 #  and XV-5080 and XV-5050?

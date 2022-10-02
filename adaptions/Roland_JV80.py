@@ -27,8 +27,14 @@ _jv80_program_buffer_addresses = RolandData("JV-80 Internal Patch"
                                             , num_size_bytes=4
                                             , base_address=(0x01, 0x40, 0x20, 0x00)
                                             , blocks=_jv80_patch_data)
-jv_80 = GenericRoland("Roland JV-80", model_id=[0x46], device_family=None, address_size=4, edit_buffer=_jv80_edit_buffer_addresses,
-                      program_dump=_jv80_program_buffer_addresses)
+_jv80_system_common = RolandData("JV-80 System Common", 1, 4, 4, (0x00, 0x00, 0x00, 0x00),
+                                   [DataBlock((0x00, 0x00, 0x00, 0x00), 0x21, "System common")])
+jv_80 = GenericRoland("Roland JV-80",
+                      model_id=[0x46],
+                      address_size=4,
+                      edit_buffer=_jv80_edit_buffer_addresses,
+                      program_dump=_jv80_program_buffer_addresses,
+                      device_detect_message=_jv80_system_common)
 
 jv_80.install(this_module)
 
