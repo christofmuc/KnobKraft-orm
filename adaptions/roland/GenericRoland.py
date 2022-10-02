@@ -99,6 +99,8 @@ class RolandData:
         # message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
         data_block_overhead = 3 + model_id_length + 1 + 2
         self.blank_out_zones = []
+        # Ignore checksums, because they might include the program position and will be different for an edit buffer and a program dump
+        self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
         if program_position is not None:
             # We want the fingerprint to ignore the program position
             self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
@@ -106,7 +108,10 @@ class RolandData:
             self.blank_out_zones += [(self._start_index_of_block(name_blankout[0], data_block_overhead) + name_blankout[1], name_blankout[2])]
 
     def _start_index_of_block(self, block_no, data_block_overhead):
-        return sum((self.data_blocks[i].size + data_block_overhead) for i in range(block_no + 1))
+        return sum([((0 if i == 0 else self.data_blocks[i-1].size) + data_block_overhead) for i in range(block_no + 1)])
+
+    def _end_index_of_block(self, block_no, data_block_overhead):
+        return self._start_index_of_block(block_no, data_block_overhead) + self.data_blocks[block_no].size - 1
 
     def total_size(self) -> int:
         return sum([f.size for f in self.data_blocks])
@@ -121,7 +126,7 @@ class RolandData:
         # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
         concrete_address = [(self.data_blocks[sub_request].address[i] + self.base_address[i]) if i != 1 else sub_address
                             for i in range(len(self.data_blocks[sub_request].address))]
-        return concrete_address, self.total_size_as_list()
+        return concrete_address, DataBlock.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
 
     def reset_to_base_address(self, address) -> Tuple:
         # The address[1] part is where the program number is stored. To compare addresses we reset it to the base address
