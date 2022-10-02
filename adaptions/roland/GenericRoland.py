@@ -255,11 +255,13 @@ class GenericRoland:
     @knobkraft_api
     def createEditBufferRequest(self, channel) -> List[int]:
         # The edit buffer is called Patch mode temporary patch
-        result = []
-        for i in range(len(self.edit_buffer.data_blocks)):
-            address, size = self.edit_buffer.address_and_size_for_sub_request(i, 0)
-            result += self.buildRolandMessage(self.device_id, command_rq1, address, size)
-        return result
+        address, size = self.edit_buffer.address_and_size_for_all_request(0)
+        return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        #result = []
+        #for i in range(len(self.edit_buffer.data_blocks)):
+        #    address, size = self.edit_buffer.address_and_size_for_sub_request(i, 0)
+        #    result += self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        #return result
 
     @knobkraft_api
     def isPartOfEditBufferDump(self, message):
