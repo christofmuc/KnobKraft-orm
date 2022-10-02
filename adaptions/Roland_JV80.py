@@ -5,7 +5,7 @@
 #
 import sys
 from roland import DataBlock, RolandData, GenericRoland
-from knobkraft import stringToSyx
+import knobkraft
 
 this_module = sys.modules[__name__]
 
@@ -49,7 +49,7 @@ def test_data():
                             "F0 41 10 46 12 00 08 29 00 00 02 0B 01 00 00 00 7F 01 01 05 44 00 40 00 40 00 40 05 41 00 40 03 7F 04 4D 00 40 00 40 00 40 04 46 01 02 01 5C 01 00 00 15 47 56 4C 05 02 01 47 00 00 00 5A 4A 7B 4D 34 40 00 0C 40 07 07 07 40 00 40 00 40 00 40 00 40 01 4F 00 00 05 00 60 07 07 07 7F 00 7F 2B 56 43 19 14 7F 6A 07 00 00 07 00 00 0E 00 60 04 07 07 34 68 36 66 4A 6C 50 03 7F 7F 00 00 36 F7" \
                             "F0 41 10 46 12 00 08 2A 00 00 02 09 01 00 00 00 7F 01 01 00 40 00 40 00 40 00 40 00 40 00 40 03 6E 00 40 00 40 00 40 00 40 04 46 00 02 01 3C 00 00 00 00 40 40 40 05 02 00 3C 00 00 00 00 40 40 40 34 40 00 0C 40 07 07 07 40 00 40 00 40 00 40 00 40 01 7F 00 00 05 00 40 07 07 07 40 00 00 00 00 00 00 00 00 7F 07 07 0F 07 00 00 00 00 60 07 07 07 2A 6A 13 79 1A 7F 50 4A 7F 5A 00 00 11 F7" \
                             "F0 41 10 46 12 00 08 2B 00 00 02 0E 00 00 00 00 7F 01 01 00 40 00 40 00 40 00 40 00 40 00 40 03 7F 00 40 00 40 00 40 00 40 04 46 00 02 01 3C 00 00 00 00 40 40 40 05 02 00 3C 00 00 00 00 40 40 40 34 40 00 0C 40 07 07 07 40 00 40 00 40 00 40 00 40 01 7F 00 00 05 00 40 07 07 07 40 00 00 00 00 00 00 00 00 7F 07 04 00 07 00 00 00 00 60 07 07 07 36 6A 13 79 1A 7F 50 4A 7F 7F 00 00 5C F7"
-        test_data = stringToSyx(xv_90_edit_buffer)
+        test_data = knobkraft.stringToSyx(xv_90_edit_buffer)
         program_dump = jv_80.convertToProgramDump(0x00, test_data, 0x22)
         messages = knobkraft.splitSysex(program_dump)
         command, address, message = jv_80.parseRolandMessage(messages[0])

@@ -83,9 +83,13 @@ def test_rename(adaptation, test_data: TestData):
         if hasattr(adaptation, "calculateFingerprint"):
             assert adaptation.calculateFingerprint(renamed) == adaptation.calculateFingerprint(binary)
         # Now rename
-        with_new_name = adaptation.renamePatch(binary, "new name")
+        if "rename_name" in test_data.test_dict:
+            new_name = test_data.test_dict["rename_name"]
+        else:
+            new_name = "new name"
+        with_new_name = adaptation.renamePatch(binary, new_name)
         new_name = adaptation.nameFromDump(with_new_name)
-        assert new_name.strip() == "new name"
+        assert new_name.strip() == new_name.strip()
 
 
 @skip_targets("test_data")

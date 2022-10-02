@@ -148,4 +148,5 @@ def test_data():
         patch_message = list(binascii.unhexlify(patch_from_device))
         yield {"message": patch_message, "name": 'BNK2: 16', "number": 1}
 
-    return {"program_generator": programs}
+    # Matrix1000 only has uppercase letters, so we need to specify a rename target name for the test
+    return {"program_generator": programs, "rename_name": "NEW NAME"}
