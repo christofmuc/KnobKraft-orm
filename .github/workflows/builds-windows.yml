@@ -34,7 +34,8 @@ jobs:
       - name: Run Python tests first
         run: |
           pip install -r requirements.txt
-          python -m pytest --all ./adaptions -q --no-header
+          cd adaptions
+          python -m pytest --all . -q --no-header
 
       - name: Build and install Sentry
         working-directory: third_party/sentry-native
