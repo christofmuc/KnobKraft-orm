@@ -64,6 +64,7 @@ def test_data():
                         break
 
     return {"sysex": "testData/jv1080_AGSOUND1.SYX", "program_generator": programs,
+            "program_dump_request": "f0 41 10 00 10 11 30 00 00 00 00 00 3b 20 75 f7",
             "device_detect_call": "f0 7e 00 06 01 f7",
             "device_detect_reply": "f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7"}
 

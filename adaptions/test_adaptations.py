@@ -163,3 +163,9 @@ def test_device_detection(adaptation, test_data: TestData):
         assert adaptation.createDeviceDetectMessage(0x00) == knobkraft.stringToSyx(test_data.test_dict["device_detect_call"])
     if "device_detect_reply" in test_data.test_dict:
         assert adaptation.channelIfValidDeviceResponse(knobkraft.stringToSyx(test_data.test_dict["device_detect_reply"])) == 0x00
+
+
+@skip_targets("test_data")
+def test_program_dump_request(adaptation, test_data: TestData):
+    if "program_dump_request" in test_data.test_dict:
+        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00), knobkraft.stringToSyx(test_data.test_dict["program_dump_request"]))
