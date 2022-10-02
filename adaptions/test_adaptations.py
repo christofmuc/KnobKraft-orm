@@ -111,7 +111,11 @@ def test_convert_to_edit_buffer(adaptation, test_data: TestData):
                 if hasattr(adaptation, "numberFromDump"):
                     previous_number = adaptation.numberFromDump(program)
                 edit_buffer = adaptation.convertToEditBuffer(0x00, program)
-                assert adaptation.isEditBufferDump(edit_buffer)
+                if "convert_to_edit_buffer_produces_program_dump" in test_data.test_dict and test_data.test_dict["convert_to_edit_buffer_produces_program_dump"]:
+                    # This is a special case for the broken implementation of the Andromeda edit buffer
+                    assert adaptation.isSingleProgramDump(edit_buffer)
+                else:
+                    assert adaptation.isEditBufferDump(edit_buffer)
                 if not hasattr(adaptation, "convertToProgramDump"):
                     # Not much more we can test here
                     return

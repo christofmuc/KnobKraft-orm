@@ -1,5 +1,5 @@
 from typing import List
-
+import functools
 
 def list_compare(list1: List, list2: List) -> bool:
     if len(list1) != len(list2):
@@ -14,3 +14,5 @@ def list_compare(list1: List, list2: List) -> bool:
             print(f"Result differ at position {i}: {list1[i]} vs {list2[i]}")
             return False
     return True
+
+
