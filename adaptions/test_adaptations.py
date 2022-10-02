@@ -80,7 +80,8 @@ def test_rename(adaptation, test_data: TestData):
         # This should not change the extracted name
         assert adaptation.nameFromDump(renamed) == adaptation.nameFromDump(binary)
         # This should not change the fingerprint
-        assert adaptation.calculateFingerprint(renamed) == adaptation.calculateFingerprint(binary)
+        if hasattr(adaptation, "calculateFingerprint"):
+            assert adaptation.calculateFingerprint(renamed) == adaptation.calculateFingerprint(binary)
         # Now rename
         with_new_name = adaptation.renamePatch(binary, "new name")
         new_name = adaptation.nameFromDump(with_new_name)
