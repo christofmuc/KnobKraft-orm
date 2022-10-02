@@ -149,4 +149,6 @@ def test_data():
         yield {"message": patch_message, "name": 'BNK2: 16', "number": 1}
 
     # Matrix1000 only has uppercase letters, so we need to specify a rename target name for the test
-    return {"program_generator": programs, "rename_name": "NEW NAME"}
+    # Flag for the generic tests that converting a program dump to a program dump might yield a new result, as there are two different
+    # ways to express a program dump and we cannot guarantee that this always is idempotent
+    return {"program_generator": programs, "rename_name": "NEW NAME", "not_idempotent": True}

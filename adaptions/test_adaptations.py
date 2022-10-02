@@ -115,8 +115,11 @@ def test_convert_to_edit_buffer(adaptation, test_data: TestData):
                 if not hasattr(adaptation, "convertToProgramDump"):
                     # Not much more we can test here
                     return
-                idempotent = adaptation.convertToProgramDump(0x00, program, previous_number)
-                assert knobkraft.list_compare(idempotent, program)
+                if "not_idempotent" in test_data.test_dict:
+                    pass
+                else:
+                    idempotent = adaptation.convertToProgramDump(0x00, program, previous_number)
+                    assert knobkraft.list_compare(idempotent, program)
                 program_buffer = adaptation.convertToProgramDump(0x00, edit_buffer, 11)
             elif adaptation.isEditBufferDump(program):
                 program_buffer = adaptation.convertToProgramDump(0x00, program, 11)
@@ -154,7 +157,8 @@ def test_fingerprinting(adaptation, test_data: TestData):
     if hasattr(adaptation, "calculateFingerprint"):
         for program in test_data.programs:
             md5 = adaptation.calculateFingerprint(program["message"])
-            if hasattr(adaptation, "isSingleProgramDump") and hasattr(adaptation, "convertToProgramDump") and adaptation.isSingleProgramDump(program["message"]):
+            if hasattr(adaptation, "isSingleProgramDump") and hasattr(adaptation, "convertToProgramDump") and adaptation.isSingleProgramDump(
+                    program["message"]):
                 # Change program place and make sure the fingerprint didn't change
                 changed_position = adaptation.convertToProgramDump(0x09, program["message"], 0x21)
                 assert adaptation.calculateFingerprint(changed_position) == md5
@@ -175,7 +179,8 @@ def test_device_detection(adaptation, test_data: TestData):
 @skip_targets("test_data")
 def test_program_dump_request(adaptation, test_data: TestData):
     if "program_dump_request" in test_data.test_dict:
-        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00), knobkraft.stringToSyx(test_data.test_dict["program_dump_request"]))
+        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00),
+                                      knobkraft.stringToSyx(test_data.test_dict["program_dump_request"]))
 
 
 @skip_targets("test_data")
