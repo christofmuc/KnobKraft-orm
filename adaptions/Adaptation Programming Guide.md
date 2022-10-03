@@ -82,6 +82,8 @@ Example implementation:
 
 Most synths (actually all vintage synths) organize their program places into banks and programs. The KnobKraft Orm does not follow that method, but rather enumerates program places in a device linearly from 0 to how many programs it can store, bank number times program number per bank. You need to do the calculation in addressing the synths bank and program on your own, and if need be also add program change and bank select messages appropriately. 
 
+### Old method
+
 The DW6000 though is a simple example. We need to implement two functions to tell the Orm how many banks and many programs per bank the synth has:
 
     def numberOfBanks():
@@ -93,6 +95,30 @@ returns the number of banks. In the case of the DW6000, that is 1.
         return 64
 
 Does exactly that. In the case of the DW6000, that would be 64.
+
+### New method
+
+A newer way to do this is to implement the `bankDescriptors` function which gives you more control. the DW6000 would simply implement this function instead of `numberOfBanks` and `numberOfPatchesPerBank`:
+
+    def bankDescriptors(self) -> List[Dict]
+
+It should return a list of banks, and each bank is described by a the following fields in the Dict:
+
+  * "bank" [int] - The number of the bank. Should be zero-based
+  * "name" [str] - The friendly name of the bank
+  * "size" [int] - The number of items in this bank. This allows for banks of differenct sizes for one synth
+  * "type" [str] - A text describing the type of data in this bank. Could be "Patch", "Tone", "Song", "Rhythm" or whatever else is stored in banks. Will be displayed in the metadata.
+  * "isROM" [bool] - Use this to indicate for later bank management functionality that the bank can be read, but not written to
+
+Example implementation for the DW6000 replacing the two methods above:
+
+    def bankDescriptors(self) -> List[Dict]:
+        return [{"bank": 0, "name": "Internal", "size": 64, "type": "Patch"}]
+
+more interesting would probably a more complex version for the Novation Summit which shows you how to use Python list comprehensions to calculate the 4 banks:
+
+    def bankDescriptors():
+        return [{"bank": x, "name": f"Bank {chr(ord('A')+x)}", "size": 128, "type": "Single Patch"} for x in range(4)]
 
 
 ## Device detection
@@ -628,6 +654,28 @@ Optionally, if you want to allow the user to change a layer name, implement the 
 
 This work like renamePatch, just with the added layerNo parameter.
 
+## Importing categories stored in the patch in the synth
+
+Some synths store sound categories or tags. As the KnobKraft Orm has these as a central part of the UI, of course we want to be able to import them as well. It is easy enough and requires two steps: Implementing a function and then defining an import mapping.
+
+The function that needs definition is 
+
+    def storedTags(self, message) -> List[str]:
+
+Just return a list of strings that map to the categories defined im the KnobKraft database. In case you want to be more flexible, you can also return the original manufacturer's texts and use the import mapping feature. For that, use the menu item "Categories... Edit category import mapping" in the Orm itself, and edit the jsonc file to define a mapping from the strings your adaptation returns. Here is am example mapping:
+
+    {
+        {
+        "Roland XV-3080": {
+            "synthToDatabase": {
+                "EL. PIANO": "Keys",
+                "MALLET": "Keys"
+            }
+        }
+    }
+
+You don't have to do a complete mapping - look at the log windoow after import to see if any extracted categories have been ignored because of a missing mapping. And yes, it is always safe to reimport.
+
 ## Leaving helpful setup information specific for a synth
 
 Especially some of our more vintage synths require some preset done, sometimes after every power on, before they can be accessed by the KnobKraft Orm. You can implement the following optional function to return a text displayed to the user in the synth's settings tab:
@@ -647,6 +695,13 @@ This just returns a text string displayed. Make sure to quote a possible multili
 
 The KnobKraft Orm ships with quite a few examples of adaptations. 
 
-All existing adaptations can be found in the directory with the source code, or here at github at https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptions
+All existing adaptations can be found in the directory with the source code, or here at github at 
 
-The adaptations that are shipped with the KnobKraft Orm are compiled into the executable, so you won't find them on your disk if you install with the DMG or the installer.
+https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptions
+
+To give you a quick overview which adaptation actually has implemented which functions and capabilities, there is am overview table that you can consult, especially for finding one of the more obscure function usages:
+
+https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptions/implementation_overview.md
+
+
+The adaptations that are shipped with the KnobKraft Orm are stored in the adaptations subdirectory of the program directory. Check them out there as well.

@@ -4,7 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 import knobkraft
 
 roland_id = 0x41  # Roland
@@ -218,7 +218,7 @@ class GenericRoland:
         return self.device_family is None
 
     @knobkraft_api
-    def bankDescriptors(self):
+    def bankDescriptors(self) -> List[Dict]:
         return [{"bank": 0, "name": "User Patches", "size": self.program_dump.num_items, "type": "User Patch"}]
 
     def isOwnSysex(self, message) -> bool:
