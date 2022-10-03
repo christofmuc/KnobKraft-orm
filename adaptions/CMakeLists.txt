@@ -14,9 +14,9 @@ set(adaptation_files
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py" 
 	"Ensoniqesq1.py" 
-	"KawaiK1.py" "KawaiK3.py" 
-	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
-	"Matrix 6.py" "Matrix1000.py" 
+	"KawaiK1.py" 
+	"Korg_03RW.py" "KorgDW6000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
+	"Matrix 6.py" 
 	"Novation_Summit.py" "Novation_UltraNova.py" 
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" 
 	"PioneerToraiz-AS1.py" 
@@ -25,25 +25,23 @@ set(adaptation_files
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "YamahaRefaceDX.py"
+	"YamahaDX7.py" "YamahaDX7II.py"
 	"Zoom_MS.py"
+)
+
+set(adaptation_files_test_only
+	"KawaiK3.py" 
+	"KorgDW8000.py" 
+	"Matrix1000.py" 
+	"YamahaRefaceDX.py"
 )
 
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
 )
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h
-	COMMAND ${CMAKE_COMMAND} -DOUTPUT="${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h" -DDIR="${CMAKE_CURRENT_LIST_DIR}/*.py" -P createResources.cmake	
-	DEPENDS ${adaptation_files}
-	COMMENT "Compiling binary resources"
-	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-)
-
 # Define the sources for the static library
 set(Sources
-	BundledAdaptation.cpp BundledAdaptation.h
-	${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h
 	CreateNewAdaptationDialog.cpp CreateNewAdaptationDialog.h
 	GenericAdaptation.cpp GenericAdaptation.h
 	GenericBankDumpCapability.cpp GenericBankDumpCapability.h
@@ -54,6 +52,7 @@ set(Sources
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
+	${adaptation_files_test_only}
 	${adaptation_support_files}
 )
 
@@ -79,5 +78,18 @@ else()
     #target_compile_options(knobkraft-generic-adaptation PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()
 
-# Define additional install files - in our case, the generic python modules need to be copied on Linux and on Mac!
+if (MSVC)
+set(INSTALLER_FILE_LIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/../The-Orm/adaptations.iss")
+file(WRITE ${INSTALLER_FILE_LIST_FILE} "; Auto generated, don't edit'\n")
+foreach(ADAPTATION ${adaptation_files})
+file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
+endforeach()
+
+endif()
+
+# Define additional install files - in our case, all adaptation files and the python modules
 install(DIRECTORY sequential/ DESTINATION bin/sequential)
+install(DIRECTORY roland/ DESTINATION bin/roland)
+install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
+install(FILES ${adaptation_files} DESTINATION bin)
+
