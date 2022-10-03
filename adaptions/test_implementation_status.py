@@ -1,6 +1,19 @@
 from mdutils.mdutils import MdUtils
 import pytest
 
+color_wheel = [
+    # "#260",
+    "#800",
+    "#840",
+    "#880",
+    "#480",
+    "#4a0",
+    "#0ac",
+    "#08a",
+    "#048",
+    "#008",
+    "#440"]
+
 column_names = ["Synth name",
                 "numberOfBanks",
                 "numberOfPatchesPerBank",
@@ -29,13 +42,40 @@ column_names = ["Synth name",
 table_result = ["Synth name" if i == 0 else str(i + 1) for i in range(len(column_names))]
 yes_char = "Y"
 no_char = "-"
-num_columns = 0
+total_columns = 0
 
 mdFile = MdUtils(file_name='implementation_overview.md', title='Adaptation: Implementation status')
 mdFile.write("This table lists which implementation has implemented which function or capability.\n\n"
              "Note that not all synths need to implement all functions, so it is not necessarily an incomplete implementation"
              " if some columns are marked as not implemented\n\n")
 legend_table = []
+
+
+def write_colored_table(table_data, num_columns, colors_in_column):
+    mdFile.write("<table>")
+    colno = 0
+    num_fields = len(table_data)
+    for rowno in range(num_fields // num_columns):
+        row_start = rowno * num_columns
+        mdFile.write("<tr>")
+        if not colors_in_column:
+            # Rows are coloured
+            if rowno == 0:
+                color = "#260"
+            else:
+                color = color_wheel[colno]
+                colno = (colno + 1) % len(color_wheel)
+        for col in range(num_columns):
+            if colors_in_column:
+                if col == 0:
+                    color = "#260"
+                    colno = 0
+                else:
+                    color = color_wheel[colno]
+                    colno = (colno + 1) % len(color_wheel)
+            mdFile.write(f'<td text-align="center" style="color: #ffffff; background-color: {color}">{table_data[row_start + col]}</td>')
+        mdFile.write("</tr>")
+    mdFile.write("</table>")
 
 
 @pytest.fixture(scope="session")
@@ -45,10 +85,9 @@ def md_file():
     for i in range(len(column_names)):
         legend_table.extend([str(i + 1), column_names[i]])
     yield mdFile
-    num_fields = len(table_result)
-    mdFile.new_table(columns=num_columns, rows=num_fields // num_columns, text=table_result, text_align='center')
+    write_colored_table(table_result, total_columns, True)
     mdFile.write("\nColumn explanation:\n\n")
-    mdFile.new_table(columns=2, rows=len(legend_table) // 2, text=legend_table, text_align='center')
+    write_colored_table(legend_table, 2, False)
     mdFile.create_md_file()
 
 
@@ -66,7 +105,7 @@ def capability_check(adaptation, list_of_methods):
 
 def test_implementation_status(adaptation, md_file):
     global table_result
-    global num_columns
+    global total_columns
     my_row = [adaptation.name(),
               check(adaptation, "numberOfBanks"),
               check(adaptation, "numberOfPatchesPerBank"),
@@ -93,4 +132,4 @@ def test_implementation_status(adaptation, md_file):
               check(adaptation, "setupHelp"),
               ]
     table_result.extend(my_row)
-    num_columns = len(my_row)
+    total_columns = len(my_row)
