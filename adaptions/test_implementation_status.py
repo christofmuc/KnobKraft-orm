@@ -4,6 +4,7 @@ import pytest
 column_names = ["Synth name",
                 "numberOfBanks",
                 "numberOfPatchesPerBank",
+                "bankDescriptors",
                 "createDeviceDetectMessage",
                 "channelIfValidDeviceResponse",
                 "needsChannelSpecificDetection",
@@ -26,7 +27,7 @@ column_names = ["Synth name",
                 "setupHelp",
                 ]
 table_result = ["Synth name" if i == 0 else str(i + 1) for i in range(len(column_names))]
-yes_char = "X"
+yes_char = "Y"
 no_char = "-"
 num_columns = 0
 
@@ -69,6 +70,7 @@ def test_implementation_status(adaptation, md_file):
     my_row = [adaptation.name(),
               check(adaptation, "numberOfBanks"),
               check(adaptation, "numberOfPatchesPerBank"),
+              check(adaptation, "bankDescriptors"),
               check(adaptation, "createDeviceDetectMessage"),
               check(adaptation, "channelIfValidDeviceResponse"),
               check(adaptation, "needsChannelSpecificDetection"),
