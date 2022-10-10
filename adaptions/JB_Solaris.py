@@ -1,5 +1,5 @@
 #   Copyright (c) 2021 Christof Ruch. All rights reserved.
-#   John Bowen Solaris Adaptation version 0.1 by Stéphane Conversy, 2022.
+#   John Bowen Solaris Adaptation version 0.2 by Stéphane Conversy, 2022.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 #
@@ -7,10 +7,21 @@
 
 # see https://owner.johnbowen.com/images//files/Solaris%20SysEx%20v1.2.2.pdf
 
+# TODO
+# verify checksum
+# update according to device id before sending
+# verify that the OS of the patch to send is the same as the Solaris unit
+
+
 def setupHelp():
     return '''\
 Solaris - can only receive preset dump, unable to send one for now
 '''
+
+
+def print_midi_message(message):
+    for m in message: print(f'{m:02x}',end=' ')
+    print()
 
 
 def name():
@@ -46,89 +57,103 @@ def createDeviceDetectMessage(channel):
 
 
 def channelIfValidDeviceResponse(message):
-    # Identity Request Response
     message[0:1] = [0xf0] # for some reason, 0xf0 is not here anymore?!
-    #for m in message: print(hex(m))
-    device_id = message[2] # save device_id just in case
-    message[2] = 0x7f 
+    #print_midi_message(message)
 
-    if (len(message) == 17 and message == [
-            0xf0,  # Start of SysEx (SOX)
-            0x7e,  # Non real time
-            0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
-            0x06,  # General Information
-            0x02,  # Identity Reply
-            0x00, 0x12, 0x34,  # Manufacturer ID
-            0x10, 0x00,  # Device family code (1 = Solaris) (shouldn't it be 0x01 instead??)
-            0x01, 0x00,  # Device family member code (1 = Keyboard)
-            0xf7   # End of SysEx (EOX)
-            ]
-        ):
-        print("Solaris OS " + ".".join((str(m) for m in message[12:16])))
-        return 1 # no midi channel from message
+    # Identity Request Response
+    expected_message = [
+        0xf0,  # Start of SysEx (SOX)
+        0x7e,  # Non real time
+        0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
+        0x06,  # General Information
+        0x02,  # Identity Reply
+        0x00, 0x12, 0x34,  # Manufacturer ID
+        0x10, 0x00,  # Device family code (1 = Solaris) (shouldn't it be 0x01 instead??)
+        0x01, 0x00,  # Device family member code (1 = Keyboard)
+        0x0, 0x0, 0x0, 0x0,  # Software revision level
+        0xf7   # End of SysEx (EOX)
+    ]
+
+    if len(message) == len(expected_message):
+        device_id = message[2]  # save msg value
+        message[2] = 0x7f  # set to expected value for the msg comparison
+        software_revision_level = message[12:16]  # save msg value
+        message[12:16] = [0]*4  # set to expected value for the msg comparison
+        if (message == expected_message):
+            print("Solaris id:" + str(device_id) +
+                " OS v" + ".".join((str(m) for m in software_revision_level)))
+            return 1 # no midi channel from message
     return -1
 
 
+# def generalMessageDelay():
+#     return 20
+
 def createEditBufferRequest(channel):
+    # Bulk Dump Request
     # To request all blocks in the current preset (edit buffer), send a bulk dump request with
     # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F.
     # The data returned will begin with a Frame Start block followed by all preset blocks and ending with a Frame End block
-    return [0xf0,
-            0x00, 0x12, 0x34,  # Manufacturer
-            0x7f,  # Device ID
-            0x10,  # Solaris ID
-            0x10,  # Bulk Dump Request
-            0x7e, 0x7f, 0x7f,  # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F
-            0xf7
-            ]
+    return [
+        0xf0,
+        0x00, 0x12, 0x34,  # Manufacturer
+        0x7f,  # Device ID
+        0x10,  # Solaris ID
+        0x10,  # Bulk Dump Request
+        0x7e, 0x7f, 0x7f,  # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F
+        0xf7
+    ]
 
 
 def isPartOfEditBufferDump(message):
-    if len(message)>7:
-        #print(message[0:7])
+    # Bulk Dump
+    expected_message = [
+        0xf0,  # Start of SysEx (SOX)
+        0x00, 0x12, 0x34,  # Manufacturer
+        0x7f,  # Device ID
+        0x10,  # Solaris ID
+        0x11   # Bulk Dump
+    ]
+    if len(message) > len(expected_message):
+        #print_midi_message(message[0:7])
         device_id = message[4]  # save device_id just in case
-        message[4] = 0x7f 
-        if message[:7] == [
-            0xf0,
-            0x00, 0x12, 0x34,  # Manufacturer
-            0x7f,  # Device ID
-            0x10,  # Solaris ID
-            0x11   # Bulk Dump
-            ]:
+        message[4] = 0x7f  # set to expected value for the msg comparison
+        if message[:len(expected_message)] == expected_message:
             return True
     return False
 
 
 def isEditBufferDump(data):
-    if len(data)>8:
+    # Bulk Dump with Frame End
+    expected_message = [
+        0xf0,  # Start of SysEx (SOX)
+        0x00, 0x12, 0x34,  # Manufacturer
+        0x7f,  # Device ID
+        0x10,  # Solaris ID
+        0x11,  # Bulk Dump
+        0x7f   #, bb, pp,
+        # 0xf7
+    ]
+
+    if len(data) > len(expected_message):
         # find last sysex msg
         pos = -1
         for i, m in enumerate(reversed(data)): 
             if m == 0xf0:
                 pos = i
                 break
-        if pos==-1: return False
+        if pos == -1 or pos<len(expected_message):
+            return False
         message = data[len(data)-pos-1:]
-
-        # check it's Frame End
+        
+        # check it's a Frame End
         device_id = message[4]  # save device_id just in case
         message[4] = 0x7f
         #print("maybe "+ ' '.join(str(hex(m)) for m in message))
-        if message[:8] == [
-            0xf0,
-            0x00, 0x12, 0x34,  # Manufacturer
-            0x7f,  # Device ID
-            0x10,  # Solaris ID
-            0x11,  # Bulk Dump
-            0x7f
-            ]:
+        if message[:len(expected_message)] == expected_message:
             #print("yes")
-            return True
+            return True  # it's the end since we received a Frame End
     return False
-
-
-def convertToEditBuffer(channel, message):
-    return message
 
 
 # don't know how to import knobkraft.sysex.splitSysexMessage
@@ -145,42 +170,62 @@ def splitSysexMessage(messages):
     return result
 
 
+def convertToEditBuffer(channel, long_message):
+    #messages = splitSysexMessage(long_message)
+    #res = sum(messages[1:-1], []) # remove Frame Start and Frame End
+    res = long_message
+    #print_midi_message(res)
+    return res
+
+def hml_to_address(high, mid, low)
+    return (((high << 8) + mid) << 8) + low
+    #return (((high << 7) + mid) << 7) + low
+
 def nameFromDump(data):
     name = "unknown name"
+
+    # find the message containing the preset name within all Bulk Dump messages
     messages = splitSysexMessage(data)
 
-    # find the message with the preset name
-    name_address = (((0x20 << 8) + 0x0) << 8) + low
+    # Bulk Dump
+    expected_message = [
+        0xf0,
+        0x00, 0x12, 0x34,
+        0x7f,
+        0x10,
+        0x11,
+        0x00, 0x00, 0x00,
+    ]
+
+    # Preset Name
+    # address to find
+    name_address = hml_to_address(0x20, 0x0, 0x0)  # (((0x20 << 8) + 0x0) << 8) + 0x0
+    
     for message in messages:
-        device_id = message[4] # save device_id just in case
-        message[4] = 0x7f # device id
-        if message[:7] == [
-            0xf0,
-            0x00, 0x12, 0x34,
-            0x7f,
-            0x10,
-            0x11
-            ]:
-            high = message[7]
-            mid = message[8]
-            low = message[9]
-            payload = len(message)-(7+3+1+1)  # header 7 address 3 checksum 1 0xf7 1
+        # header + name + checksum + 0xf7
+        if len(message) < len(expected_message) + 20*2 + 2 : continue
+
+        device_id = message[4]  # save device_id just in case
+        message[4] = 0x7f  # set to expected value for the msg comparison
+        high, mid, low = message[7:10] # save adress
+        message[7:10] = [0]*3  # set to expected value for the msg comparison
+        if message[:len(expected_message)] == expected_message:
+            payload = len(message) - (len(expected_message)+1+1)  # header checksum 0xf7
             #print(high,mid,low, payload)
-            address = (((high << 8) + mid) << 8) + low
-            
+            address = hml_to_address(high, mid, low)  # (((high << 8) + mid) << 8) + low
             #print(address, name_address)
-            
             if address <= name_address < address + payload:
                 # found it!
                 offset = name_address - address
                 #print(offset, name_address, address)
-                offset += 7+3  # header 7 address 3
+                offset += len(expected_message)
                 name = ""
-                # Part Name has 20 characters
-                for i in range(0,20,2):
+                # Part Name has 20 characters 2 bytes each
+                for i in range(0,20*2,2):
                     c = (message[offset+i] << 8) +  message[offset+i+1]
                     name += chr(c)
-                break
+                name = name.strip()
+                break # found it => exit message loop
 
     return name
 
