@@ -1,5 +1,5 @@
 #   Copyright (c) 2021 Christof Ruch. All rights reserved.
-#   John Bowen Solaris Adaptation version 0.2 by Stéphane Conversy, 2022.
+#   John Bowen Solaris Adaptation version 0.3 by Stéphane Conversy, 2022.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 #
@@ -7,21 +7,50 @@
 
 # see https://owner.johnbowen.com/images//files/Solaris%20SysEx%20v1.2.2.pdf
 
+# STATUS
+# Device detection: done
+# Edit Buffer Capability: done
+# Getting the patch's name: done
+# Send to edit buffer: done with DIN, does not work with USB (Solaris firmware bug)
+
 # TODO
 # verify checksum
-# update according to device id before sending
+# Send preset according to Device ID before sending
 # verify that the OS of the patch to send is the same as the Solaris unit
+
+# FUTURE
+# ASA Solaris supports it, Preset and Bank Dump Capability
+
+
+# ----------------
+# helper functions
+
+def print_midi_message(message):
+    for m in message: print(f'{m:02x}',end=' ')
+    print()
+
+# don't know how to import knobkraft.sysex.splitSysexMessage
+def splitSysexMessage(messages):
+    result = []
+    start = 0
+    read = 0
+    while read < len(messages):
+        if messages[read] == 0xf0:
+            start = read
+        elif messages[read] == 0xf7:
+            result.append(messages[start:read + 1])
+        read = read + 1
+    return result
+
+
+# ----------------
+# Identity, number of presets and banks
 
 
 def setupHelp():
     return '''\
 Solaris - can only receive preset dump, unable to send one for now
 '''
-
-
-def print_midi_message(message):
-    for m in message: print(f'{m:02x}',end=' ')
-    print()
 
 
 def name():
@@ -40,10 +69,14 @@ def isDefaultName(patchName):
     return patchName == 'INIT'
 
 
-def needsChannelSpecificDetection():
-    return False
+# def generalMessageDelay():
+#     return 20
 
 
+# ----------------
+# Device detection
+
+# Sending message to force reply by device
 def createDeviceDetectMessage(channel):
     # Identity Request (Universal SysEx)
     return [
@@ -55,9 +88,9 @@ def createDeviceDetectMessage(channel):
         0xf7   # End of SysEx (EOX)
     ]
 
-
+# Checking if reply came
 def channelIfValidDeviceResponse(message):
-    message[0:1] = [0xf0] # for some reason, 0xf0 is not here anymore?!
+    message[0:1] = [0xf0] # for some reason, 0xf0 is not in the message anymore?!
     #print_midi_message(message)
 
     # Identity Request Response
@@ -86,9 +119,15 @@ def channelIfValidDeviceResponse(message):
     return -1
 
 
-# def generalMessageDelay():
-#     return 20
+# Optionally specifying to not to channel specific detection
+def needsChannelSpecificDetection():
+    return False
 
+
+# ----------------------
+# Edit Buffer Capability
+
+# Requesting the edit buffer from the synth
 def createEditBufferRequest(channel):
     # Bulk Dump Request
     # To request all blocks in the current preset (edit buffer), send a bulk dump request with
@@ -105,6 +144,7 @@ def createEditBufferRequest(channel):
     ]
 
 
+# Handling edit buffer dumps that consist of more than one MIDI message
 def isPartOfEditBufferDump(message):
     # Bulk Dump
     expected_message = [
@@ -116,13 +156,14 @@ def isPartOfEditBufferDump(message):
     ]
     if len(message) > len(expected_message):
         #print_midi_message(message[0:7])
-        device_id = message[4]  # save device_id just in case
+        device_id = message[4]  # save msg value
         message[4] = 0x7f  # set to expected value for the msg comparison
         if message[:len(expected_message)] == expected_message:
             return True
     return False
 
 
+# Checking if a MIDI message is an edit buffer dump
 def isEditBufferDump(data):
     # Bulk Dump with Frame End
     expected_message = [
@@ -142,34 +183,22 @@ def isEditBufferDump(data):
             if m == 0xf0:
                 pos = i
                 break
-        if pos == -1 or pos<len(expected_message):
+        if pos == -1 or pos < len(expected_message):
             return False
+        # last sysex found
         message = data[len(data)-pos-1:]
         
         # check it's a Frame End
-        device_id = message[4]  # save device_id just in case
-        message[4] = 0x7f
+        device_id = message[4]  # save msg value
+        message[4] = 0x7f  # set to expected value for the msg comparison
         #print("maybe "+ ' '.join(str(hex(m)) for m in message))
         if message[:len(expected_message)] == expected_message:
             #print("yes")
-            return True  # it's the end since we received a Frame End
+            return True  # signal the end since we received a Frame End
     return False
 
 
-# don't know how to import knobkraft.sysex.splitSysexMessage
-def splitSysexMessage(messages):
-    result = []
-    start = 0
-    read = 0
-    while read < len(messages):
-        if messages[read] == 0xf0:
-            start = read
-        elif messages[read] == 0xf7:
-            result.append(messages[start:read + 1])
-        read = read + 1
-    return result
-
-
+# Creating the edit buffer to send
 def convertToEditBuffer(channel, long_message):
     #messages = splitSysexMessage(long_message)
     #res = sum(messages[1:-1], []) # remove Frame Start and Frame End
@@ -177,9 +206,10 @@ def convertToEditBuffer(channel, long_message):
     #print_midi_message(res)
     return res
 
-def hml_to_address(high, mid, low)
-    return (((high << 8) + mid) << 8) + low
-    #return (((high << 7) + mid) << 7) + low
+
+
+# ------------------------
+# Getting the patch's name
 
 def nameFromDump(data):
     name = "unknown name"
@@ -199,20 +229,23 @@ def nameFromDump(data):
 
     # Preset Name
     # address to find
-    name_address = hml_to_address(0x20, 0x0, 0x0)  # (((0x20 << 8) + 0x0) << 8) + 0x0
+    def hml_to_address(high, mid, low):
+        return ((( (high & 0x7f) << 7) + (mid & 0x7f)) << 7) + (low & 0x7f)
+
+    name_address = hml_to_address(0x20, 0x0, 0x0)
     
     for message in messages:
         # header + name + checksum + 0xf7
         if len(message) < len(expected_message) + 20*2 + 2 : continue
 
-        device_id = message[4]  # save device_id just in case
+        device_id = message[4]  # save msg value
         message[4] = 0x7f  # set to expected value for the msg comparison
         high, mid, low = message[7:10] # save adress
         message[7:10] = [0]*3  # set to expected value for the msg comparison
         if message[:len(expected_message)] == expected_message:
             payload = len(message) - (len(expected_message)+1+1)  # header checksum 0xf7
             #print(high,mid,low, payload)
-            address = hml_to_address(high, mid, low)  # (((high << 8) + mid) << 8) + low
+            address = hml_to_address(high, mid, low)
             #print(address, name_address)
             if address <= name_address < address + payload:
                 # found it!
@@ -221,7 +254,7 @@ def nameFromDump(data):
                 offset += len(expected_message)
                 name = ""
                 # Part Name has 20 characters 2 bytes each
-                for i in range(0,20*2,2):
+                for i in range(0, 20*2, 2):
                     c = (message[offset+i] << 8) +  message[offset+i+1]
                     name += chr(c)
                 name = name.strip()
