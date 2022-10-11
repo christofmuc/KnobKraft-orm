@@ -225,24 +225,26 @@ namespace knobkraft {
 		}
 
 #ifdef __APPLE__
-		// The Apple might not have a Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
-		// First, check the location where the Python 3.10 Mac installer will put it (taken from python.org/downloads)
-		String python38_macHome = "/Library/Frameworks/Python.framework/Versions/3.10";
-		File python38(python38_macHome);
-		if (!python38.exists()) {
-			// If that didn't work, check if the Homebrew brew install python3 command has installed it in the /usr/local/opt directory
-			python38_macHome = "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10";
-			File python38_alternative(python38_macHome);
-			if (!python38_alternative.exists()) {
-				// No Python3.8 found, don't set path
-				return;
-			}
-			else {
-				Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
-			}
+		// macOS might not have Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
+		std::string pythonCandidatePaths[] = {
+		    "/Library/Frameworks/Python.framework/Versions/3.10",               // Python Mac installer (python.org/downloads)
+		    "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10", // Homebrew: python3
+		    "/opt/local/Library/Frameworks/Python.framework/Versions/3.10"      // MacPorts: python310
+		};
+		bool pythonFound = false;
+
+		for (auto candidate : pythonCandidatePaths) {
+		    File pythonHome(candidate);
+		    if (pythonHome.exists()) {
+		        Py_SetPythonHome(const_cast<wchar_t*>(candidate.toWideCharPointer()));
+		        pythonFound = true;
+		        break;
+		    }
 		}
-		else {
-			Py_SetPythonHome(const_cast<wchar_t*>(python38_macHome.toWideCharPointer()));
+
+		if (!pythonFound) {
+		    // No Python found, don't set path
+		    return;
 		}
 #endif
 		sGenericAdaptationPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
@@ -251,7 +253,7 @@ namespace knobkraft {
         std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
 				+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
-				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("adaptations").getFullPathName().toStdString() + "\")\n" // This is where we place the adpatation modules
+				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("adaptations").getFullPathName().toStdString() + "\")\n" // This is where we place the adaptation modules
 				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
 		py::exec(command);
 #ifdef __APPLE__
@@ -351,7 +353,7 @@ else {
 		std::vector<std::shared_ptr<GenericAdaptation>> result;
 		if (!hasPython()) {
 #ifdef __APPLE__
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install using 'brew install python3' or from https://www.python.org/ftp/python/. Turning off all adaptations.");
+			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install using Homebrew (brew install python3), MacPorts (sudo port install python310) or from https://www.python.org/ftp/python/. Turning off all adaptations.");
 #else
 			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install from https://www.python.org/downloads/. Turning off all adaptations.");
 #endif
