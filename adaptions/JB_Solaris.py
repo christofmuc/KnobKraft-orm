@@ -11,6 +11,7 @@
 # Device detection: done
 # Edit Buffer Capability: done
 # Getting the patch's name: done
+# Setting the patch's name: done
 # Send to edit buffer: done with DIN, does not work with USB (Solaris firmware bug)
 
 # TODO
@@ -19,7 +20,8 @@
 # verify that the OS of the patch to send is the same as the Solaris unit
 
 # FUTURE
-# ASA Solaris supports it, Preset and Bank Dump Capability
+# Preset Dump Capability: as soon as the Solaris supports it
+# Bank Dump Capability: as soon as the Solaris supports it 
 
 
 # ----------------
@@ -42,6 +44,36 @@ def splitSysexMessage(messages):
         read = read + 1
     return result
 
+# find last sysex msg (more efficient than splitting all sysex msgs)
+def find_last_sysex(data):
+    pos = -1
+    for i, m in enumerate(reversed(data)): 
+        if m == 0xf0:
+            pos = i
+            break
+    return pos
+
+# much of the below functions compare a received message with an expected one
+# however, the received message may differ from the expected one in some variable fields (e.g. deviceid ou channel) 
+# get_and_set_expected* make field-variable midi messages comparable,
+# by assigning the expected message field to the received message
+# and by returning the original value of the field, would this prove useful
+def get_and_set_expected_index(field_index, message, expected_message):
+        original = message[field_index]
+        message[field_index] = expected_message[field_index]
+        return original
+def get_and_set_expected_range(first_index, last_index, message, expected_message):
+        original = message[first_index:last_index]
+        message[first_index:last_index] = expected_message[first_index:last_index]
+        return original
+# pseudo-overloaded version to make it more usable
+def get_and_set_expected(index_or_range, message, expected_message):
+    if type(index_or_range) == int:
+        return get_and_set_expected_index(index_or_range, message, expected_message)
+    else:
+        return get_and_set_expected_range(index_or_range[0], index_or_range[1], message, expected_message)
+
+
 
 # ----------------
 # Identity, number of presets and banks
@@ -49,7 +81,7 @@ def splitSysexMessage(messages):
 
 def setupHelp():
     return '''\
-Solaris - can only receive preset dump, unable to send one for now
+Solaris - can send, receive, rename Edit Buffer only (beware: there is a bug that prevents sending with USB)
 '''
 
 
@@ -69,57 +101,54 @@ def isDefaultName(patchName):
     return patchName == 'INIT'
 
 
-# def generalMessageDelay():
-#     return 20
-
-
 # ----------------
 # Device detection
 
+identity_common = [
+    0xf0,  # Start of SysEx (SOX)
+    0x7e,  # Non real time
+    0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
+    0x06,  # General Information
+]
+
+# Identity Request (Universal SysEx)
+identity_request = identity_common + [
+    0x01,  # Identity Request
+    0xf7   # End of SysEx (EOX)
+]
+
+
 # Sending message to force reply by device
 def createDeviceDetectMessage(channel):
-    # Identity Request (Universal SysEx)
-    return [
-        0xf0,  # Start of SysEx (SOX)
-        0x7e,  # Non real time
-        0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
-        0x06,  # General Information
-        0x01,  # Identity Request
-        0xf7   # End of SysEx (EOX)
-    ]
+    return identity_request
+
+
+# Identity Request Response
+identity_reply = identity_common + [
+    0x02,  # Identity Reply
+    0x00, 0x12, 0x34,  # Manufacturer ID
+    0x10, 0x00,  # Device family code (1 = Solaris) (shouldn't it be 0x01 instead??)
+    0x01, 0x00,  # Device family member code (1 = Keyboard)
+    0x0, 0x0, 0x0, 0x0,  # Software revision level
+    0xf7   # End of SysEx (EOX)
+]
+
 
 # Checking if reply came
 def channelIfValidDeviceResponse(message):
-    message[0:1] = [0xf0] # for some reason, 0xf0 is not in the message anymore?!
-    #print_midi_message(message)
-
-    # Identity Request Response
-    expected_message = [
-        0xf0,  # Start of SysEx (SOX)
-        0x7e,  # Non real time
-        0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
-        0x06,  # General Information
-        0x02,  # Identity Reply
-        0x00, 0x12, 0x34,  # Manufacturer ID
-        0x10, 0x00,  # Device family code (1 = Solaris) (shouldn't it be 0x01 instead??)
-        0x01, 0x00,  # Device family member code (1 = Keyboard)
-        0x0, 0x0, 0x0, 0x0,  # Software revision level
-        0xf7   # End of SysEx (EOX)
-    ]
-
+    message[0:1] = [0xf0] # FIXME for some reason, 0xf0 is no longer in the message?!
+    expected_message = identity_reply
     if len(message) == len(expected_message):
-        device_id = message[2]  # save msg value
-        message[2] = 0x7f  # set to expected value for the msg comparison
-        software_revision_level = message[12:16]  # save msg value
-        message[12:16] = [0]*4  # set to expected value for the msg comparison
+        device_id = get_and_set_expected(2, message, expected_message)
+        software_revision_level = get_and_set_expected((12, 16), message, expected_message)
         if (message == expected_message):
             print("Solaris id:" + str(device_id) +
-                " OS v" + ".".join((str(m) for m in software_revision_level)))
+                  " OS v" + ".".join((str(m) for m in software_revision_level)))
             return 1 # no midi channel from message
     return -1
 
 
-# Optionally specifying to not to channel specific detection
+# Optionally specifying to not do channel specific detection
 def needsChannelSpecificDetection():
     return False
 
@@ -127,74 +156,63 @@ def needsChannelSpecificDetection():
 # ----------------------
 # Edit Buffer Capability
 
+common_header = [
+    0xf0,  # Start of SysEx (SOX)
+    0x00, 0x12, 0x34,  # Manufacturer
+    0x7f,  # Device ID
+    0x10   # Solaris ID
+]
+
+
+# Bulk Dump Request
+# To request all blocks in the current preset (edit buffer), send a bulk dump request with
+# base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F.
+# The data returned will begin with a Frame Start block followed by all preset blocks and ending with a Frame End block
+bulk_dump_request = common_header + [
+    0x10,  # Bulk Dump Request
+    0x7e, 0x7f, 0x7f,  # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F
+    0xf7  # End of SysEx (EOX)
+]
+
 # Requesting the edit buffer from the synth
 def createEditBufferRequest(channel):
-    # Bulk Dump Request
-    # To request all blocks in the current preset (edit buffer), send a bulk dump request with
-    # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F.
-    # The data returned will begin with a Frame Start block followed by all preset blocks and ending with a Frame End block
-    return [
-        0xf0,
-        0x00, 0x12, 0x34,  # Manufacturer
-        0x7f,  # Device ID
-        0x10,  # Solaris ID
-        0x10,  # Bulk Dump Request
-        0x7e, 0x7f, 0x7f,  # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F
-        0xf7
-    ]
+    return bulk_dump_request
 
+
+# Bulk Dump
+bulk_dump_reply = common_header + [
+    0x11  # Bulk Dump
+]
 
 # Handling edit buffer dumps that consist of more than one MIDI message
 def isPartOfEditBufferDump(message):
-    # Bulk Dump
-    expected_message = [
-        0xf0,  # Start of SysEx (SOX)
-        0x00, 0x12, 0x34,  # Manufacturer
-        0x7f,  # Device ID
-        0x10,  # Solaris ID
-        0x11   # Bulk Dump
-    ]
+    expected_message = bulk_dump_reply
     if len(message) > len(expected_message):
-        #print_midi_message(message[0:7])
-        device_id = message[4]  # save msg value
-        message[4] = 0x7f  # set to expected value for the msg comparison
+        device_id = get_and_set_expected(4, message, expected_message)
         if message[:len(expected_message)] == expected_message:
             return True
     return False
 
 
+# Bulk Dump with Frame End
+bulk_dump_frame_end = bulk_dump_reply + [
+    0x7f
+] #, bb, pp,
+
 # Checking if a MIDI message is an edit buffer dump
 def isEditBufferDump(data):
-    # Bulk Dump with Frame End
-    expected_message = [
-        0xf0,  # Start of SysEx (SOX)
-        0x00, 0x12, 0x34,  # Manufacturer
-        0x7f,  # Device ID
-        0x10,  # Solaris ID
-        0x11,  # Bulk Dump
-        0x7f   #, bb, pp,
-        # 0xf7
-    ]
-
+    expected_message = bulk_dump_frame_end
     if len(data) > len(expected_message):
-        # find last sysex msg
-        pos = -1
-        for i, m in enumerate(reversed(data)): 
-            if m == 0xf0:
-                pos = i
-                break
+        pos = find_last_sysex(data)
         if pos == -1 or pos < len(expected_message):
             return False
-        # last sysex found
+        # last sysex found, put it in message
         message = data[len(data)-pos-1:]
-        
-        # check it's a Frame End
-        device_id = message[4]  # save msg value
-        message[4] = 0x7f  # set to expected value for the msg comparison
-        #print("maybe "+ ' '.join(str(hex(m)) for m in message))
+        # check whether it's a Frame End
+        device_id = get_and_set_expected(4, message, expected_message)
         if message[:len(expected_message)] == expected_message:
-            #print("yes")
-            return True  # signal the end since we received a Frame End
+            return True  # signal the end of multi-frame message
+
     return False
 
 
@@ -203,69 +221,90 @@ def convertToEditBuffer(channel, long_message):
     #messages = splitSysexMessage(long_message)
     #res = sum(messages[1:-1], []) # remove Frame Start and Frame End
     res = long_message
-    #print_midi_message(res)
     return res
 
 
 
 # ------------------------
-# Getting the patch's name
+# Getting and Setting the patch's name
 
-def nameFromDump(data):
-    name = "unknown name"
+def hml_to_address(high, mid, low):
+    return ((( (high & 0x7f) << 7) + (mid & 0x7f)) << 7) + (low & 0x7f)
 
-    # find the message containing the preset name within all Bulk Dump messages
+# Preset Name address to find
+name_address = hml_to_address(0x20, 0x0, 0x0)
+
+bulk_dump_address = bulk_dump_reply + [
+    0x00, 0x00, 0x00  # Address
+]
+
+def find_name(data):
+    # Part Name has 20 characters with 2 bytes each
+    # find the message containing the preset name address within all Bulk Dump messages
+    offset = -1
+    expected_message = bulk_dump_address
     messages = splitSysexMessage(data)
-
-    # Bulk Dump
-    expected_message = [
-        0xf0,
-        0x00, 0x12, 0x34,
-        0x7f,
-        0x10,
-        0x11,
-        0x00, 0x00, 0x00,
-    ]
-
-    # Preset Name
-    # address to find
-    def hml_to_address(high, mid, low):
-        return ((( (high & 0x7f) << 7) + (mid & 0x7f)) << 7) + (low & 0x7f)
-
-    name_address = hml_to_address(0x20, 0x0, 0x0)
-    
-    for message in messages:
-        # header + name + checksum + 0xf7
-        if len(message) < len(expected_message) + 20*2 + 2 : continue
-
-        device_id = message[4]  # save msg value
-        message[4] = 0x7f  # set to expected value for the msg comparison
-        high, mid, low = message[7:10] # save adress
-        message[7:10] = [0]*3  # set to expected value for the msg comparison
+    for msg_index, message in enumerate(messages):
+        if len(message) < len(expected_message) + 20*2 + 1 + 1:  # header + name + checksum + 0xf7
+            continue
+        device_id = get_and_set_expected(4, message, expected_message)
+        high, mid, low = get_and_set_expected((7, 10), message, expected_message)
         if message[:len(expected_message)] == expected_message:
-            payload = len(message) - (len(expected_message)+1+1)  # header checksum 0xf7
-            #print(high,mid,low, payload)
             address = hml_to_address(high, mid, low)
-            #print(address, name_address)
-            if address <= name_address < address + payload:
+            payload = len(message) - (len(expected_message)+1+1)  # header + checksum + 0xf7
+            if address  <=  name_address  <  address + payload:
                 # found it!
                 offset = name_address - address
-                #print(offset, name_address, address)
                 offset += len(expected_message)
-                name = ""
-                # Part Name has 20 characters 2 bytes each
-                for i in range(0, 20*2, 2):
-                    c = (message[offset+i] << 8) +  message[offset+i+1]
-                    name += chr(c)
-                name = name.strip()
-                break # found it => exit message loop
+                break  # found it => exit message loop
+    
+    if offset != -1:
+        # offset is related to the message, not the data
+        offset += sum(len(msg) for msg in messages[:msg_index])
+    return offset
+
+
+def nameFromDump(data):
+    offset = find_name(data)
+    if offset == -1:
+        return "unknown"
+
+    name = ""
+    # Part Name has 20 characters with 2 bytes each
+    for i in range(0, 20*2, 2):
+        c = (data[offset+i] << 8) +  data[offset+i+1]
+        name += chr(c)
+    name = name.strip()
 
     return name
 
 
+def renamePatch(data, new_name):
+    offset = find_name(data)
+    if offset == -1:
+        return 
+    # make it 20-character long
+    name = new_name.ljust(20)[:20]
+    # nibblize it
+    name_enc = []
+    for c in name:
+        name_enc += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
+
+    new_data = data[:offset] + name_enc + data[offset+20:]
+    return new_data
+
+
+
+# --------------
+# Testing
+
+
 # def run_tests():
-#     with open("testData/Ultranova_poppy.syx", "rb") as sysex:
+#     #with open("testData/Ultranova_poppy.syx", "rb") as sysex:
+#     with open("/Users/conversy/Documents/SysEx Librarian/Untitled.syx", "rb") as sysex:
 #         raw_data = list(sysex.read())
+#         assert nameFromDump(raw_data) == "Axel F"
+#         assert nameFromDump(renamePatch(raw_data, "Eddy Murphy"))
 #         assert isSingleProgramDump(raw_data)
 #         assert numberFromDump(raw_data) == 35
 
@@ -287,5 +326,5 @@ def nameFromDump(data):
 #         assert friendlyBankName(2) == 'C'
 
 
-# if __name__ == "__main__":
-#     run_tests()
+if __name__ == "__main__":
+    run_tests()
