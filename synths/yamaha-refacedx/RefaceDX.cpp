@@ -16,7 +16,7 @@
 
 namespace midikraft {
 
-	std::vector<Range<int>> kRefaceDXBlankOutZones = {
+	std::vector<Range<size_t>> kRefaceDXBlankOutZones = {
 		{ 0, 10 }, // 10 Characters for the name, the first bytes of the common block so it's really at the start of the data
 	};
 
