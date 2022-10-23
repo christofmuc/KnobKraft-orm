@@ -21,12 +21,10 @@ synth = sequential.GenericSequential(name="DSI Prophet 08",  # DSI product name 
                                      id_list=[0b00100011, 0b00100100],  # Prophet 08 or special edition Prophet 08
                                      ).install(this_module)
 
-#
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
-if __name__ == "__main__":
-    import unittest
-    messages = sequential.load_sysex("testData/Prophet_08_Programs_v1.0.syx")
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[2],
-                                                                         program_name='T8 Strings'))
+
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[2], "name": "T8 Strings", "number": 2}
+
+    return {"sysex": "testData/Prophet_08_Programs_v1.0.syx", "program_generator": programs}

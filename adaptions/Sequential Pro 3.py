@@ -20,14 +20,10 @@ synth = sequential.GenericSequential(name="Sequential Pro 3",
                                      name_position=321,
                                      ).install(this_module)
 
-#
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
-if __name__ == "__main__":
-    import unittest
-    messages = sequential.load_sysex("testData/P3_Factory_Sounds_v1.01.syx")
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[2],
-                                                                         program_name='Staircase'))
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[2], "name": 'Staircase', "number": 2}
 
+    return {"sysex": "testData/P3_Factory_Sounds_v1.01.syx", "program_generator": programs}
 

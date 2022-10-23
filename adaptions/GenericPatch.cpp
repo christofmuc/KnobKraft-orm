@@ -206,6 +206,44 @@ namespace knobkraft {
 		}
 	}
 
+	bool GenericStoredTagCapability::setTags(std::set<midikraft::Tag> const& tags)
+	{
+		ignoreUnused(tags);
+		SimpleLogger::instance()->postMessage("Changing tags in the stored patch is not implemented yet!");
+		return false;
+	}
+
+	std::set<midikraft::Tag> GenericStoredTagCapability::tags() const
+	{
+		if (me_.lock()->pythonModuleHasFunction(kGetStoredTags)) {
+			py::gil_scoped_acquire acquire;
+			if (!me_.expired()) {
+				auto patch = me_.lock();
+				try {
+					std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+					py::object result = patch->callMethod(kGetStoredTags, v);
+					auto tagsFound = result.cast<std::vector<std::string>>();
+					std::set<midikraft::Tag> resultSet;
+					for (auto const& tag : tagsFound)
+					{
+						resultSet.insert(tag);
+					}
+					return resultSet;
+				}
+				catch (py::error_already_set& ex)
+				{
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kGetStoredTags, ex);
+				}
+				catch (...) {
+					SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kGetStoredTags).str());
+				}
+			}
+		}
+		return {};
+	}
+
+
 	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const
 	{
 		midikraft::StoredPatchNameCapability *impl;
@@ -288,6 +326,35 @@ namespace knobkraft {
 				non_const->genericLayeredPatchCapabilityImpl_ = std::make_shared<GenericLayeredPatchCapability>(non_const->shared_from_this());
 			}
 			*outCapability = genericLayeredPatchCapabilityImpl_.get();
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredTagCapability >& outCapability) const
+	{
+		midikraft::StoredTagCapability* impl;
+		if (hasCapability(&impl)) {
+			if (!genericStoredTagCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericStoredTagCapabilityImpl_ = std::make_shared<GenericStoredTagCapability>(non_const->shared_from_this());
+			}
+			outCapability = genericStoredTagCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(midikraft::StoredTagCapability** outCapability) const
+	{
+		if (pythonModuleHasFunction(kGetStoredTags)) {
+			if (!genericStoredTagCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericStoredTagCapabilityImpl_ = std::make_shared<GenericStoredTagCapability>(non_const->shared_from_this());
+			}
+			*outCapability = genericStoredTagCapabilityImpl_.get();
 			return true;
 		}
 		return false;

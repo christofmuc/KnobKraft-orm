@@ -14,25 +14,29 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | works | adaptation | |
-| Behringer | RD-8 | in progress | native | |
+| Behringer | RD-8 | in progress | adaptation | |
+| Behringer | RD-9 | in progress | adaptation | |
 | Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
-| DSI | Evolver | alpha | adaptation | |
-| DSI | Mopho | beta | adaptation | |
-| DSI | Mopho X4 | beta | adaptation | |
-| DSI | Tetra | beta | adaptation | |
-| DSI | Pro 2 | beta | adaptation | |
-| DSI | Prophet 8 | beta | adaptation | |
+| DSI | Evolver | beta | adaptation | |
+| DSI | Mopho | works | adaptation | |
+| DSI | Mopho X4 | works | adaptation | |
+| DSI | Tetra | works | adaptation | |
+| DSI | Pro 2 | works | adaptation | |
+| DSI | Prophet 8 | works | adaptation | |
+| DSI | Tempest | alpha | adaptation | |
 | DSI/Sequential | OB-6 | works | native | |
 | DSI/Sequential | Prophet Rev2 | works | native | |
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
-| Ensoniq | ESQ-1/SQ-80 | beta | adaptation | Contributed by @Mostelin! |
+| Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
-| Korg | 03R/W | beta | adaptation | Thanks to Philippe! |
-| Korg | DW-6000 | beta | adaptation | |
+| Korg | 03R/W | works | adaptation | Thanks to Philippe! |
+| Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
-| Korg | MS2000/microKORG | beta | adaptation | Thanks to @windo|
+| Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
+| Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
 | Oberheim | Matrix 1000 | works | native | |
@@ -43,8 +47,11 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
+| Roland | JV-80/880/90/1000 | beta | adaptation | |
+| Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
 | Roland | MKS-80 | works | native | |
+| Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |

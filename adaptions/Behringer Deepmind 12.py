@@ -3,7 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
-
+from knobkraft import unescapeSysex_deepmind as unescapeSysex
 
 behringer_id = [0x00, 0x20, 0x32]
 
@@ -85,6 +85,14 @@ def nameFromDump(message):
     return 'invalid'
 
 
+def numberFromDump(message) -> int:
+    if isSingleProgramDump(message):
+        return message[8] * numberOfPatchesPerBank() + message[9]
+    elif isEditBufferDump(message):
+        return 0
+    return -1
+
+
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message
@@ -99,22 +107,18 @@ def convertToProgramDump(channel, message, program_number):
     program = program_number % numberOfPatchesPerBank()
     if isEditBufferDump(message):
         # Need to construct a new program dump from an edit buffer dump. Keep the protocol version intact
-        return message[0:5] + [channel, 0x04, message[7], bank, program] + message[8:]
+        return message[0:5] + [channel, 0x02, message[7], bank, program] + message[8:]
     if isSingleProgramDump(message):
         # Need to construct a new program dump from a single program dump. Keep the protocol version intact
-        return message[0:5] + [channel, 0x04, message[7], bank, program] + message[10:]
+        return message[0:5] + [channel, 0x02, message[7], bank, program] + message[10:]
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
-def unescapeSysex(sysex):
-    # This implements the algorithm defined on page 141 of the Deepmind user manual. I think it is the same as DSI uses
-    result = []
-    dataIndex = 0
-    while dataIndex < len(sysex):
-        msbits = sysex[dataIndex]
-        dataIndex += 1
-        for i in range(7):
-            if dataIndex < len(sysex):
-                result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
-            dataIndex += 1
-    return result
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[0], "name": "Brass Set 1     ", "number": 896}
+
+    return {"sysex": "testData/DM12_-_Juno_106_Presets_H.syx", "program_generator": programs}
+
+

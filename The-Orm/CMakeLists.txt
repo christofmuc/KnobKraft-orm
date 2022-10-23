@@ -188,13 +188,32 @@ IF(WIN32)
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 
-# Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir
+# Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir. Same with roland and knobkraft python modules
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
 		${CMAKE_SOURCE_DIR}/adaptions/sequential
 		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
 		)
-
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/roland
+		$<TARGET_FILE_DIR:KnobKraftOrm>/roland
+		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/knobkraft
+		$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
+		)
+file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptions/*.py")
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory 
+		$<TARGET_FILE_DIR:KnobKraftOrm>/adaptations
+		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${ADAPTATION_PYTHON_FILES}
+		$<TARGET_FILE_DIR:KnobKraftOrm>/adaptations
+		)
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
@@ -227,9 +246,6 @@ IF(APPLE)
         BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
 		)
-	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION python COMPONENT Runtime
-        )
-    
     INSTALL(CODE "include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")

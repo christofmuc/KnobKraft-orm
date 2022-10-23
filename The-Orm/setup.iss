@@ -48,6 +48,9 @@ Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptions\sequential\*.*"; DestDir: "{app}\sequential";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptions\roland\*.*"; DestDir: "{app}\roland";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptions\knobkraft\*.*"; DestDir: "{app}\knobkraft";Flags: ignoreversion
+#include "adaptations.iss"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
 
@@ -55,6 +58,12 @@ Source: "${CMAKE_SOURCE_DIR}\adaptions\sequential\*.*"; DestDir: "{app}\sequenti
 Type: files; Name: "{app}\sequential\__pycache__\*.pyc"
 Type: dirifempty; Name: "{app}\sequential\__pycache__"
 Type: dirifempty; Name: "{app}\sequential"
+Type: files; Name: "{app}\roland\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\roland\__pycache__"
+Type: dirifempty; Name: "{app}\roland"
+Type: files; Name: "{app}\knobkraft\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\knobkraft\__pycache__"
+Type: dirifempty; Name: "{app}\knobkraft"
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

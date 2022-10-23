@@ -11,6 +11,7 @@
 #include "UIModel.h"
 #include "Logger.h"
 #include "ColourHelpers.h"
+#include "HasBanksCapability.h"
 
 #include <boost/format.hpp>
 #include <fmt/format.h>
@@ -270,13 +271,30 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 	if (synth) {
 		synthBanksNode->onGenerateChildren = [this, synth, synthName] {
 			std::vector<TreeViewItem*> result;
-			for (int i = 0; i < synth->numberOfBanks(); i++) {
-				auto bank_id = midikraft::SynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
-				auto bank_name = synth->friendlyBankName(MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
+
+			//TODO this should be moved into a helper static function
+			size_t numberOfBanks = 0;
+			auto bankDescriptor = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(synth);
+			if (bankDescriptor)
+			{
+				numberOfBanks = bankDescriptor->bankDescriptors().size();
+			}
+			else {
+				auto hasBanks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
+				if (hasBanks)
+				{
+					numberOfBanks = hasBanks->numberOfBanks();
+				}
+			}
+
+			for (int i = 0; i < numberOfBanks; i++) {
+				int sizeOfBank = midikraft::SynthBank::numberOfPatchesInBank(synth, i);
+				auto bank_id = midikraft::SynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
+				auto bank_name = midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank = new TreeViewNode(bank_name, bank_id);
-				bank->onSelected = [synth, i, this](String) {
+				bank->onSelected = [synth, i, this, sizeOfBank](String) {
 					if (onSynthBankSelected) {
-						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i, synth->numberOfPatches()));
+						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 					}
 				};
 				bank->onItemDragged = [bank_id, bank_name]() {

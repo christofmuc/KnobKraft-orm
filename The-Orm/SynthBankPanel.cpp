@@ -100,7 +100,7 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 	synthBank_ = synthBank;
 	synthName_.setText(synthBank->synth()->getName(), dontSendNotification);
     auto timeAgo = (juce::Time::getCurrentTime() - synthBank_->lastSynced()).getApproximateDescription();
-	bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", synthBank_->synth()->friendlyBankName(synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
+	bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
 	bankList_->setPatches(synthBank, info);
 }
 

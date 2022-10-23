@@ -27,8 +27,8 @@ import hashlib
 class GenericSequential:
 
     def __init__(self, name, device_id, banks, patches_per_bank,
-                 name_len=0,
-                 name_position=0,
+                 name_len=None,
+                 name_position=None,
                  file_version=None,
                  id_list=None,
                  blank_out_zones=None,
@@ -47,10 +47,12 @@ class GenericSequential:
         self.__name_len = name_len
         self.__name_position = name_position
         self.__file_version = file_version
+        self._blank_out_zones = None
         if blank_out_zones is None:
-            self.__blank_out_zones = [(name_position, name_len)]
+            if name_position is not None and name_len is not None:
+                self._blank_out_zones = [(name_position, name_len)]
         else:
-            self.__blank_out_zones = blank_out_zones + [(name_position, name_len)]
+            self._blank_out_zones = blank_out_zones + [(name_position, name_len)]
         self.friendly_bank_name = friendlyBankName
         self.friendly_program_name = friendlyProgramName
         self.number_of_layers = numberOfLayers
@@ -174,8 +176,9 @@ class GenericSequential:
         raw = self.getDataBlock(message)
         data = self.unescapeSysex(raw)
         # Blank out all blank out zones, normally this is the name (or layer names)
-        for zone in self.__blank_out_zones:
-            data[zone[0]:zone[0] + zone[1]] = [0] * zone[1]
+        if self._blank_out_zones is not None:
+            for zone in self._blank_out_zones:
+                data[zone[0]:zone[0] + zone[1]] = [0] * zone[1]
         return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
 
     def renamePatch(self, message, new_name):
@@ -265,12 +268,14 @@ class GenericSequential:
         setattr(module, 'numberOfPatchesPerBank', self.numberOfPatchesPerBank)
         setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
         setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
-        setattr(module, 'nameFromDump', self.nameFromDump)
+        if self.__name_len is not None and self.__name_position is not None:
+            setattr(module, 'nameFromDump', self.nameFromDump)
         setattr(module, 'numberFromDump', self.numberFromDump)
         setattr(module, 'convertToEditBuffer', self.convertToEditBuffer)
         setattr(module, 'convertToProgramDump', self.convertToProgramDump)
         setattr(module, 'calculateFingerprint', self.calculateFingerprint)
-        setattr(module, 'renamePatch', self.renamePatch)
+        if self.__name_len is not None and self.__name_position is not None:
+            setattr(module, 'renamePatch', self.renamePatch)
         if self.friendly_bank_name is not None:
             setattr(module, 'friendlyBankName', self.friendlyBankName)
         if self.friendly_program_name is not None:

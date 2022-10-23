@@ -12,7 +12,7 @@
 #include "MidiBankNumber.h"
 #include "ProgressHandler.h"
 
-class ImportFromSynthDialog : public Component
+class ImportFromSynthDialog : public Component, private Button::Listener
 {
 public:
 	typedef std::function<void(std::vector<MidiBankNumber> bankNo)> TSuccessHandler;
@@ -23,6 +23,9 @@ public:
 	void resized() override;
 
 private:
+	virtual void ImportFromSynthDialog::buttonClicked(Button* button) override;
+
+	std::shared_ptr<midikraft::Synth> synth_;
 	TSuccessHandler onOk_;
 	MultiChoicePropertyComponent  *banks_;
 	PropertyPanel propertyPanel_;

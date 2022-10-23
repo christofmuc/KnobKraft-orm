@@ -22,12 +22,11 @@ sequential.GenericSequential(name="DSI Mopho X4",
                              id_list=[0x25, 0x27, 0x29]  # this adds Mopho Keyboard, SE, and X4
                              ).install(this_module)
 
+
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[0], "name": 'Moonster', "number": 0}
+
+    return {"sysex": "testData/Mopho_x4_AllBanks_V1.01.syx", "program_generator": programs}
 #
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
-if __name__ == "__main__":
-    import unittest
-    messages = sequential.load_sysex("testData/Mopho_x4_AllBanks_V1.01.syx")
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[0],
-                                                                         program_name='Moonster        '))

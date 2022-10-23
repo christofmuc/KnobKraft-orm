@@ -337,7 +337,7 @@ void PatchView::retrieveBankFromSynth(midikraft::SynthBank bankToRetrieve, std::
 			if (bankToRetrieve.synth() /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
-				progressWindow->setMessage((boost::format("Importing %s from %s...") % bankToRetrieve.synth()->friendlyBankName(bankToRetrieve.bankNumber()) % bankToRetrieve.synth()->getName()).str());
+				progressWindow->setMessage((boost::format("Importing %s from %s...") % midikraft::SynthBank::friendlyBankName(bankToRetrieve.synth(), bankToRetrieve.bankNumber()) % bankToRetrieve.synth()->getName()).str());
 				librarian_.startDownloadingAllPatches(
 					midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
 					bankToRetrieve.synth(),

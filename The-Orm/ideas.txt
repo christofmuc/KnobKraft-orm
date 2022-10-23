@@ -1,6 +1,14 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
+For 1.17:
+Adaptation tests need documenting
+XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
+Could simulate an ingest with the predefined names (lol)
+
+
+Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
+
 Carry over:
 * Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
 * Could do better layer switch
@@ -98,7 +106,25 @@ Open since 1.11
 * Do I need to distinguish between loadFromDataFileType and loadFromDataStreamType()?
 * Should be called Stream Load instead of DataFile
 
+Roland Synths
+* Should display Metadata item "size in bytes"
+* Could display "Type" which is calculated by adaptation
+* Sysex dissector with more color highlighting in hex display
+* Need still implement calcFingerprint, friendlyProgramName, renamePatch()
+* Need to figure out how to work with the backward compatible synths
+
+
+Code signing bundling
+https://cmake.org/cmake/help/latest/prop_tgt/XCODE_EMBED_type.html
+https://cmake.org/cmake/help/latest/prop_tgt/XCODE_EMBED_type_CODE_SIGN_ON_COPY.html#prop_tgt:XCODE_EMBED_%3Ctype%3E_CODE_SIGN_ON_COPY
+https://stackoverflow.com/questions/60329646/xcode-how-to-embed-a-framework-with-code-sign-on-copy-using-cmake#60421039
+Remember these are also for dylibs
+
+JD-800
+
+
 Before 2.0
+* Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
 * Need easy clear filter button
 * SINGLE SYNTH SETUP MODE
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
@@ -115,6 +141,12 @@ LISTS upgrades:
 * How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where? Load the list into the bank window?
 * Create a list of the currently loaded patches in all synths (store in list)
 * List folders / lists of lists?
+
+Historical 
+https://www.mossgrabers.de/Software/ChangeIt/ChangeIt.html
+
+Idea: 
+Adaptation can define a custom getMetadata(). E.g. to indicate the original synth the patch was for
 
 BUGS
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
@@ -149,6 +181,8 @@ Patch display
 * Allow "show patch" button as the simplified version of the patch diff dialog
 * Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
 * Should show waveform/oscillator/FFT of preview
+* The diff dialog needs access to the blank out sections. Could colour code
+
 
 Generic Editor
 + Could allow any mapping, to use e.g. the Rev2 to setup the OB6

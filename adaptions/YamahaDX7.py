@@ -60,7 +60,7 @@ def needsChannelSpecificDetection():
 
 
 def deviceDetectWaitMilliseconds():
-    # If this value is negative, the KnobKraft Orm will skip the auto-detection altogether
+    # If this value is negative, the KnobKraft Orm will skip the auto-detection altogether (HACK!)
     return -1
 
 
