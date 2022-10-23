@@ -34,7 +34,7 @@ namespace midikraft {
 	// Some constants
 	const uint8 cDefaultNote = 0x3c;
 
-	std::vector<Range<int>> kRev2BlankOutZones = {
+	std::vector<Range<size_t>> kRev2BlankOutZones = {
 		{ 211, 231 }, // unused according to doc
 		{ 1235, 1255 }, // same in layer B
 		{ 235, 255 }, // name of layer A
