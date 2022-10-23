@@ -161,10 +161,13 @@ def test_fingerprinting(adaptation, test_data: TestData):
     if hasattr(adaptation, "calculateFingerprint"):
         for program in test_data.programs:
             md5 = adaptation.calculateFingerprint(program["message"])
+            blank1 = adaptation.blankedOut(program["message"])
             if hasattr(adaptation, "isSingleProgramDump") and hasattr(adaptation, "convertToProgramDump") and adaptation.isSingleProgramDump(
                     program["message"]):
                 # Change program place and make sure the fingerprint didn't change
                 changed_position = adaptation.convertToProgramDump(0x09, program["message"], 0x21)
+                blank2 = adaptation.blankedOut(changed_position)
+                knobkraft.list_compare(blank1, blank2)
                 assert adaptation.calculateFingerprint(changed_position) == md5
             # Change name and make sure the fingerprint didn't change
             if hasattr(adaptation, "renamePatch"):

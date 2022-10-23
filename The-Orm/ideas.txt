@@ -1,6 +1,12 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
+For 1.17:
+Adaptation tests need documenting
+XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
+Could simulate an ingest with the predefined names (lol)
+
+
 Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
 Carry over:
@@ -72,7 +78,6 @@ https://www.mossgrabers.de/Software/ChangeIt/ChangeIt.html
 Idea: 
 Adaptation can define a custom getMetadata(). E.g. to indicate the original synth the patch was for
 
-
 BUGS
 * Global settings needs to change MIDI channel internally when using the settings editor to change it
 + When hiding the (last?) patch on a page, the page is advanced without necessity
@@ -112,6 +117,8 @@ Patch display
 * Allow "show patch" button as the simplified version of the patch diff dialog
 * Allow side panel window to show always current patch paramters (like the diff dialog, just without the coloring. Also with hex dump option)
 * Should show waveform/oscillator/FFT of preview
+* The diff dialog needs access to the blank out sections. Could colour code
+
 
 Generic Editor
 + Could allow any mapping, to use e.g. the Rev2 to setup the OB6

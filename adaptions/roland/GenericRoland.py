@@ -97,21 +97,22 @@ class RolandData:
     def make_black_out_zones(self, model_id_length: int, program_position: int = None, name_blankout: Tuple[int, int, int] = None):
         # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
         # message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
-        data_block_overhead = 3 + model_id_length + 1 + 2
+        data_block_overhead = 3 + model_id_length + 1 + 2 + self.num_address_bytes
         self.blank_out_zones = []
         # Ignore checksums, because they might include the program position and will be different for an edit buffer and a program dump
-        self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
+        #self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
         if program_position is not None:
             # We want the fingerprint to ignore the program position
             self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
         if name_blankout is not None:
-            self.blank_out_zones += [(self._start_index_of_block(name_blankout[0], data_block_overhead) + name_blankout[1], name_blankout[2])]
+            self.blank_out_zones += [(self._start_index_of_block(name_blankout[0], data_block_overhead) + data_block_overhead - 2
+                                      + name_blankout[1], name_blankout[2])]
 
     def _start_index_of_block(self, block_no, data_block_overhead):
-        return sum([((0 if i == 0 else self.data_blocks[i-1].size) + data_block_overhead) for i in range(block_no + 1)])
+        return sum([(0 if i == 0 else (self.data_blocks[i-1].size + data_block_overhead)) for i in range(block_no + 1)])
 
     def _end_index_of_block(self, block_no, data_block_overhead):
-        return self._start_index_of_block(block_no, data_block_overhead) + self.data_blocks[block_no].size - 1
+        return self._start_index_of_block(block_no, data_block_overhead) + self.data_blocks[block_no].size + data_block_overhead - 1
 
     def total_size(self) -> int:
         return sum([f.size for f in self.data_blocks])
@@ -167,9 +168,9 @@ class GenericRoland:
         self.program_dump = program_dump
         self.category_index = category_index
         # Calculate the fingerprint blank out zones for edit buffer (just the name) and program dump (program position and name)
-        edit_buffer.make_black_out_zones(self._model_id_len, 5 + self._model_id_len)
-        program_dump.make_black_out_zones(self._model_id_len, 5 + self._model_id_len,
-                                          (0, 0, 12))  # name always is in block 0 with index 0 and length 12
+        edit_buffer.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len)
+        program_dump.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len,
+                                          name_blankout=(0, 0, 12))  # name always is in block 0 with index 0 and length 12
 
     @knobkraft_api
     def name(self):
@@ -340,17 +341,26 @@ class GenericRoland:
         for blank in blankout:
             for i in range(blank[1]):
                 result[blank[0] + i] = 0
+        # Additionnal blankout: The checkums can't be precalculated, as we have messages with varying length
+        # Instead just blank every byte before the 0xf7
+        for i in range(len(data)):
+            if i+1 < len(data):
+                if data[i+1] == 0xf7:
+                    data[i] = 0x00
         return result
 
     @knobkraft_api
-    def calculateFingerprint(self, message):
+    def blankedOut(self, message):
         # Use the prepared blank out zones to clear out a) program place and b) patch name
         if self.isEditBufferDump(message):
-            return hashlib.md5(bytearray(self._apply_blankout(message, self.edit_buffer.blank_out_zones))).hexdigest()
+            return self._apply_blankout(message.copy(), self.edit_buffer.blank_out_zones)
         elif self.isSingleProgramDump(message):
-            return hashlib.md5(bytearray(self._apply_blankout(message, self.program_dump.blank_out_zones))).hexdigest()
-        else:
-            return hashlib.md5(bytearray(message)).hexdigest()
+            return self._apply_blankout(message.copy(), self.program_dump.blank_out_zones)
+        raise "Only works with edit buffers and program dumps"
+
+    @knobkraft_api
+    def calculateFingerprint(self, message):
+        return hashlib.md5(bytearray(self.blankedOut(message))).hexdigest()
 
     @knobkraft_api
     def numberFromDump(self, message) -> int:

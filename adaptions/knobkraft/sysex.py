@@ -6,9 +6,11 @@
 from typing import List, Tuple
 import binascii
 
-def load_sysex(filename):
+def load_sysex(filename, as_single_list=False):
     with open(filename, mode="rb") as midi_messages:
         content = midi_messages.read()
+        if as_single_list:
+            return list(content)
         messages = []
         start_index = 0
         for index, byte in enumerate(content):

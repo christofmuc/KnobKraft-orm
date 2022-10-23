@@ -16,5 +16,5 @@ _jv80_edit_buffer_addresses = RolandData("JV-80 Temporary Patch"
 
 def test_block_sizes():
     assert _jv80_patch_data[0].size == 0x22
-    assert _jv80_edit_buffer_addresses._start_index_of_block(0, 5) == 5
-    assert _jv80_edit_buffer_addresses._end_index_of_block(0, 5) == _jv80_edit_buffer_addresses._start_index_of_block(0, 5) + 0x22 - 1
+    assert _jv80_edit_buffer_addresses._start_index_of_block(0, 5) == 0
+    assert _jv80_edit_buffer_addresses._end_index_of_block(0, 5) == _jv80_edit_buffer_addresses._start_index_of_block(0, 5) + 0x22 + 5 - 1
