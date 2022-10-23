@@ -11,7 +11,7 @@
 
 #include "VirusPatch.h"
 
-#include <boost/format.hpp>
+#include "fmt/format.h"
 
 namespace midikraft {
 
@@ -171,7 +171,7 @@ namespace midikraft {
 	std::string Virus::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		char bankChar(char(bankNo.toZeroBased() + 'A'));
-		return (boost::format("Bank %c") % bankChar).str();
+		return fmt::format("Bank {}", bankChar);
 	}
 
 	Synth::PatchData Virus::filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const
@@ -336,7 +336,7 @@ namespace midikraft {
 			bankChar = char(programNumber.bank().toZeroBased() + 'a');
 		}
 		int progNo = programNumber.toZeroBased() % numberOfPatches();
-		return (boost::format("%c%d") % bankChar % progNo).str();
+		return fmt::format("{}{}", bankChar, progNo);
 	}
 
 	MidiMessage Virus::createSysexMessage(std::vector<uint8> const &message) const {

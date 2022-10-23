@@ -6,7 +6,7 @@
 
 #include "VirusPatch.h"
 
-#include <boost/format.hpp>
+#include "fmt/format.h"
 #include <locale>
 #include <codecvt>
 
@@ -99,7 +99,7 @@ namespace midikraft {
 				result.emplace(kVirusCategories[cat1]);
 			}
 			else {
-				SimpleLogger::instance()->postMessage((boost::format("Found invalid category in Virus patch %s: %d") % name() % cat1).str());
+				SimpleLogger::instance()->postMessage(fmt::format("Found invalid category in Virus patch {}: {}", name(), cat1));
 			}
 		}
 		size_t cat2 = data()[index(PageB, 124)];
@@ -108,7 +108,7 @@ namespace midikraft {
 				result.emplace(kVirusCategories[cat2]);
 			}
 			else {
-				SimpleLogger::instance()->postMessage((boost::format("Found invalid secondary category in Virus patch %s: %d") % name() % cat2).str());
+				SimpleLogger::instance()->postMessage(fmt::format("Found invalid secondary category in Virus patch {}: {}", name(), cat2));
 			}
 		}
 		return result;
