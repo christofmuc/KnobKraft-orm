@@ -42,7 +42,7 @@ namespace midikraft {
 
 	// Definition for the "unused" data bytes inside the sysex of the Matrix 1000
 	// These unused bytes need to be blanked for us to compare patches in order to detect duplicates
-	std::vector<Range<int>> kMatrix1000BlankOutZones = {
+	std::vector<Range<size_t>> kMatrix1000BlankOutZones = {
 		{0, 8} // This is the ASCII name, 8 character. The Matrix1000 will never display it, but I think a Matrix6 will
 	};
 
