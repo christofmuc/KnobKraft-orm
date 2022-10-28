@@ -229,6 +229,7 @@ IF(APPLE)
 
 	SET(CODESIGN_CERTIFICATE_NAME "-")
 
+	//https://gitlab.kitware.com/cmake/cmake/-/issues/22372
     INSTALL(CODE "include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
