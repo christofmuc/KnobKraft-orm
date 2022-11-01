@@ -20,7 +20,8 @@ void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	for (auto& import : imports) {
 		if (import.name.rfind("Imported from file") == 0) {
 			import.name = import.name.substr(19);
-		} else if (import.name.rfind("Imported from synth") == 0) {
+		}
+		else if (import.name.rfind("Imported from synth") == 0) {
 			import.name = import.name.substr(20);
 		}
 	}
@@ -83,7 +84,10 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			std::string synthName = activeSynth->getName();
 			auto synthLibrary = new TreeViewNode(synthName, "library-" + synthName);
 			synthLibrary->onGenerateChildren = [this, activeSynth]() {
-				return std::vector<TreeViewItem*>({ newTreeViewItemForSynthBanks(activeSynth), newTreeViewItemForImports(activeSynth) });
+				return std::vector<TreeViewItem*>({
+					newTreeViewItemForSynthBanks(activeSynth)
+					, newTreeViewItemForStoredBanks(activeSynth)
+					, newTreeViewItemForImports(activeSynth) });
 			};
 			synthLibrary->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
@@ -116,7 +120,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 					// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
 					//selectItemByPath({ "userlists", list->id() });
 				}
-			}, nullptr);
+				}, nullptr);
 		};
 		result.push_back(addNewItem);
 		return result;
@@ -124,10 +128,10 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_->onSingleClick = [this](String) {
 		userListsItem_->toggleOpenness();
 	};
-	
+
 	TreeViewNode* root = new TreeViewNode("ROOT", "");
-	root->onGenerateChildren = [=]() { 
-		return std::vector<TreeViewItem*>({ allPatchesItem_, userListsItem_ }); 
+	root->onGenerateChildren = [=]() {
+		return std::vector<TreeViewItem*>({ allPatchesItem_, userListsItem_ });
 	};
 	treeView_->setRootItem(root);
 	treeView_->setRootItemVisible(false);
@@ -219,7 +223,7 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 			node->setOpen(true);
 		}
 		for (int c = 0; c < node->getNumSubItems(); c++) {
-			child = dynamic_cast<TreeViewNode *>(node->getSubItem(c));
+			child = dynamic_cast<TreeViewNode*>(node->getSubItem(c));
 			if (!level_found && child && child->id().toStdString() == path[index]) {
 				node = child;
 				level_found = true;
@@ -251,13 +255,13 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 			onPatchSelected(patchHolder);
 	};
 	node->onItemDragged = [patchHolder, list, index]() {
-		nlohmann::json dragInfo{ { "drag_type", "PATCH_IN_LIST"}, 
+		nlohmann::json dragInfo{ { "drag_type", "PATCH_IN_LIST"},
 			{ "list_id", list.id},
 			{ "list_name", list.name},
-			{ "order_num", index }, 
-			{ "synth", patchHolder.smartSynth()->getName()}, 
+			{ "order_num", index },
+			{ "synth", patchHolder.smartSynth()->getName()},
 			{ "data_type", patchHolder.patch()->dataTypeID()},
-			{ "md5", patchHolder.md5()}, 
+			{ "md5", patchHolder.md5()},
 			{ "patch_name", patchHolder.name() } };
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
@@ -289,7 +293,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 
 			for (int i = 0; i < numberOfBanks; i++) {
 				int sizeOfBank = midikraft::SynthBank::numberOfPatchesInBank(synth, i);
-				auto bank_id = midikraft::SynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
+				auto bank_id = midikraft::ActiveSynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank_name = midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank = new TreeViewNode(bank_name, bank_id);
 				bank->onSelected = [synth, i, this, sizeOfBank](String) {
@@ -310,6 +314,41 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 	return synthBanksNode;
 }
 
+TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
+	std::string synthName = device->getName();
+	auto synthBanksNode = new TreeViewNode("User Banks", "stored-banks-" + synthName);
+	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
+	if (synth) {
+		synthBanksNode->onGenerateChildren = [this, synth, synthName, synthBanksNode] {
+			std::vector<TreeViewItem*> result;
+			auto userLists = db_.allUserBanks(synth);
+			userLists = sortLists<midikraft::ListInfo>(userLists, [](const midikraft::ListInfo& info) { return info.name;  });
+			for (auto const& list : userLists) {
+				result.push_back(newTreeViewItemForUserBank(synth, synthBanksNode, list));
+			}
+			auto addNewItem = new TreeViewNode("Add new user bank", "");
+			addNewItem->onSingleClick = [this, synth, synthBanksNode](String id) {
+				CreateListDialog::showCreateListDialog(nullptr, synth, TopLevelWindow::getActiveTopLevelWindow(), [this, synthBanksNode](std::shared_ptr<midikraft::PatchList> list) {
+					if (list) {
+						db_.putPatchList(list);
+						SimpleLogger::instance()->postMessage("Create new user bank named " + list->name());
+						synthBanksNode->regenerate();
+						regenerateUserLists();
+						// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
+						//selectItemByPath({ "userlists", list->id() });
+					}
+					}, [synthBanksNode](std::shared_ptr<midikraft::PatchList> result) {
+						ignoreUnused(result);
+						synthBanksNode->regenerate();
+					});
+			};
+			result.push_back(addNewItem);
+			return result;
+		};
+	}
+	return synthBanksNode;
+}
+
 TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
 	std::string synthName = synth->getName();
 	auto importsForSynth = new TreeViewNode("By import", "imports-" + synthName);
@@ -326,7 +365,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 				if (onImportListSelected)
 					onImportListSelected(id);
 			};
-			node->textValue.addListener(new ImportNameListener(db_, import.id));			
+			node->textValue.addListener(new ImportNameListener(db_, import.id));
 			result.push_back(node);
 		}
 		return result;
@@ -335,6 +374,119 @@ TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 		importsForSynth->toggleOpenness();
 	};
 	return importsForSynth;
+}
+
+TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode *parent, midikraft::ListInfo list) {
+	auto node = new TreeViewNode(list.name, list.id);
+	userLists_[list.id] = node;
+	node->onGenerateChildren = [this, list]() {
+		auto patchList = db_.getPatchList(list, synths_);
+		std::vector<TreeViewItem*> result;
+		if (patchList) {
+			int index = 0;
+			for (auto patch : patchList->patches()) {
+				result.push_back(newTreeViewItemForPatch(list, patch, index++));
+			}
+		}
+		return result;
+	};
+	node->onSelected = [this, list](String clicked) {
+		UIModel::instance()->multiMode_.setMultiSynthMode(false);
+		// Need to set SYNTH
+		if (onUserListSelected)
+			onUserListSelected(list.id);
+	};
+	node->acceptsItem = [list](juce::var dropItem) {
+		String dropItemString = dropItem;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		return midikraft::PatchHolder::dragItemIsPatch(infos) || (midikraft::PatchHolder::dragItemIsList(infos) && infos["list_id"] != list.id);
+	};
+	node->onItemDropped = [this, list, node](juce::var dropItem, int insertIndex) {
+		String dropItemString = dropItem;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
+			int position = insertIndex;
+			ignoreUnused(position);
+			if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
+				SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
+				return;
+			}
+
+			std::string synthname = infos["synth"];
+			if (synths_.find(synthname) == synths_.end()) {
+				SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
+				return;
+			}
+
+			auto synth = synths_[synthname].lock();
+			std::string md5 = infos["md5"];
+			std::vector<midikraft::PatchHolder> patch;
+			if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
+				if (infos.contains("list_id") && infos["list_id"] == list.id && infos.contains("order_num")) {
+					// Special case - this is a patch reference from the same list, this is effectively just a reordering operation!
+					db_.movePatchInList(list, patch[0], infos["order_num"], insertIndex);
+				}
+				else {
+					// Simple case - new patch (or patch reference) added to list
+					db_.addPatchToList(list, patch[0], insertIndex);
+					SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+				}
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
+			}
+		}
+		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
+			if (infos.contains("list_id") && infos.contains("list_name")) {
+				// Add all patches of the dragged list to the target ist
+				auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
+				if (AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "Add list to list?"
+					, fmt::format("This will add all {} patches of the list '{}' to the list '{}' at the given position. Continue?", loaded_list->patches().size(), infos["list_name"], list.name
+					))) {
+					for (auto& patch : loaded_list->patches()) {
+						db_.addPatchToList(list, patch, insertIndex++);
+						SimpleLogger::instance()->postMessage("Patch " + patch.name() + " added to list " + list.name);
+					}
+				}
+			}
+			else {
+				SimpleLogger::instance()->postMessage("Program error - dropped list does not contain name and id!");
+			}
+		}
+		node->regenerate();
+		node->setOpenness(TreeViewItem::Openness::opennessOpen);
+		if (onUserListChanged) {
+			onUserListChanged(list.id);
+		}
+	};
+	node->onItemDragged = [list]() {
+		nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", list.id }, { "list_name", list.name } };
+		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
+	};
+	node->onDoubleClick = [node, synth, this, parent](String id) {
+		// Open rename dialog on double click
+		std::string oldname = node->text().toStdString();
+		auto listInfo = midikraft::ListInfo({ id.toStdString(), oldname});
+		auto bank = db_.getPatchList(listInfo, synths_);
+		CreateListDialog::showCreateListDialog(std::dynamic_pointer_cast<midikraft::SynthBank>(bank),
+			synth,
+			TopLevelWindow::getActiveTopLevelWindow(),
+			[this, oldname, parent](std::shared_ptr<midikraft::PatchList> new_list) {
+				jassert(new_list);
+				if (new_list) {
+					db_.putPatchList(new_list);
+					SimpleLogger::instance()->postMessage((boost::format("Renamed bank from %s to %s") % oldname % new_list->name()).str());
+					parent->regenerate();
+				}
+			}, [this, parent](std::shared_ptr<midikraft::PatchList> new_list) {
+				if (new_list) {
+					db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
+					SimpleLogger::instance()->postMessage("Deleted user bank " + new_list->name());
+					parent->regenerate();
+				}
+			});
+	};
+	return node;
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
@@ -402,10 +554,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
 				if (AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "Add list to list?"
 					, fmt::format("This will add all {} patches of the list '{}' to the list '{}' at the given position. Continue?", loaded_list->patches().size(), infos["list_name"], list.name
-						))) {
+					))) {
 					for (auto& patch : loaded_list->patches()) {
 						db_.addPatchToList(list, patch, insertIndex++);
-							SimpleLogger::instance()->postMessage("Patch " + patch.name() + " added to list " + list.name);
+						SimpleLogger::instance()->postMessage("Patch " + patch.name() + " added to list " + list.name);
 					}
 				}
 			}
@@ -429,22 +581,23 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()),
 			TopLevelWindow::getActiveTopLevelWindow(),
 			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list) {
-			jassert(new_list);
-			if (new_list) {
-				db_.putPatchList(new_list);
-				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
-				regenerateUserLists();
-			}
-		}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
-			if (new_list) {
-				db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
-				SimpleLogger::instance()->postMessage("Deleted list " + new_list->name());
-				regenerateUserLists();
-			}
-		});
+				jassert(new_list);
+				if (new_list) {
+					db_.putPatchList(new_list);
+					SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
+					regenerateUserLists();
+				}
+			}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
+				if (new_list) {
+					db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
+					SimpleLogger::instance()->postMessage("Deleted list " + new_list->name());
+					regenerateUserLists();
+				}
+			});
 	};
 	return node;
 }
+
 
 void PatchListTree::selectSynthLibrary(std::string const& synthName) {
 	selectItemByPath({ "allpatches", "library-" + synthName });
@@ -480,12 +633,12 @@ std::list<std::string> PatchListTree::pathOfSelectedItem() const {
 void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->currentSynth_) {
-        if (UIModel::currentSynth()) {
-		// Synth has changed, we may need to switch to the synth library item - if and only if a synth-specific list of another synth is selected
-		if (!isUserListSelected() && getSelectedSynth() != UIModel::currentSynth()->getName()) {
-			selectSynthLibrary(UIModel::currentSynth()->getName());
+		if (UIModel::currentSynth()) {
+			// Synth has changed, we may need to switch to the synth library item - if and only if a synth-specific list of another synth is selected
+			if (!isUserListSelected() && getSelectedSynth() != UIModel::currentSynth()->getName()) {
+				selectSynthLibrary(UIModel::currentSynth()->getName());
+			}
 		}
-	}
 	}
 	else if (source == &UIModel::instance()->importListChanged_) {
 		// Did we have a previous synth/state? Then store it!

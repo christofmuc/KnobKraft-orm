@@ -22,7 +22,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "You have unsaved changes!",
 					"You have modified the synth bank but not saved it back to the synth. Reimporting the bank will make you lose your changes! Do you want to re-import the bank from the synth?",
 					"Yes", "Cancel")) {
-				patchView_->retrieveBankFromSynth(*synthBank_, {});
+				patchView_->retrieveBankFromSynth(synthBank_->synth(), synthBank_->bankNumber(), {});
 			}
 		}
 	};
@@ -99,8 +99,15 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 {
 	synthBank_ = synthBank;
 	synthName_.setText(synthBank->synth()->getName(), dontSendNotification);
-    auto timeAgo = (juce::Time::getCurrentTime() - synthBank_->lastSynced()).getApproximateDescription();
-	bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
+	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank))
+	{
+		auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
+		bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
+	}
+	else
+	{
+		bankNameAndDate_.setText(fmt::format("Bank {})", synthBank_->name()), dontSendNotification);
+	}
 	bankList_->setPatches(synthBank, info);
 }
 

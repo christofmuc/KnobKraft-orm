@@ -6,26 +6,39 @@ Adaptation tests need documenting
 XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
 Could simulate an ingest with the predefined names (lol)
 
-
 Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
 Carry over:
 * Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
 * Could do better layer switch
 
-Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
+UX:
+Windows need explanation: Library and Bank
+Need Window management. at least, resizing and show/hide
+Want to build banks offline
+Want to build multiple banks and switch them
+Want to create empty banks (need Init patch). Could remember empty position so you can drag lists into it
+Want to send a bank to a specific bank (two step? Drag bank into synth bank, make it "dirty", then sync)
 
-Release 2.0
-* Add Bank Management
 
 Duplicate name search sorts wrong I think
 Bug - cannot name search through only duplicate names result
+
+For 2.0.0:
+Importing a synth bank does not run autocategorize, but it should.
+Runninng autocategorize does not refresh the bank view
+Empty bank window needs place holder text + refresh button.
+Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
+
+
+Tree could show count of items
+
 
 BANK MANAGEMENT
 * Librarian Bank send for MKS80, K3M
 * Clicking the button should send the patch, as usual
 
-* Dirty banks should not be deleted by just changing the view... want to come back to them
+* Dirty banks should not be deleted by just changing the view... want to come back to them. I think they should be stored in the database!
 * Never synced banks should be red coloured in the tree
 * Deleting patches that are in a bank will remove them from the bank... should rather hide them?
 

@@ -50,7 +50,9 @@ private:
 
 	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
 	TreeViewItem* newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewItem* newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
 	TreeViewItem* newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewItem* newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode* parent, midikraft::ListInfo list);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;
