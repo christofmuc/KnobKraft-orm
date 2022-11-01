@@ -5,6 +5,8 @@
 #
 # Based on DeepMind adaptation.  Modified to Minilogue XD version by aka Andy2No
 
+import hashlib      # for fingerprint comparison
+
 korg_id = 0x42
 
 
@@ -55,7 +57,7 @@ def channelIfValidDeviceResponse(message):
             and message[8] == 0x00  # ( Member ID   (LSB))
             and message[9] == 0x00):  # ( Member ID   (MSB)) . Ignore the rest, hope for the best
 
-        # Reply with the device ID of the Minilogue XD - Global MIDI channel (see minilogue_xd__MIDIImp_1_01.txt)
+        # Reply with the device ID of the Minilogue XD - Global MIDI channel (see minilogue_xd__MIDIImp.txt)
         return message[2]
     return -1
 
@@ -106,7 +108,8 @@ def isEditBufferDump(message):
 
 def numberOfBanks():
     # return 4    # works reasonably well if treated as 4 banks of 128, but patches are really just numbered 1-500
-    return 5 # Since Program Change only works for 1-100, it seems it's meant to be treated as 5 banks of 100
+    # return 5 # Since Program Change only works for 1-100, it seems it's meant to be treated as 5 banks of 100
+    return 1 # One big bank, of 500 patches
     # The Minilogue XD has 500 program slots, and a 2 byte program number, but seems to be just one bank,
             # according to the MIDI implementation document, which also says it only has 8 bits - not enough
             # It turns out it's 2 bits: 7 bits, so treat it as 4 x banks of 128
@@ -119,9 +122,14 @@ def numberOfBanks():
 #  *5-1 : This message is recognized when the "MIDI Rx Prog Chg" is set to "On".
 def numberOfPatchesPerBank():
      # See comments under numberOfBanks()
-    # return 128
-    return 100  # Program change only works for choosing patches 1-100 (0-99).
-                # Bank select is not properly documented
+     # return 100  # Program change only works for choosing patches 1-100 (0-99).
+                # Bank select is not properly documented... and doesn't appear to work.
+    return 500  # either 5 banks of 100, or one big bank of 500 works, but using one big bank is better for numbering
+
+
+def friendlyProgramName(program):
+    return str(program+1).zfill(3)      # By default, import from synth gives 0-499.
+        # Add one and pad with leading zeros to make it match the display
 
 
 # (2) PROGRAM DATA DUMP REQUEST (1 PROG)                              R
@@ -215,15 +223,16 @@ def nameFromDump(message):  # see comment block above createProgramDumpRequest f
     nameLen = 12
     if isEditBufferDump(message):
         data = unescapeSysex(message[7:-1])
-        return ''.join([decodeNameChar(chr(x)) for x in data[nameBaseIndex:nameBaseIndex + nameLen]])
-#        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex + nameLen - 1]])
+        # return ''.join([decodeNameChar(chr(x)) for x in data[nameBaseIndex:nameBaseIndex + nameLen]])
+        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex + nameLen]])
     if isSingleProgramDump(message):
         data = unescapeSysex(message[9:-1])
-        return ''.join([decodeNameChar(chr(x)) for x in data[nameBaseIndex:nameBaseIndex + nameLen]])
-#        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex + nameLen - 1]])
+    #    return ''.join([decodeNameChar(chr(x)) for x in data[nameBaseIndex:nameBaseIndex + nameLen]])
+        return ''.join([chr(x) for x in data[nameBaseIndex:nameBaseIndex + nameLen]])
     return 'invalid'
 
 # See *note P1 (PROGRAM NAME)
+# This is just ASCII with some characters missing, so no actual need to translate?
 def decodeNameChar(c):
     cVal= ord(c)
 #   48~57      : '0'~'9'
@@ -295,7 +304,7 @@ def decodeNameChar(c):
 def convertToEditBuffer(channel, message):
     # print('convertToEditBuffer : ', message[0:10])
     if isEditBufferDump(message):
-        print('Is already an edit buffer')
+        # print('Is already an edit buffer')
         return message
     if isSingleProgramDump(message):
         # Need to construct a new edit buffer dump from a single program dump. Keep the protocol version intact
@@ -304,14 +313,30 @@ def convertToEditBuffer(channel, message):
     raise Exception("Neither edit buffer nor program dump.  Can't be converted")
 
 
+def calculateFingerprint(message):
+    # print(' calculateFingerprint():', message)
+
+    # data = unescapeSysex(message[6:-1])
+    dataStart = 9   # PROGRAM DATA DUMP
+    if message[6] == 0x40: # edit buffer
+        dataStart= 7
+
+    data = message[dataStart:-1]
+
+        # Blank out name, they should not matter for the fingerprint
+        # data[dataStart + name_len] = [0] * name_len
+
+    return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from
+
+
 def unescapeSysex(sysex):
     # This implements the algorithm defined on page 141 of the Deepmind user manual. I think it is the same as DSI uses
     result = []
     dataIndex = 0
     while dataIndex < len(sysex):
-        msbits = sysex[dataIndex]
+        msbits = sysex[dataIndex]   # contains the MS bits of the next 7 bytes
         dataIndex += 1
-        for i in range(7):
+        for i in range(7):  # the next 7 values are just original_value & 0x7f
             if dataIndex < len(sysex):
                 result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
             dataIndex += 1
