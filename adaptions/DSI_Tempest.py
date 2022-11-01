@@ -182,3 +182,11 @@ if __name__ == "__main__":
     #unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
     #                                                                     program_dump=messages[1],
     #                                                                     program_name='/S/Toms/Zap~~Lo'))
+
+
+# Test data picked up by test_adaptation.py
+#def test_data():
+#    def programs(messages):
+#        yield {"message": messages[1], "name": '/S/Toms/Zap~~Lo', "number": 0}
+#
+#    return {"sysex": "testData/Tempest_Factory_Sounds_1.0.syx", "program_generator": programs}
