@@ -56,11 +56,6 @@ set(Sources
 	${adaptation_support_files}
 )
 
-set_source_files_properties(
-	${CMAKE_CURRENT_BINARY_DIR}/CompiledAdaptations.h	
-	PROPERTIES GENERATED TRUE
-)
-
 # Setup library
 add_library(knobkraft-generic-adaptation ${Sources})
 target_include_directories(knobkraft-generic-adaptation PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")

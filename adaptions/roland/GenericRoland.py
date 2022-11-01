@@ -130,6 +130,9 @@ class RolandData:
                             for i in range(len(self.data_blocks[sub_request].address))]
         return concrete_address, DataBlock.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
 
+    def subaddress_from_address(self, address: List[int]) -> int:
+        return address[1] - self.base_address[1]
+
     def reset_to_base_address(self, address) -> Tuple:
         # The address[1] part is where the program number is stored. To compare addresses we reset it to the base address
         return tuple([address[i] if i != 1 else self.base_address[i] for i in range(self.num_address_bytes)])
@@ -256,22 +259,29 @@ class GenericRoland:
     @knobkraft_api
     def createEditBufferRequest(self, channel) -> List[int]:
         # The edit buffer is called Patch mode temporary patch
-        address, size = self.edit_buffer.address_and_size_for_all_request(0)
+        address, size = self.edit_buffer.address_and_size_for_sub_request(0, 0)
         return self.buildRolandMessage(self.device_id, command_rq1, address, size)
-        #result = []
-        #for i in range(len(self.edit_buffer.data_blocks)):
-        #    address, size = self.edit_buffer.address_and_size_for_sub_request(i, 0)
-        #    result += self.buildRolandMessage(self.device_id, command_rq1, address, size)
-        #return result
+
+    def _createFollowUpEditBufferDumpRequest(self, previousRequestNo):
+        # Check if there is a follow up data block
+        if previousRequestNo + 1 < len(self.edit_buffer.data_blocks):
+            address, size = self.edit_buffer.address_and_size_for_sub_request(previousRequestNo + 1, 0)
+            return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        else:
+            return []
 
     @knobkraft_api
     def isPartOfEditBufferDump(self, message):
         # Accept a certain set of addresses. This does not verify the checksum, for speed reasons, or check the size
         if self.isOwnSysex(message):
             command, address = self.getCommandAndAddressFromRolandMessage(message)
-            return command == command_dt1 and tuple(self.edit_buffer.reset_to_base_address(address)) in self.edit_buffer.allowed_addresses
-        else:
-            return False
+            if command == command_dt1:
+                normalized_address = tuple(self.edit_buffer.reset_to_base_address(address))
+                # Find out which data block we got
+                for sub_request in range(len(self.edit_buffer.data_blocks)):
+                    if normalized_address == self.edit_buffer.absolute_address(self.edit_buffer.data_blocks[sub_request].address):
+                        return True, self._createFollowUpEditBufferDumpRequest(sub_request)
+        return False
 
     @knobkraft_api
     def isEditBufferDump(self, messages):
@@ -298,18 +308,30 @@ class GenericRoland:
 
     @knobkraft_api
     def createProgramDumpRequest(self, channel, patchNo):
-        address, size = self.program_dump.address_and_size_for_all_request(patchNo % self.program_dump.num_items)
+        address, size = self.program_dump.address_and_size_for_sub_request(0, patchNo % self.program_dump.num_items)
         return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+
+    def _createFollowUpProgramDumpRequest(self, patchNo, previousRequestNo):
+        # Check if there is a follow up data block
+        if previousRequestNo + 1 < len(self.program_dump.data_blocks):
+            address, size = self.program_dump.address_and_size_for_sub_request(previousRequestNo + 1, patchNo % self.program_dump.num_items)
+            return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        else:
+            return []
 
     @knobkraft_api
     def isPartOfSingleProgramDump(self, message):
         # Accept a certain set of addresses
         if self.isOwnSysex(message):
             command, address = self.getCommandAndAddressFromRolandMessage(message)
-            matches = tuple(self.program_dump.reset_to_base_address(address)) in self.program_dump.allowed_addresses
-            return command == command_dt1 and matches
-        else:
-            return False
+            if command == command_dt1:
+                patchNo = self.program_dump.subaddress_from_address(address)
+                normalized_address = tuple(self.program_dump.reset_to_base_address(address))
+                # Find out which data block we got
+                for sub_request in range(len(self.program_dump.data_blocks)):
+                    if normalized_address == self.program_dump.absolute_address(self.program_dump.data_blocks[sub_request].address):
+                        return True, self._createFollowUpProgramDumpRequest(patchNo, sub_request)
+        return False
 
     @knobkraft_api
     def isSingleProgramDump(self, messages):

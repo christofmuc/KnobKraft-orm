@@ -59,7 +59,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	bool GenericEditBufferCapability::isMessagePartOfEditBuffer(const MidiMessage& message) const
+	midikraft::EditBufferCapability::HandshakeReply GenericEditBufferCapability::isMessagePartOfEditBuffer(const MidiMessage& message) const
 	{
 		py::gil_scoped_acquire acquire;
 		// This is an optional function that can be implemented for multi message edit buffers like in the DSI Evolver
@@ -67,7 +67,16 @@ namespace knobkraft {
 			try {
 				auto vectorForm = me_->messageToVector(message);
 				py::object result = me_->callMethod(kIsPartOfEditBufferDump, vectorForm);
-				return result.cast<bool>();
+				if (py::isinstance<py::tuple>(result)) {
+					// The reply is a tuple - let's hope it is a tuple of a bool and a list of MIDI messages as documented
+					auto result_tuple = py::cast<py::tuple>(result);
+					py::object replyBool = result_tuple[0];
+					auto byteData = GenericAdaptation::vectorToMessages(result_tuple[1].cast<std::vector<int>>());
+					return { replyBool.cast<bool>(), byteData };
+				}
+				else {
+					return { result.cast<bool>(), {} };
+				}
 			}
 			catch (py::error_already_set& ex) {
 				me_->logAdaptationError(kIsPartOfEditBufferDump, ex);
@@ -76,11 +85,11 @@ namespace knobkraft {
 			catch (std::exception& ex) {
 				me_->logAdaptationError(kIsPartOfEditBufferDump, ex);
 			}
-			return false;
+			return { false, {} };
 		}
 		else {
 			// Default implementation is to just to call isEditBuffer() with a single message vector
-			return isEditBufferDump({ message });
+			return { isEditBufferDump({ message }), {} };
 		}
 	}
 
