@@ -146,12 +146,12 @@ namespace knobkraft {
 			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % pythonModuleFilePath % ex.what()).str());
 			ex.restore();
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % pythonModuleFilePath % ex.what()).str());
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 	}
