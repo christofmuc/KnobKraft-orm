@@ -371,7 +371,6 @@ class GenericRoland:
                     data[i] = 0x00
         return result
 
-    @knobkraft_api
     def blankedOut(self, message):
         # Use the prepared blank out zones to clear out a) program place and b) patch name
         if self.isEditBufferDump(message):
