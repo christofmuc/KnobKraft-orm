@@ -341,6 +341,28 @@ Another example from the code for the Prophet 12 shows how to handle this when b
             return message[0:3] + [0b00000011] + message[6:]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
+### Handshaking
+
+Some protocols, especially those which send multiple messages per program dump or edit buffer, require a specific answer by the Librarian, either in the form of a simple ACK (acknowledge) message that signals to the synth that the previous message has been processed and the next may be sent, or even a more specific request for the next data package with the next address to deliver (multiple requests, like in the Generic Roland module).
+
+I have hacked this possibility into the edit buffer (and program dump) capabilities in a non obvious but fairly low effort way: If you implement the `isPartOfEditBufferDump` message, do not just return a boolean to indicate if this message is part of the data or not, but a pair of a boolean and a list of bytes representing one or multiple MIDI messages that will be sent as a reply.
+
+So for example, in case a device like the DW6000 would need an acknowledge message before it will send the next path, this could be implemented like this:
+
+    def isPartOfEditBufferDump(message):        
+        if (len(message) > 4
+                and message[0] == 0xf0
+                and message[1] == 0x42  # Korg
+                and (message[2] & 0xf0) == 0x30  # Format, ignore MIDI Channel in lower 4 bits
+                and message[3] == 0x04  # DW-6000
+                and message[4] == 0x40  # Data Dump
+                ):
+            return True, [0xf0, 0x42, 0x30, 0x04, 0x41, 0xf7]  # Example "0x41 ACK" message to be sent to the synth as reply
+        else:
+            return False
+
+Of course this is just an example, the DW6000 has no such ACK message in real life. The same mechanism works for the isPartOfSingleProgramDump method (see below).
+
 ## Program Dump Capability
 
 
