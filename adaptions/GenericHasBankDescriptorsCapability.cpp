@@ -34,8 +34,14 @@ namespace knobkraft {
 				if (descriptor.contains("isROM")) {
 					bank.isROM = py::cast<bool>(descriptor["isROM"]);
 				}
+				else {
+					bank.isROM = false;
+				}
 				if (descriptor.contains("type")) {
 					bank.type = py::cast<std::string>(descriptor["type"]);
+				}
+				else {
+					bank.type = "Patch";
 				}
 				banks.emplace_back(bank);
 			}
