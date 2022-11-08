@@ -37,7 +37,7 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
 	gridSizeSliderX_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
-	gridSizeSliderX_.setRange(4.0, 10.0, 1.0);
+	gridSizeSliderX_.setRange(4.0, 16.0, 1.0);
 	gridSizeSliderY_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
 	gridSizeSliderY_.setRange(4.0, 10.0, 1.0);
 	gridWidth_ = 8;
