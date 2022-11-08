@@ -426,7 +426,7 @@ void PatchView::deletePatches()
 			"Are you sure?", "Yes", "No")) {
 			int deleted = database_.deletePatches(currentFilter());
 			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
-			//TODO refresh import Filter
+			UIModel::instance()->importListChanged_.sendChangeMessage();
 			retrieveFirstPageFromDatabase();
 		}
 	}

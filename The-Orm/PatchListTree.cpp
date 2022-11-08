@@ -412,10 +412,10 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 			jassert(synthSpecificTreeState_[previousSynthName_]);
 		}*/
 		// Now the previous synth is the current synth
-		/*previousSynthName_ = UIModel::currentSynth()->getName();
+		//previousSynthName_ = UIModel::currentSynth()->getName();
 
 		// Iterate nodes and regenerate in case group node and open!
-		auto root = treeView_->getRootItem();
+		auto root = allPatchesItem_;
 		auto currentNode = root;
 		while (currentNode != nullptr) {
 			for (int child = 0; child < currentNode->getNumSubItems(); child++) {
@@ -433,7 +433,7 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 				}
 			}
 			currentNode = nullptr; // No recursion here, would it make sense?
-		}*/
+		}
 
 		// Try to restore the Tree state, if we had one stored for this synth!
 		/*if (synthSpecificTreeState_.find(previousSynthName_) != synthSpecificTreeState_.end() && synthSpecificTreeState_[previousSynthName_]) {
