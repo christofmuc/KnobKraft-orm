@@ -132,7 +132,7 @@ namespace knobkraft {
 		hasBankDescriptorsCapabilityImpl_= std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		try {
 			// Validate that the filename is a good idea
-			auto result = py::dict("filename"_a = pythonModuleFilePath);
+			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
 			py::exec(R"(
 				import re
 				python_identifier = re.compile(r"^[^\d\W]\w*\Z")
@@ -140,7 +140,7 @@ namespace knobkraft {
 			)", py::globals(), result);
 			if (!result["matches"].cast<bool>()) {
 				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Warning: file name %s is not a valid module identifier in Python, please use only lower case letters and numbers") % pythonModuleFilePath).str());
-			}
+			}*/
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
 			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
