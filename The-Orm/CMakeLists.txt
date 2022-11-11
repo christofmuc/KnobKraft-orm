@@ -4,7 +4,7 @@
 #  Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 
 project(KnobKraftOrm VERSION 1.14.2)
 
@@ -88,10 +88,16 @@ set(SOURCES
 	redist/agpl-3.0.txt
 )
 
-# Mac Icon Magic
 if(APPLE)
-set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
-set_source_files_properties(resources/icon_orm.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+	IF(SPARKLE_UPDATES)
+		# Sparkle framework
+		message("Adding Mac Objective-C files for Sparkle")
+		set(SPARKLE_SOURCES MacSparkle.mm MacSparkle.h)
+	endif()
+
+	# Mac Icon Magic
+	set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
+	set_source_files_properties(resources/icon_orm.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 ENDIF()
 
 set(MIDIKRAFT_LIBRARIES
@@ -114,7 +120,8 @@ set(MIDIKRAFT_LIBRARIES
 		pytschirp_embedded
 )
 
-add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
+#set(CMAKE_SKIP_BUILD_RPATH TRUE)
+add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES} ${SPARKLE_SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
 	PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
@@ -140,7 +147,7 @@ IF(WIN32)
 		)
 ELSEIF(APPLE)
 	if(SPARKLE_UPDATES)
-		target_compile_options(KnobKraftOrm PRIVATE -F${SPARKLE_FRAMEWORK_PATH})
+		target_compile_options(KnobKraftOrm PRIVATE -F${SPARKLE_FRAMEWORK_PATH} -DUSE_SPARKLE)
 	endif()
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		ICU::data ICU::uc
@@ -150,10 +157,23 @@ ELSEIF(APPLE)
 		${APPLE_BOOST}
 		${SPARKLE_LINK}
 		)
-	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
-		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
-		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
-		)
+	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES
+			MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
+			MACOSX_BUNDLE_ICON_FILE icon_orm.icns
+			MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+			#MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+			MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
+			XCODE_EMBED_FRAMEWORKS Sparkle
+			XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY TRUE
+			XCODE_EMBED_FRAMEWORKS_REMOVE_HEADERS_ON_COPY TRUE
+			)
+	# https://stackoverflow.com/questions/68310342/how-to-get-cmake-to-embed-a-private-framework-into-a-macos-app-bundle
+	set(APP_BUNDLE_CONTENTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents")
+	set(APP_BUNDLE_FRAMEWORKS_DIR "${APP_BUNDLE_CONTENTS_DIR}/Frameworks")
+	add_custom_command(TARGET ${PROJECT_NAME}
+			POST_BUILD COMMAND
+			install_name_tool -add_rpath "@executable_path/../Frameworks/"
+			"${APP_BUNDLE_CONTENTS_DIR}/MacOS/${PROJECT_NAME}")
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
@@ -227,10 +247,13 @@ IF(WIN32)
 ENDIF()
 
 IF(APPLE)
-    # This is supposed to build a relocatable macOS DMG installer when you specify the
+	# Make sure the private frameworks are in out binary directory
+	file(COPY ${SPARKLE_FRAMEWORK_PATH}/Sparkle.framework DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/KnobKraftOrm.app/Contents/Frameworks)
+
+	# This is supposed to build a relocatable macOS DMG installer when you specify the
     # --target package
     SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
-    SET(DIRS ${CMAKE_BINARY_DIR})
+    SET(DIRS ${CMAKE_BINARY_DIR} ${SPARKLE_FRAMEWORK_PATH})
     INSTALL(TARGETS KnobKraftOrm
         BUNDLE DESTINATION .
 		)

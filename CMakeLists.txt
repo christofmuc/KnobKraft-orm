@@ -4,10 +4,13 @@
 #  Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
 # Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
+IF(APPLE)
+set(BUILD_WITH_INSTALL_RPATH YES)
+ENDIF()
 
 # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
 add_compile_definitions(JSON_HAS_CPP_14)
@@ -90,6 +93,10 @@ ELSEIF(APPLE)
 				URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
 		)
 		FetchContent_MakeAvailable(sparkleframework)
+		find_library(MACSPARKLE Sparkle "${CMAKE_CURRENT_BINARY_DIR}/_deps/sparkleframework-src/Sparkle.framework")
+		 #IF (NOT MACSCPARKLE)
+			#message(FATAL_ERROR "Find library did not locate the Sparkle framework")
+		#ENDIF()
     ENDIF()
 
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
