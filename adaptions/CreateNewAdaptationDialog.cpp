@@ -6,7 +6,6 @@
 
 #include "CreateNewAdaptationDialog.h"
 
-#include "BundledAdaptation.h"
 #include "GenericAdaptation.h"
 
 namespace knobkraft {
@@ -28,8 +27,8 @@ namespace knobkraft {
 		cancel_.addListener(this);
 
 		StringArray templateList;
-		for (auto const &a : BundledAdaptations::getAll()) {
-			templateList.add(a.synthName);
+		for (auto const &a : GenericAdaptation::getAllBuiltinSynthNames()) {
+			templateList.add(a);
 		}
 						
 		template_.addItemList(templateList, 1);
@@ -68,8 +67,14 @@ namespace knobkraft {
 			return false;
 		}
 
-		auto adaptation = BundledAdaptations::getAll()[selected];
-		return BundledAdaptations::breakOut(adaptation.synthName);
+		bool worked = GenericAdaptation::breakOut(template_.getText().toStdString());
+		if (worked) {
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Copied", "The selected adaptation was copied into the directory %s.\n\nYou can open it in a Python editor and first change the name to start making a new synth adapation");
+		}
+		else {
+			AlertWindow::showMessageBox(AlertWindow::WarningIcon, "Error", "Program error: Something went wrong while copying the adaptation source code.");
+		}
+		return worked;
 	}
 
 	void CreateNewAdaptationDialog::buttonClicked(Button* button)

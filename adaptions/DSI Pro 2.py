@@ -29,13 +29,9 @@ def setupHelp():
            "Both settings are accessible via the GLOBALS menu."
 
 
-#
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
-if __name__ == "__main__":
-    import unittest
+# Test data picked up by test_adaptation.py
+def test_data():
+    def programs(messages):
+        yield {"message": messages[0], "name": "Cascades", "number": 1}
 
-    messages = sequential.load_sysex("testData/Pro_2_Programs_v1.0a.syx")
-    unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-                                                                         program_dump=messages[0],
-                                                                         program_name='Cascades'))
+    return {"sysex": "testData/Pro_2_Programs_v1.0a.syx", "program_generator": programs}

@@ -10,6 +10,7 @@
 
 #include "Settings.h"
 #include "UIModel.h"
+#include "Data.h"
 #include "OrmLookAndFeel.h"
 
 #include "GenericAdaptation.h"
@@ -143,6 +144,9 @@ public:
 #endif
 #endif
 
+		// Load Data
+		Data::instance().initializeFromSettings();
+
 		// Window Title Refresher
 		UIModel::instance()->windowTitle_.addChangeListener(this);
     }
@@ -175,7 +179,8 @@ public:
 
 		mainWindow = nullptr; // (deletes our window)
 
-		// The UI is gone, we don't need the UIModel anymore
+		// Save UIModel for next run
+		Data::instance().saveToSettings();
 		UIModel::shutdown();
 
 		// Shutdown MIDI subsystem after all windows are gone
@@ -260,7 +265,7 @@ public:
 			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
         }
 
-		virtual ~MainWindow() {
+		virtual ~MainWindow() override {
 			setLookAndFeel(nullptr);
 		}
 

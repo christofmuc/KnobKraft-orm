@@ -70,10 +70,19 @@ IF (WIN32)
 
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
+		URL https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip
+		#URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
+	set(PYTHON_EMBEDDED_PATH "${pythonembedded_SOURCE_DIR}")
 
+	FetchContent_Declare(
+        winsparkle
+        URL https://github.com/vslavik/winsparkle/releases/download/v0.7.0/WinSparkle-0.7.0.zip
+    )
+    FetchContent_MakeAvailable(winsparkle)
+    set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
+    set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
 
@@ -120,7 +129,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
 # Setup pybind11
-set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+if(WIN32)
+	set(PYTHON_VERSION_TO_EMBED "3.8" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+else()
+	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+endif()
 #set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
@@ -177,6 +190,7 @@ target_link_libraries(juce-static
 
 target_compile_definitions(juce-static
 	PUBLIC
+		JUCE_STANDALONE_APPLICATION=1
 		JUCE_PLUGINHOST_VST=0
 		JUCE_PLUGINHOST_AU=0
 		DONT_SET_USING_JUCE_NAMESPACE=1
@@ -204,6 +218,10 @@ set_target_properties(juce-static PROPERTIES
 	C_VISIBILITY_PRESET hidden
 	CXX_VISIBILITY_PRESET hidden)
 
+# Add more third party libraries
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(third_party/json)
+add_subdirectory(third_party/json-schema-validator)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)

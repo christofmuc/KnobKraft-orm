@@ -29,6 +29,7 @@ OutputBaseFilename=knobkraft_orm_setup_${KnobKraftOrm_VERSION}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+DisableFinishedPage=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -39,16 +40,30 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppExeName}"; DestDir: "{app}"; 
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppName}.pdb"; DestDir: "{app}"; 
-Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy
-Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; 
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc67.dll"; DestDir: "{app}";
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt67.dll"; DestDir: "{app}";
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist
-Source: "${CMAKE_SOURCE_DIR}\adaptions\sequential\*.*"; DestDir: "{app}\sequential";
+Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy deleteafterinstall
+Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc67.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt67.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptions\sequential\*.*"; DestDir: "{app}\sequential";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptions\roland\*.*"; DestDir: "{app}\roland";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptions\knobkraft\*.*"; DestDir: "{app}\knobkraft";Flags: ignoreversion
+#include "adaptations.iss"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
+
+[UninstallDelete]
+Type: files; Name: "{app}\sequential\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\sequential\__pycache__"
+Type: dirifempty; Name: "{app}\sequential"
+Type: files; Name: "{app}\roland\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\roland\__pycache__"
+Type: dirifempty; Name: "{app}\roland"
+Type: files; Name: "{app}\knobkraft\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\knobkraft\__pycache__"
+Type: dirifempty; Name: "{app}\knobkraft"
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

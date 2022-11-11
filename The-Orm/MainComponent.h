@@ -39,7 +39,7 @@ class MainComponent : public Component, private ChangeListener
 {
 public:
 	MainComponent(bool makeYourOwnSize);
-    ~MainComponent();
+    virtual ~MainComponent() override;
 
 	virtual void resized() override;
 
@@ -53,7 +53,7 @@ private:
 	void openDatabase();
 	void openDatabase(File &databaseFile);
 	void saveDatabaseAs();
-	void exportDatabases();
+	static void exportDatabases();
 	void mergeDatabases();
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
@@ -63,18 +63,18 @@ private:
 	void checkUserConsent();
 #endif
 #endif
-	void crashTheSoftware();
+	static void crashTheSoftware();
 
-	void setZoomFactor(float newZoomInPercentage);
-	float calcAcceptableGlobalScaleFactor();
+	void setZoomFactor(float newZoomInPercentage) const;
+    float calcAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
-	void aboutBox();
+	static void aboutBox();
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	
 	// Helper function because of JUCE API
-	int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
+	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
@@ -107,8 +107,7 @@ private:
 	std::unique_ptr<SetupView> setupView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::unique_ptr<RecordingView> recordingView_;
-	std::unique_ptr<BCR2000_Component>	bcr2000View_;
-	std::vector<MidiMessage> currentDownload_;
+	std::unique_ptr<BCR2000_Component> bcr2000View_;
 
 	InsetBox logArea_;
 

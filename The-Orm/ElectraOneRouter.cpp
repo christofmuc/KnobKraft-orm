@@ -29,7 +29,7 @@ void ElectraOneRouter::enable(bool enabled)
 		if (routerCallback_.isNull()) {
 			// Install handler
 			routerCallback_ = midikraft::MidiController::makeOneHandle();
-			midikraft::MidiController::instance()->addMessageHandler(routerCallback_, [this](MidiInput *source, MidiMessage const &message) {
+			midikraft::MidiController::instance()->addMessageHandler(routerCallback_, [](MidiInput *source, MidiMessage const &message) {
 				if (source->getName() == "Electra Controller") {
 					auto toWhichSynthToForward = UIModel::currentSynth();
 					if (toWhichSynthToForward) {

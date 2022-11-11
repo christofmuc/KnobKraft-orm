@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(KnobKraftOrm VERSION 1.14.2)
 
+project(KnobKraftOrm VERSION 1.17.1)
 # Append the version number to the github action environment file to be used by subsequent steps 
 if(DEFINED ENV{GITHUB_ENV})
 file(APPEND $ENV{GITHUB_ENV} "ORM_VERSION=${KnobKraftOrm_VERSION}")
@@ -17,6 +18,11 @@ endif()
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
 # Output the weird string Azure pipeline uses to parse a value into a variable. I hope.
 MESSAGE("##vso[task.setvariable variable=ormVersionNumber]${KnobKraftOrm_VERSION}")
+
+# Append the version number to the github action environment file to be used by subsequent steps 
+if(DEFINED ENV{GITHUB_ENV})
+file(APPEND $ENV{GITHUB_ENV} "ORM_VERSION=${KnobKraftOrm_VERSION}")
+endif()
 
 OPTION(CRASH_REPORTING "Turn on crash reporting via Internet/Sentry")
 OPTION(SENTRY_LOGGING "Turn on logging of sentry events into the log window")
@@ -68,7 +74,6 @@ set(SOURCES
 	PatchDiff.cpp PatchDiff.h
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
-	PatchNameDialog.cpp PatchNameDialog.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
 	PatchSearchComponent.cpp PatchSearchComponent.h
 	PatchTextBox.cpp PatchTextBox.h
@@ -209,21 +214,41 @@ IF(WIN32)
 					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
 					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
-	get_filename_component(PYTHONPATH ${PYTHON_EXECUTABLE} DIRECTORY)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${PYTHONPATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
+					"${PYTHON_EMBEDDED_PATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 
-# Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir
+# Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir. Same with roland and knobkraft python modules
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
 		${CMAKE_SOURCE_DIR}/adaptions/sequential
 		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
 		)
-
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/roland
+		$<TARGET_FILE_DIR:KnobKraftOrm>/roland
+		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/knobkraft
+		$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
+		)
+file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptions/*.py")
+list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "conftest.py")
+list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "test_.*py")
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory 
+		$<TARGET_FILE_DIR:KnobKraftOrm>/adaptations
+		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${ADAPTATION_PYTHON_FILES}
+		$<TARGET_FILE_DIR:KnobKraftOrm>/adaptations
+		)
 
 IF(WIN32)
 	# Windows only: Build InnoSetup installer
@@ -257,9 +282,6 @@ IF(APPLE)
     INSTALL(TARGETS KnobKraftOrm
         BUNDLE DESTINATION .
 		)
-	INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/adaptions/sequential DESTINATION .
-        )
-    
     INSTALL(CODE "include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
@@ -282,4 +304,12 @@ ELSE()
 			BUNDLE DESTINATION . COMPONENT Runtime
 			RUNTIME DESTINATION bin COMPONENT Runtime
 			)
+	IF(UNIX)
+		SET(CPACK_BINARY_TGZ ON)
+		set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
+		set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
+		set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
+		set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
+		INCLUDE(CPack)
+	ENDIF()
 ENDIF()

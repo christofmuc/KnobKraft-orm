@@ -10,6 +10,7 @@
 
 #include "Synth.h"
 #include "Capability.h"
+#include "HasBanksCapability.h"
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
@@ -23,18 +24,28 @@ namespace knobkraft {
 	class GenericEditBufferCapability;
 	class GenericProgramDumpCapability;
 	class GenericBankDumpCapability;
+	class GenericHasBanksCapability;
+	class GenericHasBankDescriptorsCapability;
 	void checkForPythonOutputAndLog();
 
-	extern const char *kIsEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
+	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
+		*kNumberOfBanks, * kNumberOfPatchesPerBank, * kBankDescriptors, * kFriendlyBankName,
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
-		*kIsSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
-		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank;
+		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
+		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,
+		*kNumberOfLayers,
+		*kLayerName,
+		*kSetLayerName,
+		*kGetStoredTags
+		;
 
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
+		public midikraft::RuntimeCapability<midikraft::HasBanksCapability>,
+		public midikraft::RuntimeCapability<midikraft::HasBankDescriptorsCapability>,
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
@@ -51,11 +62,6 @@ namespace knobkraft {
 		// Allow the Adaptation to implement a different fingerprint logic
 		virtual std::string calculateFingerprint(std::shared_ptr<midikraft::DataFile> patch) const override;
 
-		// Implement hints for the UI of the Librarian
-		int numberOfBanks() const override;
-		int numberOfPatches() const override;
-		std::string friendlyBankName(MidiBankNumber bankNo) const override;
-	
 		// Implement the methods needed for device detection
 		std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		int deviceDetectSleepMS() override;
@@ -68,8 +74,8 @@ namespace knobkraft {
 
 		// This generic synth method is overridden to allow throttling of messages for older synths like the Korg MS2000
 		virtual void sendBlockOfMessagesToSynth(std::string const& midiOutput, std::vector<MidiMessage> const& buffer) override;
-		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const;  //TODO this looks like a capability
-		virtual std::string setupHelpText() const;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;  //TODO this looks like a capability
+		virtual std::string setupHelpText() const override;
 
 		// Internal workings of the Generic Adaptation module
 		bool pythonModuleHasFunction(std::string const &functionName) const;
@@ -88,11 +94,16 @@ namespace knobkraft {
 		// Configure the adaptation directory
 		static void setAdaptationDirectoy(std::string const &directory);
 		
-		static std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> allAdaptations();
+		static std::vector<std::shared_ptr<GenericAdaptation>> allAdaptationsInOneDirectory(std::string const& directory);
+		static std::vector<std::shared_ptr<GenericAdaptation>> allAdaptations();
+		static std::vector<std::string> getAllBuiltinSynthNames();
+		static bool breakOut(std::string synthName);
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
+		static std::vector<int> midiMessagesToVector(std::vector<MidiMessage> const& message);
 		static std::vector<uint8> intVectorToByteVector(std::vector<int> const &data);
 		static MidiMessage vectorToMessage(std::vector<int> const &data);
+		static std::vector<MidiMessage> vectorToMessages(std::vector<int> const &data);
 
 		// Implement runtime capabilities		
 		virtual bool hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) const override;
@@ -101,6 +112,10 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) const  override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const override;
 		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::HasBanksCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::HasBanksCapability** outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::HasBankDescriptorsCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const override;
 
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
@@ -114,6 +129,12 @@ namespace knobkraft {
 
 		friend class GenericBankDumpCapability;
 		std::shared_ptr<GenericBankDumpCapability> bankDumpCapabilityImpl_;
+
+		friend class GenericHasBanksCapability;
+		std::shared_ptr<GenericHasBanksCapability> hasBanksCapabilityImpl_;
+
+		friend class GenericHasBankDescriptorsCapability;
+		std::shared_ptr<GenericHasBankDescriptorsCapability> hasBankDescriptorsCapabilityImpl_;
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

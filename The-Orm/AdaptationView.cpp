@@ -12,8 +12,6 @@
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 
-#include "BundledAdaptation.h"
-
 #include <boost/format.hpp>
 
 namespace knobkraft {
@@ -34,16 +32,18 @@ namespace knobkraft {
 			}}},
 			{ "EditAdaptation", { "Edit python file", [this]() {
 				if (adaptation_) {
+					/*
 					if (!adaptation_->isFromFile()) {
 						// Not possible yet, but offer to break out from binary
 						if (AlertWindow::showOkCancelBox(AlertWindow::InfoIcon, "Not a user defined adaptation", "This adaptation is a built-in module. We can break it out into the file system so you can edit it\n\n"
 							"Should you wish to go back to the built-in version, just delete the file that will be created!", "Break out", "Cancel")) {
-							if (BundledAdaptations::breakOut(adaptation_->getName())) {
+							if (GenericAdaptation::breakOut(adaptation_->getName())) {
 								AlertWindow::showMessageBox(AlertWindow::InfoIcon, "File created", "We created the file. Please restart the KnobKraft Orm and continue with the edit operation");
 							}
 						}
 						return;
 					}
+					*/
 
 					// Just reveal to user - launching python files with the URL command is useless, because it will probably just try to run the python script instead of opening an editor.
 					File adaptationSource(adaptation_->getSourceFilePath());

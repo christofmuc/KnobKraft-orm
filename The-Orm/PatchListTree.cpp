@@ -16,10 +16,10 @@
 
 void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	for (auto& import : imports) {
-		if (import.description.rfind("Imported from file") == 0) {
-			import.description = import.description.substr(19);
-		} else if (import.description.rfind("Imported from synth") == 0) {
-			import.description = import.description.substr(20);
+		if (import.name.rfind("Imported from file") == 0) {
+			import.name = import.name.substr(19);
+		} else if (import.name.rfind("Imported from synth") == 0) {
+			import.name = import.name.substr(20);
 		}
 	}
 }
@@ -40,6 +40,22 @@ std::vector<T> sortLists(std::vector<T> const& lists, std::function<std::string(
 	}
 	return result;
 }
+
+class ImportNameListener : public Value::Listener {
+public:
+	ImportNameListener(midikraft::PatchDatabase& db, std::string importID) : db_(db), importID_(importID) {
+	}
+
+	virtual void valueChanged(Value& value) {
+		SimpleLogger::instance()->postMessage("Changed name of import to " + value.getValue().toString());
+		String newValue = value.getValue();
+		db_.renameImport(importID_, newValue.toStdString());
+	}
+
+private:
+	midikraft::PatchDatabase& db_;
+	std::string importID_;
+};
 
 PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths)
 	: db_(db)
@@ -67,16 +83,17 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			importsForSynth->onGenerateChildren = [this, synthName]() {
 				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 				shortenImportNames(importList);
-				importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.description;  });
+				importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.name;  });
 				std::vector<TreeViewItem*> result;
 				for (auto const& import : importList) {
-					auto node = new TreeViewNode(import.description, import.id);
+					auto node = new TreeViewNode(import.name, import.id, true);
 					node->onSelected = [this, synthName](String id) {
 						UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 						UIModel::instance()->multiMode_.setMultiSynthMode(false);
 						if (onImportListSelected)
 							onImportListSelected(id);
 					};
+					node->textValue.addListener(new ImportNameListener(db_, import.id));
 					result.push_back(node);
 				}
 				return result;
@@ -277,7 +294,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		if (onUserListSelected)
 			onUserListSelected(list.id);
 	};
-	node->acceptsItem = [this, list](juce::var dropItem) {
+	node->acceptsItem = [list](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 		return infos.contains("drag_type") && (infos["drag_type"] == "PATCH" || infos["drag_type"] == "PATCH_IN_LIST");
@@ -329,17 +346,17 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		std::string oldname = node->text().toStdString();
 		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()),
 			TopLevelWindow::getActiveTopLevelWindow(),
-			[this, oldname](std::shared_ptr<midikraft::PatchList> list) {
-			jassert(list);
-			if (list) {
-				db_.putPatchList(*list);
-				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % list->name()).str());
+			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list) {
+			jassert(new_list);
+			if (new_list) {
+				db_.putPatchList(*new_list);
+				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
 				regenerateUserLists();
 			}
-		}, [this](std::shared_ptr<midikraft::PatchList> list) {
-			if (list) {
-				db_.deletePatchlist(midikraft::ListInfo({ list->id(), list->name() }));
-				SimpleLogger::instance()->postMessage("Deleted list " + list->name());
+		}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
+			if (new_list) {
+				db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
+				SimpleLogger::instance()->postMessage("Deleted list " + new_list->name());
 				regenerateUserLists();
 			}
 		});

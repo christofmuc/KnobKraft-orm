@@ -14,7 +14,7 @@
 class AutoThumbnailingDialog : public ThreadWithProgressWindow, private ChangeListener {
 public:
 	AutoThumbnailingDialog(PatchView &patchView, RecordingView &recordingView);
-	virtual ~AutoThumbnailingDialog();
+	virtual ~AutoThumbnailingDialog() override;
 
 	virtual void run() override;
 

@@ -14,7 +14,7 @@
 class EditCategoryDialog : public Component, private ValueTree::Listener {
 public:
 	typedef std::function<void(std::vector < midikraft::CategoryDefinition> const &)> TCallback;
-	EditCategoryDialog(midikraft::PatchDatabase &database);
+	EditCategoryDialog();
 	virtual ~EditCategoryDialog() override;
 
 	virtual void resized() override;

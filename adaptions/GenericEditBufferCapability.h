@@ -16,9 +16,10 @@ namespace knobkraft {
 	class GenericEditBufferCapability : public midikraft::EditBufferCapability {
 	public:
 		GenericEditBufferCapability(GenericAdaptation *me) : me_(me) {}
-		MidiMessage requestEditBufferDump() const override;
-		bool isEditBufferDump(const MidiMessage& message) const override;
-		std::shared_ptr<midikraft::DataFile> patchFromSysex(const MidiMessage& message) const override;
+		std::vector<MidiMessage> requestEditBufferDump() const override;
+		bool isEditBufferDump(const std::vector<MidiMessage>& message) const override;
+		HandshakeReply isMessagePartOfEditBuffer(const MidiMessage& message) const override;
+		std::shared_ptr<midikraft::DataFile> patchFromSysex(const std::vector<MidiMessage>& message) const override;
 		std::vector<MidiMessage> patchToSysex(std::shared_ptr<midikraft::DataFile> patch) const override;
 		MidiMessage saveEditBufferToProgram(int programNumber) override;
 

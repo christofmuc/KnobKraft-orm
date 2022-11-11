@@ -19,7 +19,7 @@
 class KeyboardMacroView : public Component, private ChangeListener, private Value::Listener {
 public:
 	KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback);
-	virtual ~KeyboardMacroView();
+	virtual ~KeyboardMacroView() override;
 
 	virtual void resized() override;
 

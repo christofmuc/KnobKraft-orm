@@ -41,8 +41,8 @@ class PatchView : public Component,
 	private ChangeListener
 {
 public:
-	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths, std::shared_ptr<midikraft::AutomaticCategory> detector);
-	virtual ~PatchView();
+	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths);
+	virtual ~PatchView() override;
 
 	void resized() override;
 
@@ -95,8 +95,6 @@ private:
 	void setImportListFilter(String filter);
 	void setUserListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);
-
-	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 
 	PatchListTree patchListTree_;
 	std::string sourceFilterID_; // This is the old "import" combo box in new

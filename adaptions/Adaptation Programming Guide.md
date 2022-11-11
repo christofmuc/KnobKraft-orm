@@ -82,6 +82,8 @@ Example implementation:
 
 Most synths (actually all vintage synths) organize their program places into banks and programs. The KnobKraft Orm does not follow that method, but rather enumerates program places in a device linearly from 0 to how many programs it can store, bank number times program number per bank. You need to do the calculation in addressing the synths bank and program on your own, and if need be also add program change and bank select messages appropriately. 
 
+### Old method
+
 The DW6000 though is a simple example. We need to implement two functions to tell the Orm how many banks and many programs per bank the synth has:
 
     def numberOfBanks():
@@ -93,6 +95,30 @@ returns the number of banks. In the case of the DW6000, that is 1.
         return 64
 
 Does exactly that. In the case of the DW6000, that would be 64.
+
+### New method
+
+A newer way to do this is to implement the `bankDescriptors` function which gives you more control. the DW6000 would simply implement this function instead of `numberOfBanks` and `numberOfPatchesPerBank`:
+
+    def bankDescriptors(self) -> List[Dict]
+
+It should return a list of banks, and each bank is described by a the following fields in the Dict:
+
+  * "bank" [int] - The number of the bank. Should be zero-based
+  * "name" [str] - The friendly name of the bank
+  * "size" [int] - The number of items in this bank. This allows for banks of differenct sizes for one synth
+  * "type" [str] - A text describing the type of data in this bank. Could be "Patch", "Tone", "Song", "Rhythm" or whatever else is stored in banks. Will be displayed in the metadata.
+  * "isROM" [bool] - Use this to indicate for later bank management functionality that the bank can be read, but not written to
+
+Example implementation for the DW6000 replacing the two methods above:
+
+    def bankDescriptors(self) -> List[Dict]:
+        return [{"bank": 0, "name": "Internal", "size": 64, "type": "Patch"}]
+
+more interesting would probably a more complex version for the Novation Summit which shows you how to use Python list comprehensions to calculate the 4 banks:
+
+    def bankDescriptors():
+        return [{"bank": x, "name": f"Bank {chr(ord('A')+x)}", "size": 128, "type": "Single Patch"} for x in range(4)]
 
 
 ## Device detection
@@ -142,6 +168,12 @@ Here is the example implementation for the Korg DW6000:
         return -1
 
 Basically I just check the first 4 bytes of the message. The `len()` check only prevents an index out of bounds exception should the message be shorter. When the first 4 bytes of the message match my expectations, I return 1 as a valid MIDI channel. In the case of the DW6000 there is no way to detect the channel, but that doesn't prevent the Librarian from working. The DW6000 as a low-budget synth simply was not equipped for the situation when somebody had two DW6000s!
+
+### Confusion about MIDI channel and "Device ID".
+
+ Note that many synths call the individual setting its Device ID and not the MIDI channel. Think of the Device ID as a channel used only for sysex messages. The idea was if you have more than one device of the same type, you still want to be able to communicate with each device separately, so you would set them to different device IDs in their setup and then the computer. In many documents (and the Orm) this gets confused/mixed up/used interchangingly with MIDI channel, so please be aware there are subtle differences.
+
+ Note that also many synths while allowing to specify a device ID actually will ignore it when being addressed. Many implementations are incomplete.
 
 ### Optionally specifying to not to channel specific detection
 
@@ -226,6 +258,51 @@ Important here is that in the third byte index by `message[2]` I want to only ch
 
 *And yes, if you followed so far you see now that I should rather use the edit buffer request message to detect if a DW6000 is connected, because its reply reveals the channel.*
 
+### What about edit buffer dumps that consist of more than one MIDI message?
+
+Until Orm 1.15, the parameter message really was just a single message. But now we can deal with multi-message type synths: The parameter message basically just becomes a parameter messages, which is the same as before, a list of bytes, and the adaptation has to do the work to split into multiple MIDI messages if that is of any relevance.
+
+The logic now works like this: An additional method `isPartOfEditBufferDump(message)` can be implemented, signaling by returning true that the message presented should be part of the messages parameter to the isEditBufferDump() message. In turn, the isEditBufferDump() should return only true if it has enough messages to complete the full edit buffer.
+
+As an example, we can look at a typical Yamaha Sysex implementation. Let's take the Yamaha reface DX, a 4 operator FM synth which has multiple messages per edit buffer dump.
+
+The isPartOfEditBufferDump is implemented like this:
+
+    def isPartOfEditBufferDump(message):
+        # Accept a certain set of addresses
+        return isBulkHeader(message) or isBulkFooter(message) or isCommonVoice(message) or isOperator(message)
+
+with the isBulkHeader etc functions checking this single MIDI message for certain bytes (their implementation can be found in the YamahaRefaceDX.py file in the repository.)
+
+Now isEditBufferDump(messages) gets presented all messages which have been received where isPartOfEditBufferDump() returned true. To check that all required messages have been received and the "messages" parameter really is a full edit buffer dump, we do:
+
+    def isEditBufferDump(data):
+        messages = splitSysexMessage(data)
+        headers = sum([1 if isBulkHeader(m) else 0 for m in messages])
+        footers = sum([1 if isBulkFooter(m) else 0 for m in messages])
+        common = sum([1 if isCommonVoice(m) else 0 for m in messages])
+        operators = sum([1 if isOperator(m) else 0 for m in messages])
+
+        return headers == 1 and footers == 1 and common == 1 and operators == 4
+
+so basically we split the data or messages parameter into individual messages with the function presented below, and then count that we received exactly 1 header, 1 footer, 1 common and 4 operator messages. Those 7 messages together will then be stored as one patch in the Orm's database.
+
+Here is the splitSysexMessage function used, you can also use it from the common Python package knobkraft found in the adaptation folder:
+
+    def splitSysexMessage(messages):
+        result = []
+        start = 0
+        read = 0
+        while read < len(messages):
+            if messages[read] == 0xf0:
+                start = read
+            elif messages[read] == 0xf7:
+                result.append(messages[start:read + 1])
+            read = read + 1
+        return result
+
+this expects a list of bytes, and will return a list of byte lists, with each byte list starting with 0xf0 and ending with 0xf7. bytes outside of the first 0xf0 and the last matching 0xf7 will be ignored.
+
 ### Creating the edit buffer to send
 
 The main function of the KnobKraft Orm is obviously to send patches to audition into the synth, and we have learned that these patches are stored in the database either as edit buffer dumps or in more complex synths also e.g. as program dumps. We always want to send edit buffer dumps, if the synth supports it, to not overwrite the synths patch memory.
@@ -264,6 +341,28 @@ Another example from the code for the Prophet 12 shows how to handle this when b
             return message[0:3] + [0b00000011] + message[6:]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
+### Handshaking
+
+Some protocols, especially those which send multiple messages per program dump or edit buffer, require a specific answer by the Librarian, either in the form of a simple ACK (acknowledge) message that signals to the synth that the previous message has been processed and the next may be sent, or even a more specific request for the next data package with the next address to deliver (multiple requests, like in the Generic Roland module).
+
+I have hacked this possibility into the edit buffer (and program dump) capabilities in a non obvious but fairly low effort way: If you implement the `isPartOfEditBufferDump` message, do not just return a boolean to indicate if this message is part of the data or not, but a pair of a boolean and a list of bytes representing one or multiple MIDI messages that will be sent as a reply.
+
+So for example, in case a device like the DW6000 would need an acknowledge message before it will send the next path, this could be implemented like this:
+
+    def isPartOfEditBufferDump(message):        
+        if (len(message) > 4
+                and message[0] == 0xf0
+                and message[1] == 0x42  # Korg
+                and (message[2] & 0xf0) == 0x30  # Format, ignore MIDI Channel in lower 4 bits
+                and message[3] == 0x04  # DW-6000
+                and message[4] == 0x40  # Data Dump
+                ):
+            return True, [0xf0, 0x42, 0x30, 0x04, 0x41, 0xf7]  # Example "0x41 ACK" message to be sent to the synth as reply
+        else:
+            return False
+
+Of course this is just an example, the DW6000 has no such ACK message in real life. The same mechanism works for the isPartOfSingleProgramDump method (see below).
+
 ## Program Dump Capability
 
 
@@ -275,7 +374,7 @@ To enable the Program Dump Capability for your adaptation, which will be used in
 
 The third function currently is not used, but is the basis for the upcoming feature of bank mangement - to send a patch into a specific position in the synths memory, not just the edit buffer or a hard-coded "pseudo edit buffer" like slot 100. 
 
-Additionally, when you have implement all three functions to enabel the ProgramDumpCapability on the adaptation, you can also add the following optional function:
+Additionally, when you have implement all three functions to enable the ProgramDumpCapability on the adaptation, you can also add the following optional function:
 
     def numberFromDump(message)
 
@@ -283,7 +382,7 @@ which will be used if present to detect the original program slot location store
 
 ### Requesting a specific program at a specific memory position
 
-The first function looks familar:
+The first function looks familiar:
 
     def createProgramDumpRequest(channel, patchNo):
 
@@ -315,6 +414,8 @@ This is very similar to the `isEditBufferDump()` described before, and actually 
         # The DW-6000 does not differentiate - you need to send program change messages in between to get other programs
         return isEditBufferDump(message)
 
+Note that the program dump capability can handle multi-MIDI message dump types exactly like the edit buffer capability (see above) by implementing a predicate function 'isPartOfSingleProgramDump'.
+
 ### Creating a message that stores a patch in a specific memory location
 
 In order to be able to store patches not only in the edit buffer, but at a specified program location, you need to implement a method to convert the patch data into one or more messages that will store the patch at that location.
@@ -338,15 +439,16 @@ Here is an example for the Prophet 12. Actually all Sequential/DSI synths have t
 
 ## Bank Dump Capability
 
-Some synths do no work with individual MIDI messages per patch, or even multiple MIDI messages for one patch, but rather with one big MIDI message which contains all patches of a bank. If your synth is of this type, you want to implement the following 4 functions to enable the Bank Dump Capability. Also, if you have onyl a single request to make, but the synth will reply with a stream of MIDI messages, this is the right capability to implement.
+Some synths do no work with individual MIDI messages per patch, or even multiple MIDI messages for one patch, but rather with one big MIDI message which contains all patches of a bank. If your synth is of this type, you want to implement the following 4 functions to enable the Bank Dump Capability. Also, if you have only a single request to make, but the synth will reply with a stream of MIDI messages, this is the right capability to implement.
 
     def createBankDumpRequest(channel, bank)
     def isPartOfBankDump(message)
     def isBankDumpFinished(messages)
+    def extractPatchesFromBank(messages)
 
 ### Requesting a full bank dump
 
-You guessed it by now, you need to create a MIDI message that will make the synth send us the requested bank. Here is an example for the Korg MS2000/microKorg, where the operation is called Program Data Dump Request. We can ignore the bank parameter here, as the MS2000 effectivly has only one bank:
+You guessed it by now, you need to create a MIDI message that will make the synth send us the requested bank. Here is an example for the Korg MS2000/microKorg, where the operation is called Program Data Dump Request. We can ignore the bank parameter here, as the MS2000 effectively has only one bank:
 
     def createBankDumpRequest(channel, bank):        
         return [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x1c, 0xf7]
@@ -421,7 +523,7 @@ and it should return a string. To implement a dummy function just return a fixed
 
 but for complex synths you will want to extract the real name. This actually can be more involved than it appears, because some synths might have some sysex escaping algorithm, needed because sysex data is 7 bits only but the synth might want to use 8 bits for the patch data, or because it uses a character set that is not the same as the ASCII set on the computer. The Access Virus is a good example for a custom character set.
 
-If you want to see some examples, I recommend to look at the implementation of the DSI Prophet 12, which also contains code to go from 7 bit packed sysex to 8 bit data, or the Matrix 6 Adaptation, which contains code to denibble data from 4 bit used to 8 bit data.
+If you want to see some examples, I recommend to look at the implementation of the DSI Prophet 12, which also contains code to go from 7 bit packed sysex to 8-bit data, or the Matrix 6 Adaptation, which contains code to denibble data from 4 bit used to 8-bit data.
 
 This is the code for the Matrix 6 `nameFromDump()`:
 
@@ -473,7 +575,7 @@ Some synths make naming hard. Mainly they fall into two categories:
 
 For category two, we can run into problems when reimporting already known patches, either because we reimport a sysex file by accident or the patches are retrieved again from the synth.
 
-When a patch is encountered again, the database tries to keep "the better name". By default it will just take the newer name. But if you have renamed a patch, you might want to keep the new name.
+When a patch is encountered again, the database tries to keep "the better name". By default, it will just take the newer name. But if you have renamed a patch, you might want to keep the new name.
 
 To teach the database logic what is a better name, you can implement the following function:
 
@@ -495,7 +597,7 @@ For case number 2, let's look at the implementation of this function for the Obe
             program = numberFromDump(message)            
             return "OB-8: %s" % friendlyProgramName(program)
 
-And this will produce strings like `OB8: AB9` or `OB8: ACD7`. Now to detect all of the possibly generated names and decide whether they are default or not becomes more complex, and we will use the regular expression library from Python to setup a general detector to decide if the name given was actually generated by the above function (needs an `import re` statement at the top of the file):
+And this will produce strings like `OB8: AB9` or `OB8: ACD7`. Now to detect all of the possibly generated names and decide whether they are default or not becomes more complex, and we will use the regular expression library from Python to set up a general detector to decide if the name given was actually generated by the above function (needs an `import re` statement at the top of the file):
 
     def isDefaultName(patchName):
         return re.match("OB-8: [A-D]*[1-8]", patchName) is not None
@@ -505,7 +607,7 @@ If this looks scary to you, then probably only because you have not used regular
 
 ## Better duplicate detection
 
-The Orm will by default check all bytes from the MIDI message for a patch to see if it has a duplicate in the database. But most often, not all bytes are relavant to check for duplicates. Much to the contrary, you probably want to prevent a duplicate from being created just because the patch data contains the program place or bank number, or just the name changed but the sound-relevant patch data is still the same.
+The Orm will by default check all bytes from the MIDI message for a patch to see if it has a duplicate in the database. But most often, not all bytes are relevant to check for duplicates. Much to the contrary, you probably want to prevent a duplicate from being created just because the patch data contains the program place or bank number, or just the name changed but the sound-relevant patch data is still the same.
 
 To enable better duplicate detection, you need to implement a single optional function that takes a patch MIDI message as input, and shall return a unique key calculated from the relevant bytes of the patch.
 
@@ -549,6 +651,53 @@ For example, the good old Korg DW8000 has 64 slots, but has banks 1 to 8 and in 
     def friendlyProgramName(program):
         return "%d%d" % (program // 8 + 1, (program % 8) + 1)
 
+## Exposing layers/splits of a patch
+
+Many synths have more than one "tone" or "layer", and some might even offer different layer modes like split or stack. And most will have more than one name for the while sound, e.g. many DSI synths have layers and will actually not name the whole patch, but rather each layer individually.
+
+To expose this information, there is a capability called "LayeredPatchCapability", and in order to utilize this we must implement at least two functions:
+
+    def numberOfLayers(messages):
+
+inspect the patch/data given, and return the number of layers in it. Most often than not, this is not dynamic but rather a fixed architecture of the synth. So the implementation for the DSI Prophet 12 would look like this:
+
+    def numberOfLayers(messages):
+        return 2
+
+Secondly, you need to implement the function that returns the name of a given layer (numbered starting with layer 0):
+
+    def layerName(messages, layerNo):
+
+Again, process the message(s) given and return a string with the layer name.
+
+Optionally, if you want to allow the user to change a layer name, implement the function to set the layer's name like this:
+
+    def setLayerName(self, messages, layerNo, new_name):
+
+This work like renamePatch, just with the added layerNo parameter.
+
+## Importing categories stored in the patch in the synth
+
+Some synths store sound categories or tags. As the KnobKraft Orm has these as a central part of the UI, of course we want to be able to import them as well. It is easy enough and requires two steps: Implementing a function and then defining an import mapping.
+
+The function that needs definition is 
+
+    def storedTags(self, message) -> List[str]:
+
+Just return a list of strings that map to the categories defined im the KnobKraft database. In case you want to be more flexible, you can also return the original manufacturer's texts and use the import mapping feature. For that, use the menu item "Categories... Edit category import mapping" in the Orm itself, and edit the jsonc file to define a mapping from the strings your adaptation returns. Here is am example mapping:
+
+    {
+        {
+        "Roland XV-3080": {
+            "synthToDatabase": {
+                "EL. PIANO": "Keys",
+                "MALLET": "Keys"
+            }
+        }
+    }
+
+You don't have to do a complete mapping - look at the log windoow after import to see if any extracted categories have been ignored because of a missing mapping. And yes, it is always safe to reimport.
+
 ## Leaving helpful setup information specific for a synth
 
 Especially some of our more vintage synths require some preset done, sometimes after every power on, before they can be accessed by the KnobKraft Orm. You can implement the following optional function to return a text displayed to the user in the synth's settings tab:
@@ -568,6 +717,13 @@ This just returns a text string displayed. Make sure to quote a possible multili
 
 The KnobKraft Orm ships with quite a few examples of adaptations. 
 
-All existing adaptations can be found in the directory with the source code, or here at github at https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptions
+All existing adaptations can be found in the directory with the source code, or here at github at 
 
-The adaptations that are shipped with the KnobKraft Orm are compiled into the executable, so you won't find them on your disk if you install with the DMG or the installer.
+https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptions
+
+To give you a quick overview which adaptation actually has implemented which functions and capabilities, there is am overview table that you can consult, especially for finding one of the more obscure function usages:
+
+https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptions/implementation_overview.md
+
+
+The adaptations that are shipped with the KnobKraft Orm are stored in the adaptations subdirectory of the program directory. Check them out there as well.

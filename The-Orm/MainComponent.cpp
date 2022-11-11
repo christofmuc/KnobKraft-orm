@@ -53,7 +53,7 @@ static SparkleAutoUpdate sAutoUpdate;
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
-	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(synth, color) {
+	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(std::move(synth), color) {
 	}
 
 	std::string getName() override
@@ -89,10 +89,10 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
 	globalScaling_(1.0f),
-	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-	logArea_(&logView_, BorderSize<int>(8)),
-	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
-	buttons_(301)
+        buttons_(301),
+        mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
+        midiLogArea_(&midiLogView_, BorderSize<int>(10)),
+        logArea_(&logView_, BorderSize<int>(8))
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
 
@@ -116,21 +116,21 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// Create the list of all synthesizers!	
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
-	synths.push_back(midikraft::SynthHolder(bcr2000, buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
+	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptations
 	auto adaptations = knobkraft::GenericAdaptation::allAdaptations();
-	for (auto adaptation : adaptations) {
-		synths.push_back(midikraft::SynthHolder(adaptation, buttonColour));
+	for (auto const& adaptation : adaptations) {
+		synths.emplace_back(midikraft::SynthHolder(adaptation, buttonColour));
 	}
 
 	UIModel::instance()->synthList_.setSynthList(synths);
@@ -140,7 +140,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		if (!synth.device()) continue;
 		auto activeKey = String(synth.device()->getName()) + String("-activated");
 		// Check if the setting is set
-		bool active = false;
+		bool active;
 		if (Settings::instance().keyIsSet(activeKey.toStdString())) {
 			active = var(String(Settings::instance().get(activeKey.toStdString(), "1")));
 		}
@@ -160,7 +160,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	float scale = calcAcceptableGlobalScaleFactor();
 	auto persistedZoom = Settings::instance().get("zoom", "0");
 	if (persistedZoom != "0") {
-		float stored = (float)atof(persistedZoom.c_str());
+		auto stored = (float)atof(persistedZoom.c_str());
 		if (stored >= 0.5f && stored <= 3.0f) {
 			scale = stored;
 		}
@@ -179,7 +179,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
-		{3, { "Categories", { { "Edit auto-categories" }, { "Edit category import mapping" },  { "Rerun auto categorize" } } } },
+		{3, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{5, { "Help", {
 #ifndef _DEBUG
@@ -194,23 +194,24 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { "Auto-detect synths", [this, synths]() {
+	{ "Auto-detect synths", { "Auto-detect synths", [synths]() {
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
 	} } },
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
-		{ "Edit auto-categories", { "Edit auto-categories", [this]() {
-		// This will create the file on demand, copying out the built-in information!
+		{ "Edit categories", { "Edit categories", [this]() {
 		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
 			database_->updateCategories(newDefinitions);
 			automaticCategories_ = database_->getCategorizer(); // Need to reload the automatic Categories!
 			UIModel::instance()->categoriesChanged.sendChangeMessage();
 		});
-		/*if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-			automaticCategories_->getAutoCategoryFile().revealToUser();
-		}*/
 	} } },
-	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
+		{ "Show category naming rules file", { "Show category naming rules file", [this]() {
+		// This will create the file on demand, copying out the built-in information!
+		if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			automaticCategories_->getAutoCategoryFile().revealToUser();
+		}
+	} } },	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
 		// This will create the file on demand, copying out the built-in information!
 		if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
 			automaticCategories_->getAutoCategoryMappingFile().revealToUser();
@@ -231,10 +232,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			window.runThread();
 		}
 	} } },
-	{ "About", { "About", [this]() {
+	{ "About", { "About", []() {
 		aboutBox();
 	}}},
-	{ "Quit", { "Quit", [this]() {
+	{ "Quit", { "Quit", []() {
 		JUCEApplicationBase::quit();
 	}}},
 		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
@@ -253,7 +254,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{ "Save database as...", { "Save database as...", [this] {
 			saveDatabaseAs();
 		}}},
-		{ "Export multiple databases...", { "Export multiple databases...", [this]() {
+		{ "Export multiple databases...", { "Export multiple databases...", []() {
 			exportDatabases();
 		}}},
 		{ "Merge multiple databases...", { "Merge multiple databases...", [this]() {
@@ -265,13 +266,13 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{ "Reindex patches...", { "Reindex patches...", [this] {
 			patchView_->reindexPatches();
 		}}},
-		{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [this] {
+		{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [] {
 			auto patch = UIModel::currentPatch();
 			if (patch.patch() && patch.synth()) {
 				std::stringstream buffer;
 				buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
 				bool first = true;
-				auto messages = patch.synth()->patchToSysex(patch.patch(), nullptr);
+				auto messages = patch.synth()->dataFileToSysex(patch.patch(), nullptr);
 				for (const auto& m : messages) {
 					for (int i = 0; i < m.getRawDataSize(); i++) {
 						if (!first) {
@@ -320,7 +321,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	addAndMakeVisible(menuBar_);
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(*database_, synths, automaticCategories_);
+	patchView_ = std::make_unique<PatchView>(*database_, synths);
 	//patchView_ = std::make_unique<PatchView>(commandManager_, *database_, synths, automaticCategories_);
 	settingsView_ = std::make_unique<SettingsView>(synths);
 	setupView_ = std::make_unique<SetupView>(&autodetector_);
@@ -334,6 +335,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
 		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
 		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
+                case KeyboardMacroEvent::Unknown:
+                  // Fall through
 		default:
 			SimpleLogger::instance()->postMessage("Error - invalid keyboard macro event detected");
 			return;
@@ -372,7 +375,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}
 	else {
 		// If at least one synth is enabled, use the first one!
-		if (UIModel::instance()->synthList_.activeSynths().size() > 0) {
+		if (!UIModel::instance()->synthList_.activeSynths().empty()) {
 			auto activeSynth = std::dynamic_pointer_cast<midikraft::Synth>(UIModel::instance()->synthList_.activeSynths()[0]);
 			if (activeSynth) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth);
@@ -407,12 +410,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// you add any child components.
 	if (makeYourOwnSize) {
 		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-		if (mainScreenSize.getHeight() >= 1024) {
-			setSize(1536 / 2, 2048 / 2);
-		}
-		else {
-			setSize(1536 / 2, mainScreenSize.getHeight());
-		}
+                auto initialSize = mainScreenSize.reduced(100);
+                setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
@@ -560,7 +559,7 @@ void MainComponent::saveDatabaseAs()
 
 class MergeAndExport : public ThreadWithProgressWindow {
 public:
-	MergeAndExport(Array<File> databases) : ThreadWithProgressWindow("Exporting databases...", true, true), databases_(databases) {
+	explicit MergeAndExport(Array<File> databases) : ThreadWithProgressWindow("Exporting databases...", true, true), databases_(std::move(databases)) {
 	}
 
 	void run() override
@@ -573,7 +572,7 @@ public:
 
 		double done = 0.0f;
 		int count = 0;
-		for (auto file : databases_) {
+		for (auto const& file : databases_) {
 			if (threadShouldExit()) {
 				break;
 			}
@@ -608,7 +607,7 @@ public:
 				}
 
 				// We have all patches in memory - write them into a pip file
-				if (allPatches.size() > 0) {
+				if (!allPatches.empty()) {
 					midikraft::PatchInterchangeFormat::save(allPatches, exported.getFullPathName().toStdString());
 				}
 			}
@@ -719,16 +718,16 @@ void MainComponent::crashTheSoftware()
 	}
 }
 
-void MainComponent::setZoomFactor(float newZoomInPercentage) {
+void MainComponent::setZoomFactor(float newZoomInPercentage) const {
 	Desktop::getInstance().setGlobalScaleFactor(newZoomInPercentage / globalScaling_);
 	Settings::instance().set("zoom", String(newZoomInPercentage).toStdString());
 }
 
 float MainComponent::calcAcceptableGlobalScaleFactor() {
-	// The idea is that we use a staircase of "good" scalings matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
+	// The idea is that we use a staircase of "good" scaling factors matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
-	auto availableHeight = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
+	auto availableHeight = (float) Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
 	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
 	float goodScale = 0.75f;
 	for (auto scale : scales) {
@@ -753,7 +752,8 @@ void MainComponent::resized()
 		synthList_.setVisible(true);
 	}
 	else {
-		// Less than one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
+                //TODO - one synth needs to be implemented differently.
+		// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
 	splitter_->setBounds(area);
@@ -781,15 +781,15 @@ void MainComponent::refreshSynthList() {
 				patchList.push_back(currentPatches[s.device()->getName()]);
 			}
 			else {
-				patchList.push_back(midikraft::PatchHolder());
+				patchList.emplace_back(midikraft::PatchHolder());
 			}
 		}
 	}
 
 	// If the list of active synths was changed, it could be that the current synth no longer is an active synth. We need to do something about that!
 	auto current = UIModel::currentSynth();
-	if ((!current || (current && !UIModel::instance()->synthList_.isSynthActive(UIModel::instance()->synthList_.synthByName(current->getName()).device())))
-		&& listItems.size() > 0) {
+	if ((!current || (!UIModel::instance()->synthList_.isSynthActive(UIModel::instance()->synthList_.synthByName(current->getName()).device())))
+		&& !listItems.empty()) {
 		// Current synth is no longer active
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(listItems[0]);
 		UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());
@@ -803,7 +803,7 @@ void MainComponent::refreshSynthList() {
 		}
 	}
 
-	synthList_.setList(listItems, [this](std::shared_ptr<ActiveListItem> clicked) {
+	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const &clicked) {
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
 		if (activeSynth) {
 			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());

@@ -19,7 +19,7 @@
 class RecordingView : public Component, private ChangeListener {
 public:
 	RecordingView(PatchView &patchView);
-	~RecordingView();
+	~RecordingView() override;
 
 	void stopAudio();
 

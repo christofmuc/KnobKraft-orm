@@ -116,6 +116,134 @@ namespace knobkraft {
 		return false;
 	}
 
+	midikraft::LayeredPatchCapability::LayerMode GenericLayeredPatchCapability::layerMode() const
+	{
+		//TODO not sure what the UI different is here
+		return LayeredPatchCapability::LayerMode::STACK;
+	}
+
+	int GenericLayeredPatchCapability::numberOfLayers() const
+	{
+		py::gil_scoped_acquire acquire;
+		if (!me_.expired()) {
+			auto patch = me_.lock();
+			try {
+				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+				py::object result = patch->callMethod(kNumberOfLayers, v);
+				return py::cast<int>(result);
+			}
+			catch (py::error_already_set& ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kNumberOfLayers, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kNumberOfLayers, ex);
+			}
+			catch (...) {
+				SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kNumberOfLayers).str());
+			}
+		}
+		return 1;
+	}
+
+	std::string GenericLayeredPatchCapability::layerName(int layerNo) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (!me_.expired()) {
+			auto patch = me_.lock();
+			try {
+				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+				py::object result = patch->callMethod(kLayerName, v, layerNo);
+				return py::cast<std::string>(result);
+			}
+			catch (py::error_already_set& ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kLayerName, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				if (!me_.expired())
+					me_.lock()->logAdaptationError(kLayerName, ex);
+			}
+			catch (...) {
+				SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kLayerName).str());
+			}
+		}
+		return "Invalid";
+	}
+
+	void GenericLayeredPatchCapability::setLayerName(int layerNo, std::string const& layerName)
+	{
+		if (me_.lock()->pythonModuleHasFunction(kSetLayerName)) {
+			py::gil_scoped_acquire acquire;
+			if (!me_.expired()) {
+				auto patch = me_.lock();
+				try {
+					std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+					py::object result = patch->callMethod(kSetLayerName, v, layerNo, layerName);
+					auto intVector = result.cast<std::vector<int>>();
+					std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
+					me_.lock()->setData(byteData);
+				}
+				catch (py::error_already_set& ex) {
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kSetLayerName, ex);
+					ex.restore();
+				}
+				catch (std::exception& ex) {
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kSetLayerName, ex);
+				}
+				catch (...) {
+					SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kSetLayerName).str());
+				}
+			}
+		}
+		else {
+			SimpleLogger::instance()->postMessage("Adaptation did not implement setLayerName(), can't rename layer");
+		}
+	}
+
+	bool GenericStoredTagCapability::setTags(std::set<midikraft::Tag> const& tags)
+	{
+		ignoreUnused(tags);
+		SimpleLogger::instance()->postMessage("Changing tags in the stored patch is not implemented yet!");
+		return false;
+	}
+
+	std::set<midikraft::Tag> GenericStoredTagCapability::tags() const
+	{
+		if (me_.lock()->pythonModuleHasFunction(kGetStoredTags)) {
+			py::gil_scoped_acquire acquire;
+			if (!me_.expired()) {
+				auto patch = me_.lock();
+				try {
+					std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+					py::object result = patch->callMethod(kGetStoredTags, v);
+					auto tagsFound = result.cast<std::vector<std::string>>();
+					std::set<midikraft::Tag> resultSet;
+					for (auto const& tag : tagsFound)
+					{
+						resultSet.insert(tag);
+					}
+					return resultSet;
+				}
+				catch (py::error_already_set& ex)
+				{
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kGetStoredTags, ex);
+				}
+				catch (...) {
+					SimpleLogger::instance()->postMessage((boost::format("Uncaught exception in %s of Patch of GenericAdaptation") % kGetStoredTags).str());
+				}
+			}
+		}
+		return {};
+	}
+
+
 	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const
 	{
 		midikraft::StoredPatchNameCapability *impl;
@@ -173,5 +301,64 @@ namespace knobkraft {
 		}
 		return false;
 	}
+
+	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::LayeredPatchCapability>& outCapability) const
+	{
+		midikraft::LayeredPatchCapability* impl;
+		if (hasCapability(&impl)) {
+			if (!genericLayeredPatchCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericLayeredPatchCapabilityImpl_ = std::make_shared<GenericLayeredPatchCapability>(non_const->shared_from_this());
+			}
+			outCapability = genericLayeredPatchCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(midikraft::LayeredPatchCapability** outCapability) const
+	{
+		if (pythonModuleHasFunction(kLayerName) && pythonModuleHasFunction(kNumberOfLayers)) {
+			if (!genericLayeredPatchCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericLayeredPatchCapabilityImpl_ = std::make_shared<GenericLayeredPatchCapability>(non_const->shared_from_this());
+			}
+			*outCapability = genericLayeredPatchCapabilityImpl_.get();
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredTagCapability >& outCapability) const
+	{
+		midikraft::StoredTagCapability* impl;
+		if (hasCapability(&impl)) {
+			if (!genericStoredTagCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericStoredTagCapabilityImpl_ = std::make_shared<GenericStoredTagCapability>(non_const->shared_from_this());
+			}
+			outCapability = genericStoredTagCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericPatch::hasCapability(midikraft::StoredTagCapability** outCapability) const
+	{
+		if (pythonModuleHasFunction(kGetStoredTags)) {
+			if (!genericStoredTagCapabilityImpl_) {
+				// Lazy init allowed despite const-ness of method. Smell.
+				GenericPatch* non_const = const_cast<GenericPatch*>(this);
+				non_const->genericStoredTagCapabilityImpl_ = std::make_shared<GenericStoredTagCapability>(non_const->shared_from_this());
+			}
+			*outCapability = genericStoredTagCapabilityImpl_.get();
+			return true;
+		}
+		return false;
+	}
+
 }
 

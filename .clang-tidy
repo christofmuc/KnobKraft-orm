@@ -1,6 +1,8 @@
 Checks:
-  + '*'
-  - modernize-use-override
+  '+ *,
+  - modernize-use-nodiscard,
+  - modernize-use-override,
+  - modernize-return-braced-init-list'
 CheckOptions:
   - key:             modernize-use-nullptr.NullMacros
 value:           NULL,CUSTOM_NULL

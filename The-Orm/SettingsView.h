@@ -20,7 +20,7 @@ class SettingsView : public Component,
 {
 public:
 	SettingsView(std::vector<midikraft::SynthHolder> const &synths);
-	virtual ~SettingsView();
+	virtual ~SettingsView() override;
 
 	void loadGlobals();
 

@@ -6,6 +6,9 @@
 
 #include "ImportFromSynthDialog.h"
 
+#include "HasBanksCapability.h"
+#include "Capability.h"
+#include "fmt/format.h"
 
 ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : onOk_(onOk)
 {
@@ -21,12 +24,32 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 	cancel_.addListener(this);
 
 	// Populate the bank selector
-	numBanks_ = synth->numberOfBanks();
 	StringArray choices;
 	Array<var> choiceValues;
-	for (int i = 0; i < numBanks_; i++) {
-		choices.add(synth->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
-		choiceValues.add(i);
+
+	auto descriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(synth);
+	if (descriptors) {
+		// The new way of listing banks, with additional info and potentially not all the same size
+		auto bankList = descriptors->bankDescriptors();
+		for (auto const& bank : bankList)
+		{
+			choices.add(bank.name);
+			choiceValues.add(bank.bank.toZeroBased());
+		}
+		numBanks_ = choices.size();
+	}
+	else {
+		auto bankList = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
+		if (bankList) {
+			numBanks_ = bankList->numberOfBanks();
+			for (int i = 0; i < numBanks_; i++) {
+				choices.add(bankList->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
+				choiceValues.add(i);
+			}
+		}
+		else {
+			SimpleLogger::instance()->postMessage(fmt::format("Error: Synth {} has neither HasBankDescriptorsCapability nor HasBanksCapability implemented, can't fill import banks dialog.", synth->getName()));
+		}
 	}
 	bankValue_ = Array<var>();
 	banks_ = new MultiChoicePropertyComponent(bankValue_, "Banks", choices, choiceValues);

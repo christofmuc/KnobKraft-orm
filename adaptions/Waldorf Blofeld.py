@@ -37,9 +37,9 @@ def channelIfValidDeviceResponse(message):
             and message[4] == 0x02  # Device request reply
             and message[5] == 0x3e  # Waldorf
             and message[6] == 0x13):  # Blofeld
-            #and message[7] == 0x00  # Family MS is 0
-            #and message[8] == 0x00  # Family member
-            #and message[9] == 0x00):  # Family member
+        # and message[7] == 0x00  # Family MS is 0
+        # and message[8] == 0x00  # Family member
+        # and message[9] == 0x00):  # Family member
         # Extract the Blofeld's device ID from byte 2 of the message
         return message[2]
     return -1
