@@ -288,6 +288,7 @@ IF(APPLE)
 		)
 	INSTALL(CODE "include(BundleUtilities)
 	fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     " COMPONENT Runtime)
     
     # Setup CPack variables
