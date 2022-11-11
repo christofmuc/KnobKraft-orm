@@ -165,10 +165,10 @@ ELSEIF(APPLE)
 			MACOSX_BUNDLE_ICON_FILE icon_orm.icns
 			MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
 			#MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
-			MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
-			XCODE_EMBED_FRAMEWORKS Sparkle
-			XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY TRUE
-			XCODE_EMBED_FRAMEWORKS_REMOVE_HEADERS_ON_COPY TRUE
+			#MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
+			#XCODE_EMBED_FRAMEWORKS Sparkle
+			#XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY TRUE
+			#XCODE_EMBED_FRAMEWORKS_REMOVE_HEADERS_ON_COPY TRUE
 			)
 	# https://stackoverflow.com/questions/68310342/how-to-get-cmake-to-embed-a-private-framework-into-a-macos-app-bundle
 	set(APP_BUNDLE_CONTENTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents")
@@ -286,11 +286,9 @@ IF(APPLE)
 		BUNDLE DESTINATION . COMPONENT Runtime
 		RUNTIME DESTINATION bin COMPONENT Runtime
 		)
-    INSTALL(CODE [[
-		include(BundleUtilities)
-		set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-		fixup_bundle("${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app"  ""  "" IGNORE_ITEM "Python")
-    ]] COMPONENT Runtime)
+	NSTALL(CODE "include(BundleUtilities)
+	fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+    " COMPONENT Runtime))
     
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
