@@ -29,9 +29,6 @@ add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
 
-# Allow to find Find<>.cmake files in our CMAKE_BINARY_DIR, placed there by a prerun with conan
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}")
-
 # Include useful scripts for CMake
 include(FetchContent REQUIRED)
 
@@ -98,14 +95,10 @@ ELSEIF(APPLE)
 
 	if (SPARKLE_UPDATES)
 		FetchContent_Declare(
-				sparkleframework
-				URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
+			sparkleframework
+			URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
 		)
 		FetchContent_MakeAvailable(sparkleframework)
-		find_library(MACSPARKLE Sparkle "${CMAKE_CURRENT_BINARY_DIR}/_deps/sparkleframework-src/Sparkle.framework")
-		 #IF (NOT MACSCPARKLE)
-			#message(FATAL_ERROR "Find library did not locate the Sparkle framework")
-		#ENDIF()
     ENDIF()
 
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag

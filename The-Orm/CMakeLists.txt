@@ -6,10 +6,9 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-project(KnobKraftOrm VERSION 1.14.2)
-
 project(KnobKraftOrm VERSION 1.17.1)
-# Append the version number to the github action environment file to be used by subsequent steps 
+
+# Append the version number to the github action environment file to be used by subsequent steps
 if(DEFINED ENV{GITHUB_ENV})
 file(APPEND $ENV{GITHUB_ENV} "ORM_VERSION=${KnobKraftOrm_VERSION}")
 endif()
@@ -32,25 +31,24 @@ set(D_LOG_SENTRY "")
 configure_file("version.cpp.in" "version.cpp")
 
 IF(CRASH_REPORTING)
-	find_package(sentry REQUIRED)
 	message("Internet-based crash reporting is turned on, using Sentry endpoint authorization from SENTRY_DSN CMake variable")
 	configure_file("${CMAKE_CURRENT_LIST_DIR}/sentry-config.h.in" "${CMAKE_CURRENT_LIST_DIR}/sentry-config.h")
 	SET(SENTRY_INSTALL_PATH "${CMAKE_CURRENT_LIST_DIR}/../third_party/sentry-native/install")
 	SET(SENTRY_CONFIG_HEADER sentry-config.h.in)
-	SET(SENTRY_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/crashpad_handler.exe")
+	SET(SENTRY_DISTRIBUTION_FILES "${SENTRY_INSTALL_PATH}/bin/sentry.dll" "${SENTRY_INSTALL_PATH}/bin/crashpad_handler.exe")
 ENDIF()
 
 IF(SPARKLE_UPDATES)
 if(WIN32)
 	find_package(winsparkle REQUIRED)
+	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem")
 	SET(WINSPARKLE_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/WinSparkle.dll")
 else()
 	set(SPARKLE_FRAMEWORK_PATH ${sparkleframework_SOURCE_DIR})
 	message("Using Sparkle Framework from ${SPARKLE_FRAMEWORK_PATH}")
 	set(SPARKLE_LINK "-F${SPARKLE_FRAMEWORK_PATH} -framework Sparkle")
 endif()
-	message("Sparkle and WinSparkle updates are turned on, the executable will be linked against WinSparkle")
-	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem") 
+	message("Sparkle and WinSparkle updates are turned on")
 ENDIF()
 
 set(SOURCES
@@ -129,7 +127,7 @@ set(MIDIKRAFT_LIBRARIES
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES} ${SPARKLE_SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
-	PRIVATE ${boost_SOURCE_DIR} "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
+	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)

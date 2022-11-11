@@ -36,23 +36,13 @@ jobs:
           pip install -r requirements.txt
           cd adaptions
           python -m pytest --all . -q --no-header
-        
-      - name: Install conan
-        run:  |
-          pip3 install wheel setuptools
-          pip3 install conan
-          conan --version
-          conan config set general.revisions_enabled=1
-          conan remote add bincrafters https://bincrafters.jfrog.io/artifactory/api/conan/public-conan
 
-      - name: Build Winsparkle with conan and publish locally, because it is not hosted in conancenter or bincrafters, export it for immediate use
-        working-directory: third_party/conan-winsparkle
+      - name: Build and install Sentry
+        working-directory: third_party/sentry-native
         run: |
-          conan create . -s build_type=Release
-
-      - name: Install dependencies from conan
-        run: |
-          conan install . -if Builds -s build_type=Release
+          cmake -B build
+          cmake --build build --parallel --config RelWithDebInfo
+          cmake --install build --prefix install --config RelWithDebInfo
 
       - name: CMake configure
         env: # We get the SENTRY DSN from the repository's secret store
@@ -71,7 +61,6 @@ jobs:
         with:
           file: Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
           tags: true
-          prerelease: true
           draft: true
 
       - name: Setup Sentry CLI        

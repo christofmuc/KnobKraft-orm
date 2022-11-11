@@ -17,12 +17,6 @@ jobs:
       run: |
         git submodule update --recursive --init --depth 1
 
-    - name: Select proper Python version
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10' 
-        architecture: 'x64' 
-        
     - name: Prepare build machine with homebrew
       run: |
         brew install boost
@@ -46,6 +40,5 @@ jobs:
       with:
         file: build/KnobKraft_Orm-${{env.ORM_VERSION}}-Darwin.dmg
         tags: true
-        prerelease: true
         draft: true
 
