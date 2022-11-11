@@ -122,7 +122,7 @@ set(MIDIKRAFT_LIBRARIES
 		pytschirp_embedded
 )
 
-#set(CMAKE_SKIP_BUILD_RPATH TRUE)
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES} ${SPARKLE_SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
