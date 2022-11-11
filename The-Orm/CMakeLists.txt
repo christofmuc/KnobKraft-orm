@@ -40,7 +40,6 @@ ENDIF()
 
 IF(SPARKLE_UPDATES)
 if(WIN32)
-	find_package(winsparkle REQUIRED)
 	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem")
 	SET(WINSPARKLE_DISTRIBUTION_FILES "${CMAKE_BINARY_DIR}/WinSparkle.dll")
 else()
@@ -127,19 +126,20 @@ set(MIDIKRAFT_LIBRARIES
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES} ${SPARKLE_SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
-	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
+	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)
 			set(D_LOG_SENTRY "-DLOG_SENTRY")
 		ENDIF()
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SENTRY ${D_LOG_SENTRY})
-		set(SENTRY_LIB sentry::sentry)
+		set(SENTRY_LIB sentry)
 	ENDIF()
 	IF(SPARKLE_UPDATES)
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SPARKLE)
 		set(SPARKLE_DEPENDENCY CodeSigning winsparkle::winsparkle)
 	ENDIF()
+	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib" "${WINSPARKLE_LIBDIR}")
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
