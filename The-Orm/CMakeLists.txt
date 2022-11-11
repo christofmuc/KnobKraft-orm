@@ -270,22 +270,27 @@ IF(WIN32)
 ENDIF()
 
 IF(APPLE)
+	set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 	IF(SPARKLE_UPDATES)
 		# Make sure the private frameworks are in out binary directory
 		file(COPY ${SPARKLE_FRAMEWORK_PATH}/Sparkle.framework DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/KnobKraftOrm.app/Contents/Frameworks)
 	ENDIF()
-		
+
 	# This is supposed to build a relocatable macOS DMG installer when you specify the
     # --target package
+	SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
     SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
-    SET(DIRS ${CMAKE_BINARY_DIR} ${SPARKLE_FRAMEWORK_PATH})
+    SET(DIRS ${CMAKE_BINARY_DIR})
+    #SET(DIRS ${CMAKE_BINARY_DIR} ${SPARKLE_FRAMEWORK_PATH})
     INSTALL(TARGETS KnobKraftOrm
-        BUNDLE DESTINATION .
+		BUNDLE DESTINATION . COMPONENT Runtime
+		RUNTIME DESTINATION bin COMPONENT Runtime
 		)
-    INSTALL(CODE "include(BundleUtilities)
-	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
-    " COMPONENT Runtime)
+    INSTALL(CODE [[
+		include(BundleUtilities)
+		set(BU_CHMOD_BUNDLE_ITEMS TRUE)
+		fixup_bundle("${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app"  ""  "" IGNORE_ITEM "Python")
+    ]] COMPONENT Runtime)
     
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
