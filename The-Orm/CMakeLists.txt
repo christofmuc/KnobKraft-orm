@@ -137,7 +137,7 @@ IF(WIN32)
 	ENDIF()
 	IF(SPARKLE_UPDATES)
 		target_compile_options(KnobKraftOrm PRIVATE -DUSE_SPARKLE)
-		set(SPARKLE_DEPENDENCY CodeSigning winsparkle::winsparkle)
+		set(SPARKLE_DEPENDENCY CodeSigning)
 	ENDIF()
 	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib" "${WINSPARKLE_LIBDIR}")
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
