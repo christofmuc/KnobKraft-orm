@@ -286,9 +286,9 @@ IF(APPLE)
 		BUNDLE DESTINATION . COMPONENT Runtime
 		RUNTIME DESTINATION bin COMPONENT Runtime
 		)
-	NSTALL(CODE "include(BundleUtilities)
+	INSTALL(CODE "include(BundleUtilities)
 	fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
-    " COMPONENT Runtime))
+    " COMPONENT Runtime)
     
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
