@@ -32,22 +32,28 @@ namespace knobkraft {
 
 	std::string GenericPatch::name() const
 	{
-		py::gil_scoped_acquire acquire;
-		try {
-			std::vector<int> v(data().data(), data().data() + data().size());
-			auto result = adaptation_.attr(kNameFromDump)(v);
-			checkForPythonOutputAndLog();
-			return result.cast<std::string>();
+		if (pythonModuleHasFunction(kNameFromDump)) {
+			py::gil_scoped_acquire acquire;
+			try {
+				std::vector<int> v(data().data(), data().data() + data().size());
+				auto result = adaptation_.attr(kNameFromDump)(v);
+				checkForPythonOutputAndLog();
+				return result.cast<std::string>();
+			}
+			catch (py::error_already_set& ex) {
+				std::string errorMessage = (boost::format("Error calling %s: %s") % kNameFromDump % ex.what()).str();
+				ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
+				SimpleLogger::instance()->postMessage(errorMessage);
+			}
+			catch (std::exception& ex) {
+				logAdaptationError(kNameFromDump, ex);
+			}
+			return "invalid";
 		}
-		catch (py::error_already_set &ex) {
-			std::string errorMessage = (boost::format("Error calling %s: %s") % kNameFromDump % ex.what()).str();
-			ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
-			SimpleLogger::instance()->postMessage(errorMessage);
+		else 
+		{ 
+			return "noname";
 		}
-		catch (std::exception &ex) {
-			logAdaptationError(kNameFromDump, ex);
-		}
-		return "invalid";
 	}
 
 	void GenericPatch::logAdaptationError(const char *methodName, std::exception &ex) const
