@@ -137,6 +137,7 @@ ELSEIF(APPLE)
 		SQLiteCpp
 		sqlite3
 		gin
+		docks
 		${APPLE_BOOST}
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"

@@ -12,6 +12,7 @@
 #include "UIModel.h"
 #include "Data.h"
 #include "OrmLookAndFeel.h"
+#include "MidiLogView.h"
 
 #include "GenericAdaptation.h"
 #include "embedded_module.h"
@@ -19,6 +20,8 @@
 #include <memory>
 
 #include "version.cpp"
+
+#include <docks/docks.h>
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -59,7 +62,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 #endif
 
 //==============================================================================
-class TheOrmApplication  : public JUCEApplication, private ChangeListener
+class TheOrmApplication  : public JUCEApplication, public DockManager::Delegate, private ChangeListener
 {
 public:
     //==============================================================================
@@ -111,7 +114,7 @@ public:
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
-		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
+		mainWindow = std::make_shared<MainWindow> (getWindowTitle());
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -149,6 +152,27 @@ public:
 
 		// Window Title Refresher
 		UIModel::instance()->windowTitle_.addChangeListener(this);
+    }
+
+    const juce::StringArray getAvailableViews() const override
+    {
+        return {
+                "Main",
+        };
+    }
+
+    std::shared_ptr<juce::Component> createView(const juce::String &nameOfViewToCreate) override
+    {
+        if (nameOfViewToCreate.isEmpty() || nameOfViewToCreate == "root") {return nullptr;}
+        if (nameOfViewToCreate.contains("Cues"))
+            return std::make_shared<MidiLogView>();
+        else
+            return mainWindow;
+    }
+
+    const juce::String getDefaultWindowName() const override
+    {
+        return "Default Window Name";
     }
 
 	String getWindowTitle() {
@@ -295,7 +319,7 @@ public:
 
 
 private:
-    std::unique_ptr<MainWindow> mainWindow;
+    std::shared_ptr<MainWindow> mainWindow;
 };
 
 //==============================================================================
