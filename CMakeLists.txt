@@ -4,15 +4,20 @@
 #  Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.19)
 
 # Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
+IF(APPLE)
+set(BUILD_WITH_INSTALL_RPATH YES)
+ENDIF()
 
 # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
 add_compile_definitions(JSON_HAS_CPP_14)
 
 project(KnobKraft_Orm)
+
+OPTION(SPARKLE_UPDATES "Turn on Sparkle/WinSparkle update service")
 
 #set(USE_ASIO true)
 
@@ -24,10 +29,11 @@ add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
 
+# Include useful scripts for CMake
+include(FetchContent REQUIRED)
+
 # On Windows, we need to download external dependencies
 IF (WIN32)
-	# Include useful scripts for CMake    
-	include(FetchContent REQUIRED)
 
     FetchContent_Declare(
 	  boost
@@ -86,8 +92,15 @@ ELSEIF(APPLE)
 	if (NOT CMAKE_BUILD_TYPE MATCHES Release)
 		add_compile_definitions(DEBUG)
 	endif()
- 
-    
+
+	if (SPARKLE_UPDATES)
+		FetchContent_Declare(
+			sparkleframework
+			URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
+		)
+		FetchContent_MakeAvailable(sparkleframework)
+    ENDIF()
+
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
@@ -114,7 +127,7 @@ if(WIN32)
 else()
 	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
 endif()
-set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
+#set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
 ELSE()
