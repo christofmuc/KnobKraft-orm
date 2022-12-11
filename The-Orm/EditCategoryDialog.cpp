@@ -7,7 +7,7 @@
 #include "EditCategoryDialog.h"
 
 #include "PropertyEditor.h"
-#include "gin/gin.h"
+#include "gin_gui/gin_gui.h"
 
 static EditCategoryDialog::TCallback sCallback_;
 

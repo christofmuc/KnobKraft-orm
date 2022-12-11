@@ -320,7 +320,8 @@ void KeyboardMacroView::turnOnMasterkeyboardInput() {
 	if (forwardMode == 2 || forwardMode == 3 || forwardMode == 4) {
 		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
 		if (masterkeyboardDevice.isNotEmpty()) {
-			midikraft::MidiController::instance()->enableMidiInput(masterkeyboardDevice.toStdString());
+            auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
+			midikraft::MidiController::instance()->enableMidiInput(device);
 			SimpleLogger::instance()->postMessage("Opening master keyboard device " + masterkeyboardDevice + ", waiting for messages");
 		}
 	}
@@ -340,7 +341,7 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 		auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(currentSynth);
 		if (location) {
 			auto tnv = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice);
-			tnv->value().setValue(tnv->indexOfValue(location->midiInput()));
+			tnv->value().setValue(tnv->indexOfValue(location->midiInput().name.toStdString()));
 			tnv = customMasterkeyboardSetup_.typedNamedValueByName(kMidiChannel);
 			auto midiChannel = std::dynamic_pointer_cast<MidiChannelPropertyEditor>(tnv);
 			if (midiChannel) {
