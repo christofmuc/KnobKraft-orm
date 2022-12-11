@@ -354,7 +354,7 @@ namespace midikraft {
 			if (data.size() == 65) {
 				int sum = 0;
 				WaveData waveData;
-				for (int i = 0; i < 64; i++) {
+				for (size_t i = 0; i < 64; i++) {
 					sum += data[i];
 					waveData.push_back(data[i]);
 				}
@@ -613,8 +613,8 @@ namespace midikraft {
 			return MidiMessage();
 		}
 
-		int start = 0;
-		int end = programNo < 100 ? 34 : 64;
+		size_t start = 0;
+		size_t end = programNo < 100 ? 34 : 64;
 		if (produceWaveInsteadOfPatch && patch.size() == 98) {
 			start = 34;
 			end = 34 + 64;
@@ -624,7 +624,7 @@ namespace midikraft {
 			// Works for the wave as well
 			std::vector<uint8> data = buildSysexFunction(ONE_BLOCK_DATA_DUMP, (uint8)programNo);
 			uint8 sum = 0;
-			for (int i = start; i < end; i++) {
+			for (size_t i = start; i < end; i++) {
 				auto byte = patch.at(i);
 				sum += byte;
 				data.push_back((byte & 0xf0) >> 4);
@@ -675,10 +675,10 @@ namespace midikraft {
 			if (isWriteConfirmation(message)) {
 				MidiController::instance()->removeMessageHandler(secondHandler);
 				logger->postMessage("Got patch write confirmation from K3");
-				MidiBuffer messages;
-				messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), 1), 1); // Any program can be used
-				messages.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBased()), 2);
-				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(messages);
+				MidiBuffer midiBuffer;
+                midiBuffer.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), 1), 1); // Any program can be used
+                midiBuffer.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBased()), 2);
+				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(midiBuffer);
 				// We ignore the result of these sends, just hope for the best
 			}
 			else {

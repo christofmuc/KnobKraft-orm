@@ -21,6 +21,7 @@ namespace midikraft {
 	class KawaiK3Patch : public Patch, public DetailedParametersCapability {
 	public:
 		KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata);
+        virtual ~KawaiK3Patch() override = default;
 
 		// Implementation of Patch interface
 		virtual std::string name() const override;

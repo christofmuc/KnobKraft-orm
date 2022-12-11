@@ -14,6 +14,7 @@
 #include "DrawbarOrgan.h"
 #include "SupportedByBCR2000.h"
 
+#include "HasBanksCapability.h"
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 #include "ReadonlySoundExpander.h"
@@ -37,7 +38,7 @@ namespace midikraft {
 	class KawaiK3Control;
 	class SynthView;
 
-	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public ProgramDumpCabability, public BankDumpCapability,
+	class KawaiK3 : public Synth, public SupportedByBCR2000, public SimpleDiscoverableDevice, public HasBanksCapability, public ProgramDumpCabability, public BankDumpCapability,
 		public DataFileLoadCapability, public DataFileSendCapability, public DetailedParametersCapability, public BidirectionalSyncCapability,
 		public SendsProgramChangeCapability, public CreateInitPatchDataCapability,
 		public ReadonlySoundExpander, public AdditiveCapability, public HybridWaveCapability {
@@ -60,12 +61,13 @@ namespace midikraft {
 		// Basic Synth implementation
 		virtual std::string getName() const override;
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
+		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
+		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const override;
+
+		// HasBanksCapabaility
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
-		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-
-		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 
 		// Special Synth implementation override, because the K3 sends actually write confirmation messages in 1985. Awesome engineers!
 		virtual void sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;

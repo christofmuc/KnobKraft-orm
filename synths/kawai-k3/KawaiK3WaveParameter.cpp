@@ -83,7 +83,7 @@ namespace midikraft {
 		}
 		case KawaiK3::K3_WAVE:
 			jassert(patch.data().size() == 64);
-			for (int i = 0; i < 64; i += 2) {
+			for (size_t i = 0; i < 64; i += 2) {
 				uint8 harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
 					outValue = patch.data()[i + 1];
@@ -100,7 +100,7 @@ namespace midikraft {
 	void KawaiK3DrawbarParameters::setInPatch(DataFile& patch, int value) const
 	{
 		auto harmonics = KawaiK3HarmonicsParameters::toHarmonics(patch);
-		harmonics.setHarmonic(drawbar_.harmonic_number_, value / 31.0f);
+		harmonics.setHarmonic(drawbar_.harmonic_number_, static_cast<float>(value) / 31.0f);
 		KawaiK3HarmonicsParameters::fromHarmonics(harmonics, patch);
 	}
 
