@@ -75,7 +75,7 @@ def numberOfPatchesPerBank():
 def createProgramDumpRequest(channel, patchNo):
     # Calculate bank and program - the KnobKraft Orm will just think the patches are 0 to 999, but the Toraiz needs a
     # bank number 0-9 and the patch number within that bank
-    bank = patchNo / numberOfPatchesPerBank()
+    bank = int(patchNo / numberOfPatchesPerBank())
     program = patchNo % numberOfPatchesPerBank()
     # See page 33 of the Toraiz manual
     return [0xf0, 0b00000000, 0b01000000, 0b00000101, 0b00000000, 0b000000000, 0b00000001, 0b00001000, 0b00010000,
