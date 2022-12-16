@@ -15,7 +15,7 @@
 
 namespace midikraft {
 
-	KawaiK3DrawbarParameters::KawaiK3DrawbarParameters(int harmonic) : drawbar_(Drawbar(DrawbarOrgan::hammondDrawbars()[0]))
+	KawaiK3DrawbarParameters::KawaiK3DrawbarParameters(unsigned int harmonic) : drawbar_(Drawbar(DrawbarOrgan::hammondDrawbars()[0]))
 	{
 		// Let's see if we find it in the Hammond definition
 		for (auto hammond : DrawbarOrgan::hammondDrawbars()) {
