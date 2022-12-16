@@ -16,8 +16,7 @@ target_include_directories(gin PUBLIC ${CMAKE_CURRENT_LIST_DIR}/Gin/modules PRIV
 
 add_subdirectory(fmt)
 
-file(GLOB DOCKS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/docks/docks/source/*.cpp" "${CMAKE_CURRENT_LIST_DIR}/docks/docks/source/*.h")
-add_library(docks STATIC ${DOCKS_SOURCES} "${CMAKE_CURRENT_LIST_DIR}/docks/docks/docks.cpp")
+add_library(docks STATIC "${CMAKE_CURRENT_LIST_DIR}/docks/docks/docks.cpp" "${CMAKE_CURRENT_LIST_DIR}/docks/docks/docks.h")
 file(GLOB DOCKS_RESOURCES "${CMAKE_CURRENT_LIST_DIR}/docks/docks/images/*")
 juce_add_binary_data(docks_res SOURCES ${DOCKS_RESOURCES})
 target_compile_definitions(docks PRIVATE "JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1")
