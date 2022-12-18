@@ -123,6 +123,10 @@ IF(WIN32)
 		set(SPARKLE_DEPENDENCY CodeSigning)
 	ENDIF()
 	target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib" "${WINSPARKLE_LIBDIR}")
+	if(ASAN)
+		set(ASAN_LINK_LIB clang_rt.asan_dbg_dynamic-x86_64)
+		target_link_options(KnobKraftOrm PRIVATE  /wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib)
+	endif()
 	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
 		icuuc
 		SQLiteCpp
