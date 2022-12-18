@@ -15,6 +15,7 @@ add_compile_definitions(JSON_HAS_CPP_14)
 project(KnobKraft_Orm)
 
 #set(USE_ASIO true)
+option(ASAN "Use Address Sanitization for Debug version (Windows only for now)" OFF)
 
 # Since we also build MacOS, we need C++ 17. Which is not a bad thing.
 set(CMAKE_CXX_STANDARD 17)
@@ -74,6 +75,10 @@ IF (WIN32)
     FetchContent_MakeAvailable(winsparkle)
     set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
     set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
+
+	if(ASAN)
+	add_compile_options(/fsanitize=address)
+	endif()
 ELSEIF(APPLE)
 	find_package(Boost REQUIRED)
 
