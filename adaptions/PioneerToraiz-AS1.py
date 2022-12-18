@@ -140,3 +140,28 @@ def unescapeSysex(sysex):
                 result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
             dataIndex += 1
     return result
+    
+
+def escapeToSysex(message):
+    result = []
+    msBits = 0
+    byteIndex = 0
+    chunk = []
+    while byteIndex < len(message):
+        indexInChunk = byteIndex % 7
+        if indexInChunk == 0:
+            chunk = []
+        currentByte = message[byteIndex]
+        lsBits = currentByte & 0x7F
+        msBit = currentByte & 0x80        
+        print("Index: {}; index mod 7: {}; lsBits: {}; masked: {}".format(byteIndex, indexInChunk, lsBits, msBit))
+        msBits |= msBit >> (7 - indexInChunk)
+        print("msBits: {}".format(msBits))
+        chunk.append(lsBits)
+        if indexInChunk == 6 or byteIndex == len(message) - 1:
+            chunk.insert(0, msBits)
+            print("Chunk: {}".format(chunk))
+            result += chunk
+            msBits = 0
+        byteIndex += 1
+    return result
