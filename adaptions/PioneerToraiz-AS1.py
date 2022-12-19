@@ -98,15 +98,46 @@ def isSingleProgramDump(message):
 
 
 def nameFromDump(message):
-    dataBlock = []
-    if isSingleProgramDump(message):
-        dataBlock = message[12:-1]
-    elif isEditBufferDump(message):
-        dataBlock = message[10:-1]
+    INVALID = "Invalid"
+    dataBlockStart = getDataBlockStart(message)
+    if dataBlockStart == -1:
+        return INVALID
+    dataBlock = message[dataBlockStart:-1]
     if len(dataBlock) > 0:
         patchData = unescapeSysex(dataBlock)
         return ''.join([chr(x) for x in patchData[107:107+20]])
-    return "Invalid"
+    return INVALID
+
+
+def renamePatch(message, new_name):
+    print("Rename patch to {}".format(new_name))
+    print(message)
+    dataBlockStart = getDataBlockStart(message)
+    if dataBlockStart == -1:
+        raise Exception("Cannot find the message's data block.")
+    dataBlock = message[dataBlockStart:-1]
+    if len(dataBlock) == 0:
+        raise Exception("Data block had zero length.")
+    patchData = unescapeSysex(dataBlock)
+    if len(new_name) < 20:
+        new_name += (" " * (20 - len(new_name)))
+    elif len(new_name) > 20:
+        new_name = new_name[:20]
+    nameBytes = list(map(ord, new_name))
+    patchData[107:107+20] = nameBytes
+    # TODO: Replace the data block in the original message.
+    escapedPatchData = escapeToSysex(patchData)
+    newMessage = message[:dataBlockStart] + escapedPatchData + [0xF7]
+    return newMessage
+
+
+def getDataBlockStart(message):
+    if isSingleProgramDump(message):
+        return 12
+    elif isEditBufferDump(message):
+        return 10
+    else:
+        return -1
 
 
 def convertToEditBuffer(channel, message):
@@ -116,7 +147,8 @@ def convertToEditBuffer(channel, message):
         # To turn a single program dump into an edit buffer dump, we need to remove the bank and program number,
         # and switch the command to 0b00000011
         return message[0:9] + [0b00000011] + message[12:]
-    raise Exception("Data is neither edit buffer nor single program buffer from Toraiz AS-1")
+    raise Exception(
+        "Data is neither edit buffer nor single program buffer from Toraiz AS-1")
 
 
 def convertToProgramDump(channel, message, program_number):
@@ -126,7 +158,8 @@ def convertToProgramDump(channel, message, program_number):
         return message[0:9] + [0b00000010] + [bank, program] + message[10:]
     elif isSingleProgramDump(message):
         return message[0:10] + [bank, program] + message[12:]
-    raise Exception("Neither edit buffer nor program dump - can't be converted")
+    raise Exception(
+        "Neither edit buffer nor program dump - can't be converted")
 
 
 def unescapeSysex(sysex):
@@ -137,10 +170,11 @@ def unescapeSysex(sysex):
         dataIndex += 1
         for i in range(7):
             if dataIndex < len(sysex):
-                result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
+                result.append(sysex[dataIndex] | (
+                    (msbits & (1 << i)) << (7 - i)))
             dataIndex += 1
     return result
-    
+
 
 def escapeToSysex(message):
     result = []
@@ -153,14 +187,14 @@ def escapeToSysex(message):
             chunk = []
         currentByte = message[byteIndex]
         lsBits = currentByte & 0x7F
-        msBit = currentByte & 0x80        
-        print("Index: {}; index mod 7: {}; lsBits: {}; masked: {}".format(byteIndex, indexInChunk, lsBits, msBit))
+        msBit = currentByte & 0x80
+        # print("Index: {}; index mod 7: {}; lsBits: {}; masked: {}".format(byteIndex, indexInChunk, lsBits, msBit))
         msBits |= msBit >> (7 - indexInChunk)
-        print("msBits: {}".format(msBits))
+        # print("msBits: {}".format(msBits))
         chunk.append(lsBits)
         if indexInChunk == 6 or byteIndex == len(message) - 1:
             chunk.insert(0, msBits)
-            print("Chunk: {}".format(chunk))
+            # print("Chunk: {}".format(chunk))
             result += chunk
             msBits = 0
         byteIndex += 1
