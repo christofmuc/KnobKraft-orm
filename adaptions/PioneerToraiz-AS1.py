@@ -216,3 +216,7 @@ def escapeToSysex(message):
             msBits = 0
         byteIndex += 1
     return result
+    
+
+def isDefaultName(patchName):
+    return patchName == "Basic Program"
