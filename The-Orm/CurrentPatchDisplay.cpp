@@ -6,6 +6,8 @@
 
 #include "CurrentPatchDisplay.h"
 
+#include "OrmViews.h"
+
 #include "Capability.h"
 
 #include "PatchButtonPanel.h"
@@ -61,8 +63,8 @@ int MetaDataArea::getDesiredHeight(int width)
 	return static_cast<int>(desiredBounds.getHeight());
 }
 
-CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
-	: Component(), database_(database), favoriteHandler_(favoriteHandler)
+CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
+	: Component(), favoriteHandler_(favoriteHandler)
 	, name_(0, false, [this](int) {
 		if (onCurrentPatchClicked) {
 			onCurrentPatchClicked(currentPatch_);
@@ -374,7 +376,7 @@ void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 {
 	ignoreUnused(source);
 	std::vector<CategoryButtons::Category> result;
-	for (const auto& c : database_.getCategories()) {
+	for (const auto& c : OrmViews::instance().patchDatabase().getCategories()) {
 		if (c.def()->isActive) {
 			result.emplace_back(c.category(), c.color());
 		}
@@ -387,7 +389,7 @@ void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
 	if (currentPatch_ && currentPatch_->patch()) {
 		// Search for the real category
-		for (auto realCat: database_.getCategories()) {
+		for (auto realCat: OrmViews::instance().patchDatabase().getCategories()) {
 			if (realCat.category() == clicked.category) {
 				currentPatch_->setUserDecision(realCat);
 				auto categories = metaData_.selectedCategories();
@@ -395,7 +397,7 @@ void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
 				for (const auto& cat : categories) {
 					// Have to convert into juce-widget version of Category here
 					bool found = false;
-					for (auto c : database_.getCategories()) {
+					for (auto c : OrmViews::instance().patchDatabase().getCategories()) {
 						if (c.category() == cat.category) {
 							currentPatch_->setCategory(c, true);
 							found = true;

@@ -6,6 +6,8 @@
 
 #include "PatchView.h"
 
+#include "OrmViews.h"
+
 #include "PatchSearchComponent.h"
 #include "InsetBox.h"
 #include "LambdaLayoutBox.h"
@@ -33,9 +35,8 @@
 
 const char *kAllPatchesFilter = "All patches";
 
-PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
-	: database_(database), librarian_(synths), synths_(synths), 
-	patchListTree_(database, synths),
+PatchView::PatchView()
+	: patchListTree_(),
 	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
 {
 	patchListTree_.onImportListSelected = [this](String id) {
@@ -59,9 +60,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	});
 
-	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(database_, predefinedCategories(),
+	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
-		database_.putPatch(*favoritePatch);
+		OrmViews::instance().patchDatabase().putPatch(*favoritePatch);
 		patchButtons_->refresh(true);
 	}
 	);
@@ -71,7 +72,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		}
 	};
 
-	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
+	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), OrmViews::instance().patchDatabase());
 
 	auto box = new LambdaLayoutBox();
 	box->onResized = [this](Component* box) {
@@ -151,7 +152,7 @@ void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 {
 	std::vector<CategoryButtons::Category> result;
-	for (const auto& c : database_.getCategories()) {
+	for (const auto& c : OrmViews::instance().patchDatabase().getCategories()) {
 		if (c.def()->isActive) {
 			result.emplace_back(c.category(), c.color());
 		}
@@ -161,7 +162,7 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
-	int total = database_.getPatchesCount(currentFilter());
+	int total = OrmViews::instance().patchDatabase().getPatchesCount(currentFilter());
 	patchButtons_->setTotalCount(total);
 	patchButtons_->refresh(true); // This kicks of loading the first page
 }
@@ -189,7 +190,7 @@ void PatchView::selectNextPatch()
 
 void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	database_.getPatchesAsync(currentFilter(), [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+	OrmViews::instance().patchDatabase().getPatchesAsync(currentFilter(), [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
 		// Discard the result when there is a newer filter - another thread will be working on a better result!
 		if (currentFilter() != filter)
 			return;
@@ -255,7 +256,7 @@ void PatchView::showPatchDiffDialog() {
 
 void PatchView::saveCurrentPatchCategories() {
 	if (currentPatchDisplay_->getCurrentPatch()->patch()) {
-		database_.putPatch(*currentPatchDisplay_->getCurrentPatch());
+		OrmViews::instance().patchDatabase().putPatch(*currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
 	}
 }
@@ -283,7 +284,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string patchName = infos["patch_name"];
 			if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Delete patch from database",
 				"Do you really want to delete the patch " + patchName + " from the database? There is no undo!")) {
-				database_.deletePatches(infos["synth"], { infos["md5"] });
+				OrmViews::instance().patchDatabase().deletePatches(infos["synth"], { infos["md5"] });
 				SimpleLogger::instance()->postMessage("Deleted patch " + patchName + " from database");
 				patchListTree_.refreshAllUserLists();
 				patchButtons_->refresh(true);
@@ -295,7 +296,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string list_id = infos["list_id"];
 			std::string patch_name = infos["patch_name"];
 			std::string list_name = infos["list_name"];
-			database_.removePatchFromList(list_id, infos["synth"], infos["md5"], infos["order_num"]);
+			OrmViews::instance().patchDatabase().removePatchFromList(list_id, infos["synth"], infos["md5"], infos["order_num"]);
 			SimpleLogger::instance()->postMessage("Removed patch " + patch_name + " from list " + list_name);
 			patchListTree_.refreshUserList(list_id);
 			if (listFilterID_ == list_id) {
@@ -308,7 +309,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string list_name = infos["list_name"];
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Delete list from database",
 				"Do you really want to delete the list " + list_name + " from the database? There is no undo!")) {
-				database_.deletePatchlist(midikraft::ListInfo{ list_id, list_name });
+				OrmViews::instance().patchDatabase().deletePatchlist(midikraft::ListInfo{ list_id, list_name });
 				SimpleLogger::instance()->postMessage("Deleted list " + list_name);
 				if (listFilterID_ == list_id) {
 				}
@@ -341,14 +342,14 @@ void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
-	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(OrmViews::instance().librarian());
 	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
 			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
 			if (!bankNo.empty()) {
 				progressWindow->launchThread();
-				librarian_.startDownloadingAllPatches(
+				OrmViews::instance().librarian().startDownloadingAllPatches(
 					midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 					activeSynth,
 					bankNo,
@@ -377,7 +378,7 @@ void PatchView::retrievePatches() {
 
 std::vector<midikraft::PatchHolder> PatchView::autoCategorize(std::vector<midikraft::PatchHolder> const &patches) {
 	for (auto p : patches) {
-		p.autoCategorizeAgain(database_.getCategorizer());
+		p.autoCategorizeAgain(OrmViews::instance().automaticCategories());
 	}
 	return patches;
 }
@@ -388,7 +389,7 @@ void PatchView::retrieveEditBuffer()
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	if (activeSynth && midiLocation) {
-		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
+		OrmViews::instance().librarian().downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 			activeSynth,
 			nullptr,
 			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
@@ -424,7 +425,7 @@ void PatchView::deletePatches()
 			"They will be gone forever, unless you use a backup!") % totalAffected).str())) {
 		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
 			"Are you sure?", "Yes", "No")) {
-			int deleted = database_.deletePatches(currentFilter());
+			int deleted = OrmViews::instance().patchDatabase().deletePatches(currentFilter());
 			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
 			UIModel::instance()->importListChanged_.sendChangeMessage();
 			retrieveFirstPageFromDatabase();
@@ -438,14 +439,14 @@ void PatchView::reindexPatches() {
 	if (!currentSynth) return;
 	auto filter = midikraft::PatchDatabase::allForSynth(currentSynth);
 
-	int totalAffected = database_.getPatchesCount(filter);
+	int totalAffected = OrmViews::instance().patchDatabase().getPatchesCount(filter);
 	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex all %d patches for synth %s?") % totalAffected % currentSynth->getName()).str(),
 		(boost::format("This will reindex the %d patches with the current fingerprinting algorithm.\n\n"
 			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n")
 			% totalAffected).str())) {
-		std::string backupName = database_.makeDatabaseBackup("-before-reindexing");
+		std::string backupName = OrmViews::instance().patchDatabase().makeDatabaseBackup("-before-reindexing");
 		SimpleLogger::instance()->postMessage((boost::format("Created database backup at %s") % backupName).str());
-		int countAfterReindexing = database_.reindexPatches(filter);
+		int countAfterReindexing = OrmViews::instance().patchDatabase().reindexPatches(filter);
 		if (countAfterReindexing != -1) {
 			// No error, display user info
 			if (totalAffected > countAfterReindexing) {
@@ -467,7 +468,7 @@ void PatchView::reindexPatches() {
 
 int PatchView::totalNumberOfPatches()
 {
-	return database_.getPatchesCount(currentFilter());
+	return OrmViews::instance().patchDatabase().getPatchesCount(currentFilter());
 }
 
 void PatchView::selectFirstPatch()
@@ -532,7 +533,7 @@ void PatchView::receiveManualDump() {
 		auto messagesReceived = receiveDumpBox.result();
 		if (messagesReceived.size() > 0) {
 			// Try to load via Librarian
-			auto patches = librarian_.loadSysexPatchesManualDump(synthToReceiveFrom, messagesReceived, database_.getCategorizer());
+			auto patches = OrmViews::instance().librarian().loadSysexPatchesManualDump(synthToReceiveFrom, messagesReceived, OrmViews::instance().automaticCategories());
 			if (patches.size() > 0) {
 				auto enhanced = autoCategorize(patches);
 				mergeNewPatches(enhanced);
@@ -543,7 +544,7 @@ void PatchView::receiveManualDump() {
 
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
-		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), database_.getCategorizer());
+		auto patches = OrmViews::instance().librarian().loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), OrmViews::instance().automaticCategories());
 		if (patches.size() > 0) {
 			auto enhanced = autoCategorize(patches);
 			mergeNewPatches(enhanced);
@@ -591,7 +592,7 @@ private:
 };
 
 void PatchView::bulkImportPIP(File directory) {
-	BulkImportPIP bulk(directory, database_, database_.getCategorizer());
+	BulkImportPIP bulk(directory, OrmViews::instance().patchDatabase(), OrmViews::instance().automaticCategories());
 
 	bulk.runThread();
 
@@ -602,7 +603,7 @@ void PatchView::exportPatches()
 {
 	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
 		ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
-			librarian_.saveSysexPatchesToDisk(params, patches);
+			OrmViews::instance().librarian().saveSysexPatchesToDisk(params, patches);
 		});
 	});
 }
@@ -632,7 +633,7 @@ void PatchView::createPatchInterchangeFile()
 }
 
 void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded) {
-	MergeManyPatchFiles backgroundThread(database_, patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
+	MergeManyPatchFiles backgroundThread(OrmViews::instance().patchDatabase(), patchesLoaded, [this](std::vector<midikraft::PatchHolder> outNewPatches) {
 		// Back to UI thread
 		MessageManager::callAsync([this, outNewPatches]() {
 			if (outNewPatches.size() > 0) {

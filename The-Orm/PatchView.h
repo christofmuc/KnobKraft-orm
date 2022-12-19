@@ -41,7 +41,7 @@ class PatchView : public Component,
 	private ChangeListener
 {
 public:
-	PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths);
+	PatchView();
 	virtual ~PatchView() override;
 
 	void resized() override;
@@ -111,15 +111,10 @@ private:
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 
-	midikraft::Librarian librarian_;
-
-	std::vector<midikraft::SynthHolder> synths_;
 	int currentLayer_;
 
 	midikraft::PatchHolder compareTarget_;
 
-	midikraft::PatchDatabase &database_;
-	
 	std::string lastPathForPIF_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)

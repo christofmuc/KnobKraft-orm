@@ -6,6 +6,8 @@
 
 #include "PatchListTree.h"
 
+#include "OrmViews.h"
+
 #include "CreateListDialog.h"
 
 #include "UIModel.h"
@@ -57,16 +59,17 @@ private:
 	std::string importID_;
 };
 
-PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths)
-	: db_(db)
+PatchListTree::PatchListTree()
 {
 	treeView_ = std::make_unique<TreeView>();
 	treeView_->setOpenCloseButtonsVisible(true);
 	addAndMakeVisible(*treeView_);
 
 	// Build data structure to load patch lists
-	for (auto synth : synths) {
-		synths_[synth.getName()] = synth.synth();
+	for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+		if (auto s = std::dynamic_pointer_cast<midikraft::Synth>(synth)) {
+			synths_[synth->getName()] = s;
+		}
 	}
 
 	allPatchesItem_ = new TreeViewNode("All patches", "allpatches");
@@ -81,7 +84,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			std::string synthName = activeSynth->getName();
 			auto importsForSynth = new TreeViewNode(synthName, "library-" + synthName);
 			importsForSynth->onGenerateChildren = [this, synthName]() {
-				auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
+				auto importList = OrmViews::instance().patchDatabase().getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 				shortenImportNames(importList);
 				importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.name;  });
 				std::vector<TreeViewItem*> result;
@@ -93,7 +96,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 						if (onImportListSelected)
 							onImportListSelected(id);
 					};
-					node->textValue.addListener(new ImportNameListener(db_, import.id));
+					node->textValue.addListener(new ImportNameListener(OrmViews::instance().patchDatabase(), import.id));
 					result.push_back(node);
 				}
 				return result;
@@ -115,7 +118,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_ = new TreeViewNode("User lists", "userlists");
 	userListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
-		auto userLists = db_.allPatchLists();
+		auto userLists = OrmViews::instance().patchDatabase().allPatchLists();
 		userLists = sortLists<midikraft::ListInfo>(userLists, [](const midikraft::ListInfo& info) { return info.name;  });
 		userLists_.clear();
 		for (auto const& list : userLists) {
@@ -125,7 +128,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		addNewItem->onSingleClick = [this](String id) {
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
-					db_.putPatchList(*list);
+					OrmViews::instance().patchDatabase().putPatchList(*list);
 					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
 					regenerateUserLists();
 				}
@@ -281,7 +284,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 	auto node = new TreeViewNode(list.name, list.id);
 	userLists_[list.id] = node;
 	node->onGenerateChildren = [this, list]() {
-		auto patchList = db_.getPatchList(list, synths_);
+		auto patchList = OrmViews::instance().patchDatabase().getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
 		int index = 0;
 		for (auto patch : patchList.patches()) {
@@ -318,14 +321,14 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		auto synth = synths_[synthname].lock();
 		std::string md5 = infos["md5"];
 		std::vector<midikraft::PatchHolder> patch;
-		if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
+		if (OrmViews::instance().patchDatabase().getSinglePatch(synth, md5, patch) && patch.size() == 1) {
 			if (infos.contains("list_id") && infos["list_id"] == list.id && infos.contains("order_num")) {
 				// Special case - this is a patch reference from the same list, this is effectively just a reordering operation!
-				db_.movePatchInList(list, patch[0], infos["order_num"], insertIndex);
+				OrmViews::instance().patchDatabase().movePatchInList(list, patch[0], infos["order_num"], insertIndex);
 			}
 			else {
 				// Simple case - new patch (or patch reference) added to list
-				db_.addPatchToList(list, patch[0], insertIndex);
+				OrmViews::instance().patchDatabase().addPatchToList(list, patch[0], insertIndex);
 				SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
 			}
 			node->regenerate();
@@ -349,13 +352,13 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list) {
 			jassert(new_list);
 			if (new_list) {
-				db_.putPatchList(*new_list);
+				OrmViews::instance().patchDatabase().putPatchList(*new_list);
 				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
 				regenerateUserLists();
 			}
 		}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
 			if (new_list) {
-				db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
+				OrmViews::instance().patchDatabase().deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
 				SimpleLogger::instance()->postMessage("Deleted list " + new_list->name());
 				regenerateUserLists();
 			}
@@ -446,6 +449,12 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
 		// List of synths changed - we need to regenerate the imports list and the library subtrees!
+		synths_.clear();
+		for (auto synth : UIModel::instance()->synthList_.activeSynths()) {
+			if (auto s = std::dynamic_pointer_cast<midikraft::Synth>(synth)) {
+				synths_[synth->getName()] = s;
+			}
+		}
 		allPatchesItem_->regenerate();
 		selectAllIfNothingIsSelected();
 	}

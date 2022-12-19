@@ -12,7 +12,7 @@
 #include "UIModel.h"
 #include "Data.h"
 #include "OrmLookAndFeel.h"
-#include "MidiLogView.h"
+#include "OrmViews.h"
 
 #include "GenericAdaptation.h"
 #include "embedded_module.h"
@@ -21,10 +21,6 @@
 
 #include "version.cpp"
 
-#pragma warning( push )
-#pragma warning( disable : 4100 )
-#include <docks/docks.h>
-#pragma warning( pop )
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -65,7 +61,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 #endif
 
 //==============================================================================
-class TheOrmApplication  : public JUCEApplication, public DockManager::Delegate, private ChangeListener
+class TheOrmApplication  : public JUCEApplication, private ChangeListener
 {
 public:
     //==============================================================================
@@ -79,6 +75,12 @@ public:
     void initialise (const String& commandLine) override
     {
 		ignoreUnused(commandLine);
+
+		dockManager_ = std::make_unique<DockManager>(OrmViews::instance());
+
+		juce::StringArray views{ "Patch Library", "Setup", "Log", "MidiLog"};
+		dockManager_->create2By2("Setup", views);
+		//dockManager_->addChangeListener(this);
 
 		// This method is where you should put your application's initialization code...
 		auto applicationDataDirName = "KnobKraftOrm";
@@ -117,7 +119,6 @@ public:
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
-		mainWindow = std::make_shared<MainWindow> (getWindowTitle());
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -157,27 +158,6 @@ public:
 		UIModel::instance()->windowTitle_.addChangeListener(this);
     }
 
-    const juce::StringArray getAvailableViews() const override
-    {
-        return {
-                "Main",
-        };
-    }
-
-    std::shared_ptr<juce::Component> createView(const juce::String &nameOfViewToCreate) override
-    {
-        if (nameOfViewToCreate.isEmpty() || nameOfViewToCreate == "root") {return nullptr;}
-        if (nameOfViewToCreate.contains("Cues"))
-            return std::make_shared<MidiLogView>();
-        else
-            return mainWindow;
-    }
-
-    const juce::String getDefaultWindowName() const override
-    {
-        return "Default Window Name";
-    }
-
 	String getWindowTitle() {
 		return getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion());
 	}
@@ -185,18 +165,34 @@ public:
 	void changeListenerCallback(ChangeBroadcaster* source) override
 	{
 		ignoreUnused(source);
+		/*
 		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
 		if (mainComp) {
 			// This is only called when the window title needs to be changed!
 			File currentDatabase(mainComp->getDatabaseFileName());
 			mainWindow->setName(getWindowTitle() + " (" + currentDatabase.getFileName() + ")");
-		}
+		}*/
+		/*if (source == dockManager_.get()) {
+			DockManager::ViewMap::Iterator i(dockManager_->getAllComponents());
+			bool close = true;
+			while (i.next()) {
+				if (i.getValue()->getParentComponent() != nullptr) {
+					close = false;
+					break;
+				}
+			}
+			if (close) {
+				// All windows have been closed, time to exit the application!
+				quit();
+			}
+		}*/
 	}
 
     void shutdown() override
     {
 		// Unregister
 		UIModel::instance()->windowTitle_.removeChangeListener(this);
+		//dockManager_->removeChangeListener(this);
 
         // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
@@ -210,12 +206,16 @@ public:
 		Data::instance().saveToSettings();
 		UIModel::shutdown();
 
+		OrmViews::shutdown();
+
 		// Shutdown MIDI subsystem after all windows are gone
 		midikraft::MidiController::shutdown();
 
 		// Shutdown settings subsystem
 		Settings::instance().saveAndClose();
 		Settings::shutdown();
+
+		dockManager_.reset();
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -230,12 +230,13 @@ public:
     {
 		// Shut down database (that makes a backup)
 		// Do this before calling quit
-		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
+		/*auto mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent());
 		if (mainComp) {
 			// Give it a chance to complete the Database backup
 			//TODO - should ask user or at least show progress dialog?
 			mainComp->shutdown();
-		}
+		}*/
+		shutdown();
 		
 		// This is called when the app is being asked to quit: you can ignore this
         // request and let the app carry on running, or call quit() to allow the app to close.
@@ -278,11 +279,11 @@ public:
 			if (Settings::instance().keyIsSet("mainWindowSize")) {
 				// Restore window size
 				restoreWindowStateFromString(Settings::instance().get("mainWindowSize"));
-				setContentOwned(new MainComponent(false), false);
+//				setContentOwned(new MainComponent(false), false);
 			}
 			else {
 				// Calculate best size for first start. 
-				setContentOwned(new MainComponent(true), true);
+				//setContentOwned(new MainComponent(true), true);
 				setResizable(true, true);
 				centreWithSize(getWidth(), getHeight());
 			}
@@ -323,6 +324,7 @@ public:
 
 private:
     std::shared_ptr<MainWindow> mainWindow;
+	std::unique_ptr<DockManager> dockManager_;
 };
 
 //==============================================================================

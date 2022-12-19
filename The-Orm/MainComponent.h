@@ -33,19 +33,23 @@
 #include "BCR2000_Component.h"
 #include "AdaptationView.h"
 
+#include "OrmViews.h"
+
 class LogViewLogger;
 
-class MainComponent : public Component, private ChangeListener
+class MainComponent : public DockingWindow, private ChangeListener
 {
 public:
-	MainComponent(bool makeYourOwnSize);
+	MainComponent(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree);
     virtual ~MainComponent() override;
 
-	virtual void resized() override;
+	//virtual void resized() override;
 
 	void shutdown();
 
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
+
+	virtual void closeButtonPressed() override;
 
 private:
 	void checkForUpdatesOnStartup();
@@ -76,10 +80,7 @@ private:
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 
-	std::unique_ptr<midikraft::PatchDatabase> database_;
-	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
 	RecentlyOpenedFilesList recentFiles_;
-	midikraft::AutoDetection autodetector_;
 
 	// For display size support. This will be filled before we modify any global scales
 	float globalScaling_;
@@ -95,21 +96,10 @@ private:
 
 	SynthList synthList_;
 	PatchPerSynthList patchList_;
-	TabbedComponent mainTabs_;
-	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
-	std::unique_ptr<KeyboardMacroView> keyboardView_;
 	std::unique_ptr<SplitteredComponent> splitter_;
-	MidiLogView midiLogView_;
-	knobkraft::AdaptationView adaptationView_;
-	InsetBox midiLogArea_;
-	std::unique_ptr<SettingsView> settingsView_;
-	std::unique_ptr<SetupView> setupView_;
-	std::unique_ptr<LogViewLogger> logger_;
 	std::unique_ptr<RecordingView> recordingView_;
 	std::unique_ptr<BCR2000_Component> bcr2000View_;
-
-	InsetBox logArea_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

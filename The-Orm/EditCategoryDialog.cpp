@@ -35,7 +35,7 @@ public:
 		// This changes the row to be displayed with this component (reusing components within a list box)
 		name.getTextValue().referTo(catItem.getPropertyAsValue("name", nullptr));
 		active.getToggleStateValue().referTo(catItem.getPropertyAsValue("active", nullptr));
-		color.getValueObject().referTo(catItem.getPropertyAsValue("color", nullptr));
+		//color.getValueObject().referTo(catItem.getPropertyAsValue("color", nullptr));
 	}
 
 private:

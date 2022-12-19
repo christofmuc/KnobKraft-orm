@@ -11,8 +11,8 @@
 #include "UIModel.h"
 
 
-AutoThumbnailingDialog::AutoThumbnailingDialog(PatchView &patchView, RecordingView &recordingView) : 
-	ThreadWithProgressWindow("Recording patch thumbnails", true, true), patchView_(patchView), recordingView_(recordingView)
+AutoThumbnailingDialog::AutoThumbnailingDialog(RecordingView &recordingView) : 
+	ThreadWithProgressWindow("Recording patch thumbnails", true, true), recordingView_(recordingView)
 {
 	UIModel::instance()->currentPatch_.addChangeListener(this);
 	UIModel::instance()->thumbnails_.addChangeListener(this);
@@ -27,10 +27,10 @@ AutoThumbnailingDialog::~AutoThumbnailingDialog()
 bool AutoThumbnailingDialog::syncSwitchToNextPatch() {
 	// Select the next patch. This is asynchronous, because the database might need to load
 	patchSwitched_ = false;
-	PatchView *patchView = &patchView_;
+	/*PatchView* patchView = &patchView_;
 	MessageManager::callAsync([patchView]() {
 		patchView->selectNextPatch();
-	});
+	});*/
 	return waitForPatchSwitchAndSendToSynth();
 }
 
@@ -56,10 +56,10 @@ bool AutoThumbnailingDialog::waitForPatchSwitchAndSendToSynth() {
 bool AutoThumbnailingDialog::syncSwitchToFirstPatch() {
 	// Select the next patch. This is asynchronous, because the database might need to load
 	patchSwitched_ = false;
-	PatchView *patchView = &patchView_;
+	/*PatchView* patchView = &patchView_;
 	MessageManager::callAsync([patchView]() {
 		patchView->selectFirstPatch();
-	});
+	});*/
 	return waitForPatchSwitchAndSendToSynth();
 }
 
@@ -110,7 +110,7 @@ void AutoThumbnailingDialog::run()
 	// Loop over all selected patches and record the thumbnails!
 	if (syncSwitchToFirstPatch()) {
 		int recordedCount = 1;
-		int toRecord = patchView_.totalNumberOfPatches();
+		int toRecord = 0; // patchView_.totalNumberOfPatches();
 		while (!threadShouldExit()) {
 			// Record current patch
 			if (!syncRecordThumbnail()) {

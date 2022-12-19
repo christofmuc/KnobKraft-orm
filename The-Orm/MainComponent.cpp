@@ -15,20 +15,10 @@
 #include "EditCategoryDialog.h"
 #include "ExportDialog.h"
 
+#include "OrmViews.h"
+
 #include "Settings.h"
 
-#include "Virus.h"
-#include "Rev2.h"
-#include "OB6.h"
-#include "KorgDW8000.h"
-#include "KawaiK3.h"
-#include "Matrix1000.h"
-#include "RefaceDX.h"
-#include "BCR2000.h"
-#include "MKS80.h"
-#include "MKS50.h"
-
-#include "GenericAdaptation.h"
 #include "PatchInterchangeFormat.h"
 
 #include "LayoutConstants.h"
@@ -83,73 +73,18 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 }
 
 //==============================================================================
-MainComponent::MainComponent(bool makeYourOwnSize) :
+MainComponent::MainComponent(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree) :
+	DockingWindow(manager, data, tree),
 	globalScaling_(1.0f),
-        buttons_(301),
-        mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-        midiLogArea_(&midiLogView_, BorderSize<int>(10)),
-        logArea_(&logView_, BorderSize<int>(8))
+    buttons_(301)
 {
-	logger_ = std::make_unique<LogViewLogger>(logView_);
-
-	auto customDatabase = Settings::instance().get("LastDatabase");
-	File databaseFile(customDatabase);
-	if (databaseFile.existsAsFile()) {
-		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	}
-	else {
-		database_ = std::make_unique<midikraft::PatchDatabase>();
-	}
 	recentFiles_.setMaxNumberOfItems(10);
 	if (Settings::instance().keyIsSet("RecentFiles")) {
 		recentFiles_.restoreFromString(Settings::instance().get("RecentFiles"));
 	}
 
-	automaticCategories_ = database_->getCategorizer();
-
-	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
-
-	// Create the list of all synthesizers!	
-	std::vector<midikraft::SynthHolder>  synths;
-	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));
-
-	// Now adding all adaptations
-	auto adaptations = knobkraft::GenericAdaptation::allAdaptations();
-	for (auto const& adaptation : adaptations) {
-		synths.emplace_back(midikraft::SynthHolder(adaptation, buttonColour));
-	}
-
-	UIModel::instance()->synthList_.setSynthList(synths);
-
-	// Load activated state
-	for (auto synth : synths) {
-		if (!synth.device()) continue;
-		auto activeKey = String(synth.device()->getName()) + String("-activated");
-		// Check if the setting is set
-		bool active;
-		if (Settings::instance().keyIsSet(activeKey.toStdString())) {
-			active = var(String(Settings::instance().get(activeKey.toStdString(), "1")));
-		}
-		else {
-			// No user decision on active or not - default is inactive now, else you end up with 20 synths which looks ugly
-			active = false;
-		}
-		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
-	}
 
 	refreshSynthList();
-
-	autodetector_.addChangeListener(&synthList_);
 
 	// Prepare for resizing the UI to fit on the screen. Crash on headless devices
 	globalScaling_ = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->scale;
@@ -190,39 +125,40 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { "Auto-detect synths", [synths]() {
+	/*{"Auto-detect synths", {"Auto-detect synths", [synths]() {
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
-	} } },
+	} } },*/
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit categories", { "Edit categories", [this]() {
-		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
-			database_->updateCategories(newDefinitions);
-			automaticCategories_ = database_->getCategorizer(); // Need to reload the automatic Categories!
-			UIModel::instance()->categoriesChanged.sendChangeMessage();
+		EditCategoryDialog::showEditDialog(OrmViews::instance().patchDatabase(), this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
+			OrmViews::instance().patchDatabase().updateCategories(newDefinitions);
+			// Need to reload the automatic Categories!
+			OrmViews::instance().reloadAutomaticCategories(); 
+			
 		});
 	} } },
 		{ "Show category naming rules file", { "Show category naming rules file", [this]() {
 		// This will create the file on demand, copying out the built-in information!
-		if (!URL(automaticCategories_->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
-			automaticCategories_->getAutoCategoryFile().revealToUser();
+		if (!URL(OrmViews::instance().automaticCategories()->getAutoCategoryFile().getFullPathName()).launchInDefaultBrowser()) {
+			OrmViews::instance().automaticCategories()->getAutoCategoryFile().revealToUser();
 		}
 	} } },	{ "Edit category import mapping", { "Edit category import mapping", [this]() {
 		// This will create the file on demand, copying out the built-in information!
-		if (!URL(automaticCategories_->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
-			automaticCategories_->getAutoCategoryMappingFile().revealToUser();
+		if (!URL(OrmViews::instance().automaticCategories()->getAutoCategoryMappingFile().getFullPathName()).launchInDefaultBrowser()) {
+			OrmViews::instance().automaticCategories()->getAutoCategoryMappingFile().revealToUser();
 		}
 	} } },
 	{ "Rerun auto categorize...", { "Rerun auto categorize", [this]() {
 		auto currentFilter = patchView_->currentFilter();
-		int affected = database_->getPatchesCount(currentFilter);
+		int affected = OrmViews::instance().patchDatabase().getPatchesCount(currentFilter);
 		if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Re-run auto-categorization?",
 			"Do you want to rerun the auto-categorization on the currently filtered " + String(affected) + " patches?\n\n"
 			"This makes sense if you changed the auto category search strings, or the import mappings!\n\n"
 			"And don't worry, if you have manually set categories (or manually removed categories that were auto-detected), this information is retained!"
 			)) {
-			automaticCategories_ = database_->getCategorizer(); // Need to reload the automatic Categories!
-			AutoCategorizeWindow window(database_.get(), automaticCategories_, currentFilter, [this]() {
+			OrmViews::instance().reloadAutomaticCategories();
+			AutoCategorizeWindow window(OrmViews::instance().patchDatabase(), OrmViews::instance().automaticCategories(), currentFilter, [this]() {
 				patchView_->retrieveFirstPageFromDatabase();
 			});
 			window.runThread();
@@ -311,17 +247,17 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	menuModel_ = std::make_unique<LambdaMenuModel>(menuStructure, &commandManager_, &buttons_);
 	menuModel_->setApplicationCommandManagerToWatch(&commandManager_);
 	menuBar_.setModel(menuModel_.get());
-	addAndMakeVisible(menuBar_);
+	setMenuBar(menuModel_.get());
 
 	// Create the patch view
-	patchView_ = std::make_unique<PatchView>(*database_, synths);
+	//patchView_ = std::make_unique<PatchView>(OrmViews::instance().patchDatabase(), synths);
 	//patchView_ = std::make_unique<PatchView>(commandManager_, *database_, synths, automaticCategories_);
-	settingsView_ = std::make_unique<SettingsView>(synths);
-	setupView_ = std::make_unique<SetupView>(&autodetector_);
+	//settingsView_ = std::make_unique<SettingsView>(synths);
+	//setupView_ = std::make_unique<SetupView>(&autodetector_);
 	//recordingView_ = std::make_unique<RecordingView>(*patchView_);
 
 	// Create Macro Definition view
-	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
+	/*keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
 		switch (event) {
 		case KeyboardMacroEvent::Hide: patchView_->hideCurrentPatch(); break;
 		case KeyboardMacroEvent::Favorite: patchView_->favoriteCurrentPatch(); break;
@@ -335,25 +271,25 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			return;
 		}
 		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
-	});
+	});*/
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
-	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
+	//bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
 
-	addAndMakeVisible(synthList_);
-	addAndMakeVisible(patchList_);
-	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
-	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
+	//addAndMakeVisible(synthList_);
+	//addAndMakeVisible(patchList_);
+	//Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
+	//mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
 	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
 	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
-	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
-	mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
-	mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
-	mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
+	//mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
+	//mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
+	//mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
+	//mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 
-	addAndMakeVisible(menuBar_);
-	splitter_ = std::make_unique<SplitteredComponent>("LogSplitter", SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
-	addAndMakeVisible(splitter_.get());
+	//addAndMakeVisible(&menuBar_);
+	//splitter_ = std::make_unique<SplitteredComponent>("LogSplitter", SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
+	//addAndMakeVisible(mainTabs_);
 
 	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -376,14 +312,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}
 	}
 
-	// Install our MidiLogger
-	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
-		midiLogView_.addMessageToList(message, source, isOut);
-	});
-
 	// Do a quickconfigure
 	auto list = UIModel::instance()->synthList_.activeSynths();
-	autodetector_.quickconfigure(list);
+	OrmViews::instance().autoDetector().quickconfigure(list);
 	// Refresh Setup View with the result of this
 	UIModel::instance()->currentSynth_.sendChangeMessage();
 
@@ -392,16 +323,16 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// If there is no synth configured, like, on first launch, show the Setup tab instead of the default Library tab
 	if (list.empty()) {
-		int setupIndex = findIndexOfTabWithNameEnding(&mainTabs_, "Setup");
-		mainTabs_.setCurrentTabIndex(setupIndex, false);
+		//int setupIndex = findIndexOfTabWithNameEnding(&mainTabs_, "Setup");
+		//mainTabs_.setCurrentTabIndex(setupIndex, false);
 	}
 
 	// Feel free to request the globals page from the active synth
-	settingsView_->loadGlobals();
+	//settingsView_->loadGlobals();
 
 	// Make sure you set the size of the component after
 	// you add any child components.
-	if (makeYourOwnSize) {
+	if (false) {
 		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
                 auto initialSize = mainScreenSize.reduced(100);
                 setSize(initialSize.getWidth(), initialSize.getHeight());
@@ -448,6 +379,8 @@ MainComponent::~MainComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 
+	setMenuBar(nullptr);
+
 	Logger::setCurrentLogger(nullptr);
 }
 
@@ -487,8 +420,8 @@ void MainComponent::createNewDatabase()
 			}
 			databaseFile.deleteFile();
 		}
-		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
+		recentFiles_.addFile(File(OrmViews::instance().patchDatabase().getCurrentDatabaseFileName()));
+		if (OrmViews::instance().patchDatabase().switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			persistRecentFileList();
 			// That worked, new database file is in use!
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
@@ -518,8 +451,8 @@ void MainComponent::openDatabase()
 void MainComponent::openDatabase(File& databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
-		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
+		recentFiles_.addFile(File(OrmViews::instance().patchDatabase().getCurrentDatabaseFileName()));
+		if (OrmViews::instance().patchDatabase().switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			recentFiles_.removeFile(databaseFile);
 			persistRecentFileList();
 			// That worked, new database file is in use!
@@ -543,7 +476,7 @@ void MainComponent::saveDatabaseAs()
 	FileChooser databaseChooser("Please choose a new KnobKraft Orm SQlite database file...", lastDirectory, "*.db3");
 	if (databaseChooser.browseForFileToSave(true)) {
 		File databaseFile = databaseChooser.getResult();
-		database_->makeDatabaseBackup(databaseFile);
+		OrmViews::instance().patchDatabase().makeDatabaseBackup(databaseFile);
 		openDatabase(databaseFile);
 	}
 }
@@ -729,7 +662,7 @@ float MainComponent::calcAcceptableGlobalScaleFactor() {
 	return goodScale;
 }
 
-void MainComponent::resized()
+/*void MainComponent::resized()
 {
 	auto area = getLocalBounds();
 	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
@@ -747,18 +680,18 @@ void MainComponent::resized()
 		// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
-	splitter_->setBounds(area);
-}
+	if (splitter_) {
+		splitter_->setBounds(area);
+	}
+}*/
 
 void MainComponent::shutdown()
 {
-	// Shutdown database, which will make a backup
-	database_.reset();
 }
-
+	
 std::string MainComponent::getDatabaseFileName() const
 {
-	return database_->getCurrentDatabaseFileName();
+	return OrmViews::instance().patchDatabase().getCurrentDatabaseFileName();
 }
 
 void MainComponent::refreshSynthList() {
@@ -819,7 +752,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		auto synthList = UIModel::instance()->synthList_.activeSynths();
 		quickconfigreDebounce_.callDebounced([this, synthList]() {
 			auto myList = synthList;
-			autodetector_.quickconfigure(myList);
+			//autodetector_.quickconfigure(myList);
 		}, 2000);
 	} else if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
@@ -837,7 +770,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 
 
 		// The active synth has been switched, make sure to refresh the tab name properly
-		int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
+		/*int index = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
 		if (index != -1) {
 			// Rename tab to show settings of this synth
 			if (UIModel::currentSynth()) {
@@ -846,18 +779,18 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		}
 		else {
 			mainTabs_.setTabName(index, "Settings");
-		}
+		}*/
 
 
 		// The active synth has been switched, check if it is an adaptation and then refresh the adaptation view
 		auto adaptation = std::dynamic_pointer_cast<knobkraft::GenericAdaptation>(UIModel::instance()->currentSynth_.smartSynth());
 		Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
-		if (adaptation) {
-			adaptationView_.setupForAdaptation(adaptation);
+		/*if (adaptation) {
+			//adaptationView_.setupForAdaptation(adaptation);
 			int i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
 			if (i == -1) {
 				// Need to add the tab back in
-				mainTabs_.addTab("Adaptation", tabColour, &adaptationView_, false, 2);
+				//mainTabs_.addTab("Adaptation", tabColour, &adaptationView_, false, 2);
 			}
 			i = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
 			if (i != -1) {
@@ -873,10 +806,10 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 				int j = findIndexOfTabWithNameEnding(&mainTabs_, "settings");
 				if (j == -1) {
 					if (UIModel::currentSynth()) {
-						mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
+						//mainTabs_.addTab(UIModel::currentSynth()->getName() + " settings", tabColour, settingsView_.get(), false, 1);
 					}
 					else {
-						mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false, 1);
+						//mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false, 1);
 					}
 				}
 				i = findIndexOfTabWithNameEnding(&mainTabs_, "Adaptation");
@@ -885,7 +818,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 				}
 				mainTabs_.removeTab(i);
 			}
-		}
+		}*/
 	}
 }
 
@@ -916,3 +849,12 @@ void MainComponent::aboutBox()
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
+void MainComponent::closeButtonPressed() 
+{
+	Settings::instance().set("mainWindowSize", getWindowStateAsString().toStdString());
+
+	// This is called when the user tries to close this window. Here, we'll just
+	// ask the app to quit when this happens, but you can change this to do
+	// whatever you need.
+	JUCEApplication::getInstance()->systemRequestedQuit();
+}

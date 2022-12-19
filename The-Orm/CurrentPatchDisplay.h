@@ -39,8 +39,7 @@ class CurrentPatchDisplay : public Component,
 	private TextButton::Listener, private ChangeListener, private Value::Listener
 {
 public:
-	CurrentPatchDisplay(midikraft::PatchDatabase &database,
-		std::vector<CategoryButtons::Category>  categories, 
+	CurrentPatchDisplay(std::vector<CategoryButtons::Category>  categories, 
 		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler);
 	virtual ~CurrentPatchDisplay() override;
 
@@ -68,7 +67,6 @@ private:
 	void categoryUpdated(CategoryButtons::Category clicked);
 	virtual void valueChanged(Value& value) override; // This gets called when the property editor is used
 
-	midikraft::PatchDatabase &database_;
 	PatchButton name_;
 	PropertyEditor propertyEditor_;
 	String lastOpenState_;
