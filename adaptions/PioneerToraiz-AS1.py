@@ -101,6 +101,7 @@ def isSingleProgramDump(message):
 
 
 def nameFromDump(message):
+    """Extracts the patch name from the supplied sysex message."""
     INVALID = "Invalid"
     dataBlockStart = getDataBlockStart(message)
     if dataBlockStart == -1:
@@ -113,14 +114,13 @@ def nameFromDump(message):
 
 
 def renamePatch(message, new_name):
-    print("Rename patch to '{}'".format(new_name))
-    # print(message)
+    """Returns a copy of the supplied sysex message whose internal name has been replaced with new_name."""
     dataBlockStart = getDataBlockStart(message)
     if dataBlockStart == -1:
         raise Exception(CANNOT_FIND_DATA_BLOCK)
     dataBlock = message[dataBlockStart:-1]
     if len(dataBlock) == 0:
-        raise Exception("Data block had zero length.")
+        raise Exception("Data block length was 0.")
     patchData = unescapeSysex(dataBlock)
     # Normalize the name to exactly 20 characters, padding with spaces or truncating.
     if len(new_name) < 20:
@@ -129,7 +129,6 @@ def renamePatch(message, new_name):
         new_name = new_name[:20]
     nameBytes = list(map(ord, new_name))
     patchData[107:107+20] = nameBytes
-    # TODO: Replace the data block in the original message.
     escapedPatchData = escapeToSysex(patchData)
     # Rebuild the message with the new data block, appending "end of exclusive" (EOX).
     newMessage = message[:dataBlockStart] + escapedPatchData + [0xF7]
@@ -137,7 +136,7 @@ def renamePatch(message, new_name):
 
     
 def calculateFingerprint(message):
-    # Calculate a hash from the data block only, ignoring the patch's name.
+    """Calculates a hash from the message's data block only, ignoring the patch's name."""
     dataBlockStart = getDataBlockStart(message)
     if dataBlockStart == -1:
         raise Exception(CANNOT_FIND_DATA_BLOCK)
@@ -146,12 +145,11 @@ def calculateFingerprint(message):
     dummyName = " " * 20
     data[107:107+20] = map(ord, dummyName)
     fingerprint = hashlib.md5(bytearray(data)).hexdigest()    
-    # name = nameFromDump(message)
-    # print("Patch '{}' has fingerprint {}.".format(name, fingerprint))   
     return fingerprint
 
 
 def getDataBlockStart(message):
+    """Returns the start index of the data block within a sysex message, or -1 if the data block cannot be found."""
     if isSingleProgramDump(message):
         return 12
     elif isEditBufferDump(message):
@@ -183,6 +181,7 @@ def convertToProgramDump(channel, message, program_number):
 
 
 def unescapeSysex(sysex):
+    """Unpacks a 7-bit sysex message into 8-bit bytes."""
     result = []
     dataIndex = 0
     while dataIndex < len(sysex):
@@ -197,6 +196,7 @@ def unescapeSysex(sysex):
 
 
 def escapeToSysex(message):
+    """Packs a message composed of 8-bit bytes into 7-bit sysex format."""
     result = []
     msBits = 0
     byteIndex = 0
@@ -208,13 +208,10 @@ def escapeToSysex(message):
         currentByte = message[byteIndex]
         lsBits = currentByte & 0x7F
         msBit = currentByte & 0x80
-        # print("Index: {}; index mod 7: {}; lsBits: {}; masked: {}".format(byteIndex, indexInChunk, lsBits, msBit))
         msBits |= msBit >> (7 - indexInChunk)
-        # print("msBits: {}".format(msBits))
         chunk.append(lsBits)
         if indexInChunk == 6 or byteIndex == len(message) - 1:
             chunk.insert(0, msBits)
-            # print("Chunk: {}".format(chunk))
             result += chunk
             msBits = 0
         byteIndex += 1
