@@ -4,6 +4,9 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
+import hashlib
+
+CANNOT_FIND_DATA_BLOCK = "Cannot find the message's data block."
 
 def name():
     return "Pioneer Toraiz AS-1"
@@ -110,15 +113,16 @@ def nameFromDump(message):
 
 
 def renamePatch(message, new_name):
-    print("Rename patch to {}".format(new_name))
-    print(message)
+    print("Rename patch to '{}'".format(new_name))
+    # print(message)
     dataBlockStart = getDataBlockStart(message)
     if dataBlockStart == -1:
-        raise Exception("Cannot find the message's data block.")
+        raise Exception(CANNOT_FIND_DATA_BLOCK)
     dataBlock = message[dataBlockStart:-1]
     if len(dataBlock) == 0:
         raise Exception("Data block had zero length.")
     patchData = unescapeSysex(dataBlock)
+    # Normalize the name to exactly 20 characters, padding with spaces or truncating.
     if len(new_name) < 20:
         new_name += (" " * (20 - len(new_name)))
     elif len(new_name) > 20:
@@ -127,8 +131,24 @@ def renamePatch(message, new_name):
     patchData[107:107+20] = nameBytes
     # TODO: Replace the data block in the original message.
     escapedPatchData = escapeToSysex(patchData)
+    # Rebuild the message with the new data block, appending "end of exclusive" (EOX).
     newMessage = message[:dataBlockStart] + escapedPatchData + [0xF7]
     return newMessage
+
+    
+def calculateFingerprint(message):
+    dataBlockStart = getDataBlockStart(message)
+    if dataBlockStart == -1:
+        raise Exception(CANNOT_FIND_DATA_BLOCK)
+    dataBlock = message[dataBlockStart:-1]
+    data = unescapeSysex(dataBlock)
+    name = nameFromDump(message)
+    dummyName = " " * 20
+    data[107:107+20] = map(ord, dummyName)
+    # Calculate a hash from the data block only, ignoring the patch's name.
+    fingerprint = hashlib.md5(bytearray(data)).hexdigest()    
+    print("Patch '{}' has fingerprint {}.".format(name, fingerprint))   
+    return fingerprint
 
 
 def getDataBlockStart(message):
