@@ -137,17 +137,17 @@ def renamePatch(message, new_name):
 
     
 def calculateFingerprint(message):
+    # Calculate a hash from the data block only, ignoring the patch's name.
     dataBlockStart = getDataBlockStart(message)
     if dataBlockStart == -1:
         raise Exception(CANNOT_FIND_DATA_BLOCK)
     dataBlock = message[dataBlockStart:-1]
-    data = unescapeSysex(dataBlock)
-    name = nameFromDump(message)
+    data = unescapeSysex(dataBlock)   
     dummyName = " " * 20
     data[107:107+20] = map(ord, dummyName)
-    # Calculate a hash from the data block only, ignoring the patch's name.
     fingerprint = hashlib.md5(bytearray(data)).hexdigest()    
-    print("Patch '{}' has fingerprint {}.".format(name, fingerprint))   
+    # name = nameFromDump(message)
+    # print("Patch '{}' has fingerprint {}.".format(name, fingerprint))   
     return fingerprint
 
 
