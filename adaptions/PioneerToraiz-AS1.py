@@ -75,10 +75,15 @@ def numberOfPatchesPerBank():
     return 100
 
 
+def getZeroBasedBankNumber(patchNo):
+    """Takes a zero-based patch number and returns the corresponding zero-based bank number."""
+    return patchNo // numberOfPatchesPerBank()
+
+
 def createProgramDumpRequest(channel, patchNo):
     # Calculate bank and program - the KnobKraft Orm will just think the patches are 0 to 999, but the Toraiz needs a
     # bank number 0-9 and the patch number within that bank
-    bank = patchNo // numberOfPatchesPerBank()
+    bank = getZeroBasedBankNumber(patchNo)
     program = patchNo % numberOfPatchesPerBank()
     # See page 33 of the Toraiz manual
     return [0xf0, 0b00000000, 0b01000000, 0b00000101, 0b00000000, 0b000000000, 0b00000001, 0b00001000, 0b00010000,
@@ -170,7 +175,7 @@ def convertToEditBuffer(channel, message):
 
 
 def convertToProgramDump(channel, message, program_number):
-    bank = program_number // numberOfPatchesPerBank()
+    bank = getZeroBasedBankNumber(program_number)
     program = program_number % numberOfPatchesPerBank()
     if isEditBufferDump(message):
         return message[0:9] + [0b00000010] + [bank, program] + message[10:]
@@ -227,3 +232,8 @@ def friendlyBankName(bank_number):
     if bank_number < 5:
         return "U{}".format(bank_number + 1)
     return "F{}".format(bank_number - 4)
+
+
+def friendlyProgramName(programNo):
+    """Converts zero-based program numbers within a bank to the format displayed on the Toraiz AS-1."""
+    return "P{}".format(programNo + 1)
