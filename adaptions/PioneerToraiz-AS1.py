@@ -216,7 +216,14 @@ def escapeToSysex(message):
             msBits = 0
         byteIndex += 1
     return result
-    
+
 
 def isDefaultName(patchName):
     return patchName == "Basic Program"
+
+
+def friendlyBankName(bank_number):
+    """Converts bank numbers to bank names as displayed on the Toraiz AS-1."""
+    if bank_number < 5:
+        return "U{}".format(bank_number + 1)
+    return "F{}".format(bank_number - 4)
