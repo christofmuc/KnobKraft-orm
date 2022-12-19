@@ -75,9 +75,9 @@ def numberOfPatchesPerBank():
     return 100
 
 
-def getZeroBasedBankNumber(patchNo):
+def getZeroBasedBankNumber(patch_number):
     """Takes a zero-based patch number and returns the corresponding zero-based bank number."""
-    return patchNo // numberOfPatchesPerBank()
+    return patch_number // numberOfPatchesPerBank()
 
 
 def createProgramDumpRequest(channel, patchNo):
@@ -170,8 +170,7 @@ def convertToEditBuffer(channel, message):
         # To turn a single program dump into an edit buffer dump, we need to remove the bank and program number,
         # and switch the command to 0b00000011
         return message[0:9] + [0b00000011] + message[12:]
-    raise Exception(
-        "Data is neither edit buffer nor single program buffer from Toraiz AS-1")
+    raise Exception("Data is neither edit buffer nor single program buffer from Toraiz AS-1")
 
 
 def convertToProgramDump(channel, message, program_number):
@@ -181,8 +180,7 @@ def convertToProgramDump(channel, message, program_number):
         return message[0:9] + [0b00000010] + [bank, program] + message[10:]
     elif isSingleProgramDump(message):
         return message[0:10] + [bank, program] + message[12:]
-    raise Exception(
-        "Neither edit buffer nor program dump - can't be converted")
+    raise Exception("Neither edit buffer nor program dump - can't be converted")
 
 
 def unescapeSysex(sysex):
@@ -194,8 +192,7 @@ def unescapeSysex(sysex):
         dataIndex += 1
         for i in range(7):
             if dataIndex < len(sysex):
-                result.append(sysex[dataIndex] | (
-                    (msbits & (1 << i)) << (7 - i)))
+                result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
             dataIndex += 1
     return result
 
@@ -223,8 +220,8 @@ def escapeToSysex(message):
     return result
 
 
-def isDefaultName(patchName):
-    return patchName == "Basic Program"
+def isDefaultName(patch_name):
+    return patch_name == "Basic Program"
 
 
 def friendlyBankName(bank_number):
@@ -234,6 +231,6 @@ def friendlyBankName(bank_number):
     return "F{}".format(bank_number - 4)
 
 
-def friendlyProgramName(programNo):
+def friendlyProgramName(program_number):
     """Converts zero-based program numbers within a bank to the format displayed on the Toraiz AS-1."""
-    return "P{}".format(programNo + 1)
+    return "P{}".format(program_number + 1)
