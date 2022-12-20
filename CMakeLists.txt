@@ -176,6 +176,7 @@ target_link_libraries(juce-static
 target_compile_definitions(juce-static
 	PUBLIC
 		JUCE_STANDALONE_APPLICATION=1
+        JUCE_MODAL_LOOPS_PERMITTED=1
 		JUCE_PLUGINHOST_VST=0
 		JUCE_PLUGINHOST_AU=0
 		DONT_SET_USING_JUCE_NAMESPACE=1
