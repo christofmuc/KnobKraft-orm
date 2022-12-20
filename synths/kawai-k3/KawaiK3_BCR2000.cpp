@@ -33,7 +33,7 @@ namespace midikraft {
 
 		virtual std::string generateBCR(int channel) const override {
 			KawaiK3 k3;
-			k3.setCurrentChannelZeroBased({}, {}, channel);
+			k3.setCurrentChannelZeroBased(juce::MidiDeviceInfo(), juce::MidiDeviceInfo(), channel);
 			auto patch = KawaiK3Patch::createInitPatch();
 			auto syx = k3.k3PatchToSysex(patch->data(), KawaiK3::kFakeEditBuffer.toZeroBased(), false);
 
