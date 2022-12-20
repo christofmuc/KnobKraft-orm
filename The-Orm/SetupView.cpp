@@ -30,19 +30,19 @@ public:
 	MidiChannelPropertyEditorWithOldDevices(std::string const &title, std::string const &sectionName, bool inputInsteadOutput) : MidiDevicePropertyEditor(title, sectionName, inputInsteadOutput) {
 		if (inputInsteadOutput) {
 			auto set = midikraft::MidiController::instance()->currentInputs(true);
-			std::vector<std::string> list;
+			juce::Array<juce::MidiDeviceInfo> list;
             for (auto device : set)
             {
-                list.push_back(device.name.toStdString());
+                list.add(device);
             }
 			refreshDropdownList(list);
 		}
 		else {
 			auto set = midikraft::MidiController::instance()->currentOutputs(true);
-            std::vector<std::string> list;
+            juce::Array<juce::MidiDeviceInfo> list;
             for (auto device : set)
             {
-                list.push_back(device.name.toStdString());
+                list.add(device);
             }
 			refreshDropdownList(list);
 		}
