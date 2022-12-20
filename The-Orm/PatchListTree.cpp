@@ -125,7 +125,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		addNewItem->onSingleClick = [this](String id) {
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
-					db_.putPatchList(*list);
+					db_.putPatchList(list);
 					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
 					regenerateUserLists();
 				}
@@ -284,7 +284,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
 		int index = 0;
-		for (auto patch : patchList.patches()) {
+		for (auto patch : patchList->patches()) {
 			result.push_back(newTreeViewItemForPatch(list, patch, index++));
 		}
 		return result;
@@ -349,7 +349,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list) {
 			jassert(new_list);
 			if (new_list) {
-				db_.putPatchList(*new_list);
+				db_.putPatchList(new_list);
 				SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
 				regenerateUserLists();
 			}
