@@ -32,7 +32,7 @@ namespace midikraft {
 	{
 	public:
 		KawaiK3DrawbarParameters(Drawbar& drawbar) : drawbar_(drawbar) {}
-		KawaiK3DrawbarParameters(int harmonic);
+		KawaiK3DrawbarParameters(unsigned int harmonic);
 
 		// SynthParameterDefinition
 		ParamType type() const override;
