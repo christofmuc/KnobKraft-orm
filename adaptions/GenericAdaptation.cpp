@@ -278,7 +278,9 @@ namespace knobkraft {
 	void GenericAdaptation::shutdownGenericAdaptation()
 	{
 		// Remove the global release on Python, else the destruction code will fail!
+		sGenericAdaptationPyOutputRedirect.reset();
 		sGenericAdaptationDontLockGIL.reset();
+		sGenericAdaptationPythonEmbeddedGuard.reset();
 	}
 
 	bool GenericAdaptation::hasPython()
@@ -523,7 +525,7 @@ else {
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kFriendlyProgramName)) {
 			try {
-				int zerobased = programNo.toZeroBased();
+				int zerobased = programNo.toZeroBasedWithBank();
 				auto result = callMethod(kFriendlyProgramName, zerobased);
 				return py::cast<std::string>(result);
 			}

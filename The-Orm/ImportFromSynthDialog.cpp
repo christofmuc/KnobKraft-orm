@@ -8,9 +8,10 @@
 
 #include "HasBanksCapability.h"
 #include "Capability.h"
+#include "SynthBank.h"
 #include "fmt/format.h"
 
-ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHandler onOk) : onOk_(onOk)
+ImportFromSynthDialog::ImportFromSynthDialog(std::shared_ptr<midikraft::Synth> synth, TSuccessHandler onOk) : synth_(synth), onOk_(onOk)
 {
 	addAndMakeVisible(propertyPanel_);
 	addAndMakeVisible(cancel_);
@@ -43,7 +44,7 @@ ImportFromSynthDialog::ImportFromSynthDialog(midikraft::Synth *synth, TSuccessHa
 		if (bankList) {
 			numBanks_ = bankList->numberOfBanks();
 			for (int i = 0; i < numBanks_; i++) {
-				choices.add(bankList->friendlyBankName(MidiBankNumber::fromZeroBase(i)));
+				choices.add(midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, midikraft::SynthBank::numberOfPatchesInBank(synth, i))));
 				choiceValues.add(i);
 			}
 		}
@@ -81,7 +82,7 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 		var selected = bankValue_.getValue();
 		for (auto bank : *selected.getArray()) {
 			if ((int)bank < numBanks_) {
-				result.push_back(MidiBankNumber::fromZeroBase((int)bank));
+				result.push_back(MidiBankNumber::fromZeroBase((int)bank, midikraft::SynthBank::numberOfPatchesInBank(synth_, (int)bank)));
 			}
 			else {
 				// All selected, just add all banks into the array
@@ -96,7 +97,7 @@ void ImportFromSynthDialog::buttonClicked(Button *button)
 			dw->exitModalState(1);
 		}
 		std::vector<MidiBankNumber> result;
-		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i));
+		for (int i = 0; i < numBanks_; i++) result.push_back(MidiBankNumber::fromZeroBase(i, midikraft::SynthBank::numberOfPatchesInBank(synth_, i)));
 		onOk_(result);
 	}
 	else if (button == &cancel_) {

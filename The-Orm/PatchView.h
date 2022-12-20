@@ -30,6 +30,7 @@
 #include "AutomaticCategory.h"
 
 #include "ImportFromSynthDialog.h"
+#include "SynthBankPanel.h"
 
 #include <map>
 
@@ -50,6 +51,9 @@ public:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	void retrieveFirstPageFromDatabase();
+	std::shared_ptr<midikraft::PatchList> retrieveListFromDatabase(midikraft::ListInfo const& info);
+	void retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler);
+	void sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, std::function<void()> finishedHandler);
 
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();
@@ -77,9 +81,13 @@ private:
 
 	std::vector<CategoryButtons::Category> predefinedCategories();
 
-	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
+	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	void retrievePatches();
+
+	// New for bank management
+	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
+	void loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId);
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
@@ -92,6 +100,7 @@ private:
 	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
 	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
+	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setImportListFilter(String filter);
 	void setUserListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);
@@ -108,6 +117,7 @@ private:
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
+	std::unique_ptr<SynthBankPanel> synthBank_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 

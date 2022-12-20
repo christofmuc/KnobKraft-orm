@@ -13,6 +13,7 @@
 #include "PatchHolder.h"
 #include "SynthHolder.h"
 #include "Session.h"
+#include "SynthBank.h"
 
 #include "Data.h"
 
@@ -97,6 +98,20 @@ private:
 	std::vector<std::pair<midikraft::SynthHolder, bool>> synths_;	
 };
 
+class CurrentSynthBank : public ChangeBroadcaster {
+public:
+	void setSynthBank(std::shared_ptr<midikraft::SynthBank> synthBank);
+	void flagModified();
+	void clearModified();
+
+	std::shared_ptr<midikraft::SynthBank> synthBank();
+	bool modified() const { return modified_;  }
+
+private:
+	std::shared_ptr<midikraft::SynthBank> synthBank_;
+	bool modified_;
+};
+
 class ThumbnailChanges : public ChangeBroadcaster {
 };
 
@@ -128,6 +143,7 @@ public:
 	WindowTitleChanges windowTitle_;
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
 	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
+	CurrentSynthBank synthBank;
 
 	static ValueTree ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 	static Value getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);

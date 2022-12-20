@@ -28,9 +28,9 @@ namespace knobkraft {
 			for (auto const& descriptor : d)
 			{
 				midikraft::BankDescriptor bank;
-				bank.bank  = MidiBankNumber::fromZeroBase(py::cast<int>(descriptor["bank"]));
+				bank.size = py::cast<int>(descriptor["size"]);
+				bank.bank  = MidiBankNumber::fromZeroBase(py::cast<int>(descriptor["bank"]), bank.size);
 				bank.name  = py::cast<std::string>(descriptor["name"]);
-				bank.size  = py::cast<int>(descriptor["size"]);
 				if (descriptor.contains("isROM")) {
 					bank.isROM = py::cast<bool>(descriptor["isROM"]);
 				}

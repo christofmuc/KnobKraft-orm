@@ -19,13 +19,22 @@ AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<midikraft::SynthH
 }
 
 AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths) :
-	ProgressHandlerWindow("Running auto-detection", "Detecting synth..."), synths_(synths)
+	ProgressHandlerWindow("Running auto-detection", "Detecting synth...")
 {
+	for (auto synth : synths) {
+		synths_.push_back(synth); // Convert from shared to weak_ptr
+	}
 }
 
 void AutoDetectProgressWindow::run()
 {
-	autodetector_.autoconfigure(synths_, this);
+	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths;
+	for (auto synth : synths_) {
+		if (!synth.expired()) {
+			synths.push_back(synth.lock());
+		}
+	}
+	autodetector_.autoconfigure(synths, this);
 	if (!shouldAbort()) {
 		onSuccess();
 	}

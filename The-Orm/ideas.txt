@@ -6,20 +6,105 @@ Adaptation tests need documenting
 XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
 Could simulate an ingest with the predefined names (lol)
 
-
 Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
 Carry over:
 * Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
-* Would expect to choose sort order of patches in grid
 * Could do better layer switch
+
+UX:
+Windows need explanation: Library and Bank
+Need Window management. at least, resizing and show/hide
+Want to build banks offline
+Want to build multiple banks and switch them
+Want to create empty banks (need Init patch). Could remember empty position so you can drag lists into it
+Want to send a bank to a specific bank (two step? Drag bank into synth bank, make it "dirty", then sync)
+
+
+Duplicate name search sorts wrong I think
+Bug - cannot name search through only duplicate names result
+
+For 2.0.0:
+Importing a synth bank does not run autocategorize, but it should.
+Runninng autocategorize does not refresh the bank view
+Empty bank window needs place holder text + refresh button.
+Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
+
+
+Tree could show count of items
+
+
+BANK MANAGEMENT
+* Librarian Bank send for MKS80, K3M
+* Clicking the button should send the patch, as usual
+
+* Dirty banks should not be deleted by just changing the view... want to come back to them. I think they should be stored in the database!
+* Never synced banks should be red coloured in the tree
+* Deleting patches that are in a bank will remove them from the bank... should rather hide them?
+
+* Bug - lists are ordered incorrectly in the Library, no longer with order_num
+* Bug - scrolling the list is really choppy
+* Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
+* Bug: After import, the new bank is not selected in the tree.
+* Bug: The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
+
+* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
+* Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
+
+
+PatchNumbers
+Altes System: Patch Daten von Program Platz trennen. Programm Platz speichern in der Tabelle, Nutzdaten sind egal ob Edit Buffer oder Program Dump
+Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich evtl der Speicherplatz
+
+Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
+Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
+
+Migration: Wo file source oder bulk source mit file source ist und keine BankNumber + ProgramNumber sind, diese erzeugen
+SourceInfo sollte vor der Datenbank Info stehen
+MidiBankNumber null sollte sich eigentlich immer aus der import source füllen lassen?
+From Synth source hat keine Program Number! Das ist ein Problem!
+
+Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
+
+BANKS IMPROVEMENT
+* Needs to have concept of ROM banks. 
+* Could display per patch if it is in Synth or not
+* Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Could allow for single patch retrieval instead of whole bank synth (if mode is available)
+* Could allow for single patch send into program place (if more is available)
+* What should happen when you click on "In Synth"?
+* Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
+* Can drag bank into user lists to create a user list from a bank!
+* The Normal download button should then go away? But then have no download all banks. It certainly needs to be synced somehow
+* Trashcan should light up when drag target works
+* Export into file wäre nice.
+
+
+LISTS IMPROVEMENT
+Imports sind auch lists, und sollten immer alle patches enthalten (auch mit anderen Namen etc.). In der Library ist de Patch natürlich nur einmal. Macht das Sinn?
+Import als Liste auch draggen können
+
+Sollte irgendwo anzeigen können, für welche Synths in der Datenbank Patches sind, auch wenn sie ausgeschaltet sind. Vielleicht eine Database statistik Seite mit Anzahl der Patches pro Synth, Listen, ?
+
+
+
+Layer logic
+- need pretty layer names!
+
+Idea:
+History stack!
+
+Retry logic - the OB-6 and Rev2 seem to be pretty unstable now?
+
+More ideas
+* migrate imports into lists
+* migrate categories into a m:n relationship
 
 Inspiration:
 	Surf! Auto-Surf! Dive!
 
 	AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
 	AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
-
 
 Better marketing
 * Should setup github project page
@@ -56,21 +141,19 @@ Before 2.0
 * Need easy clear filter button
 * SINGLE SYNTH SETUP MODE
 	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
-	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
+	* Half done: The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth !!!
 
 LISTS upgrades:
-* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
+* Reorder patches in a list - needs dragging within the grid! With insert position indicator...
 * Add lists to PIF export
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 	 Stored filters could be single or multi-synth
-* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
+* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where? Load the list into the bank window?
+* Create a list of the currently loaded patches in all synths (store in list)
 * List folders / lists of lists?
-
-Release 2.0
-* Add Bank Management
 
 Historical 
 https://www.mossgrabers.de/Software/ChangeIt/ChangeIt.html
@@ -88,19 +171,13 @@ User questions
 * How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
 * Backup behavior!?	
 
-BANK MANAGEMENT
-* Bank management (github #9)
-* Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
-  a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
-* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
-* Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
-* How do I do drag and drop from the Library into the bank?
-* Probably needs split screen
+NETWORK SYNC
+Hook up Firebase - what to sync? always?
+Public folders where people can publish patches?
 
 UI/UX
 * Different log levels with error colors
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
-* Edit field should be focused of Change Patch Name box
 * The current patch per synth could be hidable
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
 

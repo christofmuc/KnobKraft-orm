@@ -280,6 +280,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 		}
 	}
 	return { synthMap,
+		midikraft::PatchOrdering::Order_by_Import_id,
 		"", // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
 		"", // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
 		nameFilter,

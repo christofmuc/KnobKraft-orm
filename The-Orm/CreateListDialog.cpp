@@ -7,8 +7,72 @@
 #include "CreateListDialog.h"
 
 #include "LayoutConstants.h"
+#include "SynthBank.h"
 
-CreateListDialog::CreateListDialog(TCallback &callback, TCallback &deleteCallback) : callback_(callback), deleteCallback_(deleteCallback)
+#include "Capability.h"
+#include "HasBanksCapability.h"
+
+std::map<int, std::string> bankLookup(std::shared_ptr<midikraft::Synth> synth)
+{
+	std::map<int, std::string> result;
+	auto desc = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(synth);
+	if (desc) {
+		int i = 0;
+		for (auto const& d : desc->bankDescriptors())
+		{
+			if (!d.isROM) {
+				result.insert({ i, d.name });
+			}
+			i++;
+		}
+	}
+	else {
+		auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
+		if (banks) {
+			for (int i = 0; i < banks->numberOfBanks(); i++)
+			{
+				result.insert({i, banks->friendlyBankName(MidiBankNumber::fromZeroBase(i, banks->numberOfPatches()))});
+			}
+		}
+	}
+	return result;
+}
+
+CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallback &callback, TCallback &deleteCallback) : 
+	synth_(synth)
+	, isBank_(true)
+	, callback_(callback)
+	, deleteCallback_(deleteCallback)
+{
+	addAndMakeVisible(propertyEditor_);
+
+	ok_.setButtonText("OK");
+	ok_.addListener(this);
+	addAndMakeVisible(ok_);
+
+	cancel_.setButtonText("Cancel");
+	cancel_.addListener(this);
+	addAndMakeVisible(cancel_);
+
+	delete_.setButtonText("Delete Bank");
+	delete_.addListener(this);
+	addAndMakeVisible(delete_);
+	delete_.setVisible(false);
+
+	// Finally we need a default size
+	setBounds(0, 0, 540, 200);
+
+	PropertyEditor::TProperties props;
+	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
+	auto lookup = bankLookup(synth);
+	props.push_back(std::make_shared<TypedNamedValue>("Bank", "General", 0, lookup));
+	nameValue_ = Value(props[0]->value());
+	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
+	bankValue_ = Value(props[1]->value());
+	propertyEditor_.setProperties(props);
+}
+
+CreateListDialog::CreateListDialog(TCallback& callback, TCallback& deleteCallback) : isBank_(false), callback_(callback), deleteCallback_(deleteCallback)
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -43,7 +107,7 @@ void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
 		delete_.setVisible(true);
 	}
 	else {
-		nameValue_.setValue("new list");
+		nameValue_.setValue(isBank_ ? "new bank" : "new list");
 		delete_.setVisible(false);
 	}
 }
@@ -64,6 +128,28 @@ static void dialogClosed(int modalResult, CreateListDialog* dialog)
 	if (modalResult == 1 && dialog != nullptr) { // (must check that dialog isn't null in case it was deleted..)
 		dialog->notifyResult();
 	}
+	if (dialog) {
+		dialog->release();
+	}
+}
+
+void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::SynthBank> list, std::shared_ptr<midikraft::Synth> synth, Component* centeredAround, TCallback callback, TCallback deleteCallback)
+{
+	if (!sCreateListDialog_) {
+		sCreateListDialog_ = std::make_unique<CreateListDialog>(synth, callback, deleteCallback);
+	}
+	sCreateListDialog_->setList(list);
+	sCreateListDialog_->callback_ = callback;
+	sCreateListDialog_->deleteCallback_ = deleteCallback;
+
+	DialogWindow::LaunchOptions launcher;
+	launcher.content.set(sCreateListDialog_.get(), false);
+	launcher.componentToCentreAround = centeredAround;
+	launcher.dialogTitle = list ? "Edit user bank" : "Create user bank";
+	launcher.useNativeTitleBar = false;
+	launcher.dialogBackgroundColour = Colours::black;
+	sWindow_ = launcher.launchAsync();
+	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sCreateListDialog_.get()));
 }
 
 void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback, TCallback deleteCallback)
@@ -85,6 +171,7 @@ void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList
 	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sCreateListDialog_.get()));
 }
 
+
 void CreateListDialog::release()
 {
 	sCreateListDialog_.reset();
@@ -98,7 +185,14 @@ void CreateListDialog::notifyResult()
 	}
 	else {
 		// This was create mode!
-		list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
+		if (isBank_) {
+			int bankSelected = bankValue_.getValue();
+			bank_ = MidiBankNumber::fromZeroBase(bankSelected, midikraft::SynthBank::numberOfPatchesInBank(synth_, bankSelected));
+			list_ = std::make_shared<midikraft::SynthBank>(name.toStdString(), synth_, bank_);
+		}
+		else {
+			list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
+		}
 	}
 	callback_(list_);
 }
