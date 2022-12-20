@@ -245,7 +245,7 @@ namespace midikraft {
 	{
 		switch (streamType) {
 		case StreamLoadCapability::StreamType::BANK_DUMP: {
-			MidiBankNumber bankNo = MidiBankNumber::fromZeroBase(no);
+			MidiBankNumber bankNo = MidiBankNumber::fromZeroBase(no, 100);
 			if (!bankNo.isValid()) {
 				return {};
 			}
@@ -374,7 +374,7 @@ namespace midikraft {
 		jassert(programNumber >= 0 && programNumber < 1000);
 		uint8 bank = (uint8)(programNumber / 100);
 		uint8 num = (uint8)(programNumber % 100);
-		result.push_back(createBankSelect(MidiBankNumber::fromZeroBase(bank)));
+		result.push_back(createBankSelect(MidiBankNumber::fromZeroBase(bank, 100)));
 		result.push_back(createBankUnlock());
 		result.push_back(createRequest(SINGLE_PATCH, num));
 		return result;
