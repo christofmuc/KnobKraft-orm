@@ -221,7 +221,7 @@ namespace midikraft {
 		auto handle = MidiController::makeOneHandle();
 		std::vector<MidiMessage> localCopy = messages;
 		MidiController::instance()->addMessageHandler(handle, [this, localCopy, midiOutput, receivedCounter, handle, whenDone](MidiInput *source, const juce::MidiMessage &answer) {
-			if (source->getName().toStdString() != midiInput()) return;
+			if (source->getDeviceInfo() != midiInput()) return;
 
 			// Check the answer from the BCR2000
 			if (isSysexFromBCR2000(answer)) {
