@@ -8,7 +8,7 @@
 
 #include "JuceHeader.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -26,14 +26,14 @@ namespace midikraft {
 	{
 		switch (type()) {
 		case ENCODER:
-			return (boost::format(
-				"$encoder %d ; Standard CC Controller $%02x\n"
-				"  .easypar CC %d %d %d %d absolute\n"
+			return fmt::format(
+				"$encoder {} ; Standard CC Controller ${:02x}\n"
+				"  .easypar CC {} {} {} {} absolute\n"
 				"  .default 0\n"
-				"  .mode %s\n"
+				"  .mode {}\n"
 				"  .showvalue on\n"
-				"  .resolution 64 64 127 127\n"
-			) % number_ % controllerNumber_ % (channel + 1) % controllerNumber_ % minValue_ % maxValue_  % BCRdefinition::ledMode(ledMode_)).str();
+				"  .resolution 64 64 127 127\n",
+			 number_, controllerNumber_, (channel + 1), controllerNumber_, minValue_, maxValue_, BCRdefinition::ledMode(ledMode_));
 		case BUTTON: {
 			std::string mode = "incval 1";
 			std::string ccmode = "increment";
@@ -42,13 +42,13 @@ namespace midikraft {
 				mode = "toggle";
 				ccmode = "toggleon";
 			}
-			return (boost::format(
-				"$button %d ; Standard CC Controller $%02x\n"
-				"  .easypar CC %d %d %d %d %s\n"
+			return fmt::format(
+				"$button {} ; Standard CC Controller ${:02x}\n"
+				"  .easypar CC {} {} {} {} {}\n"
 				"  .default 0\n"
-				"  .mode %s\n"
-				"  .showvalue on\n"
-			) % number_ % controllerNumber_ % (channel + 1) % controllerNumber_ % maxValue_ % minValue_ % ccmode % mode).str();
+				"  .mode {}\n"
+				"  .showvalue on\n",
+			 number_, controllerNumber_, (channel + 1), controllerNumber_, maxValue_, minValue_, ccmode, mode);
 		}
 		default:
 			jassert(false);
