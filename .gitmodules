@@ -20,10 +20,6 @@
 	path = MidiKraft-librarian
 	url = https://github.com/christofmuc/MidiKraft-librarian.git
 	branch = master
-[submodule "synths/MidiKraft-sequential-rev2"]
-	path = synths/MidiKraft-sequential-rev2
-	url = https://github.com/christofmuc/MidiKraft-sequential-rev2.git
-	branch = master
 [submodule "third_party/dtl"]
 	path = third_party/dtl
 	url = https://github.com/cubicdaiya/dtl.git
@@ -34,37 +30,9 @@
 [submodule "third_party/SQLiteCpp"]
 	path = third_party/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
-[submodule "synths/MidiKraft-sequential-ob6"]
-	path = synths/MidiKraft-sequential-ob6
-	url = https://github.com/christofmuc/MidiKraft-sequential-ob6.git
-	branch = master
-[submodule "synths/MidiKraft-oberheim-matrix1000"]
-	path = synths/MidiKraft-oberheim-matrix1000
-	url = https://github.com/christofmuc/MidiKraft-oberheim-matrix1000.git
-	branch = master
-[submodule "synths/MidiKraft-roland-mks80"]
-	path = synths/MidiKraft-roland-mks80
-	url = https://github.com/christofmuc/MidiKraft-roland-mks80.git
-	branch = master
-[submodule "synths/MidiKraft-korg-dw8000"]
-	path = synths/MidiKraft-korg-dw8000
-	url = https://github.com/christofmuc/MidiKraft-korg-dw8000.git
-	branch = master
-[submodule "synths/MidiKraft-yamaha-refacedx"]
-	path = synths/MidiKraft-yamaha-refacedx
-	url = https://github.com/christofmuc/MidiKraft-yamaha-refacedx.git
-	branch = master
-[submodule "synths/MidiKraft-kawai-k3"]
-	path = synths/MidiKraft-kawai-k3
-	url = https://github.com/christofmuc/MidiKraft-kawai-k3.git
-	branch = master
 [submodule "third_party/pybind11"]
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
-[submodule "synths/MidiKraft-BCR2000"]
-	path = synths/MidiKraft-BCR2000
-	url = https://github.com/christofmuc/MidiKraft-BCR2000.git
-	branch = master
 [submodule "pytschirp"]
 	path = pytschirp
 	url = https://github.com/christofmuc/pytschirp.git
@@ -76,9 +44,6 @@
 [submodule "third_party/Gin"]
 	path = third_party/Gin
 	url = https://github.com/FigBug/Gin.git
-[submodule "synths/MidiKraft-roland-mks50"]
-	path = synths/MidiKraft-roland-mks50
-	url = https://github.com/christofmuc/MidiKraft-roland-mks50.git
 [submodule "third_party/json"]
 	path = third_party/json
 	url = https://github.com/nlohmann/json.git
