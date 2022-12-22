@@ -207,6 +207,7 @@ set_target_properties(juce-static PROPERTIES
 # Add more third party libraries
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(third_party/json)
+set(JSON_VALIDATOR_INSTALL OFF)
 add_subdirectory(third_party/json-schema-validator)
 
 # Import MidiKraft infrastructure 
