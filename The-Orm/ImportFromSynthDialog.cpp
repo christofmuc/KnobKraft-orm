@@ -9,7 +9,8 @@
 #include "HasBanksCapability.h"
 #include "Capability.h"
 #include "SynthBank.h"
-#include "fmt/format.h"
+
+#include <spdlog/spdlog.h>
 
 ImportFromSynthDialog::ImportFromSynthDialog(std::shared_ptr<midikraft::Synth> synth, TSuccessHandler onOk) : synth_(synth), onOk_(onOk)
 {
@@ -49,7 +50,7 @@ ImportFromSynthDialog::ImportFromSynthDialog(std::shared_ptr<midikraft::Synth> s
 			}
 		}
 		else {
-			SimpleLogger::instance()->postMessage(fmt::format("Error: Synth {} has neither HasBankDescriptorsCapability nor HasBanksCapability implemented, can't fill import banks dialog.", synth->getName()));
+			spdlog::error("Synth {} has neither HasBankDescriptorsCapability nor HasBanksCapability implemented, can't fill import banks dialog.", synth->getName());
 		}
 	}
 	bankValue_ = Array<var>();

@@ -505,7 +505,7 @@ namespace midikraft {
 			}
 		}
 		else {
-			SimpleLogger::instance()->postMessage("Ignoring Matrix1000 global settings data - unescaped block size is not 172 bytes");
+			spdlog::warn("Ignoring Matrix1000 global settings data - unescaped block size is not 172 bytes");
 			jassert(settingsArray.size() == 172);
 		}
 	}

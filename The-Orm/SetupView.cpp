@@ -22,7 +22,8 @@
 
 #include "ColourHelpers.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 #include <algorithm>
 
 class MidiChannelPropertyEditorWithOldDevices : public MidiDevicePropertyEditor {
@@ -307,10 +308,10 @@ void SetupView::loopDetection()
 		case midikraft::MidiLoopType::Note: typeName = "MIDI Note"; break;
 		case midikraft::MidiLoopType::Sysex: typeName = "Sysex"; break;
 		}
-		SimpleLogger::instance()->postMessage((boost::format("Warning: %s loop detected. Sending sysex to %s is returned on %s") % typeName % loop.midiOutput.name.toStdString() % loop.midiInput.name.toStdString()).str());
+		spdlog::warn("Warning: {} loop detected. Sending sysex to {} is returned on {}", typeName, loop.midiOutput.name, loop.midiInput.name);
 	}
 	if (modalWindow->loops.empty()) {
-		SimpleLogger::instance()->postMessage("All clear, no MIDI loops detected when sending to all available MIDI outputs");
+		spdlog::info("All clear, no MIDI loops detected when sending to all available MIDI outputs");
 	}
 }
 

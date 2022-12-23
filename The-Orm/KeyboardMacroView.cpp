@@ -12,6 +12,9 @@
 #include "Settings.h"
 #include "UIModel.h"
 
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
+
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
@@ -322,7 +325,7 @@ void KeyboardMacroView::turnOnMasterkeyboardInput() {
 		if (masterkeyboardDevice.isNotEmpty()) {
             auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
 			midikraft::MidiController::instance()->enableMidiInput(device);
-			SimpleLogger::instance()->postMessage("Opening master keyboard device " + masterkeyboardDevice + ", waiting for messages");
+			spdlog::info("Opening master keyboard device {}, waiting for messages", masterkeyboardDevice);
 		}
 	}
 }

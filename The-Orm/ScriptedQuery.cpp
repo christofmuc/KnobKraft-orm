@@ -12,7 +12,7 @@
 #include "Logger.h"
 
 #include <pybind11/embed.h>
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -49,12 +49,12 @@ std::vector<midikraft::PatchHolder> ScriptedQuery::filterByPredicate(std::string
 			}
 			else {
 				// Abort with an error message
-				SimpleLogger::instance()->postMessage("Error with scripted query - expression did not return True or False but " + py::str(queryResult));
+				spdlog::error("Error with scripted query - expression did not return True or False but {}", (std::string) py::str(queryResult));
 				return input;
 			}
 		}
 		catch (py::error_already_set &e) {
-			SimpleLogger::instance()->postMessage((boost::format("Error with scripted query: %s") % e.what()).str());
+			spdlog::error("Error with scripted query: {}", e.what());
 			return input;
 		}
 	}

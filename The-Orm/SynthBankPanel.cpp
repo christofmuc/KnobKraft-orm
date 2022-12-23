@@ -10,7 +10,7 @@
 #include "UIModel.h"
 #include "PatchView.h"
 
-#include "fmt/format.h"
+#include <spdlog/spdlog.h>
 
 SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchView *patchView)
 	: patchDatabase_(patchDatabase), patchView_(patchView)
@@ -50,7 +50,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				UIModel::instance()->synthBank.flagModified();
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Program error - dropped patch that cannot be found in the database");
+				spdlog::error("Program error - dropped patch that cannot be found in the database");
 			}
 		}
 		}

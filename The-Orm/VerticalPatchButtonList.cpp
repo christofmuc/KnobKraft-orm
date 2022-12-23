@@ -11,6 +11,8 @@
 
 #include "UIModel.h"
 
+#include <spdlog/spdlog.h>
+
 typedef std::function<void(int, std::string const&, std::string const&)> TDragHighlightHandler;
 
 
@@ -91,7 +93,7 @@ public:
 					}
 					else {
 						jassertfalse;
-							SimpleLogger::instance()->postMessage("Program error - drag info has no md5 or no handler");
+						spdlog::error("Program error - drag info has no md5 or no handler");
 					}
 				}
 				else if (midikraft::PatchHolder::dragItemIsList(infos)) {
@@ -228,10 +230,10 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
 		if (patchRow) {
 			UIModel::instance()->currentPatch_.changeCurrentPatch(patchRow->patch());
-			SimpleLogger::instance()->postMessage("Patch " + patchRow->patch().name()  + "selected");
+			spdlog::debug("Patch {} selected", patchRow->patch().name());
 		}
 		else {
-			SimpleLogger::instance()->postMessage("No patch known for row " + String(row));
+			spdlog::error("No patch known for row {}", row);
 		}
 	},
 		[this](MidiProgramNumber programPlace, std::string md5) {

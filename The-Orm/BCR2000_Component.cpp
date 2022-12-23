@@ -23,7 +23,8 @@
 
 #include "MidiHelpers.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 const char* kLastPathBCL = "lastPathBCL";
 
@@ -319,12 +320,12 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 						auto messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
 						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
 						if (location) {
-							SimpleLogger::instance()->postMessage((boost::format("Sending message to %s to update %s to new value %s")
-								% UIModel::currentSynthOfPatch()->getName() % param->name() % param->valueInPatchToText(*patch_)).str());
+							spdlog::debug("Sending message to {} to update {} to new value {}",
+								UIModel::currentSynthOfPatch()->getName(), param->name(), param->valueInPatchToText(*patch_));
 							UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
 						}
 						else {
-							SimpleLogger::instance()->postMessage("Error: Synth does not provide location information, can't send data to it");
+							spdlog::error("Synth does not provide location information, can't send data to it");
 						}
 					}
 					else {
@@ -338,7 +339,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 				}
 			}
 		}
-		SimpleLogger::instance()->postMessage("Error, failed to find parameter definition for property " + property.toString());
+		spdlog::error("Failed to find parameter definition for property {}", property.toString());
 	}
 	else {
 		//SimpleLogger::instance()->postMessage("Can't update, Synth does not support DetailedParamtersCapability");

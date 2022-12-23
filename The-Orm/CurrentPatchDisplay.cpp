@@ -21,7 +21,7 @@
 
 #include "Settings.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
 	categories_(categories, categoryUpdateHandler, false, false)
@@ -162,7 +162,7 @@ String getImportName(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	if (patch->sourceInfo()) {
 		auto friendlyName = patch->synth()->friendlyProgramName(patch->patchNumber());
-		String position = (boost::format(" at %s") % friendlyName).str();
+		String position = fmt::format(" at {}", friendlyName);
 		return String(patch->sourceInfo()->toDisplayString(patch->synth(), false)) + position;
 	}
 	else
@@ -403,7 +403,7 @@ void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
 						}
 					}
 					if (!found) {
-						SimpleLogger::instance()->postMessage((boost::format("Can't set category %s as it is not stored in the database. Program error?") % cat.category).str());
+						spdlog::error("Can't set category {} as it is not stored in the database. Program error?", cat.category);
 					}
 				}
 				favoriteHandler_(currentPatch_);

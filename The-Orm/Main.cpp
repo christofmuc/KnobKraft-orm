@@ -17,6 +17,7 @@
 #include "embedded_module.h"
 
 #include <memory>
+#include <spdlog/spdlog.h>
 
 #include "version.cpp"
 
@@ -95,7 +96,7 @@ public:
 		}
 		else {
 			if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
-				SimpleLogger::instance()->postMessage("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
+				spdlog::warn("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
 			}
 			else {
 				AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "No Python installation found",

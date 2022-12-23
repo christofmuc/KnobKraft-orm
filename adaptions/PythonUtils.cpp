@@ -8,8 +8,8 @@
 
 #include "Logger.h"
 
-#include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+#include <spdlog/spdlog.h>
 
 namespace py = pybind11;
 
@@ -62,7 +62,7 @@ void PyStdErrOutStreamRedirect::flushToLogger(std::string const &logDomain)
 	auto output = stdoutString();
 	if (!output.empty()) {
 		boost::trim_right(output);
-		SimpleLogger::instance()->postMessage((boost::format("%s: %s") % logDomain % output).str());
+		spdlog::info("{}: {}", logDomain, output);
 	}
 	clear();
 }

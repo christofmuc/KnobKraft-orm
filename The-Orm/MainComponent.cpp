@@ -49,6 +49,7 @@
 //
 // Build a spdlog sink that goes into out standard log view
 #include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 #include <spdlog/sinks/base_sink.h>
 
 template<typename Mutex>
@@ -373,10 +374,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
                 case KeyboardMacroEvent::Unknown:
                   // Fall through
 		default:
-			SimpleLogger::instance()->postMessage("Error - invalid keyboard macro event detected");
+			spdlog::error("Invalid keyboard macro event detected");
 			return;
 		}
-		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
+		spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(event));
 	});
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
@@ -495,7 +496,7 @@ MainComponent::~MainComponent()
 
 #ifdef USE_SPARKLE
 void logSparkleError() {
-	SimpleLogger::instance()->postMessage("Error encountered in WinSparkle");
+	spdlog::error("Error encountered in WinSparkle");
 }
 
 void sparkleInducedShutdown() {
@@ -615,7 +616,7 @@ public:
 				try {
 					midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
 					auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
-					SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+					spdlog::info("Exporting database file {} containing {} patches", file.getFullPathName(), mergeSource.getPatchesCount(filter));
 					allPatches = mergeSource.getPatches(filter, 0, -1);
 				}
 				catch (midikraft::PatchDatabaseReadonlyException& e) {
@@ -627,16 +628,16 @@ public:
 						midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
 						midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
 						auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
-						SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+						spdlog::info("Exporting database file {} containing {} patches", file.getFullPathName(), mergeSource.getPatchesCount(filter));
 						allPatches = mergeSource.getPatches(filter, 0, -1);
 					}
 					catch (midikraft::PatchDatabaseException& e) {
-						SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
+						spdlog::error("Fatal error opening database file {}: {}", file.getFullPathName(), e.what());
 					}
 					tempfile.deleteFile();
 				}
 				catch (midikraft::PatchDatabaseException& e) {
-					SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
+					spdlog::error("Fatal error opening database file {}: {}", file.getFullPathName(), e.what());
 				}
 
 				// We have all patches in memory - write them into a pip file
@@ -645,14 +646,14 @@ public:
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Not exporting because file already exists: " + exported.getFullPathName());
+				spdlog::warn("Not exporting because file already exists: {}",  exported.getFullPathName());
 			}
 
 			done += 1.0;
 			setProgress(done / databases_.size());
 			count++;
 		}
-		SimpleLogger::instance()->postMessage("Done, exported " + String(count) + " databases to pip files for reimport and merge");
+		spdlog::info("Done, exported {} databases to pip files for reimport and merge", count);
 	}
 
 private:

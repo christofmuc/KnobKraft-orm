@@ -62,7 +62,7 @@ target_include_directories(knobkraft-generic-adaptation PUBLIC ${CMAKE_CURRENT_L
 if(WIN32)
 	target_link_directories(knobkraft-generic-adaptation PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(knobkraft-generic-adaptation pybind11::embed juce-utils midikraft-base ${APPLE_BOOST})
+target_link_libraries(knobkraft-generic-adaptation pybind11::embed juce-utils midikraft-base spdlog::spdlog ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)

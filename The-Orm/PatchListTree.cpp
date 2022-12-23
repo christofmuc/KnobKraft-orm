@@ -13,8 +13,8 @@
 #include "ColourHelpers.h"
 #include "HasBanksCapability.h"
 
-#include <boost/format.hpp>
-#include <fmt/format.h>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	for (auto& import : imports) {
@@ -50,7 +50,7 @@ public:
 	}
 
 	virtual void valueChanged(Value& value) {
-		SimpleLogger::instance()->postMessage("Changed name of import to " + value.getValue().toString());
+		spdlog::info("Changed name of import to {}", value.getValue().toString());
 		String newValue = value.getValue();
 		db_.renameImport(importID_, newValue.toStdString());
 	}
@@ -115,7 +115,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
 					db_.putPatchList(list);
-					SimpleLogger::instance()->postMessage("Create new user list named " + list->name());
+					spdlog::info("Create new user list named {}", list->name());
 					regenerateUserLists();
 					// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
 					//selectItemByPath({ "userlists", list->id() });
@@ -231,7 +231,7 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 			}
 		}
 		if (!level_found) {
-			SimpleLogger::instance()->postMessage("Did not find item in tree");
+			spdlog::warn("Did not find item in tree: {}", path[index]);
 			return;
 		}
 		else {
@@ -331,7 +331,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 				CreateListDialog::showCreateListDialog(nullptr, synth, TopLevelWindow::getActiveTopLevelWindow(), [this, synthBanksNode](std::shared_ptr<midikraft::PatchList> list) {
 					if (list) {
 						db_.putPatchList(list);
-						SimpleLogger::instance()->postMessage("Create new user bank named " + list->name());
+						spdlog::info("Create new user bank named {}", list->name());
 						synthBanksNode->regenerate();
 						regenerateUserLists();
 						// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
@@ -408,13 +408,13 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 			int position = insertIndex;
 			ignoreUnused(position);
 			if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
-				SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
+				spdlog::error("drop operation didn't give synth and md5");
 				return;
 			}
 
 			std::string synthname = infos["synth"];
 			if (synths_.find(synthname) == synths_.end()) {
-				SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
+				spdlog::error("Synth unknown during drop operation: {}", synthname);
 				return;
 			}
 
@@ -429,11 +429,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 				else {
 					// Simple case - new patch (or patch reference) added to list
 					db_.addPatchToList(list, patch[0], insertIndex);
-					SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+					spdlog::info("Patch {} added to list {}", patch[0].name(), list.name);
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
+				spdlog::error("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
 			}
 		}
 		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
@@ -445,12 +445,12 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 					))) {
 					for (auto& patch : loaded_list->patches()) {
 						db_.addPatchToList(list, patch, insertIndex++);
-						SimpleLogger::instance()->postMessage("Patch " + patch.name() + " added to list " + list.name);
+						spdlog::info("Patch {} added to list {}", patch.name(), list.name);
 					}
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Program error - dropped list does not contain name and id!");
+				spdlog::error("Program error - dropped list does not contain name and id!");
 			}
 		}
 		node->regenerate();
@@ -475,13 +475,13 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 				jassert(new_list);
 				if (new_list) {
 					db_.putPatchList(new_list);
-					SimpleLogger::instance()->postMessage((boost::format("Renamed bank from %s to %s") % oldname % new_list->name()).str());
+					spdlog::info("Renamed bank from {} to {}", oldname, new_list->name());
 					parent->regenerate();
 				}
 			}, [this, parent](std::shared_ptr<midikraft::PatchList> new_list) {
 				if (new_list) {
 					db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
-					SimpleLogger::instance()->postMessage("Deleted user bank " + new_list->name());
+					spdlog::info("Deleted user bank {}", new_list->name());
 					parent->regenerate();
 				}
 			});
@@ -520,13 +520,13 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 			int position = insertIndex;
 			ignoreUnused(position);
 			if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
-				SimpleLogger::instance()->postMessage("Error - drop operation didn't give synth and md5");
+				spdlog::error("Drop operation didn't give synth and md5");
 				return;
 			}
 
 			std::string synthname = infos["synth"];
 			if (synths_.find(synthname) == synths_.end()) {
-				SimpleLogger::instance()->postMessage("Error - synth unknown during drop operation: " + synthname);
+				spdlog::error("Synth unknown during drop operation: {}", synthname);
 				return;
 			}
 
@@ -541,11 +541,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				else {
 					// Simple case - new patch (or patch reference) added to list
 					db_.addPatchToList(list, patch[0], insertIndex);
-					SimpleLogger::instance()->postMessage("Patch " + patch[0].name() + " added to list " + list.name);
+					spdlog::info("Patch {} added to list {}", patch[0].name(), list.name);
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
+				spdlog::error("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
 			}
 		}
 		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
@@ -557,12 +557,12 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 					))) {
 					for (auto& patch : loaded_list->patches()) {
 						db_.addPatchToList(list, patch, insertIndex++);
-						SimpleLogger::instance()->postMessage("Patch " + patch.name() + " added to list " + list.name);
+						spdlog::info("Patch {} added to list {}", patch.name(), list.name);
 					}
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Program error - dropped list does not contain name and id!");
+				spdlog::error("Program error - dropped list does not contain name and id!");
 			}
 		}
 		node->regenerate();
@@ -584,13 +584,13 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				jassert(new_list);
 				if (new_list) {
 					db_.putPatchList(new_list);
-					SimpleLogger::instance()->postMessage((boost::format("Renamed list from %s to %s") % oldname % new_list->name()).str());
+					spdlog::info("Renamed list from {} to {}", oldname, new_list->name());
 					regenerateUserLists();
 				}
 			}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
 				if (new_list) {
 					db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
-					SimpleLogger::instance()->postMessage("Deleted list " + new_list->name());
+					spdlog::info("Deleted list {}", new_list->name());
 					regenerateUserLists();
 				}
 			});
