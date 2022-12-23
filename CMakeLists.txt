@@ -207,15 +207,15 @@ set_target_properties(juce-static PROPERTIES
 # Add more third party libraries
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(third_party/json)
-set(JSON_VALIDATOR_INSTALL OFF)
+option(JSON_VALIDATOR_INSTALL "" OFF)
 add_subdirectory(third_party/json-schema-validator)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
-add_subdirectory(MidiKraft-base)
-add_subdirectory(MidiKraft-librarian)
-add_subdirectory(MidiKraft-database)
+option(MIDIKRAFT_BUILD_LIBRARIAN "" ON)
+option(MIDIKRAFT_BUILD_DATABASE "" ON)
+add_subdirectory(MidiKraft)
 
 # Import the synths currently supported
 add_subdirectory(synths/access-virus)
