@@ -209,6 +209,7 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(third_party/json)
 option(JSON_VALIDATOR_INSTALL "" OFF)
 add_subdirectory(third_party/json-schema-validator)
+add_subdirectory(third_party/spdlog)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)

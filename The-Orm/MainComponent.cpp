@@ -46,6 +46,37 @@
 #endif
 #endif
 
+//
+// Build a spdlog sink that goes into out standard log view
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/base_sink.h>
+
+template<typename Mutex>
+class LogViewSink : public spdlog::sinks::base_sink <Mutex>
+{
+public:
+	LogViewSink(LogView &logView) : logView_(logView) {}
+
+protected:
+	void sink_it_(const spdlog::details::log_msg& msg) override
+	{
+		spdlog::memory_buf_t formatted;
+		formatter_->format(msg, formatted);
+		logView_.addMessageToListWithoutTimestamp(fmt::to_string(formatted));
+	}
+
+	void flush_() override
+	{
+		// NOP
+	}
+
+private:
+	LogView& logView_;
+};
+
+#include <mutex>
+using LogViewSink_mt = LogViewSink<std::mutex>;
+
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
@@ -91,6 +122,17 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
         logArea_(&logView_, BorderSize<int>(8))
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
+
+	// Setup spd logging
+	std::vector<spdlog::sink_ptr> sinks;
+	sinks.push_back(std::make_shared<LogViewSink_mt>(logView_));
+	spdLogger_ = std::make_shared<spdlog::logger>("KnobKraftOrm", begin(sinks), end(sinks));
+	spdLogger_->set_pattern("%H:%M:%S: %l %v");
+	//spdLogger_->set_pattern("%Y-%m-%d %H:%M:%S.%e%z %l [%t] %v");
+	spdlog::set_default_logger(spdLogger_);
+	spdlog::flush_every(std::chrono::milliseconds(50));
+	spdlog::set_level(spdlog::level::debug);
+	spdlog::info("Launching KnobKraft Orm");
 
 	auto customDatabase = Settings::instance().get("LastDatabase");
 	File databaseFile(customDatabase);
