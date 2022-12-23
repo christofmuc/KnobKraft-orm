@@ -154,7 +154,7 @@ namespace midikraft {
 		// For the patch sysex, all we need to do is to add the header on the correct channel
 		std::vector<uint8> data(4);
 		data[0] = 0x42; // Korg
-		data[1] = uint8(0x30 | channel().toZeroBasedInt());
+		data[1] = uint8(0x30 | (channel().isValid() ? channel().toZeroBasedInt() : 0));
 		data[2] = 0x03; // DW8000
 		data[3] = DATA_DUMP;
 		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(data));
