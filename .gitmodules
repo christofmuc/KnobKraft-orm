@@ -41,3 +41,6 @@
 [submodule "MidiKraft"]
 	path = MidiKraft
 	url = https://github.com/christofmuc/MidiKraft.git
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
+	url = https://github.com/gabime/spdlog.git
