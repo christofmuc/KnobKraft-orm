@@ -22,7 +22,7 @@ set(Sources
 # Setup library
 add_library(midikraft-behringer-bcr2000 ${Sources})
 target_include_directories(midikraft-behringer-bcr2000 PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(midikraft-behringer-bcr2000 juce-utils midikraft-base)
+target_link_libraries(midikraft-behringer-bcr2000 juce-utils midikraft-base spdlog::spdlog)
 
 # Pedantic about warnings
 if (MSVC)

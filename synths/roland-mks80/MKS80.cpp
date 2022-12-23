@@ -17,10 +17,10 @@
 //#include "BCR2000_Component.h"
 //#include "BCR2000_Presets.h"
 
-#include "Logger.h"
 #include "Sysex.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 namespace midikraft {
 
@@ -42,7 +42,7 @@ namespace midikraft {
 	{
 		int bank = programNo.toZeroBased() / 8;
 		int patch = programNo.toZeroBased() % 8;
-		return (boost::format("%d%d") % (bank + 1) % (patch + 1)).str();
+		return fmt::format("{}{}", (bank + 1), (patch + 1));
 	}
 
 	std::string MKS80::friendlyBankName(MidiBankNumber bankNo) const
@@ -140,17 +140,17 @@ namespace midikraft {
 				}
 				else {
 					jassertfalse;
-					SimpleLogger::instance()->postMessage("ERROR - Group ID is not 1, probably corrupt file. Ignoring this APR package.");
+					spdlog::error("Group ID is not 1, probably corrupt file. Ignoring this APR package.");
 				}
 			case 0b00110000: /* Level 2 */
-				SimpleLogger::instance()->postMessage("Warning - ignoring patch data for now, looking for tone data!");
+				spdlog::warn("Ignoring patch data for now, looking for tone data!");
 				break;
 			case 0b01000000: /* Level 3 */
-				SimpleLogger::instance()->postMessage("Warning - ignoring chord data for now, looking for tone data!");
+				spdlog::warn("Ignoring chord data for now, looking for tone data!");
 				break;
 			default:
 				jassert(false);
-				SimpleLogger::instance()->postMessage("ERROR - unknown level in APR package, probably corrupt file. Ignoring this APR package.");
+				spdlog::error("Unknown level in APR package, probably corrupt file. Ignoring this APR package.");
 			}
 		}
 		return std::shared_ptr<Patch>();
@@ -211,7 +211,7 @@ namespace midikraft {
 			if (MidiHelpers::equalSysexMessageContent(message, s->previousMessage)) {
 				//TODO Is this an issue with the MKS-80?
 				jassert(false);
-				SimpleLogger::instance()->postMessage("Dropping suspicious duplicate MIDI message from the MKS-80");
+				spdlog::warn("Dropping suspicious duplicate MIDI message from the MKS-80");
 				return false;
 			}
 			s->previousMessage = message;
@@ -271,7 +271,7 @@ namespace midikraft {
 				return false;
 			default:
 				jassert(false);
-				SimpleLogger::instance()->postMessage("Ignoring unknown operation code during handshake transfer with MKS-80");
+				spdlog::warn("Ignoring unknown operation code during handshake transfer with MKS-80");
 			}
 		}
 		return false;
@@ -336,7 +336,7 @@ namespace midikraft {
 				case MKS80_Operation_Code::DAT: {
 					if (state.valid && state.isAPR) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Warning - ignoring DAT block embedded into PGR/APR stream, flaky file!");
+						spdlog::warn("Ignoring DAT block embedded into PGR/APR stream, flaky file!");
 						break;
 					}
 					state.valid = true;
@@ -346,7 +346,7 @@ namespace midikraft {
 					// Each DAT message contains 4 patches consisting of one tone data block and one patch data block
 					if (message.getSysExDataSize() != 253) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Warning - ignoring DAT block of irregular length");
+						spdlog::warn("Ignoring DAT block of irregular length");
 						break;
 					}
 
@@ -358,7 +358,7 @@ namespace midikraft {
 					if ((128 - checksum) != message.getSysExData()[248 + 4]) {
 						Sysex::saveSysex("failed_checksum.bin", { message });
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Checksum error, aborting!");
+						spdlog::error("Checksum error, aborting!");
 						return result;
 					}
 
@@ -375,7 +375,7 @@ namespace midikraft {
 					// This starts a PGR section followed by 4 APR messages. Only accept this in case we are not in DAT mode, though
 					if (state.valid && !state.isAPR) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Ignoring PGR message embedded into DAT stream, flaky file?");
+						spdlog::warn("Ignoring PGR message embedded into DAT stream, flaky file?");
 						break;
 					}
 					state.valid = true;
@@ -384,36 +384,36 @@ namespace midikraft {
 					if (message.getSysExDataSize() == 9 && data[4] == 0x02 /* Level */ && data[5] == 0x00 /* dummy */ && data[6] == 0x00 /* patch number following */ && data[8] == 0x00 /* NOP */) {
 						state.currentPatch = std::make_unique<MidiProgramNumber>(MidiProgramNumber::fromZeroBase(data[7]));
 						state.data.clear();
-						SimpleLogger::instance()->postMessage((boost::format("Found PGR message starting new patch %s") % friendlyProgramName(*state.currentPatch)).str());
+						spdlog::debug("Found PGR message starting new patch {}", friendlyProgramName(*state.currentPatch));
 					}
 					else {
 						state.currentPatch.reset();
-						SimpleLogger::instance()->postMessage("Wrong PGR message format, can't determine patch number");
+						spdlog::error("Wrong PGR message format, can't determine patch number");
 					}
 					break;
 				}
 				case MKS80_Operation_Code::APR: {
 					if (state.valid && !state.isAPR) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Ignoring APR message embedded into DAT stream, flaky file?");
+						spdlog::warn("Ignoring APR message embedded into DAT stream, flaky file?");
 						break;
 					}
 					if (!state.currentPatch) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Ignoring APR message not preceded by proper PGR message");
+						spdlog::warn("Ignoring APR message not preceded by proper PGR message");
 						break;
 					}
 					const uint8 *data = message.getSysExData();
 					int sectionInt = (data[5] | data[6]);
 					if (!MKS80_Patch::isValidAPRSection(sectionInt)) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Invalid level group combination in APR message, ignoring it!");
+						spdlog::warn("Invalid level group combination in APR message, ignoring it!");
 						break;
 					}
 					auto section = static_cast<MKS80_Patch::APR_Section>(sectionInt);
 					if (state.data.find(section) != state.data.end()) {
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Warning - got duplicate APR section, ignoring it");
+						spdlog::warn("Warning - got duplicate APR section, ignoring it");
 						break;
 					}
 					state.data[section] = std::vector<uint8>();
@@ -423,7 +423,7 @@ namespace midikraft {
 					// Are we finished?
 					if (state.data.size() == 4) {
 						// We got 4 sections of valid APR data, so we now can create a patch that is standalone and has two layers (both tone and patch!)
-						SimpleLogger::instance()->postMessage("Successfully loaded patch from APR format!");
+						spdlog::debug("Successfully loaded patch from APR format!");
 						result.push_back(std::make_shared<MKS80_Patch>(*state.currentPatch, state.data));
 					}
 					break;
@@ -435,7 +435,7 @@ namespace midikraft {
 		if (state.valid && !state.isAPR) {
 			// We need to convert the 64 DAT blocks into 64 patches - this is so complicated because the MKS80 has only 64 tone memories, but 64 patches with dual layers.
 			if (state.datBlocks.size() != 64) {
-				SimpleLogger::instance()->postMessage("Got less than 64 patches from DAT stream, failure!");
+				spdlog::error("Got less than 64 patches from DAT stream, failure!");
 				return result;
 			}
 			std::vector<std::vector<uint8>> toneData;
@@ -500,7 +500,7 @@ namespace midikraft {
 	}*/
 
 	std::string MKS80::presetName() {
-		return (boost::format("KnobKraft MKS80 %%d %d") % channel().toOneBasedInt()).str();
+		return fmt::format("KnobKraft MKS80 %{}", channel().toOneBasedInt());
 	}
 
 	void MKS80::setupBCR2000(BCR2000 &bcr)

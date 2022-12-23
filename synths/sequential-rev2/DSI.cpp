@@ -8,7 +8,8 @@
 
 #include "MidiHelpers.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 namespace midikraft {
 
@@ -83,7 +84,7 @@ namespace midikraft {
 			int versionMajor = data[9]; // This is different from the Rev2 manual, which states that the version is within one byte
 			int versionMinor = data[10];
 			int versionPatch = data[11];
-			versionString_ = (boost::format("%d.%d.%d") % versionMajor % versionMinor % versionPatch).str();
+			versionString_ = fmt::format("{}.{}.{}", versionMajor, versionMinor, versionPatch);
 			if (data[1] == 0b01111111) {
 				//Omni seems to be 0b01111111 at DSI
 				return MidiChannel::omniChannel();
@@ -285,7 +286,7 @@ namespace midikraft {
 					//TODO not implemented yet
 					jassert(false);
 				}
-				SimpleLogger::instance()->postMessage("Setting " + def.typedNamedValue.name() + " to " + valueText);				
+				spdlog::info("Setting {} to {}",def.typedNamedValue.name(), valueText);				
 				synth_->sendBlockOfMessagesToSynth(synth_->midiOutput(), messages);
 				return;
 			}

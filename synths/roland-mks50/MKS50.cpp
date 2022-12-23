@@ -13,7 +13,7 @@
 #include "Logger.h"
 #include "Sysex.h"
 
-#include <boost/format.hpp>
+#include "spdlog/spdlog.h"
 
 namespace midikraft {
 
@@ -61,7 +61,7 @@ namespace midikraft {
 		int group = place.toZeroBased() % 64;
 		int bank = place.toZeroBased() % 8;
 		int no = place.toZeroBased() / 8;
-		std::string name = (boost::format("%c%d%d") % static_cast<char>((static_cast<int>('A') + group)) % bank % no).str();
+		std::string name = fmt::format("{}{}{}", static_cast<char>((static_cast<int>('A') + group)), bank, no);
 		return std::make_shared<MKS50_Patch>(place, name, data);
 	}
 
@@ -135,17 +135,17 @@ namespace midikraft {
 				}
 				else {
 					jassert(false);
-					SimpleLogger::instance()->postMessage("ERROR - Group ID is not 1, probably corrupt file. Ignoring this APR package.");
+					spdlog::error("Group ID is not 1, probably corrupt file. Ignoring this APR package.");
 				}
 			case 0b00110000: /* Level 2 */
-				SimpleLogger::instance()->postMessage("Warning - ignoring patch data for now, looking for tone data!");
+				spdlog::warn("Ignoring patch data for now, looking for tone data!");
 				break;
 			case 0b01000000: /* Level 3 */
-				SimpleLogger::instance()->postMessage("Warning - ignoring chord data for now, looking for tone data!");
+				spdlog::warn("Ignoring chord data for now, looking for tone data!");
 				break;
 			default:
 				jassert(false);
-				SimpleLogger::instance()->postMessage("ERROR - unknown level in APR package, probably corrupt file. Ignoring this APR package.");
+				spdlog::error("Unknown level in APR package, probably corrupt file. Ignoring this APR package.");
 			}
 		}
 		return std::shared_ptr<MKS50_Patch>();
@@ -223,7 +223,7 @@ namespace midikraft {
 			// My MKS-50 tends to send each message twice... this is a bit weird, and I am not sure if I have a loop in my MIDI setup or is that this device.
 			// For now, just check if this is the same message and if yes, drop it.
 			if (MidiHelpers::equalSysexMessageContent(message, s->previousMessage)) {
-				SimpleLogger::instance()->postMessage("Dropping suspicious duplicate MIDI message from the MKS-50");
+				spdlog::warn("Dropping suspicious duplicate MIDI message from the MKS-50");
 				return false;
 			}
 			s->previousMessage = message;
@@ -300,7 +300,7 @@ namespace midikraft {
 						// Level 1, Tone Dump
 						if (message.getSysExData()[5] == 0x01 /* Required group 1 */) {
 							if (message.getSysExData()[6] == 0x00 /* Documentation says "program number extension" and requires it to be 0? */) {
-								SimpleLogger::instance()->postMessage((boost::format("Found tone data block starting at #%d") % (int)message.getSysExData()[7]).str());
+								spdlog::debug(fmt::format("Found tone data block starting at #{}", (int)message.getSysExData()[7]));
 								for (int patch = 0; patch < 4; patch++) {
 									std::vector<uint8> patchData;
 									for (int i = 0; i < 64; i += 2) {
@@ -311,16 +311,16 @@ namespace midikraft {
 									}
 									auto newPatch = MKS50_Patch::createFromToneBLD(MidiProgramNumber::fromZeroBase(message.getSysExData()[7] + patch), patchData);
 									result.push_back(newPatch);
-									SimpleLogger::instance()->postMessage("Found tone " + newPatch->name());
+									spdlog::debug("Found tone " + newPatch->name());
 								}
 							}
 							else {
-								SimpleLogger::instance()->postMessage("Error - Program Number extension is not 0");
+								spdlog::error("Program Number extension is not 0");
 								return TPatchVector();
 							}
 						}
 						else {
-							SimpleLogger::instance()->postMessage("Error - Group is not set to 1");
+							spdlog::error("Group is not set to 1");
 							return TPatchVector();
 						}
 						break;
@@ -328,7 +328,7 @@ namespace midikraft {
 						// Level 2, Patch Dump, MKS-50 only (no Alpha Juno)
 						if (message.getSysExData()[5] == 0x01 /* Required group 1 */) {
 							if (message.getSysExData()[6] == 0x00 /* Documentation says "program number extension" and requires it to be 0? */) {
-								SimpleLogger::instance()->postMessage((boost::format("Found patch data block starting at #%d") % (int)message.getSysExData()[7]).str());
+								spdlog::debug("Found patch data block starting at #{}", (int)message.getSysExData()[7]);
 								for (int patch = 0; patch < 4; patch++) {
 									std::vector<uint8> patchData;
 									for (int i = 0; i < 64; i += 2) {
@@ -344,16 +344,16 @@ namespace midikraft {
 										const std::string kPatchNameChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
 										patchName.push_back(kPatchNameChar[patchData[i] & 0b00111111]);
 									}
-									SimpleLogger::instance()->postMessage("Found patch data for tone " + patchName);
+									spdlog::debug("Found patch data for tone " + patchName);
 								}
 							}
 							else {
-								SimpleLogger::instance()->postMessage("Error - Program Number extension is not 0");
+								spdlog::error("Program Number extension is not 0");
 								return TPatchVector();
 							}
 						}
 						else {
-							SimpleLogger::instance()->postMessage("Error - Group is not set to 1");
+							spdlog::error("Group is not set to 1");
 							return TPatchVector();
 						}
 						break;
@@ -361,7 +361,7 @@ namespace midikraft {
 						// Level 3, Chord Memory Dump, MKS-50 only and for now ignored
 						break;
 					default:
-						SimpleLogger::instance()->postMessage("Error - unknown Level in BLD package");
+						spdlog::error("Unknown Level in BLD package");
 						return TPatchVector();
 					}
 					break;
@@ -378,7 +378,7 @@ namespace midikraft {
 						if (((checksum + message.getSysExData()[256 + 4]) & 0x7f) != 0) {
 							Sysex::saveSysex("failed_checksum.bin", { message });
 							jassert(false);
-							SimpleLogger::instance()->postMessage("Checksum error, aborting!");
+							spdlog::error("Checksum error, aborting!");
 							return result;
 						}
 
@@ -403,12 +403,12 @@ namespace midikraft {
 										// 2) All Group 'b' Tone names will overwrite all Group 'B' Patch names leaving all the Tone Group 'b' data intact
 										//
 										// This is what you will need to do if you used the handshake mode to transfer data from synth A to B
-										SimpleLogger::instance()->postMessage("ERROR - this is actually patch data, not tone data. Make sure to use the Bulk Dump [T-a] function and not [P-A]. Aborting!");
+										spdlog::error("This is actually patch data, not tone data. Make sure to use the Bulk Dump [T-a] function and not [P-A]. Aborting!");
 										return result;
 									}
 									else {
 										result.push_back(newPatch);
-										SimpleLogger::instance()->postMessage("Found tone " + newPatch->name());
+										spdlog::debug("Found tone {}", newPatch->name());
 									}
 								}
 								else {
@@ -419,18 +419,18 @@ namespace midikraft {
 						else {
 							// Must be a patch block
 							//TODO - this is not correct, in case you have saved patch and tone data into different files...
-							SimpleLogger::instance()->postMessage("Ignoring patch definition part of patch dump (for now)");
+							spdlog::warn("Ignoring patch definition part of patch dump (for now)");
 						}
 						datPackageCounter++;
 						break;
 					}
 					case 192 + 5:
 						// This is a chord memory block
-						SimpleLogger::instance()->postMessage("Ignoring chord memory definition part of patch dump");
+						spdlog::debug("Ignoring chord memory definition part of patch dump");
 						break;
 					default:
 						jassert(false);
-						SimpleLogger::instance()->postMessage("Warning - ignoring DAT block of irregular length");
+						spdlog::warn("Warning - ignoring DAT block of irregular length");
 						break;
 					}
 					break;
@@ -439,7 +439,7 @@ namespace midikraft {
 					auto newPatch = patchFromSysex({ message });
 					if (newPatch) {
 						result.push_back(newPatch);
-						SimpleLogger::instance()->postMessage("Found tone " + newPatch->name());
+						spdlog::debug("Found tone {}", newPatch->name());
 					}
 				}
 			}

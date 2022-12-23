@@ -9,7 +9,9 @@
 #include "SynthParameterDefinition.h"
 #include "Synth.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 #include "Matrix1000Patch.h"
 #include "Matrix1000_GlobalSettings.h"
@@ -188,12 +190,12 @@ namespace midikraft {
 	std::string Matrix1000::friendlyProgramName(MidiProgramNumber programNo) const
 	{
 		// The Matrix does a 3 digit display, with the first patch being "000" and the highest being "999"s 
-		return (boost::format("%03d") % programNo.toZeroBased()).str();
+		return fmt::format("{:03d}", programNo.toZeroBased());
 	}
 
 	std::string Matrix1000::friendlyBankName(MidiBankNumber bankNo) const
 	{
-		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
+		return fmt::format("{:03d} - {:03d}", (bankNo.toZeroBased() * numberOfPatches()), (bankNo.toOneBased() * numberOfPatches() - 1));
 	}
 
 	bool Matrix1000::isEditBufferDump(const std::vector<MidiMessage>& message) const
@@ -254,7 +256,7 @@ namespace midikraft {
 		case StreamLoadCapability::StreamType::EDIT_BUFFER_DUMP:
 			return { requestEditBufferDump() };
 		default:
-			SimpleLogger::instance()->postMessage("The Matrix1000 does not support loading this stream type");
+			spdlog::warn("The Matrix1000 does not support loading this stream type");
 			return {};
 		}
 	}
@@ -347,7 +349,7 @@ namespace midikraft {
 				// Ignore other messages like global settings and fake split patches
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Matrix 1000: Ignoring sysex message found, not implemented: " + message.getDescription());
+				spdlog::info("Matrix 1000: Ignoring sysex message found, not implemented: {}", message.getDescription());
 			}
 		}
 		return result;

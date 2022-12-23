@@ -20,7 +20,7 @@ set(Sources
 # Setup library
 add_library(midikraft-roland-mks50 ${Sources})
 target_include_directories(midikraft-roland-mks50 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
-target_link_libraries(midikraft-roland-mks50 juce-utils midikraft-base ${APPLE_BOOST})
+target_link_libraries(midikraft-roland-mks50 juce-utils midikraft-base spdlog::spdlog ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)

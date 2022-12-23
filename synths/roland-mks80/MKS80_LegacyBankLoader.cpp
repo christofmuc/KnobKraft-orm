@@ -3,7 +3,7 @@
 #include "MKS80.h"
 #include "MKS80_Patch.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
 
 namespace midikraft {
 
@@ -57,7 +57,7 @@ namespace midikraft {
 			}
 			else {
 				// Premature end of file
-				SimpleLogger::instance()->postMessage("M80 loader: Could not parse patch and tone structure, cannot load file, trying other formats");
+				spdlog::info("M80 loader: Could not parse patch and tone structure, cannot load file, trying other formats");
 				return {};
 			}
 		}
@@ -68,7 +68,7 @@ namespace midikraft {
 			return MKS80::patchesFromAPRs(toneDatas, patchDatas);
 		}
 		else {
-			SimpleLogger::instance()->postMessage("M80 loader: Did not find 64 patches and 64 tones, trying other formats");
+			spdlog::info("M80 loader: Did not find 64 patches and 64 tones, trying other formats");
 			return {};
 		}
 	}
@@ -76,7 +76,7 @@ namespace midikraft {
 	midikraft::TPatchVector MKS80_LegacyBankLoader::loadMKS80File(std::vector<uint8> fileContent)
 	{
 		if (fileContent.size() != 0xf80) {
-			SimpleLogger::instance()->postMessage("MKS80 loader: File length is not 0xf80, this does not seem to be an mks80 file, trying other formats");
+			spdlog::info("MKS80 loader: File length is not 0xf80, this does not seem to be an mks80 file, trying other formats");
 			return {};
 		}
 

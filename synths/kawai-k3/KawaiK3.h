@@ -148,7 +148,7 @@ namespace midikraft {
 		virtual Synth::PatchData createInitPatch() override;
 
 	private:
-		void sendPatchToSynth(MidiController* controller, SimpleLogger* logger, MidiBuffer const& messages);
+		void sendPatchToSynth(MidiController* controller, MidiBuffer const& messages);
 
 		friend class KawaiK3Control;
 		friend class KawaiK3Parameter;

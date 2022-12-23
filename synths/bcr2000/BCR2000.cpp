@@ -15,7 +15,8 @@
 #include <sstream>
 #include <iterator> 
 
-#include "fmt/format.h"
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include <map>
 #include <regex>
 
@@ -236,7 +237,7 @@ namespace midikraft {
 						// Check for dropped messages...
 						int logicalLineNumber = receivedCounter->overflowCounter * (1 << 14) + lineNo;
 						if (logicalLineNumber != receivedCounter->receivedMessages && receivedCounter->lastLine != -1) {
-							SimpleLogger::instance()->postMessage("Seems to have a MIDI message drop");
+							spdlog::warn("BCR2000: Seems to have a MIDI message drop in communication");
 						}
 						if (lineNo < receivedCounter->lastLine && lineNo == 0) {
 							// That was a wrap around
@@ -251,10 +252,10 @@ namespace midikraft {
 							if (logicalLineNumber >= 0 && logicalLineNumber < localCopy.size()) {
 								auto currentLine = convertSyxToText(localCopy[logicalLineNumber]);
 								errorsDuringUpload_.push_back({ error, errorText, logicalLineNumber + 1, currentLine });
-								SimpleLogger::instance()->postMessage(errorsDuringUpload_.back().toDisplayString());
+								spdlog::error(errorsDuringUpload_.back().toDisplayString());
 							}
 							else {
-								SimpleLogger::instance()->postMessage(fmt::format("Error {} ({}) in line {}", error, errorText, (logicalLineNumber + 1)));
+								spdlog::error("Error {} ({}) in line {}", error, errorText, (logicalLineNumber + 1));
 							}
 						}
 
@@ -263,7 +264,7 @@ namespace midikraft {
 						if (receivedCounter->receivedMessages == receivedCounter->numMessages - 1) {
 							delete receivedCounter;
 							MidiController::instance()->removeMessageHandler(handle);
-							SimpleLogger::instance()->postMessage("All messages received by BCR2000");
+							spdlog::info("All messages received by BCR2000");
 							whenDone(errorsDuringUpload_);
 						}
 						else {
@@ -286,7 +287,7 @@ namespace midikraft {
 				midiOutput->sendMessageNow(messages[0]);
 			}
 			else {
-				SimpleLogger::instance()->postMessage("No Midi Output known for BCR2000, not sending anything!");
+				spdlog::warn("No Midi Output known for BCR2000, not sending anything!");
 			}
 		}
 		else {
@@ -431,7 +432,7 @@ namespace midikraft {
 							int presetNum = message.getSysExData()[7] + 1;
 							std::string presetName(&message.getSysExData()[8], &message.getSysExData()[32]);
 							trim(presetName);
-							SimpleLogger::instance()->postMessage(fmt::format("Preset #{}: {}", presetNum, presetName));
+							spdlog::debug("Preset #{}: {}", presetNum, presetName);
 							bcrPresets_.push_back(presetName);
 							if (presetNum == 32) {
 								MidiController::instance()->removeMessageHandler(myhandle);
@@ -575,7 +576,7 @@ namespace midikraft {
 			auto messages = dataFileToSysex(dataFile, target);
 			sendSysExToBCR(MidiController::instance()->getMidiOutput(midiOutput()), messages, [](std::vector<BCRError> const &errors) {
 				if (!errors.empty()) {
-					SimpleLogger::instance()->postMessage("Preset contains errors");
+					spdlog::error("Preset contains errors");
 				}
 			});
 		}

@@ -41,7 +41,7 @@ set_source_files_properties(
 # Setup library
 add_library(midikraft-sequential-rev2 ${Sources})
 target_include_directories(midikraft-sequential-rev2 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${boost_SOURCE_DIR})
-target_link_libraries(midikraft-sequential-rev2 juce-utils midikraft-base ${APPLE_BOOST})
+target_link_libraries(midikraft-sequential-rev2 juce-utils midikraft-base spdlog::spdlog ${APPLE_BOOST})
 
 # Pedantic about warnings
 if (MSVC)

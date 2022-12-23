@@ -11,7 +11,7 @@
 #include "Rev2Patch.h"
 
 #include <algorithm>
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
 
 #include "MidiHelpers.h"
 #include "TypedNamedValue.h"
@@ -51,8 +51,8 @@ namespace midikraft {
 			octave++;
 			interval -= 12;
 		}
-		std::string octaveText = octave == 1 ? "one octave" : (boost::format("%d octaves") % octave).str();
-		std::string semitoneText = interval == 0 ? "same note" : (boost::format("%d semi-tones") % interval).str();
+		std::string octaveText = octave == 1 ? "one octave" : fmt::format("{} octaves", octave);
+		std::string semitoneText = interval == 0 ? "same note" : fmt::format("{} semi-tones", interval);
 		if (interval == 0) {
 			return octaveText;
 		}
@@ -100,7 +100,7 @@ namespace midikraft {
 	{
 		int section = bankNo.toZeroBased() / 4;
 		int bank = bankNo.toZeroBased();
-		return (boost::format("%s%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1)).str();
+		return fmt::format("{}{}", (section == 0 ? "U" : "F"), ((bank % 4) + 1));
 	}
 
 	std::shared_ptr<DataFile> Rev2::patchFromSysex(const std::vector<MidiMessage>& message) const
@@ -521,7 +521,7 @@ namespace midikraft {
 		case GLOBAL_SETTINGS:
 			// Not possible
 			jassert(false);
-			SimpleLogger::instance()->postMessage("Program error - don't try to send global settings in one messages to synth");
+			spdlog::error("Program error - don't try to send global settings in one messages to synth");
 			break;
 		case ALTERNATE_TUNING: {
 			// This makes sense, though we should patch the program place in the program
@@ -613,7 +613,7 @@ namespace midikraft {
 		}
 		int section = bank / 4;
 		int program = programNo.toZeroBased() % 128;
-		return (boost::format("%s%d P%d") % (section == 0 ? "U" : "F") % ((bank % 4) + 1) % (program+1)).str();
+		return fmt::format("{}{} P{}", (section == 0 ? "U" : "F"), ((bank % 4) + 1), (program+1));
 	}
 
 }
