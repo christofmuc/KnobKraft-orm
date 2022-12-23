@@ -24,8 +24,6 @@ PyStdErrOutStreamRedirect::~PyStdErrOutStreamRedirect()
 	auto sysm = py::module::import("sys");
 	sysm.attr("stdout") = _stdout;
 	sysm.attr("stderr") = _stderr;
-	_stdout_buffer.release(); // This shouldn't be necessary, but somehow without these the 2.0 crashes on me on exit.
-	_stderr_buffer.release();
 }
 
 std::string PyStdErrOutStreamRedirect::stdoutString()
