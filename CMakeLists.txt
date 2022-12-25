@@ -31,12 +31,6 @@ IF (WIN32)
 	include(FetchContent REQUIRED)
 
     FetchContent_Declare(
-	  boost
-	  URL "https://boostorg.jfrog.io/artifactory/main/release/1.71.0/source/boost_1_71_0.zip"
-	)
-	FetchContent_MakeAvailable(boost)
-
-    FetchContent_Declare(
 	  icu
 	  URL https://github.com/unicode-org/icu/releases/download/release-67-1/icu4c-67_1-Win64-MSVC2017.zip
 	)
@@ -80,11 +74,8 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	find_package(Boost REQUIRED)
-
 	list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/icu4c")	
 	find_package(ICU REQUIRED data uc)
-	SET(APPLE_BOOST Boost::boost)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
 	# NOTE that NDEBUG is set automatically in Release
@@ -209,6 +200,8 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(third_party/json)
 option(JSON_VALIDATOR_INSTALL "" OFF)
 add_subdirectory(third_party/json-schema-validator)
+add_subdirectory(third_party/fmt)
+option(SPDLOG_FMT_EXTERNAL "" ON)
 add_subdirectory(third_party/spdlog)
 
 # Import MidiKraft infrastructure 

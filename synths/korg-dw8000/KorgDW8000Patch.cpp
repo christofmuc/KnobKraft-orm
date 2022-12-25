@@ -9,8 +9,6 @@
 #include "KorgDW8000Parameter.h"
 #include "KorgDW8000.h"
 
-#include <boost/format.hpp>
-
 namespace midikraft {
 
 	const int kKorgDW8000DataTypeID = 0; // The DW8000 has only one data-type, no layers, tones, tunings, or other stuff

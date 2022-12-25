@@ -15,7 +15,7 @@
 #include "DetailedParametersCapability.h"
 
 #include <algorithm>
-#include <boost/format.hpp>
+#include <fmt/format.h>
 // Turn off warning on unknown pragmas for VC++
 #pragma warning(push)
 #pragma warning(disable: 4068)
@@ -319,7 +319,7 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 		for (int layer = 0; layer < numLayers; layer++) {
 			if (layers) {
 				if (layer > 0) result += "\n";
-				result = result + (boost::format("Layer: %s\n") % layers->layerName(layer)).str();
+				result = result + fmt::format("Layer: {}\n", layers->layerName(layer));
 			}
 			for (auto param : parameterDetails->allParameterDefinitions()) {
 				if (layers) {
@@ -331,7 +331,7 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 				}
 				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
 				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
-					result = result + (boost::format("%s: %s\n") % param->description() % param->valueInPatchToText(*patch)).str();
+					result = result + fmt::format("{}: {}\n", param->description(), param->valueInPatchToText(*patch));
 				}
 			}
 		}

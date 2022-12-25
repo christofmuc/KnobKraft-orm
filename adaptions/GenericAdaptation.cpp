@@ -26,7 +26,7 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace knobkraft {
 
@@ -139,19 +139,19 @@ namespace knobkraft {
 				matches = re.match(python_identifier, filename) is not None
 			)", py::globals(), result);
 			if (!result["matches"].cast<bool>()) {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: Warning: file name %s is not a valid module identifier in Python, please use only lower case letters and numbers") % pythonModuleFilePath).str());
+				SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Warning: file name %s is not a valid module identifier in Python, please use only lower case letters and numbers") % pythonModuleFilePath).str());
 			}*/
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
 			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % pythonModuleFilePath % ex.what()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what()));
 			ex.restore();
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % pythonModuleFilePath % ex.what()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what()));
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 	}
@@ -190,11 +190,11 @@ namespace knobkraft {
 			return newAdaptation;
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % moduleName % ex.what()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", moduleName, ex.what()));
 			ex.restore();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure loading python module %s: %s") % moduleName % ex.what()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", moduleName, ex.what()));
 		}
 		return nullptr;
 	}
@@ -209,11 +209,11 @@ namespace knobkraft {
 			}
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure inspecting python module: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure inspecting python module: {}", ex.what()));
 			ex.restore();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation: Failure inspecting python module: %s") % ex.what()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure inspecting python module: {}", ex.what()));
 		}
 	}
 
@@ -280,7 +280,7 @@ namespace knobkraft {
 		// Remove the global release on Python, else the destruction code will fail!
 		{
 			py::gil_scoped_acquire acquire;
-		sGenericAdaptationPyOutputRedirect.reset();
+			sGenericAdaptationPyOutputRedirect.reset();
 		}
 		sGenericAdaptationDontLockGIL.reset();
 		sGenericAdaptationPythonEmbeddedGuard.reset();
@@ -319,8 +319,8 @@ auto newAdaptationName = newAdaptation->getName();
 if (newAdaptationName != "invalid") {
 	for (auto existing : outAddToThis) {
 		if (existing->getName() == newAdaptationName) {
-			SimpleLogger::instance()->postMessage((boost::format("Overriding built-in adaptation %s (found in user directory %s)")
-				% newAdaptationName % getAdaptationDirectory().getFullPathName().toStdString()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Overriding built-in adaptation {} (found in user directory {})",
+				newAdaptationName, getAdaptationDirectory().getFullPathName().toStdString()));
 			return true; // Was created successfully, but still is ignored.
 		}
 	}
@@ -352,7 +352,7 @@ else {
 			}
 		}
 		else {
-			SimpleLogger::instance()->postMessage((boost::format("Warning - directory given '%s' does not exist or is not a directory") % directory).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Warning - directory given '{}' does not exist or is not a directory", directory));
 		}
 		return result;
 	}
@@ -372,12 +372,12 @@ else {
 		// First, load user defined adaptations from the directory
 		File adaptationDirectory = getAdaptationDirectory();
 		if (adaptationDirectory.exists()) {
-			result = allAdaptationsInOneDirectory(adaptationDirectory.getFullPathName().toStdString());
+			//result = allAdaptationsInOneDirectory(adaptationDirectory.getFullPathName().toStdString());
 		}
 
 		// Then, load all adaptations in the directory of the current executable
 		auto installDirectory = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory().getChildFile("adaptations");
-		auto builtIns = allAdaptationsInOneDirectory(installDirectory.getFullPathName().toStdString());
+		/*auto builtIns = allAdaptationsInOneDirectory(installDirectory.getFullPathName().toStdString());
 		for (auto& builtin : builtIns)
 		{
 			if (std::none_of(result.begin(), result.end(), [&](std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) { return device->getName() == builtin->getName(); }))
@@ -386,10 +386,10 @@ else {
 			}
 			else
 			{
-				SimpleLogger::instance()->postMessage((boost::format("Overriding built-in adaptation %s (found in user directory %s)")
+				SimpleLogger::instance()->postMessage(fmt::format("Overriding built-in adaptation %s (found in user directory %s)")
 					% builtin->getName() % getAdaptationDirectory().getFullPathName().toStdString()).str());
 			}
-		}
+		}*/
 		return result;
 	}
 
@@ -426,7 +426,7 @@ else {
 		// Copy out source code
 		File sourceFile(adaptation->getSourceFilePath());
 		if (!sourceFile.existsAsFile()) {
-			SimpleLogger::instance()->postMessage((boost::format("Program error - could not find source code for module to break out at %s") % adaptation->getSourceFilePath()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Program error - could not find source code for module to break out at {}", adaptation->getSourceFilePath()));
 			return false;
 		}
 		File target = dir.getChildFile(sourceFile.getFileName());
@@ -437,7 +437,7 @@ else {
 
 		if (!sourceFile.copyFileTo(target))
 		{
-			SimpleLogger::instance()->postMessage((boost::format("Program error - could not find copy %s to %s") % adaptation->getSourceFilePath() % target.getFullPathName().toStdString()).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Program error - could not find copy {} to {}", adaptation->getSourceFilePath(), target.getFullPathName().toStdString()));
 			return false;
 		}
 		else 
@@ -844,7 +844,7 @@ else {
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();
 		MessageManager::callAsync([this, methodName, exceptionMessage]() {
-			SimpleLogger::instance()->postMessage((boost::format("Adaptation[%s]: Error calling %s: %s") % adaptationName_ % methodName % exceptionMessage).str());
+			SimpleLogger::instance()->postMessage(fmt::format("Adaptation[{}]: Error calling {}: {}", adaptationName_, methodName, exceptionMessage));
 		});
 	}
 

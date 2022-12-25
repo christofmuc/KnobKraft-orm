@@ -11,8 +11,6 @@
 #include "MidiHelpers.h"
 #include "MKS80.h"
 
-#include <boost/format.hpp>
-
 namespace midikraft {
 
 	void MKS80_Patch::copyDataSection(std::map<APR_Section, std::vector<uint8>> const &data, std::vector<uint8> &result, MKS80_Patch::APR_Section section, int expectedLength) {

@@ -10,7 +10,6 @@
 
 #include "Matrix1000ParamDefinition.h"
 
-#include <boost/format.hpp>
 #include <unicode/ucnv.h>
 
 #include <regex>

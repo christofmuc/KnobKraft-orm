@@ -9,7 +9,7 @@
 #include "Matrix1000Patch.h"
 
 #include <set>
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -47,7 +47,7 @@ namespace midikraft {
 		}
 
 		// Format as text
-		return (boost::format("%d") % value).str();
+		return fmt::format("{}", value);
 	}
 
 	int Matrix1000ParamDefinition::sysexIndex() const

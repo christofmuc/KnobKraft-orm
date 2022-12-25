@@ -19,8 +19,8 @@ set(Sources
 
 # Setup library
 add_library(midikraft-sequential-ob6 ${Sources})
-target_include_directories(midikraft-sequential-ob6 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR})
-target_link_libraries(midikraft-sequential-ob6 juce-utils midikraft-base midikraft-sequential-rev2 spdlog::spdlog ${APPLE_BOOST})
+target_include_directories(midikraft-sequential-ob6 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES})
+target_link_libraries(midikraft-sequential-ob6 juce-utils midikraft-base midikraft-sequential-rev2 spdlog::spdlog)
 
 # Pedantic about warnings
 if (MSVC)

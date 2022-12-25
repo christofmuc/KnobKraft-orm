@@ -11,8 +11,6 @@
 #include "KawaiK3.h"
 #include "KawaiK3Wave.h"
 
-#include <boost/format.hpp>
-
 namespace midikraft {
 
 	KawaiK3Patch::KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata) 

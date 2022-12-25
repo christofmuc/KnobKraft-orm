@@ -11,7 +11,7 @@
 
 #include "MidiHelpers.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -46,7 +46,7 @@ namespace midikraft {
 	{
 		int outValue;
 		if (valueInPatch(patch, outValue)) {
-			return (boost::format("Drawbar %s at %d") % drawbar_.name_ % outValue).str();
+			return fmt::format("Drawbar {} at {}", drawbar_.name_, outValue);
 		}
 		return "invalid";
 	}
@@ -143,7 +143,7 @@ namespace midikraft {
 		if (harmonics.harmonics().size() > 0) {
 			std::string result;
 			for (auto harmonic : harmonics.harmonics()) {
-				result += (boost::format("#%d %d ") % harmonic.first % harmonic.second).str();
+				result += fmt::format("#{} {} ", harmonic.first, harmonic.second);
 			}
 			return result;
 		}

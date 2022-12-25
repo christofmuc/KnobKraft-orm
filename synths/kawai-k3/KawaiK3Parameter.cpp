@@ -12,7 +12,7 @@
 
 #include "MidiHelpers.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -149,7 +149,7 @@ namespace midikraft {
 			if (paramNo_ == CHORUS) {
 				return kChrousName[value];
 			}
-			return (boost::format("%d") % value).str();
+			return fmt::format("{}", value);
 		}
 		return "invalid";
 	}

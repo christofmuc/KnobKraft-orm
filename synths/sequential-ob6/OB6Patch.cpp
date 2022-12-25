@@ -7,8 +7,6 @@
 
 #include "OB6Patch.h"
 
-#include <boost/format.hpp>
-
 namespace midikraft {
 
 	OB6Patch::OB6Patch(int dataTypeID, Synth::PatchData const &patchData, MidiProgramNumber programNo) : Patch(dataTypeID, patchData), place_(programNo)

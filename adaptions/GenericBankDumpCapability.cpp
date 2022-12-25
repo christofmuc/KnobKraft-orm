@@ -11,7 +11,7 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace py = pybind11;
 
@@ -93,7 +93,7 @@ namespace knobkraft {
 					patchesFound.push_back(patch);
 				}
 				else {
-					SimpleLogger::instance()->postMessage((boost::format("Adaptation: Could not create patch from data returned from %s") % kExtractPatchesFromBank).str());
+					SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank));
 				}
 			}
 			return patchesFound;

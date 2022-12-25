@@ -443,7 +443,7 @@ namespace midikraft {
 
 	/*std::vector<std::string> Matrix1000::presetNames()
 	{
-		auto basename = (boost::format("Knobkraft M1000 %d") % channel().toOneBasedInt()).str();
+		auto basename = (fmt::format("Knobkraft M1000 %d") % channel().toOneBasedInt()).str();
 		return { basename + " Main", basename + " Second" };
 	}*/
 

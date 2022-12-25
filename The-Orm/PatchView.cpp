@@ -25,8 +25,7 @@
 
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
-#include <boost/format.hpp>
-#include "fmt/format.h"
+#include <fmt/format.h>
 #include "PatchInterchangeFormat.h"
 #include "Settings.h"
 #include "ReceiveManualDumpWindow.h"
@@ -340,7 +339,7 @@ void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, M
 			if (synth /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
-				progressWindow->setMessage((boost::format("Importing %s from %s...") % midikraft::SynthBank::friendlyBankName(synth, bank) % synth->getName()).str());
+				progressWindow->setMessage(fmt::format("Importing {} from {}...", midikraft::SynthBank::friendlyBankName(synth, bank), synth->getName()));
 				librarian_.startDownloadingAllPatches(
 					midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
 					synth,
@@ -571,13 +570,13 @@ void PatchView::retrieveEditBuffer()
 void PatchView::deletePatches()
 {
 	int totalAffected = totalNumberOfPatches();
-	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Delete all %d patches matching current filter") % totalAffected).str(),
-		(boost::format("Warning, there is no undo operation. Do you really want to delete the %d patches matching the current filter?\n\n"
-			"They will be gone forever, unless you use a backup!") % totalAffected).str())) {
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, fmt::format("Delete all {} patches matching current filter", totalAffected),
+		fmt::format("Warning, there is no undo operation. Do you really want to delete the {} patches matching the current filter?\n\n"
+			"They will be gone forever, unless you use a backup!", totalAffected))) {
 		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
 			"Are you sure?", "Yes", "No")) {
 			int deleted = database_.deletePatches(currentFilter());
-			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", fmt::format("{} patches deleted from database", deleted));
 			UIModel::instance()->importListChanged_.sendChangeMessage();
 			retrieveFirstPageFromDatabase();
 		}
@@ -591,10 +590,10 @@ void PatchView::reindexPatches() {
 	auto filter = midikraft::PatchDatabase::allForSynth(currentSynth);
 
 	int totalAffected = database_.getPatchesCount(filter);
-	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex all %d patches for synth %s?") % totalAffected % currentSynth->getName()).str(),
-		(boost::format("This will reindex the %d patches with the current fingerprinting algorithm.\n\n"
-			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n")
-			% totalAffected).str())) {
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, fmt::format("Do you want to reindex all {} patches for synth {}?", totalAffected, currentSynth->getName()),
+		fmt::format("This will reindex the {} patches with the current fingerprinting algorithm.\n\n"
+			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n",
+			totalAffected))) {
 		std::string backupName = database_.makeDatabaseBackup("-before-reindexing");
 		spdlog::info("Created database backup at {}", backupName);
 		int countAfterReindexing = database_.reindexPatches(filter);
@@ -602,7 +601,7 @@ void PatchView::reindexPatches() {
 			// No error, display user info
 			if (totalAffected > countAfterReindexing) {
 				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful",
-					(boost::format("The reindexing reduced the number of patches from %d to %d due to deduplication.") % totalAffected % countAfterReindexing).str());
+					fmt::format("The reindexing reduced the number of patches from {} to {} due to deduplication.",totalAffected, countAfterReindexing));
 			}
 			else {
 				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful", "The count of patches did not change, but they are now indexed with the correct fingerprint and should stop duplicating themselves.");

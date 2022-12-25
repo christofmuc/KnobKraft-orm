@@ -7,8 +7,8 @@
 #include "PythonUtils.h"
 
 #include "Logger.h"
+#include "I18NHelper.h"
 
-#include <boost/algorithm/string.hpp>
 #include <spdlog/spdlog.h>
 
 namespace py = pybind11;
@@ -61,7 +61,7 @@ void PyStdErrOutStreamRedirect::flushToLogger(std::string const &logDomain)
 	}
 	auto output = stdoutString();
 	if (!output.empty()) {
-		boost::trim_right(output);
+		string_trim_right(output);
 		spdlog::info("{}: {}", logDomain, output);
 	}
 	clear();

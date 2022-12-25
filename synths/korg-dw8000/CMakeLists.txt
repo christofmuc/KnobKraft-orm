@@ -20,11 +20,11 @@ set(Sources
 
 # Setup library
 add_library(midikraft-korg-dw8000 ${Sources})
-target_include_directories(midikraft-korg-dw8000 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
+target_include_directories(midikraft-korg-dw8000 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(midikraft-korg-dw8000 PUBLIC "${icu_SOURCE_DIR}/lib64")
 endif()
-target_link_libraries(midikraft-korg-dw8000 juce-utils midikraft-base ${APPLE_BOOST})
+target_link_libraries(midikraft-korg-dw8000 juce-utils midikraft-base)
 
 # Pedantic about warnings
 if (MSVC)

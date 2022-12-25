@@ -12,7 +12,7 @@
 
 #include "KawaiK3WaveParameter.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -37,12 +37,12 @@ namespace midikraft {
 			auto patch = KawaiK3Patch::createInitPatch();
 			auto syx = k3.k3PatchToSysex(patch->data(), KawaiK3::kFakeEditBuffer.toZeroBased(), false);
 
-			return (boost::format("$button %d ; Init Patch\n"
-				"  .tx $F0 %s $f7 $c%x $00\n" // Notice the program change message, else the K3 will keep playing the edit buffer and not reload the program
+			return fmt::format("$button {} ; Init Patch\n"
+				"  .tx $F0 {} $f7 $c{:x} $00\n" // Notice the program change message, else the K3 will keep playing the edit buffer and not reload the program
 				"  .minmax 0 0\n"
 				"  .default 0\n"
 				"  .mode down\n"
-				"  .showvalue off\n") % number_ % BCR2000::syxToBCRString(syx) % channel).str();
+				"  .showvalue off\n", number_, BCR2000::syxToBCRString(syx), channel);
 		}
 
 		std::string name() override
@@ -129,23 +129,23 @@ namespace midikraft {
 		case ENCODER: {
 			if (paramDef->minValue() >= 0) {
 				// Simple case, no negative values required
-				return (boost::format(
-					"$encoder %d ; %s\n"
-					"  .easypar CC %d %d %d %d absolute\n"
+				return fmt::format(
+					"$encoder {} ; {}\n"
+					"  .easypar CC {} {} {} {} absolute\n"
 					// This would work, but as negative numbers don't work we resort back to CC only and have knobkraft translate it
 					//"  .tx $F0 $40 $%02X $10 $00 $01 $%02X val4.7 val0.3 $F7\n" 
 					//"  .minmax 0 %d\n"
-					"  .default %s\n"
-					"  .mode %s\n"
+					"  .default {}\n"
+					"  .mode {}\n"
 					"  .showvalue on\n"
-					"  .resolution %d %d %d %d\n"
-				) % number_ % paramDef->name()
-					% (knobkraftChannel + 1) % paramDef->paramNo() % 0 % paramDef->maxValue()
+					"  .resolution {} {} {} {}\n"
+				 , number_ , paramDef->name()
+					, (knobkraftChannel + 1) , paramDef->paramNo() , 0 , paramDef->maxValue()
 					//% (channel & 0x0f) % param_ 
 					//% paramDef->maxValue() 
-					% 0 % BCRdefinition::ledMode(ledMode_)
-					% range % range % range % range
-					).str();
+					, 0 , BCRdefinition::ledMode(ledMode_)
+					, range , range , range , range
+					);
 			}
 			else {
 				// Uh, the BCR can't do negative. So we need to shift the range from e.g. -15..15 to 0..31, but generate 0x8F..0x81 0 0x01 .. 0x0F
@@ -157,9 +157,9 @@ namespace midikraft {
 		case BUTTON:
 			// Not implemented yet
 		default:
-			return (boost::format(
-				"; %s\n"
-			) % paramDef->name()).str();
+			return fmt::format(
+				"; {}\n",
+			paramDef->name());
 		}
 	}
 
@@ -264,7 +264,7 @@ namespace midikraft {
 
 	std::string KawaiK3BCRWaveDefinition::name()
 	{
-		return (boost::format("Harmonic #%d") % harmonic_).str();
+		return fmt::format("Harmonic #{}", harmonic_);
 	}
 
 	std::shared_ptr<midikraft::SynthParameterDefinition> KawaiK3BCRWaveDefinition::parameter()

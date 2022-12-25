@@ -8,7 +8,7 @@
 
 #include "Patch.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -98,7 +98,7 @@ namespace midikraft {
 		if (valueLookup_.find(value) != valueLookup_.end()) {
 			return valueLookup_.find(value)->second;
 		}
-		return (boost::format("%d") % value).str();
+		return fmt::format("%d", value);
 	}
 
 	int MKS50_Parameter::sysexIndex() const

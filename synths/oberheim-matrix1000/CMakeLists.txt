@@ -21,12 +21,12 @@ set(Sources
 
 # Setup library
 add_library(midikraft-oberheim-matrix1000 ${Sources})
-target_include_directories(midikraft-oberheim-matrix1000 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${boost_SOURCE_DIR} "${icu_SOURCE_DIR}/include")
+target_include_directories(midikraft-oberheim-matrix1000 PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(midikraft-oberheim-matrix1000 PUBLIC "${icu_SOURCE_DIR}/lib64")
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog)
 ELSEIF(APPLE)
-	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog ICU::data ICU::uc ${APPLE_BOOST})
+	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog ICU::data ICU::uc)
 ELSE()
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog icudata icuuc)
 ENDIF()

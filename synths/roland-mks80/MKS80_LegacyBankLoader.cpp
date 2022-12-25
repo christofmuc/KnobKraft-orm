@@ -15,7 +15,7 @@ namespace midikraft {
 			// Read length of string
 			size_t len = *(position++);
 			while (position != end && *position < 0x20) {
-				//SimpleLogger::instance()->postMessage((boost::format("skipping byte valued %d at position %d") % ((int) *(position-1)) % std::distance(start, position-1)).str());
+				//SimpleLogger::instance()->postMessage((fmt::format("skipping byte valued %d at position %d") % ((int) *(position-1)) % std::distance(start, position-1)).str());
 				len = *(position++);
 			}
 			while (name.size() < len && position != end) {

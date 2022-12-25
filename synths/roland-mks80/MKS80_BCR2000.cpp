@@ -2,7 +2,7 @@
 
 #include "BCR2000.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -35,30 +35,29 @@ namespace midikraft {
 		int upperOrLower = param_->section() == MKS80_Parameter::LOWER ? 0x10 : 0x01; // Hard code to upper for now
 		switch (type_) {
 		case ENCODER:
-			return (boost::format(
-				"$encoder %d ; %s\n"
-				"  .tx $F0 $41 $36 $%02X $20 $%02X $%02X $%02X val $F7\n"
-				"  .minmax %d %d\n"
+			return fmt::format(
+				"$encoder {} ; {}\n"
+				"  .tx $F0 $41 $36 ${:02X} $20 ${:02X} ${:02X} ${:02X} val $F7\n"
+				"  .minmax {} {}\n"
 				"  .default 0\n"
-				"  .mode %s\n"
+				"  .mode {}\n"
 				"  .showvalue on\n"
-				"  .resolution 64 64 127 127\n"
-			) % encoderNumber() % param_->name() % (channel & 0x0f) % toneOrPatch % upperOrLower % param_->paramIndex() % param_->minValue() % param_->maxValue() % BCRdefinition::ledMode(ledMode_)).str();
+				"  .resolution 64 64 127 127\n",
+			 encoderNumber(), param_->name(), (channel & 0x0f), toneOrPatch, upperOrLower, param_->paramIndex(), param_->minValue(), param_->maxValue(), BCRdefinition::ledMode(ledMode_));
 		case BUTTON: {
 			std::string buttonMode = param_->maxValue() > 1 ? "incval 1" : "toggle";
-			return (boost::format(
-				"$button %d ; %s\n"
-				"  .tx $F0 $41 $36 $%02X $20 $%02X $%02X $%02X val $F7\n"
-				"  .minmax %d %d\n"
+			return fmt::format(
+				"$button {} ; {}\n"
+				"  .tx $F0 $41 $36 ${:02X} $20 ${:02X} ${:02X} ${:02X} val $F7\n"
+				"  .minmax {} {}\n"
 				"  .default 0\n"
-				"  .mode %s\n"
-				"  .showvalue on\n"
-			) % encoderNumber() % param_->name() % (channel & 0x0f) % toneOrPatch % upperOrLower % param_->paramIndex() % param_->minValue() % param_->maxValue() % buttonMode).str();
+				"  .mode {}\n"
+				"  .showvalue on\n",
+			encoderNumber(), param_->name(), (channel & 0x0f), toneOrPatch, upperOrLower, param_->paramIndex(), param_->minValue(), param_->maxValue(), buttonMode);
 		}
 		default:
-			return (boost::format(
-				"; Undefined: %s\n"
-			) % param_->name()).str();
+			return fmt::format(
+				"; Undefined: %s\n", param_->name());
 		}
 	}
 
@@ -161,7 +160,7 @@ namespace midikraft {
 		std::string result;
 		result = BCR2000::generateBCRHeader();
 		for (int i = 0; i < 2; i++) {
-			result += BCR2000::generatePresetHeader((boost::format(presetName) % i).str());
+			result += BCR2000::generatePresetHeader(fmt::format(fmt::runtime(presetName),  i));
 			std::vector<std::pair<BCRdefinition *, std::string>> all_entries;
 			for (auto controller : MKS80_BCR2000::BCR2000_setup((MKS80_Parameter::SynthSection) i)) {
 				all_entries.emplace_back(std::make_pair(controller, controller->generateBCR(channel)));

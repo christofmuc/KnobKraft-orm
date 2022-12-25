@@ -16,7 +16,7 @@
 #include "Sysex.h"
 
 #include <iterator>
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -92,7 +92,7 @@ namespace midikraft {
 
 	std::string KorgDW8000::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		return (boost::format("%d%d") % ((programNo.toZeroBased() / 8) + 1) % ((programNo.toZeroBased() % 8) + 1)).str();
+		return fmt::format("{} {}", ((programNo.toZeroBased() / 8) + 1), ((programNo.toZeroBased() % 8) + 1));
 	}
 
 	std::string KorgDW8000::friendlyBankName(MidiBankNumber bankNo) const
@@ -120,7 +120,7 @@ namespace midikraft {
 
 	/*std::vector<std::string> KorgDW8000::presetNames()
 	{
-		return { (boost::format("Knobkraft %s") % getName()).str() };
+		return { (fmt::format("Knobkraft %s") % getName()).str() };
 	}*/
 
 	bool KorgDW8000::isEditBufferDump(const std::vector<MidiMessage>& message) const
@@ -226,7 +226,7 @@ namespace midikraft {
 				data[KorgDW8000Parameter::allParameters[patch]->sysexIndex()] = (uint8)KorgDW8000Parameter::allParameters[patch]->maxValue();
 			}
 
-			KorgDW8000Patch testPatch(data, (boost::format("Patch %d") % patch).str());
+			KorgDW8000Patch testPatch(data, (fmt::format("Patch %d") % patch).str());
 			reverseEngineer.push_back(patchToSysex(testPatch)[0]);
 			reverseEngineer.push_back(saveEditBufferToProgram(patch));
 		}

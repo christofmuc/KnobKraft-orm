@@ -496,11 +496,11 @@ namespace midikraft {
 	{
 		// The MKS80 needs two BCR2000 presets - one for lower, one for upper
 		auto name = presetName();
-		return { (boost::format(name) % 0).str(), (boost::format(name) % 1).str() };
+		return { (fmt::format(name) % 0).str(), (boost::format(name) % 1).str() };
 	}*/
 
 	std::string MKS80::presetName() {
-		return fmt::format("KnobKraft MKS80 %{}", channel().toOneBasedInt());
+		return fmt::format("KnobKraft MKS80 {{}}{}", channel().toOneBasedInt());
 	}
 
 	void MKS80::setupBCR2000(BCR2000 &bcr)

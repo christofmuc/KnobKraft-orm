@@ -13,8 +13,7 @@
 
 #include "MidiNote.h"
 
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
+#include "I18NHelper.h"
 
 namespace midikraft {
 
@@ -240,8 +239,8 @@ namespace midikraft {
 	{
 		std::string layerA = layerName(0);
 		std::string layerB = layerName(1);
-		boost::trim(layerA);
-		boost::trim(layerB);
+		string_trim(layerA);
+		string_trim(layerB);
 
 		if (layerA == layerB) {
 			switch (layerMode()) {

@@ -10,7 +10,7 @@
 #include "DetailedParametersCapability.h"
 #include "LayeredPatchCapability.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 PatchTextBox::PatchTextBox() : mode_(DisplayMode::PARAMS)
 {
@@ -141,7 +141,7 @@ std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch
 		for (int layer = 0; layer < numLayers; layer++) {
 			if (layers) {
 				if (layer > 0) result += "\n";
-				result = result + (boost::format("Layer: %s\n") % layers->layerName(layer)).str();
+				result = result + fmt::format("Layer: {}\n", layers->layerName(layer));
 			}
 			for (auto param : parameterDetails->allParameterDefinitions()) {
 				if (layers) {
@@ -153,7 +153,7 @@ std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch
 				}
 				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
 				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
-					result = result + (boost::format("%s: %s\n") % param->description() % param->valueInPatchToText(*patch)).str();
+					result = result + fmt::format("{}: {}\n",param->description(), param->valueInPatchToText(*patch));
 				}
 			}
 		}

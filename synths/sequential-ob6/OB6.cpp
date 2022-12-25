@@ -13,7 +13,7 @@
 #include "MidiTuning.h"
 #include "MTSFile.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace midikraft {
 
@@ -146,12 +146,12 @@ namespace midikraft {
 
 	std::string OB6::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		return (boost::format("#%03d") % programNo.toZeroBasedWithBank()).str();
+		return fmt::format("#{:03d}", programNo.toZeroBasedWithBank());
 	}
 
 	std::string OB6::friendlyBankName(MidiBankNumber bankNo) const
 	{
-		return (boost::format("%03d - %03d") % (bankNo.toZeroBased() * numberOfPatches()) % (bankNo.toOneBased() * numberOfPatches() - 1)).str();
+		return fmt::format("{:03d} - {:03d}", (bankNo.toZeroBased() * numberOfPatches()), (bankNo.toOneBased() * numberOfPatches() - 1));
 	}
 
 	std::shared_ptr<DataFile> OB6::patchFromSysex(const std::vector<MidiMessage>& messages) const

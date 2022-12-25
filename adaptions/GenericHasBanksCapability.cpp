@@ -52,7 +52,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_->pythonModuleHasFunction(kFriendlyBankName)) {
-			return (boost::format("Bank %d") % bankNo.toOneBased()).str();
+			return fmt::format("Bank {}", bankNo.toOneBased());
 		}
 		try {
 			int bankAsInt = bankNo.toZeroBased();

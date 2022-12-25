@@ -53,16 +53,16 @@
 #include <spdlog/sinks/base_sink.h>
 
 template<typename Mutex>
-class LogViewSink : public spdlog::sinks::base_sink <Mutex>
+class LogViewSink : public spdlog::sinks::base_sink<Mutex>
 {
 public:
-	LogViewSink(LogView &logView) : logView_(logView) {}
+	LogViewSink(LogView& logView) : logView_(logView) {}
 
 protected:
 	void sink_it_(const spdlog::details::log_msg& msg) override
 	{
 		spdlog::memory_buf_t formatted;
-		formatter_->format(msg, formatted);
+		this->formatter_->format(msg, formatted);
 		logView_.logMessage(msg.level, fmt::to_string(formatted));
 	}
 
@@ -117,11 +117,11 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
 	globalScaling_(1.0f),
-        buttons_(301),
-        mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-		logView_(true, true, true, true),
-        midiLogArea_(&midiLogView_, BorderSize<int>(10)),
-        logArea_(&logView_, BorderSize<int>(8))
+	buttons_(301),
+	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
+	logView_(true, true, true, true),
+	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
+	logArea_(&logView_, BorderSize<int>(8))
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
 
@@ -372,14 +372,14 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
 		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
 		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
-                case KeyboardMacroEvent::Unknown:
-                  // Fall through
+		case KeyboardMacroEvent::Unknown:
+			// Fall through
 		default:
 			spdlog::error("Invalid keyboard macro event detected");
 			return;
 		}
 		spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(event));
-	});
+		});
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
 	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
@@ -423,7 +423,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
 		midiLogView_.addMessageToList(message, source, isOut);
-	});
+		});
 
 	// Do a quickconfigure
 	auto list = UIModel::instance()->synthList_.activeSynths();
@@ -447,8 +447,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// you add any child components.
 	if (makeYourOwnSize) {
 		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-                auto initialSize = mainScreenSize.reduced(100);
-                setSize(initialSize.getWidth(), initialSize.getHeight());
+		auto initialSize = mainScreenSize.reduced(100);
+		setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
@@ -457,7 +457,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 #ifdef WIN32
 		checkForUpdatesOnStartup();
 #endif
-	});
+		});
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -503,7 +503,7 @@ void logSparkleError() {
 void sparkleInducedShutdown() {
 	MessageManager::callAsync([]() {
 		JUCEApplicationBase::quit();
-	});
+		});
 }
 #endif
 
@@ -601,7 +601,7 @@ public:
 	{
 		// Build synth list
 		std::vector<std::shared_ptr<midikraft::Synth>> allSynths;
-		for (auto & synth : UIModel::instance()->synthList_.allSynths()) {
+		for (auto& synth : UIModel::instance()->synthList_.allSynths()) {
 			allSynths.push_back(synth.synth());
 		}
 
@@ -647,7 +647,7 @@ public:
 				}
 			}
 			else {
-				spdlog::warn("Not exporting because file already exists: {}",  exported.getFullPathName());
+				spdlog::warn("Not exporting because file already exists: {}", exported.getFullPathName());
 			}
 
 			done += 1.0;
@@ -762,7 +762,7 @@ float MainComponent::calcAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scaling factors matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
-	auto availableHeight = (float) Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
+	auto availableHeight = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
 	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
 	float goodScale = 0.75f;
 	for (auto scale : scales) {
@@ -787,8 +787,8 @@ void MainComponent::resized()
 		synthList_.setVisible(true);
 	}
 	else {
-                //TODO - one synth needs to be implemented differently.
-		// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
+		//TODO - one synth needs to be implemented differently.
+// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
 	splitter_->setBounds(area);
@@ -838,7 +838,7 @@ void MainComponent::refreshSynthList() {
 		}
 	}
 
-	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const &clicked) {
+	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const& clicked) {
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
 		if (activeSynth) {
 			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());
@@ -847,7 +847,7 @@ void MainComponent::refreshSynthList() {
 			// What did you put into the list?
 			jassert(false);
 		}
-	});
+		});
 
 	// Need to make sure the correct button is pressed
 	if (UIModel::currentSynth()) {
@@ -864,8 +864,9 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		quickconfigreDebounce_.callDebounced([this, synthList]() {
 			auto myList = synthList;
 			autodetector_.quickconfigure(myList);
-		}, 2000);
-	} else if (source == &UIModel::instance()->synthList_) {
+			}, 2000);
+	}
+	else if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
 		resized();
@@ -875,8 +876,8 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		if (synth) {
 			// Persist current synth for next launch
 			Settings::instance().set("CurrentSynth", synth->getName());
-            // Make sure to let the synth list reflect the selection state!
-            synthList_.setActiveListItem(synth->getName());
+			// Make sure to let the synth list reflect the selection state!
+			synthList_.setActiveListItem(synth->getName());
 		}
 
 
@@ -945,14 +946,13 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2023 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
 		"\n"
 		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
 		"\n"
 		"Other licenses:\n"
 		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
-		"The boost library is used for parts of this software, see https://www.boost.org/.\n"
 		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
 		"\n"
 		"Icons made by Freepik from www.flaticon.com\n"

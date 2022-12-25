@@ -7,7 +7,6 @@
 #include "RefaceDXPatch.h"
 
 #include <algorithm>
-#include <boost/format.hpp>
 
 namespace midikraft {
 
