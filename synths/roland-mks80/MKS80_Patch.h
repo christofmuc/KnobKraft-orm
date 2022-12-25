@@ -29,8 +29,6 @@ namespace midikraft {
 		MKS80_Patch(MidiProgramNumber patchNumber, std::map<APR_Section, std::vector<uint8>> const &data);
 		MKS80_Patch(MidiProgramNumber patchNumber, Synth::PatchData const &data);
 
-		virtual std::string name() const override;
-
 		virtual MidiProgramNumber patchNumber() const override;
 
 		int value(SynthParameterDefinition const &param) const;

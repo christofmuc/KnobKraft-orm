@@ -28,6 +28,7 @@ namespace knobkraft {
 		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
 
 		void setName(std::string const &name) override;
+		std::string name() const override;
 
 	private:
 		std::weak_ptr<GenericPatch> me_;
@@ -115,8 +116,7 @@ namespace knobkraft {
 			}
 		}
 
-		std::string name() const override;
-
+		
 		// For error handling
 		void logAdaptationError(const char *methodName, std::exception &e) const;
 

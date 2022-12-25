@@ -11,11 +11,6 @@ namespace midikraft {
 	class Matrix1000_GlobalSettings_DataFile : public DataFile {
 	public:
 		using DataFile::DataFile;
-
-		std::string name() const override
-		{
-			return "MASTER DATA";
-		}
 	};
 
 	midikraft::Matrix1000_GlobalSettings_Loader::Matrix1000_GlobalSettings_Loader(Matrix1000 *matrix1000) : matrix1000_(matrix1000)

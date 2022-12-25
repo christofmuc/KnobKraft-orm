@@ -24,7 +24,6 @@ namespace midikraft {
         virtual ~KawaiK3Patch() override = default;
 
 		// Implementation of Patch interface
-		virtual std::string name() const override;
 		virtual MidiProgramNumber patchNumber() const override;
 
 		// DetailedParametersCapability

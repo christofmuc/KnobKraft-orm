@@ -270,8 +270,8 @@ void PatchView::showPatchDiffDialog() {
 	if (compareTarget_.synth()->getName() != UIModel::currentPatch().synth()->getName()) {
 		// Should have come either
 		spdlog::warn("Can't compare patch {} of synth {} with patch {} of synth {}",
-			UIModel::currentPatch().patch()->name(), UIModel::currentPatch().synth()->getName(),
-			compareTarget_.patch()->name(), compareTarget_.synth()->getName());
+			UIModel::currentPatch().name(), UIModel::currentPatch().synth()->getName(),
+			compareTarget_.name(), compareTarget_.synth()->getName());
 		return;
 	}
 

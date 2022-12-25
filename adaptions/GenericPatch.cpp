@@ -30,29 +30,35 @@ namespace knobkraft {
 		return py::hasattr(*adaptation_, functionName.c_str());
 	}
 
-	std::string GenericPatch::name() const
+	std::string GenericStoredPatchNameCapability::name() const
 	{
-		if (pythonModuleHasFunction(kNameFromDump)) {
-			py::gil_scoped_acquire acquire;
-			try {
-				std::vector<int> v(data().data(), data().data() + data().size());
-				auto result = adaptation_.attr(kNameFromDump)(v);
-				checkForPythonOutputAndLog();
-				return result.cast<std::string>();
+		py::gil_scoped_acquire acquire;
+		if (!me_.expired()) {
+			auto patch = me_.lock();
+			if (patch->pythonModuleHasFunction(kNameFromDump)) {
+				try {
+					std::vector<int> v(patch->data().data(), patch->data().data() + patch->data().size());
+					auto result = patch->callMethod(kNameFromDump, v);
+					checkForPythonOutputAndLog();
+					return result.cast<std::string>();
+				}
+				catch (py::error_already_set& ex) {
+					std::string errorMessage = (boost::format("Error calling %s: %s") % kNameFromDump % ex.what()).str();
+					ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
+					SimpleLogger::instance()->postMessage(errorMessage);
+				}
+				catch (std::exception& ex) {
+					patch->logAdaptationError(kNameFromDump, ex);
+				}
+				return "invalid";
 			}
-			catch (py::error_already_set& ex) {
-				std::string errorMessage = (boost::format("Error calling %s: %s") % kNameFromDump % ex.what()).str();
-				ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
-				SimpleLogger::instance()->postMessage(errorMessage);
+			else
+			{
+				return "noname";
 			}
-			catch (std::exception& ex) {
-				logAdaptationError(kNameFromDump, ex);
-			}
-			return "invalid";
 		}
-		else 
-		{ 
-			return "noname";
+		else {
+			return "invalid";
 		}
 	}
 
@@ -187,15 +193,14 @@ namespace knobkraft {
 			if (!me_.expired()) {
 				auto patch = me_.lock();
 				try {
-					std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
+					std::vector<int> v(patch->data().data(), patch->data().data() + patch->data().size());
 					py::object result = patch->callMethod(kSetLayerName, v, layerNo, layerName);
 					auto intVector = result.cast<std::vector<int>>();
 					std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
-					me_.lock()->setData(byteData);
+					patch->setData(byteData);
 				}
 				catch (py::error_already_set& ex) {
-					if (!me_.expired())
-						me_.lock()->logAdaptationError(kSetLayerName, ex);
+					patch->logAdaptationError(kSetLayerName, ex);
 					ex.restore();
 				}
 				catch (std::exception& ex) {

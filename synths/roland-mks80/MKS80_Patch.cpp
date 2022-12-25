@@ -39,12 +39,6 @@ namespace midikraft {
 	{
 	}
 
-	std::string MKS80_Patch::name() const
-	{
-		MKS80 mks;
-		return mks.friendlyProgramName(patchNumber_); //TODO could call static function
-	}
-
 	MidiProgramNumber MKS80_Patch::patchNumber() const
 	{
 		return patchNumber_;

@@ -159,7 +159,8 @@ namespace midikraft {
 		// Copy the tone data
 		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(syx));
 		// And now reverse map the 10 characters of the patch name into the bytes
-		std::string name = patch->name();
+		//TODO - this needs to be replaced by properly implementing the renamePatch() function
+		/*std::string name = patch->name();
 		//TODO - this should be taken from the MKS50_Patch class
 		const std::string kPatchNameChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
 		for (int i = 0; i < 10; i++) {
@@ -181,7 +182,7 @@ namespace midikraft {
 			if (!found) {
 				syx.push_back(62); // This should be blank
 			}
-		}
+		}*/
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(syx) });
 	}
 
@@ -439,7 +440,7 @@ namespace midikraft {
 					auto newPatch = patchFromSysex({ message });
 					if (newPatch) {
 						result.push_back(newPatch);
-						spdlog::debug("Found tone {}", newPatch->name());
+						spdlog::debug("Found tone {}", nameForPatch(newPatch));
 					}
 				}
 			}

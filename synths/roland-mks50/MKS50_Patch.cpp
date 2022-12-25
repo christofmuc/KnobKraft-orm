@@ -9,7 +9,7 @@
 #include "MKS50_Parameter.h"
 #include "PackedDataFormatInfo.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
 
 namespace midikraft {
 
@@ -24,6 +24,12 @@ namespace midikraft {
 	std::string MKS50_Patch::name() const
 	{
 		return patchName_;
+	}
+
+	void MKS50_Patch::setName(std::string const& name)
+	{
+		juce::ignoreUnused(name);
+		spdlog::error("Renaming patches for the MKS50 is not implemented yet!");
 	}
 
 	MidiProgramNumber MKS50_Patch::patchNumber() const

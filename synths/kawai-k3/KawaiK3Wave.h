@@ -19,8 +19,6 @@ namespace midikraft {
 		KawaiK3Wave(Synth::PatchData const& data, MidiProgramNumber programNo);
 		KawaiK3Wave(const Additive::Harmonics& harmonics, MidiProgramNumber programNo);
 
-		std::string name() const override;
-
 	private:
 		MidiProgramNumber programNo_;
 	};

@@ -46,13 +46,6 @@ namespace midikraft {
 		return patch;
 	}
 
-	std::string KawaiK3Patch::name() const
-	{
-		// The Kawai K3 is so old is has no display to display a patch name, hence, also none stored in the patch data
-		KawaiK3 k3;
-		return k3.friendlyProgramName(number_); //TODO could do static call
-	}
-
 	MidiProgramNumber KawaiK3Patch::patchNumber() const {
 		return number_;
 	}

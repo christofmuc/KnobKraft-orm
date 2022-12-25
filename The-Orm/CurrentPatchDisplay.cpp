@@ -227,7 +227,7 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 				if (layers) {
 					int i = atoi(property->name().substring(6).toStdString().c_str());
 					layers->setLayerName(i, value.getValue().toString().toStdString());
-					currentPatch_->setName(currentPatch_->patch()->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
+					currentPatch_->setName(currentPatch_->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
 					setCurrentPatch(currentPatch_);
 					favoriteHandler_(currentPatch_);
 					return;

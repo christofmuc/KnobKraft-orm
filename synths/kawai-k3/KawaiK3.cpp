@@ -454,7 +454,7 @@ namespace midikraft {
 		}
 		if (!unresolvedUserWave.empty()) {
 			for (auto patch : unresolvedUserWave) {
-				spdlog::info("No user wave recorded for programmable oscillator of patch '{}', sound can not be reproduced", patch->name());
+				spdlog::info("No user wave recorded for programmable oscillator of patch '{}', sound can not be reproduced", nameForPatch(patch));
 			}
 		}
 		return result;
@@ -663,7 +663,7 @@ namespace midikraft {
 			spdlog::info("Writing K3 user wave to the internal wave memory");
 		}
 		else {
-			spdlog::info("Writing K3 patch '{}' to program {}", dataFile->name(), friendlyProgramName(kFakeEditBuffer));
+			spdlog::info("Writing K3 patch '{}' to program {}", nameForPatch(dataFile), friendlyProgramName(kFakeEditBuffer));
 		}
 		MidiBuffer messages = MidiHelpers::bufferFromMessages(dataFileToMessages(dataFile, target));
 		sendPatchToSynth(MidiController::instance(), messages);

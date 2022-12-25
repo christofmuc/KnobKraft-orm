@@ -15,6 +15,7 @@
 #include "StreamLoadCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DataFileSendCapability.h"
+#include "StoredPatchNameCapability.h"
 
 #include "Logger.h"
 
@@ -107,11 +108,12 @@ namespace midikraft {
 		};
 	};
 
-	class BCR2000Preset : public DataFile {
+	class BCR2000Preset : public DataFile, public StoredPatchNameCapability {
 	public:
 		BCR2000Preset(std::string const &name, Synth::PatchData const &data);
 
-		std::string name() const override;
+		virtual std::string name() const override;
+		virtual void setName(std::string const& name) override;
 
 	private:
 		std::string name_;

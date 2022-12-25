@@ -21,9 +21,4 @@ namespace midikraft {
 		KawaiK3HarmonicsParameters::fromHarmonics(harmonics, *this);
 	}
 
-	std::string KawaiK3Wave::name() const
-	{
-		return "User Wave";
-	}
-
 }

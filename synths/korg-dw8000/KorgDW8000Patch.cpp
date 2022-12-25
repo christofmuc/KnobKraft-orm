@@ -21,12 +21,6 @@ namespace midikraft {
 		jassert(patchdata.size() == 51);
 	}
 
-	std::string KorgDW8000Patch::name() const
-	{
-		KorgDW8000 dw;
-		return dw.friendlyProgramName(number_); //TODO Could call a static method here
-	}
-
 	MidiProgramNumber KorgDW8000Patch::patchNumber() const {
 		return number_;
 	}

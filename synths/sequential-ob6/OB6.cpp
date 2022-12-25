@@ -111,11 +111,6 @@ namespace midikraft {
 	class GlobalSettingsFile : public DataFile {
 	public:
 		using DataFile::DataFile;
-
-		std::string name() const override
-		{
-			return "OB6 MASTER DATA";
-		}
 	};
 
 	std::vector<Range<size_t>> kOB6BlankOutZones = {

@@ -8,6 +8,7 @@
 
 #include "Patch.h"
 #include "DetailedParametersCapability.h"
+#include "StoredPatchNameCapability.h"
 
 namespace midikraft {
 
@@ -15,11 +16,12 @@ namespace midikraft {
 		ALL = 0, 
 	};
 
-	class MKS50_Patch : public Patch, public DetailedParametersCapability {
+	class MKS50_Patch : public Patch, public DetailedParametersCapability, public StoredPatchNameCapability {
 	public:
 		MKS50_Patch(MidiProgramNumber programNumber, std::string const& patchName, Synth::PatchData const& patchData);
 
 		virtual std::string name() const override;
+		virtual void setName(std::string const& name) override;
 
 		virtual MidiProgramNumber patchNumber() const override;
 		//virtual void setPatchNumber(MidiProgramNumber patchNumber) override;
