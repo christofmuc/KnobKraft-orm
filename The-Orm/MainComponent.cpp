@@ -63,7 +63,7 @@ protected:
 	{
 		spdlog::memory_buf_t formatted;
 		formatter_->format(msg, formatted);
-		logView_.addMessageToListWithoutTimestamp(fmt::to_string(formatted));
+		logView_.logMessage(msg.level, fmt::to_string(formatted));
 	}
 
 	void flush_() override
