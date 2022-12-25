@@ -221,7 +221,7 @@ namespace midikraft {
 		Rev2ParamDefinition(980, 1043, 128, 255, "Poly Seq Vel 6", 960)
 	};
 
-	Rev2Patch::Rev2Patch() : Patch(Rev2::PATCH), number_(MidiProgramNumber::fromZeroBase(0))
+	Rev2Patch::Rev2Patch() : Patch(Rev2::PATCH), number_(MidiProgramNumber::invalidProgram())
 	{
 		// Load the init patch
 		MidiMessage initPatch = MidiMessage(Rev2_InitPatch_syx, Rev2_InitPatch_syx_size);

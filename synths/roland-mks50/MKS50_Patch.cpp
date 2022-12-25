@@ -132,7 +132,7 @@ namespace midikraft {
 				name += "!";
 			}
 		}
-		return std::make_shared<MKS50_Patch>(MidiProgramNumber::fromZeroBase(0), name, aprData);
+		return std::make_shared<MKS50_Patch>(MidiProgramNumber::invalidProgram(), name, aprData);
 	}
 
 }

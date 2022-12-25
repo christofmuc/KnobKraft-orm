@@ -181,7 +181,7 @@ namespace midikraft {
 		if (isSingleProgramDump(message)) {
 			return MidiProgramNumber::fromZeroBase(sysexSubcommand(message[0]));
 		}
-		return MidiProgramNumber::fromZeroBase(0);
+		return MidiProgramNumber::invalidProgram();
 	}
 
 	juce::MidiMessage KawaiK3::requestWaveBufferDump(WaveType waveType) const
@@ -549,7 +549,7 @@ namespace midikraft {
 	std::vector<std::shared_ptr<midikraft::SynthParameterDefinition>> KawaiK3::allParameterDefinitions() const
 	{
 		Synth::PatchData data;
-		KawaiK3Patch fake(MidiProgramNumber::fromZeroBase(0), data);
+		KawaiK3Patch fake(MidiProgramNumber::invalidProgram(), data);
 		return fake.allParameterDefinitions();
 	}
 

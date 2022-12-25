@@ -221,7 +221,7 @@ namespace midikraft {
 		if (isSingleProgramDump(message)) {
 			return MidiProgramNumber::fromZeroBase(message[0].getSysExData()[3]);
 		}
-		return MidiProgramNumber::fromZeroBase(0);
+		return MidiProgramNumber::invalidProgram();
 	}
 
 	std::shared_ptr<DataFile> Matrix1000::patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const
@@ -386,7 +386,7 @@ namespace midikraft {
 	{
 		if (!isEditBufferDump(message)) {
 			jassert(false);
-			return std::make_shared<Matrix1000Patch>(PatchData(), MidiProgramNumber());
+			return std::make_shared<Matrix1000Patch>(PatchData(), MidiProgramNumber::invalidProgram());
 		}
 
 		// Decode the data

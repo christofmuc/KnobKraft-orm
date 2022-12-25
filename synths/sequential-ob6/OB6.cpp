@@ -169,7 +169,7 @@ namespace midikraft {
 					int startIndex = messageCode == 0x02 ? 5 : 3;
 					const uint8 *startOfData = &message.getSysExData()[startIndex];
 					auto globalDumpData = unescapeSysex(startOfData, message.getSysExDataSize() - startIndex, 1024);
-					MidiProgramNumber place;
+					MidiProgramNumber place = MidiProgramNumber::invalidProgram();
 					if (messageCode == 0x02) {
 						place = MidiProgramNumber::fromZeroBaseWithBank(MidiBankNumber::fromZeroBase(message.getSysExData()[3], 100),  message.getSysExData()[4]);
 					}
@@ -330,7 +330,7 @@ namespace midikraft {
 					break;
 				}
 				case ALTERNATE_TUNING: {
-					MidiTuning tuning(MidiProgramNumber::fromZeroBase(0), "unused", {});
+					MidiTuning tuning(MidiProgramNumber::invalidProgram(), "unused", {});
 					if (MidiTuning::fromMidiMessage(m, tuning)) {
 						std::vector<uint8> mtsData({ m.getSysExData(), m.getSysExData() + m.getSysExDataSize() });
 						auto storage = std::make_shared<MTSFile>(ALTERNATE_TUNING, mtsData);

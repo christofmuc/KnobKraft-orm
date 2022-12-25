@@ -142,7 +142,7 @@ namespace midikraft {
 		for (int index = 4; index < message[0].getSysExDataSize(); index++) {
 			patchdata.push_back(data[index]);
 		}
-		return {std::make_shared<KorgDW8000Patch>(patchdata, MidiProgramNumber::fromZeroBase(0))};
+		return {std::make_shared<KorgDW8000Patch>(patchdata, MidiProgramNumber::invalidProgram())};
 	}
 
 	std::shared_ptr<DataFile> KorgDW8000::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {

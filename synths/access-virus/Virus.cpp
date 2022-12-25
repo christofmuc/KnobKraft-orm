@@ -129,7 +129,7 @@ namespace midikraft {
 			uint8 program = message[0].getSysExData()[7];
 			return MidiProgramNumber::fromZeroBaseWithBank(MidiBankNumber::fromZeroBase(bank, numberOfPatches()), program);
 		}
-		return MidiProgramNumber::fromZeroBase(0);
+		return MidiProgramNumber::invalidProgram();
 	}
 
 	std::shared_ptr<DataFile> Virus::patchFromProgramDumpSysex(const std::vector<MidiMessage>& messages) const
@@ -199,7 +199,7 @@ namespace midikraft {
 			auto pages = getPagesFromMessage(message[0], 8);
 			if (pages.size() == 256) {
 				// That should be Page A and Page B from the manual
-				MidiProgramNumber place;
+				MidiProgramNumber place = MidiProgramNumber::invalidProgram();
 				if (isSingleProgramDump(message)) {
 					place = getProgramNumber(message);
 				}
