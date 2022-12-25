@@ -119,6 +119,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	globalScaling_(1.0f),
         buttons_(301),
         mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
+		logView_(true, true, true, true),
         midiLogArea_(&midiLogView_, BorderSize<int>(10)),
         logArea_(&logView_, BorderSize<int>(8))
 {
