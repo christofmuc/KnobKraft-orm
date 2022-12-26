@@ -20,6 +20,7 @@
 #include "UIModel.h"
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
+#include "StoredPatchNameCapability.h"
 #include "ScriptedQuery.h"
 #include "LibrarianProgressWindow.h"
 
@@ -719,10 +720,21 @@ void PatchView::receiveManualDump() {
 
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
-		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), database_.getCategorizer());
+		auto synth = UIModel::instance()->currentSynth_.smartSynth();
+		auto patches = librarian_.loadSysexPatchesFromDisk(synth, database_.getCategorizer());
 		if (patches.size() > 0) {
-			auto enhanced = autoCategorize(patches);
-			mergeNewPatches(enhanced);
+			// If the synth does not offer stored patch names, the names of these patches will be useless defaults only.
+			// Open the new bulk rename dialog to allow the user to fix it immediately.
+			if (midikraft::Capability::hasCapability<midikraft::StoredPatchNameCapability>(patches[0].patch())) {
+				auto enhanced = autoCategorize(patches);
+				mergeNewPatches(enhanced);
+			}
+			else {
+				BulkRenameDialog::show(patches, this, [this](std::vector<midikraft::PatchHolder> renamedPatches) {
+					auto enhanced = autoCategorize(renamedPatches);
+					mergeNewPatches(enhanced);
+				});
+			}
 		}
 	}
 }
