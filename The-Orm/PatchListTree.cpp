@@ -358,7 +358,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 		importList = sortLists<midikraft::ImportInfo>(importList, [](const midikraft::ImportInfo& import) { return import.name;  });
 		std::vector<TreeViewItem*> result;
 		for (auto const& import : importList) {
-			auto node = new TreeViewNode(import.name, import.id);
+			auto node = new TreeViewNode(import.name, import.id, true);
 			node->onSelected = [this, synthName](String id) {
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
