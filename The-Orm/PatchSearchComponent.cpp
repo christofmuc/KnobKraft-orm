@@ -82,19 +82,23 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 {
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
-	onlyFaves_.setButtonText("Only Faves");
+	onlyFaves_.setButtonText("Faves");
 	onlyFaves_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyFaves_);
 
-	showHidden_.setButtonText("Also Hidden");
+	showHidden_.setButtonText("Hidden");
 	showHidden_.onClick = [this]() { updateCurrentFilter(); patchView_ ->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(showHidden_);
 
-	onlyUntagged_.setButtonText("Only Untagged");
+	showUndecided_.setButtonText("Undecided");
+	showUndecided_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
+	addAndMakeVisible(showUndecided_);
+
+	onlyUntagged_.setButtonText("Untagged");
 	onlyUntagged_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
 	addAndMakeVisible(onlyUntagged_);
 
-	onlyDuplicates_.setButtonText("Only duplicate Names");
+	onlyDuplicates_.setButtonText("Duplicate Names");
 	onlyDuplicates_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
 	addAndMakeVisible(onlyDuplicates_);
 
@@ -174,6 +178,7 @@ void PatchSearchComponent::resized()
 	fb.alignContent = FlexBox::AlignContent::flexStart; // This is cross axis, up
 	fb.items.add(createFlexButton(&onlyFaves_));
 	fb.items.add(createFlexButton(&showHidden_));
+	fb.items.add(createFlexButton(&showUndecided_));
 	fb.items.add(createFlexButton(&onlyUntagged_));
 	fb.items.add(createFlexButton(&onlyDuplicates_));
 	fb.items.add(createFlexButton(&andCategories_));
@@ -209,6 +214,7 @@ void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
 	onlyFaves_.setToggleState(filter.onlyFaves, dontSendNotification);
 	onlyUntagged_.setToggleState(filter.onlyUntagged, dontSendNotification);
 	showHidden_.setToggleState(filter.showHidden, dontSendNotification);
+	showUndecided_.setToggleState(filter.showUndecided, dontSendNotification);
 	onlyDuplicates_.setToggleState(filter.onlyDuplicateNames, dontSendNotification);
 	andCategories_.setToggleState(filter.andCategories, dontSendNotification);
 
@@ -288,6 +294,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 		typeSelected,
 		filterType,
 		showHidden_.getToggleState(),
+		showUndecided_.getToggleState(),
 		onlyUntagged_.getToggleState(),
 		catSelected,
 		andCategories_.getToggleState(),
