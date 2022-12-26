@@ -530,10 +530,12 @@ void PatchView::retrievePatches() {
 }
 
 std::vector<midikraft::PatchHolder> PatchView::autoCategorize(std::vector<midikraft::PatchHolder> const &patches) {
+	std::vector<midikraft::PatchHolder> result;
 	for (auto p : patches) {
 		p.autoCategorizeAgain(database_.getCategorizer());
+		result.push_back(p);
 	}
-	return patches;
+	return result;
 }
 
 
