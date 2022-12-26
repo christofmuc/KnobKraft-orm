@@ -63,6 +63,7 @@ public:
 	void retrieveEditBuffer();
 
 	// Protected functions that are potentially dangerous and are only called via the main menu
+	void bulkRenamePatches();
 	void deletePatches();
 	void reindexPatches();
 

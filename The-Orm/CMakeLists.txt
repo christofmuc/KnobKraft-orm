@@ -46,6 +46,7 @@ set(SOURCES
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
 	AutoThumbnailingDialog.cpp AutoThumbnailingDialog.h
 	BCR2000_Component.cpp BCR2000_Component.h
+	BulkRenameDialog.cpp BulkRenameDialog.h
 	CreateListDialog.cpp CreateListDialog.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	EditCategoryDialog.cpp EditCategoryDialog.h

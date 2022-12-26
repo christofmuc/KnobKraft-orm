@@ -30,6 +30,7 @@
 #include "Settings.h"
 #include "ReceiveManualDumpWindow.h"
 #include "ExportDialog.h"
+#include "BulkRenameDialog.h"
 #include "SynthBank.h"
 
 #include "LayoutConstants.h"
@@ -159,6 +160,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 PatchView::~PatchView()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
+	BulkRenameDialog::release();
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
@@ -565,6 +567,18 @@ void PatchView::retrieveEditBuffer()
 			});
 		});
 	}
+}
+
+void PatchView::bulkRenamePatches()
+{
+	loadPage(0, 512, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
+		BulkRenameDialog::show(patches, this, [this](std::vector<midikraft::PatchHolder> renamed) {
+			std::vector<midikraft::PatchHolder> newPatches_;
+			size_t numChanged = database_.mergePatchesIntoDatabase(renamed, newPatches_, nullptr, midikraft::PatchDatabase::UPDATE_NAME);
+			spdlog::info("Renamed {} patches in the database!", numChanged);
+			retrieveFirstPageFromDatabase();
+			});
+		});
 }
 
 void PatchView::deletePatches()

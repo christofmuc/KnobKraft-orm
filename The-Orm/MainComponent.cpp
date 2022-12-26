@@ -217,7 +217,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Export multiple databases..."  },
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
+		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
 		{2, { "MIDI", { { "Auto-detect synths" } } } },
 		{3, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
@@ -299,6 +299,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}}},
 		{ "Merge multiple databases...", { "Merge multiple databases...", [this]() {
 			mergeDatabases();
+		}}},
+		{ "Bulk rename patches...", { "Bulk rename patches...", [this] {
+			patchView_->bulkRenamePatches();
 		}}},
 		{ "Delete patches...", { "Delete patches...", [this] {
 			patchView_->deletePatches();
