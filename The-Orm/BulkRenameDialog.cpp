@@ -136,7 +136,7 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 			// Depending on the type of import, we might have the original filename available...
 			auto info = input_[i].sourceInfo();
 			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {
-				File fileToParse(fileNameSource->filename());
+				File fileToParse(fileNameSource->fullpath());
 				auto filename = fileToParse.getFileNameWithoutExtension();
 				if (nameCount.find(filename) == nameCount.end()) {
 					nameCount[filename] = 0;
@@ -145,7 +145,7 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 			}
 			else if (auto bulkSource = std::dynamic_pointer_cast<midikraft::FromBulkImportSource>(info)) {
 				if (auto subFileName = std::dynamic_pointer_cast<midikraft::FromFileSource>(bulkSource->individualInfo())) {
-					File fileToParse(subFileName->filename());
+					File fileToParse(subFileName->fullpath());
 					auto filename = fileToParse.getFileNameWithoutExtension();
 					if (nameCount.find(filename) == nameCount.end()) {
 						nameCount[filename] = 0;
@@ -160,7 +160,7 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 			// Depending on the type of import, we might have the original filename available...
 			auto info = input_[i].sourceInfo();
 			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {
-				File fileToParse(fileNameSource->filename());
+				File fileToParse(fileNameSource->fullpath());
 				auto filename = fileToParse.getFileNameWithoutExtension();
 				if (runningCounter.find(filename) == runningCounter.end()) {
 					runningCounter[filename] = 0;
@@ -170,7 +170,7 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 			}
 			else if (auto bulkSource = std::dynamic_pointer_cast<midikraft::FromBulkImportSource>(info)) {
 				if (auto subFileName = std::dynamic_pointer_cast<midikraft::FromFileSource>(bulkSource->individualInfo())) {
-					File fileToParse(subFileName->filename());
+					File fileToParse(subFileName->fullpath());
 					auto filename = fileToParse.getFileNameWithoutExtension();
 					if (runningCounter.find(filename) == runningCounter.end()) {
 						runningCounter[filename] = 0;
