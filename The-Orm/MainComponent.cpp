@@ -46,6 +46,15 @@
 #endif
 #endif
 
+// Some command name constants
+const std::string kRetrievePatches{ "retrieveActiveSynthPatches" };
+const std::string kFetchEditBuffer{ "fetchEditBuffer" };
+const std::string kReceiveManualDump{ "receiveManualDump" };
+const std::string kLoadSysEx{ "loadsysEx" };
+const std::string kExportSysEx{ "exportSysex" };
+const std::string kExportPIF { "exportPIF" };
+const std::string kShowDiff{ "showDiff" };
+
 //
 // Build a spdlog sink that goes into out standard log view
 #include <spdlog/spdlog.h>
@@ -218,10 +227,11 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
-		{2, { "MIDI", { { "Auto-detect synths" } } } },
-		{3, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
-		{5, { "Help", {
+		{2, { "MIDI", { { "Auto-detect synths" }, { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump } }}},
+		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
+		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
+		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{6, { "Help", {
 #ifndef _DEBUG
 #ifdef USE_SENTRY
 			{ "Crash software.."},
@@ -237,7 +247,29 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	{ "Auto-detect synths", { "Auto-detect synths", [synths]() {
 		AutoDetectProgressWindow window(synths);
 		window.runThread();
+	}, juce::KeyPress::F1Key } },
+	{ "Import patches from synth", { kRetrievePatches, [this]() {
+		patchView_->retrievePatches();
+	}, juce::KeyPress::F7Key } },
+	{ "Import edit buffer from synth",{ kFetchEditBuffer, [this]() {
+		patchView_->retrieveEditBuffer();
+	}, juce::KeyPress::F8Key  } },
+	{ "Receive manual dump",{ kReceiveManualDump, [this]() {
+		patchView_->receiveManualDump();
+	}, juce::KeyPress::F9Key  } },
+	{ "Import from files into database", { kLoadSysEx, [this]() {
+		patchView_->loadPatches();
+	}, juce::KeyPress::F3Key } },
+	{ "Export into sysex files", { kExportSysEx , [this]() {
+		patchView_->exportPatches();
+	}}},
+	{ "Export into PIF", { kExportPIF, [this]() {
+		patchView_->createPatchInterchangeFile();
 	} } },
+	{ "Show patch comparison", { kShowDiff , [this]() {
+		patchView_->showPatchDiffDialog();
+	} } },
+
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit categories", { "Edit categories", [this]() {
 		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
@@ -353,6 +385,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
 	commandManager_.registerAllCommandsForTarget(&buttons_);
+	getTopLevelComponent()->addKeyListener(commandManager_.getKeyMappings());
 
 	// Setup menu structure
 	menuModel_ = std::make_unique<LambdaMenuModel>(menuStructure, &commandManager_, &buttons_);

@@ -63,9 +63,15 @@ public:
 	void retrieveEditBuffer();
 
 	// Protected functions that are potentially dangerous and are only called via the main menu
+	void retrievePatches();
 	void bulkRenamePatches();
+	void receiveManualDump();
 	void deletePatches();
 	void reindexPatches();
+	void loadPatches();
+	void exportPatches();
+	void createPatchInterchangeFile();
+	void showPatchDiffDialog();
 
 	// Additional functions for the auto thumbnailer
 	int totalNumberOfPatches();
@@ -84,22 +90,16 @@ private:
 
 	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
-	void retrievePatches();
-
 	// New for bank management
 	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
 	void loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId);
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
-	void loadPatches();	
-	void receiveManualDump();
-	void exportPatches();
 	void updateLastPath();
-	void createPatchInterchangeFile();
+
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
-	void showPatchDiffDialog();
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setImportListFilter(String filter);
@@ -114,7 +114,6 @@ private:
 	RecycleBin recycleBin_;
 
 	Label patchLabel_;
-	LambdaButtonStrip buttonStrip_;
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;

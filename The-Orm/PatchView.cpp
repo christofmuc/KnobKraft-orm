@@ -43,8 +43,7 @@ const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
 	: database_(database), librarian_(synths), synths_(synths), 
-	patchListTree_(database, synths),
-	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
+	patchListTree_(database, synths)
 {
 	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 		setSynthBankFilter(synth, bank);
@@ -124,32 +123,6 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 
 	addAndMakeVisible(recycleBin_);
 
-	LambdaButtonStrip::TButtonMap buttons = {
-	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
-		retrievePatches();
-	} } },
-	{ "fetchEditBuffer",{ "Import edit buffer from synth", [this]() {
-		retrieveEditBuffer();
-	} } },
-	{ "receiveManualDump",{ "Receive manual dump", [this]() {
-		receiveManualDump();
-	},  } },
-	{ "loadsysEx", { "Import sysex files from computer", [this]() {
-		loadPatches();
-	} } },
-	{ "exportSysex", { "Export into sysex files", [this]() {
-		exportPatches();
-	}}},
-	{ "exportPIF", { "Export into PIF", [this]() {
-		createPatchInterchangeFile();
-	} } },
-	{ "showDiff", { "Show patch comparison", [this]() {
-		showPatchDiffDialog();
-	} } },
-	};
-	buttonStrip_.setButtonDefinitions(buttons);
-	addAndMakeVisible(buttonStrip_);
-	
 	patchButtons_->setPatchLoader([this](int skip, int limit, std::function<void(std::vector< midikraft::PatchHolder>)> callback) {
 		loadPage(skip, limit, currentFilter(), callback);
 	});
@@ -251,8 +224,7 @@ void PatchView::resized()
 
 	/*if (area.getWidth() > area.getHeight() * 1.5)*/ {
 		// Landscape layout		
-		buttonStrip_.setBounds(area.removeFromBottom(LAYOUT_LARGE_LINE_SPACING + LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
-		splitters_->setBounds(area);
+		splitters_->setBounds(area.withTrimmedBottom(LAYOUT_INSET_NORMAL));
 	}
 	/*else {
 		// Portrait
