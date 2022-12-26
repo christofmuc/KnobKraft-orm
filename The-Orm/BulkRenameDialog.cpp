@@ -130,17 +130,53 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 	}
 	else if (button == &fromFilename_) 
 	{
+		// First count how often each filename occurs
+		std::map<String, int> nameCount;
 		for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
 			// Depending on the type of import, we might have the original filename available...
 			auto info = input_[i].sourceInfo();
 			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {
 				File fileToParse(fileNameSource->filename());
-				props_[i]->value() = fileToParse.getFileNameWithoutExtension();
+				auto filename = fileToParse.getFileNameWithoutExtension();
+				if (nameCount.find(filename) == nameCount.end()) {
+					nameCount[filename] = 0;
+				}
+				nameCount[filename]++;
 			}
 			else if (auto bulkSource = std::dynamic_pointer_cast<midikraft::FromBulkImportSource>(info)) {
 				if (auto subFileName = std::dynamic_pointer_cast<midikraft::FromFileSource>(bulkSource->individualInfo())) {
 					File fileToParse(subFileName->filename());
-					props_[i]->value() = fileToParse.getFileNameWithoutExtension();
+					auto filename = fileToParse.getFileNameWithoutExtension();
+					if (nameCount.find(filename) == nameCount.end()) {
+						nameCount[filename] = 0;
+					}
+					nameCount[filename]++;
+				}
+			}
+		}
+		// Now set the name
+		std::map<String, int> runningCounter;
+		for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
+			// Depending on the type of import, we might have the original filename available...
+			auto info = input_[i].sourceInfo();
+			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {
+				File fileToParse(fileNameSource->filename());
+				auto filename = fileToParse.getFileNameWithoutExtension();
+				if (runningCounter.find(filename) == runningCounter.end()) {
+					runningCounter[filename] = 0;
+				}
+				runningCounter[filename]++;
+				props_[i]->value() = filename + (nameCount[filename] == 1 ? "" : " - " + String(runningCounter[filename]));
+			}
+			else if (auto bulkSource = std::dynamic_pointer_cast<midikraft::FromBulkImportSource>(info)) {
+				if (auto subFileName = std::dynamic_pointer_cast<midikraft::FromFileSource>(bulkSource->individualInfo())) {
+					File fileToParse(subFileName->filename());
+					auto filename = fileToParse.getFileNameWithoutExtension();
+					if (runningCounter.find(filename) == runningCounter.end()) {
+						runningCounter[filename] = 0;
+					}
+					runningCounter[filename]++;
+					props_[i]->value() = filename + (nameCount[filename] == 1 ? "" : " - " + String(runningCounter[filename]));
 				}
 			}
 		}
