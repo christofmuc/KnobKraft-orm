@@ -672,7 +672,7 @@ public:
 				std::vector<midikraft::PatchHolder> allPatches;
 				try {
 					midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
-					auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+					midikraft::PatchFilter filter(allSynths);
 					spdlog::info("Exporting database file {} containing {} patches", file.getFullPathName(), mergeSource.getPatchesCount(filter));
 					allPatches = mergeSource.getPatches(filter, 0, -1);
 				}
@@ -684,7 +684,7 @@ public:
 					try {
 						midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
 						midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
-						auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
+						midikraft::PatchFilter filter(allSynths);
 						spdlog::info("Exporting database file {} containing {} patches", file.getFullPathName(), mergeSource.getPatchesCount(filter));
 						allPatches = mergeSource.getPatches(filter, 0, -1);
 					}

@@ -77,8 +77,8 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	patchButtons_(patchButtons),
 	database_(database),
 	categoryFilters_({}, [this](CategoryButtons::Category) { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); }, true, true),
+	multiModeFilter_({}),
 	textSearch_([this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  })
-
 {
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
@@ -129,7 +129,7 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(buttonDisplayType_);
 
 	// Need to initialize multiModeFilter, else we get weird search results
-	multiModeFilter_ = midikraft::PatchDatabase::allPatchesFilter({});
+	multiModeFilter_ = midikraft::PatchFilter({});
 
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->multiMode_.addChangeListener(this);
@@ -231,7 +231,7 @@ midikraft::PatchFilter PatchSearchComponent::getFilter()
 	if (!isInMultiSynthMode()) {
 		auto name = UIModel::currentSynth()->getName();
 		if (synthSpecificFilter_.find(name) != synthSpecificFilter_.end()) {
-			return synthSpecificFilter_[name];
+			return synthSpecificFilter_.at(name);
 		}
 	}
 	else {
@@ -246,7 +246,11 @@ void PatchSearchComponent::updateCurrentFilter()
 {
 	if (!isInMultiSynthMode()) {
 		auto name = UIModel::currentSynth()->getName();
-		synthSpecificFilter_[name] = buildFilter();
+		auto filter = buildFilter();
+		auto [pos, inserted] = synthSpecificFilter_.insert({ name, filter});
+		if (!inserted) {
+			pos->second = filter;
+		}
 	}
 	else {
 		multiModeFilter_ = buildFilter();
@@ -285,21 +289,22 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 			synthMap[UIModel::currentSynth()->getName()] = UIModel::instance()->currentSynth_.smartSynth();
 		}
 	}
-	return { synthMap,
-		midikraft::PatchOrdering::Order_by_Import_id,
-		"", // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
-		"", // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
-		nameFilter,
-		onlyFaves_.getToggleState(),
-		typeSelected,
-		filterType,
-		showHidden_.getToggleState(),
-		showUndecided_.getToggleState(),
-		onlyUntagged_.getToggleState(),
-		catSelected,
-		andCategories_.getToggleState(),
-		onlyDuplicates_.getToggleState()
-	};
+	midikraft::PatchFilter filter(synthMap);
+
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Import_id;
+	filter.importID = ""; // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
+	filter.listID = ""; // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
+	filter.name = nameFilter;
+	filter.onlyFaves = onlyFaves_.getToggleState();
+	filter.onlySpecifcType = typeSelected;
+	filter.typeID = filterType;
+	filter.showHidden = showHidden_.getToggleState();
+	filter.showUndecided = showUndecided_.getToggleState();
+	filter.onlyUntagged = onlyUntagged_.getToggleState();
+	filter.categories = catSelected;
+	filter.andCategories = andCategories_.getToggleState();
+	filter.onlyDuplicateNames = onlyDuplicates_.getToggleState();
+	return filter;
 }
 
 void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
@@ -332,9 +337,13 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 			// Load the filter stored for this synth
 			if (synthSpecificFilter_.find(synthName) == synthSpecificFilter_.end()) {
 				// First time this synth is selected, store a new blank filter for this synth
-				synthSpecificFilter_[synthName] = midikraft::PatchDatabase::allForSynth(currentSynth);
+				auto filter = midikraft::PatchFilter({ currentSynth });
+				auto [pos, inserted] = synthSpecificFilter_.insert({ synthName, filter });
+				if (!inserted) {
+					pos->second = filter;
+				}
 			}
-			loadFilter(synthSpecificFilter_[synthName]);
+			loadFilter(synthSpecificFilter_.at(synthName));
 		}
 
 		patchView_->retrieveFirstPageFromDatabase();

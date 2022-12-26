@@ -576,7 +576,8 @@ void PatchView::reindexPatches() {
 	// We do reindex all patches of the currently selected synth. It does not make sense to reindex less than that.
 	auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
 	if (!currentSynth) return;
-	auto filter = midikraft::PatchDatabase::allForSynth(currentSynth);
+	midikraft::PatchFilter filter({ currentSynth });
+	filter.turnOnAll(); // Make sure we also reindex hidden entries
 
 	int totalAffected = database_.getPatchesCount(filter);
 	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, fmt::format("Do you want to reindex all {} patches for synth {}?", totalAffected, currentSynth->getName()),
@@ -626,8 +627,9 @@ midikraft::PatchFilter PatchView::currentFilter()
 midikraft::PatchFilter PatchView::bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID)
 {
 	// We want to load all patches for this synth that are in the bank list given
-	auto filter = database_.allForSynth(synth);
-	filter.showHidden = true; // If there are hidden patches, we need to know!
+	midikraft::PatchFilter filter({ synth });
+	filter.turnOnAll();
+
 	filter.importID = "";
 	filter.listID = listID;
 	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
