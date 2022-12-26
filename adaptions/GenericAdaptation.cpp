@@ -167,6 +167,12 @@ namespace knobkraft {
 		adaptation_module = adaptationModule;		
 	}
 
+	GenericAdaptation::~GenericAdaptation()
+	{
+		py::gil_scoped_acquire gil;
+		adaptation_module.release();
+	}
+
 	std::shared_ptr<GenericAdaptation> GenericAdaptation::fromBinaryCode(std::string moduleName, std::string adaptationCode)
 	{
 		py::gil_scoped_acquire acquire;
@@ -374,12 +380,12 @@ else {
 		// First, load user defined adaptations from the directory
 		File adaptationDirectory = getAdaptationDirectory();
 		if (adaptationDirectory.exists()) {
-			//result = allAdaptationsInOneDirectory(adaptationDirectory.getFullPathName().toStdString());
+			result = allAdaptationsInOneDirectory(adaptationDirectory.getFullPathName().toStdString());
 		}
 
 		// Then, load all adaptations in the directory of the current executable
 		auto installDirectory = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory().getChildFile("adaptations");
-		/*auto builtIns = allAdaptationsInOneDirectory(installDirectory.getFullPathName().toStdString());
+		auto builtIns = allAdaptationsInOneDirectory(installDirectory.getFullPathName().toStdString());
 		for (auto& builtin : builtIns)
 		{
 			if (std::none_of(result.begin(), result.end(), [&](std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) { return device->getName() == builtin->getName(); }))
@@ -388,10 +394,13 @@ else {
 			}
 			else
 			{
-				SimpleLogger::instance()->postMessage(fmt::format("Overriding built-in adaptation %s (found in user directory %s)")
-					% builtin->getName() % getAdaptationDirectory().getFullPathName().toStdString()).str());
+				spdlog::warn("Overriding built-in adaptation {} (found in user directory {})", builtin->getName(), getAdaptationDirectory().getFullPathName().toStdString());
 			}
-		}*/
+		}
+		{
+			py::gil_scoped_acquire gil;
+			builtIns.clear();
+		}
 		return result;
 	}
 
