@@ -37,6 +37,8 @@ private:
 	TextButton ok_;
 	TextButton cancel_;
 	TextButton paste_;
+	TextButton copy_;
+	TextButton fromFilename_;
 	TCallback callback_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BulkRenameDialog)

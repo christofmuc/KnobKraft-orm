@@ -22,9 +22,17 @@ BulkRenameDialog::BulkRenameDialog()
 	cancel_.addListener(this);
 	addAndMakeVisible(cancel_);
 
-	paste_.setButtonText("Paste");
+	paste_.setButtonText("Paste from Clipboard");
 	paste_.addListener(this);
 	addAndMakeVisible(paste_);
+
+	copy_.setButtonText("Copy to Clipboard");
+	copy_.addListener(this);
+	addAndMakeVisible(copy_);
+
+	fromFilename_.setButtonText("Generate from Filename");
+	fromFilename_.addListener(this);
+	addAndMakeVisible(fromFilename_);
 
 	// Finally we need a default size
 	setBounds(0, 0, 540, 600);
@@ -48,7 +56,11 @@ void BulkRenameDialog::resized()
 	auto buttonRow = bottomRow.withSizeKeepingCentre(2 * LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL, LAYOUT_LINE_SPACING);
 	ok_.setBounds(buttonRow.removeFromLeft(LAYOUT_BUTTON_WIDTH).reduced(LAYOUT_INSET_SMALL));
 	cancel_.setBounds(buttonRow.removeFromLeft(LAYOUT_BUTTON_WIDTH).reduced(LAYOUT_INSET_SMALL));
-	paste_.setBounds(area.removeFromBottom(2*LAYOUT_LINE_SPACING + LAYOUT_INSET_NORMAL).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_LINE_HEIGHT));
+	auto secondRow = area.removeFromBottom(2 * LAYOUT_LINE_SPACING + LAYOUT_INSET_NORMAL);
+	int halfWidth = secondRow.getWidth() / 3;
+	paste_.setBounds(secondRow.removeFromLeft(halfWidth).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_LINE_HEIGHT));
+	copy_.setBounds(secondRow.removeFromLeft(halfWidth).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_LINE_HEIGHT));
+	fromFilename_.setBounds(secondRow.removeFromLeft(halfWidth).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_LINE_HEIGHT));
 	propertyEditor_.setBounds(area);
 }
 
@@ -107,6 +119,30 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 		tokens.addLines(juce::SystemClipboard::getTextFromClipboard());
 		for (int i = 0; i < juce::jmin(tokens.size(), (int) props_.size()); i++) {
 			props_[i]->value() = tokens[i];
+		}
+	}
+	else if (button == &copy_) {
+		StringArray allNames;
+		for (auto const& prop : props_) {
+			allNames.add(prop->value().toString());
+		}
+		SystemClipboard::copyTextToClipboard(allNames.joinIntoString("\n"));
+	}
+	else if (button == &fromFilename_) 
+	{
+		for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
+			// Depending on the type of import, we might have the original filename available...
+			auto info = input_[i].sourceInfo();
+			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {
+				File fileToParse(fileNameSource->filename());
+				props_[i]->value() = fileToParse.getFileNameWithoutExtension();
+			}
+			else if (auto bulkSource = std::dynamic_pointer_cast<midikraft::FromBulkImportSource>(info)) {
+				if (auto subFileName = std::dynamic_pointer_cast<midikraft::FromFileSource>(bulkSource->individualInfo())) {
+					File fileToParse(subFileName->filename());
+					props_[i]->value() = fileToParse.getFileNameWithoutExtension();
+				}
+			}
 		}
 	}
 }
