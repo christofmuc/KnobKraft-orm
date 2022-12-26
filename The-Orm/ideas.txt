@@ -1,12 +1,12 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
-For 1.17:
+
+
 Adaptation tests need documenting
 XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
 Could simulate an ingest with the predefined names (lol)
 
-Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
 
 Carry over:
 * Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
