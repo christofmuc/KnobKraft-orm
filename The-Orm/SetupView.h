@@ -11,7 +11,6 @@
 //#include "HueLightControl.h"
 #include "PropertyEditor.h"
 #include "InfoText.h"
-#include "LambdaButtonStrip.h"
 #include "DebounceTimer.h"
 
 #include "AutoDetection.h"
@@ -28,7 +27,12 @@ public:
 	virtual ~SetupView() override;
 
 	virtual void resized() override;
-	
+
+	void quickConfigure();
+	void loopDetection();
+	void autoDetect();
+	void createNewAdaptation();
+
 private:
 	void refreshSynthActiveness();
 	void refreshData();
@@ -40,17 +44,12 @@ private:
 	
 	std::shared_ptr<midikraft::SimpleDiscoverableDevice> findSynthForName(juce::String const &synthName) const;
 
-	void quickConfigure();
-	void loopDetection();
-	void autoDetect();
-
 	std::vector<midikraft::SynthHolder> sortedSynthList_;
 	std::vector<std::shared_ptr<TypedNamedValue>> synths_;
 	std::vector<std::shared_ptr<TypedNamedValue>> properties_;
 	midikraft::AutoDetection *autoDetection_;
 	InfoText header_;
 	//HueLightControl * lights_;
-	LambdaButtonStrip functionButtons_;
 	TextButton autoConfigureButton_;
 	PropertyEditor synthSelection_;
 	PropertyEditor synthSetup_;

@@ -8,7 +8,6 @@
 
 #include "JuceHeader.h"
 
-#include "LambdaButtonStrip.h"
 #include "Librarian.h"
 #include "MidiController.h"
 #include "Logger.h"

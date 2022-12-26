@@ -54,6 +54,10 @@ const std::string kLoadSysEx{ "loadsysEx" };
 const std::string kExportSysEx{ "exportSysex" };
 const std::string kExportPIF { "exportPIF" };
 const std::string kShowDiff{ "showDiff" };
+const std::string kSynthDetection{ "synthDetection" };
+const std::string kLoopDetection{ "loopDetection" };
+const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
+const std::string kCreateNewAdaptation{ "createNewAdaptation" };
 
 //
 // Build a spdlog sink that goes into out standard log view
@@ -227,10 +231,11 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
-		{2, { "MIDI", { { "Auto-detect synths" }, { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump } }}},
+		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
 		{6, { "Help", {
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -244,9 +249,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { "Auto-detect synths", [synths]() {
-		AutoDetectProgressWindow window(synths);
-		window.runThread();
+	{ "Auto-detect synths", { "Auto-detect synths", [this]() {
+		setupView_->autoDetect();
 	}, juce::KeyPress::F1Key } },
 	{ "Import patches from synth", { kRetrievePatches, [this]() {
 		patchView_->retrievePatches();
@@ -268,6 +272,22 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	} } },
 	{ "Show patch comparison", { kShowDiff , [this]() {
 		patchView_->showPatchDiffDialog();
+	} } },
+	{ "Quick check connectivity", { kSynthDetection, [this]() {
+		setupView_->quickConfigure();
+	}, juce::KeyPress::F2Key } },
+	{ "Check for MIDI loops", { kLoopDetection, [this]() {
+		setupView_->loopDetection();
+	} } },
+	{"Set User Adaptation Dir", { kSelectAdaptationDirect, [this]() {
+		FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
+		if (directoryChooser.browseForDirectory()) {
+			knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
+			juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
+		}
+	} } },
+	{"Create new adaptation", { kCreateNewAdaptation, [this]() {
+		setupView_->createNewAdaptation();
 	} } },
 
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
