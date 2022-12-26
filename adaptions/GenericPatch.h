@@ -18,6 +18,7 @@
 #include <pybind11/embed.h>
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 namespace knobkraft {
 
@@ -111,7 +112,7 @@ namespace knobkraft {
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage(fmt::format("Adaptation: method {} not found, fatal!", methodName));
+				spdlog::error("Adaptation: method {} not found, fatal!", methodName);
 				return pybind11::none();
 			}
 		}

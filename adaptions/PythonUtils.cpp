@@ -57,7 +57,7 @@ void PyStdErrOutStreamRedirect::flushToLogger(std::string const &logDomain)
 {
 	auto error = stderrString();
 	if (!error.empty()) {
-		SimpleLogger::instance()->postMessage(logDomain + " ERROR: " + error);
+		spdlog::error("{}: {}", logDomain , error);
 	}
 	auto output = stdoutString();
 	if (!output.empty()) {

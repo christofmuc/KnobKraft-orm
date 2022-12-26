@@ -14,6 +14,7 @@
 namespace py = pybind11;
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 namespace knobkraft {
 
@@ -45,7 +46,7 @@ namespace knobkraft {
 				catch (py::error_already_set& ex) {
 					std::string errorMessage = fmt::format("Error calling {}: {}", kNameFromDump, ex.what());
 					ex.restore(); // Prevent a deadlock https://github.com/pybind/pybind11/issues/1490
-					SimpleLogger::instance()->postMessage(errorMessage);
+					spdlog::error(errorMessage);
 				}
 				catch (std::exception& ex) {
 					patch->logAdaptationError(kNameFromDump, ex);
@@ -69,7 +70,7 @@ namespace knobkraft {
 		std::string adaptionName = me_->getName();
 		std::string methodCopy(methodName, methodName + strlen(methodName));
 		MessageManager::callAsync([adaptionName, methodCopy, exceptionMessage]() {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation[{}]: Error calling {}: {}", adaptionName, methodCopy, exceptionMessage));
+			spdlog::error("Adaptation[{}]: Error calling {}: {}", adaptionName, methodCopy, exceptionMessage);
 		});
 	}
 
@@ -98,7 +99,7 @@ namespace knobkraft {
 					me_.lock()->logAdaptationError(kRenamePatch, ex);
 			}
 			catch (...) {
-				SimpleLogger::instance()->postMessage(fmt::format("Adaptation[unknown]: Uncaught exception in {} of Patch of GenericAdaptation", kRenamePatch));
+				spdlog::error("Adaptation[unknown]: Uncaught exception in {} of Patch of GenericAdaptation", kRenamePatch);
 			}
 		}
 	}
@@ -122,7 +123,7 @@ namespace knobkraft {
 					me_.lock()->logAdaptationError(kIsDefaultName, ex);
 			}
 			catch (...) {
-				SimpleLogger::instance()->postMessage(fmt::format("Uncaught exception in {} of Patch of GenericAdaptation", kIsDefaultName));
+				spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation", kIsDefaultName);
 			}
 		}
 		return false;
@@ -154,7 +155,7 @@ namespace knobkraft {
 					me_.lock()->logAdaptationError(kNumberOfLayers, ex);
 			}
 			catch (...) {
-				SimpleLogger::instance()->postMessage(fmt::format("Uncaught exception in {} of Patch of GenericAdaptation", kNumberOfLayers));
+				spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation", kNumberOfLayers);
 			}
 		}
 		return 1;
@@ -180,7 +181,7 @@ namespace knobkraft {
 					me_.lock()->logAdaptationError(kLayerName, ex);
 			}
 			catch (...) {
-				SimpleLogger::instance()->postMessage(fmt::format("Uncaught exception in {} of Patch of GenericAdaptation",  kLayerName));
+				spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation",  kLayerName);
 			}
 		}
 		return "Invalid";
@@ -208,19 +209,19 @@ namespace knobkraft {
 						me_.lock()->logAdaptationError(kSetLayerName, ex);
 				}
 				catch (...) {
-					SimpleLogger::instance()->postMessage(fmt::format("Uncaught exception in {} of Patch of GenericAdaptation", kSetLayerName));
+					spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation", kSetLayerName);
 				}
 			}
 		}
 		else {
-			SimpleLogger::instance()->postMessage("Adaptation did not implement setLayerName(), can't rename layer");
+			spdlog::warn("Adaptation did not implement setLayerName(), can't rename layer");
 		}
 	}
 
 	bool GenericStoredTagCapability::setTags(std::set<midikraft::Tag> const& tags)
 	{
 		ignoreUnused(tags);
-		SimpleLogger::instance()->postMessage("Changing tags in the stored patch is not implemented yet!");
+		spdlog::warn("Changing tags in the stored patch is not implemented yet!");
 		return false;
 	}
 
@@ -247,7 +248,7 @@ namespace knobkraft {
 						me_.lock()->logAdaptationError(kGetStoredTags, ex);
 				}
 				catch (...) {
-					SimpleLogger::instance()->postMessage(fmt::format("Uncaught exception in {} of Patch of GenericAdaptation", kGetStoredTags));
+					spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation", kGetStoredTags);
 				}
 			}
 		}

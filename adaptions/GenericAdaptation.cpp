@@ -22,6 +22,8 @@
 
 #include <pybind11/stl.h>
 #include <memory>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -146,12 +148,12 @@ namespace knobkraft {
 			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what()));
+			spdlog::error("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what());
 			ex.restore();
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what()));
+			spdlog::error("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what());
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
 	}
@@ -190,11 +192,11 @@ namespace knobkraft {
 			return newAdaptation;
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", moduleName, ex.what()));
+			spdlog::error("Adaptation: Failure loading python module {}: {}", moduleName, ex.what());
 			ex.restore();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure loading python module {}: {}", moduleName, ex.what()));
+			spdlog::error("Adaptation: Failure loading python module {}: {}", moduleName, ex.what());
 		}
 		return nullptr;
 	}
@@ -205,15 +207,15 @@ namespace knobkraft {
 			auto name = py::cast<std::string>(adaptation_module.attr("__name__"));
 			auto moduleDict = adaptation_module.attr("__dict__");
 			for (auto a : moduleDict) {
-				SimpleLogger::instance()->postMessage("Found in " + name + " attribute " + py::cast<std::string>(a));
+				spdlog::debug("Found in {} attribute {}", name , py::cast<std::string>(a));
 			}
 		}
 		catch (py::error_already_set &ex) {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure inspecting python module: {}", ex.what()));
+			spdlog::error("Adaptation: Failure inspecting python module: {}", ex.what());
 			ex.restore();
 		}
 		catch (std::exception &ex) {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Failure inspecting python module: {}", ex.what()));
+			spdlog::error("Adaptation: Failure inspecting python module: {}", ex.what());
 		}
 	}
 
@@ -319,8 +321,8 @@ auto newAdaptationName = newAdaptation->getName();
 if (newAdaptationName != "invalid") {
 	for (auto existing : outAddToThis) {
 		if (existing->getName() == newAdaptationName) {
-			SimpleLogger::instance()->postMessage(fmt::format("Overriding built-in adaptation {} (found in user directory {})",
-				newAdaptationName, getAdaptationDirectory().getFullPathName().toStdString()));
+			spdlog::warn("Overriding built-in adaptation {} (found in user directory {})",
+				newAdaptationName, getAdaptationDirectory().getFullPathName().toStdString());
 			return true; // Was created successfully, but still is ignored.
 		}
 	}
@@ -329,7 +331,7 @@ if (newAdaptationName != "invalid") {
 }
 else {
 	jassertfalse;
-	SimpleLogger::instance()->postMessage("Program error: built-in adaptation " + std::string(pythonModuleName) + " failed to report name");
+	spdlog::error("Program error: built-in adaptation {} failed to report name", std::string(pythonModuleName));
 }
 		}
 		return false;
@@ -347,12 +349,12 @@ else {
 					}
 				}
 				catch (FatalAdaptationException&) {
-					SimpleLogger::instance()->postMessage("Unloading adaptation module " + String(f.getFullPathName()));
+					spdlog::error("Unloading adaptation module {}", String(f.getFullPathName()));
 				}
 			}
 		}
 		else {
-			SimpleLogger::instance()->postMessage(fmt::format("Warning - directory given '{}' does not exist or is not a directory", directory));
+			spdlog::warn("Directory given '{}' does not exist or is not a directory", directory);
 		}
 		return result;
 	}
@@ -362,9 +364,9 @@ else {
 		std::vector<std::shared_ptr<GenericAdaptation>> result;
 		if (!hasPython()) {
 #ifdef __APPLE__
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install using Homebrew (brew install python3), MacPorts (sudo port install python310) or from https://www.python.org/ftp/python/. Turning off all adaptations.");
+			spdlog::warn("Couldn't find a Python 3.10 installation. Please install using Homebrew (brew install python3), MacPorts (sudo port install python310) or from https://www.python.org/ftp/python/. Turning off all adaptations.");
 #else
-			SimpleLogger::instance()->postMessage("Warning - couldn't find a Python 3.10 installation. Please install from https://www.python.org/downloads/. Turning off all adaptations.");
+			spdlog::warn("Couldn't find a matching Python installation. Please install from https://www.python.org/downloads/. Turning off all adaptations.");
 #endif
 			return result;
 		}
@@ -417,7 +419,7 @@ else {
 			}
 		}
 		if (!adaptation) {
-			SimpleLogger::instance()->postMessage("Program error - could not find adaptation for synth " + synthName);
+			spdlog::error("Program error - could not find adaptation for synth {}", synthName);
 			return false;
 		}
 
@@ -426,7 +428,7 @@ else {
 		// Copy out source code
 		File sourceFile(adaptation->getSourceFilePath());
 		if (!sourceFile.existsAsFile()) {
-			SimpleLogger::instance()->postMessage(fmt::format("Program error - could not find source code for module to break out at {}", adaptation->getSourceFilePath()));
+			spdlog::error("Program error - could not find source code for module to break out at {}", adaptation->getSourceFilePath());
 			return false;
 		}
 		File target = dir.getChildFile(sourceFile.getFileName());
@@ -437,7 +439,7 @@ else {
 
 		if (!sourceFile.copyFileTo(target))
 		{
-			SimpleLogger::instance()->postMessage(fmt::format("Program error - could not find copy {} to {}", adaptation->getSourceFilePath(), target.getFullPathName().toStdString()));
+			spdlog::error("Program error - could not copy {} to {}", adaptation->getSourceFilePath(), target.getFullPathName().toStdString());
 			return false;
 		}
 		else 
@@ -844,7 +846,7 @@ else {
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();
 		MessageManager::callAsync([this, methodName, exceptionMessage]() {
-			SimpleLogger::instance()->postMessage(fmt::format("Adaptation[{}]: Error calling {}: {}", adaptationName_, methodName, exceptionMessage));
+			spdlog::error("Adaptation[{}]: Error calling {}: {}", adaptationName_, methodName, exceptionMessage);
 		});
 	}
 

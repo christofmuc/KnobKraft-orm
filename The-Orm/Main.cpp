@@ -40,7 +40,7 @@ static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
 	char *s = sentry_envelope_serialize(envelope, &size_out);
 	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
 	if (SimpleLogger::instance()) {
-		SimpleLogger::instance()->postMessage("Sentry: " + std::string(s));
+		spdlog::debug("Sentry: {}", std::string(s));
 	}
 	sentry_free(s);
 	sentry_envelope_free(envelope);
@@ -51,10 +51,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 	ignoreUnused(level, args, userdata);
 	char buffer[2048];
 	vsnprintf_s(buffer, 2048, message, args);
-	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
-	if (SimpleLogger::instance()) {
-		SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
-	}
+	spdlog::debug("Sentry: {}",  std::string(buffer));
 }
 #endif
 #endif

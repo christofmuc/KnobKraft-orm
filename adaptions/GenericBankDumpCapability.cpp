@@ -12,6 +12,7 @@
 #include <pybind11/stl.h>
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 namespace py = pybind11;
 
@@ -93,7 +94,7 @@ namespace knobkraft {
 					patchesFound.push_back(patch);
 				}
 				else {
-					SimpleLogger::instance()->postMessage(fmt::format("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank));
+					spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
 				}
 			}
 			return patchesFound;
