@@ -2,36 +2,36 @@
 =============================================
 
 
+UX - Windows need explanation: Library and Bank
+UX - Need Window management. at least, resizing and show/hide
+* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
+* Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
+UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
 
-Adaptation tests need documenting
-XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
-Could simulate an ingest with the predefined names (lol)
-
-
-Carry over:
-* Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
-* Could do better layer switch
-
-UX:
-Windows need explanation: Library and Bank
-Need Window management. at least, resizing and show/hide
-Want to build banks offline
-Want to build multiple banks and switch them
-Want to create empty banks (need Init patch). Could remember empty position so you can drag lists into it
-Want to send a bank to a specific bank (two step? Drag bank into synth bank, make it "dirty", then sync)
+BUG - lists are ordered incorrectly in the Library, no longer with order_num
+BUG - scrolling the list is really choppy
+BUG - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
+BUG - After import, the new bank is not selected in the tree.
+BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
 
 
-Duplicate name search sorts wrong I think
-Bug - cannot name search through only duplicate names result
+BUG - Duplicate name search sorts wrong I think. And is utterly slow (try on Reface DX)
 
-For 2.0.0:
-Importing a synth bank does not run autocategorize, but it should.
-Runninng autocategorize does not refresh the bank view
-Empty bank window needs place holder text + refresh button.
-Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
+DOCS - Adaptation tests need documenting
 
+IDEA - XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change Could simulate an ingest with the predefined names (lol)
 
-Tree could show count of items
+IMPROV - Could do better layer switch
+IMPROV - Tree could show count of items
+
+BANKS - Want to build banks offline
+BANKS - Want to build multiple banks and switch them
+BANKS - Want to create empty banks (need Init patch). Could remember empty position so you can drag lists into it
+BANKS - Want to send a bank to a specific bank (two step? Drag bank into synth bank, make it "dirty", then sync)
+
+BUG - Importing a synth bank does not run autocategorize, but it should.
+BUG - Runninng autocategorize does not refresh the bank view
+UX - Empty bank window needs place holder text + refresh button.
 
 
 BANK MANAGEMENT
@@ -41,15 +41,6 @@ BANK MANAGEMENT
 * Dirty banks should not be deleted by just changing the view... want to come back to them. I think they should be stored in the database!
 * Never synced banks should be red coloured in the tree
 * Deleting patches that are in a bank will remove them from the bank... should rather hide them?
-
-* Bug - lists are ordered incorrectly in the Library, no longer with order_num
-* Bug - scrolling the list is really choppy
-* Bug - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
-* Bug: After import, the new bank is not selected in the tree.
-* Bug: The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
-
-* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
-* Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
 
 
 PatchNumbers
@@ -85,8 +76,6 @@ Imports sind auch lists, und sollten immer alle patches enthalten (auch mit ande
 Import als Liste auch draggen können
 
 Sollte irgendwo anzeigen können, für welche Synths in der Datenbank Patches sind, auch wenn sie ausgeschaltet sind. Vielleicht eine Database statistik Seite mit Anzahl der Patches pro Synth, Listen, ?
-
-
 
 Layer logic
 - need pretty layer names!
@@ -213,8 +202,6 @@ KawaiK3 - supported by BCR2000
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
-Behringer RD-8
-+ Need support for Patterns and Songs with display of content?
 
 RefaceDX
 * Parameter set missing
@@ -367,7 +354,6 @@ Big things
 
 More synthesizers
 
- 	+ Behringer RD 8
 	+ Moog Source Encore - can only do bank uploads (?), not single uploads https://www.encoreelectronics.com/smkmanual.pdf. This is a problem until KnobKraft 2.0, I guess. Unless I encode the whole bank dump as a single patch?
 	+ Jupiter 8 Encore - https://www.encoreelectronics.com/jp8mk.pdf can do edit buffer, patch and presets (different types?)
 
