@@ -56,10 +56,10 @@ void PatchPerSynthList::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->currentPatch_) {
 		// The Current Patch has changed - update our display!
-		auto synthName = UIModel::currentPatch().synth()->getName();
+		auto synthName = UIModel::currentPatch()->synth()->getName();
 		if (buttonForSynth_.find(synthName) != buttonForSynth_.end()) {
 			auto tempHolder = UIModel::currentPatch();
-			buttonForSynth_[synthName]->setPatchHolder(&tempHolder, false, PatchHolderButton::getCurrentInfoForSynth(synthName));
+			buttonForSynth_[synthName]->setPatchHolder(tempHolder.get(), false, PatchHolderButton::getCurrentInfoForSynth(synthName));
 		}
 		else {
 			//jassertfalse;

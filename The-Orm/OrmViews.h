@@ -21,6 +21,7 @@ class LogView;
 class MidiLogView;
 class SetupView;
 class PatchView;
+class PatchDiff;
 
 class OrmDockableWindow : public Component
 {
@@ -32,7 +33,7 @@ private:
 	OrmLookAndFeel ormLookAndFeel_;
 };
 
-class OrmViews : public DockManager::Delegate
+class OrmViews : public DockManager::Delegate, private ChangeListener
 {
 public:
 	OrmViews();
@@ -62,7 +63,7 @@ public:
 	virtual std::shared_ptr<DockingWindow> createTopLevelWindow(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree) override;
 
 	std::shared_ptr<juce::MenuBarModel> getMainMenu();
-	
+	int getNumTopWindows() const;
 	PatchView& activePatchView();
 
 private:
@@ -90,7 +91,11 @@ private:
 	void checkUserConsent();
 #endif
 #endif
+	void showPatchDiffDialog();
+	void auditionPatch(midikraft::PatchHolder const& patch, bool notifyListeners);
 	static void crashTheSoftware();
+
+	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	midikraft::Librarian librarian_;
 	midikraft::AutoDetection autodetector_;
@@ -118,6 +123,13 @@ private:
 
 	// Reference to DockManager
 	DockManager* dockManager_;
+
+	std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
+
+	// Stuff that should go elsewhere
+	midikraft::PatchHolder compareTarget_;
+	int currentLayer_;
+	std::unique_ptr<PatchDiff> diffDialog_;
 
 	static std::unique_ptr<OrmViews> instance_;
 };

@@ -83,9 +83,9 @@ void RecordingView::resized()
 }
 
 void RecordingView::sampleNote() {
-	if (!UIModel::currentPatch().patch()) return;
+	if (!UIModel::currentPatch()->patch()) return;
 
-	auto patchMD5 = UIModel::currentPatch().md5();
+	auto patchMD5 = UIModel::currentPatch()->md5();
 
 	std::string filename = UIModel::getPrehearDirectory().getChildFile(patchMD5 + ".wav").getFullPathName().toStdString();
 

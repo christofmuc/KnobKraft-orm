@@ -98,12 +98,16 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 		lastOpenState_ = Settings::instance().get("MetaDataLayout");
 	}
 
+	// Follow the global selected patch
+	UIModel::instance()->currentPatch_.addChangeListener(this);
+
 	// We need to recolor in case the categories are changed
 	UIModel::instance()->categoriesChanged.addChangeListener(this);
 }
 
 CurrentPatchDisplay::~CurrentPatchDisplay()
 {
+	UIModel::instance()->currentPatch_.removeChangeListener(this);
 	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	Settings::instance().set("MetaDataLayout", propertyEditor_.getLayout().toStdString());
 }
@@ -375,16 +379,20 @@ void CurrentPatchDisplay::paint(Graphics& g)
 
 void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-	std::vector<CategoryButtons::Category> result;
-	for (const auto& c : OrmViews::instance().patchDatabase().getCategories()) {
-		if (c.def()->isActive) {
-			result.emplace_back(c.category(), c.color());
+	if (source == &UIModel::instance()->categoriesChanged) {
+		std::vector<CategoryButtons::Category> result;
+		for (const auto& c : OrmViews::instance().patchDatabase().getCategories()) {
+			if (c.def()->isActive) {
+				result.emplace_back(c.category(), c.color());
+			}
 		}
+		metaData_.setCategories(result);
+		refreshNameButtonColour();
+		resized();
 	}
-	metaData_.setCategories(result);
-	refreshNameButtonColour();
-	resized();
+	else if (source == &UIModel::instance()->currentPatch_) {
+		setCurrentPatch(UIModel::instance()->currentPatch());
+	}
 }
 
 void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {

@@ -56,17 +56,18 @@ private:
 
 class CurrentPatch : public ChangeBroadcaster {
 public:
-	void changeCurrentPatch(midikraft::PatchHolder const &currentPatch);
+	void changeCurrentPatch(midikraft::PatchHolder const& currentPatch);
+	void changeCurrentPatch(std::shared_ptr<midikraft::PatchHolder> currentPatch);
 
-	midikraft::PatchHolder patch() {
+	std::shared_ptr<midikraft::PatchHolder> patch() {
 		return currentPatch_;
 	}
 
-	std::map<std::string, midikraft::PatchHolder> allCurrentPatches() const;
+	std::map<std::string, std::shared_ptr<midikraft::PatchHolder>> allCurrentPatches() const;
 
 private:
-	midikraft::PatchHolder currentPatch_;
-	std::map<std::string, midikraft::PatchHolder> currentPatchBySynth_;
+	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
+	std::map<std::string, std::shared_ptr<midikraft::PatchHolder>> currentPatchBySynth_;
 };
 
 class CurrentPatchValues : public ChangeBroadcaster {
@@ -127,7 +128,7 @@ public:
 	static midikraft::Synth* currentSynthOfPatch();
 	static std::shared_ptr<midikraft::Synth> currentSynthOfPatchSmart();
 	static midikraft::StepSequencer *currentSequencer();
-	static midikraft::PatchHolder currentPatch();
+	static std::shared_ptr<midikraft::PatchHolder> currentPatch();
 
 	static File getPrehearDirectory();
 	static File getThumbnailDirectory();

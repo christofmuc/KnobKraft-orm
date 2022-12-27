@@ -169,7 +169,7 @@ void BCR2000_Component::changeListenerCallback(ChangeBroadcaster* source) {
 		}
 	}
 	else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_) {
-		updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch().patch());
+		updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch()->patch());
 	}
 }
 
@@ -295,7 +295,7 @@ BCR2000_Component::UpdateSynthListener::~UpdateSynthListener()
 void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 {
 	auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
-	patch_ = UIModel::instance()->currentPatch_.patch().patch();
+	patch_ = UIModel::instance()->currentPatch_.patch()->patch();
 	if (detailedParameters) {
 		std::string paramName = property.toString().toStdString();
 		for (auto param : detailedParameters->allParameterDefinitions()) {

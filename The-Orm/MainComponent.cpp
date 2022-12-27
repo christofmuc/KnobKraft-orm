@@ -75,7 +75,6 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 //==============================================================================
 MainComponent::MainComponent(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree) :
 	DockingWindow(manager, data, tree),
-	dockManager_(manager),
 	globalScaling_(1.0f)
 {
 	setResizable(true, true);
@@ -98,39 +97,6 @@ MainComponent::MainComponent(DockManager& manager, DockManagerData& data, const 
 	menu_ = OrmViews::instance().getMainMenu();
 	setMenuBar(menu_.get());
 
-	// Create Macro Definition view
-	/*keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
-		switch (event) {
-		case KeyboardMacroEvent::Hide: patchView_->hideCurrentPatch(); break;
-		case KeyboardMacroEvent::Favorite: patchView_->favoriteCurrentPatch(); break;
-		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
-		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
-		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
-		case KeyboardMacroEvent::Unknown:
-			// Fall through
-		default:
-			spdlog::error("Invalid keyboard macro event detected");
-			return;
-		}
-		spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(event));
-		});*/
-
-	//addAndMakeVisible(synthList_);
-	//addAndMakeVisible(patchList_);
-	//Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
-	//mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
-	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
-	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
-	//mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
-	//mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
-	//mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
-	//mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
-
-	//addAndMakeVisible(&menuBar_);
-	//splitter_ = std::make_unique<SplitteredComponent>("LogSplitter", SplitteredEntry{ &mainTabs_, 80, 20, 100 }, SplitteredEntry{ &logArea_, 20, 5, 50 }, false);
-	//addAndMakeVisible(mainTabs_);
-
-	UIModel::instance()->currentSynth_.addChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.addChangeListener(this);
 	UIModel::instance()->synthList_.addChangeListener(this);
 
@@ -139,7 +105,7 @@ MainComponent::MainComponent(DockManager& manager, DockManagerData& data, const 
 	auto persistedSynth = UIModel::instance()->synthList_.synthByName(activeSynthName);
 	if (persistedSynth.device() && UIModel::instance()->synthList_.isSynthActive(persistedSynth.device())) {
 		UIModel::instance()->currentSynth_.changeCurrentSynth(persistedSynth.synth());
-		synthList_.setActiveListItem(activeSynthName);
+		//synthList_.setActiveListItem(activeSynthName);
 	}
 	else {
 		// If at least one synth is enabled, use the first one!
@@ -151,75 +117,16 @@ MainComponent::MainComponent(DockManager& manager, DockManagerData& data, const 
 		}
 	}
 
-	// Install our MidiLogger
-	/*midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
-		midiLogView_.addMessageToList(message, source, isOut);
-		});*/
-
-	// Do a quickconfigure
-	auto list = UIModel::instance()->synthList_.activeSynths();
-	OrmViews::instance().autoDetector().quickconfigure(list);
-	// Refresh Setup View with the result of this
-	UIModel::instance()->currentSynth_.sendChangeMessage();
-
 	// Monitor the list of available MIDI devices
 	midikraft::MidiController::instance()->addChangeListener(this);
 
-	// If there is no synth configured, like, on first launch, show the Setup tab instead of the default Library tab
-	if (list.empty()) {
-		//int setupIndex = findIndexOfTabWithNameEnding(&mainTabs_, "Setup");
-		//mainTabs_.setCurrentTabIndex(setupIndex, false);
-	}
-
-	// Feel free to request the globals page from the active synth
-	//settingsView_->loadGlobals();
-
-	// Make sure you set the size of the component after
-	// you add any child components.
-	if (false) {
-		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-		auto initialSize = mainScreenSize.reduced(100);
-		setSize(initialSize.getWidth(), initialSize.getHeight());
-	}
-
-	// Select colour scheme
 	ormLookAndFeel_.setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 	setLookAndFeel(&ormLookAndFeel_);
-
-	tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
-
-
-#ifndef _DEBUG
-#ifdef USE_SENTRY
-	auto consentAlreadyGiven = Settings::instance().get("SentryConsent", "unknown");
-	if (consentAlreadyGiven == "unknown") {
-		checkUserConsent();
-	}
-	else {
-		if (consentAlreadyGiven == "0") {
-			sentry_user_consent_revoke();
-		}
-		else if (consentAlreadyGiven == "1") {
-			sentry_user_consent_give();
-		}
-	}
-#endif
-#endif
 }
 
 MainComponent::~MainComponent()
 {
-	// Prevent memory leaks being reported on shutdown
-	EditCategoryDialog::shutdown();
-	ExportDialog::shutdown();
-
-#ifdef USE_SPARKLE
-#ifdef WIN32
-	win_sparkle_cleanup();
-#endif
-#endif
 	UIModel::instance()->synthList_.removeChangeListener(this);
-	UIModel::instance()->currentSynth_.removeChangeListener(&synthList_);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 
 	setMenuBar(nullptr);
@@ -228,18 +135,6 @@ MainComponent::~MainComponent()
 
 	setLookAndFeel(nullptr);
 }
-
-#ifdef USE_SPARKLE
-void logSparkleError() {
-	spdlog::error("Error encountered in WinSparkle");
-}
-
-void sparkleInducedShutdown() {
-	MessageManager::callAsync([]() {
-		JUCEApplicationBase::quit();
-		});
-}
-#endif
 
 void MainComponent::setZoomFactor(float newZoomInPercentage) const {
 	Desktop::getInstance().setGlobalScaleFactor(newZoomInPercentage / globalScaling_);
@@ -261,33 +156,6 @@ float MainComponent::calcAcceptableGlobalScaleFactor() {
 	return goodScale;
 }
 
-/*void MainComponent::resized()
-{
-	auto area = getLocalBounds();
-	menuBar_.setBounds(area.removeFromTop(LookAndFeel::getDefaultLookAndFeel().getDefaultMenuBarHeight()));
-	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
-	//patchList_.setBounds(topRow);
-
-	if (UIModel::instance()->synthList_.activeSynths().size() > 1) {
-		auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
-			.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
-		synthList_.setBounds(secondTopRow);
-		synthList_.setVisible(true);
-	}
-	else {
-		//TODO - one synth needs to be implemented differently.
-// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
-		synthList_.setVisible(false);
-	}
-	if (splitter_) {
-		splitter_->setBounds(area);
-	}
-}*/
-
-void MainComponent::shutdown()
-{
-}
-	
 std::string MainComponent::getDatabaseFileName() const
 {
 	return OrmViews::instance().patchDatabase().getCurrentDatabaseFileName();
@@ -301,7 +169,7 @@ void MainComponent::refreshSynthList() {
 		if (UIModel::instance()->synthList_.isSynthActive(s.device())) {
 			listItems.push_back(std::make_shared<ActiveSynthHolder>(s.device(), s.color()));
 			if (currentPatches.find(s.device()->getName()) != currentPatches.end()) {
-				patchList.push_back(currentPatches[s.device()->getName()]);
+				patchList.push_back(*currentPatches[s.device()->getName()]);
 			}
 			else {
 				patchList.emplace_back(midikraft::PatchHolder());
@@ -326,7 +194,7 @@ void MainComponent::refreshSynthList() {
 		}
 	}
 
-	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const& clicked) {
+/*	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const& clicked) {
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
 		if (activeSynth) {
 			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());
@@ -341,7 +209,7 @@ void MainComponent::refreshSynthList() {
 	if (UIModel::currentSynth()) {
 		synthList_.setActiveListItem(UIModel::currentSynth()->getName());
 	}
-	patchList_.setPatches(patchList);
+	patchList_.setPatches(patchList);*/
 }
 
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
@@ -365,7 +233,7 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 			// Persist current synth for next launch
 			Settings::instance().set("CurrentSynth", synth->getName());
 			// Make sure to let the synth list reflect the selection state!
-			synthList_.setActiveListItem(synth->getName());
+			//synthList_.setActiveListItem(synth->getName());
 		}
 
 
@@ -448,12 +316,12 @@ void MainComponent::aboutBox()
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
-void MainComponent::closeButtonPressed() 
+void MainComponent::closeButtonPressed()
 {
 	Settings::instance().set("mainWindowSize", getWindowStateAsString().toStdString());
 
-	// This is called when the user tries to close this window. Here, we'll just
-	// ask the app to quit when this happens, but you can change this to do
-	// whatever you need.
-	JUCEApplication::getInstance()->systemRequestedQuit();
+	if (juce::TopLevelWindow::getNumTopLevelWindows() == 1) {
+		// Last top window was closed. Quit application (we're not on Mac)
+		JUCEApplication::getInstance()->systemRequestedQuit();
+	}
 }

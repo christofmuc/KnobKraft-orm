@@ -61,12 +61,12 @@ PatchView::PatchView()
 		}
 	};
 	patchListTree_.onPatchSelected = [this](midikraft::PatchHolder patch) {
-		selectPatch(patch, false);
+		UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
 	};
 
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
 		if (UIModel::currentSynth()) {
-			selectPatch(patch, true);
+			UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
 		}
 	});
 
@@ -220,32 +220,6 @@ void PatchView::resized()
 		//currentPatchDisplay_->setBounds(topRow);
 		splitters_->setBounds(area);
 	}*/
-}
-
-void PatchView::showPatchDiffDialog() {
-	if (!compareTarget_.patch() || !UIModel::currentPatch().patch()) {
-		// Shouldn't have come here
-		return;
-	}
-
-	if (compareTarget_.synth()->getName() != UIModel::currentPatch().synth()->getName()) {
-		// Should have come either
-		spdlog::warn("Can't compare patch {} of synth {} with patch {} of synth {}",
-			UIModel::currentPatch().name(), UIModel::currentPatch().synth()->getName(),
-			compareTarget_.name(), compareTarget_.synth()->getName());
-		return;
-	}
-
-	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentPatch().synth(), compareTarget_, UIModel::currentPatch());
-
-	DialogWindow::LaunchOptions launcher;
-	launcher.content.set(diffDialog_.get(), false);
-	launcher.componentToCentreAround = patchButtons_.get();
-	launcher.dialogTitle = "Compare two patches";
-	launcher.useNativeTitleBar = false;
-	launcher.dialogBackgroundColour = Colours::black;
-	auto window = launcher.launchAsync();
-	ignoreUnused(window);
 }
 
 void PatchView::saveCurrentPatchCategories() {
@@ -805,47 +779,4 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 	backgroundThread.runThread();
 }
 
-void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
-{
-	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
-	// Always refresh the compare target, you just expect it after you clicked it!
-	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
-	// It could be that we clicked on the patch that is already loaded?
-	if (patch.patch() != UIModel::currentPatch().patch() || !layers) {
-		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
-		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
-
-		UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
-		currentLayer_ = 0;
-
-		if (alsoSendToSynth) {
-			// Send out to Synth
-			patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
-		}
-	}
-	else {
-		if (alsoSendToSynth) {
-			// Toggle through the layers, if the patch is a layered patch...
-			if (layers) {
-				currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
-			}
-			auto layerSynth = midikraft::Capability::hasCapability<midikraft::LayerCapability>(patch.smartSynth());
-			if (layerSynth) {
-				spdlog::info("Switching to layer {}", currentLayer_);
-				//layerSynth->switchToLayer(currentLayer_);
-				auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
-				auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
-				if (location) {
-					int totalSize = 0;
-					totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const& m) { return m.getRawDataSize() + acc; });
-					spdlog::debug("Sending {} messages, total size {} bytes", allMessages.size(), totalSize);
-					patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
-				}
-				else {
-					jassertfalse;
-				}
-			}
-		}
-	}
-}
 

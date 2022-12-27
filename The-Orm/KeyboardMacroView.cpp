@@ -128,8 +128,8 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 					// We want to route all events from the master keyboard to the synth of the current patch, so we can play it!
 					// Forward to the synth of the current patch
 					auto currentPatch = UIModel::currentPatch();
-					if (currentPatch.patch()) {
-						toWhichSynthToForward = currentPatch.smartSynth();
+					if (currentPatch->patch()) {
+						toWhichSynthToForward = currentPatch->smartSynth();
 					}
 				}
 				if (forwardMode == 2 || !toWhichSynthToForward) {

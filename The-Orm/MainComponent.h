@@ -45,10 +45,6 @@ public:
 	MainComponent(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree);
     virtual ~MainComponent() override;
 
-	//virtual void resized() override;
-
-	void shutdown();
-
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
 
 	virtual void closeButtonPressed() override;
@@ -66,8 +62,6 @@ private:
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 
-	DockManager& dockManager_;
-
 	// For display size support. This will be filled before we modify any global scales
 	float globalScaling_;
 
@@ -77,15 +71,7 @@ private:
 	std::shared_ptr<juce::MenuBarModel> menu_;
 	MenuBarComponent menuBar_;
 
-	SynthList synthList_;
-	PatchPerSynthList patchList_;
-	std::unique_ptr<PatchView> patchView_;
-	std::unique_ptr<SplitteredComponent> splitter_;
-	std::unique_ptr<RecordingView> recordingView_;
-	std::unique_ptr<BCR2000_Component> bcr2000View_;
-
-	OrmLookAndFeel ormLookAndFeel_;
-	std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
+	OrmLookAndFeel ormLookAndFeel_;	
 	
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

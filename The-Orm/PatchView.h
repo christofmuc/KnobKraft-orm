@@ -70,7 +70,6 @@ public:
 	void loadPatches();
 	void exportPatches();
 	void createPatchInterchangeFile();
-	void showPatchDiffDialog();
 
 	// Additional functions for the auto thumbnailer
 	int totalNumberOfPatches();
@@ -81,11 +80,9 @@ public:
 
 	// Special functions
 	void bulkImportPIP(File directory);
-	
-	
+
 	// Refactoring helper
 	static std::vector<CategoryButtons::Category> predefinedCategories();
-
 
 private:
 	friend class PatchSearchComponent;
@@ -101,7 +98,7 @@ private:
 	void updateLastPath();
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
-	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
+	
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setImportListFilter(String filter);
@@ -119,11 +116,6 @@ private:
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
-	std::unique_ptr<PatchDiff> diffDialog_;
-
-	int currentLayer_;
-
-	midikraft::PatchHolder compareTarget_;
 
 	std::string lastPathForPIF_;
 

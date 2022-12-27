@@ -25,8 +25,11 @@
 #include "MKS50.h"
 
 #include "GenericAdaptation.h"
+#include "LayeredPatchCapability.h"
 
 #include "EditCategoryDialog.h"
+#include "PatchDiff.h"
+#include "ExportDialog.h"
 #include "AutoCategorizeWindow.h"
 #include "PatchInterchangeFormat.h"
 
@@ -198,6 +201,13 @@ OrmViews::OrmViews() : librarian_({}), buttons_(301)
 	setupView_ = std::make_shared<SetupView>(&autodetector_);
 	midiLogView_ = std::make_shared<KnobKraftMidiLog>();
 
+	// Install our MidiLogger
+	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
+		if (midiLogView_) {
+			midiLogView_->addMessageToList(message, source, isOut);
+		}
+	});
+
 	// Setup menus
 	recentFiles_.setMaxNumberOfItems(10);
 	if (Settings::instance().keyIsSet("RecentFiles")) {
@@ -271,7 +281,7 @@ OrmViews::OrmViews() : librarian_({}), buttons_(301)
 		activePatchView().createPatchInterchangeFile();
 	} } },
 	{ "Show patch comparison", { kShowDiff , [this]() {
-		activePatchView().showPatchDiffDialog();
+		showPatchDiffDialog();
 	} } },
 	{ "Quick check connectivity", { kSynthDetection, [this]() {
 		OrmViews::instance().setupView()->quickConfigure();
@@ -367,11 +377,11 @@ OrmViews::OrmViews() : librarian_({}), buttons_(301)
 	}}},
 	{ "Copy patch to clipboard...", { "Copy patch to clipboard...", [] {
 		auto patch = UIModel::currentPatch();
-		if (patch.patch() && patch.synth()) {
+		if (patch && patch->patch() && patch->synth()) {
 			std::stringstream buffer;
 			buffer << "\"sysex\" : ["; // This is the very specific CF Sysex format
 			bool first = true;
-			auto messages = patch.synth()->dataFileToSysex(patch.patch(), nullptr);
+			auto messages = patch->synth()->dataFileToSysex(patch->patch(), nullptr);
 			for (const auto& m : messages) {
 				for (int i = 0; i < m.getRawDataSize(); i++) {
 					if (!first) {
@@ -421,11 +431,71 @@ OrmViews::OrmViews() : librarian_({}), buttons_(301)
 		checkForUpdatesOnStartup();
 #endif
 		});
+
+	// Do a quickconfigure
+	auto list = UIModel::instance()->synthList_.activeSynths();
+	autodetector_.quickconfigure(list);
+	// Refresh Setup View with the result of this
+	UIModel::instance()->currentSynth_.sendChangeMessage();
+
+	// If there is no synth configured, like, on first launch, show the Setup tab instead of the default Library tab
+	if (list.empty()) {
+		//int setupIndex = findIndexOfTabWithNameEnding(&mainTabs_, "Setup");
+		//mainTabs_.setCurrentTabIndex(setupIndex, false);
+	}
+
+	// Feel free to request the globals page from the active synth
+	//settingsView_->loadGlobals();
+
+	tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
+
+#ifndef _DEBUG
+#ifdef USE_SENTRY
+	auto consentAlreadyGiven = Settings::instance().get("SentryConsent", "unknown");
+	if (consentAlreadyGiven == "unknown") {
+		checkUserConsent();
+	}
+	else {
+		if (consentAlreadyGiven == "0") {
+			sentry_user_consent_revoke();
+		}
+		else if (consentAlreadyGiven == "1") {
+			sentry_user_consent_give();
+		}
+	}
+#endif
+#endif
+
+	// Auto audition feature - monitor the current patch, and if it changes, send it to the synth
+	UIModel::instance()->currentPatch_.addChangeListener(this);
 }
 
 OrmViews::~OrmViews() {
+	UIModel::instance()->currentPatch_.removeChangeListener(this);
+
+	EditCategoryDialog::shutdown();
+	ExportDialog::shutdown();
+
 	menuModel_.reset();
+
+#ifdef USE_SPARKLE
+#ifdef WIN32
+	win_sparkle_cleanup();
+#endif
+#endif
 }
+
+#ifdef USE_SPARKLE
+void logSparkleError() {
+	spdlog::error("Error encountered in WinSparkle");
+}
+
+void sparkleInducedShutdown() {
+	MessageManager::callAsync([]() {
+		JUCEApplicationBase::quit();
+		});
+}
+#endif
 
 OrmViews& OrmViews::instance() {
 	if (!instance_) {
@@ -493,6 +563,13 @@ void OrmViews::reloadAutomaticCategories() {
 
 const juce::StringArray OrmViews::getAvailableViews() const
 {
+	//mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
+	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
+	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
+	//mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
+	//mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
+	//mainTabs_.addTab("Setup", tabColour, setupView_.get(), false);
+	//mainTabs_.addTab("MIDI Log", tabColour, &midiLogArea_, false);
 	return {
 			"Setup",
 			"Settings",
@@ -527,9 +604,23 @@ std::shared_ptr<juce::Component> OrmViews::createView(const juce::String& nameOf
 		return std::make_shared<knobkraft::AdaptationView>();
 	}
 	else if (nameOfViewToCreate == "Macros") {
-		return std::make_shared<KeyboardMacroView>([](KeyboardMacroEvent event) {
-			ignoreUnused(event);
-			});
+		// Create Macro Definition view
+		auto keyboardView = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
+			switch (event) {
+			case KeyboardMacroEvent::Hide: activePatchView().hideCurrentPatch(); break;
+			case KeyboardMacroEvent::Favorite: activePatchView().favoriteCurrentPatch(); break;
+			case KeyboardMacroEvent::NextPatch: activePatchView().selectNextPatch(); break;
+			case KeyboardMacroEvent::PreviousPatch: activePatchView().selectPreviousPatch(); break;
+			case KeyboardMacroEvent::ImportEditBuffer: activePatchView().retrieveEditBuffer(); break;
+			case KeyboardMacroEvent::Unknown:
+				// Fall through
+			default:
+				spdlog::error("Invalid keyboard macro event detected");
+				return;
+			}
+			spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(event));
+		});
+		return keyboardView;
 	}
 	else if (nameOfViewToCreate == "Log") {
 		return logView_;
@@ -557,7 +648,7 @@ std::shared_ptr<juce::Component> OrmViews::createView(const juce::String& nameOf
 		);
 		currentPatchDisplay->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {
 			if (patch) {
-				//selectPatch(*patch, true);
+				auditionPatch(*patch, true);
 			}
 		};
 		return currentPatchDisplay;
@@ -805,10 +896,13 @@ void OrmViews::newViewSelected(int selected) {
 	auto l = getAvailableViews();
 	if (selected >= 0 && selected < l.size()) {
 		if (canCreateAdditionalViews(l[selected])) {
-			dockManager_->openViewAsNewTab(l[selected], "", DropLocation::none);
+			dockManager_->openViewAsNewTab(l[selected], "", DropLocation::parentRight);
 		}
 		else {
-			dockManager_->showView(l[selected]);
+			if (!dockManager_->showView(l[selected])) {
+				// Showing didn't work, let's create a new one then
+				dockManager_->openViewAsNewTab(l[selected], "", DropLocation::parentRight);
+			}
 		}
 	}
 }
@@ -876,6 +970,87 @@ void OrmViews::crashTheSoftware()
 		(*bad_idea) = 0;
 	}
 }
+
+void OrmViews::showPatchDiffDialog() {
+	if (!compareTarget_.patch() || !UIModel::currentPatch()->patch()) {
+		// Shouldn't have come here
+		return;
+	}
+
+	if (compareTarget_.synth()->getName() != UIModel::currentPatch()->synth()->getName()) {
+		// Should have come either
+		spdlog::warn("Can't compare patch {} of synth {} with patch {} of synth {}",
+			UIModel::currentPatch()->name(), UIModel::currentPatch()->synth()->getName(),
+			compareTarget_.name(), compareTarget_.synth()->getName());
+		return;
+	}
+
+	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentPatch()->synth(), compareTarget_, *UIModel::currentPatch());
+
+	DialogWindow::LaunchOptions launcher;
+	launcher.content.set(diffDialog_.get(), false);
+	launcher.componentToCentreAround = activeMainWindow();
+	launcher.dialogTitle = "Compare two patches";
+	launcher.useNativeTitleBar = false;
+	launcher.dialogBackgroundColour = Colours::black;
+	auto window = launcher.launchAsync();
+	ignoreUnused(window);
+}
+
+void OrmViews::changeListenerCallback(ChangeBroadcaster* source) {
+	if (source == &UIModel::instance()->currentPatch_) {
+		auto patch = UIModel::instance()->currentPatch();
+		if (patch) {
+			auditionPatch(*patch, false);
+		}
+	}
+}
+
+void OrmViews::auditionPatch(midikraft::PatchHolder const& patch, bool notifyListeners)
+{
+	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
+	if (UIModel::currentPatch()) {
+		// Always refresh the compare target, you just expect it after you clicked it!
+		compareTarget_ = *UIModel::currentPatch(); // Previous patch is the one we will compare with
+	}
+
+	// It could be that we clicked on the patch that is already loaded?
+	if ((UIModel::currentPatch() && patch.patch() != UIModel::currentPatch()->patch()) || !layers) {
+		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
+		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
+
+		if (notifyListeners) {
+			UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
+		}
+		currentLayer_ = 0;
+
+		// Send out to Synth
+		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+	}
+	else {
+		// Toggle through the layers, if the patch is a layered patch...
+		if (layers) {
+			currentLayer_ = (currentLayer_ + 1) % layers->numberOfLayers();
+		}
+		auto layerSynth = midikraft::Capability::hasCapability<midikraft::LayerCapability>(patch.smartSynth());
+		if (layerSynth) {
+			spdlog::info("Switching to layer {}", currentLayer_);
+			//layerSynth->switchToLayer(currentLayer_);
+			auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
+			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+			if (location) {
+				int totalSize = 0;
+				totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const& m) { return m.getRawDataSize() + acc; });
+				spdlog::debug("Sending {} messages, total size {} bytes", allMessages.size(), totalSize);
+				patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
+			}
+			else {
+				jassertfalse;
+			}
+		}
+	}
+}
+
 
 
 std::unique_ptr<OrmViews> OrmViews::instance_;

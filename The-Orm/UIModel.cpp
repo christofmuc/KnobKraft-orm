@@ -32,14 +32,19 @@ void CurrentSequencer::changeCurrentSequencer(midikraft::StepSequencer *activeSe
 }
 
 
-void CurrentPatch::changeCurrentPatch(midikraft::PatchHolder const &currentPatch)
+void CurrentPatch::changeCurrentPatch(midikraft::PatchHolder const& currentPatch) {
+	currentPatch_ = std::make_shared<midikraft::PatchHolder>(currentPatch);
+	changeCurrentPatch(currentPatch_);
+}
+
+void CurrentPatch::changeCurrentPatch(std::shared_ptr<midikraft::PatchHolder> currentPatch)
 {
 	currentPatch_ = currentPatch;
-	currentPatchBySynth_[currentPatch.synth()->getName()] = currentPatch;
+	currentPatchBySynth_[currentPatch->synth()->getName()] = currentPatch;
 	sendChangeMessage();
 }
 
-std::map<std::string, midikraft::PatchHolder> CurrentPatch::allCurrentPatches() const
+std::map<std::string, std::shared_ptr<midikraft::PatchHolder>> CurrentPatch::allCurrentPatches() const
 {
 	return currentPatchBySynth_;
 }
@@ -74,16 +79,16 @@ midikraft::Synth * UIModel::currentSynth()
 
 midikraft::Synth* UIModel::currentSynthOfPatch()
 {
-	if (instance_->currentPatch_.patch().patch()) {
-		return instance_->currentPatch().synth();
+	if (instance_->currentPatch_.patch()->patch()) {
+		return instance_->currentPatch()->synth();
 	}
 	return currentSynth();
 }
 
 std::shared_ptr<midikraft::Synth> UIModel::currentSynthOfPatchSmart()
 {
-	if (instance_->currentPatch_.patch().patch()) {
-		return instance_->currentPatch().smartSynth();
+	if (instance_->currentPatch_.patch()->patch()) {
+		return instance_->currentPatch()->smartSynth();
 	}
 	return instance_->currentSynth_.smartSynth();
 }
@@ -93,7 +98,7 @@ midikraft::StepSequencer * UIModel::currentSequencer()
 	return instance_->currentSequencer_.sequencer();
 }
 
-midikraft::PatchHolder  UIModel::currentPatch()
+std::shared_ptr<midikraft::PatchHolder> UIModel::currentPatch()
 {
 	return instance_->currentPatch_.patch();
 }

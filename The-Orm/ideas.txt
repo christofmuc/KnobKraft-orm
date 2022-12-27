@@ -8,6 +8,10 @@ UX - Need Window management. at least, resizing and show/hide
 * Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
 UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
 
+DOCKS - Problem with newly created view - can it not dock somewhere sensible?
+
+UX IDEA - can have Pin Icon for Current Patch, Library to work with multiple windows?
+
 BUG - lists are ordered incorrectly in the Library, no longer with order_num
 BUG - scrolling the list is really choppy
 BUG - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
