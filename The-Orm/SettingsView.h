@@ -13,13 +13,12 @@
 #include "InfoText.h"
 
 #include "SynthHolder.h"
-#include "Librarian.h"
 
 class SettingsView : public Component,
 	private ChangeListener
 {
 public:
-	SettingsView(std::vector<midikraft::SynthHolder> const &synths);
+	SettingsView();
 	virtual ~SettingsView() override;
 
 	void loadGlobals();
@@ -28,9 +27,6 @@ public:
 
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
-
-	std::vector<midikraft::SynthHolder> synths_;
-	midikraft::Librarian librarian_;
 
 	PropertyEditor propertyEditor_;
 	InfoText errorMessageInstead_;

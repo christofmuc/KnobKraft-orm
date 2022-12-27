@@ -15,7 +15,7 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
-RecordingView::RecordingView(PatchView &patchView) : patchView_(patchView), deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
+RecordingView::RecordingView() : deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
 	recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV), buttons_(1111, LambdaButtonStrip::Direction::Horizontal),
 	midiSender_(48000)
 {
@@ -44,7 +44,7 @@ RecordingView::RecordingView(PatchView &patchView) : patchView_(patchView), devi
 		sampleNote();
 	} } },
 	{ "autoThumbnail", { "Create thumbnails", [this]() {
-		AutoThumbnailingDialog dialog(patchView_, *this);
+		AutoThumbnailingDialog dialog(*this);
 		dialog.runThread();
 	} } },
 	};

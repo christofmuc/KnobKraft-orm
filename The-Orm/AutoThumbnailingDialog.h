@@ -13,7 +13,7 @@
 
 class AutoThumbnailingDialog : public ThreadWithProgressWindow, private ChangeListener {
 public:
-	AutoThumbnailingDialog(PatchView &patchView, RecordingView &recordingView);
+	AutoThumbnailingDialog(RecordingView &recordingView);
 	virtual ~AutoThumbnailingDialog() override;
 
 	virtual void run() override;
@@ -25,7 +25,6 @@ private:
 	bool syncRecordThumbnail();
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
-	PatchView &patchView_;
 	RecordingView &recordingView_;
 	bool patchSwitched_;
 	bool thumbnailDone_;

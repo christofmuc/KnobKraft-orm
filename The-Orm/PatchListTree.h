@@ -18,7 +18,7 @@ public:
 	typedef std::function<void(std::shared_ptr<midikraft::Synth>, MidiBankNumber)> TBankSelectionHandler;
 	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
 
-	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
+	PatchListTree();
 	virtual ~PatchListTree() override;
 
 	TSelectionHandler onImportListSelected;
@@ -59,8 +59,6 @@ private:
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths_; // The database needs this to load patch lists
 	//std::map<std::string, std::unique_ptr<XmlElement>> synthSpecificTreeState_;
-
-	midikraft::PatchDatabase& db_;
 
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewNode* allPatchesItem_;

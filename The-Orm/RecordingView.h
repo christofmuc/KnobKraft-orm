@@ -18,7 +18,7 @@
 
 class RecordingView : public Component, private ChangeListener {
 public:
-	RecordingView(PatchView &patchView);
+	RecordingView();
 	~RecordingView() override;
 
 	void stopAudio();
@@ -30,8 +30,6 @@ public:
 
 private:
 	void changeListenerCallback(ChangeBroadcaster* source) override;
-
-	PatchView &patchView_;
 
 	AudioDeviceManager deviceManager_;
 	AudioDeviceSelectorComponent deviceSelector_;

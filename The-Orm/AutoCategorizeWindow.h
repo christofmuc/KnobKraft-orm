@@ -16,7 +16,7 @@
 
 class AutoCategorizeWindow : public ThreadWithProgressWindow {
 public:
-	AutoCategorizeWindow(midikraft::PatchDatabase *database, std::shared_ptr<midikraft::AutomaticCategory> detector, midikraft::PatchFilter activeFilter, std::function<void()> finishedHandler) :
+	AutoCategorizeWindow(midikraft::PatchDatabase& database, std::shared_ptr<midikraft::AutomaticCategory> detector, midikraft::PatchFilter activeFilter, std::function<void()> finishedHandler) :
 		ThreadWithProgressWindow("Re-running auto categorization...", true, true), database_(database), detector_(detector),
 		activeFilter_(activeFilter), finishedHandler_(finishedHandler)
 	{
@@ -25,7 +25,7 @@ public:
 	virtual void run() override;
 
 private:
-	midikraft::PatchDatabase *database_;
+	midikraft::PatchDatabase& database_;
 	std::shared_ptr<midikraft::AutomaticCategory> detector_;
 	midikraft::PatchFilter activeFilter_;
 	std::function<void()> finishedHandler_;

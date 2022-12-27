@@ -7,6 +7,15 @@
 
 #include "OrmLookAndFeel.h"
 
+#pragma warning(disable:4100) // Suppress unreferenced formal parameter warning
+#include <docks/docks.h>
+
+OrmLookAndFeel::OrmLookAndFeel() {	
+	setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
+	auto backgroundColour = getCurrentColourScheme().getUIColour(ColourScheme::UIColour::windowBackground);
+	setColour(DockingWindow::ColourIds::backgroundColourId, backgroundColour);
+}
+
 /*juce::Font OrmLookAndFeel::getTextButtonFont(TextButton& button, int buttonHeight)
 {
 	ignoreUnused(button, buttonHeight);

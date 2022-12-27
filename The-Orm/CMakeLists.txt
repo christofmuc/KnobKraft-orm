@@ -59,6 +59,7 @@ set(SOURCES
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
 	OrmLookAndFeel.cpp OrmLookAndFeel.h
+	OrmViews.cpp OrmViews.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
 	PatchHolderButton.cpp PatchHolderButton.h
@@ -137,6 +138,7 @@ IF(WIN32)
 		sqlite3
 		gin
 		spdlog::spdlog
+		docks
 		${SENTRY_LIB}
 		${SPARKLE_DEPENDENCY}
 		)
@@ -147,6 +149,7 @@ ELSEIF(APPLE)
 		sqlite3
 		gin
 		spdlog::spdlog
+		docks
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
@@ -162,6 +165,7 @@ ELSEIF(UNIX)
 		sqlite3
 		gin
 		spdlog::spdlog
+		docks
 		)
 	target_compile_options(KnobKraftOrm PRIVATE -pthread -I/usr/include/webkitgtk-4.0 -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/webkitgtk-4.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include)
 ENDIF()

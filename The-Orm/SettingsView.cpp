@@ -8,14 +8,15 @@
 
 #include "DataFileLoadCapability.h"
 #include "MidiController.h"
+#include "OrmViews.h"
 
 #include "UIModel.h"
 
 #include "GlobalSettingsCapability.h"
 
+#include "Librarian.h"
 
-SettingsView::SettingsView(std::vector<midikraft::SynthHolder> const &synths) : synths_(synths), librarian_(synths),
-buttonStrip_(3001, LambdaButtonStrip::Direction::Horizontal)
+SettingsView::SettingsView() : buttonStrip_(3001, LambdaButtonStrip::Direction::Horizontal)
 {
 	LambdaButtonStrip::TButtonMap buttons = {
 	{ "loadGlobals", { "Load Globals", [this]() {
@@ -81,7 +82,7 @@ void SettingsView::loadGlobals() {
 	auto gsc = midikraft::Capability::hasCapability<midikraft::GlobalSettingsCapability>(synth);
 	if (gsc && midiLocation) {
 		errorMessageInstead_.setText("", dontSendNotification);
-		librarian_.startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), nullptr,
+		OrmViews::instance().librarian().startDownloadingSequencerData(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), gsc->loader(), gsc->settingsDataFileType(), nullptr,
 			[this, gsc](std::vector<std::shared_ptr<midikraft::DataFile>> dataLoaded) {
 			gsc->setGlobalSettingsFromDataFile(dataLoaded[0]);
 			MessageManager::callAsync([this, gsc]() {

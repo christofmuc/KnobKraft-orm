@@ -10,6 +10,8 @@
 
 class OrmLookAndFeel : public LookAndFeel_V4 {
 public:
+	OrmLookAndFeel();
+
 	//Font getTextButtonFont(TextButton&, int buttonHeight) override;
 	//void drawButtonText(Graphics&, TextButton&, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 };

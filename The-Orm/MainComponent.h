@@ -32,56 +32,41 @@
 #include "RecordingView.h"
 #include "BCR2000_Component.h"
 #include "AdaptationView.h"
+#include "OrmLookAndFeel.h"
 
-#include <spdlog/logger.h>
+#include "OrmViews.h"
 
 class LogViewLogger;
 
-class MainComponent : public Component, private ChangeListener
+// Each top level Window that takes docked views is one of these
+class MainComponent : public DockingWindow, private ChangeListener
 {
 public:
-	MainComponent(bool makeYourOwnSize);
+	MainComponent(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree);
     virtual ~MainComponent() override;
 
-	virtual void resized() override;
+	//virtual void resized() override;
 
 	void shutdown();
 
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
 
+	virtual void closeButtonPressed() override;
+
+	static void aboutBox();
 private:
-	void checkForUpdatesOnStartup();
-	void createNewDatabase();
-	void openDatabase();
-	void openDatabase(File &databaseFile);
-	void saveDatabaseAs();
-	static void exportDatabases();
-	void mergeDatabases();
-	PopupMenu recentFileMenu();
-	void recentFileSelected(int selected);
-	void persistRecentFileList();
-#ifndef _DEBUG
-#ifdef USE_SENTRY
-	void checkUserConsent();
-#endif
-#endif
-	static void crashTheSoftware();
 
 	void setZoomFactor(float newZoomInPercentage) const;
     float calcAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
-	static void aboutBox();
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 
-	std::unique_ptr<midikraft::PatchDatabase> database_;
-	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
-	RecentlyOpenedFilesList recentFiles_;
-	midikraft::AutoDetection autodetector_;
+	DockManager& dockManager_;
 
 	// For display size support. This will be filled before we modify any global scales
 	float globalScaling_;
@@ -89,31 +74,18 @@ private:
 	// For kicking off new quickconfigures automatically
 	DebounceTimer quickconfigreDebounce_;
 
-	// The infrastructure for the menu and the short cut keys
-	std::unique_ptr<LambdaMenuModel> menuModel_;
-	LambdaButtonStrip buttons_;
-	ApplicationCommandManager commandManager_;
+	std::shared_ptr<juce::MenuBarModel> menu_;
 	MenuBarComponent menuBar_;
 
 	SynthList synthList_;
 	PatchPerSynthList patchList_;
-	TabbedComponent mainTabs_;
-	LogView logView_;
 	std::unique_ptr<PatchView> patchView_;
-	std::unique_ptr<KeyboardMacroView> keyboardView_;
 	std::unique_ptr<SplitteredComponent> splitter_;
-	MidiLogView midiLogView_;
-	knobkraft::AdaptationView adaptationView_;
-	InsetBox midiLogArea_;
-	std::unique_ptr<SettingsView> settingsView_;
-	std::unique_ptr<SetupView> setupView_;
-	std::unique_ptr<LogViewLogger> logger_;
 	std::unique_ptr<RecordingView> recordingView_;
 	std::unique_ptr<BCR2000_Component> bcr2000View_;
 
-	InsetBox logArea_;
-
-	std::shared_ptr<spdlog::logger> spdLogger_;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
+	OrmLookAndFeel ormLookAndFeel_;
+	std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
+	
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

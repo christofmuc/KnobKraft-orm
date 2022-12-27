@@ -12,16 +12,16 @@ void AutoCategorizeWindow::run()
 {
 	// Load the auto category file and re-categorize everything!
 	if (detector_->autoCategoryFileExists()) {
-		detector_->loadFromFile(database_->getCategories(), detector_->getAutoCategoryFile().getFullPathName().toStdString());
+		detector_->loadFromFile(database_.getCategories(), detector_->getAutoCategoryFile().getFullPathName().toStdString());
 	}
-	auto patches = database_->getPatches(activeFilter_, 0, 100000);
+	auto patches = database_.getPatches(activeFilter_, 0, 100000);
 	size_t tick = 0;
 	for (auto patch : patches) {
 		if (patch.autoCategorizeAgain(detector_)) {
 			if (threadShouldExit()) break;
 			// This was changed, updating database
 			spdlog::info("Updating patch {} with new categories", patch.name());
-			database_->putPatch(patch);
+			database_.putPatch(patch);
 		}
 		setProgress(tick++ / (double)patches.size());
 	}

@@ -17,9 +17,10 @@
 #include "SynthHolder.h"
 
 #include "MidiChannelPropertyEditor.h"
+#include "OrmViews.h"
 
 
-class SetupView : public Component,
+class SetupView : public OrmDockableWindow,
 	private ChangeListener, private Value::Listener
 {
 public:

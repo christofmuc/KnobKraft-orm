@@ -12,6 +12,7 @@
 #include "UIModel.h"
 #include "Data.h"
 #include "OrmLookAndFeel.h"
+#include "OrmViews.h"
 
 #include "GenericAdaptation.h"
 #include "embedded_module.h"
@@ -20,6 +21,7 @@
 #include <spdlog/spdlog.h>
 
 #include "version.cpp"
+
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -72,9 +74,10 @@ public:
     {
 		ignoreUnused(commandLine);
 
-		// This method is where you should put your application's initialization code...
+		// Load Data
 		auto applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
+		Data::instance().initializeFromSettings();
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -104,12 +107,11 @@ public:
 		}
 
 		// Select colour scheme
-		auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
+		/*auto lookAndFeel = &LookAndFeel_V4::getDefaultLookAndFeel();
 		auto v4 = dynamic_cast<LookAndFeel_V4 *>(lookAndFeel);
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
-		}
-		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
+		}*/
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -142,8 +144,24 @@ public:
 #endif
 #endif
 
-		// Load Data
-		Data::instance().initializeFromSettings();
+		dockManager_ = std::make_unique<DockManager>(OrmViews::instance());
+
+		OrmViews::instance().init(dockManager_.get());
+
+		bool layoutDone = false;
+		if (Settings::instance().keyIsSet("Docks")) {
+			std::string layout = Settings::instance().get("Docks", "");
+			MemoryInputStream ins(layout.data(), layout.size(), false);
+			dockManager_->openLayout(ins);
+			layoutDone = true;
+		}
+
+		if (!layoutDone) {
+			//TODO This needs to be a template
+			juce::StringArray views{ "Patch Library", "Setup", "Log", "MidiLog" };
+			dockManager_->create2By2("Setup", views);
+		}
+
 
 		// Window Title Refresher
 		UIModel::instance()->windowTitle_.addChangeListener(this);
@@ -156,18 +174,34 @@ public:
 	void changeListenerCallback(ChangeBroadcaster* source) override
 	{
 		ignoreUnused(source);
+		/*
 		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
 		if (mainComp) {
 			// This is only called when the window title needs to be changed!
 			File currentDatabase(mainComp->getDatabaseFileName());
 			mainWindow->setName(getWindowTitle() + " (" + currentDatabase.getFileName() + ")");
-		}
+		}*/
+		/*if (source == dockManager_.get()) {
+			DockManager::ViewMap::Iterator i(dockManager_->getAllComponents());
+			bool close = true;
+			while (i.next()) {
+				if (i.getValue()->getParentComponent() != nullptr) {
+					close = false;
+					break;
+				}
+			}
+			if (close) {
+				// All windows have been closed, time to exit the application!
+				quit();
+			}
+		}*/
 	}
 
     void shutdown() override
     {
 		// Unregister
 		UIModel::instance()->windowTitle_.removeChangeListener(this);
+		//dockManager_->removeChangeListener(this);
 
         // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
@@ -176,16 +210,25 @@ public:
 		Data::instance().saveToSettings();
 		UIModel::shutdown();
 
-		mainWindow = nullptr; // (deletes our window)
-
-		// No more Python from here please
-		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
+		OrmViews::shutdown();
 
 		// Shutdown MIDI subsystem after all windows are gone
 		midikraft::MidiController::shutdown();
 
+		juce::MemoryOutputStream layoutString;
+		dockManager_->saveLayout(layoutString);
+		Settings::instance().set("Docks", layoutString.toString().toStdString());
+
+		// Now shut down UI
+		dockManager_.reset();
+
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
+
 		// Shutdown settings subsystem
 		Settings::instance().saveAndClose();
+
+		// End of it
 		Settings::shutdown();
 
 #ifndef _DEBUG
@@ -201,13 +244,12 @@ public:
     {
 		// Shut down database (that makes a backup)
 		// Do this before calling quit
-		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
+		/*auto mainComp = dynamic_cast<MainComponent*>(mainWindow->getContentComponent());
 		if (mainComp) {
 			// Give it a chance to complete the Database backup
 			//TODO - should ask user or at least show progress dialog?
 			mainComp->shutdown();
-		}
-		
+		}*/
 		// This is called when the app is being asked to quit: you can ignore this
         // request and let the app carry on running, or call quit() to allow the app to close.
         quit();
@@ -221,79 +263,8 @@ public:
         // the other instance's command-line arguments were.
     }
 
-    //==============================================================================
-    /*
-        This class implements the desktop window that contains an instance of
-        our MainComponent class.
-    */
-    class MainWindow    : public DocumentWindow
-    {
-    public:
-        MainWindow (String name)  : DocumentWindow (name,
-                                                    Desktop::getInstance().getDefaultLookAndFeel()
-                                                                          .findColour (ResizableWindow::backgroundColourId),
-                                                    DocumentWindow::allButtons)
-        {
-			setResizable(true, true);
-            setUsingNativeTitleBar (true);
-
-			// Select colour scheme
-			ormLookAndFeel_.setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
-			setLookAndFeel(&ormLookAndFeel_);
-			
-#if JUCE_IOS || JUCE_ANDROID
-			setFullScreen(true);
-			setContentOwned(new MainComponent(false), false);
-			centreWithSize(getWidth(), getHeight());
-#else
-			if (Settings::instance().keyIsSet("mainWindowSize")) {
-				// Restore window size
-				restoreWindowStateFromString(Settings::instance().get("mainWindowSize"));
-				setContentOwned(new MainComponent(false), false);
-			}
-			else {
-				// Calculate best size for first start. 
-				setContentOwned(new MainComponent(true), true);
-				setResizable(true, true);
-				centreWithSize(getWidth(), getHeight());
-			}
-#endif
-			setVisible(true); //NOLINT
-
-			tooltipGlobalWindow_ = std::make_unique<TooltipWindow>();
-        }
-
-		virtual ~MainWindow() override {
-			setLookAndFeel(nullptr);
-		}
-
-        void closeButtonPressed() override
-        {
-			Settings::instance().set("mainWindowSize", getWindowStateAsString().toStdString());
-
-            // This is called when the user tries to close this window. Here, we'll just
-            // ask the app to quit when this happens, but you can change this to do
-            // whatever you need.
-            JUCEApplication::getInstance()->systemRequestedQuit();
-        }
-
-        /* Note: Be careful if you override any DocumentWindow methods - the base
-           class uses a lot of them, so by overriding you might break its functionality.
-           It's best to do all your work in your content component instead, but if
-           you really have to override any DocumentWindow methods, make sure your
-           subclass also calls the superclass's method.
-        */
-
-    private:
-		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
-
-		OrmLookAndFeel ormLookAndFeel_;
-		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
-    };
-
-
 private:
-    std::unique_ptr<MainWindow> mainWindow;
+	std::unique_ptr<DockManager> dockManager_;
 };
 
 //==============================================================================
