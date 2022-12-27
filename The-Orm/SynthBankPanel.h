@@ -17,7 +17,7 @@ class PatchView;
 class SynthBankPanel : public Component, private ChangeListener
 {
 public:
-	SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchView *patchView);
+	SynthBankPanel(midikraft::PatchDatabase& patchDatabase);
 	virtual ~SynthBankPanel() override;
 
 	virtual void resized() override;
@@ -28,7 +28,6 @@ private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	midikraft::PatchDatabase& patchDatabase_;
-	PatchView* patchView_;
 	std::shared_ptr<midikraft::SynthBank> synthBank_;
 	Label synthName_;
 	Label bankNameAndDate_;

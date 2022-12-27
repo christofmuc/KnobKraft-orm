@@ -70,20 +70,6 @@ PatchView::PatchView()
 		}
 	});
 
-	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(predefinedCategories(),
-		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
-		OrmViews::instance().patchDatabase().putPatch(*favoritePatch);
-		patchButtons_->refresh(true);
-	}
-	);
-	currentPatchDisplay_->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {
-		if (patch) {
-			selectPatch(*patch, true);
-		}
-	};
-
-	synthBank_ = std::make_unique<SynthBankPanel>(OrmViews::instance().patchDatabase(), this);
-
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), OrmViews::instance().patchDatabase());
 
 	auto box = new LambdaLayoutBox();
@@ -110,16 +96,14 @@ PatchView::PatchView()
 	auto centerBox = new LambdaLayoutBox();
 	centerBox->onResized = [this](Component* box) {
 		auto area = box->getLocalBounds();
-		patchSearch_->setBounds(area.removeFromLeft(area.getWidth() / 4 * 3));
-		synthBank_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
+		patchSearch_->setBounds(area.removeFromLeft(area.getWidth()));
 	};
-	centerBox->addAndMakeVisible(*synthBank_);
 	centerBox->addAndMakeVisible(*patchSearch_);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
 		SplitteredEntry{ box, 15, 5, 40 },
-		SplitteredEntry{ centerBox, 50, 40, 90 },
-		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
+		SplitteredEntry{ centerBox, 85, 40, 90 },
+		true);
 	addAndMakeVisible(splitters_.get());
 
 	addAndMakeVisible(recycleBin_);
@@ -141,7 +125,7 @@ PatchView::~PatchView()
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (dynamic_cast<CurrentPatch *>(source)) {
-		currentPatchDisplay_->setCurrentPatch(std::make_shared<midikraft::PatchHolder>(UIModel::currentPatch()));
+		//currentPatchDisplay_->setCurrentPatch(std::make_shared<midikraft::PatchHolder>(UIModel::currentPatch()));
 	}
 }
 
@@ -181,12 +165,12 @@ std::shared_ptr<midikraft::PatchList>  PatchView::retrieveListFromDatabase(midik
 void PatchView::hideCurrentPatch()
 {
 	selectNextPatch();
-	currentPatchDisplay_->toggleHide();
+	//currentPatchDisplay_->toggleHide();
 }
 
 void PatchView::favoriteCurrentPatch()
 {
-	currentPatchDisplay_->toggleFavorite();
+	//currentPatchDisplay_->toggleFavorite();
 }
 
 void PatchView::selectPreviousPatch()
@@ -265,10 +249,10 @@ void PatchView::showPatchDiffDialog() {
 }
 
 void PatchView::saveCurrentPatchCategories() {
-	if (currentPatchDisplay_->getCurrentPatch()->patch()) {
+	/*if (currentPatchDisplay_->getCurrentPatch()->patch()) {
 		OrmViews::instance().patchDatabase().putPatch(*currentPatchDisplay_->getCurrentPatch());
 		patchButtons_->refresh(false);
-	}
+	}*/
 }
 
 void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId)
@@ -296,7 +280,7 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 			if (bankList) {
 				UIModel::instance()->synthBank.setSynthBank(bankList);
 				//TODO could be transported via UIModel?
-				synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
+				//synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
 			} 
 		}
 		else {

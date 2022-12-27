@@ -218,12 +218,23 @@ OrmViews::OrmViews() : librarian_({}), buttons_(301)
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{5, { "View", { { "Load view layout...", true, 4444, [this]() {
-		return loadLayoutMenu();
-	}, [this](int selected) {
-		layoutTemplateSelected(selected);
-	} }, { kSaveTemplate },
-				{"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
+		{5, { "View", { 
+			{ "Open new view...", true, 4461, [this]()
+				{
+					return newViewMenu();
+				}, [this](int selected) {
+					newViewSelected(selected);
+				}
+			},
+			{ "Load view layout...", true, 4444, [this]()
+				{
+					return loadLayoutMenu();
+				}, [this](int selected) {
+					layoutTemplateSelected(selected);
+				} 
+			},
+			{ kSaveTemplate },
+			{"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
 		{7, { "Help", {
 #ifndef _DEBUG
@@ -491,8 +502,17 @@ const juce::StringArray OrmViews::getAvailableViews() const
 			"MidiLog",
 			"Recording",
 			"BCR2000",
-			"Patch Library"
+			"Patch Library",
+			"Current Patch",
+			"Synth Bank"
 	};
+}
+
+bool OrmViews::canCreateAdditionalViews(juce::String const& name) {
+	if (name == "Setup" || name == "Macros" || name == "MidiLog" || name == "Log") {
+		return false;
+	}
+	return true;
 }
 
 std::shared_ptr<juce::Component> OrmViews::createView(const juce::String& nameOfViewToCreate)
@@ -527,6 +547,24 @@ std::shared_ptr<juce::Component> OrmViews::createView(const juce::String& nameOf
 		auto newPatchView = std::make_shared<PatchView>();
 		patchViews_.push_back(newPatchView);
 		return newPatchView;
+	}
+	else if (nameOfViewToCreate == "Current Patch") {
+		auto currentPatchDisplay = std::make_shared<CurrentPatchDisplay>(PatchView::predefinedCategories(),
+			[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
+				OrmViews::instance().patchDatabase().putPatch(*favoritePatch);
+				//patchButtons_->refresh(true);
+			}
+		);
+		currentPatchDisplay->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {
+			if (patch) {
+				//selectPatch(*patch, true);
+			}
+		};
+		return currentPatchDisplay;
+	}
+	else if (nameOfViewToCreate == "Synth Bank") {
+		auto synthBank = std::make_shared<SynthBankPanel>(OrmViews::instance().patchDatabase());
+		return synthBank;
 	}
 	else if (nameOfViewToCreate == "" || nameOfViewToCreate == "root") {
 		return nullptr;
@@ -751,6 +789,27 @@ void OrmViews::recentFileSelected(int selected)
 		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "File not found", "That file no longer exists, cannot open!");
 		recentFiles_.removeFile(databaseFile);
 		persistRecentFileList();
+	}
+}
+
+PopupMenu OrmViews::newViewMenu() {
+	PopupMenu menu;
+	int i = 4461;
+	for (auto layout : getAvailableViews()) {
+		menu.addItem(i++, layout, true, false);
+	}
+	return menu;
+}
+
+void OrmViews::newViewSelected(int selected) {
+	auto l = getAvailableViews();
+	if (selected >= 0 && selected < l.size()) {
+		if (canCreateAdditionalViews(l[selected])) {
+			dockManager_->openViewAsNewTab(l[selected], "", DropLocation::none);
+		}
+		else {
+			dockManager_->showView(l[selected]);
+		}
 	}
 }
 

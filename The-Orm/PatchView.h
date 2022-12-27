@@ -81,11 +81,14 @@ public:
 
 	// Special functions
 	void bulkImportPIP(File directory);
+	
+	
+	// Refactoring helper
+	static std::vector<CategoryButtons::Category> predefinedCategories();
+
 
 private:
 	friend class PatchSearchComponent;
-
-	std::vector<CategoryButtons::Category> predefinedCategories();
 
 	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
@@ -115,8 +118,6 @@ private:
 	Label patchLabel_;
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
-	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
-	std::unique_ptr<SynthBankPanel> synthBank_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 

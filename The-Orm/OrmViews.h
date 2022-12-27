@@ -62,10 +62,13 @@ public:
 	virtual std::shared_ptr<DockingWindow> createTopLevelWindow(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree) override;
 
 	std::shared_ptr<juce::MenuBarModel> getMainMenu();
+	
+	PatchView& activePatchView();
 
 private:
 	Component* activeMainWindow();
-	PatchView& activePatchView();
+
+	bool canCreateAdditionalViews(juce::String const& name);
 
 	void checkForUpdatesOnStartup();
 	void createNewDatabase();
@@ -74,6 +77,8 @@ private:
 	void saveDatabaseAs();
 	static void exportDatabases();
 	void mergeDatabases();
+	PopupMenu newViewMenu();
+	void newViewSelected(int selected);
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
 	PopupMenu loadLayoutMenu();

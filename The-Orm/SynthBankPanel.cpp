@@ -9,28 +9,29 @@
 #include "LayoutConstants.h"
 #include "UIModel.h"
 #include "PatchView.h"
+#include "OrmViews.h"
 
 #include <spdlog/spdlog.h>
 
-SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchView *patchView)
-	: patchDatabase_(patchDatabase), patchView_(patchView)
+SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase)
+	: patchDatabase_(patchDatabase)
 {
 	resyncButton_.setButtonText("Import again");
 	resyncButton_.onClick = [this]() {
-		if (patchView_ && synthBank_) {
+		if (synthBank_) {
 			if (!UIModel::instance()->synthBank.modified() ||
 				AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "You have unsaved changes!",
 					"You have modified the synth bank but not saved it back to the synth. Reimporting the bank will make you lose your changes! Do you want to re-import the bank from the synth?",
 					"Yes", "Cancel")) {
-				patchView_->retrieveBankFromSynth(synthBank_->synth(), synthBank_->bankNumber(), {});
+				OrmViews::instance().activePatchView().retrieveBankFromSynth(synthBank_->synth(), synthBank_->bankNumber(), {});
 			}
 		}
 	};
 
 	sendButton_.setButtonText("Send to synth");
 	sendButton_.onClick = [this]() {
-		if (patchView_ && synthBank_) {
-			patchView_->sendBankToSynth(synthBank_, [this]() {
+		if (synthBank_) {
+			OrmViews::instance().activePatchView().sendBankToSynth(synthBank_, [this]() {
 				// Save it in the database now that we have successfully sent it to the synth
 				patchDatabase_.putPatchList(synthBank_);
 				// Mark the bank as not modified
@@ -55,28 +56,24 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 		}
 		}
 		, [this](MidiProgramNumber program, std::string const& list_id, std::string const& list_name) {
-			if (patchView_) {
-				auto list = patchView_->retrieveListFromDatabase({ list_id, list_name });
-				if (list) {
-					// Insert the list into the bank...
-					synthBank_->copyListToPosition(program, *list);
-					UIModel::instance()->synthBank.flagModified();
-				}
+			auto list = OrmViews::instance().activePatchView().retrieveListFromDatabase({ list_id, list_name });
+			if (list) {
+				// Insert the list into the bank...
+				synthBank_->copyListToPosition(program, *list);
+				UIModel::instance()->synthBank.flagModified();
 			}
 		}
 		, [this](std::string const& list_id, std::string const& list_name) {
-			if (patchView_) {
-				auto list = patchView_->retrieveListFromDatabase({ list_id, list_name });
-				if (list) {
-					// Count how many patches are for our synth in that list
-					int count = 0;
-					for (auto const& patch : list->patches()) {
-						if (patch.synth()->getName() == synthBank_->synth()->getName()) {
-							count++;
-						}
+			auto list = OrmViews::instance().activePatchView().retrieveListFromDatabase({ list_id, list_name });
+			if (list) {
+				// Count how many patches are for our synth in that list
+				int count = 0;
+				for (auto const& patch : list->patches()) {
+					if (patch.synth()->getName() == synthBank_->synth()->getName()) {
+						count++;
 					}
-					return count;
 				}
+				return count;
 			}
 			return 1;
 		});
