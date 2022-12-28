@@ -1,6 +1,21 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
+BUG - Category setzen geht nicht mehr
+BUG - patch grid refreshed nicht bei Änderung an aktuellem Patch
+BUG - Loading from sysex again has all program places on 0
+
+BUG - Create Setup View doesn't work
+BUG - Normale Dockwindows haben kein Schliessen X
+BUG - Adaptation window funktioniert nicht
+
+
+UX - need good first template
+BUG - Colouring in Log stimmt noch nicht
+BUG - Patch Diff dialog always shows the same patch
+
+BUG - open PIF opens bulk rename dialog. That should not be the case
+
 
 UX - Windows need explanation: Library and Bank
 UX - Need Window management. at least, resizing and show/hide
@@ -60,6 +75,8 @@ MidiBankNumber null sollte sich eigentlich immer aus der import source füllen l
 From Synth source hat keine Program Number! Das ist ein Problem!
 
 Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
+
+BUG - export of program dump for DW8000 does not contain save program code
 
 BANKS IMPROVEMENT
 * Needs to have concept of ROM banks. 

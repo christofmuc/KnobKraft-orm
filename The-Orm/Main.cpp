@@ -85,6 +85,7 @@ public:
 		win_sparkle_set_app_details(String("KnobKraft").toWideCharPointer(), getApplicationName().toWideCharPointer(), getApplicationVersion().toWideCharPointer());
 #endif
 #endif
+		LookAndFeel::setDefaultLookAndFeel(&defaultLookAndFeel_);
 
 		// Init python for GenericAdaptation
 		knobkraft::GenericAdaptation::startupGenericAdaptation();
@@ -265,6 +266,7 @@ public:
 
 private:
 	std::unique_ptr<DockManager> dockManager_;
+	OrmLookAndFeel defaultLookAndFeel_;
 };
 
 //==============================================================================

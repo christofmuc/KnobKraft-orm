@@ -39,7 +39,7 @@
 class LogViewLogger;
 
 // Each top level Window that takes docked views is one of these
-class MainComponent : public DockingWindow, private ChangeListener
+class MainComponent : public DockingWindow, public DragAndDropContainer, private ChangeListener
 {
 public:
 	MainComponent(DockManager& manager, DockManagerData& data, const juce::ValueTree& tree);
