@@ -2,36 +2,38 @@
 =============================================
 
 
-UX - Windows need explanation: Library and Bank
-UX - Need Window management. at least, resizing and show/hide
-* Need to reconsider the split view/window management. Really use the tree? But then why does it open certain child items in a different window? Shouldn't the bank selector be part of the bank window?
-* Need window management of Bank window. Close/hide button when no longer needed. Could alternatively reuse space for current patch
-UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
-
-BUG - lists are ordered incorrectly in the Library, no longer with order_num
-BUG - scrolling the list is really choppy
-BUG - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
-BUG - After import, the new bank is not selected in the tree.
-BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change.
+BANKS - UserBank needs to display which bank it will be sent to 
+DRAG AND DROP - need to check drag and drop between the three different types of lists
 
 
+2.0 Release
+
+BUG  info Overriding built-in import category rules with file C - comes too often now
+BUG - lists are ordered incorrectly in the Library, no longer with order_num. This actually never worked, and should be implemented together with general sorting!
 BUG - Duplicate name search sorts wrong I think. And is utterly slow (try on Reface DX)
+BUG - import einer Bank kann eventuell den Namen eines Patches wieder ändern!
+BUG - Progress dialog geht nicht beim sent der UserBank
+BUG - After import, the new bank is not selected in the tree. Shows warning: Did not find item in tree:
+BUG - Runninng autocategorize does not refresh the bank view
+BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change. Need to somehow refresh better
+
+IMPROV - should have save bank as sysex menu item 
+
+
 
 DOCS - Adaptation tests need documenting
 
-IDEA - XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change Could simulate an ingest with the predefined names (lol)
 
+Fraglich
+UX - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
+
+
+Später
+
+IDEA - XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change Could simulate an ingest with the predefined names (lol)
 IMPROV - Could do better layer switch
 IMPROV - Tree could show count of items
 
-BANKS - Want to build banks offline
-BANKS - Want to build multiple banks and switch them
-BANKS - Want to create empty banks (need Init patch). Could remember empty position so you can drag lists into it
-BANKS - Want to send a bank to a specific bank (two step? Drag bank into synth bank, make it "dirty", then sync)
-
-BUG - Importing a synth bank does not run autocategorize, but it should.
-BUG - Runninng autocategorize does not refresh the bank view
-UX - Empty bank window needs place holder text + refresh button.
 
 
 BANK MANAGEMENT
@@ -69,6 +71,10 @@ BANKS IMPROVEMENT
 * The Normal download button should then go away? But then have no download all banks. It certainly needs to be synced somehow
 * Trashcan should light up when drag target works
 * Export into file wäre nice.
+
+May be
+UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
+
 
 
 LISTS IMPROVEMENT
