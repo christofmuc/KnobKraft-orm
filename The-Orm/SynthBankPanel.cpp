@@ -15,6 +15,9 @@
 SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchView *patchView)
 	: patchDatabase_(patchDatabase), patchView_(patchView)
 {
+	instructions_.setText("This window displays a synth bank and acts as drop target to arrange patches. To start, select a synth bank via the Library tree.", juce::dontSendNotification);
+	addAndMakeVisible(instructions_);
+
 	resyncButton_.setButtonText("Import again");
 	resyncButton_.onClick = [this]() {
 		if (patchView_ && synthBank_) {
@@ -87,6 +90,8 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	addAndMakeVisible(modified_);
 	addAndMakeVisible(*bankList_);
 
+	showInfoIfRequired();
+
 	UIModel::instance()->synthBank.addChangeListener(this);
 }
 
@@ -109,13 +114,16 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 		bankNameAndDate_.setText(fmt::format("Bank {})", synthBank_->name()), dontSendNotification);
 	}
 	bankList_->setPatches(synthBank, info);
+	showInfoIfRequired();
 }
 
 void SynthBankPanel::resized()
 {
 	auto bounds = getLocalBounds();
 
-	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 2);
+	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 2).reduced(LAYOUT_INSET_NORMAL);
+
+	instructions_.setBounds(header);
 
 	auto headerRightSide = header.removeFromRight(LAYOUT_BUTTON_WIDTH);
 
@@ -125,7 +133,7 @@ void SynthBankPanel::resized()
 	bankNameAndDate_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
 	modified_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
 
-	bankList_->setBounds(bounds);
+	bankList_->setBounds(bounds.reduced(LAYOUT_INSET_NORMAL));
 }
 
 void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
@@ -133,4 +141,14 @@ void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
 	ignoreUnused(source);
 	setBank(UIModel::instance()->synthBank.synthBank(), PatchButtonInfo::DefaultDisplay);
 	modified_.setText(UIModel::instance()->synthBank.modified() ? "modified" : "", dontSendNotification);
+}
+
+void SynthBankPanel::showInfoIfRequired() {
+	bool showBank = synthBank_ != nullptr;
+	instructions_.setVisible(!showBank);
+	synthName_.setVisible(showBank);
+	bankNameAndDate_.setVisible(showBank);
+	modified_.setVisible(showBank);
+	resyncButton_.setVisible(showBank);
+	sendButton_.setVisible(showBank);
 }

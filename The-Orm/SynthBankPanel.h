@@ -11,6 +11,7 @@
 #include "VerticalPatchButtonList.h"
 #include "SynthBank.h"
 #include "PatchDatabase.h"
+#include "InfoText.h"
 
 class PatchView;
 
@@ -27,9 +28,12 @@ public:
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
+	void showInfoIfRequired();
+
 	midikraft::PatchDatabase& patchDatabase_;
 	PatchView* patchView_;
 	std::shared_ptr<midikraft::SynthBank> synthBank_;
+	InfoText instructions_;
 	Label synthName_;
 	Label bankNameAndDate_;
 	Label modified_;
