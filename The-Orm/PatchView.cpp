@@ -53,6 +53,10 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	patchListTree_.onImportListSelected = [this](String id) {
 		setImportListFilter(id);
 	};
+	patchListTree_.onUserBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, String id) {
+		setUserBankFilter(synth, id.toStdString());
+		showBank();
+	};
 	patchListTree_.onUserListSelected= [this](String id) {
 		setUserListFilter(id);
 	};
@@ -360,7 +364,7 @@ void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, M
 	}
 }
 
-void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, std::function<void()> finishedHandler)
+void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
 {
 	if (!bankToSend) return;
 
@@ -372,7 +376,7 @@ void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend
 			if (bankToSend->synth() /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
-				librarian_.sendBankToSynth(*bankToSend, false, progressWindow.get(), [this, bankToSend, finishedHandler](bool completed) {
+				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [this, bankToSend, finishedHandler](bool completed) {
 					if (completed) {
 						bankToSend->clearDirty();
 						if (finishedHandler) {
@@ -412,6 +416,17 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 		});
 	}
 }
+
+void PatchView::setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId) {
+	if (database_.doesListExist(listId)) {
+		// It does, so we can safely load and display it
+		loadSynthBankFromDatabase(synth, MidiBankNumber::invalid(), listId);
+	}
+	else {
+		jassertfalse;
+	}
+}
+
 
 void PatchView::setImportListFilter(String filter)
 {

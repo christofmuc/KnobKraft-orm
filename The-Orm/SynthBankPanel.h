@@ -28,6 +28,7 @@ public:
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
+	bool isUserBank();
 	void showInfoIfRequired();
 
 	midikraft::PatchDatabase& patchDatabase_;
@@ -38,6 +39,7 @@ private:
 	Label bankNameAndDate_;
 	Label modified_;
 	TextButton resyncButton_;
+	TextButton saveButton_;
 	TextButton sendButton_;
 	std::unique_ptr<VerticalPatchButtonList> bankList_;
 };

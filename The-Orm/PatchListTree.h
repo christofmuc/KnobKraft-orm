@@ -16,6 +16,7 @@ class PatchListTree : public Component, private ChangeListener {
 public:
 	typedef std::function<void(String)> TSelectionHandler;
 	typedef std::function<void(std::shared_ptr<midikraft::Synth>, MidiBankNumber)> TBankSelectionHandler;
+	typedef std::function<void(std::shared_ptr<midikraft::Synth>, String)> TUserBankSelectionHandler;
 	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
 
 	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
@@ -23,6 +24,7 @@ public:
 
 	TSelectionHandler onImportListSelected;
 	TBankSelectionHandler onSynthBankSelected;
+	TUserBankSelectionHandler onUserBankSelected;
 	TSelectionHandler onUserListSelected;
 	TSelectionHandler onUserListChanged;
 

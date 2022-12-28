@@ -49,17 +49,19 @@ void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	patch_ = patch;
 
-	// If there is detailed parameter information, also show the second option
-	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
-	if (parameterDetails) {
-		textBased_.setVisible(true);
+	if (patch) {
+		// If there is detailed parameter information, also show the second option
+		auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
+		if (parameterDetails) {
+			textBased_.setVisible(true);
+		}
+		else {
+			mode_ = DisplayMode::HEX;
+			textBased_.setVisible(false);
+			hexBased_.setToggleState(true, dontSendNotification);
+		}
+		refreshText();
 	}
-	else {
-		mode_ = DisplayMode::HEX;
-		textBased_.setVisible(false);
-		hexBased_.setToggleState(true, dontSendNotification);
-	}
-	refreshText();
 }
 
 void PatchTextBox::refreshText() {

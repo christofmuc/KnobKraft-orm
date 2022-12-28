@@ -71,18 +71,23 @@ namespace midikraft {
 
 	Synth::PatchData Rev2::filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const
 	{
-		switch (unfilteredData->dataTypeID())
-		{
-		case PATCH:
-			return Patch::blankOut(kRev2BlankOutZones, unfilteredData->data());
-		case GLOBAL_SETTINGS:
-			// Global settings don't contain a name, all data is relevant
-			return unfilteredData->data();
-		case ALTERNATE_TUNING:
-			//TBD - name irrelevant?
-			return unfilteredData->data();
-		default:
-			throw new std::runtime_error("Invalid argument - unknown data type id");
+		if (unfilteredData) {
+			switch (unfilteredData->dataTypeID())
+			{
+			case PATCH:
+				return Patch::blankOut(kRev2BlankOutZones, unfilteredData->data());
+			case GLOBAL_SETTINGS:
+				// Global settings don't contain a name, all data is relevant
+				return unfilteredData->data();
+			case ALTERNATE_TUNING:
+				//TBD - name irrelevant?
+				return unfilteredData->data();
+			default:
+				throw new std::runtime_error("Invalid argument - unknown data type id");
+			}
+		}
+		else {
+			return {};
 		}
 	}
 
