@@ -42,11 +42,13 @@
 const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
-	: database_(database), librarian_(synths), synths_(synths), 
-	patchListTree_(database, synths)
+	: database_(database), librarian_(synths), synths_(synths)
+	, patchListTree_(database, synths)
+	, rightSideTab_(juce::TabbedButtonBar::TabsAtLeft)
 {
 	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 		setSynthBankFilter(synth, bank);
+		showBank();
 	};
 	patchListTree_.onImportListSelected = [this](String id) {
 		setImportListFilter(id);
@@ -106,19 +108,23 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		deleteSomething(infos);
 	};
 	
-	auto centerBox = new LambdaLayoutBox();
+	/*auto centerBox = new LambdaLayoutBox();
 	centerBox->onResized = [this](Component* box) {
 		auto area = box->getLocalBounds();
 		patchSearch_->setBounds(area.removeFromLeft(area.getWidth() / 4 * 3));
 		synthBank_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 	};
 	centerBox->addAndMakeVisible(*synthBank_);
-	centerBox->addAndMakeVisible(*patchSearch_);
+	centerBox->addAndMakeVisible(*patchSearch_);*/
+
+	addAndMakeVisible(rightSideTab_);
+	rightSideTab_.addTab("Current Patch", Colours::black, currentPatchDisplay_.get(), false);
+	rightSideTab_.addTab("Synth Bank", Colours::black, synthBank_.get(), false);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
 		SplitteredEntry{ box, 15, 5, 40 },
-		SplitteredEntry{ centerBox, 50, 40, 90 },
-		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
+		SplitteredEntry{ patchSearch_.get(), 50, 40, 90},
+		SplitteredEntry{ &rightSideTab_, 15, 5, 40}, true);
 	addAndMakeVisible(splitters_.get());
 
 	addAndMakeVisible(recycleBin_);
@@ -135,6 +141,10 @@ PatchView::~PatchView()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
 	BulkRenameDialog::release();
+}
+
+void PatchView::showBank() {
+	rightSideTab_.setCurrentTabIndex(1, true);
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
