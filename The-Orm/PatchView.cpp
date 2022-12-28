@@ -324,7 +324,7 @@ void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, M
 	if (location) {
 		if (location->channel().isValid() && device->wasDetected()) {
 			// We can offer to download the bank from the synth, or rather just do it!
-			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
 			if (synth /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
@@ -372,11 +372,13 @@ void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend
 	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToSend->synth());
 	if (location) {
 		if (location->channel().isValid() && device->wasDetected()) {
-			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Sending bank to Synth");
+			progressWindow->setMessage("Starting send");
 			if (bankToSend->synth() /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
-				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [this, bankToSend, finishedHandler](bool completed) {
+				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [this, bankToSend, finishedHandler, progressWindow](bool completed) {
+					progressWindow->signalThreadShouldExit();
 					if (completed) {
 						bankToSend->clearDirty();
 						if (finishedHandler) {
@@ -492,7 +494,7 @@ void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
-	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
 	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,

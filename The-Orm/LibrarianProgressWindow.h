@@ -11,7 +11,7 @@
 
 class LibrarianProgressWindow : public ProgressHandlerWindow {
 public:
-	LibrarianProgressWindow(midikraft::Librarian& librarian) : ProgressHandlerWindow("Import patches from Synth", "..."), librarian_(librarian) {
+	LibrarianProgressWindow(midikraft::Librarian& librarian, std::string const& title) : ProgressHandlerWindow(title, "..."), librarian_(librarian) {
 	}
 
 	// Override this from the ThreadWithProgressWindow to understand closing with cancel button!
