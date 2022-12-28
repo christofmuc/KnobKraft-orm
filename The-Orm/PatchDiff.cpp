@@ -85,7 +85,7 @@ private:
 	CodeEditorComponent *slave_ = nullptr;
 };
 
-PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : p1_(patch1), p2_(patch2),
+PatchDiff::PatchDiff(midikraft::Synth *activeSynth, std::shared_ptr<midikraft::PatchHolder> patch1, std::shared_ptr<midikraft::PatchHolder> patch2) : p1_(patch1), p2_(patch2),
 	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument)
 {
 	// Create more components, with more complex bootstrapping
@@ -126,7 +126,7 @@ PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const
 	showHexDiff_ = true;
 
 	// If there is detailed parameter information, also show the second option
-	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch1.patch());
+	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch1->patch());
 	if (parameterDetails) {
 		addAndMakeVisible(textBased_);
 		textBased_.setButtonText("Show parameter values");
@@ -186,20 +186,20 @@ void PatchDiff::buttonStateChanged(Button *button)
 
 void PatchDiff::fillDocuments()
 {
-	patch1Name_.setText(p1_.name(), dontSendNotification);
-	patch2Name_.setText(p2_.name(), dontSendNotification);
+	patch1Name_.getTextValue().referTo(p1_->name.getPropertyAsValue());
+	patch2Name_.getTextValue().referTo(p2_->name.getPropertyAsValue());
 
 	String doc1, doc2;
 	if (showHexDiff_) {
-		doc1 = makeHexDocument(&p1_);
-		doc2 = makeHexDocument(&p2_);
-		std::vector<Range<int>> diffRanges = diffFromData(p1_.patch(), p2_.patch());
+		doc1 = makeHexDocument(p1_);
+		doc2 = makeHexDocument(p2_);
+		std::vector<Range<int>> diffRanges = diffFromData(p1_->patch(), p2_->patch());
 		tokenizer1_->setRangeList(diffRanges);
 		tokenizer2_->setRangeList(diffRanges);
 	}
 	else {
-		doc1 = makeTextDocument(&p1_);
-		doc2 = makeTextDocument(&p2_);
+		doc1 = makeTextDocument(p1_);
+		doc2 = makeTextDocument(p2_);
 		std::vector<Range<int>> diffRanges1 = diffFromText(doc1, doc2);
 		std::vector<Range<int>> diffRanges2 = diffFromText(doc2, doc1);
 		tokenizer1_->setRangeList(diffRanges1);
@@ -220,7 +220,7 @@ int PatchDiff::positionInHexDocument(int positionInBinary) {
 	return row * rowLength + headerLength + column * columnWidth;
 }
 
-String PatchDiff::makeHexDocument(midikraft::PatchHolder *patch)
+String PatchDiff::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	String result;
 	std::vector<uint8> binaryData = patch->patch()->data();
@@ -243,7 +243,7 @@ String PatchDiff::makeHexDocument(midikraft::PatchHolder *patch)
 	return result;
 }
 
-String PatchDiff::makeTextDocument(midikraft::PatchHolder *patch) {
+String PatchDiff::makeTextDocument(std::shared_ptr<midikraft::PatchHolder> patch) {
 	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
 	if (realPatch) {
 		return patchToTextRaw(realPatch, false);

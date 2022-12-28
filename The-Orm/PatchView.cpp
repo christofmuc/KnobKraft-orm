@@ -238,8 +238,8 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 		//TODO - this should possible go into the PatchDatabase code. But it is a load option?
 		int i = 0;
 		for (auto& patch : patches) {
-			patch.setBank(bank);
-			patch.setPatchNumber(MidiProgramNumber::fromZeroBaseWithBank(bank, i++));
+			patch.bank = bank;
+			patch.program = MidiProgramNumber::fromZeroBaseWithBank(bank, i++);
 		}
 
 		// Load the bank info from the database as well for the timestamp
@@ -485,7 +485,7 @@ void PatchView::retrieveEditBuffer()
 			jassert(patchesLoaded.size() == 1);
 
 			if (patchesLoaded.size() == 1) {
-				spdlog::info("Current edit buffer from synth is patch '{}'", patchesLoaded[0].name());
+				spdlog::info("Current edit buffer from synth is patch '{}'", patchesLoaded[0].name.get());
 			}
 
 			patchesLoaded = autoCategorize(patchesLoaded);

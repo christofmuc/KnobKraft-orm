@@ -38,11 +38,10 @@ void PatchPerSynthList::setPatches(std::vector<midikraft::PatchHolder> const &pa
 		patchButtons_.push_back(std::make_shared<PatchHolderButton>(i++, false, [](int) {
 		}));
 		if (patch.patch() && patch.synth()) {
-			patchButtons_.back()->setPatchHolder(&patch, false, PatchHolderButton::getCurrentInfoForSynth(patch.synth()->getName()));
+			patchButtons_.back()->setPatchHolder(patch, false, PatchHolderButton::getCurrentInfoForSynth(patch.synth()->getName()));
 		}
 		else {
-			// No patch, reset button
-			patchButtons_.back()->setPatchHolder(nullptr, false, PatchButtonInfo::CenterName);
+			patchButtons_.back()->clearButton();
 		}
 		addAndMakeVisible(*patchButtons_.back());
 		if (patch.synth()) {
@@ -59,7 +58,12 @@ void PatchPerSynthList::changeListenerCallback(ChangeBroadcaster* source)
 		auto synthName = UIModel::currentPatch()->synth()->getName();
 		if (buttonForSynth_.find(synthName) != buttonForSynth_.end()) {
 			auto tempHolder = UIModel::currentPatch();
-			buttonForSynth_[synthName]->setPatchHolder(tempHolder.get(), false, PatchHolderButton::getCurrentInfoForSynth(synthName));
+			if (tempHolder) {
+				buttonForSynth_[synthName]->setPatchHolder(*tempHolder, false, PatchHolderButton::getCurrentInfoForSynth(synthName));
+			}
+			else {
+				buttonForSynth_[synthName]->clearButton();
+			}
 		}
 		else {
 			//jassertfalse;

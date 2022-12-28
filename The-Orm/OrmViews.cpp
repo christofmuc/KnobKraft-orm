@@ -980,12 +980,12 @@ void OrmViews::showPatchDiffDialog() {
 	if (compareTarget_.synth()->getName() != UIModel::currentPatch()->synth()->getName()) {
 		// Should have come either
 		spdlog::warn("Can't compare patch {} of synth {} with patch {} of synth {}",
-			UIModel::currentPatch()->name(), UIModel::currentPatch()->synth()->getName(),
-			compareTarget_.name(), compareTarget_.synth()->getName());
+			UIModel::currentPatch()->name.get(), UIModel::currentPatch()->synth()->getName(),
+			compareTarget_.name.get(), compareTarget_.synth()->getName());
 		return;
 	}
 
-	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentPatch()->synth(), compareTarget_, *UIModel::currentPatch());
+	diffDialog_ = std::make_unique<PatchDiff>(UIModel::currentPatch()->synth(), std::make_shared<midikraft::PatchHolder>(compareTarget_), UIModel::currentPatch());
 
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(diffDialog_.get(), false);

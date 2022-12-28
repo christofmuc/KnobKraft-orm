@@ -250,7 +250,7 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 }
 
 TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index) {
-	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
+	auto node = new TreeViewNode(patchHolder.name.get(), patchHolder.md5());
 	//TODO - this doesn't work. The TreeView from JUCE has no handlers for selected or clicked that do not fire if a drag is started, so 
 	// you can do either the one thing or the other.
 	node->onSelected = [this, patchHolder](String md5) {
@@ -265,7 +265,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 			{ "synth", patchHolder.smartSynth()->getName()},
 			{ "data_type", patchHolder.patch()->dataTypeID()},
 			{ "md5", patchHolder.md5()},
-			{ "patch_name", patchHolder.name() } };
+			{ "patch_name", patchHolder.name.get().toStdString()}};
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	return node;
@@ -432,7 +432,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 				else {
 					// Simple case - new patch (or patch reference) added to list
 					OrmViews::instance().patchDatabase().addPatchToList(list, patch[0], insertIndex);
-					spdlog::info("Patch {} added to list {}", patch[0].name(), list.name);
+					spdlog::info("Patch {} added to list {}", patch[0].name.get(), list.name);
 				}
 			}
 			else {
@@ -448,7 +448,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 					))) {
 					for (auto& patch : loaded_list->patches()) {
 						OrmViews::instance().patchDatabase().addPatchToList(list, patch, insertIndex++);
-						spdlog::info("Patch {} added to list {}", patch.name(), list.name);
+						spdlog::info("Patch {} added to list {}", patch.name.get(), list.name);
 					}
 				}
 			}
@@ -544,7 +544,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				else {
 					// Simple case - new patch (or patch reference) added to list
 					OrmViews::instance().patchDatabase().addPatchToList(list, patch[0], insertIndex);
-					spdlog::info("Patch {} added to list {}", patch[0].name(), list.name);
+					spdlog::info("Patch {} added to list {}", patch[0].name.get(), list.name);
 				}
 			}
 			else {
@@ -560,7 +560,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 					))) {
 					for (auto& patch : loaded_list->patches()) {
 						OrmViews::instance().patchDatabase().addPatchToList(list, patch, insertIndex++);
-						spdlog::info("Patch {} added to list {}", patch.name(), list.name);
+						spdlog::info("Patch {} added to list {}", patch.name.get(), list.name);
 					}
 				}
 			}

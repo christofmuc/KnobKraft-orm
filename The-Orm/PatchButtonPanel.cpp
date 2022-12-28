@@ -285,11 +285,11 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 						static_cast<int>(PatchButtonInfo::SubtitleSynth) | (static_cast<int>(displayMode) & static_cast<int>(PatchButtonInfo::CenterMask))
 						);
 				}
-				button->setPatchHolder(&patches_[i], i == active, displayMode);
+				button->setPatchHolder(patches_[i], i == active, displayMode);
 				refreshThumbnail((int)i);
 			}
 			else {
-				button->setPatchHolder(nullptr, false, PatchButtonInfo::CenterName);
+				button->clearButton();
 				button->clearThumbnailFile();
 			}
 		}

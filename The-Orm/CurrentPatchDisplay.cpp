@@ -65,7 +65,7 @@ int MetaDataArea::getDesiredHeight(int width)
 
 CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
 	: Component(), favoriteHandler_(favoriteHandler)
-	, name_(0, false, [this](int) {
+	, nameButton_(0, false, [this](int) {
 		if (onCurrentPatchClicked) {
 			onCurrentPatchClicked(currentPatch_);
 		}
@@ -77,7 +77,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(std::vector<CategoryButtons::Category> 
 		categoryUpdated(categoryClicked);
 	})
 	{
-	addAndMakeVisible(&name_);
+	addAndMakeVisible(&nameButton_);
 	addAndMakeVisible(&propertyEditor_);
 
 	favorite_.setClickingTogglesState(true);
@@ -119,11 +119,12 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 	}
 	currentPatch_ = patch;
 	if (patch && patch->patch()) {
-		name_.setButtonData(patch->name(), patch->createDragInfoString());
+		nameButton_.setPatchHolder(*patch, true, PatchButtonInfo::DefaultDisplay);
 		setupPatchProperties(patch);
 		refreshNameButtonColour();
-		favorite_.setToggleState(patch->isFavorite(), dontSendNotification);
-		hide_.setToggleState(patch->isHidden(), dontSendNotification);
+		favorite_.setToggleState(patch->favorite.get().isItForSure(), dontSendNotification);
+		hide_.getToggleStateValue().referTo(patch->getTree().getPropertyAsValue("hidden", nullptr));
+		//hide_.setToggleState(patch->isHidden(), dontSendNotification);
 		
 		std::set<CategoryButtons::Category> buttonCategories;
 		for (const auto& cat : patch->categories()) {
@@ -167,7 +168,7 @@ String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
 String getImportName(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	if (patch->sourceInfo()) {
-		auto friendlyName = patch->synth()->friendlyProgramName(patch->patchNumber());
+		auto friendlyName = patch->synth()->friendlyProgramName(patch->program.get());
 		String position = fmt::format(" at {}", friendlyName);
 		return String(patch->sourceInfo()->toDisplayString(patch->synth(), false)) + position;
 	}
@@ -191,7 +192,7 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 		}
 	}
 	else if (patch->patch()) {
-		TypedNamedValue v("Patch name", "Patch name", String(patch->name()).trim(), 20);
+		TypedNamedValue v("Patch name", "Patch name", String(patch->name.get()).trim(), 20);
 		metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 
@@ -217,7 +218,7 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 		if (property->name() == "Patch name" && value.refersToSameSourceAs(property->value())) {
 			// Name was changed - do this in the database!
 			if (currentPatch_) {
-				currentPatch_->setName(value.getValue().toString().toStdString());
+				currentPatch_->name = value.getValue().toString();
 				setCurrentPatch(currentPatch_);
 				favoriteHandler_(currentPatch_);
 				return;
@@ -233,7 +234,7 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 				if (layers) {
 					int i = atoi(property->name().substring(6).toStdString().c_str());
 					layers->setLayerName(i, value.getValue().toString().toStdString());
-					currentPatch_->setName(currentPatch_->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
+					currentPatch_->name = currentPatch_->name.get(); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
 					setCurrentPatch(currentPatch_);
 					favoriteHandler_(currentPatch_);
 					return;
@@ -251,7 +252,7 @@ void CurrentPatchDisplay::reset()
 {
 	currentPatch_ = std::make_shared<midikraft::PatchHolder>();
 	propertyEditor_.setProperties({});
-	name_.setButtonData("No patch loaded", "");
+	nameButton_.setButtonData("No patch loaded", "");
 	metaDataValues_.clear();
 	favorite_.setToggleState(false, dontSendNotification);
 	hide_.setToggleState(false, dontSendNotification);
@@ -269,7 +270,7 @@ void CurrentPatchDisplay::resized()
 		patchAsText_.setVisible(true);
 
 		auto topRow = area.removeFromTop(LAYOUT_TOUCHBUTTON_HEIGHT);
-		name_.setBounds(topRow);
+		nameButton_.setBounds(topRow);
 
 		// Property Editor at the top
 		int desiredHeight = propertyEditor_.getTotalContentHeight();
@@ -317,7 +318,7 @@ void CurrentPatchDisplay::resized()
 		//TODO - Need to setup property table
 
 		// Center - patch name
-		name_.setBounds(topRow);
+		nameButton_.setBounds(topRow);
 
 		auto bottomRow = area.removeFromTop(80).withTrimmedTop(8);
 		auto metaDataWidth = bottomRow.getWidth() - LAYOUT_INSET_NORMAL; // Allow for the vertical scrollbar on the right hand side!
@@ -331,13 +332,13 @@ void CurrentPatchDisplay::buttonClicked(Button *button)
 	if (currentPatch_) {
 		if (button == &favorite_) {
 			if (currentPatch_->patch()) {
-				currentPatch_->setFavorite(midikraft::Favorite(button->getToggleState()));
+				currentPatch_->favorite = midikraft::Favorite(button->getToggleState());
 				favoriteHandler_(currentPatch_);
 			}
 		}
 		else if (button == &hide_) {
 			if (currentPatch_->patch()) {
-				currentPatch_->setHidden(hide_.getToggleState());
+				currentPatch_->hidden = (hide_.getToggleState());
 				favoriteHandler_(currentPatch_);
 			}
 		}
@@ -365,10 +366,10 @@ void CurrentPatchDisplay::toggleHide()
 
 void CurrentPatchDisplay::refreshNameButtonColour() {
 	if (currentPatch_ && currentPatch_->patch()) {
-		name_.setColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
+		nameButton_.setColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
 	}
 	else {
-		name_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
+		nameButton_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
 	}
 }
 

@@ -11,7 +11,7 @@
 
 #include "UIModel.h"
 
-Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
+Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder const &patch, Component *componentForDefaultBackground) {
 	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
 	auto cats = patch.categories();
 	if (!cats.empty()) {
@@ -64,65 +64,73 @@ void PatchHolderButton::itemDragExit(const SourceDetails& dragSourceDetails)
 	setGlow(false);
 }
 
-void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool active, PatchButtonInfo info)
+void PatchHolderButton::setPatchHolder(midikraft::PatchHolder& holder, bool active, PatchButtonInfo info)
 {
+	listeners_.clear();
+
 	setActive(active);
 	Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
-	if (holder) {
-		auto number = holder->synth()->friendlyProgramAndBankName(holder->bankNumber(), holder->patchNumber());
-		auto dragInfo = holder->createDragInfoString();
-		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::CenterMask))) {
-		case PatchButtonInfo::CenterLayers: {
-			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(holder->patch());
-			if (layers) {
-				if (layers->layerName(0) != layers->layerName(1)) {
-					setButtonData(layers->layerName(0), layers->layerName(1), dragInfo);
-				}
-				else {
-					setButtonData(layers->layerName(0), dragInfo);
-				}
-				break;
-			}
-		}
-		// FallThrough
-		case PatchButtonInfo::CenterName:
-			setButtonData(holder->name(), dragInfo);
-			break;
-		case PatchButtonInfo::CenterNumber:
-			setButtonData(number, dragInfo);
-			break;
-		default:
-			// Please make sure your enum bit flags work the way we expect
-			jassertfalse;
-			setButtonData(number, dragInfo);
-		}
 
-		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::SubtitleMask))) {
-		case PatchButtonInfo::NoneMasked:
-			setSubtitle("");
+	auto number = holder.synth()->friendlyProgramAndBankName(holder.bank.get(), holder.program.get());
+	auto dragInfo = holder.createDragInfoString();
+	switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::CenterMask))) {
+	case PatchButtonInfo::CenterLayers: {
+		auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(holder.patch());
+		if (layers) {
+			if (layers->layerName(0) != layers->layerName(1)) {
+				setButtonData(layers->layerName(0), layers->layerName(1), dragInfo);
+			}
+			else {
+				setButtonData(layers->layerName(0), dragInfo);
+			}
 			break;
-		case PatchButtonInfo::SubtitleNumber:
-			setSubtitle(number);
-			break;
-		case PatchButtonInfo::SubtitleSynth:
-			setSubtitle(holder->synth() ? holder->synth()->getName() : "");
-			break;
-		default:
-			jassertfalse;
-			// Your bit masks don't work as you expect
-			setSubtitle("");
 		}
-		setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(*holder, this));
-		setFavorite(holder->isFavorite());
-		setHidden(holder->isHidden());
 	}
-	else {
-		setButtonData("", "");
+	// FallThrough
+	case PatchButtonInfo::CenterName:
+		setButtonData(holder.name.get(), dragInfo);
+		listeners_.addListener(holder.name.getPropertyAsValue(), [this, dragInfo](juce::Value& newValue) {
+			setButtonData(newValue.getValue(), dragInfo);
+		});
+		break;
+	case PatchButtonInfo::CenterNumber:
+		setButtonData(number, dragInfo);
+		break;
+	default:
+		// Please make sure your enum bit flags work the way we expect
+		jassertfalse;
+		setButtonData(number, dragInfo);
+	}
+
+	switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::SubtitleMask))) {
+	case PatchButtonInfo::NoneMasked:
 		setSubtitle("");
-		setColour(TextButton::ColourIds::buttonColourId, color);
-		setFavorite(false);
-		setHidden(false);
+		break;
+	case PatchButtonInfo::SubtitleNumber:
+		setSubtitle(number);
+		break;
+	case PatchButtonInfo::SubtitleSynth:
+		setSubtitle(holder.synth() ? holder.synth()->getName() : "");
+		break;
+	default:
+		jassertfalse;
+		// Your bit masks don't work as you expect
+		setSubtitle("");
 	}
+	setColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(holder, this));
+	setFavorite(holder.favorite.get().isItForSure());
+	setHidden(holder.hidden.get());
+}
+
+
+void PatchHolderButton::clearButton() {
+	setActive(false);
+	Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
+	setButtonData("", "");
+	setSubtitle("");
+	setColour(TextButton::ColourIds::buttonColourId, color);
+	setFavorite(false);
+	setHidden(false);
 }
 
 PatchButtonInfo PatchHolderButton::getCurrentInfoForSynth(std::string const& synthname) {

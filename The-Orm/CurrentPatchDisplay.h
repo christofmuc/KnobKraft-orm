@@ -9,13 +9,13 @@
 #include "JuceHeader.h"
 
 #include "CategoryButtons.h"
-#include "PatchButton.h"
 
 #include "Patch.h"
 #include "PatchHolder.h"
 #include "PatchTextBox.h"
 #include "PatchDatabase.h"
 #include "PropertyEditor.h"
+#include "PatchHolderButton.h"
 
 class MetaDataArea: public Component {
 public:
@@ -67,7 +67,7 @@ private:
 	void categoryUpdated(CategoryButtons::Category clicked);
 	virtual void valueChanged(Value& value) override; // This gets called when the property editor is used
 
-	PatchButton name_;
+	PatchHolderButton nameButton_;
 	PropertyEditor propertyEditor_;
 	String lastOpenState_;
 	TextButton favorite_;

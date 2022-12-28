@@ -7,6 +7,7 @@
 #include "AutoCategorizeWindow.h"
 
 #include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 void AutoCategorizeWindow::run()
 {
@@ -20,7 +21,7 @@ void AutoCategorizeWindow::run()
 		if (patch.autoCategorizeAgain(detector_)) {
 			if (threadShouldExit()) break;
 			// This was changed, updating database
-			spdlog::info("Updating patch {} with new categories", patch.name());
+			spdlog::info("Updating patch {} with new categories", patch.name.get());
 			database_.putPatch(patch);
 		}
 		setProgress(tick++ / (double)patches.size());

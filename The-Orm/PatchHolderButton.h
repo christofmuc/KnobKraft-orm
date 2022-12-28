@@ -9,6 +9,8 @@
 #include "PatchButton.h"
 #include "PatchHolder.h"
 
+#include "LambdaValueListener.h"
+
 enum class PatchButtonInfo {
 	NoneMasked = 0b0,
 	CenterName = 0b001,
@@ -35,14 +37,17 @@ public:
 	virtual void itemDragEnter(const SourceDetails& dragSourceDetails) override;
 	virtual void itemDragExit(const SourceDetails& dragSourceDetails) override;
 
-	void setPatchHolder(midikraft::PatchHolder *holder, bool active, PatchButtonInfo info);
+	void setPatchHolder(midikraft::PatchHolder& holder, bool active, PatchButtonInfo info);
+	void clearButton();
 
-	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
+	static Colour buttonColourForPatch(midikraft::PatchHolder const& patch, Component *componentForDefaultBackground);
 	static PatchButtonInfo getCurrentInfoForSynth(std::string const& synthname);
 	static void setCurrentInfoForSynth(std::string const& synthname, PatchButtonInfo newValue);
 
 private:
 	bool isDirty_;
 	GlowEffect glow;
+
+	ListenerSet listeners_;
 };
 

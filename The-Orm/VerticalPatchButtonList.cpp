@@ -12,6 +12,7 @@
 #include "UIModel.h"
 
 #include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 typedef std::function<void(int, std::string const&, std::string const&)> TDragHighlightHandler;
 
@@ -89,7 +90,7 @@ public:
 				auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 				if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
 					if (patchChangeHandler_ && infos.contains("md5")) {
-						patchChangeHandler_(thePatch_.patchNumber(), infos["md5"]);
+						patchChangeHandler_(thePatch_.program.get(), infos["md5"]);
 					}
 					else {
 						jassertfalse;
@@ -97,7 +98,7 @@ public:
 					}
 				}
 				else if (midikraft::PatchHolder::dragItemIsList(infos)) {
-					listDropHandler_(thePatch_.patchNumber(), infos["list_id"], infos["list_name"]);
+					listDropHandler_(thePatch_.program.get(), infos["list_id"], infos["list_name"]);
 				}
 			}; 
 
@@ -107,7 +108,7 @@ public:
 			button_->updateId(rowNo);
 		}
 		thePatch_ = patch; // Need a copy to keep the pointer alive
-		button_->setPatchHolder(&thePatch_, false, info);
+		button_->setPatchHolder(thePatch_, false, info);
 		button_->setDirty(dirty);
 	}
 
@@ -230,7 +231,7 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
 		if (patchRow) {
 			UIModel::instance()->currentPatch_.changeCurrentPatch(patchRow->patch());
-			spdlog::debug("Patch {} selected", patchRow->patch().name());
+			spdlog::debug("Patch {} selected", patchRow->patch().name.get());
 		}
 		else {
 			spdlog::error("No patch known for row {}", row);

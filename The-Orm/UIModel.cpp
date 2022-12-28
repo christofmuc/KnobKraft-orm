@@ -54,11 +54,6 @@ void CurrentPatchValues::changedPatch()
 	sendChangeMessage();
 }
 
-void CurrentSession::changedSession()
-{
-	sendChangeMessage();
-}
-
 UIModel * UIModel::instance()
 {
 	if (instance_ == nullptr) {

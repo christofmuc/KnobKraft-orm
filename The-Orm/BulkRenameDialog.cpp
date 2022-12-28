@@ -44,7 +44,7 @@ void BulkRenameDialog::setList(std::vector<midikraft::PatchHolder> input)
 	propertyEditor_.clear();
 	props_.clear();
 	for (auto const& patch: input_) {
-		props_.push_back(std::make_shared<TypedNamedValue>(patch.name(), "Names", patch.name(), 50));
+		props_.push_back(std::make_shared<TypedNamedValue>(patch.name.get(), "Names", patch.name.get(), 50));
 	}
 	propertyEditor_.setProperties(props_);
 }
@@ -101,7 +101,7 @@ void BulkRenameDialog::notifyResult()
 {
 	// Copy out new values into input list names
 	for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
-		input_[i].setName(props_[i]->value().toString().toStdString());
+		input_[i].name =  props_[i]->value().toString();
 	}
 	callback_(input_);
 }
