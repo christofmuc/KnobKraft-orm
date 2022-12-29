@@ -44,7 +44,7 @@ const char *kAllPatchesFilter = "All patches";
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
 	: database_(database), librarian_(synths), synths_(synths)
 	, patchListTree_(database, synths)
-	, rightSideTab_(juce::TabbedButtonBar::TabsAtLeft)
+	, rightSideTab_(juce::TabbedButtonBar::TabsAtTop)
 {
 	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 		setSynthBankFilter(synth, bank);
@@ -305,8 +305,6 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 		if (fullInfo) {
 			auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
 			if (bankList) {
-				UIModel::instance()->synthBank.setSynthBank(bankList);
-				//TODO could be transported via UIModel?
 				synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
 			} 
 		}

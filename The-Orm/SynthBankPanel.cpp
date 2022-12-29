@@ -21,7 +21,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	resyncButton_.setButtonText("Import again");
 	resyncButton_.onClick = [this]() {
 		if (patchView_ && synthBank_) {
-			if (!UIModel::instance()->synthBank.modified() ||
+			if (!synthBank_->isDirty() ||
 				AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "You have unsaved changes!",
 					"You have modified the synth bank but not saved it back to the synth. Reimporting the bank will make you lose your changes! Do you want to re-import the bank from the synth?",
 					"Yes", "Cancel")) {
@@ -34,9 +34,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	saveButton_.onClick = [this]() {
 		patchDatabase_.putPatchList(synthBank_);
 		synthBank_->clearDirty();
-		// Mark the bank as not modified
-		UIModel::instance()->synthBank.clearModified();
-		repaint();
+		refresh();
 	};
 
 	sendButton_.setButtonText("Send to synth");
@@ -53,10 +51,8 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 					// Save it in the database now that we have successfully sent it to the synth
 					patchDatabase_.putPatchList(synthBank_);
 					// Mark the bank as not modified
-					UIModel::instance()->synthBank.clearModified();
-					if (bankList_) {
-						bankList_->refreshContent();
-					}
+					synthBank_->clearDirty();
+					refresh();
 				});
 			}
 		}
@@ -67,7 +63,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 			std::vector<midikraft::PatchHolder> result;
 			if (patchDatabase_.getSinglePatch(synthBank_->synth(), md5, result)) {
 				synthBank_->changePatchAtPosition(programPlace, result[0]);
-				UIModel::instance()->synthBank.flagModified();
+				refresh();
 			}
 			else {
 				spdlog::error("Program error - dropped patch that cannot be found in the database");
@@ -80,7 +76,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				if (list) {
 					// Insert the list into the bank...
 					synthBank_->copyListToPosition(program, *list);
-					UIModel::instance()->synthBank.flagModified();
+					refresh();
 				}
 			}
 		}
@@ -109,20 +105,33 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	addAndMakeVisible(*bankList_);
 
 	showInfoIfRequired();
-
-	UIModel::instance()->synthBank.addChangeListener(this);
 }
 
-SynthBankPanel::~SynthBankPanel()
-{
-	UIModel::instance()->synthBank.removeChangeListener(this);
-}
+SynthBankPanel::~SynthBankPanel() = default;
 
 void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info)
 {
-	synthBank_ = synthBank;
-	synthName_.setText(synthBank->synth()->getName(), dontSendNotification);
-	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank))
+	buttonMode_ = info;
+
+	// If we have a synth bank already, move it aside to not lose potential changes to it
+	if (synthBank_) {
+		temporaryBanks_[synthBank_->id()] = synthBank_;
+	}
+
+	// Now take either the new bank, in case it is dirty or it is not found in the temp storage
+	if (synthBank->isDirty() || temporaryBanks_.find(synthBank->id()) == temporaryBanks_.end()) {
+		synthBank_ = synthBank;
+	}
+	else {
+		// this bank is already known, so take the one from temp storage
+		synthBank_ = temporaryBanks_[synthBank->id()];
+	}
+	refresh();
+}
+
+void SynthBankPanel::refresh() {
+	synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);
+	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
 	{
 		auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
 		bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
@@ -131,7 +140,8 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 	{
 		bankNameAndDate_.setText(fmt::format("Bank {})", synthBank_->name()), dontSendNotification);
 	}
-	bankList_->setPatches(synthBank, info);
+	bankList_->setPatches(synthBank_, buttonMode_);
+	modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	showInfoIfRequired();
 }
 
@@ -159,8 +169,7 @@ void SynthBankPanel::resized()
 void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
 	ignoreUnused(source);
-	setBank(UIModel::instance()->synthBank.synthBank(), PatchButtonInfo::DefaultDisplay);
-	modified_.setText(UIModel::instance()->synthBank.modified() ? "modified" : "", dontSendNotification);
+	refresh();
 }
 
 bool SynthBankPanel::isUserBank() {
@@ -175,6 +184,6 @@ void SynthBankPanel::showInfoIfRequired() {
 	modified_.setVisible(showBank);
 	bool isUser = isUserBank();
 	resyncButton_.setVisible(showBank && !isUser);
-	saveButton_.setVisible(showBank && isUser);
+	saveButton_.setVisible(showBank && isUser && synthBank_->isDirty());
 	sendButton_.setVisible(showBank);
 }
