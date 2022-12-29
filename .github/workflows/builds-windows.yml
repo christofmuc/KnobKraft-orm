@@ -44,6 +44,11 @@ jobs:
           cmake --build build --parallel --config RelWithDebInfo
           cmake --install build --prefix install --config RelWithDebInfo
 
+      - name: Patch JUCE
+        working-directory: third_party/JUCE
+        run: |
+          git apply ..\JUCE-patch-getApproxDescription.diff
+
       - name: CMake configure
         env: # We get the SENTRY DSN from the repository's secret store
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
