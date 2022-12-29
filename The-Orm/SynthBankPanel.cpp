@@ -139,7 +139,15 @@ void SynthBankPanel::refresh() {
 	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
 	{
 		auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
-		bankNameAndDate_.setText(fmt::format("Bank '{}' ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
+		std::string romText;
+		if (!synthBank_->isWritable()) {
+			romText = " [ROM]";
+		}
+		bankNameAndDate_.setText(fmt::format("Bank '{}'{} ({} ago)"
+				, midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber())
+				, romText
+				, timeAgo.toStdString())
+			, dontSendNotification);
 	}
 	else
 	{
@@ -190,5 +198,5 @@ void SynthBankPanel::showInfoIfRequired() {
 	bool isUser = isUserBank();
 	resyncButton_.setVisible(showBank && !isUser);
 	saveButton_.setVisible(showBank && isUser && synthBank_->isDirty());
-	sendButton_.setVisible(showBank);
+	sendButton_.setVisible(showBank && synthBank_->isWritable());
 }

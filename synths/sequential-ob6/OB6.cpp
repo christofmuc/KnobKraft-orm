@@ -14,6 +14,7 @@
 #include "MTSFile.h"
 
 #include <fmt/format.h>
+#include <algorithm>
 
 namespace midikraft {
 
@@ -144,14 +145,24 @@ namespace midikraft {
 		return 100;
 	}
 
+	std::vector<BankDescriptor> OB6::bankDescriptors() const {
+		std::vector<BankDescriptor> result;
+		for (int num = 0; num < numberOfBanks(); num++) {
+			result.push_back(
+				BankDescriptor{
+					MidiBankNumber::fromZeroBase(num, numberOfPatches())
+					,  fmt::format("{:03d} - {:03d}", (num * numberOfPatches()), ((num + 1) * numberOfPatches() - 1))
+					, numberOfPatches()
+					, num > 4
+					, "Patches"
+				});
+		}
+		return result;
+	}
+
 	std::string OB6::friendlyProgramName(MidiProgramNumber programNo) const
 	{
 		return fmt::format("#{:03d}", programNo.toZeroBasedWithBank());
-	}
-
-	std::string OB6::friendlyBankName(MidiBankNumber bankNo) const
-	{
-		return fmt::format("{:03d} - {:03d}", (bankNo.toZeroBased() * numberOfPatches()), (bankNo.toOneBased() * numberOfPatches() - 1));
 	}
 
 	std::shared_ptr<DataFile> OB6::patchFromSysex(const std::vector<MidiMessage>& messages) const

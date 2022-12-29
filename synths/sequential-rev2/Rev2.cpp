@@ -101,11 +101,22 @@ namespace midikraft {
 		return 128;
 	}
 
-	std::string Rev2::friendlyBankName(MidiBankNumber bankNo) const
-	{
-		int section = bankNo.toZeroBased() / 4;
-		int bank = bankNo.toZeroBased();
-		return fmt::format("{}{}", (section == 0 ? "U" : "F"), ((bank % 4) + 1));
+	std::vector<BankDescriptor> Rev2::bankDescriptors() const {
+		std::vector<BankDescriptor> result;
+		for (int num = 0; num < numberOfBanks(); num++) {
+			int section = num / 4;
+			int bank = num;
+			std::string name = fmt::format("{}{}", (section == 0 ? "U" : "F"), ((bank % 4) + 1));
+			result.push_back(
+				BankDescriptor{
+					MidiBankNumber::fromZeroBase(num, numberOfPatches())
+					, name
+					, numberOfPatches()
+					, section == 1
+					, "Patches"
+				});
+		}
+		return result;
 	}
 
 	std::shared_ptr<DataFile> Rev2::patchFromSysex(const std::vector<MidiMessage>& message) const

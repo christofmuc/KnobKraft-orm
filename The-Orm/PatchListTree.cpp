@@ -128,6 +128,23 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_->onSingleClick = [this](String) {
 		userListsItem_->toggleOpenness();
 	};
+	userListsItem_->acceptsItem = [this](juce::var dropItem) {
+		String dropItemString = dropItem;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		return midikraft::PatchHolder::dragItemIsList(infos);
+	};
+	userListsItem_->onItemDropped = [this](juce::var dropItem, int) {
+		String dropItemString = dropItem;
+		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+		if (infos.contains("list_id") && infos.contains("list_name")) {
+			// Create a new list as a copy of the dropped list (or bank)
+			auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
+			auto copyOfList = std::make_shared<midikraft::PatchList>(fmt::format("Copy of {}", loaded_list->name()));
+			copyOfList->setPatches(loaded_list->patches());
+			db_.putPatchList(copyOfList);
+			refreshAllUserLists();
+		}
+	};
 
 	TreeViewNode* root = new TreeViewNode("ROOT", "");
 	root->onGenerateChildren = [=]() {
@@ -273,6 +290,9 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 	auto synthBanksNode = new TreeViewNode("In synth", "banks-" + synthName);
 	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
 	if (synth) {
+		synthBanksNode->onSingleClick = [synthBanksNode](String) {
+			synthBanksNode->toggleOpenness();
+		};
 		synthBanksNode->onGenerateChildren = [this, synth, synthName] {
 			std::vector<TreeViewItem*> result;
 
@@ -310,7 +330,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 					}
 				};
 				bank->onItemDragged = [bank_id, bank_name]() {
-					nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", bank_id}, { "list_name", bank_name } };
+					nlohmann::json dragInfo{ { "drag_type", "LIST"}, {"list_sub_type", "synth bank"}, { "list_id", bank_id}, { "list_name", bank_name } };
 					return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 				};
 				if (loadedIds.find(bank_id) == loadedIds.end()) {
@@ -356,6 +376,38 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 			result.push_back(addNewItem);
 			return result;
 		};
+		synthBanksNode->onSingleClick = [synthBanksNode](String) {
+			synthBanksNode->toggleOpenness();
+		};
+		synthBanksNode->acceptsItem = [](juce::var dropItem) {
+			String dropItemString = dropItem;
+			auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+			return midikraft::PatchHolder::dragItemIsList(infos) && infos["list_sub_type"] == "synth bank";
+		};
+		synthBanksNode->onItemDropped = [this](juce::var dropItem, int) {
+			String dropItemString = dropItem;
+			auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+			if (midikraft::PatchHolder::dragItemIsList(infos) && infos["list_sub_type"] == "synth bank") {
+				if (infos.contains("list_id") && infos.contains("list_name")) {
+					// Create a new list as a copy of the dropped ban)
+					auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
+					auto loaded_bank = std::dynamic_pointer_cast<midikraft::SynthBank>(loaded_list);
+					if (loaded_bank) {
+						auto copyOfList = std::make_shared<midikraft::UserBank>(Uuid().toString().toStdString()
+							, fmt::format("Copy of {}", loaded_list->name())
+							, loaded_bank->synth()
+							, loaded_bank->bankNumber());
+						copyOfList->setPatches(loaded_list->patches());
+						db_.putPatchList(copyOfList);
+						regenerateImportLists(); // This refreshes the upper tree
+					}
+					else {
+						spdlog::error("Program error - dropped list was not a synth bank after all, can't create new user list");
+					}
+				}
+
+			}
+		};
 	}
 	return synthBanksNode;
 }
@@ -396,71 +448,8 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 		if (onUserBankSelected)
 			onUserBankSelected(synth, list.id);
 	};
-	node->acceptsItem = [list](juce::var dropItem) {
-		String dropItemString = dropItem;
-		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-		return midikraft::PatchHolder::dragItemIsPatch(infos) || (midikraft::PatchHolder::dragItemIsList(infos) && infos["list_id"] != list.id);
-	};
-	node->onItemDropped = [this, list, node](juce::var dropItem, int insertIndex) {
-		String dropItemString = dropItem;
-		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-		if (midikraft::PatchHolder::dragItemIsPatch(infos)) {
-			int position = insertIndex;
-			ignoreUnused(position);
-			if (!(infos.contains("synth") && infos["synth"].is_string() && infos.contains("md5") && infos["md5"].is_string())) {
-				spdlog::error("drop operation didn't give synth and md5");
-				return;
-			}
-
-			std::string synthname = infos["synth"];
-			if (synths_.find(synthname) == synths_.end()) {
-				spdlog::error("Synth unknown during drop operation: {}", synthname);
-				return;
-			}
-
-			auto synth = synths_[synthname].lock();
-			std::string md5 = infos["md5"];
-			std::vector<midikraft::PatchHolder> patch;
-			if (db_.getSinglePatch(synth, md5, patch) && patch.size() == 1) {
-				if (infos.contains("list_id") && infos["list_id"] == list.id && infos.contains("order_num")) {
-					// Special case - this is a patch reference from the same list, this is effectively just a reordering operation!
-					db_.movePatchInList(list, patch[0], infos["order_num"], insertIndex);
-				}
-				else {
-					// Simple case - new patch (or patch reference) added to list
-					db_.addPatchToList(list, patch[0], insertIndex);
-					spdlog::info("Patch {} added to list {}", patch[0].name(), list.name);
-				}
-			}
-			else {
-				spdlog::error("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
-			}
-		}
-		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
-			if (infos.contains("list_id") && infos.contains("list_name")) {
-				// Add all patches of the dragged list to the target ist
-				auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
-				if (AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "Add list to list?"
-					, fmt::format("This will add all {} patches of the list '{}' to the list '{}' at the given position. Continue?", loaded_list->patches().size(), infos["list_name"], list.name
-					))) {
-					for (auto& patch : loaded_list->patches()) {
-						db_.addPatchToList(list, patch, insertIndex++);
-						spdlog::info("Patch {} added to list {}", patch.name(), list.name);
-					}
-				}
-			}
-			else {
-				spdlog::error("Program error - dropped list does not contain name and id!");
-			}
-		}
-		node->regenerate();
-		node->setOpenness(TreeViewItem::Openness::opennessOpen);
-		if (onUserListChanged) {
-			onUserListChanged(list.id);
-		}
-	};
 	node->onItemDragged = [list]() {
-		nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", list.id }, { "list_name", list.name } };
+		nlohmann::json dragInfo{ { "drag_type", "LIST"}, {"list_sub_type", "user bank"},  {"list_id", list.id}, {"list_name", list.name}};
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	node->onDoubleClick = [node, synth, this, parent](String id) {
@@ -572,7 +561,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		}
 	};
 	node->onItemDragged = [list]() {
-		nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", list.id }, { "list_name", list.name } };
+		nlohmann::json dragInfo{ { "drag_type", "LIST"}, {"list_sub_type", "patch list"}, { "list_id", list.id }, { "list_name", list.name } };
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	node->onDoubleClick = [node, this](String id) {

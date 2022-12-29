@@ -29,11 +29,14 @@ namespace midikraft {
 		int displayOffset = 0;
 	};
 
-	class DSISynth : public Synth, public SimpleDiscoverableDevice, public HasBanksCapability, public EditBufferCapability, public ProgramDumpCabability,
+	class DSISynth : public Synth, public SimpleDiscoverableDevice, public HasBankDescriptorsCapability, public EditBufferCapability, public ProgramDumpCabability,
 		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability, public GlobalSettingsCapability {
 	public:
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
+
+		virtual int numberOfBanks() const = 0;
+		virtual int numberOfPatches() const = 0;
 
 		// Discoverable Device
 		virtual std::vector<juce::MidiMessage> deviceDetect(int channel) override;
