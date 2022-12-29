@@ -134,11 +134,11 @@ void SynthBankPanel::refresh() {
 	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
 	{
 		auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
-		bankNameAndDate_.setText(fmt::format("Bank {} ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
+		bankNameAndDate_.setText(fmt::format("Bank '{}' ({} ago)", midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber()), timeAgo.toStdString()), dontSendNotification);
 	}
 	else
 	{
-		bankNameAndDate_.setText(fmt::format("Bank {}", synthBank_->name()), dontSendNotification);
+		bankNameAndDate_.setText(fmt::format("Bank '{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
 	}
 	bankList_->setPatches(synthBank_, buttonMode_);
 	modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);

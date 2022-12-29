@@ -20,7 +20,6 @@ Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
 * Deleting patches that are in a bank will remove them from the bank... should rather hide them?
 * Librarian Bank send for MKS80, K3M
 * Clicking the button should send the patch, as usual
-BANKS - UserBank needs to display which bank it will be sent to 
 * Can drag bank into user lists to create a user list from a bank!
 DRAG AND DROP - need to check drag and drop between the three different types of lists
 UX - What should happen when you click on "In Synth"?
