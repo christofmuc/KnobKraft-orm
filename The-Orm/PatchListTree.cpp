@@ -291,20 +291,30 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 				}
 			}
 
+			// Build a set of IDs of Banks that already are synced
+			auto alreadyLoadedBanks = db_.allSynthBanks(synth);
+			std::set<std::string> loadedIds;
+			std::transform(alreadyLoadedBanks.begin(), alreadyLoadedBanks.end(),
+				std::inserter(loadedIds, loadedIds.begin()), [](midikraft::ListInfo info) { return info.id; });
+
 			for (int i = 0; i < numberOfBanks; i++) {
 				int sizeOfBank = midikraft::SynthBank::numberOfPatchesInBank(synth, i);
 				auto bank_id = midikraft::ActiveSynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank_name = midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank = new TreeViewNode(bank_name, bank_id);
-				bank->onSelected = [synth, i, this, sizeOfBank](String) {
+				bank->onSelected = [synth, i, this, bank, sizeOfBank](String) {
 					if (onSynthBankSelected) {
 						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
+						bank->regenerate();
 					}
 				};
 				bank->onItemDragged = [bank_id, bank_name]() {
 					nlohmann::json dragInfo{ { "drag_type", "LIST"}, { "list_id", bank_id}, { "list_name", bank_name } };
 					return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 				};
+				if (loadedIds.find(bank_id) == loadedIds.end()) {
+					bank->setTextColour(juce::Colours::indianred);
+				}
 				result.push_back(bank);
 			}
 			return result;

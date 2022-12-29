@@ -1,9 +1,39 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
+PatchNumbers
+Altes System: Patch Daten von Program Platz trennen. Programm Platz speichern in der Tabelle, Nutzdaten sind egal ob Edit Buffer oder Program Dump
+Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich evtl der Speicherplatz
 
+Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
+Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
+
+Migration: Wo file source oder bulk source mit file source ist und keine BankNumber + ProgramNumber sind, diese erzeugen
+SourceInfo sollte vor der Datenbank Info stehen
+MidiBankNumber null sollte sich eigentlich immer aus der import source füllen lassen?
+From Synth source hat keine Program Number! Das ist ein Problem!
+Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
+
+
+2.0 Beta 1
+
+* Deleting patches that are in a bank will remove them from the bank... should rather hide them?
+* Librarian Bank send for MKS80, K3M
+* Clicking the button should send the patch, as usual
 BANKS - UserBank needs to display which bank it will be sent to 
+* Can drag bank into user lists to create a user list from a bank!
 DRAG AND DROP - need to check drag and drop between the three different types of lists
+UX - What should happen when you click on "In Synth"?
+* Needs to have concept of ROM banks. 
+* Could allow for single patch retrieval instead of whole bank synth (if mode is available)
+* Could allow for single patch send into program place (if more is available)
+* SynthBank Buttons sollten auch die ButtonInfo benutzen
+
+
+2.0 Beta 2 - Select Handler
+
+* Could display per patch if it is in Synth or not
+* Click on a button would not send to edit buffer, but just a bank select/program change message. 
 
 
 2.0 Release
@@ -17,77 +47,41 @@ BUG - After import, the new bank is not selected in the tree. Shows warning: Did
 BUG - Runninng autocategorize does not refresh the bank view
 BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change. Need to somehow refresh better
 
-IMPROV - should have save bank as sysex menu item 
+UX - can make revert changes for dirty synth bank panel
+UX - Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
+UX - What is the point of the normal download menu item. Should it go away? But then have no download all banks. It certainly needs to be synced somehow
+UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
+UX - Trashcan should light up when drag target works
 
 
+2.1 Release
 
+IMPROV - should have save bank as sysex menu item, Export into file wäre nice.
 DOCS - Adaptation tests need documenting
+LISTS IMPROVEMENT Imports sind auch lists, und sollten immer alle patches enthalten (auch mit anderen Namen etc.). In der Library ist de Patch natürlich nur einmal. Macht das Sinn?
+LISTS IMPROVEMENT Import als Liste auch draggen können
+IDEA - History stack!
+* Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
+* Need easy clear filter button
+* SINGLE SYNTH SETUP MODE
+	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
+	* Half done: The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth !!!
 
 
-Fraglich
+Later
+
 UX - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
-
-
-Später
-
 IDEA - XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change Could simulate an ingest with the predefined names (lol)
 IMPROV - Could do better layer switch
 IMPROV - Tree could show count of items
 
 
 
-BANK MANAGEMENT
-* Librarian Bank send for MKS80, K3M
-* Clicking the button should send the patch, as usual
-
-* Dirty banks should not be deleted by just changing the view... want to come back to them. I think they should be stored in the database!
-* Never synced banks should be red coloured in the tree
-* Deleting patches that are in a bank will remove them from the bank... should rather hide them?
-
-
-PatchNumbers
-Altes System: Patch Daten von Program Platz trennen. Programm Platz speichern in der Tabelle, Nutzdaten sind egal ob Edit Buffer oder Program Dump
-Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich evtl der Speicherplatz
-
-Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
-Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
-
-Migration: Wo file source oder bulk source mit file source ist und keine BankNumber + ProgramNumber sind, diese erzeugen
-SourceInfo sollte vor der Datenbank Info stehen
-MidiBankNumber null sollte sich eigentlich immer aus der import source füllen lassen?
-From Synth source hat keine Program Number! Das ist ein Problem!
-
-Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
-
-BANKS IMPROVEMENT
-* Needs to have concept of ROM banks. 
-* Could display per patch if it is in Synth or not
-* Click on a button would not send to edit buffer, but just a bank select/program change message. 
-* Could allow for single patch retrieval instead of whole bank synth (if mode is available)
-* Could allow for single patch send into program place (if more is available)
-* What should happen when you click on "In Synth"?
-* Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
-* Can drag bank into user lists to create a user list from a bank!
-* The Normal download button should then go away? But then have no download all banks. It certainly needs to be synced somehow
-* Trashcan should light up when drag target works
-* Export into file wäre nice.
-
-May be
-UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
-
-
-
-LISTS IMPROVEMENT
-Imports sind auch lists, und sollten immer alle patches enthalten (auch mit anderen Namen etc.). In der Library ist de Patch natürlich nur einmal. Macht das Sinn?
-Import als Liste auch draggen können
-
 Sollte irgendwo anzeigen können, für welche Synths in der Datenbank Patches sind, auch wenn sie ausgeschaltet sind. Vielleicht eine Database statistik Seite mit Anzahl der Patches pro Synth, Listen, ?
 
 Layer logic
 - need pretty layer names!
-
-Idea:
-History stack!
 
 Retry logic - the OB-6 and Rev2 seem to be pretty unstable now?
 
@@ -132,12 +126,6 @@ JD-800
 
 
 Before 2.0
-* Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
-* Need easy clear filter button
-* SINGLE SYNTH SETUP MODE
-	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
-	* Half done: The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth !!!
 
 LISTS upgrades:
 * Reorder patches in a list - needs dragging within the grid! With insert position indicator...
