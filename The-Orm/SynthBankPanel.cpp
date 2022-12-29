@@ -25,7 +25,12 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "You have unsaved changes!",
 					"You have modified the synth bank but not saved it back to the synth. Reimporting the bank will make you lose your changes! Do you want to re-import the bank from the synth?",
 					"Yes", "Cancel")) {
-				patchView_->retrieveBankFromSynth(synthBank_->synth(), synthBank_->bankNumber(), {});
+				patchView_->retrieveBankFromSynth(synthBank_->synth(), synthBank_->bankNumber(), [this]() {
+					temporaryBanks_.erase(synthBank_->id());
+					auto toReload = synthBank_;
+					synthBank_ = nullptr;
+					patchView_->loadSynthBankFromDatabase(toReload->synth(), toReload->bankNumber(), toReload->id());
+					});
 			}	
 		}
 	};
