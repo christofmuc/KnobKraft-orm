@@ -302,10 +302,11 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 				auto bank_id = midikraft::ActiveSynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank_name = midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank = new TreeViewNode(bank_name, bank_id);
-				bank->onSelected = [synth, i, this, bank, sizeOfBank](String) {
+				bank->onSelected = [synth, i, this, sizeOfBank, bank](String) {
 					if (onSynthBankSelected) {
 						onSynthBankSelected(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
-						bank->regenerate();
+						bank->removeTextColour();
+						bank->repaintItem();
 					}
 				};
 				bank->onItemDragged = [bank_id, bank_name]() {
