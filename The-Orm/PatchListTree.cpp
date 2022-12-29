@@ -389,17 +389,6 @@ TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode *parent, midikraft::ListInfo list) {
 	auto node = new TreeViewNode(list.name, list.id);
 	userLists_[list.id] = node;
-	/*node->onGenerateChildren = [this, list]() {
-		auto patchList = db_.getPatchList(list, synths_);
-		std::vector<TreeViewItem*> result;
-		if (patchList) {
-			int index = 0;
-			for (auto patch : patchList->patches()) {
-				result.push_back(newTreeViewItemForPatch(list, patch, index++));
-			}
-		}
-		return result;
-	};*/
 	node->onSelected = [this, list, synth](String clicked) {
 		UIModel::instance()->multiMode_.setMultiSynthMode(false);
 		// Need to set SYNTH
