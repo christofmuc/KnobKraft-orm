@@ -23,7 +23,7 @@ jobs:
     - name: Patch JUCE
       working-directory: third_party/JUCE
       run: |
-        git apply ../JUCE-patch-getApproxDescription.diff
+        git apply --whitespace=fix ../JUCE-patch-getApproxDescription.diff
 
     - name: CMake configure
       env: # We get the SENTRY DSN from the repository's secret store
