@@ -181,8 +181,10 @@ void PatchListTree::regenerateUserLists() {
 	// Need to refresh user lists
 	TreeViewNode* node = dynamic_cast<TreeViewNode*>(userListsItem_);
 	if (node) {
-		node->regenerate();
-		selectAllIfNothingIsSelected();
+		MessageManager::callAsync([this, node]() {
+			node->regenerate();
+			selectAllIfNothingIsSelected();
+		});
 	}
 }
 
@@ -190,8 +192,10 @@ void PatchListTree::regenerateImportLists() {
 	// Need to refresh user lists
 	TreeViewNode* node = dynamic_cast<TreeViewNode*>(allPatchesItem_);
 	if (node) {
-		node->regenerate();
-		selectAllIfNothingIsSelected();
+		MessageManager::callAsync([this, node]() {
+			node->regenerate();
+			selectAllIfNothingIsSelected();
+			});
 	}
 }
 
@@ -203,14 +207,18 @@ void PatchListTree::resized()
 
 void PatchListTree::refreshAllUserLists()
 {
-	userListsItem_->regenerate();
-	selectAllIfNothingIsSelected();
+	MessageManager::callAsync([this]() {
+		userListsItem_->regenerate();
+		selectAllIfNothingIsSelected();
+	});
 }
 
 void PatchListTree::refreshUserList(std::string list_id)
 {
 	if (userLists_.find(list_id) != userLists_.end()) {
-		userLists_[list_id]->regenerate();
+		MessageManager::callAsync([this, node = userLists_[list_id]]() {
+			node->regenerate();
+			});
 	}
 	else {
 		jassertfalse;
@@ -219,7 +227,9 @@ void PatchListTree::refreshUserList(std::string list_id)
 
 void PatchListTree::refreshAllImports()
 {
-	allPatchesItem_->regenerate();
+	MessageManager::callAsync([this]() {
+		allPatchesItem_->regenerate();
+		});
 }
 
 void PatchListTree::selectAllIfNothingIsSelected()
@@ -363,14 +373,18 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 					if (list) {
 						db_.putPatchList(list);
 						spdlog::info("Create new user bank named {}", list->name());
-						synthBanksNode->regenerate();
-						regenerateUserLists();
+						MessageManager::callAsync([this, synthBanksNode]() {
+							synthBanksNode->regenerate();
+							regenerateUserLists();
+							});
 						// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
 						//selectItemByPath({ "userlists", list->id() });
 					}
 					}, [synthBanksNode](std::shared_ptr<midikraft::PatchList> result) {
 						ignoreUnused(result);
-						synthBanksNode->regenerate();
+						MessageManager::callAsync([synthBanksNode]() {
+							synthBanksNode->regenerate();
+							});
 					});
 			};
 			result.push_back(addNewItem);
@@ -465,13 +479,17 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 				if (new_list) {
 					db_.putPatchList(new_list);
 					spdlog::info("Renamed bank from {} to {}", oldname, new_list->name());
-					parent->regenerate();
+					MessageManager::callAsync([parent]() {
+						parent->regenerate();
+						});
 				}
 			}, [this, parent](std::shared_ptr<midikraft::PatchList> new_list) {
 				if (new_list) {
 					db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
 					spdlog::info("Deleted user bank {}", new_list->name());
-					parent->regenerate();
+					MessageManager::callAsync([parent]() {
+						parent->regenerate();
+						});
 				}
 			});
 	};
@@ -554,8 +572,10 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				spdlog::error("Program error - dropped list does not contain name and id!");
 			}
 		}
-		node->regenerate();
-		node->setOpenness(TreeViewItem::Openness::opennessOpen);
+		MessageManager::callAsync([node]() {
+			node->regenerate();
+			node->setOpenness(TreeViewItem::Openness::opennessOpen);
+			});
 		if (onUserListChanged) {
 			onUserListChanged(list.id);
 		}
@@ -648,8 +668,9 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 					subItem->clearSubItems();
 					TreeViewNode* node = dynamic_cast<TreeViewNode*>(subItem);
 					if (node) {
-						node->regenerate();
-						node->treeHasChanged();
+						MessageManager::callAsync([node]() {
+							node->regenerate();
+							});
 					}
 					else {
 						jassertfalse;
@@ -670,12 +691,16 @@ void PatchListTree::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else if (dynamic_cast<CurrentSynthList*>(source)) {
 		// List of synths changed - we need to regenerate the imports list and the library subtrees!
-		allPatchesItem_->regenerate();
-		selectAllIfNothingIsSelected();
+		MessageManager::callAsync([this]() {
+			allPatchesItem_->regenerate();
+			selectAllIfNothingIsSelected();
+			});
 	}
 	else if (source == &UIModel::instance()->databaseChanged) {
-		allPatchesItem_->regenerate();
-		userListsItem_->regenerate();
-		selectAllIfNothingIsSelected();
+		MessageManager::callAsync([this]() {
+			allPatchesItem_->regenerate();
+			userListsItem_->regenerate();
+			selectAllIfNothingIsSelected();
+			});
 	}
 }
