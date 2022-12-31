@@ -30,6 +30,7 @@ namespace midikraft {
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const override;
 
 		// StreamLoadCapability
 		virtual std::vector<MidiMessage> requestStreamElement(int elemNo, StreamType streamType) const override;

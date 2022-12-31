@@ -68,6 +68,7 @@ namespace midikraft {
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const override;
 
 		// Special Synth implementation override, because the K3 sends actually write confirmation messages in 1985. Awesome engineers!
 		virtual void sendDataFileToSynth(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) override;

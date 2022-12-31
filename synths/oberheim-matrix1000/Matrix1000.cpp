@@ -198,6 +198,12 @@ namespace midikraft {
 		return fmt::format("{:03d} - {:03d}", (bankNo.toZeroBased() * numberOfPatches()), (bankNo.toOneBased() * numberOfPatches() - 1));
 	}
 
+	std::vector<juce::MidiMessage> Matrix1000::bankSelectMessages(MidiBankNumber bankNo) const {
+		// F0H 10H 06H 0AH <bank> F7H
+		uint8_t bank = bankNo.isValid() ? (uint8_t)bankNo.toZeroBased() : 0;
+		return { MidiHelpers::sysexMessage({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SET_BANK, bank }) };
+	}
+
 	bool Matrix1000::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
 		// The Matrix1000 either sends Edit Buffers as Program Dumps, or it is a Single Patch Data to Edit Buffer message, which the M1k will never generate on its own, 

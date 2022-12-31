@@ -55,6 +55,11 @@ namespace midikraft {
 		return bankNo.toZeroBased() <= 63 ? "Bank A" : "Bank B";
 	}
 
+	std::vector<juce::MidiMessage> MKS50::bankSelectMessages(MidiBankNumber bankNo) const {
+		ignoreUnused(bankNo);
+		return {};
+	}
+
 	std::shared_ptr<DataFile> MKS50::patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const
 	{
 		// Banks are called group, as the first digit is called bank

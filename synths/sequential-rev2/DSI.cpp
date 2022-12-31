@@ -62,6 +62,14 @@ namespace midikraft {
 			&& message.getSysExData()[1] == midiModelID_;
 	}
 
+	std::vector<juce::MidiMessage> DSISynth::bankSelectMessages(MidiBankNumber bankNo) const {
+		// Documented on page 82 of the Rev2 manual
+		if (channel().isValid() && bankNo.isValid()) {
+			return { juce::MidiMessage(0xb0 | (channel().toZeroBasedInt() & 0x0f), 32, bankNo.toZeroBased()) };
+		}
+		return { };
+	}
+
 	MidiChannel DSISynth::channelIfValidDeviceResponse(const MidiMessage &message)
 	{
 		if (message.isSysEx() && message.getSysExDataSize() > 9) {

@@ -101,6 +101,11 @@ namespace midikraft {
 		return "Standard Bank";
 	}
 
+	std::vector<juce::MidiMessage> KorgDW8000::bankSelectMessages(MidiBankNumber bankNo) const {
+		juce::ignoreUnused(bankNo);
+		return {};
+	}
+
 	juce::MidiMessage KorgDW8000::saveEditBufferToProgram(int programNumber)
 	{
 		// The Korg DW 8000 has no direct download to program slot message - you can only send it the edit buffer, and then instruct it to 

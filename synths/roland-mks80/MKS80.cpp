@@ -51,6 +51,11 @@ namespace midikraft {
 		return bankNo.toZeroBased() == 0 ? "Bank A" : "Bank B";
 	}
 
+	std::vector<juce::MidiMessage> MKS80::bankSelectMessages(MidiBankNumber bankNo) const {
+		ignoreUnused(bankNo);
+		return {};
+	}
+
 	std::shared_ptr<DataFile> MKS80::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
 		return std::make_shared<MKS80_Patch>(place, data);

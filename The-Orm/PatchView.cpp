@@ -865,8 +865,30 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		currentLayer_ = 0;
 
 		if (alsoSendToSynth) {
-			// Send out to Synth
-			patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+			auto alreadyInSynth = database_.getBankPositions(patch.smartSynth(), patch.md5());
+			for (auto inSynth : alreadyInSynth) {
+				spdlog::debug("Patch is already in synth in bank {} at position {}", inSynth.bank().toZeroBased(), inSynth.toZeroBased());
+			}
+			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+			if (midiLocation && midiLocation->channel().isValid() && alreadyInSynth.size() > 0) {
+				// We can get away with just a bank select and program change
+				std::vector<juce::MidiMessage> selectPatch;
+				if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
+					auto bankSelect = bankDescriptors->bankSelectMessages(patch.bankNumber());
+					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+				}
+				else if (auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(patch.smartSynth())) {
+					auto bankSelect = banks->bankSelectMessages(patch.bankNumber());
+					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+				}
+				selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), alreadyInSynth[0].toZeroBased()));
+				patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
+				spdlog::info("Sending program change to {}: program {}", patch.smartSynth()->getName(), patch.smartSynth()->friendlyProgramAndBankName(alreadyInSynth[0].bank(), alreadyInSynth[0]));
+			}
+			else {
+				// Send out to Synth into edit buffer
+				patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+			}
 		}
 	}
 	else {

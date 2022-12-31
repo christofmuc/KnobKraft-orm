@@ -30,7 +30,7 @@ namespace knobkraft {
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
-		*kNumberOfBanks, * kNumberOfPatchesPerBank, * kBankDescriptors, * kFriendlyBankName,
+		*kNumberOfBanks, * kNumberOfPatchesPerBank, * kBankDescriptors, * kFriendlyBankName, *kBankSelect, 
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,

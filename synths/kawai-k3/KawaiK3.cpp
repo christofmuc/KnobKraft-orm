@@ -234,6 +234,11 @@ namespace midikraft {
 		}
 	}
 
+	std::vector<juce::MidiMessage> KawaiK3::bankSelectMessages(MidiBankNumber bankNo) const {
+		ignoreUnused(bankNo);
+		return {};
+	}
+
 	std::shared_ptr<DataFile> KawaiK3::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const {
 
 		if (data.size() == 34 || data.size() == 98) {

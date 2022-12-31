@@ -19,7 +19,8 @@ namespace knobkraft {
 	public:
 		GenericHasBankDescriptorsCapability(GenericAdaptation* me) : me_(me) {}
 
-		std::vector<midikraft::BankDescriptor> bankDescriptors() const override;
+		virtual std::vector<midikraft::BankDescriptor> bankDescriptors() const override;
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const override;
 
 	private:
 		GenericAdaptation* me_;

@@ -35,6 +35,7 @@ namespace midikraft {
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const override;
 
 		virtual std::vector<MidiMessage> deviceDetect(int channel) override;
 		virtual int deviceDetectSleepMS() override;

@@ -551,6 +551,11 @@ namespace midikraft {
 		return fmt::format("Preset #{}", bankNo.toOneBased());
 	}
 
+	std::vector<juce::MidiMessage> BCR2000::bankSelectMessages(MidiBankNumber bankNo) const {
+		ignoreUnused(bankNo);
+		return {};
+	}
+
 	std::shared_ptr<midikraft::DataFile> BCR2000::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
 	{
 		ignoreUnused(place);

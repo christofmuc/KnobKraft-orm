@@ -410,6 +410,12 @@ namespace midikraft {
 	{
 		return 32;
 	}
+	
+	std::vector<juce::MidiMessage> RefaceDX::bankSelectMessages(MidiBankNumber bankNo) const {
+		juce::ignoreUnused(bankNo);
+		return {};
+	}
+
 
 	std::string RefaceDX::friendlyProgramName(MidiProgramNumber programNo) const
 	{

@@ -174,6 +174,13 @@ namespace midikraft {
 		return fmt::format("Bank {}", bankChar);
 	}
 
+	std::vector<juce::MidiMessage> Virus::bankSelectMessages(MidiBankNumber bankNo) const {
+		if (channel().isValid() && bankNo.isValid()) {
+			return { juce::MidiMessage(0xb0 | (channel().toZeroBasedInt() & 0x0f), 32, bankNo.toZeroBased())};
+		}
+		return {};
+	}
+
 	Synth::PatchData Virus::filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const
 	{
 		// Phew, the Virus has lots of unused data bytes that contribute nothing to the sound of the patch

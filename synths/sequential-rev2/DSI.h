@@ -35,6 +35,9 @@ namespace midikraft {
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;
 
+		// Part of HasBankDescriptorCapability
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const override;
+
 		virtual int numberOfBanks() const = 0;
 		virtual int numberOfPatches() const = 0;
 

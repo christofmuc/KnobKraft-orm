@@ -86,6 +86,7 @@ namespace midikraft {
 		int numberOfBanks() const override;
 		int numberOfPatches() const override;
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const;
 		std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 		bool isOwnSysex(MidiMessage const &message) const override;
 
