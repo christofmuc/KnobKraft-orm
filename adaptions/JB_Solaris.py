@@ -299,31 +299,31 @@ def renamePatch(data, new_name):
 # Testing
 
 
-# def run_tests():
-#     #with open("testData/Ultranova_poppy.syx", "rb") as sysex:
-#     with open("/Users/conversy/Documents/SysEx Librarian/Untitled.syx", "rb") as sysex:
-#         raw_data = list(sysex.read())
-#         assert nameFromDump(raw_data) == "Axel F"
-#         assert nameFromDump(renamePatch(raw_data, "Eddy Murphy"))
-#         assert isSingleProgramDump(raw_data)
-#         assert numberFromDump(raw_data) == 35
+def run_tests():
+    with open("testData/JBSolaris-INIT.syx", "rb") as sysex:
+        raw_data = list(sysex.read())
+        assert nameFromDump(raw_data) == "INIT"
+        assert nameFromDump(renamePatch(raw_data, "SolarisINIT")) == "SolarisINIT"
+        #assert isSingleProgramDump(raw_data)
+        # assert numberFromDump(raw_data) == 35
 
-#         buffer = convertToEditBuffer(1, raw_data)
-#         assert isEditBufferDump(buffer)
-#         assert numberFromDump(buffer) == 0
+        # buffer = convertToEditBuffer(1, raw_data)
+        # assert isEditBufferDump(buffer)
+        # assert numberFromDump(buffer) == 0
 
-#         back_dump = convertToProgramDump(1, buffer, 130)
-#         assert numberFromDump(back_dump) == 130
+        # back_dump = convertToProgramDump(1, buffer, 130)
+        # assert numberFromDump(back_dump) == 130
 
-#         assert nameFromDump(raw_data) == "Poppy"
-#         assert nameFromDump(buffer) == nameFromDump(raw_data)
-#         same_patch = renamePatch(raw_data, "Papaver")
-#         assert nameFromDump(same_patch) == "Papaver"
-#         same_same = renamePatch(same_patch, "Cr4zy Name°$    overflow")
-#         assert nameFromDump(same_same) == "Cr4zy Name_$"
+        # assert nameFromDump(raw_data) == "Poppy"
+        # assert nameFromDump(buffer) == nameFromDump(raw_data)
+        # same_patch = renamePatch(raw_data, "Papaver")
+        # assert nameFromDump(same_patch) == "Papaver"
+        # same_same = renamePatch(same_patch, "Cr4zy Name°$    overflow")
+        # assert nameFromDump(same_same) == "Cr4zy Name_$"
 
-#         assert calculateFingerprint(same_same) == calculateFingerprint(raw_data)
-#         assert friendlyBankName(2) == 'C'
+        # assert calculateFingerprint(same_same) == calculateFingerprint(raw_data)
+        # assert friendlyBankName(2) == 'C'
+
 
 
 if __name__ == "__main__":
