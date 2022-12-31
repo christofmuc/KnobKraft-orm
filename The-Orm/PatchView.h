@@ -54,6 +54,7 @@ public:
 	void loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId);
 	void retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler);
 	void sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler);
+	void selectPatch(midikraft::PatchHolder& patch, bool alsoSendToSynth);
 
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();
@@ -98,7 +99,7 @@ private:
 	void updateLastPath();
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
-	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
+	
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId);

@@ -101,6 +101,9 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 			}
 			return 1;
 		});
+	bankList_->onPatchClicked = [this](midikraft::PatchHolder& patch) {
+		patchView_->selectPatch(patch, true);
+	};
 	addAndMakeVisible(synthName_);
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);

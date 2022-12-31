@@ -229,8 +229,14 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 	list_.setModel(new PatchListModel(bank, [this](int row) {
 		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
 		if (patchRow) {
-			UIModel::instance()->currentPatch_.changeCurrentPatch(patchRow->patch());
-			spdlog::debug("Patch {} selected", patchRow->patch().name());
+			if (onPatchClicked) {
+				midikraft::PatchHolder copy = patchRow->patch();
+				onPatchClicked(copy);
+			}
+			else {
+				UIModel::instance()->currentPatch_.changeCurrentPatch(patchRow->patch());
+				spdlog::debug("Patch {} selected", patchRow->patch().name());
+			}
 		}
 		else {
 			spdlog::error("No patch known for row {}", row);

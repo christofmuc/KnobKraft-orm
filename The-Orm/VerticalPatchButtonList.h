@@ -17,6 +17,8 @@ public:
 
 	VerticalPatchButtonList(std::function<void(MidiProgramNumber, std::string)> dropHandler, TListDropHandler listDropHandler, std::function<int(std::string const&, std::string const&)> listResolver);
 
+	std::function<void(midikraft::PatchHolder&)> onPatchClicked;
+
 	virtual void resized() override;
 
 	void setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info);

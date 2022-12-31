@@ -23,22 +23,18 @@ Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
 
 2.0 Beta 1
 
-DRAG AND DROP - need to check drag and drop between the three different types of lists
-* Clicking the button should send the patch, as usual * Could allow for single patch send into program place (if more is available)
 * Librarian Bank send for MKS80, K3M
-* Deleting patches that are in a bank will remove them from the bank... should rather hide them?
-
 
 2.0 Beta 2 - Select Handler
 
 * Could display per patch if it is in Synth or not
-* Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Need global mode whether a Click on a button would not send to edit buffer, but just a bank select/program change message. 
 * Could allow for single patch retrieval instead of whole bank synth (if mode is available)
-
+UX - Library does not show what is loaded (e.g. all patches DW8000, or "import .. of OB-6")
 
 2.0 Release
 
-BUG - Hidden state wird in Bank nicht angezeigt ohne Neustart
+BUG - Hidden state wird in Bank nicht angezeigt ohne Neustart, need ValueTree backing
 BUG  info Overriding built-in import category rules with file C - comes too often now
 BUG - lists are ordered incorrectly in the Library, no longer with order_num. This actually never worked, and should be implemented together with general sorting!
 BUG - Duplicate name search sorts wrong I think. And is utterly slow (try on Reface DX)
@@ -47,6 +43,7 @@ BUG - Progress dialog geht nicht beim sent der UserBank
 BUG - After import, the new bank is not selected in the tree. Shows warning: Did not find item in tree:
 BUG - Runninng autocategorize does not refresh the bank view
 BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change. Need to somehow refresh better
+BUG - Bulk deleting patches that are in a bank will fail because of foreign key constaint - should rather hide them
 
 UX -  SynthBank Buttons sollten auch die ButtonInfo benutzen
 UX - can make revert changes for dirty synth bank panel
@@ -54,6 +51,9 @@ UX - Should have a clear/init bank function? (e.g. drop target to drag a patch o
 UX - What is the point of the normal download menu item. Should it go away? But then have no download all banks. It certainly needs to be synced somehow
 UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
 UX - Trashcan should light up when drag target works
+UX - Double click rename should also work for user banks and user lists
+UX - adding new list or bank could use in place editing and put cursor right there instead of the dialog window
+
 
 
 2.1 Release
