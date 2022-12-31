@@ -451,8 +451,16 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string patchName = infos["patch_name"];
 			if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Delete patch from database",
 				"Do you really want to delete the patch " + patchName + " from the database? There is no undo!")) {
-				database_.deletePatches(infos["synth"], { infos["md5"] });
-				spdlog::info("Deleted patch {} from database", patchName);
+				auto [deleted, hidden] = database_.deletePatches(infos["synth"], { infos["md5"] });
+				if (deleted > 0) {
+					spdlog::info("Deleted patch {} from database", patchName);
+				}
+				else if (hidden > 0 ) {
+					spdlog::warn("Could not delete patch {} from database as it is referred to be at least one bank definition. Removed it from user lists and set it to hidden instead!", patchName);
+				} 
+				else {
+					spdlog::error("Program error, could not delete patch");
+				}
 				patchListTree_.refreshAllUserLists();
 				patchButtons_->refresh(true);
 			}

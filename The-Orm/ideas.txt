@@ -38,6 +38,7 @@ DRAG AND DROP - need to check drag and drop between the three different types of
 
 2.0 Release
 
+BUG - Hidden state wird in Bank nicht angezeigt ohne Neustart
 BUG  info Overriding built-in import category rules with file C - comes too often now
 BUG - lists are ordered incorrectly in the Library, no longer with order_num. This actually never worked, and should be implemented together with general sorting!
 BUG - Duplicate name search sorts wrong I think. And is utterly slow (try on Reface DX)
