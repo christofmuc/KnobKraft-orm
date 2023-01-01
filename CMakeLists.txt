@@ -213,7 +213,7 @@ add_subdirectory(MidiKraft)
 
 # Import the synths currently supported
 add_subdirectory(synths/access-virus)
-add_subdirectory(synths/BCR2000)
+add_subdirectory(synths/bcr2000)
 add_subdirectory(synths/kawai-k3)
 add_subdirectory(synths/korg-dw8000)
 add_subdirectory(synths/oberheim-matrix1000)
