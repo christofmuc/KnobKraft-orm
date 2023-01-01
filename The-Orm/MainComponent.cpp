@@ -236,7 +236,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
-		{6, { "Help", {
+		{7, { "Help", {
 #ifndef _DEBUG
 #ifdef USE_SENTRY
 			{ "Crash software.."},
