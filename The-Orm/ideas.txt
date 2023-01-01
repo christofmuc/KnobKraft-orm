@@ -20,17 +20,15 @@ MidiBankNumber null sollte sich eigentlich immer aus der import source füllen l
 From Synth source hat keine Program Number! Das ist ein Problem!
 Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
 
-
-2.0 Beta 1
-
-* Librarian Bank send for MKS80, K3M
-
 2.0 Beta 2 - Select Handler
 
+* Document bankSelect(channel, bankNo) Python function required now
 * Could display per patch if it is in Synth or not
 * Need global mode whether a Click on a button would not send to edit buffer, but just a bank select/program change message. 
 * Could allow for single patch retrieval instead of whole bank synth (if mode is available)
 UX - Library does not show what is loaded (e.g. all patches DW8000, or "import .. of OB-6")
+BUG - Kawai shows Wave as #51, but that cannot be assigned. Should be a different bank!
+* Librarian Bank send for MKS80, K3M. -> K3 though also has program dump, so it doesn't actually need bank upload.
 
 2.0 Release
 
