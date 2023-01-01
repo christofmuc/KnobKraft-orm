@@ -107,7 +107,7 @@ namespace midikraft {
 
 		// Looping over the source code, chunking it into as many MIDI messages as required
 		std::stringstream input(bcl);
-		int maxLen = 500;
+		size_t maxLen = 500;
 		uint16 messageNo = 0;
 		while (!input.eof()) {
 			std::vector<uint8> characters;
@@ -128,7 +128,7 @@ namespace midikraft {
 				rtrim(line);
 			}
 
-			for (auto c : line) characters.push_back(c);
+			for (auto c : line) characters.push_back(static_cast<uint8>(c));
 
 			// First sanitize characters...
 			for (uint8 &value : characters) {
@@ -166,11 +166,11 @@ namespace midikraft {
 			auto data = message.getSysExData();
 			if (data[5] == SEND_BCL_MESSAGE) {
 				// This is a BCL message which contains actually only a line of text in 7bit ASCII
-				uint16 lineno = data[6] << 7 | data[7];
+				uint16 lineno = (uint16)(data[6] << 7 | data[7]);
 				ignoreUnused(lineno);
 				std::string result;
 				for (int rest = 8; rest < message.getSysExDataSize(); rest++) {
-					result.push_back(data[rest]);
+					result.push_back(static_cast<char>(data[rest]));
 				}
 				return result;
 			}
@@ -231,7 +231,7 @@ namespace midikraft {
 					auto data = answer.getSysExData();
 					if (data[5] == BCL_REPLY) {
 						// Command code is 0x21 and data size is 9, this is the answer we have been waiting for
-						uint16 lineNo = data[6] << 7 | data[7];
+						uint16 lineNo = (uint16)(data[6] << 7 | data[7]);
 						uint8 error = data[8];
 
 						// Check for dropped messages...
@@ -249,8 +249,8 @@ namespace midikraft {
 							if (errorNames.find(error) != errorNames.end()) {
 								errorText = errorNames[error];
 							}
-							if (logicalLineNumber >= 0 && logicalLineNumber < localCopy.size()) {
-								auto currentLine = convertSyxToText(localCopy[logicalLineNumber]);
+							if (logicalLineNumber >= 0 && logicalLineNumber < (int)localCopy.size()) {
+								auto currentLine = convertSyxToText(localCopy[(size_t)logicalLineNumber]);
 								errorsDuringUpload_.push_back({ error, errorText, logicalLineNumber + 1, currentLine });
 								spdlog::error(errorsDuringUpload_.back().toDisplayString());
 							}
@@ -269,7 +269,7 @@ namespace midikraft {
 						}
 						else {
 							receivedCounter->lastLine = lineNo; // To detect the wrap around
-							midiOutput->sendMessageNow(localCopy[receivedCounter->lastLine + 1]);
+							midiOutput->sendMessageNow(localCopy[static_cast<size_t>(receivedCounter->lastLine + 1)]);
 						}
 					}
 				}
@@ -405,9 +405,9 @@ namespace midikraft {
 
 	int BCR2000::indexOfPreset(std::string const &name) const
 	{
-		for (int i = 0; i < bcrPresets_.size(); i++) {
+		for (size_t i = 0; i < bcrPresets_.size(); i++) {
 			if (bcrPresets_[i] == name) {
-				return i;
+				return static_cast<int>(i);
 			}
 		}
 		return -1;
