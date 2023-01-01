@@ -14,23 +14,25 @@ namespace midikraft {
 
 
 	KorgDW8000Parameter::KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits) :
-		paramIndex_(paramIndex), parameterName_(name), bits_(bits), maxValue_((1 << bits) - 1)
+		paramIndex_(paramIndex), parameterName_(name), maxValue_(static_cast<uint8>((1 << bits) - 1))
 	{
 	}
 
 	KorgDW8000Parameter::KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits, TValueLookup const &valueLookup) :
-		paramIndex_(paramIndex), parameterName_(name), bits_(bits), maxValue_((1 << bits) - 1), valueLookup_(valueLookup)
+		paramIndex_(paramIndex), parameterName_(name), maxValue_(static_cast<uint8>((1 << bits) - 1)), valueLookup_(valueLookup)
 	{
 	}
 
 	KorgDW8000Parameter::KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits, uint8 maxValue) :
-		paramIndex_(paramIndex), parameterName_(name), bits_(bits), maxValue_(maxValue)
+		paramIndex_(paramIndex), parameterName_(name), maxValue_(maxValue)
 	{
+        juce::ignoreUnused(bits);
 	}
 
 	KorgDW8000Parameter::KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits, uint8 maxValue, TValueLookup const &valueLookup) :
-		paramIndex_(paramIndex), parameterName_(name), bits_(bits), maxValue_(maxValue), valueLookup_(valueLookup)
+		paramIndex_(paramIndex), parameterName_(name), maxValue_(maxValue), valueLookup_(valueLookup)
 	{
+        juce::ignoreUnused(bits);
 	}
 
 	SynthParameterDefinition::ParamType KorgDW8000Parameter::type() const

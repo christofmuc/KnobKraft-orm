@@ -75,6 +75,8 @@ namespace midikraft {
 		KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits, uint8 maxValue);
 		KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits, TValueLookup const &valueLookup);
 		KorgDW8000Parameter(Parameter const paramIndex, std::string const &name, int bits, uint8 maxValue, TValueLookup const &valueLookup);
+        KorgDW8000Parameter(KorgDW8000Parameter const& other) = default;
+        virtual ~KorgDW8000Parameter() = default;
 
 		// Implementation of interface
 		virtual ParamType type() const override;
@@ -95,7 +97,6 @@ namespace midikraft {
 	private:
 		Parameter paramIndex_; // In the DW8000, this is really a list of 51 consecutive parameter bytes, no lookup necessary
 		std::string parameterName_;
-		int bits_;
 		uint8 maxValue_;
 		TValueLookup valueLookup_;
 	};
