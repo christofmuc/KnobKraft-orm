@@ -164,8 +164,9 @@ ELSEIF(APPLE)
 			MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 			MACOSX_BUNDLE_ICON_FILE icon_orm.icns
 			MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+			MACOSX_BUNDLE_EXECUTABLE_NAME KnobKraftOrm
 			#MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
-			#MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
+			MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist
 			#XCODE_EMBED_FRAMEWORKS Sparkle
 			#XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY TRUE
 			#XCODE_EMBED_FRAMEWORKS_REMOVE_HEADERS_ON_COPY TRUE
@@ -173,6 +174,8 @@ ELSEIF(APPLE)
 	# https://stackoverflow.com/questions/68310342/how-to-get-cmake-to-embed-a-private-framework-into-a-macos-app-bundle
 	set(APP_BUNDLE_CONTENTS_DIR "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.app/Contents")
 	set(APP_BUNDLE_FRAMEWORKS_DIR "${APP_BUNDLE_CONTENTS_DIR}/Frameworks")
+	configure_file("Info.plist.in" "Info.plist")
+
 	add_custom_command(TARGET ${PROJECT_NAME}
 			POST_BUILD COMMAND
 			install_name_tool -add_rpath "@executable_path/../Frameworks/"
