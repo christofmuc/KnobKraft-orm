@@ -309,6 +309,7 @@ namespace midikraft {
 
 	void Virus::changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> finished)
 	{
+        juce::ignoreUnused(finished);
 		// We're changing the global channel here. This is parameter 124 in Page C
 		controller->getMidiOutput(midiOutput())->sendMessageNow(createParameterChangeSingle(2, 124, (uint8) channel.toZeroBasedInt()));
 		// Assume this worked and set our internal channel anew 

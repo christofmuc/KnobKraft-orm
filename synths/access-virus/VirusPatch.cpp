@@ -32,6 +32,7 @@ namespace midikraft {
 
 	// Sigh
 	// https://stackoverflow.com/questions/32055357/visual-studio-c-2015-stdcodecvt-with-char16-t-or-char32-t
+    static std::string utf32_to_utf8(char32_t utf32_char);
 	std::string utf32_to_utf8(char32_t utf32_char)
 	{
 		std::u32string utf32_string;
@@ -49,7 +50,7 @@ namespace midikraft {
 	std::string VirusPatch::name() const
 	{
 		std::string result;
-		for (int i = index(PageB, 112); i < index(PageB, 122); i++) {
+		for (size_t i = index(PageB, 112); i < index(PageB, 122); i++) {
 			// Character lookup
 			uint8 charIndex = data()[i];
 			if (charIndex >= 32 && charIndex <= 32 + virus_codepage.length()) {
@@ -79,7 +80,7 @@ namespace midikraft {
 		return place_;
 	}
 
-	int VirusPatch::index(Page page, int index)
+	size_t VirusPatch::index(Page page, size_t index)
 	{
 		// We have stored the A and the B pages in one vector
 		return page * 128 + index;

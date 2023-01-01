@@ -28,7 +28,7 @@ namespace midikraft {
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
 		virtual std::string friendlyBankName(MidiBankNumber bankNo) const override;
-		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const;
+		virtual std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber bankNo) const override;
 
 		// This needs to be overridden because the Virus contains a lot of noise in the patch data that is not really relevant
 		virtual PatchData filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const override;

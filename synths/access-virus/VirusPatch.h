@@ -30,7 +30,7 @@ namespace midikraft {
 
 		enum DataFileTypes { PATCH_VIRUS_B = 0 };
 		enum Page { PageA = 0, PageB = 1 };
-		static int index(Page page, int index);
+		static size_t index(Page page, size_t index);
 
 	private:
 		MidiProgramNumber place_;
