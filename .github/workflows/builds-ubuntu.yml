@@ -6,7 +6,7 @@ on: [push]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout repository with tags
       uses: actions/checkout@v2
@@ -18,7 +18,7 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - name: Install dependencies from apt-get
-      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3.8-dev
+      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-dev
 
     - name: Patch JUCE
       working-directory: third_party/JUCE
