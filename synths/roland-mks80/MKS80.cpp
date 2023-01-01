@@ -187,6 +187,7 @@ namespace midikraft {
 
 	struct MKS80HandshakeState : public HandshakeLoadingCapability::ProtocolState {
 		MKS80HandshakeState() : done(false), numWSF(0), success(false), dataPackages(0) {}
+        virtual ~MKS80HandshakeState() = default;
 		virtual bool isFinished() override { return done; }
 		virtual bool wasSuccessful() override { return success; }
 		virtual double progress() override { return dataPackages / 16.0; }
@@ -205,6 +206,7 @@ namespace midikraft {
 
 	void MKS80::startDownload(std::shared_ptr<SafeMidiOutput> output, std::shared_ptr<ProtocolState> saveState)
 	{
+        juce::ignoreUnused(saveState);
 		// Request the file from the MKS80
 		output->sendMessageNow(buildHandshakingMessage(MKS80_Operation_Code::RQF));
 	}
@@ -274,6 +276,10 @@ namespace midikraft {
 				// An ACK would come from the MKS80 in RQF mode when we have sent our EOF message, this ending the transfer
 				s->done = true;
 				return false;
+            case MKS80_Operation_Code::INVALID:
+                // fallthrough
+            case MKS80_Operation_Code::PGR:
+                // fallthrough
 			default:
 				jassert(false);
 				spdlog::warn("Ignoring unknown operation code during handshake transfer with MKS-80");
@@ -368,7 +374,7 @@ namespace midikraft {
 					}
 
 					// All good, we can construct 4 partial patches (layers) now
-					for (int block = 0; block < 4; block++) {
+					for (size_t block = 0; block < 4; block++) {
 						state.datBlocks.emplace_back();
 						size_t startOfBlock = 4 + block * 62;
 						std::copy(&message.getSysExData()[startOfBlock], &message.getSysExData()[startOfBlock + 62], std::back_inserter(state.datBlocks.back()));
@@ -445,7 +451,7 @@ namespace midikraft {
 			}
 			std::vector<std::vector<uint8>> toneData;
 			std::vector<std::vector<uint8>> patchData;
-			for (int i = 0; i < state.datBlocks.size(); i++) {
+			for (size_t i = 0; i < state.datBlocks.size(); i++) {
 				// First, extract the tone data stored in the dat block!
 				toneData.emplace_back(MKS80_Patch::toneFromDat(state.datBlocks[i]));
 				// Now extract upper and lower patch definition, in this case into one array of 30 bytes
@@ -482,16 +488,16 @@ namespace midikraft {
 		TPatchVector result;
 
 		// Now, build up 64 standalone patches that ignore the complexity of where the tone data is stored in RAM
-		for (int i = 0; i < toneData.size(); i++) {
+		for (size_t i = 0; i < toneData.size(); i++) {
 			std::map<MKS80_Patch::APR_Section, std::vector<uint8>> patch;
 			patch[MKS80_Patch::APR_Section::PATCH_UPPER] = std::vector<uint8>(patchData[i].begin(), patchData[i].begin() + 15); //TODO - no range check done here...
 			patch[MKS80_Patch::APR_Section::PATCH_LOWER] = std::vector<uint8>(patchData[i].begin() + 15, patchData[i].end());
-			int upperTone = patch[MKS80_Patch::APR_Section::PATCH_UPPER][MKS80_Parameter::TONE_NUMBER];
+			size_t upperTone = patch[MKS80_Patch::APR_Section::PATCH_UPPER][MKS80_Parameter::TONE_NUMBER];
 			patch[MKS80_Patch::APR_Section::TONE_UPPER] = toneData[upperTone];
-			int lowerTone = patch[MKS80_Patch::APR_Section::PATCH_LOWER][MKS80_Parameter::TONE_NUMBER];
+			size_t lowerTone = patch[MKS80_Patch::APR_Section::PATCH_LOWER][MKS80_Parameter::TONE_NUMBER];
 			//jassert(lowerTone== i); // If this is not guaranteed, we might not archive the whole data because a patch might refer to "outside" tone data, leaving tone data unused
 			patch[MKS80_Patch::APR_Section::TONE_LOWER] = toneData[lowerTone];
-			result.push_back(std::make_shared<MKS80_Patch>(MidiProgramNumber::fromZeroBase(i), patch));
+			result.push_back(std::make_shared<MKS80_Patch>(MidiProgramNumber::fromZeroBase(static_cast<int>(i)), patch));
 		}
 
 		return result;

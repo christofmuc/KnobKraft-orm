@@ -11,7 +11,7 @@ namespace midikraft {
 	const int kNRPNStartLayerB = 2048; // The NRPN numbers for layer B start 2048 higher than those for layer A
 
 	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) :
-		type_(ParamType::INT), targetLayer_(0), sourceLayer_(0), number_(number), min_(min), max_(max), name_(name), endNumber_(number), sysex_(sysExIndex)
+		type_(ParamType::INT), targetLayer_(0), sourceLayer_(0), number_(number), endNumber_(number), min_(min), max_(max), sysex_(sysExIndex), name_(name)
 	{
 	}
 

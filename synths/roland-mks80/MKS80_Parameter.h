@@ -110,8 +110,10 @@ namespace midikraft {
 
 		MKS80_Parameter(ParameterType paramType, int paramIndex, std::string const &name, int min, int max);
 		MKS80_Parameter(ParameterType paramType, int paramIndex, std::string const &name, int min, int max, std::map<int, std::string> const &valueLookup);
+        MKS80_Parameter(MKS80_Parameter const& other) = default;
+        virtual ~MKS80_Parameter() = default;
 
-		ParamType type() const override;
+        ParamType type() const override;
 		virtual std::string name() const override;
 		
 		std::string valueInPatchToText(DataFile const &patch) const override;

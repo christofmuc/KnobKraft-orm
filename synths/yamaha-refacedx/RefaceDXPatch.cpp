@@ -20,7 +20,7 @@ namespace midikraft {
 	{
 		std::string result;
 		// Extract the first 10 bytes of the common block, that's the ascii name
-		for (int i = 0; i < std::min((size_t)10, data().size()); i++) {
+		for (size_t i = 0; i < std::min((size_t)10, data().size()); i++) {
 			result.push_back(data()[i]);
 		}
 		return result;
@@ -29,7 +29,7 @@ namespace midikraft {
 	void RefaceDXPatch::setName(std::string const &name)
 	{
 		// Poke this into the first 10 bytes of the common block, which is the ASCII name. Ignore UTF 8 complexity for now.
-		for (int i = 0; i < std::min((size_t)10, name.size()); i++) {
+		for (size_t i = 0; i < std::min((size_t)10, name.size()); i++) {
 			setAt(i, name[i]);
 		}
 		for (int i = std::min(10, (int) name.size()); i < 10; i++) {

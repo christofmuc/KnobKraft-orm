@@ -25,7 +25,7 @@ namespace midikraft {
 		virtual std::string getName() const override;
 		virtual int numberOfBanks() const override;
 		virtual int numberOfPatches() const override;
-		virtual std::vector<BankDescriptor> bankDescriptors() const;
+		virtual std::vector<BankDescriptor> bankDescriptors() const override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;
 
 
@@ -66,7 +66,7 @@ namespace midikraft {
 		virtual int settingsDataFileType() const override;
 
 		// Enable the DSISynth implementation of the GlobalSettingsCapability
-		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() const;
+		virtual std::vector<DSIGlobalSettingDefinition> dsiGlobalSettings() const override;
 
 	private:
 		void initGlobalSettings();

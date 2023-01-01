@@ -144,12 +144,12 @@ namespace midikraft {
 	}
 
 	MKS80_Parameter::MKS80_Parameter(ParameterType paramType, int paramIndex, std::string const &name, int min, int max) :
-		paramType_(paramType), paramIndex_(paramIndex), paramName_(name), min_(min), max_(max), section_(SynthSection::LOWER)
+		paramType_(paramType), section_(SynthSection::LOWER), paramIndex_(paramIndex), paramName_(name), min_(min), max_(max)
 	{
 	}
 
 	MKS80_Parameter::MKS80_Parameter(ParameterType paramType, int paramIndex, std::string const &name, int min, int max, std::map<int, std::string> const &valueLookup) :
-		paramType_(paramType), paramIndex_(paramIndex), paramName_(name), min_(min), max_(max), valueLookup_(valueLookup), section_(SynthSection::LOWER)
+		paramType_(paramType), section_(SynthSection::LOWER), paramIndex_(paramIndex), paramName_(name), min_(min), max_(max), valueLookup_(valueLookup)
 	{
 	}
 
