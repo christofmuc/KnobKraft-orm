@@ -29,6 +29,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
+| John Bowen | Solaris | beta | adaptation | Contributed by @conversy! | 
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
@@ -43,7 +44,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
 | Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
-| Pioneer | Toraiz AS-1 | beta | adaptation | |
+| Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |

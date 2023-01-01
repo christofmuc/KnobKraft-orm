@@ -14,6 +14,7 @@ set(adaptation_files
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py" 
 	"Ensoniqesq1.py" 
+	"JB_Solaris.py"
 	"KawaiK1.py" 
 	"Korg_03RW.py" "KorgDW6000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
 	"Matrix 6.py" 
