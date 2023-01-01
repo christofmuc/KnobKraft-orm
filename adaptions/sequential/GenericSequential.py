@@ -116,6 +116,9 @@ class GenericSequential:
     def numberOfPatchesPerBank(self):
         return self.__patches_per_bank
 
+    def bankSelect(self, channel, bank):
+        return [0xb0 | (channel & 0x0f), 32, bank]
+
     def createProgramDumpRequest(self, channel, patchNo):
         bank = patchNo // self.numberOfPatchesPerBank()
         program = patchNo % self.numberOfPatchesPerBank()
@@ -266,6 +269,7 @@ class GenericSequential:
         setattr(module, 'isEditBufferDump', self.isEditBufferDump)
         setattr(module, 'numberOfBanks', self.numberOfBanks)
         setattr(module, 'numberOfPatchesPerBank', self.numberOfPatchesPerBank)
+        setattr(module, 'bankSelect', self.bankSelect)
         setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
         setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
         if self.__name_len is not None and self.__name_position is not None:
