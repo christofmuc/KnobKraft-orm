@@ -18,7 +18,7 @@ namespace knobkraft {
 	{
 	public:
 		GenericHasBanksCapability(GenericAdaptation* me) : me_(me) {}
-
+        virtual ~GenericHasBanksCapability() = default;
 		int numberOfBanks() const override;
 		int numberOfPatches() const override;
 		std::string friendlyBankName(MidiBankNumber bankNo) const override;

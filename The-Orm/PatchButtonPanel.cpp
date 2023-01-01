@@ -285,7 +285,7 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 						static_cast<int>(PatchButtonInfo::SubtitleSynth) | (static_cast<int>(displayMode) & static_cast<int>(PatchButtonInfo::CenterMask))
 						);
 				}
-				button->setPatchHolder(&patches_[i], i == active, displayMode);
+				button->setPatchHolder(&patches_[i], static_cast<int>(i) == active, displayMode);
 				refreshThumbnail((int)i);
 			}
 			else {
@@ -380,7 +380,7 @@ void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->thumbnails_) {
 		// Some Thumbnail has changed, most likely it is visible...
-		for (int i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
+		for (size_t i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
 			refreshThumbnail(i);
 		}
 	}
@@ -406,8 +406,8 @@ void PatchButtonPanel::selectNext()
 {
 	int active = indexOfActive();
 	if (active != -1) {
-		if (active + 1 < patchButtons_->size()) {
-			if (active + 1 < patches_.size()) {
+		if (active + 1 < static_cast<int>(patchButtons_->size())) {
+			if (active + 1 < static_cast<int>(patches_.size())) {
 				patchButtons_->buttonWithIndex(active + 1)->buttonClicked(nullptr);
 			}
 		}

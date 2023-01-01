@@ -59,8 +59,12 @@ void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 		};
 		break;
 	case ValueType::String:
+    case ValueType::Filename:
+    case ValueType::Pathname:
+    case ValueType::Color:
 		jassertfalse; // A rotary dial for a string property doesn't make sense?
 		break;
+
 	}
 	label.setText(param->name(), dontSendNotification);
 }

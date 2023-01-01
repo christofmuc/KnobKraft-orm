@@ -100,7 +100,7 @@ void BulkRenameDialog::release()
 void BulkRenameDialog::notifyResult()
 {
 	// Copy out new values into input list names
-	for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
+	for (size_t i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
 		input_[i].setName(props_[i]->value().toString().toStdString());
 	}
 	callback_(input_);
@@ -132,7 +132,7 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 	{
 		// First count how often each filename occurs
 		std::map<String, int> nameCount;
-		for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
+		for (size_t i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
 			// Depending on the type of import, we might have the original filename available...
 			auto info = input_[i].sourceInfo();
 			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {
@@ -156,7 +156,7 @@ void BulkRenameDialog::buttonClicked(Button* button) {
 		}
 		// Now set the name
 		std::map<String, int> runningCounter;
-		for (int i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
+		for (size_t i = 0; i < juce::jmin(input_.size(), props_.size()); i++) {
 			// Depending on the type of import, we might have the original filename available...
 			auto info = input_[i].sourceInfo();
 			if (auto fileNameSource = std::dynamic_pointer_cast<midikraft::FromFileSource>(info)) {

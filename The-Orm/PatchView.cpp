@@ -41,10 +41,12 @@
 
 const char *kAllPatchesFilter = "All patches";
 
-PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
-	: database_(database), librarian_(synths), synths_(synths)
-	, patchListTree_(database, synths)
-	, rightSideTab_(juce::TabbedButtonBar::TabsAtTop)
+PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths) :
+         patchListTree_(database, synths)
+        , rightSideTab_(juce::TabbedButtonBar::TabsAtTop)
+        , librarian_(synths)
+        , synths_(synths)
+        , database_(database)
 {
 	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 		setSynthBankFilter(synth, bank);
@@ -100,7 +102,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(box);
 	box->addAndMakeVisible(&patchListTree_);
 	box->addAndMakeVisible(&recycleBin_);
-	recycleBin_.onClicked = [this]() {
+	recycleBin_.onClicked = []() {
 		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Delete functionality", "The trash can is a drag and drop target you can use to delete patches or patch list entries - "
 			"just drag a patch or a list entry onto the trash can and drop it.\nDeleting patch list entries will be done immediately,"
 			" but deleting patches will ask for confirmation, as this is a destructive operation.");
@@ -213,6 +215,7 @@ void PatchView::selectNextPatch()
 void PatchView::loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
 	database_.getPatchesAsync(filter, [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+        ignoreUnused(filter);
 		// Discard the result when there is a newer filter - another thread will be working on a better result!
 		/*if (currentFilter() != filter)
 			return;*/
@@ -375,7 +378,7 @@ void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend
 			if (bankToSend->synth() /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
-				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [this, bankToSend, finishedHandler, progressWindow](bool completed) {
+				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [bankToSend, finishedHandler, progressWindow](bool completed) {
 					progressWindow->signalThreadShouldExit();
 					if (completed) {
 						bankToSend->clearDirty();
@@ -409,7 +412,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 	}
 	else {
 		// No, first time ever - offer the user to download from the synth if connected
-		retrieveBankFromSynth(synth, bank, [this, synth, bank]() {
+		retrieveBankFromSynth(synth, bank, [this, synth]() {
 			// After it has been loaded successfully, make sure to select it in the tree 
 			std::string synthName = synth->getName();
 			patchListTree_.selectItemByPath({ "allpatches", "library-" + synthName, "banks-" + synthName});

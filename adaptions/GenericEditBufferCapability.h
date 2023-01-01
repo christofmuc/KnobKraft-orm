@@ -16,6 +16,7 @@ namespace knobkraft {
 	class GenericEditBufferCapability : public midikraft::EditBufferCapability {
 	public:
 		GenericEditBufferCapability(GenericAdaptation *me) : me_(me) {}
+        virtual ~GenericEditBufferCapability() = default;
 		std::vector<MidiMessage> requestEditBufferDump() const override;
 		bool isEditBufferDump(const std::vector<MidiMessage>& message) const override;
 		HandshakeReply isMessagePartOfEditBuffer(const MidiMessage& message) const override;

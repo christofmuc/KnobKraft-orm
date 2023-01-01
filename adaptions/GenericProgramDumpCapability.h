@@ -16,6 +16,7 @@ namespace knobkraft {
 	class GenericProgramDumpCapability : public midikraft::ProgramDumpCabability {
 	public:
 		GenericProgramDumpCapability(GenericAdaptation *me) : me_(me) {}
+        virtual ~GenericProgramDumpCapability() = default;
 		virtual std::vector<MidiMessage> requestPatch(int patchNo) const override;
 		virtual bool isSingleProgramDump(const std::vector<MidiMessage>& message) const override;
 		virtual HandshakeReply isMessagePartOfProgramDump(const MidiMessage& message) const override;

@@ -279,7 +279,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	{ "Check for MIDI loops", { kLoopDetection, [this]() {
 		setupView_->loopDetection();
 	} } },
-	{"Set User Adaptation Dir", { kSelectAdaptationDirect, [this]() {
+	{"Set User Adaptation Dir", { kSelectAdaptationDirect, []() {
 		FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
 		if (directoryChooser.browseForDirectory()) {
 			knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
@@ -508,12 +508,16 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
-	MessageManager::callAsync([this]() {
-		UIModel::instance()->windowTitle_.sendChangeMessage();
 #ifdef WIN32
+    MessageManager::callAsync([this]() {
+		UIModel::instance()->windowTitle_.sendChangeMessage();
 		checkForUpdatesOnStartup();
+	});
+#else
+    MessageManager::callAsync([]() {
+        UIModel::instance()->windowTitle_.sendChangeMessage();
+    });
 #endif
-		});
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY

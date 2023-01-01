@@ -94,7 +94,7 @@ namespace knobkraft {
 				dw->exitModalState(1);
 			}
 		}
-		MessageManager::callAsync([this]() {
+		MessageManager::callAsync([]() {
 			// Prevent a (wrong) memory leak to be detected
 			dialog_.reset();
 		});

@@ -15,7 +15,7 @@ namespace knobkraft {
 	class GenericBankDumpCapability : public midikraft::BankDumpCapability {
 	public:
 		GenericBankDumpCapability(GenericAdaptation *me) : me_(me) {}
-
+        virtual ~GenericBankDumpCapability() = default;
 		std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
 		bool isBankDump(const MidiMessage& message) const override;
 		bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;

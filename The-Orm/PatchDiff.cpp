@@ -28,8 +28,6 @@
 
 class DiffTokenizer : public CodeTokeniser {
 public:
-	DiffTokenizer(CodeDocument &doc) : document_(doc) {}
-
 	void setRangeList(std::vector<Range<int>> &ranges) {
 		ranges_ = ranges;
 	}
@@ -62,7 +60,6 @@ private:
 		PLAIN,
 		DIFF
 	};
-	CodeDocument & document_;
 	std::vector<Range<int>> ranges_;
 };
 
@@ -85,12 +82,12 @@ private:
 	CodeEditorComponent *slave_ = nullptr;
 };
 
-PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : p1_(patch1), p2_(patch2),
-	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument)
+PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : activeSynth_(activeSynth), p1_(patch1), p2_(patch2),
+	p1Document_(new CodeDocument), p2Document_(new CodeDocument)
 {
 	// Create more components, with more complex bootstrapping
-	tokenizer1_.reset(new DiffTokenizer(*p1Document_.get()));
-	tokenizer2_.reset(new DiffTokenizer(*p2Document_.get()));
+	tokenizer1_.reset(new DiffTokenizer());
+	tokenizer2_.reset(new DiffTokenizer());
 	p1Editor_.reset(new CoupledScrollCodeEditor(*p1Document_, tokenizer1_.get()));
 	p2Editor_.reset(new CoupledScrollCodeEditor(*p2Document_, tokenizer2_.get()));
 	p1Editor_->setSlavedEditor(p2Editor_.get());

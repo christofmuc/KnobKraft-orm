@@ -35,7 +35,7 @@ std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
-BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this), updateControllerListener_(this), librarian_({})
+BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : updateSynthListener_(this), updateControllerListener_(this), bcr2000_(bcr), librarian_({})
 {
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {

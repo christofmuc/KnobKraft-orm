@@ -45,16 +45,16 @@ namespace {
 class AdvancedFilterPanel : public Component {
 public:
 	AdvancedFilterPanel(PatchView* patchView) :
-		synthFilters_({}, [patchView](CategoryButtons::Category) { 
-		patchView->retrieveFirstPageFromDatabase(); 
+		synthFilters_({}, [patchView](CategoryButtons::Category) {
+		patchView->retrieveFirstPageFromDatabase();
 	}, false, true)
 	{
 		addAndMakeVisible(synthFilters_);
 		addAndMakeVisible(dataTypeSelector_);
 		dataTypeSelector_.setTextWhenNoChoicesAvailable("This synth does not support different data types");
 		dataTypeSelector_.setTextWhenNothingSelected("Click here to show only data of a specific type");
-		dataTypeSelector_.onChange = [patchView]() { 
-			patchView->retrieveFirstPageFromDatabase();  
+		dataTypeSelector_.onChange = [patchView]() {
+			patchView->retrieveFirstPageFromDatabase();
 		};
 	}
 
@@ -73,12 +73,12 @@ public:
 
 
 PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPanel* patchButtons, midikraft::PatchDatabase& database) :
-	patchView_(patchView),
-	patchButtons_(patchButtons),
-	database_(database),
-	categoryFilters_({}, [this](CategoryButtons::Category) { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); }, true, true),
-	multiModeFilter_({}),
-	textSearch_([this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  })
+        multiModeFilter_({}),
+        patchView_(patchView),
+        patchButtons_(patchButtons),
+        textSearch_([this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  }),
+        categoryFilters_({}, [this](CategoryButtons::Category) { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); }, true, true),
+        database_(database)
 {
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
@@ -118,7 +118,7 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	buttonDisplayType_.onChange = [this]() {
 		auto synthName = currentSynthNameWithMulti();
 		int selected = buttonDisplayType_.getSelectedId() - 1;
-		if (selected >= 0 && selected < kDisplayChoices.size()) {
+		if (selected >= 0 && selected < static_cast<int>(kDisplayChoices.size())) {
 			PatchHolderButton::setCurrentInfoForSynth(synthName, static_cast<PatchButtonInfo>(kDisplayChoices[selected].second));
 		}
 		else {
@@ -184,7 +184,7 @@ void PatchSearchComponent::resized()
 	fb.items.add(createFlexButton(&andCategories_));
 	fb.performLayout(normalFilter);
 	auto flexBoxSize = FlexBoxHelper::computeFlexBoxSize(fb);
-	auto favRow = normalFilter.removeFromTop((int) flexBoxSize.getHeight());
+	//auto favRow = normalFilter.removeFromTop((int) flexBoxSize.getHeight());
 
 	auto filterRow = normalFilter; 
 	auto catFilterMin = categoryFilters_.determineSubAreaForButtonLayout(this, filterRow);
@@ -321,7 +321,7 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 		auto synthNameForUI = currentSynthNameWithMulti();
 		auto displayType = PatchHolderButton::getCurrentInfoForSynth(synthNameForUI);
 		buttonDisplayType_.setSelectedId(0, dontSendNotification);
-		for (int id = 0; id < kDisplayChoices.size(); id++) {
+		for (size_t id = 0; id < kDisplayChoices.size(); id++) {
 			if (kDisplayChoices[id].second == static_cast<int>(displayType)) {
 				buttonDisplayType_.setSelectedId(id+1, dontSendNotification);
 			}

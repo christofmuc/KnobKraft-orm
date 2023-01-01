@@ -112,8 +112,12 @@ set(MIDIKRAFT_LIBRARIES
 
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
-	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
+	INTERFACE ${CMAKE_CURRENT_LIST_DIR}})
+target_include_directories(KnobKraftOrm SYSTEM
 	PRIVATE "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+target_compile_definitions(KnobKraftOrm PRIVATE JUCE_MODULE_AVAILABLE_gin_gui JUCE_MODULE_AVAILABLE_gin)
+get_target_property(gin_include_dirs gin INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(KnobKraftOrm SYSTEM PRIVATE ${gin_include_dirs})
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)
@@ -177,7 +181,7 @@ if (MSVC)
     target_compile_options(KnobKraftOrm PRIVATE /W4 /WX)
 else()
     # lots of warnings and all warnings as errors
-    #target_compile_options(juce-widgets PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas -Wno-missing-field-initializers)
 endif()
 
 IF(WIN32)

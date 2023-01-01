@@ -27,7 +27,7 @@ namespace knobkraft {
 	class GenericStoredPatchNameCapability : public midikraft::StoredPatchNameCapability {
 	public:
 		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
-
+        virtual ~GenericStoredPatchNameCapability() = default;
 		void setName(std::string const &name) override;
 		std::string name() const override;
 
@@ -38,7 +38,7 @@ namespace knobkraft {
 	class GenericDefaultNameCapability : public midikraft::DefaultNameCapability {
 	public:
 		GenericDefaultNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
-
+        virtual ~GenericDefaultNameCapability() = default;
 		virtual bool isDefaultName(std::string const &patchName) const override;
 
 	private:
@@ -48,7 +48,7 @@ namespace knobkraft {
 	class GenericLayeredPatchCapability : public midikraft::LayeredPatchCapability {
 	public:
 		GenericLayeredPatchCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
-
+        virtual ~GenericLayeredPatchCapability() = default;
 		virtual LayerMode layerMode() const override;
 		virtual int numberOfLayers() const override;
 		virtual std::string layerName(int layerNo) const override;
@@ -62,7 +62,7 @@ namespace knobkraft {
 	{
 	public:
 		GenericStoredTagCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
-
+        virtual ~GenericStoredTagCapability() = default;
 		virtual bool setTags(std::set<midikraft::Tag> const& tags) override;
 		virtual std::set<midikraft::Tag> tags() const override;
 
@@ -83,6 +83,7 @@ namespace knobkraft {
 		};
 
 		GenericPatch(GenericAdaptation const *me, pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
+        virtual ~GenericPatch() = default;
 
 		bool pythonModuleHasFunction(std::string const &functionName) const;
 

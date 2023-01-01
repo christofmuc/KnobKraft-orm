@@ -74,6 +74,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 
 	allPatchesItem_ = new TreeViewNode("All patches", "allpatches");
 	allPatchesItem_->onSelected = [this](String id) {
+        juce::ignoreUnused(id);
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
 		if (onImportListSelected)
 			onImportListSelected("");
@@ -90,6 +91,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 					, newTreeViewItemForImports(activeSynth) });
 			};
 			synthLibrary->onSelected = [this, synthName](String id) {
+                juce::ignoreUnused(id);
 				UIModel::instance()->currentSynth_.changeCurrentSynth(UIModel::instance()->synthList_.synthByName(synthName).synth());
 				UIModel::instance()->multiMode_.setMultiSynthMode(false);
 				if (onImportListSelected)
@@ -112,6 +114,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		}
 		auto addNewItem = new TreeViewNode("Add new list", "");
 		addNewItem->onSingleClick = [this](String id) {
+            juce::ignoreUnused(id);
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
 				if (list) {
 					db_.putPatchList(list);
@@ -128,7 +131,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	userListsItem_->onSingleClick = [this](String) {
 		userListsItem_->toggleOpenness();
 	};
-	userListsItem_->acceptsItem = [this](juce::var dropItem) {
+	userListsItem_->acceptsItem = [](juce::var dropItem) {
 		String dropItemString = dropItem;
 		auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
 		return midikraft::PatchHolder::dragItemIsList(infos);
@@ -216,7 +219,7 @@ void PatchListTree::refreshAllUserLists()
 void PatchListTree::refreshUserList(std::string list_id)
 {
 	if (userLists_.find(list_id) != userLists_.end()) {
-		MessageManager::callAsync([this, node = userLists_[list_id]]() {
+		MessageManager::callAsync([node = userLists_[list_id]]() {
 			node->regenerate();
 			});
 	}
@@ -243,7 +246,7 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 {
 	auto node = treeView_->getRootItem();
 	TreeViewNode* child = nullptr;
-	int index = 0;
+	size_t index = 0;
 	while (index < path.size()) {
 		bool level_found = false;
 		if (!node->isOpen()) {
@@ -278,6 +281,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 	//TODO - this doesn't work. The TreeView from JUCE has no handlers for selected or clicked that do not fire if a drag is started, so 
 	// you can do either the one thing or the other.
 	node->onSelected = [this, patchHolder](String md5) {
+        juce::ignoreUnused(md5);
 		if (onPatchSelected)
 			onPatchSelected(patchHolder);
 	};
@@ -327,7 +331,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 			std::transform(alreadyLoadedBanks.begin(), alreadyLoadedBanks.end(),
 				std::inserter(loadedIds, loadedIds.begin()), [](midikraft::ListInfo info) { return info.id; });
 
-			for (int i = 0; i < numberOfBanks; i++) {
+			for (size_t i = 0; i < numberOfBanks; i++) {
 				int sizeOfBank = midikraft::SynthBank::numberOfPatchesInBank(synth, i);
 				auto bank_id = midikraft::ActiveSynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank_name = midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
@@ -369,6 +373,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 			}
 			auto addNewItem = new TreeViewNode("Add new user bank", "");
 			addNewItem->onSingleClick = [this, synth, synthBanksNode](String id) {
+                juce::ignoreUnused(id);
 				CreateListDialog::showCreateListDialog(nullptr, synth, TopLevelWindow::getActiveTopLevelWindow(), [this, synthBanksNode](std::shared_ptr<midikraft::PatchList> list) {
 					if (list) {
 						db_.putPatchList(list);
@@ -457,6 +462,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 	auto node = new TreeViewNode(list.name, list.id);
 	userLists_[list.id] = node;
 	node->onSelected = [this, list, synth](String clicked) {
+        juce::ignoreUnused(clicked);
 		UIModel::instance()->multiMode_.setMultiSynthMode(false);
 		// Need to set SYNTH
 		if (onUserBankSelected)
@@ -511,6 +517,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		return result;
 	};
 	node->onSelected = [this, list](String clicked) {
+        juce::ignoreUnused(clicked);
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
 		if (onUserListSelected)
 			onUserListSelected(list.id);
@@ -585,6 +592,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		return var(dragInfo.dump(-1, ' ', true, nlohmann::detail::error_handler_t::replace));
 	};
 	node->onDoubleClick = [node, this](String id) {
+        juce::ignoreUnused(id);
 		// Open rename dialog on double click
 		std::string oldname = node->text().toStdString();
 		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()),

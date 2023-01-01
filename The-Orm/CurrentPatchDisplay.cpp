@@ -62,7 +62,7 @@ int MetaDataArea::getDesiredHeight(int width)
 }
 
 CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
-	: Component(), database_(database), favoriteHandler_(favoriteHandler)
+	: Component(), database_(database)
 	, name_(0, false, [this](int) {
 		if (onCurrentPatchClicked) {
 			onCurrentPatchClicked(currentPatch_);
@@ -74,6 +74,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	, metaData_(categories, [this](CategoryButtons::Category categoryClicked) {
 		categoryUpdated(categoryClicked);
 	})
+    , favoriteHandler_(favoriteHandler)
 	{
 	addAndMakeVisible(&name_);
 	addAndMakeVisible(&propertyEditor_);
@@ -147,7 +148,7 @@ String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
 	auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch->smartSynth());
 	if (dataFileCap) {
 		int datatype = patch->patch()->dataTypeID();
-		if (datatype < dataFileCap->dataTypeNames().size()) {
+		if (datatype < static_cast<int>(dataFileCap->dataTypeNames().size())) {
 			return dataFileCap->dataTypeNames()[patch->patch()->dataTypeID()].name;
 		}
 		else {
@@ -299,9 +300,9 @@ void CurrentPatchDisplay::resized()
 		// Split the top row in three parts, with the centered one taking 240 px (the patch name)
 		auto topRow = area.removeFromTop(LAYOUT_TOUCHBUTTON_HEIGHT);
 		int side = (topRow.getWidth() - 240) / 2;
-		auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
-		auto leftCornerUpper = leftCorner.removeFromTop(20);
-		auto leftCornerLower = leftCorner;
+		//auto leftCorner = topRow.removeFromLeft(side).withTrimmedRight(8);
+		//auto leftCornerUpper = leftCorner.removeFromTop(20);
+		//auto leftCornerLower = leftCorner;
 		auto rightCorner = topRow.removeFromRight(side).withTrimmedLeft(8);
 
 		// Right side - hide and favorite button

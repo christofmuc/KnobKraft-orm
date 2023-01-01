@@ -46,7 +46,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	sendButton_.onClick = [this]() {
 		if (patchView_ && synthBank_) {
 			if (isUserBank()) {
-				patchView_->sendBankToSynth(synthBank_, true,  [this]() {
+				patchView_->sendBankToSynth(synthBank_, true,  []() {
 					spdlog::info("Bank sent successfully!");
 				});
 			} 
