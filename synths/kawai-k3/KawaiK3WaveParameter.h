@@ -15,6 +15,8 @@ namespace midikraft {
 
 	class KawaiK3HarmonicsParameters : public SynthParameterDefinition {
 	public:
+        virtual ~KawaiK3HarmonicsParameters() = default;
+
 		// SynthParameterDefinition
 		virtual ParamType type() const override;
 		virtual std::string name() const override;
@@ -32,7 +34,8 @@ namespace midikraft {
 	{
 	public:
 		KawaiK3DrawbarParameters(Drawbar& drawbar) : drawbar_(drawbar) {}
-		KawaiK3DrawbarParameters(unsigned int harmonic);
+		KawaiK3DrawbarParameters(int harmonic);
+        virtual ~KawaiK3DrawbarParameters() = default;
 
 		// SynthParameterDefinition
 		ParamType type() const override;

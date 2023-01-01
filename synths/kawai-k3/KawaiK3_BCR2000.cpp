@@ -212,14 +212,16 @@ namespace midikraft {
 		}
 	}
 
+    /*static int encoderNumber(KawaiK3BCR2000Definition* def);
 	int encoderNumber(KawaiK3BCR2000Definition* def) {
 		int encoder = -1;
 		if (def->type() == ENCODER) {
 			return def->encoderNumber();
 		}
 		return encoder;
-	}
+	}*/
 
+    static int buttonNumber(BCRStandardDefinition* def);
 	int buttonNumber(BCRStandardDefinition* def) {
 		int encoder = -1;
 		if (def->type() == BUTTON) {

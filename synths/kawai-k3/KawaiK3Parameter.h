@@ -66,6 +66,7 @@ namespace midikraft {
 
 		KawaiK3Parameter(std::string const &name, Parameter param, int sysexIndex, int bits, int minValue, int maxValue);
 		KawaiK3Parameter(std::string const &name, Parameter param, int sysexIndex, int bits, int shift, int minValue, int maxValue);
+        virtual ~KawaiK3Parameter() = default;
 
 		// Basic SynthParameterDefinition
 		virtual ParamType type() const override;

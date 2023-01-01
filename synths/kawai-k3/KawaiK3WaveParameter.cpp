@@ -15,7 +15,7 @@
 
 namespace midikraft {
 
-	KawaiK3DrawbarParameters::KawaiK3DrawbarParameters(unsigned int harmonic) : drawbar_(Drawbar(DrawbarOrgan::hammondDrawbars()[0]))
+	KawaiK3DrawbarParameters::KawaiK3DrawbarParameters(int harmonic) : drawbar_(Drawbar(DrawbarOrgan::hammondDrawbars()[0]))
 	{
 		// Let's see if we find it in the Hammond definition
 		for (auto hammond : DrawbarOrgan::hammondDrawbars()) {
@@ -72,7 +72,7 @@ namespace midikraft {
 		switch (patch.dataTypeID()) {
 		case KawaiK3::K3_PATCH: {
 			if (patch.data().size() != 98) return false;
-			for (int i = 34; i < 64 + 34; i += 2) {
+			for (size_t i = 34; i < 64 + 34; i += 2) {
 				uint8 harmonic = patch.data()[i];
 				if (harmonic == drawbar_.harmonic_number_) {
 					outValue = patch.data()[i + 1];

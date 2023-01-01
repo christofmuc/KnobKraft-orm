@@ -285,7 +285,7 @@ namespace midikraft {
 			while (readIndex < message.getSysExDataSize() - 1 && readBytes < 35) {
 				uint8 highNibble = rawData[readIndex];
 				uint8 lowNibble = rawData[readIndex + 1];
-				uint8 value = ((highNibble & 0x0f) << 4) | (lowNibble & 0x0f);
+				uint8 value = (uint8)((highNibble & 0x0f) << 4) | (lowNibble & 0x0f);
 				data.push_back(value);
 				readIndex += 2;
 				readBytes++;
@@ -295,7 +295,7 @@ namespace midikraft {
 			if (data.size() == 35) {
 				int sum = 0;
 				std::vector<uint8> toneData;
-				for (int i = 0; i < 34; i++) {
+				for (size_t i = 0; i < 34; i++) {
 					sum += data[i];
 					toneData.push_back(data[i]);
 				}
@@ -350,7 +350,7 @@ namespace midikraft {
 			while (readIndex < message.getSysExDataSize() - 1 && readBytes < 65) {
 				uint8 highNibble = rawData[readIndex];
 				uint8 lowNibble = rawData[readIndex + 1];
-				uint8 value = ((highNibble & 0x0f) << 4) | (lowNibble & 0x0f);
+				uint8 value = (uint8)((highNibble & 0x0f) << 4) | (lowNibble & 0x0f);
 				data.push_back(value);
 				readIndex += 2;
 				readBytes++;

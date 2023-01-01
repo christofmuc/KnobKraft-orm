@@ -31,7 +31,7 @@ namespace midikraft {
 		"Triangle", "Sawtooth", "Reverse sawtooth", "Square", "Inverted Square", "Random", "Chromatic random"
 	};
 
-	std::vector<std::string> kChrousName = {
+	std::vector<std::string> kChorusName = {
 		"None", "Chorus I (slow choral/phase shift)", "Chorus II (combination slow/fast shift)", "Chorus III (medium, random shift)",
 		"Tremolo (fast, deep shift)", "Chorus IV (ambiance 1)", "Chorus V (ambiance 2)", "Delay (short 40-60 ms)"
 	};
@@ -138,16 +138,37 @@ namespace midikraft {
 	{
 		if (value >= minValue_ && value <= maxValue_) {
 			if (paramNo_ == OSC1_WAVE_SELECT || paramNo_ == OSC2_WAVE_SELECT) {
-				return kWaveFormNames[value];
+                if (value >= 0 && value < static_cast<int>(kWaveFormNames.size())) {
+                    return kWaveFormNames[static_cast<size_t>(value)];
+                }
+                else {
+                    return "invalid wave form";
+                }
 			}
 			if (paramNo_ == OSC1_RANGE) {
-				return kRangeNames[value];
+                if (value >= 0 && value < static_cast<int>(kRangeNames.size())) {
+                    return kRangeNames[static_cast<size_t>(value)];
+                }
+                else
+                {
+                    return "invalid OSC range";
+                }
 			}
 			if (paramNo_ == LFO_SHAPE) {
-				return kLfoName[value];
+                if (value >= 0 && value < static_cast<int>(kLfoName.size())) {
+                    return kLfoName[static_cast<size_t>(value)];
+                }
+                else {
+                    return "invalid LFO shape";
+                }
 			}
 			if (paramNo_ == CHORUS) {
-				return kChrousName[value];
+                if (value >= 0 && value < static_cast<int>(kChorusName.size())) {
+                    return kChorusName[static_cast<size_t>(value)];
+                }
+                else {
+                    return "invalid chorus name";
+                }
 			}
 			return fmt::format("{}", value);
 		}
@@ -166,6 +187,10 @@ namespace midikraft {
 			}
 			return std::make_shared<TypedNamedValue>(name(), "KawaiK3", 0, lookup);
 		}
+        case midikraft::SynthParameterDefinition::ParamType::INT_ARRAY:
+            // fall through
+        case midikraft::SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
+                // fall through
 		default:
 			jassertfalse;
 		}
@@ -327,9 +352,9 @@ namespace midikraft {
 
 	int KawaiK3Parameter::findWave(std::string shapename)
 	{
-		for (int i = 0; i < kWaveFormNames.size(); i++) {
+		for (size_t i = 0; i < kWaveFormNames.size(); i++) {
 			if (kWaveFormNames[i] == shapename)
-				return i;
+				return static_cast<int>(i);
 		}
 		return -1;
 	}
@@ -337,7 +362,7 @@ namespace midikraft {
 	std::string KawaiK3Parameter::waveName(int waveNo)
 	{
 		if (waveNo > 0 && waveNo < 34) {
-			return kWaveFormNames[waveNo];
+			return kWaveFormNames[static_cast<size_t>(waveNo)];
 		}
 		return "invalid wave no";
 	}
