@@ -53,7 +53,7 @@ namespace midikraft {
 					}
 					else if (asciiResult[i] > 0x5f) {
 						// The sysex spec of the Matrix says it only uses 6 bits for the name, so I would think it does uppercase letters only (6 bits would be up to 2^6 = ascii 64)
-						setAt(i, asciiResult[i] - 0x20); // This works because it would bring the highest ascii character 7f down to 5f
+						setAt(i, static_cast<uint8>(asciiResult[i] - 0x20)); // This works because it would bring the highest ascii character 7f down to 5f
 					}
 					else if (asciiResult[i] < 0x20) {
 						// Any other non-printable ASCII character, use a different substitution character, like "_"
@@ -61,7 +61,7 @@ namespace midikraft {
 					}
 					else {
 						// Valid ASCII
-						setAt(i, asciiResult[i]);
+						setAt(i, static_cast<uint8>(asciiResult[i]));
 					}
 				}
 				else {

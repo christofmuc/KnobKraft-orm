@@ -205,6 +205,10 @@ namespace midikraft {
 			// There are a few parameters that have no CC controller assigned, and can only be modified with specific sysex messages
 		}
 
+        Matrix1000ParamDefinition(Matrix1000ParamDefinition const& other) = default;
+
+        virtual ~Matrix1000ParamDefinition() = default;
+
 		Matrix1000Param id() const;
 		int controller() const;
 		int bits() const;
@@ -236,9 +240,9 @@ namespace midikraft {
 		int controller_;
 		int bits_;
 		int bitposition_;
+        std::string description_;
+        TValueLookup lookup_;
 		bool activeIfNonNull_;
-		std::string description_;
-		TValueLookup lookup_;
 		TActivePredicate testActive_;
 	};
 

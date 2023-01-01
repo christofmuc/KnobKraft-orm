@@ -40,5 +40,5 @@ if (MSVC)
     target_compile_options(midikraft-oberheim-matrix1000 PRIVATE /W4 /WX)
 else()
     # lots of warnings and all warnings as errors
-    #target_compile_options(midikraft-oberheim-matrix1000 PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(midikraft-oberheim-matrix1000 PRIVATE -Wall -Wextra -pedantic -Werror)
 endif()

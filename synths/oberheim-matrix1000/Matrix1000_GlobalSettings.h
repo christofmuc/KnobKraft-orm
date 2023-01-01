@@ -17,6 +17,7 @@ namespace midikraft {
 	class Matrix1000_GlobalSettings_Loader : public DataFileLoadCapability {
 	public:
 		Matrix1000_GlobalSettings_Loader(Matrix1000 *matrix1000);
+        virtual ~Matrix1000_GlobalSettings_Loader() = default;
 
 		virtual std::vector<MidiMessage> requestDataItem(int itemNo, int dataTypeID) override;
 		virtual int numberOfDataItemsPerType(int dataTypeID) const override;

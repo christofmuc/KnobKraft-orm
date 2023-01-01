@@ -49,7 +49,7 @@ namespace midikraft {
 	};
 
 	struct Matrix1000GlobalSettingDefinition {
-		int sysexIndex;
+		size_t sysexIndex;
 		TypedNamedValue typedNamedValue;
 		bool isTwosComplement;
 		int displayOffset;
@@ -58,37 +58,37 @@ namespace midikraft {
 	// Table of global settings. What I left out was the "group enabled" array for one bit per patch to specify if it is deemed to be group-worthy.
 	struct Matrix1000GlobalSettings {
 		std::vector<Matrix1000GlobalSettingDefinition> definitions = {
-			{ 34, { "Master Transpose", "Tuning", 0, -24, 24 }, true },
-			{ 8, { "Master Tune", "Tuning", 0, -32, 32 }, true },
+			{ 34, { "Master Transpose", "Tuning", 0, -24, 24 }, true, 0 },
+			{ 8, { "Master Tune", "Tuning", 0, -32, 32 }, true, 0 },
 			{ 11, { "MIDI Basic Channel", "MIDI", 1, 1, 16 }, false, 1 /* Make it one based */},
-			{ 12, { "MIDI OMNI Mode Enable", "MIDI", false } },
-			{ 13, { "MIDI Controllers enable", "MIDI", true} },
-			{ 14, { "MIDI Patch Changes Enable", "MIDI", true } },
-			{ 17, { "MIDI Pedal 1 Controller", "MIDI", 0, 0, 121 } }, //TODO - could make a lookup of CC controller names? 121 is from the manual
-			{ 18, { "MIDI Pedal 2 Controller", "MIDI", 0, 0, 121 } },
-			{ 19, { "MIDI Pedal 3 Controller", "MIDI", 0, 0, 121 } },
-			{ 20, { "MIDI Pedal 4 Controller", "MIDI", 0, 0, 121 } },
-			{ 32, { "MIDI Echo Enable", "MIDI", false } },
-			{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", false } },
-			{ 165, { "Bank Lock Enable", "MIDI", false} }, // (In MSB only)
-			{ 4, { "Vibrato Waveform", "Global Vibrato", 0, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } } },
-			{ 1, { "Vibrato Speed", "Global Vibrato", 0, 0, 63 } },
-			{ 5, { "Vibrato Amplitude", "Global Vibrato", 0, 0, 63 } },
-			{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
-			{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", 0, 0, 63 } },
-			{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } } },
-			{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", 0, 0, 63 } },
-			{ 164, { "Bend Range", "Controls", 2, 1, 24 } },
-			{ 166, { "Number of Units", "Group Mode", 1, 1, 6 } },
-			{ 167, { "Current Unit Number", "Group Mode", 0, 0, 7 } }, // (In MSB only)
-			{ 168, { "Group Mode Enable", "Group Mode", false } }, // (In MSB only)
-			{ 169, { "Unison Enable", "General", false } },
-			{ 170, { "Volume Invert Enable", "General", false } },
-			{ 171, { "Memory Protect Enable", "General", false } },
+			{ 12, { "MIDI OMNI Mode Enable", "MIDI", false }, false, 0 },
+			{ 13, { "MIDI Controllers enable", "MIDI", true}, false, 0 },
+			{ 14, { "MIDI Patch Changes Enable", "MIDI", true }, false, 0 },
+			{ 17, { "MIDI Pedal 1 Controller", "MIDI", 0, 0, 121 }, false, 0 }, //TODO - could make a lookup of CC controller names? 121 is from the manual
+			{ 18, { "MIDI Pedal 2 Controller", "MIDI", 0, 0, 121 }, false, 0 },
+			{ 19, { "MIDI Pedal 3 Controller", "MIDI", 0, 0, 121 }, false, 0 },
+			{ 20, { "MIDI Pedal 4 Controller", "MIDI", 0, 0, 121 }, false, 0 },
+			{ 32, { "MIDI Echo Enable", "MIDI", false }, false, 0 },
+			{ 35, { "MIDI Mono Mode (Guitar)", "MIDI", false }, false, 0 },
+			{ 165, { "Bank Lock Enable", "MIDI", false}, false, 0 }, // (In MSB only)
+			{ 4, { "Vibrato Waveform", "Global Vibrato", 0, { {0, "Triangle" }, { 1, "Saw up" }, { 2, "Saw Down" }, { 3, "Square" }, { 4, "Random" }, { 5, "Noise" } } }, false, 0 },
+			{ 1, { "Vibrato Speed", "Global Vibrato", 0, 0, 63 }, false, 0 },
+			{ 5, { "Vibrato Amplitude", "Global Vibrato", 0, 0, 63 }, false, 0 },
+			{ 2, { "Vibrato Speed Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } }, false, 0 },
+			{ 3, { "Vibrato Speed Mod Amount", "Global Vibrato", 0, 0, 63 }, false, 0 },
+			{ 6, { "Vibrato Amp Mod Source", "Global Vibrato", 0, { {0, "Off" }, { 1, "Lever 2" }, { 2, "Pedal 1" } } }, false, 0 },
+			{ 7, { "Vibrato Amp Mod Amount", "Global Vibrato", 0, 0, 63 }, false, 0 },
+			{ 164, { "Bend Range", "Controls", 2, 1, 24 }, false, 0 },
+			{ 166, { "Number of Units", "Group Mode", 1, 1, 6 }, false, 0 },
+			{ 167, { "Current Unit Number", "Group Mode", 0, 0, 7 }, false, 0 }, // (In MSB only)
+			{ 168, { "Group Mode Enable", "Group Mode", false }, false, 0 }, // (In MSB only)
+			{ 169, { "Unison Enable", "General", false }, false, 0 },
+			{ 170, { "Volume Invert Enable", "General", false }, false, 0 },
+			{ 171, { "Memory Protect Enable", "General", false }, false, 0 },
 		};
 	};
 	std::shared_ptr<Matrix1000GlobalSettings> gMatrix1000GlobalSettings;
-	std::shared_ptr<Matrix1000GlobalSettings> sMatrix1000GlobalSettings() {
+	static std::shared_ptr<Matrix1000GlobalSettings> sMatrix1000GlobalSettings() {
 		if (!gMatrix1000GlobalSettings) {
 			gMatrix1000GlobalSettings = std::make_shared<Matrix1000GlobalSettings>();
 		}
@@ -159,7 +159,12 @@ namespace midikraft {
 								newMidiValue = (uint8)newMidiValue;
 							}
 						}
-						newMessage[def.sysexIndex] = (uint8)newMidiValue;
+                        if (def.sysexIndex >= 0) {
+                            newMessage[static_cast<size_t>(def.sysexIndex)] = (uint8) newMidiValue;
+                        }
+                        else {
+                            jassertfalse;
+                        }
 					}
 				}
 			}
@@ -242,7 +247,7 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Matrix1000::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
-		uint8 programNo = programNumber.toZeroBased() % 100;
+		uint8 programNo = (uint8)(programNumber.toZeroBased() % 100);
 		std::vector<uint8> singleProgramDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_DATA, programNo });
 		auto patchdata = escapeSysex(patch->data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(singleProgramDump));
@@ -564,7 +569,7 @@ namespace midikraft {
 		uint8 checksum = 0;
 		for (int index = 0; index < sysExLen; ) {
 			// Read one more data byte from two bytes
-			uint8 byte = sysExData[index] | sysExData[index + 1] << 4;
+			uint8 byte = (uint8)((int)sysExData[index] | sysExData[index + 1] << 4);
 			result.push_back(byte);
 			checksum += byte;
 			index += 2;
@@ -586,7 +591,7 @@ namespace midikraft {
 		std::vector<uint8> result;
 		// We generate the nibbles and the checksum
 		int checksum = 0;
-		for (int i = 0; i < programEditBuffer.size(); i++) {
+		for (size_t i = 0; i < programEditBuffer.size(); i++) {
 			checksum += programEditBuffer[i];
 			result.push_back(programEditBuffer[i] & 0x0f);
 			result.push_back((programEditBuffer[i] & 0xf0) >> 4);

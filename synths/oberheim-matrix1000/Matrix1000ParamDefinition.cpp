@@ -95,7 +95,7 @@ namespace midikraft {
 	bool Matrix1000ParamDefinition::valueInPatch(DataFile const &patch, int &outValue) const
 	{
 		// For this to work, this parameter must have a sysex definition
-		if (sysexIndex_ == -1 || sysexIndex_ >= patch.data().size()) {
+		if (sysexIndex_ == -1 || sysexIndex_ >= static_cast<int>(patch.data().size())) {
 			return false;
 		}
 
@@ -235,7 +235,7 @@ namespace midikraft {
 	TActivePredicate cRamp2Used = [](DataFile const &patch) { return std::any_of(modSourceIndexes.begin(), modSourceIndexes.end(), [&](int sourceIndex) { return patch.at(sourceIndex) == 8; }); };
 
 	// Helper function required while refactoring to midikraft code
-	int valueBySysexIndex(DataFile const &patch, int sysexIndex) {
+	static int valueBySysexIndex(DataFile const &patch, int sysexIndex) {
 		auto matrix1000Patch = dynamic_cast<Matrix1000Patch const *>(&patch);
 		if (matrix1000Patch) {
 			return matrix1000Patch->value(matrix1000Patch->paramBySysexIndex(sysexIndex));
