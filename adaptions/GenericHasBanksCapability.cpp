@@ -7,6 +7,7 @@
 #include "GenericHasBanksCapability.h"
 
 #include "GenericAdaptation.h"
+#include "Sysex.h"
 
 #include <pybind11/embed.h>
 
@@ -52,7 +53,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_->pythonModuleHasFunction(kFriendlyBankName)) {
-			return (boost::format("Bank %d") % bankNo.toOneBased()).str();
+			return fmt::format("Bank {}", bankNo.toOneBased());
 		}
 		try {
 			int bankAsInt = bankNo.toZeroBased();
@@ -68,5 +69,27 @@ namespace knobkraft {
 		}
 		return "invalid name";
 	}
+
+	std::vector<juce::MidiMessage> GenericHasBanksCapability::bankSelectMessages(MidiBankNumber bankNo) const {
+		py::gil_scoped_acquire acquire;
+		try {
+			if (me_->pythonModuleHasFunction(kBankSelect)) {
+				int c = me_->channel().toZeroBasedInt();
+				int bankAsInt = bankNo.toZeroBased();
+				py::object result = me_->callMethod(kBankSelect, c, bankAsInt);
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+				return Sysex::vectorToMessages(byteData);
+			}
+		}
+		catch (py::error_already_set& ex) {
+			me_->logAdaptationError(kBankSelect, ex);
+			ex.restore();
+		}
+		catch (std::exception& ex) {
+			me_->logAdaptationError(kBankSelect, ex);
+		}
+		return {};
+	}
+
 
 }

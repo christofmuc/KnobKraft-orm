@@ -17,6 +17,7 @@
 #include "embedded_module.h"
 
 #include <memory>
+#include <spdlog/spdlog.h>
 
 #include "version.cpp"
 
@@ -39,7 +40,7 @@ static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
 	char *s = sentry_envelope_serialize(envelope, &size_out);
 	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
 	if (SimpleLogger::instance()) {
-		SimpleLogger::instance()->postMessage("Sentry: " + std::string(s));
+		spdlog::debug("Sentry: {}", std::string(s));
 	}
 	sentry_free(s);
 	sentry_envelope_free(envelope);
@@ -50,10 +51,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 	ignoreUnused(level, args, userdata);
 	char buffer[2048];
 	vsnprintf_s(buffer, 2048, message, args);
-	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
-	if (SimpleLogger::instance()) {
-		SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
-	}
+	spdlog::debug("Sentry: {}",  std::string(buffer));
 }
 #endif
 #endif
@@ -95,7 +93,7 @@ public:
 		}
 		else {
 			if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
-				SimpleLogger::instance()->postMessage("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
+				spdlog::warn("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
 			}
 			else {
 				AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "No Python installation found",
@@ -174,14 +172,14 @@ public:
         // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
-		// No more Python from here please
-		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
-
-		mainWindow = nullptr; // (deletes our window)
-
 		// Save UIModel for next run
 		Data::instance().saveToSettings();
 		UIModel::shutdown();
+
+		mainWindow = nullptr; // (deletes our window)
+
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
 
 		// Shutdown MIDI subsystem after all windows are gone
 		midikraft::MidiController::shutdown();

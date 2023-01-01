@@ -1,0 +1,26 @@
+From 9da108a82ac963f2cea8eb36726ffbad53f76e88 Mon Sep 17 00:00:00 2001
+From: Christof Ruch <christof.ruch@gmx.de>
+Date: Thu, 29 Dec 2022 21:36:29 +0100
+Subject: [PATCH] Fix the getApproximateDescription() function that never did a
+ correct description of "days", because days were calculated as weeks.
+
+---
+ modules/juce_core/time/juce_RelativeTime.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/modules/juce_core/time/juce_RelativeTime.cpp b/modules/juce_core/time/juce_RelativeTime.cpp
+index efa17b827..60b1a1e9a 100644
+--- a/modules/juce_core/time/juce_RelativeTime.cpp
++++ b/modules/juce_core/time/juce_RelativeTime.cpp
+@@ -86,7 +86,7 @@ String RelativeTime::getApproximateDescription() const
+     if (weeks > 8)    return describeMonths ((weeks * 12) / 52);
+     if (weeks > 1)    return describeWeeks (weeks);
+ 
+-    auto days = (int) inWeeks();
++    auto days = (int) inDays();
+ 
+     if (days > 1)
+         return describeDays (days);
+-- 
+2.39.0.windows.2
+

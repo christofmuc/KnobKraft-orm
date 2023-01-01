@@ -10,6 +10,8 @@
 #include "Logger.h"
 #include "UIModel.h"
 
+#include <spdlog/spdlog.h>
+
 
 AutoThumbnailingDialog::AutoThumbnailingDialog(PatchView &patchView, RecordingView &recordingView) : 
 	ThreadWithProgressWindow("Recording patch thumbnails", true, true), patchView_(patchView), recordingView_(recordingView)
@@ -80,13 +82,13 @@ bool AutoThumbnailingDialog::syncRecordThumbnail() {
 		}
 		else {
 			waitingForDone.stopThread(1000);
-			SimpleLogger::instance()->postMessage("That was a never ending patch - you're sure you're not recording something else?");
+			spdlog::info("That was a never ending patch - you're sure you're not recording something else?");
 			return false;
 		}
 	}
 	else {
 		waitingForSignal.stopThread(1000);
-		SimpleLogger::instance()->postMessage("No patch could be recorded, please check the Audio setup in the AudioIn view!");
+		spdlog::error("No patch could be recorded, please check the Audio setup in the AudioIn view!");
 		return false;
 	}
 	return true;
@@ -103,7 +105,7 @@ void AutoThumbnailingDialog::run()
 
 	auto location = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
 	if (!location || !location->wasDetected()) {
-		SimpleLogger::instance()->postMessage("Cannot record patches when the " + synth->getName() + " hasn't been detected!");
+		spdlog::error("Cannot record patches when the {} hasn't been detected!", synth->getName());
 		return;
 	}
 

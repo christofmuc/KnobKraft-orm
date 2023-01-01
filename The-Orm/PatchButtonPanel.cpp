@@ -13,7 +13,6 @@
 #include "LayoutConstants.h"
 #include "Settings.h"
 
-#include <boost/format.hpp>
 #include <algorithm>
 
 namespace {

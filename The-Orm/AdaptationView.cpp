@@ -12,7 +12,7 @@
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
 
 namespace knobkraft {
 
@@ -64,12 +64,12 @@ namespace knobkraft {
 	{
 		adaptation_ = adaptationSynth;
 		std::string infoText;
-		infoText = (boost::format("Implementation information for the adaptation for the '%s':\n\n") % adaptationSynth->getName()).str();
+		infoText = fmt::format("Implementation information for the adaptation for the '{}':\n\n", adaptationSynth->getName());
 
 		bool failure = false;
 		for (auto functionName : kMinimalRequiredFunctionNames) {
 			if (!adaptationSynth->pythonModuleHasFunction(functionName)) {
-				infoText += (boost::format("Error: Required function %s has not been implemented yet\n") % functionName).str();
+				infoText += fmt::format("Error: Required function {} has not been implemented yet\n", functionName);
 				failure = true;
 			}
 		}
@@ -82,20 +82,20 @@ namespace knobkraft {
 		auto hasProgramDump = midikraft::Capability::hasCapability<midikraft::ProgramDumpCabability>(adaptationSynth);
 		auto hasBankDump = midikraft::Capability::hasCapability<midikraft::BankDumpCapability>(adaptationSynth);
 
-		infoText += (boost::format("Edit Buffer Capability has %sbeen implemented\n") % (hasEditBuffer ? "" : "not ")).str();
-		infoText += (boost::format("Program Dump Capability has %sbeen implemented\n") % (hasProgramDump? "" : "not ")).str();
-		infoText += (boost::format("Bank Dump Capability has %sbeen implemented\n") % (hasBankDump ? "" : "not ")).str();
+		infoText += fmt::format("Edit Buffer Capability has {}been implemented\n", (hasEditBuffer ? "" : "not "));
+		infoText += fmt::format("Program Dump Capability has {}been implemented\n", (hasProgramDump? "" : "not "));
+		infoText += fmt::format("Bank Dump Capability has {}been implemented\n", (hasBankDump ? "" : "not "));
 
 		infoText += "\n\nImplemented functions:\n\n";
 		for (auto functionName : kAdapatationPythonFunctionNames) {
 			if (adaptationSynth->pythonModuleHasFunction(functionName)) {
-				infoText += (boost::format("def %s()\n") % functionName).str();
+				infoText += fmt::format("def {}()\n",functionName);
 			}
 		}
 		infoText += "\n\nNot implemented functions:\n\n";
 		for (auto functionName : kAdapatationPythonFunctionNames) {
 			if (!adaptationSynth->pythonModuleHasFunction(functionName)) {
-				infoText += (boost::format("def %s()\n") % functionName).str();
+				infoText += fmt::format("def {}()\n", functionName);
 			}
 		}
 

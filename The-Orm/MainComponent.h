@@ -33,6 +33,8 @@
 #include "BCR2000_Component.h"
 #include "AdaptationView.h"
 
+#include <spdlog/logger.h>
+
 class LogViewLogger;
 
 class MainComponent : public Component, private ChangeListener
@@ -110,6 +112,8 @@ private:
 	std::unique_ptr<BCR2000_Component> bcr2000View_;
 
 	InsetBox logArea_;
+
+	std::shared_ptr<spdlog::logger> spdLogger_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

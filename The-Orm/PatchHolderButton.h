@@ -24,14 +24,25 @@ enum class PatchButtonInfo {
 	LayerDisplay = DefaultDisplay
 };
 
-class PatchHolderButton : public PatchButton {
+class PatchHolderButton : public PatchButtonWithDropTarget {
 public:
-	using PatchButton::PatchButton;
-	
+	PatchHolderButton(int id, bool isToggle, std::function<void(int)> clickHandler);
+
+	void setDirty(bool isDirty);
+	void setGlow(bool glow);
+
+	// Need to visualize the drag
+	virtual void itemDragEnter(const SourceDetails& dragSourceDetails) override;
+	virtual void itemDragExit(const SourceDetails& dragSourceDetails) override;
+
 	void setPatchHolder(midikraft::PatchHolder *holder, bool active, PatchButtonInfo info);
 
 	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
 	static PatchButtonInfo getCurrentInfoForSynth(std::string const& synthname);
 	static void setCurrentInfoForSynth(std::string const& synthname, PatchButtonInfo newValue);
+
+private:
+	bool isDirty_;
+	GlowEffect glow;
 };
 

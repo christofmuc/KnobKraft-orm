@@ -13,6 +13,7 @@
 #include "PatchHolder.h"
 #include "SynthHolder.h"
 #include "Session.h"
+#include "SynthBank.h"
 
 #include "Data.h"
 

@@ -46,6 +46,51 @@
 #endif
 #endif
 
+// Some command name constants
+const std::string kRetrievePatches{ "retrieveActiveSynthPatches" };
+const std::string kFetchEditBuffer{ "fetchEditBuffer" };
+const std::string kReceiveManualDump{ "receiveManualDump" };
+const std::string kLoadSysEx{ "loadsysEx" };
+const std::string kExportSysEx{ "exportSysex" };
+const std::string kExportPIF { "exportPIF" };
+const std::string kShowDiff{ "showDiff" };
+const std::string kSynthDetection{ "synthDetection" };
+const std::string kLoopDetection{ "loopDetection" };
+const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
+const std::string kCreateNewAdaptation{ "createNewAdaptation" };
+
+//
+// Build a spdlog sink that goes into out standard log view
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
+#include <spdlog/sinks/base_sink.h>
+
+template<typename Mutex>
+class LogViewSink : public spdlog::sinks::base_sink<Mutex>
+{
+public:
+	LogViewSink(LogView& logView) : logView_(logView) {}
+
+protected:
+	void sink_it_(const spdlog::details::log_msg& msg) override
+	{
+		spdlog::memory_buf_t formatted;
+		this->formatter_->format(msg, formatted);
+		logView_.logMessage(msg.level, fmt::to_string(formatted));
+	}
+
+	void flush_() override
+	{
+		// NOP
+	}
+
+private:
+	LogView& logView_;
+};
+
+#include <mutex>
+using LogViewSink_mt = LogViewSink<std::mutex>;
+
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
 public:
@@ -85,12 +130,24 @@ Colour MainComponent::getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourT
 //==============================================================================
 MainComponent::MainComponent(bool makeYourOwnSize) :
 	globalScaling_(1.0f),
-        buttons_(301),
-        mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
-        midiLogArea_(&midiLogView_, BorderSize<int>(10)),
-        logArea_(&logView_, BorderSize<int>(8))
+	buttons_(301),
+	mainTabs_(TabbedButtonBar::Orientation::TabsAtTop),
+	logView_(true, true, true, true),
+	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
+	logArea_(&logView_, BorderSize<int>(8))
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
+
+	// Setup spd logging
+	std::vector<spdlog::sink_ptr> sinks;
+	sinks.push_back(std::make_shared<LogViewSink_mt>(logView_));
+	spdLogger_ = std::make_shared<spdlog::logger>("KnobKraftOrm", begin(sinks), end(sinks));
+	spdLogger_->set_pattern("%H:%M:%S: %l %v");
+	//spdLogger_->set_pattern("%Y-%m-%d %H:%M:%S.%e%z %l [%t] %v");
+	spdlog::set_default_logger(spdLogger_);
+	spdlog::flush_every(std::chrono::milliseconds(50));
+	spdlog::set_level(spdlog::level::debug);
+	spdlog::info("Launching KnobKraft Orm");
 
 	auto customDatabase = Settings::instance().get("LastDatabase");
 	File databaseFile(customDatabase);
@@ -173,11 +230,13 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Export multiple databases..."  },
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Delete patches..." }, { "Reindex patches..." } } } },
-		{2, { "MIDI", { { "Auto-detect synths" } } } },
-		{3, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{4, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
-		{5, { "Help", {
+		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
+		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
+		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
+		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
+		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
+		{6, { "Help", {
 #ifndef _DEBUG
 #ifdef USE_SENTRY
 			{ "Crash software.."},
@@ -190,10 +249,47 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { "Auto-detect synths", [synths]() {
-		AutoDetectProgressWindow window(synths);
-		window.runThread();
+	{ "Auto-detect synths", { "Auto-detect synths", [this]() {
+		setupView_->autoDetect();
+	}, juce::KeyPress::F1Key } },
+	{ "Import patches from synth", { kRetrievePatches, [this]() {
+		patchView_->retrievePatches();
+	}, juce::KeyPress::F7Key } },
+	{ "Import edit buffer from synth",{ kFetchEditBuffer, [this]() {
+		patchView_->retrieveEditBuffer();
+	}, juce::KeyPress::F8Key  } },
+	{ "Receive manual dump",{ kReceiveManualDump, [this]() {
+		patchView_->receiveManualDump();
+	}, juce::KeyPress::F9Key  } },
+	{ "Import from files into database", { kLoadSysEx, [this]() {
+		patchView_->loadPatches();
+	}, juce::KeyPress::F3Key } },
+	{ "Export into sysex files", { kExportSysEx , [this]() {
+		patchView_->exportPatches();
+	}}},
+	{ "Export into PIF", { kExportPIF, [this]() {
+		patchView_->createPatchInterchangeFile();
 	} } },
+	{ "Show patch comparison", { kShowDiff , [this]() {
+		patchView_->showPatchDiffDialog();
+	} } },
+	{ "Quick check connectivity", { kSynthDetection, [this]() {
+		setupView_->quickConfigure();
+	}, juce::KeyPress::F2Key } },
+	{ "Check for MIDI loops", { kLoopDetection, [this]() {
+		setupView_->loopDetection();
+	} } },
+	{"Set User Adaptation Dir", { kSelectAdaptationDirect, [this]() {
+		FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
+		if (directoryChooser.browseForDirectory()) {
+			knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
+			juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
+		}
+	} } },
+	{"Create new adaptation", { kCreateNewAdaptation, [this]() {
+		setupView_->createNewAdaptation();
+	} } },
+
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
 		{ "Edit categories", { "Edit categories", [this]() {
 		EditCategoryDialog::showEditDialog(*database_, this, [this](std::vector<midikraft::CategoryDefinition> const& newDefinitions) {
@@ -256,6 +352,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{ "Merge multiple databases...", { "Merge multiple databases...", [this]() {
 			mergeDatabases();
 		}}},
+		{ "Bulk rename patches...", { "Bulk rename patches...", [this] {
+			patchView_->bulkRenamePatches();
+		}}},
 		{ "Delete patches...", { "Delete patches...", [this] {
 			patchView_->deletePatches();
 		}}},
@@ -306,6 +405,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
 	commandManager_.registerAllCommandsForTarget(&buttons_);
+	getTopLevelComponent()->addKeyListener(commandManager_.getKeyMappings());
 
 	// Setup menu structure
 	menuModel_ = std::make_unique<LambdaMenuModel>(menuStructure, &commandManager_, &buttons_);
@@ -328,17 +428,17 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
 		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
 		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
-                case KeyboardMacroEvent::Unknown:
-                  // Fall through
+		case KeyboardMacroEvent::Unknown:
+			// Fall through
 		default:
-			SimpleLogger::instance()->postMessage("Error - invalid keyboard macro event detected");
+			spdlog::error("Invalid keyboard macro event detected");
 			return;
 		}
-		SimpleLogger::instance()->postMessage("Keyboard Macro event fired " + KeyboardMacro::toText(event));
-	});
+		spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(event));
+		});
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
-	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
+	//bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
 
 	addAndMakeVisible(synthList_);
 	addAndMakeVisible(patchList_);
@@ -379,7 +479,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
 		midiLogView_.addMessageToList(message, source, isOut);
-	});
+		});
 
 	// Do a quickconfigure
 	auto list = UIModel::instance()->synthList_.activeSynths();
@@ -403,8 +503,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// you add any child components.
 	if (makeYourOwnSize) {
 		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
-                auto initialSize = mainScreenSize.reduced(100);
-                setSize(initialSize.getWidth(), initialSize.getHeight());
+		auto initialSize = mainScreenSize.reduced(100);
+		setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
@@ -413,7 +513,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 #ifdef WIN32
 		checkForUpdatesOnStartup();
 #endif
-	});
+		});
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -453,13 +553,13 @@ MainComponent::~MainComponent()
 
 #ifdef USE_SPARKLE
 void logSparkleError() {
-	SimpleLogger::instance()->postMessage("Error encountered in WinSparkle");
+	spdlog::error("Error encountered in WinSparkle");
 }
 
 void sparkleInducedShutdown() {
 	MessageManager::callAsync([]() {
 		JUCEApplicationBase::quit();
-	});
+		});
 }
 #endif
 
@@ -557,7 +657,7 @@ public:
 	{
 		// Build synth list
 		std::vector<std::shared_ptr<midikraft::Synth>> allSynths;
-		for (auto & synth : UIModel::instance()->synthList_.allSynths()) {
+		for (auto& synth : UIModel::instance()->synthList_.allSynths()) {
 			allSynths.push_back(synth.synth());
 		}
 
@@ -572,8 +672,8 @@ public:
 				std::vector<midikraft::PatchHolder> allPatches;
 				try {
 					midikraft::PatchDatabase mergeSource(file.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_ONLY);
-					auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
-					SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+					midikraft::PatchFilter filter(allSynths);
+					spdlog::info("Exporting database file {} containing {} patches", file.getFullPathName(), mergeSource.getPatchesCount(filter));
 					allPatches = mergeSource.getPatches(filter, 0, -1);
 				}
 				catch (midikraft::PatchDatabaseReadonlyException& e) {
@@ -584,17 +684,17 @@ public:
 					try {
 						midikraft::PatchDatabase::makeDatabaseBackup(file, tempfile);
 						midikraft::PatchDatabase mergeSource(tempfile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE_NO_BACKUPS);
-						auto filter = midikraft::PatchDatabase::allPatchesFilter(allSynths);
-						SimpleLogger::instance()->postMessage("Exporting database file " + file.getFullPathName() + " containing " + String(mergeSource.getPatchesCount(filter)) + " patches");
+						midikraft::PatchFilter filter(allSynths);
+						spdlog::info("Exporting database file {} containing {} patches", file.getFullPathName(), mergeSource.getPatchesCount(filter));
 						allPatches = mergeSource.getPatches(filter, 0, -1);
 					}
 					catch (midikraft::PatchDatabaseException& e) {
-						SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
+						spdlog::error("Fatal error opening database file {}: {}", file.getFullPathName(), e.what());
 					}
 					tempfile.deleteFile();
 				}
 				catch (midikraft::PatchDatabaseException& e) {
-					SimpleLogger::instance()->postMessage("Fatal error opening database file " + file.getFullPathName() + ":" + e.what());
+					spdlog::error("Fatal error opening database file {}: {}", file.getFullPathName(), e.what());
 				}
 
 				// We have all patches in memory - write them into a pip file
@@ -603,14 +703,14 @@ public:
 				}
 			}
 			else {
-				SimpleLogger::instance()->postMessage("Not exporting because file already exists: " + exported.getFullPathName());
+				spdlog::warn("Not exporting because file already exists: {}", exported.getFullPathName());
 			}
 
 			done += 1.0;
 			setProgress(done / databases_.size());
 			count++;
 		}
-		SimpleLogger::instance()->postMessage("Done, exported " + String(count) + " databases to pip files for reimport and merge");
+		spdlog::info("Done, exported {} databases to pip files for reimport and merge", count);
 	}
 
 private:
@@ -718,7 +818,7 @@ float MainComponent::calcAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scaling factors matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
-	auto availableHeight = (float) Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
+	auto availableHeight = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
 	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
 	float goodScale = 0.75f;
 	for (auto scale : scales) {
@@ -743,8 +843,8 @@ void MainComponent::resized()
 		synthList_.setVisible(true);
 	}
 	else {
-                //TODO - one synth needs to be implemented differently.
-		// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
+		//TODO - one synth needs to be implemented differently.
+// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
 	splitter_->setBounds(area);
@@ -794,7 +894,7 @@ void MainComponent::refreshSynthList() {
 		}
 	}
 
-	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const &clicked) {
+	synthList_.setList(listItems, [](std::shared_ptr<ActiveListItem> const& clicked) {
 		auto activeSynth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked);
 		if (activeSynth) {
 			UIModel::instance()->currentSynth_.changeCurrentSynth(activeSynth->synth());
@@ -803,7 +903,7 @@ void MainComponent::refreshSynthList() {
 			// What did you put into the list?
 			jassert(false);
 		}
-	});
+		});
 
 	// Need to make sure the correct button is pressed
 	if (UIModel::currentSynth()) {
@@ -820,8 +920,9 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		quickconfigreDebounce_.callDebounced([this, synthList]() {
 			auto myList = synthList;
 			autodetector_.quickconfigure(myList);
-		}, 2000);
-	} else if (source == &UIModel::instance()->synthList_) {
+			}, 2000);
+	}
+	else if (source == &UIModel::instance()->synthList_) {
 		// A synth has been activated or deactivated - rebuild the whole list at the top
 		refreshSynthList();
 		resized();
@@ -831,8 +932,8 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		if (synth) {
 			// Persist current synth for next launch
 			Settings::instance().set("CurrentSynth", synth->getName());
-            // Make sure to let the synth list reflect the selection state!
-            synthList_.setActiveListItem(synth->getName());
+			// Make sure to let the synth list reflect the selection state!
+			synthList_.setActiveListItem(synth->getName());
 		}
 
 
@@ -901,14 +1002,13 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2023 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
 		"\n"
 		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
 		"\n"
 		"Other licenses:\n"
 		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
-		"The boost library is used for parts of this software, see https://www.boost.org/.\n"
 		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
 		"\n"
 		"Icons made by Freepik from www.flaticon.com\n"

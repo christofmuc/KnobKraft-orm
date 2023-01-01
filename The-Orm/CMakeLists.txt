@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 1.17.1)
+project(KnobKraftOrm VERSION 2.0.0)
 
 # Export this variable to be use by the Azure pipeline to know how the installers are called
 SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
@@ -46,6 +46,7 @@ set(SOURCES
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
 	AutoThumbnailingDialog.cpp AutoThumbnailingDialog.h
 	BCR2000_Component.cpp BCR2000_Component.h
+	BulkRenameDialog.cpp BulkRenameDialog.h
 	CreateListDialog.cpp CreateListDialog.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	EditCategoryDialog.cpp EditCategoryDialog.h
@@ -53,6 +54,7 @@ set(SOURCES
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
+	LibrarianProgressWindow.h
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
@@ -71,7 +73,9 @@ set(SOURCES
 	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
+	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
+	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
 	win_resources.rc
 	version.cpp.in
 	setup.iss
@@ -109,7 +113,7 @@ set(MIDIKRAFT_LIBRARIES
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR} 
-	PRIVATE ${boost_SOURCE_DIR} "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+	PRIVATE "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
 IF(WIN32)	
 	IF(CRASH_REPORTING)
 		IF(SENTRY_LOGGING)
@@ -132,6 +136,7 @@ IF(WIN32)
 		SQLiteCpp
 		sqlite3
 		gin
+		spdlog::spdlog
 		${SENTRY_LIB}
 		${SPARKLE_DEPENDENCY}
 		)
@@ -141,7 +146,7 @@ ELSEIF(APPLE)
 		SQLiteCpp
 		sqlite3
 		gin
-		${APPLE_BOOST}
+		spdlog::spdlog
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
@@ -156,6 +161,7 @@ ELSEIF(UNIX)
 		SQLiteCpp
 		sqlite3
 		gin
+		spdlog::spdlog
 		)
 	target_compile_options(KnobKraftOrm PRIVATE -pthread -I/usr/include/webkitgtk-4.0 -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/webkitgtk-4.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include)
 ENDIF()

@@ -12,6 +12,9 @@
 #include "Settings.h"
 #include "UIModel.h"
 
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
+
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
@@ -215,37 +218,42 @@ void KeyboardMacroView::refreshUI() {
 
 void KeyboardMacroView::loadFromSettings() {
 	auto json = Settings::instance().get("MacroDefinitions");
-	var macros = JSON::parse(String(json));
-
-	if (macros.isArray()) {
-		for (var macro : *macros.getArray()) {
-			if (macro.isObject()) {
-				std::set<int> midiNoteValues;
-				auto notes = macro.getProperty("Notes", var());
-				if (notes.isArray()) {
-					for (var noteVar : *notes.getArray()) {
-						if (noteVar.isInt()) {
-							midiNoteValues.insert((int)noteVar);
+	try {
+		var macros = JSON::parse(String(json));
+		if (macros.isArray()) {
+			for (var macro : *macros.getArray()) {
+				if (macro.isObject()) {
+					std::set<int> midiNoteValues;
+					auto notes = macro.getProperty("Notes", var());
+					if (notes.isArray()) {
+						for (var noteVar : *notes.getArray()) {
+							if (noteVar.isInt()) {
+								midiNoteValues.insert((int)noteVar);
+							}
 						}
 					}
-				}
-				auto event = macro.getProperty("Event", var());
-				KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
-				if (event.isString()) {
-					String eventString = event;
-					macroEventCode = KeyboardMacro::fromText(eventString.toStdString());
-				}
-				if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
-					macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+					auto event = macro.getProperty("Event", var());
+					KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
+					if (event.isString()) {
+						String eventString = event;
+						macroEventCode = KeyboardMacro::fromText(eventString.toStdString());
+					}
+					if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
+						macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+					}
 				}
 			}
 		}
-	}
 
-	for (auto &prop : customMasterkeyboardSetup_) {
-		std::string storedValue = Settings::instance().get(prop->name().toStdString());
-		int intValue = std::atoi(storedValue.c_str());
-		prop->value().setValue(intValue);
+		for (auto& prop : customMasterkeyboardSetup_) {
+			std::string storedValue = Settings::instance().get(prop->name().toStdString());
+			int intValue = std::atoi(storedValue.c_str());
+			prop->value().setValue(intValue);
+		}
+	}
+	catch (...) {
+		// Uncatchable JUCE exception
+		spdlog::error("Keyboard macro definition corrupt in settings file, not loading!");
 	}
 }
 
@@ -322,7 +330,7 @@ void KeyboardMacroView::turnOnMasterkeyboardInput() {
 		if (masterkeyboardDevice.isNotEmpty()) {
             auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
 			midikraft::MidiController::instance()->enableMidiInput(device);
-			SimpleLogger::instance()->postMessage("Opening master keyboard device " + masterkeyboardDevice + ", waiting for messages");
+			spdlog::info("Opening master keyboard device {}, waiting for messages", masterkeyboardDevice);
 		}
 	}
 }

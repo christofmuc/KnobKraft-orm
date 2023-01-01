@@ -16,7 +16,8 @@
 #include "BankDumpCapability.h"
 
 #include <pybind11/embed.h>
-#include <boost/format.hpp>
+#include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 namespace knobkraft {
 
@@ -29,7 +30,7 @@ namespace knobkraft {
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
-		*kNumberOfBanks, * kNumberOfPatchesPerBank, * kBankDescriptors, * kFriendlyBankName,
+		*kNumberOfBanks, * kNumberOfPatchesPerBank, * kBankDescriptors, * kFriendlyBankName, *kBankSelect, 
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,
@@ -54,6 +55,7 @@ namespace knobkraft {
 	public:
 		GenericAdaptation(std::string const &pythonModuleFilePath);
 		GenericAdaptation(pybind11::module adaptation_module);
+		virtual ~GenericAdaptation() override;
 		static std::shared_ptr<GenericAdaptation> fromBinaryCode(std::string moduleName, std::string adaptationCode);
 
 		// This needs to be implemented, and never changed, as the result is used as a primary key in the database to store the patches
@@ -148,7 +150,7 @@ namespace knobkraft {
 				return result;
 			}
 			else {
-				SimpleLogger::instance()->postMessage((boost::format("Adaptation: method %s not found, fatal!") % methodName).str());
+				spdlog::error("Adaptation: method {} not found, fatal!", methodName);
 				return pybind11::none();
 			}
 		}

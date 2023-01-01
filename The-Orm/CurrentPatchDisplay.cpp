@@ -21,7 +21,7 @@
 
 #include "Settings.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
 	categories_(categories, categoryUpdateHandler, false, false)
@@ -161,7 +161,8 @@ String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
 String getImportName(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	if (patch->sourceInfo()) {
-		String position = (boost::format(" at %d") % patch->patchNumber().toZeroBased()).str();
+		auto friendlyName = patch->synth()->friendlyProgramName(patch->patchNumber());
+		String position = fmt::format(" at {}", friendlyName);
 		return String(patch->sourceInfo()->toDisplayString(patch->synth(), false)) + position;
 	}
 	else
@@ -226,7 +227,7 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 				if (layers) {
 					int i = atoi(property->name().substring(6).toStdString().c_str());
 					layers->setLayerName(i, value.getValue().toString().toStdString());
-					currentPatch_->setName(currentPatch_->patch()->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
+					currentPatch_->setName(currentPatch_->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
 					setCurrentPatch(currentPatch_);
 					favoriteHandler_(currentPatch_);
 					return;
@@ -402,7 +403,7 @@ void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
 						}
 					}
 					if (!found) {
-						SimpleLogger::instance()->postMessage((boost::format("Can't set category %s as it is not stored in the database. Program error?") % cat.category).str());
+						spdlog::error("Can't set category {} as it is not stored in the database. Program error?", cat.category);
 					}
 				}
 				favoriteHandler_(currentPatch_);

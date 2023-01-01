@@ -7,9 +7,9 @@
 #include "PythonUtils.h"
 
 #include "Logger.h"
+#include "I18NHelper.h"
 
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
+#include <spdlog/spdlog.h>
 
 namespace py = pybind11;
 
@@ -57,12 +57,12 @@ void PyStdErrOutStreamRedirect::flushToLogger(std::string const &logDomain)
 {
 	auto error = stderrString();
 	if (!error.empty()) {
-		SimpleLogger::instance()->postMessage(logDomain + " ERROR: " + error);
+		spdlog::error("{}: {}", logDomain , error);
 	}
 	auto output = stdoutString();
 	if (!output.empty()) {
-		boost::trim_right(output);
-		SimpleLogger::instance()->postMessage((boost::format("%s: %s") % logDomain % output).str());
+		string_trim_right(output);
+		spdlog::info("{}: {}", logDomain, output);
 	}
 	clear();
 }

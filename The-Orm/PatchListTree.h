@@ -15,12 +15,16 @@
 class PatchListTree : public Component, private ChangeListener {
 public:
 	typedef std::function<void(String)> TSelectionHandler;
+	typedef std::function<void(std::shared_ptr<midikraft::Synth>, MidiBankNumber)> TBankSelectionHandler;
+	typedef std::function<void(std::shared_ptr<midikraft::Synth>, String)> TUserBankSelectionHandler;
 	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
 
 	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
 	virtual ~PatchListTree() override;
 
 	TSelectionHandler onImportListSelected;
+	TBankSelectionHandler onSynthBankSelected;
+	TUserBankSelectionHandler onUserBankSelected;
 	TSelectionHandler onUserListSelected;
 	TSelectionHandler onUserListChanged;
 
@@ -47,6 +51,10 @@ private:
 	std::list<std::string> pathOfSelectedItem() const;
 
 	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
+	TreeViewItem* newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewItem* newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewItem* newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewItem* newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode* parent, midikraft::ListInfo list);
 	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;

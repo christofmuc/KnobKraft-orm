@@ -22,7 +22,8 @@
 
 #include "ColourHelpers.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 #include <algorithm>
 
 class MidiChannelPropertyEditorWithOldDevices : public MidiDevicePropertyEditor {
@@ -56,8 +57,7 @@ const char *kSetupHint2 = "First please select at least one synth to use, then t
 
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
-	autoDetection_(autoDetection)/*, lights_(lights) */,
-	functionButtons_(1501, LambdaButtonStrip::Direction::Horizontal)
+	autoDetection_(autoDetection)/*, lights_(lights) */
 {
 	// We have two lists: One is the list of synths, where you just activate and deactivate them, and the second is the detail list which shows the
 	// individual synths setup
@@ -83,33 +83,12 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	addAndMakeVisible(synthSetup_);
 	synthSetup_.setProperties(properties_);
 
-	// Define function buttons
-	functionButtons_.setButtonDefinitions({
-			{ "synthDetection", { "Quick check connectivity", [this]() {
-				quickConfigure();
-			} } },
-			{ "loopDetection", { "Check for MIDI loops", [this]() {
-				loopDetection();
-			} } },
-			{"selectAdaptationDirectory", { "Set User Adaptation Dir", [this]() {
-				FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
-				if (directoryChooser.browseForDirectory()) {
-					knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
-					juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
-				}
-			} } },
-			{"createNewAdaptation", { "Create new adaptation", [this]() {
-				knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
-			} } }
-		});
-	addAndMakeVisible(functionButtons_);
-
 	// I want one very prominent button for auto-configure, because that should normally the first one to press
 	addAndMakeVisible(autoConfigureButton_);
 	autoConfigureButton_.onClick = [this]() {
 		autoDetect();
 	};
-	autoConfigureButton_.setButtonText("Auto-Configure");
+	autoConfigureButton_.setButtonText("Auto-Detect");
 
 	midikraft::MidiController::instance()->addChangeListener(this);
 
@@ -124,7 +103,6 @@ void SetupView::resized() {
 	Rectangle<int> area(getLocalBounds());
 
 	int width = std::min(area.getWidth(), 600);
-	functionButtons_.setBounds(area.removeFromBottom(40).reduced(8));
 	header_.setBounds(area.removeFromTop(100).withSizeKeepingCentre(width, 100).reduced(8));
 
 	// Two column setup, don't go to wide, I don't need more than 1000 pixels
@@ -284,6 +262,11 @@ void SetupView::quickConfigure()
 	refreshData();
 }
 
+void SetupView::createNewAdaptation()
+{
+	knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
+}
+
 class LoopDetectorWindow : public ProgressHandlerWindow, public std::enable_shared_from_this<LoopDetectorWindow> {
 public:
 	LoopDetectorWindow() : ProgressHandlerWindow("Checking for MIDI loops...", "Sending test messages to all MIDI outputs to detect if we have a loop in the configuration") {
@@ -307,10 +290,10 @@ void SetupView::loopDetection()
 		case midikraft::MidiLoopType::Note: typeName = "MIDI Note"; break;
 		case midikraft::MidiLoopType::Sysex: typeName = "Sysex"; break;
 		}
-		SimpleLogger::instance()->postMessage((boost::format("Warning: %s loop detected. Sending sysex to %s is returned on %s") % typeName % loop.midiOutput.name.toStdString() % loop.midiInput.name.toStdString()).str());
+		spdlog::warn("Warning: {} loop detected. Sending sysex to {} is returned on {}", typeName, loop.midiOutput.name, loop.midiInput.name);
 	}
 	if (modalWindow->loops.empty()) {
-		SimpleLogger::instance()->postMessage("All clear, no MIDI loops detected when sending to all available MIDI outputs");
+		spdlog::info("All clear, no MIDI loops detected when sending to all available MIDI outputs");
 	}
 }
 

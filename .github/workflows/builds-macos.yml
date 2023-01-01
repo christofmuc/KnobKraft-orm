@@ -24,7 +24,12 @@ jobs:
     - uses: actions/setup-python@v3
       with:
         python-version: '3.10'
-        
+
+    - name: Patch JUCE
+      working-directory: third_party/JUCE
+      run: |
+        git apply --whitespace=fix ../JUCE-patch-getApproxDescription.diff
+      
     - name: CMake configure
       shell: bash
       run: |

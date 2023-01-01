@@ -9,6 +9,7 @@
 #include "GenericHasBankDescriptorsCapability.h"
 
 #include "GenericAdaptation.h"
+#include "Sysex.h"
 
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
@@ -28,9 +29,9 @@ namespace knobkraft {
 			for (auto const& descriptor : d)
 			{
 				midikraft::BankDescriptor bank;
-				bank.bank  = MidiBankNumber::fromZeroBase(py::cast<int>(descriptor["bank"]));
+				bank.size = py::cast<int>(descriptor["size"]);
+				bank.bank  = MidiBankNumber::fromZeroBase(py::cast<int>(descriptor["bank"]), bank.size);
 				bank.name  = py::cast<std::string>(descriptor["name"]);
-				bank.size  = py::cast<int>(descriptor["size"]);
 				if (descriptor.contains("isROM")) {
 					bank.isROM = py::cast<bool>(descriptor["isROM"]);
 				}
@@ -54,6 +55,27 @@ namespace knobkraft {
 		}
 		catch (std::exception& ex) {
 			me_->logAdaptationError(kBankDescriptors, ex);
+		}
+		return {};
+	}
+
+	std::vector<juce::MidiMessage> GenericHasBankDescriptorsCapability::bankSelectMessages(MidiBankNumber bankNo) const {
+		py::gil_scoped_acquire acquire;
+		try {
+			if (me_->pythonModuleHasFunction(kBankSelect)) {
+				int c = me_->channel().toZeroBasedInt();
+				int bankAsInt = bankNo.toZeroBased();
+				py::object result = me_->callMethod(kBankSelect, c, bankAsInt);
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+				return Sysex::vectorToMessages(byteData);
+			}
+		}
+		catch (py::error_already_set& ex) {
+			me_->logAdaptationError(kBankSelect, ex);
+			ex.restore();
+		}
+		catch (std::exception& ex) {
+			me_->logAdaptationError(kBankSelect, ex);
 		}
 		return {};
 	}
