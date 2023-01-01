@@ -23,7 +23,7 @@ New adaptations are stored as a single Python file with the ending `.py` in a di
 
 The Orm will read in all python files in the specified directory, so you can name or rename the file you are working on as you like. The identity of the device supported is specified by the string returned by the `name()` function you implement, so make sure not to have two files in the directory which have the same return value there.
 
-To find out or change the directory where those are stored, press the button `Set User Adaptation Dir` in the Setup tab.
+To find out or change the directory where those are stored, press the button `Set User Adaptation Dir` in the Setup tab for version 1.x, and in the Options menu for version 2.x.
 
 [![](SetupTab.PNG)]
 
@@ -120,6 +120,20 @@ more interesting would probably a more complex version for the Novation Summit w
     def bankDescriptors():
         return [{"bank": x, "name": f"Bank {chr(ord('A')+x)}", "size": 128, "type": "Single Patch"} for x in range(4)]
 
+### Bank Select
+
+New with version 2 of the KnobKraft Orm, it can decide to send a bank select and program change to load a selected patch into the synth, when it knows the patch is actually already in the synth's memory via the synth bank import.
+
+For this to work with synths that have more than 1 bank, or to be specific for those where a program change alone is not sufficient to address a specific program, another method has to be implemented to create the appropriate bank change message:
+
+    def bankSelect(channel, bank):
+
+This should return one or more MIDI messages that will select the bank requested. A default implementation might look like this:
+
+    def bankSelect(channel, bank):
+        return [0xb0 | (channel & 0x0f), 32, bank]
+
+This would create a MIDI CC with controller number 32, which is used by many synth as the bank select controller.
 
 ## Device detection
 
