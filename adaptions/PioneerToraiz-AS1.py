@@ -4,6 +4,9 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
+import hashlib
+
+CANNOT_FIND_DATA_BLOCK = "Cannot find the message's data block."
 
 def name():
     return "Pioneer Toraiz AS-1"
@@ -72,10 +75,15 @@ def numberOfPatchesPerBank():
     return 100
 
 
+def getZeroBasedBankNumber(patch_number):
+    """Takes a zero-based patch number and returns the corresponding zero-based bank number."""
+    return patch_number // numberOfPatchesPerBank()
+
+
 def createProgramDumpRequest(channel, patchNo):
     # Calculate bank and program - the KnobKraft Orm will just think the patches are 0 to 999, but the Toraiz needs a
     # bank number 0-9 and the patch number within that bank
-    bank = patchNo / numberOfPatchesPerBank()
+    bank = getZeroBasedBankNumber(patchNo)
     program = patchNo % numberOfPatchesPerBank()
     # See page 33 of the Toraiz manual
     return [0xf0, 0b00000000, 0b01000000, 0b00000101, 0b00000000, 0b000000000, 0b00000001, 0b00001000, 0b00010000,
@@ -98,15 +106,61 @@ def isSingleProgramDump(message):
 
 
 def nameFromDump(message):
-    dataBlock = []
-    if isSingleProgramDump(message):
-        dataBlock = message[12:-1]
-    elif isEditBufferDump(message):
-        dataBlock = message[10:-1]
+    """Extracts the patch name from the supplied sysex message."""
+    INVALID = "Invalid"
+    dataBlockStart = getDataBlockStart(message)
+    if dataBlockStart == -1:
+        return INVALID
+    dataBlock = message[dataBlockStart:-1]
     if len(dataBlock) > 0:
         patchData = unescapeSysex(dataBlock)
         return ''.join([chr(x) for x in patchData[107:107+20]])
-    return "Invalid"
+    return INVALID
+
+
+def renamePatch(message, new_name):
+    """Returns a copy of the supplied sysex message whose internal name has been replaced with new_name."""
+    dataBlockStart = getDataBlockStart(message)
+    if dataBlockStart == -1:
+        raise Exception(CANNOT_FIND_DATA_BLOCK)
+    dataBlock = message[dataBlockStart:-1]
+    if len(dataBlock) == 0:
+        raise Exception("Data block length was 0.")
+    patchData = unescapeSysex(dataBlock)
+    # Normalize the name to exactly 20 characters, padding with spaces or truncating.
+    if len(new_name) < 20:
+        new_name += (" " * (20 - len(new_name)))
+    elif len(new_name) > 20:
+        new_name = new_name[:20]
+    nameBytes = list(map(ord, new_name))
+    patchData[107:107+20] = nameBytes
+    escapedPatchData = escapeToSysex(patchData)
+    # Rebuild the message with the new data block, appending "end of exclusive" (EOX).
+    newMessage = message[:dataBlockStart] + escapedPatchData + [0xF7]
+    return newMessage
+
+    
+def calculateFingerprint(message):
+    """Calculates a hash from the message's data block only, ignoring the patch's name."""
+    dataBlockStart = getDataBlockStart(message)
+    if dataBlockStart == -1:
+        raise Exception(CANNOT_FIND_DATA_BLOCK)
+    dataBlock = message[dataBlockStart:-1]
+    data = unescapeSysex(dataBlock)   
+    dummyName = " " * 20
+    data[107:107+20] = map(ord, dummyName)
+    fingerprint = hashlib.md5(bytearray(data)).hexdigest()    
+    return fingerprint
+
+
+def getDataBlockStart(message):
+    """Returns the start index of the data block within a sysex message, or -1 if the data block cannot be found."""
+    if isSingleProgramDump(message):
+        return 12
+    elif isEditBufferDump(message):
+        return 10
+    else:
+        return -1
 
 
 def convertToEditBuffer(channel, message):
@@ -120,7 +174,7 @@ def convertToEditBuffer(channel, message):
 
 
 def convertToProgramDump(channel, message, program_number):
-    bank = program_number // numberOfPatchesPerBank()
+    bank = getZeroBasedBankNumber(program_number)
     program = program_number % numberOfPatchesPerBank()
     if isEditBufferDump(message):
         return message[0:9] + [0b00000010] + [bank, program] + message[10:]
@@ -130,6 +184,7 @@ def convertToProgramDump(channel, message, program_number):
 
 
 def unescapeSysex(sysex):
+    """Unpacks a 7-bit sysex message into 8-bit bytes."""
     result = []
     dataIndex = 0
     while dataIndex < len(sysex):
@@ -140,3 +195,42 @@ def unescapeSysex(sysex):
                 result.append(sysex[dataIndex] | ((msbits & (1 << i)) << (7 - i)))
             dataIndex += 1
     return result
+
+
+def escapeToSysex(message):
+    """Packs a message composed of 8-bit bytes into 7-bit sysex format."""
+    result = []
+    msBits = 0
+    byteIndex = 0
+    chunk = []
+    while byteIndex < len(message):
+        indexInChunk = byteIndex % 7
+        if indexInChunk == 0:
+            chunk = []
+        currentByte = message[byteIndex]
+        lsBits = currentByte & 0x7F
+        msBit = currentByte & 0x80
+        msBits |= msBit >> (7 - indexInChunk)
+        chunk.append(lsBits)
+        if indexInChunk == 6 or byteIndex == len(message) - 1:
+            chunk.insert(0, msBits)
+            result += chunk
+            msBits = 0
+        byteIndex += 1
+    return result
+
+
+def isDefaultName(patch_name):
+    return patch_name == "Basic Program"
+
+
+def friendlyBankName(bank_number):
+    """Converts bank numbers to bank names as displayed on the Toraiz AS-1."""
+    if bank_number < 5:
+        return "U{}".format(bank_number + 1)
+    return "F{}".format(bank_number - 4)
+
+
+def friendlyProgramName(program_number):
+    """Converts zero-based program numbers within a bank to the format displayed on the Toraiz AS-1."""
+    return "P{}".format(program_number + 1)
