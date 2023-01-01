@@ -199,6 +199,7 @@ namespace midikraft {
 
 	struct MKS50HandshakeState : public HandshakeLoadingCapability::ProtocolState {
 		MKS50HandshakeState() : done(false), isBulkDump(false), numWSF(0), success(false), dataPackages(0) {}
+        virtual ~MKS50HandshakeState() = default;
 		virtual bool isFinished() override { return done; }
 		virtual bool wasSuccessful() override { return success; }
 		virtual double progress() override { return dataPackages / 16.0; }
@@ -313,7 +314,7 @@ namespace midikraft {
 										int index = 8 + patch * 64 + i;
 										uint8 nibble1 = message.getSysExData()[index];
 										uint8 nibble2 = message.getSysExData()[index + 1];
-										patchData.push_back(nibble1 | (nibble2 << 4));
+										patchData.push_back((uint8)(nibble1 | (nibble2 << 4)));
 									}
 									auto newPatch = MKS50_Patch::createFromToneBLD(MidiProgramNumber::fromZeroBase(message.getSysExData()[7] + patch), patchData);
 									result.push_back(newPatch);
@@ -341,11 +342,11 @@ namespace midikraft {
 										int index = 8 + patch * 64 + i;
 										uint8 nibble1 = message.getSysExData()[index];
 										uint8 nibble2 = message.getSysExData()[index + 1];
-										patchData.push_back(nibble1 | (nibble2 << 4));
+										patchData.push_back((uint8)(nibble1 | (nibble2 << 4)));
 									}
 									//TODO - not loading patch data for now, all I am interested in is whether the program name is also blanked out with AAAAAAAAAA
 									std::string patchName;
-									for (int i = 11; i < 20; i++) {
+									for (size_t i = 11; i < 20; i++) {
 										//TODO use global variable
 										const std::string kPatchNameChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
 										patchName.push_back(kPatchNameChar[patchData[i] & 0b00111111]);
@@ -396,7 +397,7 @@ namespace midikraft {
 									int index = 4 + patch * 64 + i;
 									uint8 nibble1 = message.getSysExData()[index];
 									uint8 nibble2 = message.getSysExData()[index + 1];
-									patchData.push_back(nibble1 | (nibble2 << 4));
+									patchData.push_back((uint8)(nibble1 | (nibble2 << 4)));
 								}
 								auto newPatch = MKS50_Patch::createFromToneDAT(MidiProgramNumber::fromZeroBase(datPackageCounter * 4 + patch), patchData);
 								if (newPatch) {
@@ -440,13 +441,17 @@ namespace midikraft {
 						break;
 					}
 					break;
-				case MKS50_Operation_Code::APR:
-					// APR packages are the default and I call them "editBuffer", because it behaves like one.
-					auto newPatch = patchFromSysex({ message });
-					if (newPatch) {
-						result.push_back(newPatch);
-						spdlog::debug("Found tone {}", nameForPatch(newPatch));
-					}
+				case MKS50_Operation_Code::APR: {
+                    // APR packages are the default and I call them "editBuffer", because it behaves like one.
+                    auto newPatch = patchFromSysex({message});
+                    if (newPatch) {
+                        result.push_back(newPatch);
+                        spdlog::debug("Found tone {}", nameForPatch(newPatch));
+                    }
+                    }
+                    break;
+                default:
+                    jassertfalse;
 				}
 			}
 		}

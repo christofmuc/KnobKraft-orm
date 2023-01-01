@@ -84,8 +84,14 @@ namespace midikraft {
 
 	std::string MKS50_Parameter::valueInPatchToText(DataFile const& patch) const
 	{
-		int v = patch.data()[paramIndex_];
-		return valueAsText(v);
+        if (paramIndex_ >= 0) {
+            int v = patch.data()[static_cast<size_t>(paramIndex_)];
+            return valueAsText(v);
+        }
+        else {
+            jassertfalse;
+            return "invalid";
+        }
 	}
 
 	std::string MKS50_Parameter::name() const

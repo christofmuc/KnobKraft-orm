@@ -108,7 +108,7 @@ namespace midikraft {
 
 		// Extract the patchName first, for me to check that the whole decoding and depackaging worked
 		std::string patchName;
-		for (int i = 21; i < 31; i++) {
+		for (size_t i = 21; i < 31; i++) {
 			patchName.push_back(kPatchNameChar[bldData[i] & 0b00111111]);
 		}
 
@@ -130,7 +130,7 @@ namespace midikraft {
 		std::copy(message.getSysExData() + 6, message.getSysExData() + 36 + 6, std::back_inserter(aprData));
 		std::string name;
 		for (int index = 36 + 6; index < 46 + 6; index++) {
-			int c = message.getSysExData()[index];
+			auto c = message.getSysExData()[index];
 			if (c >= 0 && c < 64) {
 				name += MKS50_Patch::kPatchNameChar[c];
 			}

@@ -74,6 +74,8 @@ namespace midikraft {
 
 		MKS50_Parameter(ParameterType paramType, int paramIndex, std::string const& name, int min, int max);
 		MKS50_Parameter(ParameterType paramType, int paramIndex, std::string const& name, int min, int max, std::map<int, std::string> const& valueLookup);
+        MKS50_Parameter(MKS50_Parameter const& other) = default;
+        virtual ~MKS50_Parameter() = default;
 
 		virtual std::string name() const override;
 		ParamType type() const override;
