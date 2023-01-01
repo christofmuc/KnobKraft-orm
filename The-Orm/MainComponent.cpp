@@ -438,7 +438,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		});
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
-	bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
+	//bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
 
 	addAndMakeVisible(synthList_);
 	addAndMakeVisible(patchList_);
