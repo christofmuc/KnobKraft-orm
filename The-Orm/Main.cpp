@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 #include "version.cpp"
 
@@ -150,7 +151,7 @@ public:
     }
 
 	String getWindowTitle() {
-		return getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion());
+		return fmt::format("{} - Sysex Librarian V{} [BETA]", getApplicationName(), getOrmVersion());
 	}
 
 	void changeListenerCallback(ChangeBroadcaster* source) override
