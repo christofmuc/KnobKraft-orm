@@ -19,7 +19,7 @@ jobs:
 
     - name: Prepare build machine with homebrew
       run: |
-        brew install boost
+        brew install boost icu4c
 
     - uses: actions/setup-python@v3
       with:

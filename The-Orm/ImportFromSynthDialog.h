@@ -23,7 +23,7 @@ public:
 	void resized() override;
 
 private:
-	virtual void ImportFromSynthDialog::buttonClicked(Button* button) override;
+	virtual void buttonClicked(Button* button) override;
 
 	std::shared_ptr<midikraft::Synth> synth_;
 	TSuccessHandler onOk_;
