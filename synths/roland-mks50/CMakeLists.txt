@@ -27,6 +27,11 @@ if (MSVC)
     # warning level 4 and all warnings as errors
     target_compile_options(midikraft-roland-mks50 PRIVATE /W4 /WX)
 else()
-    # lots of warnings and all warnings as errors
-    target_compile_options(midikraft-roland-mks50 PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unused-private-field -Wno-switch-enum -Wno-switch)
+	if(UNIX AND NOT APPLE)
+    	# lots of warnings and all warnings as errors
+    	target_compile_options(midikraft-roland-mks50 PRIVATE -Wall -Wextra -pedantic -Werror -Wno-switch-enum -Wno-switch -Wno-implicit-fallthrough)
+	else()
+		# lots of warnings and all warnings as errors
+		target_compile_options(midikraft-roland-mks50 PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unused-private-field -Wno-switch-enum -Wno-switch)
+	endif()
 endif()

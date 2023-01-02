@@ -131,7 +131,7 @@ namespace midikraft {
 		std::string name;
 		for (int index = 36 + 6; index < 46 + 6; index++) {
 			auto c = message.getSysExData()[index];
-			if (c >= 0 && c < 64) {
+			if (c < 64) {
 				name += MKS50_Patch::kPatchNameChar[c];
 			}
 			else {

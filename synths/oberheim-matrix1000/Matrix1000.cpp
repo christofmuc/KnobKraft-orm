@@ -159,12 +159,7 @@ namespace midikraft {
 								newMidiValue = (uint8)newMidiValue;
 							}
 						}
-                        if (def.sysexIndex >= 0) {
-                            newMessage[static_cast<size_t>(def.sysexIndex)] = (uint8) newMidiValue;
-                        }
-                        else {
-                            jassertfalse;
-                        }
+                        newMessage[def.sysexIndex] = (uint8) newMidiValue;
 					}
 				}
 			}
@@ -223,7 +218,7 @@ namespace midikraft {
 		return message.size() == 1 && isOwnSysex(message[0])
 			&& message[0].getSysExDataSize() > 3
 			&& message[0].getSysExData()[2] == MIDI_COMMAND.SINGLE_PATCH_DATA
-			&& message[0].getSysExData()[3] >= 0x00
+			// && message[0].getSysExData()[3] >= 0x00 Always true
 			&& message[0].getSysExData()[3] < 100; // Should be a valid program number in this bank
 	}
 
