@@ -363,7 +363,7 @@ namespace midikraft {
 					}
 					else if (block.addressHigh == 0x31 && block.addressLow == 0x00) {
 						uint8 operatorIndex = block.addressMid;
-						if (operatorIndex >= 0 && operatorIndex < 4) {
+						if (operatorIndex < 4) {
 							if (voiceData.back().op[operatorIndex].size() == 0) {
 								voiceData.back().op[operatorIndex] = block.data;
 							}
