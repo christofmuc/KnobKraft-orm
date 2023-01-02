@@ -30,10 +30,10 @@ namespace midikraft {
 	{
 		// Poke this into the first 10 bytes of the common block, which is the ASCII name. Ignore UTF 8 complexity for now.
 		for (size_t i = 0; i < std::min((size_t)10, name.size()); i++) {
-			setAt(i, name[i]);
+			setAt((int) i, name[i]);
 		}
 		for (int i = std::min(10, (int) name.size()); i < 10; i++) {
-			setAt(i, ' ');
+			setAt((int) i, ' ');
 		}
 	}
 
