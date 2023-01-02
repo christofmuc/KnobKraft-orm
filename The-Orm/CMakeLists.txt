@@ -178,7 +178,7 @@ endif()
 # Pedantic about warnings
 if (MSVC)
     # warning level 4 and all warnings as errors
-    target_compile_options(KnobKraftOrm PRIVATE /W4 /WX)
+    target_compile_options(KnobKraftOrm PRIVATE /W4 /WX /we4388 /we4389)
 else()
     # lots of warnings and all warnings as errors
     target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas -Wno-missing-field-initializers)

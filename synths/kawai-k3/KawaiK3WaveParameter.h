@@ -34,7 +34,7 @@ namespace midikraft {
 	{
 	public:
 		KawaiK3DrawbarParameters(Drawbar& drawbar) : drawbar_(drawbar) {}
-		KawaiK3DrawbarParameters(int harmonic);
+		KawaiK3DrawbarParameters(unsigned int harmonic);
         virtual ~KawaiK3DrawbarParameters() = default;
 
 		// SynthParameterDefinition
