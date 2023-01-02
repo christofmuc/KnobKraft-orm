@@ -381,7 +381,7 @@ void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
 	if (source == &UIModel::instance()->thumbnails_) {
 		// Some Thumbnail has changed, most likely it is visible...
 		for (size_t i = 0; i < std::min(patchButtons_->size(), patches_.size()); i++) {
-			refreshThumbnail(i);
+			refreshThumbnail((int)i);
 		}
 	}
 	else if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->multiMode_) {

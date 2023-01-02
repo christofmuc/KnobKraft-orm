@@ -332,7 +332,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 				std::inserter(loadedIds, loadedIds.begin()), [](midikraft::ListInfo info) { return info.id; });
 
 			for (size_t i = 0; i < numberOfBanks; i++) {
-				int sizeOfBank = midikraft::SynthBank::numberOfPatchesInBank(synth, i);
+				int sizeOfBank = midikraft::SynthBank::numberOfPatchesInBank(synth, (int)i);
 				auto bank_id = midikraft::ActiveSynthBank::makeId(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank_name = midikraft::SynthBank::friendlyBankName(synth, MidiBankNumber::fromZeroBase(i, sizeOfBank));
 				auto bank = new TreeViewNode(bank_name, bank_id);

@@ -323,7 +323,7 @@ void PatchSearchComponent::changeListenerCallback(ChangeBroadcaster* source)
 		buttonDisplayType_.setSelectedId(0, dontSendNotification);
 		for (size_t id = 0; id < kDisplayChoices.size(); id++) {
 			if (kDisplayChoices[id].second == static_cast<int>(displayType)) {
-				buttonDisplayType_.setSelectedId(id+1, dontSendNotification);
+				buttonDisplayType_.setSelectedId((int)id+1, dontSendNotification);
 			}
 		}
 
