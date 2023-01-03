@@ -18,7 +18,7 @@ project(KnobKraft_Orm)
 option(ASAN "Use Address Sanitization for Debug version (Windows only for now)" OFF)
 
 # Since we also build MacOS, we need C++ 17. Which is not a bad thing.
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
