@@ -45,29 +45,8 @@ endgroup
 begingroup "Info"
 echo "macOS version: $(sw_vers -productVersion)"
 echo "IP address: $(/usr/bin/curl -fsS https://www-origin.macports.org/ip.php)"
-/usr/bin/curl -fsSIo /dev/null https://packages-private.macports.org/.org.macports.packages-private.healthcheck.txt && private_packages_available=yes || private_packages_available=no
-echo "Can reach private packages server: $private_packages_available"
-endgroup
-
-
-begingroup "Disabling Spotlight"
-# Disable Spotlight indexing. We don't need it, and it might cost performance
-sudo mdutil -a -i off
-endgroup
-
-
-begingroup "Uninstalling Homebrew"
-# Move directories to /opt/off
-echo "Moving directories..."
-sudo mkdir /opt/off
-/usr/bin/sudo /usr/bin/find /usr/local -mindepth 1 -maxdepth 1 -type d -print -exec /bin/mv {} /opt/off/ \;
-
-# Unlink files
-echo "Removing files..."
-/usr/bin/sudo /usr/bin/find /usr/local -mindepth 1 -maxdepth 1 -type f -print -delete
-
-# Rehash to forget about the deleted files
-hash -r
+#/usr/bin/curl -fsSIo /dev/null https://packages-private.macports.org/.org.macports.packages-private.healthcheck.txt && private_packages_available=yes || private_packages_available=no
+#echo "Can reach private packages server: $private_packages_available"
 endgroup
 
 
