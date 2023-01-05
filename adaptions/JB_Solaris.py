@@ -290,7 +290,7 @@ def renamePatch(data, new_name):
     for c in name:
         name_enc += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
 
-    new_data = data[:offset] + name_enc + data[offset+20:]
+    new_data = data[:offset] + name_enc + data[offset+20*2:]
     return new_data
 
 
@@ -303,7 +303,10 @@ def run_tests():
     with open("testData/JBSolaris-INIT.syx", "rb") as sysex:
         raw_data = list(sysex.read())
         assert nameFromDump(raw_data) == "INIT"
-        assert nameFromDump(renamePatch(raw_data, "SolarisINIT")) == "SolarisINIT"
+        renamed = renamePatch(raw_data, "SolarisINIT")
+        assert nameFromDump(renamed) == "SolarisINIT"
+        #print (len(raw_data),  len(renamed))
+        assert len(raw_data) == len(renamed)
         #assert isSingleProgramDump(raw_data)
         # assert numberFromDump(raw_data) == 35
 
@@ -323,7 +326,6 @@ def run_tests():
 
         # assert calculateFingerprint(same_same) == calculateFingerprint(raw_data)
         # assert friendlyBankName(2) == 'C'
-
 
 
 if __name__ == "__main__":
