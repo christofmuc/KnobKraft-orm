@@ -17,12 +17,8 @@ jobs:
       run: |
         git submodule update --recursive --init --depth 1
 
-    - name: Prepare build machine with homebrew
-      run: |
-        brew install boost
-
-    - name: Install MacPorts
-      uses: melusina-org/gha-install-macports@v1.0.0
+    - name: Bootstrap MacPorts
+      run: . .github/workflows/bootstrap.sh
 
     - name: Install ICU via MacPorts, because they can do universal binaries!
       run: |
