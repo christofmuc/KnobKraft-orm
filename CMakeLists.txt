@@ -80,7 +80,10 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/icu4c")
+	# Use the macPort version of the icu4c library, as the homebrew version is not available as universal binary
+	list(APPEND CMAKE_PREFIX_PATH "/opt/local/lib")
+	#set(ICU_DEBUG 1)
+	set(ICU_ROOT "/opt/local/lib")
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
@@ -114,7 +117,7 @@ set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include
 if(WIN32)
 	set(PYTHON_VERSION_TO_EMBED "3.8" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
 else()
-	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
+	set(PYTHON_VERSION_TO_EMBED "3.11" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
 endif()
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)

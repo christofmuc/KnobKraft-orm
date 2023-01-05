@@ -20,12 +20,16 @@ jobs:
     - name: Prepare build machine with homebrew
       run: |
         brew install boost
-        brew reinstall icu4c
-        ls /usr/local/Cellar/icu4c/
+
+    - name: Install MacPorts
+      uses: melusina-org/gha-install-macports@v1.0.0
+
+    - name: Install ICU via MacPorts, because they can do universal binaries!
+        port install icu
 
     - uses: actions/setup-python@v3
       with:
-        python-version: '3.10'
+        python-version: '3.11'
 
     - name: Patch JUCE
       working-directory: third_party/JUCE
