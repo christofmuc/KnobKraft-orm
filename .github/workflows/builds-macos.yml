@@ -25,6 +25,7 @@ jobs:
       uses: melusina-org/gha-install-macports@v1.0.0
 
     - name: Install ICU via MacPorts, because they can do universal binaries!
+      run: |
         port install icu
 
     - uses: actions/setup-python@v3
