@@ -1,5 +1,5 @@
 #   Copyright (c) 2021 Christof Ruch. All rights reserved.
-#   John Bowen Solaris Adaptation version 0.3 by Stéphane Conversy, 2022.
+#   John Bowen Solaris Adaptation version 0.4 by Stéphane Conversy, 2022.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 #
@@ -10,18 +10,17 @@
 # STATUS
 # Device detection: done
 # Edit Buffer Capability: done
-# Getting the patch's name: done
-# Setting the patch's name: done
-# Send to edit buffer: done with DIN, does not work with USB (Solaris firmware bug)
+# Getting the patch's name with checksum verification: done
+# Setting the patch's name with new checksum: done
+# Send to edit buffer: done with DIN, not verified with USB
 
 # TODO
-# verify checksum
 # Send preset according to Device ID before sending
 # verify that the OS of the patch to send is the same as the Solaris unit
 
 # FUTURE
-# Preset Dump Capability: as soon as the Solaris supports it
-# Bank Dump Capability: as soon as the Solaris supports it 
+# Preset Dump Capability: as soon as Solaris supports it
+# Bank Dump Capability: as soon as Solaris supports it 
 
 
 # ----------------
@@ -100,6 +99,9 @@ def numberOfPatchesPerBank():
 def isDefaultName(patchName):
     return patchName == 'INIT'
 
+
+#def generalMessageDelay():
+#    return 10
 
 # ----------------
 # Device detection
@@ -239,28 +241,50 @@ bulk_dump_address = bulk_dump_reply + [
 ]
 
 def find_name(data):
+    ''' returns the offset of the preset name within a multipart sysex message'''
+
     # Part Name has 20 characters with 2 bytes each
     # find the message containing the preset name address within all Bulk Dump messages
     offset = -1
     expected_message = bulk_dump_address
     messages = splitSysexMessage(data)
     for msg_index, message in enumerate(messages):
-        if len(message) < len(expected_message) + 20*2 + 1 + 1:  # header + name + checksum + 0xf7
+        # the name sysex message is composed of header (including address) + name + checksum + cat1 + cat2 + 0xf7
+        if len(message) < len(expected_message) + 20*2 + 1 + 1 + 1 + 1:
             continue
+
         device_id = get_and_set_expected(4, message, expected_message)
         high, mid, low = get_and_set_expected((7, 10), message, expected_message)
+
         if message[:len(expected_message)] == expected_message:
-            address = hml_to_address(high, mid, low)
-            payload = len(message) - (len(expected_message)+1+1)  # header + checksum + 0xf7
-            if address  <=  name_address  <  address + payload:
+            if [high, mid, low] == [0x20, 0x0, 0x0]:
                 # found it!
-                offset = name_address - address
-                offset += len(expected_message)
-                break  # found it => exit message loop
+                offset = len(expected_message)
+
+                # verify checksum
+                checksum = message[-2]
+                s = sum([0x20,0,0] + message[10:-2]) # 7 = len (expected_message) - len([0x20,0,0])
+
+                # print('solaris debug')
+                # print([f'{s:02x}' for s in message[:]])
+                # print(f'{s:03x}')
+                # print(f'{checksum:02x}')
+                # print(f'{(s + checksum):03x}')
+                # print(f'{(s + checksum)&0x7f:02x}')
+
+                if ((s + checksum) & 0x7f) != 0:
+                    offset = -1
+                    assert(0) # FIXME should do something smarter
+
+                # found it => exit message loop
+                break
     
+    # if offset has been found
     if offset != -1:
-        # offset is related to the message, not the data
+        # so far, offset is related to the single sysex message, not the whole multipart sysex message
+        # so add the length of the preceding messages to make it relative to the whole multipart sysex message
         offset += sum(len(msg) for msg in messages[:msg_index])
+
     return offset
 
 
@@ -271,6 +295,7 @@ def nameFromDump(data):
 
     name = ""
     # Part Name has 20 characters with 2 bytes each
+    # denibblize it
     for i in range(0, 20*2, 2):
         c = (data[offset+i] << 8) +  data[offset+i+1]
         name += chr(c)
@@ -282,15 +307,27 @@ def nameFromDump(data):
 def renamePatch(data, new_name):
     offset = find_name(data)
     if offset == -1:
-        return 
-    # make it 20-character long
+        return
+
+    # make new_name 20-character long
     name = new_name.ljust(20)[:20]
+
     # nibblize it
     name_enc = []
     for c in name:
         name_enc += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
 
-    new_data = data[:offset] + name_enc + data[offset+20*2:]
+    # compute new checksum    
+    s = sum([0x20,0,0] + name_enc + data[offset+40:offset+40+1+1]) # cat1 + cat2
+    checksum = 0x80 - (s & 0x7f)
+    
+    # verify new checksum
+    assert (s + checksum) & 0x7 == 0
+
+    # assemble new data
+    # 1 + 1 + 1 : cat1 + cat2 + 0xf7
+    new_data = data[:offset] + name_enc + [0,0] + [checksum] + data[offset + len(name_enc) + 1 + 1 + 1:]
+
     return new_data
 
 
@@ -303,11 +340,22 @@ def run_tests():
     with open("testData/JBSolaris-INIT.syx", "rb") as sysex:
         raw_data = list(sysex.read())
         assert nameFromDump(raw_data) == "INIT"
-        renamed = renamePatch(raw_data, "SolarisINIT")
-        assert nameFromDump(renamed) == "SolarisINIT"
-        #print (len(raw_data),  len(renamed))
+
+        # same name produces the same data
+        renamed = renamePatch(raw_data, "INIT")
         assert len(raw_data) == len(renamed)
-        #assert isSingleProgramDump(raw_data)
+        assert raw_data == renamed
+        check_name = nameFromDump(renamed)
+        assert check_name == "INIT"
+        
+        # different name
+        renamed = renamePatch(raw_data, "SolarisINIT")
+        assert len(raw_data) == len(renamed)
+        assert raw_data != renamed
+        check_name = nameFromDump(renamed)
+        assert check_name == "SolarisINIT"
+        
+        # assert isSingleProgramDump(raw_data)
         # assert numberFromDump(raw_data) == 35
 
         # buffer = convertToEditBuffer(1, raw_data)
