@@ -326,14 +326,11 @@ void KeyboardMacroView::valueChanged(Value& value)
 }
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
-	int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
-	if (forwardMode == 2 || forwardMode == 3 || forwardMode == 4) {
-		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
-		if (masterkeyboardDevice.isNotEmpty()) {
-            auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
-			midikraft::MidiController::instance()->enableMidiInput(device);
-			spdlog::info("Opening master keyboard device {}, waiting for messages", masterkeyboardDevice);
-		}
+	String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
+	if (masterkeyboardDevice.isNotEmpty()) {
+        auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
+		midikraft::MidiController::instance()->enableMidiInput(device);
+		spdlog::info("Opening master keyboard device {}, waiting for messages", masterkeyboardDevice);
 	}
 }
 
