@@ -249,8 +249,9 @@ public:
 #else
 			if (Settings::instance().keyIsSet("mainWindowSize")) {
 				// Restore window size
+				auto main = new MainComponent(false);
 				restoreWindowStateFromString(Settings::instance().get("mainWindowSize"));
-				setContentOwned(new MainComponent(false), false);
+				setContentOwned(main, false);
 			}
 			else {
 				// Calculate best size for first start. 
