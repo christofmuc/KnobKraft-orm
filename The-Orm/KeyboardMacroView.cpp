@@ -219,41 +219,43 @@ void KeyboardMacroView::refreshUI() {
 
 void KeyboardMacroView::loadFromSettings() {
 	auto json = Settings::instance().get("MacroDefinitions");
-	try {
-		auto macros = nlohmann::json::parse(json);
-		if (macros.is_array()) {
-			for (auto macro : macros) {
-				if (macro.is_object()) {
-					std::set<int> midiNoteValues;
-					auto notes = macro["Notes"];
-					if (notes.is_array()) {
-						for (auto noteVar : notes) {
-							if (noteVar.is_number_integer()) {
-								midiNoteValues.insert((int)noteVar);
+	if (!json.empty()) {
+		try {
+			auto macros = nlohmann::json::parse(json);
+			if (macros.is_array()) {
+				for (auto macro : macros) {
+					if (macro.is_object()) {
+						std::set<int> midiNoteValues;
+						auto notes = macro["Notes"];
+						if (notes.is_array()) {
+							for (auto noteVar : notes) {
+								if (noteVar.is_number_integer()) {
+									midiNoteValues.insert((int)noteVar);
+								}
 							}
 						}
-					}
-					auto event = macro["Event"];
-					KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
-					if (event.is_string()) {
-						std::string eventString = event;
-						macroEventCode = KeyboardMacro::fromText(eventString);
-					}
-					if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
-						macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+						auto event = macro["Event"];
+						KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
+						if (event.is_string()) {
+							std::string eventString = event;
+							macroEventCode = KeyboardMacro::fromText(eventString);
+						}
+						if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
+							macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+						}
 					}
 				}
 			}
-		}
 
-		for (auto& prop : customMasterkeyboardSetup_) {
-			std::string storedValue = Settings::instance().get(prop->name().toStdString());
-			int intValue = std::atoi(storedValue.c_str());
-			prop->value().setValue(intValue);
+			for (auto& prop : customMasterkeyboardSetup_) {
+				std::string storedValue = Settings::instance().get(prop->name().toStdString());
+				int intValue = std::atoi(storedValue.c_str());
+				prop->value().setValue(intValue);
+			}
 		}
-	}
-	catch (nlohmann::json::parse_error &e) {
-		spdlog::error("Keyboard macro definition corrupt in settings file, not loading. Error is {}", e.what());
+		catch (nlohmann::json::parse_error& e) {
+			spdlog::error("Keyboard macro definition corrupt in settings file, not loading. Error is {}", e.what());
+		}
 	}
 }
 
