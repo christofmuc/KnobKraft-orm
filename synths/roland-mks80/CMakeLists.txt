@@ -30,5 +30,5 @@ if (MSVC)
     target_compile_options(midikraft-roland-mks80 PRIVATE /W4 /WX)
 else()
     # lots of warnings and all warnings as errors
-    target_compile_options(midikraft-roland-mks80 PRIVATE -Wall -Wextra -Werror -Wno-switch-enum -Wno-switch)
+    target_compile_options(midikraft-roland-mks80 PRIVATE -Wall -Wextra -Werror -Wno-switch-enum -Wno-switch -Wno-implicit-fallthrough)
 endif()
