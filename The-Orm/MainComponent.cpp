@@ -146,7 +146,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	//spdLogger_->set_pattern("%Y-%m-%d %H:%M:%S.%e%z %l [%t] %v");
 	spdlog::set_default_logger(spdLogger_);
 	spdlog::flush_every(std::chrono::milliseconds(50));
-	spdlog::set_level(spdlog::level::debug);
+	spdlog::set_level(spdlog::level::trace);
 	spdlog::info("Launching KnobKraft Orm");
 
 	auto customDatabase = Settings::instance().get("LastDatabase");
