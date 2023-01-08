@@ -860,7 +860,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
 	// It could be that we clicked on the patch that is already loaded?
-	if (patch.patch() != UIModel::currentPatch().patch() || !layers) {
+//	if (patch.patch() != UIModel::currentPatch().patch() || !layers) {
 		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
 		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
 
@@ -893,7 +893,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 				patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
 			}
 		}
-	}
+	/* }
 	else {
 		if (alsoSendToSynth) {
 			// Toggle through the layers, if the patch is a layered patch...
@@ -917,6 +917,6 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 				}
 			}
 		}
-	}
+	}*/
 }
 

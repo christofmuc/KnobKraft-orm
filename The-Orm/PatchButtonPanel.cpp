@@ -66,7 +66,7 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	addAndMakeVisible(sliderYLabel_);
 	sliderYLabel_.attachToComponent(&gridSizeSliderY_, true);
 
-	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index); });
+	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index, true); });
 	addAndMakeVisible(patchButtons_.get());
 
 	addAndMakeVisible(pageUp_); 
@@ -162,7 +162,7 @@ void PatchButtonPanel::changeGridSize(int newWidth, int newHeight) {
 	pageSize_ = gridWidth_ * gridHeight_;
 	numPages_ = totalSize_ / pageSize_;
 	if (totalSize_ % pageSize_ != 0) numPages_++;
-	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index); });
+	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index, true); });
 	addAndMakeVisible(patchButtons_.get());
 
 	resized();
@@ -215,10 +215,10 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	refresh(false);
 	if (autoSelectTarget != -1) {
 		if (autoSelectTarget == 0) {
-			buttonClicked(autoSelectTarget);
+			buttonClicked(autoSelectTarget, false);
 		}
 		else if (autoSelectTarget == 1) {
-			buttonClicked(((int) patches_.size()) - 1);
+			buttonClicked(((int) patches_.size()) - 1, false);
 		}
 	}
 	setupPageButtons();
@@ -326,16 +326,18 @@ void PatchButtonPanel::resized()
 	patchButtons_->setBounds(area);
 }
 
-void PatchButtonPanel::buttonClicked(int buttonIndex) {
+void PatchButtonPanel::buttonClicked(int buttonIndex, bool triggerHandler) {
 	if (buttonIndex >= 0 && buttonIndex < (int) patches_.size()) {
 		int active = indexOfActive();
 		if (active != -1) {
 			patchButtons_->buttonWithIndex(active)->setActive(false);
 		}
 		// This button is active, is it?
-		handler_(patches_[buttonIndex]);
-		activePatchMd5_ = patches_[buttonIndex].md5();
-		patchButtons_->buttonWithIndex(buttonIndex)->setActive(true);
+		if (triggerHandler) {
+			handler_(patches_[buttonIndex]);
+			activePatchMd5_ = patches_[buttonIndex].md5();
+			patchButtons_->buttonWithIndex(buttonIndex)->setActive(true);
+		}
 	}
 }
 

@@ -12,7 +12,7 @@ Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Wa
 
 2.0 Beta 1
 
-Layout der PatchSearch kaputt
+BUG - Single click on list does send 
 
 
 
@@ -46,6 +46,7 @@ BUG - After import, the new bank is not selected in the tree. Shows warning: Did
 BUG - Runninng autocategorize does not refresh the bank view
 BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change. Need to somehow refresh better
 BUG - Bulk deleting patches that are in a bank will fail because of foreign key constaint - should rather hide them
+BUG - Single click on already selected item in user list does not load again into current patch (onSelectionChanged vs onClick)
 
 UX -  SynthBank Buttons sollten auch die ButtonInfo benutzen
 UX - can make revert changes for dirty synth bank panel
@@ -56,6 +57,7 @@ UX - Trashcan should light up when drag target works
 UX - Double click rename should also work for user banks and user lists
 UX - adding new list or bank could use in place editing and put cursor right there instead of the dialog window
 
+UX - Single click handler in user list does not send anymore/actually never sent. Should it?
 
 
 2.1 Release
@@ -79,7 +81,7 @@ UX - clicking a bank of a different than the current synth needs to switch the c
 IDEA - XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change Could simulate an ingest with the predefined names (lol)
 IMPROV - Could do better layer switch
 IMPROV - Tree could show count of items
-
+IMPROV - Concrete Layer switching with implentation of layer play mode e.g. stack/split/select one of two. Could be used by Rev2 and MKS80
 
 
 Sollte irgendwo anzeigen können, für welche Synths in der Datenbank Patches sind, auch wenn sie ausgeschaltet sind. Vielleicht eine Database statistik Seite mit Anzahl der Patches pro Synth, Listen, ?

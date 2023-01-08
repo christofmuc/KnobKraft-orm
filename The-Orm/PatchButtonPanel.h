@@ -33,7 +33,7 @@ public:
 	void resized() override;
 
 	void buttonClicked(Button* button) override;
-	void buttonClicked(int buttonIndex);
+	void buttonClicked(int buttonIndex, bool triggerHandler);
 
 	// Remote control
 	void selectPrevious();
