@@ -73,7 +73,7 @@ So basically everyone who can read the MIDI spec and can do a little scripting c
 
 # How does it look?
 
-[Disclaimer]: The video shows version 1.0.0, a lot has happened since then.
+[Disclaimer]: The video shows version 1.0.0, a lot has happened since then. Especially the version 2.0.0 introduced the most sought after feature - bank management!
 
 I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well
 
