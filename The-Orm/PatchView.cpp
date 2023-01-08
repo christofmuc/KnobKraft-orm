@@ -552,31 +552,30 @@ void PatchView::retrieveEditBuffer()
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	if (activeSynth && midiLocation) {
-		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
-			activeSynth,
-			nullptr,
-			[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
-			// There should only be one edit buffer, just check that this is true here
-			jassert(patchesLoaded.size() == 1);
+		midikraft::runMidiCoroutineWithCallback < std::vector<midikraft::PatchHolder>>(
+			librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), activeSynth, nullptr),
+			[this](std::vector<midikraft::PatchHolder> const& patchesLoaded) {
+				// There should only be one edit buffer, just check that this is true here
+				jassert(patchesLoaded.size() == 1);
 
-			if (patchesLoaded.size() == 1) {
-				spdlog::info("Current edit buffer from synth is patch '{}'", patchesLoaded[0].name());
-			}
+				if (patchesLoaded.size() == 1) {
+					spdlog::info("Current edit buffer from synth is patch '{}'", patchesLoaded[0].name());
+				}
 
-			patchesLoaded = autoCategorize(patchesLoaded);
+				auto categorizedPatches = autoCategorize(patchesLoaded);
 
-			// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
-			auto now = Time::getCurrentTime();
-			auto editBufferSource = std::make_shared<midikraft::FromSynthSource>(now);
-			for (auto &p : patchesLoaded) {
-				p.setSourceInfo(editBufferSource);
-			}
+				// Set a specific "EditBufferImport" source for those patches retrieved directly from the edit buffer
+				auto now = Time::getCurrentTime();
+				auto editBufferSource = std::make_shared<midikraft::FromSynthSource>(now);
+				for (auto& p : categorizedPatches) {
+					p.setSourceInfo(editBufferSource);
+				}
 
-			// Off to the UI thread (because we will update the UI)
-			MessageManager::callAsync([this, patchesLoaded]() {
-				mergeNewPatches(patchesLoaded);
+				// Off to the UI thread (because we will update the UI)
+				MessageManager::callAsync([this, categorizedPatches]() {
+					mergeNewPatches(categorizedPatches);
+					});
 			});
-		});
 	}
 }
 
