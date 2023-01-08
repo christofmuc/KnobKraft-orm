@@ -184,7 +184,8 @@ void PatchSearchComponent::resized()
 	fb.items.add(createFlexButton(&andCategories_));
 	fb.performLayout(normalFilter);
 	auto flexBoxSize = FlexBoxHelper::computeFlexBoxSize(fb);
-	//auto favRow = normalFilter.removeFromTop((int) flexBoxSize.getHeight());
+	auto favRow = normalFilter.removeFromTop((int) flexBoxSize.getHeight());
+	ignoreUnused(favRow);
 
 	auto filterRow = normalFilter; 
 	auto catFilterMin = categoryFilters_.determineSubAreaForButtonLayout(this, filterRow);
