@@ -43,6 +43,13 @@ namespace knobkraft {
 	extern std::vector<const char *> kAdapatationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
+#ifndef DEFAULT_VISIBILITY
+#ifdef __GNUC__
+#define DEFAULT_VISIBILITY __attribute__((visibility("default")))
+#else
+#define DEFAULT_VISIBILITY 
+#endif
+#endif
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
 		public midikraft::RuntimeCapability<midikraft::HasBanksCapability>,
@@ -159,9 +166,7 @@ namespace knobkraft {
 		static bool createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
-#pragma GCC visibility push(default)
-		pybind11::module adaptation_module;
-#pragma GCC visibility pop
+		pybind11::module adaptation_module DEFAULT_VISIBILITY;
 		std::string filepath_;
 		std::string adaptationName_;
 	};
