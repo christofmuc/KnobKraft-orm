@@ -53,7 +53,7 @@ public:
 
 const char *kSetupHint1 = "In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
 	"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.";
-const char *kSetupHint2 = "First please select at least one synth to use, then turn it on and press auto-configure to detect if a working bi-directional connection can be made.\n\n";
+const char *kSetupHint2 = "First please select at least one synth to use, then turn it on and press auto-detect to detect if a working bi-directional connection can be made.\n\n";
 
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
