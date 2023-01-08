@@ -12,6 +12,7 @@
 #include "Settings.h"
 #include "UIModel.h"
 
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
@@ -219,24 +220,24 @@ void KeyboardMacroView::refreshUI() {
 void KeyboardMacroView::loadFromSettings() {
 	auto json = Settings::instance().get("MacroDefinitions");
 	try {
-		var macros = JSON::parse(String(json));
-		if (macros.isArray()) {
-			for (var macro : *macros.getArray()) {
-				if (macro.isObject()) {
+		auto macros = nlohmann::json::parse(json);
+		if (macros.is_array()) {
+			for (auto macro : macros) {
+				if (macro.is_object()) {
 					std::set<int> midiNoteValues;
-					auto notes = macro.getProperty("Notes", var());
-					if (notes.isArray()) {
-						for (var noteVar : *notes.getArray()) {
-							if (noteVar.isInt()) {
+					auto notes = macro["Notes"];
+					if (notes.is_array()) {
+						for (auto noteVar : notes) {
+							if (noteVar.is_number_integer()) {
 								midiNoteValues.insert((int)noteVar);
 							}
 						}
 					}
-					auto event = macro.getProperty("Event", var());
+					auto event = macro["Event"];
 					KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
-					if (event.isString()) {
-						String eventString = event;
-						macroEventCode = KeyboardMacro::fromText(eventString.toStdString());
+					if (event.is_string()) {
+						std::string eventString = event;
+						macroEventCode = KeyboardMacro::fromText(eventString);
 					}
 					if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
 						macros_[macroEventCode] = { macroEventCode, midiNoteValues };
@@ -251,9 +252,8 @@ void KeyboardMacroView::loadFromSettings() {
 			prop->value().setValue(intValue);
 		}
 	}
-	catch (...) {
-		// Uncatchable JUCE exception
-		spdlog::error("Keyboard macro definition corrupt in settings file, not loading!");
+	catch (nlohmann::json::parse_error &e) {
+		spdlog::error("Keyboard macro definition corrupt in settings file, not loading. Error is {}", e.what());
 	}
 }
 
