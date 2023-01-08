@@ -874,23 +874,36 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 			}
 			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (midiLocation && midiLocation->channel().isValid() && alreadyInSynth.size() > 0) {
+				auto bankNumberToSelect = patch.bankNumber();
+				if (alreadyInSynth[0].isBankKnown()) {
+					bankNumberToSelect = alreadyInSynth[0].bank();
+				}
 				// We can get away with just a bank select and program change
 				std::vector<juce::MidiMessage> selectPatch;
 				if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
-					auto bankSelect = bankDescriptors->bankSelectMessages(patch.bankNumber());
+					auto bankSelect = bankDescriptors->bankSelectMessages(bankNumberToSelect);
 					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
 				}
 				else if (auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(patch.smartSynth())) {
-					auto bankSelect = banks->bankSelectMessages(patch.bankNumber());
+					auto bankSelect = banks->bankSelectMessages(bankNumberToSelect);
 					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
 				}
 				selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), alreadyInSynth[0].toZeroBased()));
 				patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
-				spdlog::info("Sending program change to {}: program {}", patch.smartSynth()->getName(), patch.smartSynth()->friendlyProgramAndBankName(alreadyInSynth[0].bank(), alreadyInSynth[0]));
+				spdlog::info("Sending program change to {}: program {} {}. {}"
+					, patch.smartSynth()->getName()
+					, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, alreadyInSynth[0])
+					, alreadyInSynth[0].isBankKnown() ? "[known bank]" : "[bank not known!]"
+					, alreadyInSynth.size() > 1 ? fmt::format("Patch is in {} different positions.", alreadyInSynth.size()): "");
 			}
 			else {
 				// Send out to Synth into edit buffer
-				patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+				if (patch.patch()) {
+					patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+				}
+				else {
+					spdlog::info("Empty patch slot selected, can't send to synth");
+				}
 			}
 		}
 	/* }
