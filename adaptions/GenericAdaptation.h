@@ -159,7 +159,7 @@ namespace knobkraft {
 		static bool createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
-#pragma GCC visibility push(hidden)
+#pragma GCC visibility push(default)
 		pybind11::module adaptation_module;
 #pragma GCC visibility pop
 		std::string filepath_;

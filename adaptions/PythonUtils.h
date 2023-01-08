@@ -21,8 +21,10 @@ public:
 	void flushToLogger(std::string const &logDomain);
 
 private:
+#pragma GCC visibility push(default)
 	pybind11::object _stdout;
 	pybind11::object _stderr;
 	pybind11::object _stdout_buffer;
 	pybind11::object _stderr_buffer;
+#pragma GCC visibility pop
 };
