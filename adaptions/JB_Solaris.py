@@ -12,7 +12,7 @@
 # Edit Buffer Capability: done
 # Getting the patch's name with checksum verification: done
 # Setting the patch's name with new checksum: done
-# Send to edit buffer: done with DIN, not verified with USB
+# Send to edit buffer: done with DIN, not working with USB
 
 # TODO
 # Send preset according to Device ID before sending
@@ -100,8 +100,8 @@ def isDefaultName(patchName):
     return patchName == 'INIT'
 
 
-#def generalMessageDelay():
-#    return 10
+def generalMessageDelay():
+    return 50
 
 # ----------------
 # Device detection
@@ -242,6 +242,7 @@ bulk_dump_address = bulk_dump_reply + [
 
 def find_name(data):
     ''' returns the offset of the preset name within a multipart sysex message'''
+    print([f'{s:02x}' for s in data])
 
     # Part Name has 20 characters with 2 bytes each
     # find the message containing the preset name address within all Bulk Dump messages
@@ -250,9 +251,9 @@ def find_name(data):
     messages = splitSysexMessage(data)
     for msg_index, message in enumerate(messages):
         # the name sysex message is composed of header (including address) + name + checksum + cat1 + cat2 + 0xf7
-        if len(message) < len(expected_message) + 20*2 + 1 + 1 + 1 + 1:
+        if len(message) < len(expected_message): # + 20*2 + 1 + 1 + 1 + 1:
             continue
-
+        orig = message[:]
         device_id = get_and_set_expected(4, message, expected_message)
         high, mid, low = get_and_set_expected((7, 10), message, expected_message)
 
@@ -263,18 +264,29 @@ def find_name(data):
 
                 # verify checksum
                 checksum = message[-2]
-                s = sum([0x20,0,0] + message[10:-2]) # 7 = len (expected_message) - len([0x20,0,0])
-
-                # print('solaris debug')
-                # print([f'{s:02x}' for s in message[:]])
-                # print(f'{s:03x}')
-                # print(f'{checksum:02x}')
-                # print(f'{(s + checksum):03x}')
-                # print(f'{(s + checksum)&0x7f:02x}')
+                #s = sum([0x20,0,0] + message[10:-2]) # 7 = len (expected_message) - len([0x20,0,0])
+                s = sum(orig[7:-2]) # 7 = len (expected_message) - len([0x20,0,0])
+                
+                #s = 0
+                #for d in [0x20,0,0] + message[10:-2]:
+                #    s += d & 0x7f
+                #    #s &= 0x7f
 
                 if ((s + checksum) & 0x7f) != 0:
-                    offset = -1
-                    assert(0) # FIXME should do something smarter
+                    print("bad cheksum")
+                    #offset = -1
+                    #assert(0) # FIXME should do something smarter
+
+                    print('solaris debug')
+                    print('orig: ' + str([f'{s:02x}' for s in orig]))
+                    print('msg : ' + str([f'{s:02x}' for s in message]))
+                    print('data: ' + str([f'{s:02x}' for s in orig[7:-2]]))
+                    print(f'sum : {s:03x}')
+                    print(f'checksum: {checksum:02x}')
+                    print(f'd+c : {(s + checksum):03x}')
+                    print(f'd+c&: {(s + checksum) & 0x7f:02x}')
+
+                
 
                 # found it => exit message loop
                 break
