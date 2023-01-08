@@ -66,7 +66,7 @@ def isOwnSysex(message):
 
 
 def createProgramDumpRequest(channel, patchNo):
-    bank = patchNo // 182
+    bank = patchNo // 128
     program = patchNo % 128
     return [0xf0] + novation_id + summit_id + [0x41, 0x00, 0x00, 0x00, bank, program, 0xf7]
 
