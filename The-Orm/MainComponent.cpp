@@ -152,10 +152,19 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	auto customDatabase = Settings::instance().get("LastDatabase");
 	File databaseFile(customDatabase);
 	if (databaseFile.existsAsFile()) {
-		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
+		//TODO
+		// This is not openDatabase, because that expects the database_ pointer to be already initialized.
+		// Refactoring would be to create a database without a loaded file state.
+		try {
+			database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
+		}
+		catch (midikraft::PatchDatabaseException& e) {
+			spdlog::error("Critical error trying to open database, maybe wrong version? Creating a new empty database instead. Error was '{}'", e.what());
+			database_ = std::make_unique<midikraft::PatchDatabase>(false);
+		}
 	}
 	else {
-		database_ = std::make_unique<midikraft::PatchDatabase>();
+		database_ = std::make_unique<midikraft::PatchDatabase>(false);
 	}
 	recentFiles_.setMaxNumberOfItems(10);
 	if (Settings::instance().keyIsSet("RecentFiles")) {
@@ -623,16 +632,22 @@ void MainComponent::openDatabase(File& databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
-			recentFiles_.removeFile(databaseFile);
-			persistRecentFileList();
-			// That worked, new database file is in use!
-			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
-			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
-			// Refresh UI
-			UIModel::instance()->currentSynth_.sendChangeMessage();
-			UIModel::instance()->windowTitle_.sendChangeMessage();
-			UIModel::instance()->databaseChanged.sendChangeMessage();
+		try {
+			if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
+				recentFiles_.removeFile(databaseFile);
+				persistRecentFileList();
+				// That worked, new database file is in use!
+				Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+				Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
+				// Refresh UI
+				UIModel::instance()->currentSynth_.sendChangeMessage();
+				UIModel::instance()->windowTitle_.sendChangeMessage();
+				UIModel::instance()->databaseChanged.sendChangeMessage();
+			}
+		}
+		catch (midikraft::PatchDatabaseException& e) {
+			spdlog::error("Critical error trying to open database, maybe wrong version? Creating a new empty database instead. Error was '{}'", e.what());
+			database_ = std::make_unique<midikraft::PatchDatabase>(false);
 		}
 	}
 }

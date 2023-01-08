@@ -10,6 +10,11 @@ Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich e
 Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
 Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
 
+2.0 Beta 1
+
+Migration der eigenen Datenbank failed
+
+
 
 
 Data Migration 1.x -> 2.0
