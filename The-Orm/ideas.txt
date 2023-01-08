@@ -10,11 +10,6 @@ Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich e
 Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
 Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
 
-2.0 Beta 1
-
-BUG - Single click on list does send 
-
-
 
 Data Migration 1.x -> 2.0
 
@@ -26,7 +21,6 @@ Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
 
 2.0 Beta 2 - Select Handler
 
-* Document bankSelect(channel, bankNo) Python function required now
 * Could display per patch if it is in Synth or not
 * Need global mode whether a Click on a button would not send to edit buffer, but just a bank select/program change message. 
 * Could allow for single patch retrieval instead of whole bank synth (if mode is available)
