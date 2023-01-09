@@ -73,6 +73,9 @@ private:
 	void refreshSynthList();
 	static void aboutBox();
 
+	void openSecondMainWindow();
+	static std::unique_ptr<juce::DocumentWindow> sSecondMainWindow;
+
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	
 	// Helper function because of JUCE API

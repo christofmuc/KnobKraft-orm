@@ -365,6 +365,9 @@ Librarian for other stuff (should rather do with adaptation?)
 
 	+ Meris pedal
 
+List of other tools
+	http://www.hitsquad.com/smm/freeware/PATCH_EDITORS_LIBRARIANS/
+
 MacOS X installer
   + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
   + Helpful: https://github.com/ionyshch/cmake-bundle-macos/blob/master/CMakeLists.txt https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/PackageGenerators https://gitlab.kitware.com/cmake/community/-/wikis/doc/cpack/Configuration

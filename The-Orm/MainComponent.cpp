@@ -243,7 +243,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
 		{7, { "Help", {
 #ifndef _DEBUG
@@ -340,6 +340,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		JUCEApplicationBase::quit();
 	}}},
 		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+		{ "Open 2nd window", { "Open 2nd window", [this]() {
+			openSecondMainWindow(); 
+		} }},
 		{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
 		{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
 		{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
@@ -551,6 +554,8 @@ MainComponent::~MainComponent()
 	// Prevent memory leaks being reported on shutdown
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
+
+	sSecondMainWindow.reset();
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -1035,3 +1040,35 @@ void MainComponent::aboutBox()
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
+class SecondaryMainWindow : public juce::DocumentWindow
+{
+public:
+	SecondaryMainWindow(std::string const& settingsName, int initialW, int initialH, Component *initialContent) : juce::DocumentWindow("KnobKraft Quick Access", juce::Colours::black, juce::DocumentWindow::TitleBarButtons::allButtons, true) {
+		ignoreUnused(settingsName);
+		setContentOwned(initialContent, false);
+		setSize(initialW, initialH);
+		setVisible(true);
+		toFront(true);
+	}
+
+	void closeButtonPressed() override {
+		setVisible(false);
+	}
+};
+
+void MainComponent::openSecondMainWindow() 
+{
+	// Start simple, create a new document window
+	if (!sSecondMainWindow) {
+		auto newSelector = new PatchView(*database_, UIModel::instance()->synthList_.allSynths());
+		sSecondMainWindow = std::make_unique<SecondaryMainWindow>("SecondWindow", 1024, 600, newSelector);
+		jassert(sSecondMainWindow->isShowing());
+	}
+	else
+	{
+		sSecondMainWindow->setVisible(true);
+		sSecondMainWindow->toFront(true);
+	}
+}
+
+std::unique_ptr<juce::DocumentWindow> MainComponent::sSecondMainWindow;
