@@ -203,6 +203,7 @@ bulk_dump_frame_end = bulk_dump_reply + [
 
 # Checking if a MIDI message is an edit buffer dump
 def isEditBufferDump(data):
+    #print(str([f'{s:02x}' for s in data]))
     expected_message = bulk_dump_frame_end
     if len(data) > len(expected_message):
         pos = find_last_sysex(data)
@@ -242,7 +243,7 @@ bulk_dump_address = bulk_dump_reply + [
 
 def find_name(data):
     ''' returns the offset of the preset name within a multipart sysex message'''
-    print([f'{s:02x}' for s in data])
+    #print([f'{s:02x}' for s in data])
 
     # Part Name has 20 characters with 2 bytes each
     # find the message containing the preset name address within all Bulk Dump messages
@@ -261,6 +262,7 @@ def find_name(data):
             if [high, mid, low] == [0x20, 0x0, 0x0]:
                 # found it!
                 offset = len(expected_message)
+                #print('orig: ' + str([f'{s:02x}' for s in orig]))
 
                 # verify checksum
                 checksum = message[-2]
@@ -273,18 +275,18 @@ def find_name(data):
                 #    #s &= 0x7f
 
                 if ((s + checksum) & 0x7f) != 0:
-                    print("bad cheksum")
+                    print("solaris: bad preset cheksum")
                     #offset = -1
                     #assert(0) # FIXME should do something smarter
 
-                    print('solaris debug')
-                    print('orig: ' + str([f'{s:02x}' for s in orig]))
-                    print('msg : ' + str([f'{s:02x}' for s in message]))
-                    print('data: ' + str([f'{s:02x}' for s in orig[7:-2]]))
-                    print(f'sum : {s:03x}')
-                    print(f'checksum: {checksum:02x}')
-                    print(f'd+c : {(s + checksum):03x}')
-                    print(f'd+c&: {(s + checksum) & 0x7f:02x}')
+                    # print('solaris debug')
+                    # print('orig: ' + str([f'{s:02x}' for s in orig]))
+                    # print('msg : ' + str([f'{s:02x}' for s in message]))
+                    # print('data: ' + str([f'{s:02x}' for s in orig[7:-2]]))
+                    # print(f'sum : {s:03x}')
+                    # print(f'checksum: {checksum:02x}')
+                    # print(f'd+c : {(s + checksum):03x}')
+                    # print(f'd+c&: {(s + checksum) & 0x7f:02x}')
 
                 
 
@@ -317,8 +319,8 @@ def nameFromDump(data):
 
 
 def renamePatch(data, new_name):
-    offset = find_name(data)
-    if offset == -1:
+    beg_name = find_name(data)
+    if beg_name == -1:
         return
 
     # make new_name 20-character long
@@ -329,8 +331,9 @@ def renamePatch(data, new_name):
     for c in name:
         name_enc += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
 
-    # compute new checksum    
-    s = sum([0x20,0,0] + name_enc + data[offset+40:offset+40+1+1]) # cat1 + cat2
+    # compute new checksum
+    end_name = beg_name + 40
+    s = sum([0x20,0,0] + name_enc + data[end_name:end_name+1+1]) # cat1 + cat2
     checksum = 0x80 - (s & 0x7f)
     
     # verify new checksum
@@ -338,7 +341,7 @@ def renamePatch(data, new_name):
 
     # assemble new data
     # 1 + 1 + 1 : cat1 + cat2 + 0xf7
-    new_data = data[:offset] + name_enc + [0,0] + [checksum] + data[offset + len(name_enc) + 1 + 1 + 1:]
+    new_data = data[:beg_name] + name_enc + data[end_name:end_name+1+1] + [checksum] + data[end_name+1+1+1:]
 
     return new_data
 
@@ -366,6 +369,49 @@ def run_tests():
         assert raw_data != renamed
         check_name = nameFromDump(renamed)
         assert check_name == "SolarisINIT"
+
+def run_midi_tests():
+        class MidiInputHandler(object):
+            def __init__(self, port):
+                self.port = port
+                self._wallclock = time.time()
+
+            def __call__(self, event, data=None):
+                message, deltatime = event
+                self._wallclock += deltatime
+                #print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
+                print ([f'{x:02x}' for x in message])
+
+
+        import time
+        import rtmidi
+        midiout = rtmidi.MidiOut()
+        available_ports = midiout.get_ports()
+        from rtmidi.midiutil import open_midiinput
+        midiin, port_name = open_midiinput(0)
+        print(port_name)
+
+        #midiin = rtmidi.MidiIn()
+        # Don't ignore sysex, timing, or active sensing messages.
+        midiin.ignore_types( False, True, True )
+        midiin.set_callback(MidiInputHandler(port_name))
+        
+        midiout.open_port(0)
+
+        msg = [0x90, 60, 112]
+        midiout.send_message(msg)
+        time.sleep(1)
+        msg = [0x80, 60, 0]
+        midiout.send_message(msg)
+
+        msg = identity_request # bulk_dump_request
+        msg = bulk_dump_request
+        print(msg)
+        midiout.send_message(msg)
+        
+        while(True):
+            time.sleep(1)
+        #print (midiin.get_message())
         
         # assert isSingleProgramDump(raw_data)
         # assert numberFromDump(raw_data) == 35
