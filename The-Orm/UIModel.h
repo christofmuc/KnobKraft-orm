@@ -20,6 +20,8 @@
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
 
+juce::Identifier const EPROPERTY_LIBRARY_PATCH_LIST {"LibraryPatchList"};
+
 class CurrentSynth : public ChangeBroadcaster {
 public:
 	void changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth);

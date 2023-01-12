@@ -73,6 +73,7 @@ set(SOURCES
 	ScriptedQuery.cpp ScriptedQuery.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
+	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
 	VerticalPatchButtonList.cpp VerticalPatchButtonList.h

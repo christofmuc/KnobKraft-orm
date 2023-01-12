@@ -14,6 +14,7 @@
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
 #include "ExportDialog.h"
+#include "SimplePatchGrid.h"
 
 #include "Settings.h"
 
@@ -1060,7 +1061,7 @@ void MainComponent::openSecondMainWindow()
 {
 	// Start simple, create a new document window
 	if (!sSecondMainWindow) {
-		auto newSelector = new PatchView(*database_, UIModel::instance()->synthList_.allSynths());
+		auto newSelector = new SimplePatchGrid(patchView_.get());
 		sSecondMainWindow = std::make_unique<SecondaryMainWindow>("SecondWindow", 1024, 600, newSelector);
 		jassert(sSecondMainWindow->isShowing());
 	}

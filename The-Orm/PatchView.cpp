@@ -171,11 +171,16 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 	return result;
 }
 
+int PatchView::getTotalCount() {
+	return database_.getPatchesCount(currentFilter());
+}
+
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
-	int total = database_.getPatchesCount(currentFilter());
+	int total = getTotalCount();
 	patchButtons_->setTotalCount(total);
 	patchButtons_->refresh(true); // This kicks of loading the first page
+	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, Uuid::Uuid().toString(), nullptr);
 }
 
 std::shared_ptr<midikraft::PatchList>  PatchView::retrieveListFromDatabase(midikraft::ListInfo const& info)
