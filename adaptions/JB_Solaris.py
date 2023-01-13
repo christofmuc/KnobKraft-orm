@@ -1,5 +1,5 @@
 #   Copyright (c) 2021 Christof Ruch. All rights reserved.
-#   John Bowen Solaris Adaptation version 0.4 by Stéphane Conversy, 2022.
+#   John Bowen Solaris Adaptation version 0.5 by Stéphane Conversy, 2022.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 #
@@ -12,7 +12,7 @@
 # Edit Buffer Capability: done
 # Getting the patch's name with checksum verification: done
 # Setting the patch's name with new checksum: done
-# Send to edit buffer: done with DIN, not working with USB
+# Send to edit buffer: done with DIN, not working with USB (USB connection lost)
 
 # TODO
 # Send preset according to Device ID before sending
@@ -52,6 +52,19 @@ def find_last_sysex(data):
             break
     return pos
 
+def nibblize(data):
+    nibblized = []
+    for c in data:
+        nibblized += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
+    return nibblized
+
+def denibblize(data):
+    denibblized = ""
+    for i in range(0, len(data), 2):
+        c = (data[i] << 8) + data[i+1]
+        denibblized += chr(c)
+    return denibblized
+
 # much of the below functions compare a received message with an expected one
 # however, the received message may differ from the expected one in some variable fields (e.g. deviceid ou channel) 
 # get_and_set_expected* make field-variable midi messages comparable,
@@ -80,7 +93,7 @@ def get_and_set_expected(index_or_range, message, expected_message):
 
 def setupHelp():
     return '''\
-Solaris - can send, receive, rename Edit Buffer only (beware: there is a bug that prevents sending with USB)
+Solaris - can send, receive, rename Edit Buffer only (beware: sending through USB crashes the Solaris USB)
 '''
 
 
@@ -199,11 +212,10 @@ def isPartOfEditBufferDump(message):
 # Bulk Dump with Frame End
 bulk_dump_frame_end = bulk_dump_reply + [
     0x7f
-] #, bb, pp,
+]
 
 # Checking if a MIDI message is an edit buffer dump
 def isEditBufferDump(data):
-    #print(str([f'{s:02x}' for s in data]))
     expected_message = bulk_dump_frame_end
     if len(data) > len(expected_message):
         pos = find_last_sysex(data)
@@ -221,8 +233,6 @@ def isEditBufferDump(data):
 
 # Creating the edit buffer to send
 def convertToEditBuffer(channel, long_message):
-    #messages = splitSysexMessage(long_message)
-    #res = sum(messages[1:-1], []) # remove Frame Start and Frame End
     res = long_message
     return res
 
@@ -231,19 +241,12 @@ def convertToEditBuffer(channel, long_message):
 # ------------------------
 # Getting and Setting the patch's name
 
-def hml_to_address(high, mid, low):
-    return ((( (high & 0x7f) << 7) + (mid & 0x7f)) << 7) + (low & 0x7f)
-
-# Preset Name address to find
-name_address = hml_to_address(0x20, 0x0, 0x0)
-
 bulk_dump_address = bulk_dump_reply + [
     0x00, 0x00, 0x00  # Address
 ]
 
 def find_name(data):
     ''' returns the offset of the preset name within a multipart sysex message'''
-    #print([f'{s:02x}' for s in data])
 
     # Part Name has 20 characters with 2 bytes each
     # find the message containing the preset name address within all Bulk Dump messages
@@ -252,7 +255,7 @@ def find_name(data):
     messages = splitSysexMessage(data)
     for msg_index, message in enumerate(messages):
         # the name sysex message is composed of header (including address) + name + checksum + cat1 + cat2 + 0xf7
-        if len(message) < len(expected_message): # + 20*2 + 1 + 1 + 1 + 1:
+        if len(message) < len(expected_message):
             continue
         orig = message[:]
         device_id = get_and_set_expected(4, message, expected_message)
@@ -262,33 +265,17 @@ def find_name(data):
             if [high, mid, low] == [0x20, 0x0, 0x0]:
                 # found it!
                 offset = len(expected_message)
-                #print('orig: ' + str([f'{s:02x}' for s in orig]))
 
                 # verify checksum
                 checksum = message[-2]
-                #s = sum([0x20,0,0] + message[10:-2]) # 7 = len (expected_message) - len([0x20,0,0])
                 s = sum(orig[7:-2]) # 7 = len (expected_message) - len([0x20,0,0])
-                
-                #s = 0
-                #for d in [0x20,0,0] + message[10:-2]:
-                #    s += d & 0x7f
-                #    #s &= 0x7f
 
                 if ((s + checksum) & 0x7f) != 0:
-                    print("solaris: bad preset cheksum")
-                    #offset = -1
-                    #assert(0) # FIXME should do something smarter
-
-                    # print('solaris debug')
-                    # print('orig: ' + str([f'{s:02x}' for s in orig]))
+                    print("solaris: bad name '" + denibblize(message[offset:offset+40]) + "' checksum " + f'{checksum:02x}')
+                    offset = -1
                     # print('msg : ' + str([f'{s:02x}' for s in message]))
-                    # print('data: ' + str([f'{s:02x}' for s in orig[7:-2]]))
                     # print(f'sum : {s:03x}')
                     # print(f'checksum: {checksum:02x}')
-                    # print(f'd+c : {(s + checksum):03x}')
-                    # print(f'd+c&: {(s + checksum) & 0x7f:02x}')
-
-                
 
                 # found it => exit message loop
                 break
@@ -307,41 +294,38 @@ def nameFromDump(data):
     if offset == -1:
         return "unknown"
 
-    name = ""
     # Part Name has 20 characters with 2 bytes each
-    # denibblize it
-    for i in range(0, 20*2, 2):
-        c = (data[offset+i] << 8) +  data[offset+i+1]
-        name += chr(c)
+    name = denibblize(data[offset:offset+40])
     name = name.strip()
 
     return name
 
 
 def renamePatch(data, new_name):
-    beg_name = find_name(data)
-    if beg_name == -1:
+    name_beg = find_name(data)
+    if name_beg == -1:
         return
 
     # make new_name 20-character long
     name = new_name.ljust(20)[:20]
 
     # nibblize it
-    name_enc = []
-    for c in name:
-        name_enc += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
+    nibblized = nibblize(name)
 
     # compute new checksum
-    end_name = beg_name + 40
-    s = sum([0x20,0,0] + name_enc + data[end_name:end_name+1+1]) # cat1 + cat2
+    name_end = name_beg + 40
+    categories = data[name_end:name_end+2]
+    s = sum([0x20,0,0] + nibblized + categories)
     checksum = 0x80 - (s & 0x7f)
     
-    # verify new checksum
-    assert (s + checksum) & 0x7 == 0
+    # verify checksum
+    if (s + checksum) & 0x7 != 0:
+        print("solaris: bad new name '" + new_name + "' checksum " + f'{checksum:02x}')
+        return None
 
     # assemble new data
     # 1 + 1 + 1 : cat1 + cat2 + 0xf7
-    new_data = data[:beg_name] + name_enc + data[end_name:end_name+1+1] + [checksum] + data[end_name+1+1+1:]
+    new_data = data[:name_beg] + nibblized + categories + [checksum] + data[name_end+1+1+1:]
 
     return new_data
 
@@ -369,7 +353,19 @@ def run_tests():
         assert raw_data != renamed
         check_name = nameFromDump(renamed)
         assert check_name == "SolarisINIT"
+    
+    # with open("testData/JBSolaris-RotorDreams.syx", "rb") as sysex:
+    #     raw_data = list(sysex.read())
+    #     assert nameFromDump(raw_data) == "JBaRotor Dreams"
+    #     renamed = renamePatch(raw_data, "JB Rotor Dreams")
+    #     assert len(raw_data) == len(renamed)
+    #     assert raw_data != renamed
+    #     check_name = nameFromDump(renamed)
+    #     assert check_name == "JB Rotor Dreams"
 
+
+
+def run_midi_tests():
         class MidiInputHandler(object):
             def __init__(self, port):
                 self.port = port
@@ -381,7 +377,6 @@ def run_tests():
                 #print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
                 print ([f'{x:02x}' for x in message])
 
-def run_midi_tests():
         import time
         import rtmidi
         midiout = rtmidi.MidiOut()
