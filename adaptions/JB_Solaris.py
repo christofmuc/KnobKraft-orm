@@ -100,8 +100,8 @@ def isDefaultName(patchName):
     return patchName == 'INIT'
 
 
-def generalMessageDelay():
-    return 50
+# def generalMessageDelay():
+#     return 50
 
 # ----------------
 # Device detection
@@ -370,7 +370,6 @@ def run_tests():
         check_name = nameFromDump(renamed)
         assert check_name == "SolarisINIT"
 
-def run_midi_tests():
         class MidiInputHandler(object):
             def __init__(self, port):
                 self.port = port
@@ -382,7 +381,7 @@ def run_midi_tests():
                 #print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
                 print ([f'{x:02x}' for x in message])
 
-
+def run_midi_tests():
         import time
         import rtmidi
         midiout = rtmidi.MidiOut()
