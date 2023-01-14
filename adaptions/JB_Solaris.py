@@ -1,5 +1,5 @@
 #   Copyright (c) 2021 Christof Ruch. All rights reserved.
-#   John Bowen Solaris Adaptation version 0.3 by Stéphane Conversy, 2022.
+#   John Bowen Solaris Adaptation version 0.5 by Stéphane Conversy, 2022.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 #
@@ -10,18 +10,17 @@
 # STATUS
 # Device detection: done
 # Edit Buffer Capability: done
-# Getting the patch's name: done
-# Setting the patch's name: done
-# Send to edit buffer: done with DIN, does not work with USB (Solaris firmware bug)
+# Getting the patch's name with checksum verification: done
+# Setting the patch's name with new checksum: done
+# Send to edit buffer: done with DIN, not working with USB (USB connection lost)
 
 # TODO
-# verify checksum
 # Send preset according to Device ID before sending
 # verify that the OS of the patch to send is the same as the Solaris unit
 
 # FUTURE
-# Preset Dump Capability: as soon as the Solaris supports it
-# Bank Dump Capability: as soon as the Solaris supports it 
+# Preset Dump Capability: as soon as Solaris supports it
+# Bank Dump Capability: as soon as Solaris supports it 
 
 
 # ----------------
@@ -53,6 +52,19 @@ def find_last_sysex(data):
             break
     return pos
 
+def nibblize(data):
+    nibblized = []
+    for c in data:
+        nibblized += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
+    return nibblized
+
+def denibblize(data):
+    denibblized = ""
+    for i in range(0, len(data), 2):
+        c = (data[i] << 8) + data[i+1]
+        denibblized += chr(c)
+    return denibblized
+
 # much of the below functions compare a received message with an expected one
 # however, the received message may differ from the expected one in some variable fields (e.g. deviceid ou channel) 
 # get_and_set_expected* make field-variable midi messages comparable,
@@ -81,7 +93,7 @@ def get_and_set_expected(index_or_range, message, expected_message):
 
 def setupHelp():
     return '''\
-Solaris - can send, receive, rename Edit Buffer only (beware: there is a bug that prevents sending with USB)
+Solaris - can send, receive, rename Edit Buffer only (beware: sending through USB crashes the Solaris USB)
 '''
 
 
@@ -100,6 +112,9 @@ def numberOfPatchesPerBank():
 def isDefaultName(patchName):
     return patchName == 'INIT'
 
+
+# def generalMessageDelay():
+#     return 50
 
 # ----------------
 # Device detection
@@ -197,7 +212,7 @@ def isPartOfEditBufferDump(message):
 # Bulk Dump with Frame End
 bulk_dump_frame_end = bulk_dump_reply + [
     0x7f
-] #, bb, pp,
+]
 
 # Checking if a MIDI message is an edit buffer dump
 def isEditBufferDump(data):
@@ -218,8 +233,6 @@ def isEditBufferDump(data):
 
 # Creating the edit buffer to send
 def convertToEditBuffer(channel, long_message):
-    #messages = splitSysexMessage(long_message)
-    #res = sum(messages[1:-1], []) # remove Frame Start and Frame End
     res = long_message
     return res
 
@@ -228,39 +241,51 @@ def convertToEditBuffer(channel, long_message):
 # ------------------------
 # Getting and Setting the patch's name
 
-def hml_to_address(high, mid, low):
-    return ((( (high & 0x7f) << 7) + (mid & 0x7f)) << 7) + (low & 0x7f)
-
-# Preset Name address to find
-name_address = hml_to_address(0x20, 0x0, 0x0)
-
 bulk_dump_address = bulk_dump_reply + [
     0x00, 0x00, 0x00  # Address
 ]
 
 def find_name(data):
+    ''' returns the offset of the preset name within a multipart sysex message'''
+
     # Part Name has 20 characters with 2 bytes each
     # find the message containing the preset name address within all Bulk Dump messages
     offset = -1
     expected_message = bulk_dump_address
     messages = splitSysexMessage(data)
     for msg_index, message in enumerate(messages):
-        if len(message) < len(expected_message) + 20*2 + 1 + 1:  # header + name + checksum + 0xf7
+        # the name sysex message is composed of header (including address) + name + checksum + cat1 + cat2 + 0xf7
+        if len(message) < len(expected_message):
             continue
+        orig = message[:]
         device_id = get_and_set_expected(4, message, expected_message)
         high, mid, low = get_and_set_expected((7, 10), message, expected_message)
+
         if message[:len(expected_message)] == expected_message:
-            address = hml_to_address(high, mid, low)
-            payload = len(message) - (len(expected_message)+1+1)  # header + checksum + 0xf7
-            if address  <=  name_address  <  address + payload:
+            if [high, mid, low] == [0x20, 0x0, 0x0]:
                 # found it!
-                offset = name_address - address
-                offset += len(expected_message)
-                break  # found it => exit message loop
+                offset = len(expected_message)
+
+                # verify checksum
+                checksum = message[-2]
+                s = sum(orig[7:-2]) # 7 = len (expected_message) - len([0x20,0,0])
+
+                if ((s + checksum) & 0x7f) != 0:
+                    print("solaris: bad name '" + denibblize(message[offset:offset+40]) + "' checksum " + f'{checksum:02x}')
+                    offset = -1
+                    # print('msg : ' + str([f'{s:02x}' for s in message]))
+                    # print(f'sum : {s:03x}')
+                    # print(f'checksum: {checksum:02x}')
+
+                # found it => exit message loop
+                break
     
+    # if offset has been found
     if offset != -1:
-        # offset is related to the message, not the data
+        # so far, offset is related to the single sysex message, not the whole multipart sysex message
+        # so add the length of the preceding messages to make it relative to the whole multipart sysex message
         offset += sum(len(msg) for msg in messages[:msg_index])
+
     return offset
 
 
@@ -269,28 +294,39 @@ def nameFromDump(data):
     if offset == -1:
         return "unknown"
 
-    name = ""
     # Part Name has 20 characters with 2 bytes each
-    for i in range(0, 20*2, 2):
-        c = (data[offset+i] << 8) +  data[offset+i+1]
-        name += chr(c)
+    name = denibblize(data[offset:offset+40])
     name = name.strip()
 
     return name
 
 
 def renamePatch(data, new_name):
-    offset = find_name(data)
-    if offset == -1:
-        return 
-    # make it 20-character long
-    name = new_name.ljust(20)[:20]
-    # nibblize it
-    name_enc = []
-    for c in name:
-        name_enc += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
+    name_beg = find_name(data)
+    if name_beg == -1:
+        return
 
-    new_data = data[:offset] + name_enc + data[offset+20:]
+    # make new_name 20-character long
+    name = new_name.ljust(20)[:20]
+
+    # nibblize it
+    nibblized = nibblize(name)
+
+    # compute new checksum
+    name_end = name_beg + 40
+    categories = data[name_end:name_end+2]
+    s = sum([0x20,0,0] + nibblized + categories)
+    checksum = 0x80 - (s & 0x7f)
+    
+    # verify checksum
+    if (s + checksum) & 0x7 != 0:
+        print("solaris: bad new name '" + new_name + "' checksum " + f'{checksum:02x}')
+        return None
+
+    # assemble new data
+    # 1 + 1 + 1 : cat1 + cat2 + 0xf7
+    new_data = data[:name_beg] + nibblized + categories + [checksum] + data[name_end+1+1+1:]
+
     return new_data
 
 
@@ -303,8 +339,75 @@ def run_tests():
     with open("testData/JBSolaris-INIT.syx", "rb") as sysex:
         raw_data = list(sysex.read())
         assert nameFromDump(raw_data) == "INIT"
-        assert nameFromDump(renamePatch(raw_data, "SolarisINIT")) == "SolarisINIT"
-        #assert isSingleProgramDump(raw_data)
+
+        # same name produces the same data
+        renamed = renamePatch(raw_data, "INIT")
+        assert len(raw_data) == len(renamed)
+        assert raw_data == renamed
+        check_name = nameFromDump(renamed)
+        assert check_name == "INIT"
+        
+        # different name
+        renamed = renamePatch(raw_data, "SolarisINIT")
+        assert len(raw_data) == len(renamed)
+        assert raw_data != renamed
+        check_name = nameFromDump(renamed)
+        assert check_name == "SolarisINIT"
+    
+    # with open("testData/JBSolaris-RotorDreams.syx", "rb") as sysex:
+    #     raw_data = list(sysex.read())
+    #     assert nameFromDump(raw_data) == "JBaRotor Dreams"
+    #     renamed = renamePatch(raw_data, "JB Rotor Dreams")
+    #     assert len(raw_data) == len(renamed)
+    #     assert raw_data != renamed
+    #     check_name = nameFromDump(renamed)
+    #     assert check_name == "JB Rotor Dreams"
+
+
+
+def run_midi_tests():
+        class MidiInputHandler(object):
+            def __init__(self, port):
+                self.port = port
+                self._wallclock = time.time()
+
+            def __call__(self, event, data=None):
+                message, deltatime = event
+                self._wallclock += deltatime
+                #print("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
+                print ([f'{x:02x}' for x in message])
+
+        import time
+        import rtmidi
+        midiout = rtmidi.MidiOut()
+        available_ports = midiout.get_ports()
+        from rtmidi.midiutil import open_midiinput
+        midiin, port_name = open_midiinput(0)
+        print(port_name)
+
+        #midiin = rtmidi.MidiIn()
+        # Don't ignore sysex, timing, or active sensing messages.
+        midiin.ignore_types( False, True, True )
+        midiin.set_callback(MidiInputHandler(port_name))
+        
+        midiout.open_port(0)
+
+        msg = [0x90, 60, 112]
+        midiout.send_message(msg)
+        time.sleep(1)
+        msg = [0x80, 60, 0]
+        midiout.send_message(msg)
+
+        msg = identity_request # bulk_dump_request
+        msg = bulk_dump_request
+        print(msg)
+        midiout.send_message(msg)
+        
+        while(True):
+            time.sleep(1)
+        #print (midiin.get_message())
+        
+        # assert isSingleProgramDump(raw_data)
         # assert numberFromDump(raw_data) == 35
 
         # buffer = convertToEditBuffer(1, raw_data)
@@ -323,7 +426,6 @@ def run_tests():
 
         # assert calculateFingerprint(same_same) == calculateFingerprint(raw_data)
         # assert friendlyBankName(2) == 'C'
-
 
 
 if __name__ == "__main__":
