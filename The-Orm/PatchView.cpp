@@ -180,7 +180,7 @@ void PatchView::retrieveFirstPageFromDatabase() {
 	int total = getTotalCount();
 	patchButtons_->setTotalCount(total);
 	patchButtons_->refresh(true); // This kicks of loading the first page
-	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, Uuid::Uuid().toString(), nullptr);
+	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, juce::Uuid().toString(), nullptr);
 }
 
 std::shared_ptr<midikraft::PatchList>  PatchView::retrieveListFromDatabase(midikraft::ListInfo const& info)
