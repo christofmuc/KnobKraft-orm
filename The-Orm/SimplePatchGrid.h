@@ -29,5 +29,5 @@ private:
 
 	PatchView* patchView_;
 	std::unique_ptr<PatchButtonPanel> grid_;
-	std::vector<std::unique_ptr<LambdaValueListener>> _listeners;
+	ListenerSet listeners_;
 };

@@ -23,10 +23,11 @@ SimplePatchGrid::SimplePatchGrid(PatchView* patchView) : patchView_(patchView)
 		});
 
 	Data::ensureEphemeralPropertyExists(EPROPERTY_LIBRARY_PATCH_LIST, {});
-	_listeners.push_back(std::make_unique<LambdaValueListener>(Data::getEphemeralPropertyAsValue(EPROPERTY_LIBRARY_PATCH_LIST), [this](juce::Value& newValue) {
+	listeners_.addListener(Data::getEphemeralPropertyAsValue(EPROPERTY_LIBRARY_PATCH_LIST), [this](juce::Value& newValue) {
 		ignoreUnused(newValue);
 		reload();
-		}));
+		});
+	listeners_.triggerAll();
 }
 
 void SimplePatchGrid::resized()
