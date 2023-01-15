@@ -19,6 +19,9 @@
 
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
+juce::Identifier const PROPERTY_WINDOW_LIST {"Windows"};
+juce::Identifier const PROPERTY_WINDOW_OPENNESS {"Open"};
+juce::Identifier const PROPERTY_WINDOW_SIZE {"Size"};
 
 juce::Identifier const EPROPERTY_LIBRARY_PATCH_LIST {"LibraryPatchList"};
 

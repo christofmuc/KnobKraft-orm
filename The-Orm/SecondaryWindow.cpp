@@ -6,7 +6,7 @@
 
 #include "SecondaryWindow.h"
 
-#include "Settings.h"
+#include "UIModel.h"
 
 #include <fmt/format.h>
 
@@ -20,18 +20,33 @@ SecondaryMainWindow::SecondaryMainWindow(std::string const& settingsName, int in
 	if (!restoreWindowState()) {
 		setSize(initialW, initialH);
 	}
+	if (thisWindowSettings().getProperty(PROPERTY_WINDOW_OPENNESS) == "1") {
+		initialShow();
+	}
+}
+
+void SecondaryMainWindow::initialShow() 
+{
 	setVisible(true);
 	toFront(true);
+	thisWindowSettings().setProperty(PROPERTY_WINDOW_OPENNESS, "1", nullptr);
+}
+
+juce::ValueTree SecondaryMainWindow::thisWindowSettings()
+{
+	auto windows = Data::instance().get().getOrCreateChildWithName(PROPERTY_WINDOW_LIST, nullptr);
+	return windows.getOrCreateChildWithName(juce::Identifier(settingsName_), nullptr);
 }
 
 void SecondaryMainWindow::closeButtonPressed() {
 	storeWindowState();
 	setVisible(false);
+	thisWindowSettings().setProperty(PROPERTY_WINDOW_OPENNESS, "0", nullptr);
 }
 
 bool SecondaryMainWindow::restoreWindowState() {
-	if (Settings::instance().keyIsSet(settingsKeyName())) {
-		restoreWindowStateFromString(Settings::instance().get(settingsKeyName(), ""));
+	if (thisWindowSettings().hasProperty(PROPERTY_WINDOW_SIZE)) {
+		restoreWindowStateFromString(thisWindowSettings().getProperty(PROPERTY_WINDOW_SIZE));
 		return true;
 	}
 	else {
@@ -40,10 +55,6 @@ bool SecondaryMainWindow::restoreWindowState() {
 }
 
 void SecondaryMainWindow::storeWindowState() {
-	Settings::instance().set(settingsKeyName(), getWindowStateAsString().toStdString());
+	thisWindowSettings().setProperty(PROPERTY_WINDOW_SIZE, getWindowStateAsString(), nullptr);
 }
 
-std::string SecondaryMainWindow::settingsKeyName() const
-{
-	return fmt::format("{}-Size", settingsName_);
-}

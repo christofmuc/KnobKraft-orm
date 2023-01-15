@@ -342,7 +342,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}}},
 		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
 		{ "Open 2nd window", { "Open 2nd window", [this]() {
-			openSecondMainWindow(); 
+			openSecondMainWindow(false); 
 		} }},
 		{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
 		{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
@@ -521,9 +521,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}
 
 	// Check if the secondary main window was open last time we closed
-	if (Settings::instance().get("secondaryWindowOpen", "0") == "1") {
-		openSecondMainWindow();
-	}
+	openSecondMainWindow(true);
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
 #ifdef WIN32
@@ -561,9 +559,10 @@ MainComponent::~MainComponent()
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
 
-	Settings::instance().set("secondaryWindowOpen", sSecondMainWindow ? (sSecondMainWindow->isVisible() ? "1": "0") : "0");
-	sSecondMainWindow->storeWindowState();
-	sSecondMainWindow.reset();
+	if (sSecondMainWindow) {
+		sSecondMainWindow->storeWindowState();
+		sSecondMainWindow.reset();
+	}
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -1048,18 +1047,18 @@ void MainComponent::aboutBox()
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
-void MainComponent::openSecondMainWindow() 
+void MainComponent::openSecondMainWindow(bool fromSettings) 
 {
 	// Start simple, create a new document window
 	if (!sSecondMainWindow) {
 		auto newSelector = new SimplePatchGrid(patchView_.get());
 		sSecondMainWindow = std::make_unique<SecondaryMainWindow>("SecondWindow", 1024, 600, newSelector);
-		jassert(sSecondMainWindow->isShowing());
 	}
-	else
-	{
-		sSecondMainWindow->setVisible(true);
-		sSecondMainWindow->toFront(true);
+
+	if (!fromSettings) {
+		// Show the window, irregardless of what was stored in the settings. This is used to show a window that wasn't shown via stored setting
+		sSecondMainWindow->initialShow();
+		jassert(sSecondMainWindow->isShowing());
 	}
 }
 

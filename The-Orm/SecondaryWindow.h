@@ -15,11 +15,12 @@ public:
 
 	void closeButtonPressed() override;
 
+	void initialShow();
 	void storeWindowState();
 
 private:
 	bool restoreWindowState();
-	std::string settingsKeyName() const;
+	juce::ValueTree thisWindowSettings();
 
 	std::string settingsName_;
 };

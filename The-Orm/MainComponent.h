@@ -22,6 +22,7 @@
 #include "SynthList.h"
 #include "LambdaMenuModel.h"
 #include "LambdaButtonStrip.h"
+#include "LambdaValueListener.h"
 #include "PatchPerSynthList.h"
 #include "PatchListTree.h"
 
@@ -75,7 +76,7 @@ private:
 	void refreshSynthList();
 	static void aboutBox();
 
-	void openSecondMainWindow();
+	void openSecondMainWindow(bool fromSettings);
 	static std::unique_ptr<SecondaryMainWindow> sSecondMainWindow;
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
@@ -119,6 +120,8 @@ private:
 	InsetBox logArea_;
 
 	std::shared_ptr<spdlog::logger> spdLogger_;
+
+	ListenerSet listeners_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
