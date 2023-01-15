@@ -14,7 +14,7 @@
 
 SimplePatchGrid::SimplePatchGrid(PatchView* patchView) : patchView_(patchView)
 {
-	grid_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) { patchSelectedHandler(patch); });
+	grid_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) { patchSelectedHandler(patch); }, "secondWindow");
 	addAndMakeVisible(*grid_);
 
 	// Setup the Grid so it always shows the same list as our main patch view

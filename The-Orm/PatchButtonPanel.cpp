@@ -14,26 +14,10 @@
 #include "Settings.h"
 
 #include <algorithm>
+#include <fmt/format.h>
 
-namespace {
-
-	enum class SliderAxis {
-		X_AXIS, Y_AXIS
-	};
-
-	std::string settingName(SliderAxis axis)
-	{
-		if (UIModel::instance()->currentSynth() == nullptr || (UIModel::instance()->multiMode_.multiSynthMode())) {
-			return std::string("gridSizeSlider") + (axis == SliderAxis::Y_AXIS ? "Y" : "X"); 
-		}
-		else {
-			return UIModel::currentSynth()->getName() + "-gridSizeSlider" + (axis == SliderAxis::Y_AXIS ? "Y" : "X");
-		}
-	}
-}
-
-PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler) :
-	handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
+PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler, std::string const& settingPrefix) :
+	settingPrefix_(settingPrefix), handler_(handler), pageBase_(0), pageNumber_(0), totalSize_(0)
 {
 	gridSizeSliderX_.setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
 	gridSizeSliderX_.setRange(4.0, 16.0, 1.0);
@@ -123,6 +107,22 @@ PatchButtonPanel::~PatchButtonPanel()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	UIModel::instance()->thumbnails_.removeChangeListener(this);
 	UIModel::instance()->multiMode_.removeChangeListener(this);
+}
+
+std::string PatchButtonPanel::settingName(SliderAxis axis)
+{
+	std::string axisName = axis == SliderAxis::Y_AXIS ? "Y" : "X";
+	if (settingPrefix_.empty()) {
+		if (UIModel::instance()->currentSynth() == nullptr || (UIModel::instance()->multiMode_.multiSynthMode())) {
+			return fmt::format("gridSizeSlider{}", axisName);
+		}
+		else {
+			return fmt::format("{}-gridSizeSlider{}", UIModel::currentSynth()->getName(), axisName);
+		}
+	}
+	else {
+		return fmt::format("{}-gridSizeSlider{}", settingPrefix_, axisName);
+	}
 }
 
 void PatchButtonPanel::refreshGridSize()
