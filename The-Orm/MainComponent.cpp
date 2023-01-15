@@ -556,6 +556,7 @@ MainComponent::~MainComponent()
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
 
+	sSecondMainWindow->storeWindowState();
 	sSecondMainWindow.reset();
 
 #ifdef USE_SPARKLE
@@ -1041,22 +1042,6 @@ void MainComponent::aboutBox()
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
-class SecondaryMainWindow : public juce::DocumentWindow
-{
-public:
-	SecondaryMainWindow(std::string const& settingsName, int initialW, int initialH, Component *initialContent) : juce::DocumentWindow("KnobKraft Quick Access", juce::Colours::black, juce::DocumentWindow::TitleBarButtons::allButtons, true) {
-		ignoreUnused(settingsName);
-		setContentOwned(initialContent, false);
-		setSize(initialW, initialH);
-		setVisible(true);
-		toFront(true);
-	}
-
-	void closeButtonPressed() override {
-		setVisible(false);
-	}
-};
-
 void MainComponent::openSecondMainWindow() 
 {
 	// Start simple, create a new document window
@@ -1072,4 +1057,4 @@ void MainComponent::openSecondMainWindow()
 	}
 }
 
-std::unique_ptr<juce::DocumentWindow> MainComponent::sSecondMainWindow;
+std::unique_ptr<SecondaryMainWindow> MainComponent::sSecondMainWindow;

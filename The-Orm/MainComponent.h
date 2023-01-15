@@ -25,6 +25,8 @@
 #include "PatchPerSynthList.h"
 #include "PatchListTree.h"
 
+#include "SecondaryWindow.h"
+
 #include "PatchView.h"
 #include "SettingsView.h"
 #include "KeyboardMacroView.h"
@@ -74,7 +76,7 @@ private:
 	static void aboutBox();
 
 	void openSecondMainWindow();
-	static std::unique_ptr<juce::DocumentWindow> sSecondMainWindow;
+	static std::unique_ptr<SecondaryMainWindow> sSecondMainWindow;
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	

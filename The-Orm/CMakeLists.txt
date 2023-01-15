@@ -71,6 +71,7 @@ set(SOURCES
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h
+	SecondaryWindow.cpp SecondaryWindow.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	SimplePatchGrid.cpp SimplePatchGrid.h
