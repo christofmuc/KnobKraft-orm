@@ -15,7 +15,7 @@
 #include "EditCategoryDialog.h"
 #include "ExportDialog.h"
 #include "SimplePatchGrid.h"
-
+#include "SecondaryWindow.h"
 #include "Settings.h"
 
 #include "Virus.h"
@@ -520,6 +520,11 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
 
+	// Check if the secondary main window was open last time we closed
+	if (Settings::instance().get("secondaryWindowOpen", "0") == "1") {
+		openSecondMainWindow();
+	}
+
 	// Refresh Window title and other things to do when the MainComponent is displayed
 #ifdef WIN32
     MessageManager::callAsync([this]() {
@@ -556,6 +561,7 @@ MainComponent::~MainComponent()
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
 
+	Settings::instance().set("secondaryWindowOpen", sSecondMainWindow ? (sSecondMainWindow->isVisible() ? "1": "0") : "0");
 	sSecondMainWindow->storeWindowState();
 	sSecondMainWindow.reset();
 
