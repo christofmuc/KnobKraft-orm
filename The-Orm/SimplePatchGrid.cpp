@@ -44,6 +44,7 @@ void SimplePatchGrid::reload()
 void SimplePatchGrid::patchSelectedHandler(midikraft::PatchHolder& patch)
 {
 	spdlog::info("Patch {} selected", patch.name());
+	patchView_->selectPatch(patch, true);
 	if (onPatchSelected)
 	{
 		onPatchSelected(patch);
