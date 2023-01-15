@@ -114,7 +114,9 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 	}
 	currentPatch_ = patch;
 	if (patch && patch->patch()) {
-		name_.setButtonData(patch->name(), patch->createDragInfoString());
+		//TODO This should use a PatchHolder and a PatchHolderButton
+		name_.setButtonData(patch->name());
+		name_.setButtonDragInfo(patch->createDragInfoString());
 		setupPatchProperties(patch);
 		refreshNameButtonColour();
 		favorite_.setToggleState(patch->isFavorite(), dontSendNotification);
@@ -246,7 +248,7 @@ void CurrentPatchDisplay::reset()
 {
 	currentPatch_ = std::make_shared<midikraft::PatchHolder>();
 	propertyEditor_.setProperties({});
-	name_.setButtonData("No patch loaded", "");
+	name_.setButtonData("No patch loaded");
 	metaDataValues_.clear();
 	favorite_.setToggleState(false, dontSendNotification);
 	hide_.setToggleState(false, dontSendNotification);

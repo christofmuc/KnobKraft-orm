@@ -42,6 +42,11 @@ public:
 	static void setCurrentInfoForSynth(std::string const& synthname, PatchButtonInfo newValue);
 
 private:
+	juce::ValueTree createValueTwin(midikraft::PatchHolder*);
+	void rebindButton(ValueTree patchValues);
+
+	static juce::ValueTree emptyButtonValues_;
+
 	bool isDirty_;
 	GlowEffect glow;
 };
