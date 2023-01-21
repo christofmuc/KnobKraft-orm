@@ -277,6 +277,7 @@ def createDeviceDetectMessage(channel):
 def channelIfValidDeviceResponse(message):
     # match message:
     #     case [
+    if len(message) < 16: return -1
     device_id = message[2]
     [v1,v2,v3,v4] = message[12:16]
     if message == [
@@ -331,6 +332,7 @@ def createEditBufferRequest(channel):
 def isPartOfEditBufferDump(message):
     # match message:
     #     case [
+    if len(message) < 7: return False
     device_id = message[4]
     if message[0:7] == [
             0xf0,  # Start of SysEx (SOX)
@@ -349,6 +351,7 @@ def isEditBufferDump(data):
     for message, _ in nextSysexMessageReversed(data):
         # match message:
         #     case [
+        if len(message) < 8: return False
         device_id = message[4]
         if message[0:8] == [
                 0xf0,  # Start of SysEx (SOX)
@@ -405,6 +408,7 @@ def _find_name(data, high=0x20, middle=0x0, low=0x0):
     for message, slice_ in nextSysexMessage(data):
         # match message:
         #     case [
+        if len(message) < 10: continue
         device_id = message[4]
         [h, m, l] = message[7:10]
         if message[0:10] == [
@@ -483,7 +487,7 @@ def renamePatch(data, new_name):
 # Exposing layers/splits of a patch
 
 def numberOfLayers(messages):
-    # TODO: check effective use of layers, but taking into account the allocated voices or name != INIT?
+    # TODO: check effective use of layers, but taking into account the allocated voices or part name != INIT?
     return 4
 
 
