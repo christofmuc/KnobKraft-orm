@@ -82,30 +82,6 @@ def nextSysexMessageReversed(messages):
         yield list(reversed(message)), revslice_
 
 
-# -- pre python 3.10, without Structural Pattern Matching and 'match' keyword
-
-# much of the below functions compare a received message with an expected one
-# however, the received message may differ from the expected one in some variable fields (e.g. deviceid ou channel) 
-# _get_and_set_expected* make field-variable midi messages comparable,
-# by assigning the expected message field to the received message
-# and by returning the original value of the field, would this prove useful
-
-def _get_and_set_expected_index(message, index, expected_value):
-        original = message[index]
-        message[index] = expected_value
-        return original
-def _get_and_set_expected_range(message, first_index, last_index, expected_values):
-        original = message[first_index:last_index]
-        message[first_index:last_index] = expected_values
-        return original
-# pseudo-overloaded version to make it more usable
-def _get_and_set_expected(message, index_or_range, expected_value):
-    if type(index_or_range) == int:
-        return _get_and_set_expected_index(message, index_or_range, expected_value)
-    else:
-        return _get_and_set_expected_range(message, index_or_range[0], index_or_range[1], expected_value)
-
-
 
 # ------------------
 # Identity and Setup
@@ -151,6 +127,7 @@ def numberOfPatchesPerBank():
 
 def bankDescriptors() -> List[Dict]:
     # this is the official Factory bank set
+    # TODO: find a way to build it according to the actual location of the bank, maybe by recognizing some preset names?
     return [
         {
             "bank": 0,
@@ -224,7 +201,7 @@ def bankDescriptors() -> List[Dict]:
         },
         {
             "bank": 10,
-            "name": "",
+            "name": "Brian Kehew",
             "size": 0,
             "type": "Patch",
             "isROM": False
@@ -264,6 +241,13 @@ def bankDescriptors() -> List[Dict]:
             "type": "Patch",
             "isROM": False
         },
+        {
+            "bank": 16,
+            "name": "OSv2 demo",
+            "size": 24,
+            "type": "Patch",
+            "isROM": False
+        },
     ]
 
 
@@ -291,23 +275,20 @@ def createDeviceDetectMessage(channel):
 
 # Checking if reply came
 def channelIfValidDeviceResponse(message):
-    device_id = _get_and_set_expected(message, 2, 0)
-    [v1,v2,v3,v4] = _get_and_set_expected(message, (12,16), [0,0,0,0])
-
     # match message:
     #     case [
+    device_id = message[2]
+    [v1,v2,v3,v4] = message[12:16]
     if message == [
             0xf0,  # Start of SysEx (SOX)
             0x7e,  # Non real time
-            #device_id,  # Device ID (n = 0x00 – 0x0F or 0x7F)
-            0,
+            device_id,  # Device ID (n = 0x00 – 0x0F or 0x7F)
             0x06,  # General Information
             0x02,  # Identity Reply
             0x00, 0x12, 0x34,  # Manufacturer ID
             0x10, 0x00,  # Device family code (1 = Solaris) (shouldn't it be 0x01 instead??)
             0x01, 0x00,  # Device family member code (1 = Keyboard)
-            #v1,v2,v3,v4,  # Software revision level
-            0,0,0,0,
+            v1,v2,v3,v4,  # Software revision level
             0xf7   # End of SysEx (EOX)
         ]:
             print("Solaris id:" + str(device_id) + " OS v" + ".".join((str(m) for m in [v1,v2,v3,v4])))
@@ -348,14 +329,13 @@ def createEditBufferRequest(channel):
 
 # Handling edit buffer dumps that consist of more than one MIDI message
 def isPartOfEditBufferDump(message):
-    device_id = _get_and_set_expected(message, 4, 0)
     # match message:
     #     case [
-    if message[0:6] == [
+    device_id = message[4]
+    if message[0:7] == [
             0xf0,  # Start of SysEx (SOX)
             0x00, 0x12, 0x34,  # Manufacturer
-            #_,     # Device ID
-            0,
+            device_id, #_,     # Device ID
             0x10,  # Solaris ID
             0x11,  # Bulk Dump Request
             #*_
@@ -367,14 +347,13 @@ def isPartOfEditBufferDump(message):
 # Checking if a MIDI message is an edit buffer dump
 def isEditBufferDump(data):
     for message, _ in nextSysexMessageReversed(data):
-        device_id = _get_and_set_expected(message, 4, 0)
         # match message:
         #     case [
+        device_id = message[4]
         if message[0:8] == [
                 0xf0,  # Start of SysEx (SOX)
                 0x00, 0x12, 0x34,  # Manufacturer
-                #_,     # Device ID
-                0,
+                device_id,     # Device ID
                 0x10,  # Solaris ID
                 0x11,  # Bulk Dump Request
                 0x7f,  # Frame End
@@ -416,43 +395,42 @@ def convertToEditBuffer(channel, long_message):
 # Getting and Setting the patch's name
 
 
-# 0x20: preset name, 0x17+p: part/layer name
+# high 0x20: preset name
+# high 0x17+p: part/layer name
 def _find_name(data, high=0x20, middle=0x0, low=0x0):
+    ''' return (name,slice_): 'name' is denibbled, 20-character long name (inc. spaces), 'slice_' is the slice in the wole data'''
+
     offset = -1
     name = ""
     for message, slice_ in nextSysexMessage(data):
-        original_msg = message[:] # save original message
-        device_id = _get_and_set_expected(message, 4, 0)
-        [h, m, l] = _get_and_set_expected(message, (7, 10), [0,0,0])
         # match message:
         #     case [
+        device_id = message[4]
+        [h, m, l] = message[7:10]
         if message[0:10] == [
                 0xf0,   # Start of SysEx (SOX)
                 0x00, 0x12, 0x34,  # Manufacturer
-                #_,      # Device ID
-                0,
+                device_id, #_,      # Device ID
                 0x10,   # Solaris ID,
                 0x11,   # Bulk Dump Request
-                #h,m,l,  # Address
-                0,0,0
+                h,m,l,  # Address
                 #*_
-            ]:
-                if [h, m, l] != [high, middle, low]:
-                    continue
+                ]:
+                    if [h, m, l] != [high, middle, low]:
+                        continue
 
-                # verify checksum
-                #s = sum(message[7:-2]) # 7 = address location
-                s = sum(original_msg[7:-2]) # 7 = address location
-                checksum = message[-2]
+                    # verify checksum
+                    s = sum(message[7:-2]) # 7 = address location
+                    checksum = message[-2]
 
-                if ((s + checksum) & 0x7f) == 0:
-                    offset = slice_.start + 7 + 3
-                    # Part Name has 20 characters with 2 bytes each
-                    name = denibblize(data[offset:offset+40])
-                else:
-                    print("solaris: bad name '" + denibblize(data[offset:offset+40]) + "' checksum " + f'{checksum:02x}')
-                    
-                break
+                    if ((s + checksum) & 0x7f) == 0:
+                        offset = slice_.start + 7 + 3
+                        # Part Name has 20 characters with 2 bytes each
+                        name = denibblize(data[offset:offset+40])
+                    else:
+                        print("solaris: bad name '" + denibblize(data[offset:offset+40]) + "' checksum " + f'{checksum:02x}')
+                        
+                    break
     return name, slice(offset, offset+40)
 
 
@@ -542,7 +520,7 @@ for i in range(1,11):
 # KnobKraft categories:
 # Lead, Pad, Brass, Organ, Keys, Bass, Arp, Pluck, Drone, Drum, Bell, SFX, Ambient, Wind, Voice
 
-# TODO: discrepency for Bell/Bells SFX/Effect Keys/Keyboard.
+# TODO: discrepency for Bell/Bells, SFX/Effect, Keys/Keyboard.
 # IDEA: rename patch once they are properly tagged
 # IDEA: reorganize banks according to tag (Keys, Bass, Pad etc.)
 
