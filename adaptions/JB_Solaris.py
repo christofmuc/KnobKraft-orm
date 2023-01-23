@@ -34,27 +34,31 @@
 # Preset Dump Capability: as soon as Solaris supports it
 # Bank Dump Capability: as soon as Solaris supports it
 
-from typing import List, Dict
+from typing import List, Dict, Tuple, Iterator
+#TypeAlias # 3.10
 
 # ----------------
 # helper functions
 
-def m2str(message):
+MidiMessage = list[int]
+#MidiMessage = bytes
+
+def m2str(message:MidiMessage) -> str:
     return ' '.join(f'{m:02x}' for m in message)
 
 
-def print_midi(message):
+def print_midi(message:MidiMessage) -> None:
     print(m2str(message))
 
 
-def nibblize(data):
-    nibblized = []
+def nibblize_str(data:str) -> MidiMessage:
+    nibblized = MidiMessage()
     for c in data:
-        nibblized += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
+        nibblized += MidiMessage([(ord(c) >> 8) & 0x7f, ord(c) & 0x7f])
     return nibblized
 
 
-def denibblize(data):
+def denibblize_str(data:MidiMessage) -> str:
     denibblized = ""
     for i in range(0, len(data), 2):
         c = (data[i] << 8) + data[i+1]
@@ -62,35 +66,39 @@ def denibblize(data):
     return denibblized
 
 
-# sysex message generators to iterate through bulk messages
-def nextSysexMessage(messages, SOX=0xf0, EOX=0xf7):
+# sysex message iterator through bulk messages
+def nextSysexMessage(messages:MidiMessage, SOX:int=0xf0, EOX:int=0xf7) -> Iterator[Tuple[MidiMessage, slice]]:
     start = 0
     read = 0
-    message = []
+    message = MidiMessage()
+    # for i in range(len(messages)):
+    #     b = bytes(messages[i:i+1]) # bytes
+    #     message = message + b
     for b in messages:
         message.append(b)
         if b == SOX:
             start = read
         elif b == EOX:
             yield (message, slice(start, read + 1))
-            message = []
+            message = MidiMessage()
         read = read + 1
 
 
-def nextSysexMessageReversed(messages):
-    for message, revslice_ in nextSysexMessage(reversed(messages), SOX=0xf7, EOX=0xf0):
-        yield list(reversed(message)), revslice_
+def nextSysexMessageReversed(messages:MidiMessage) -> Iterator[Tuple[MidiMessage, slice]]:
+    for message, revslice_ in nextSysexMessage(MidiMessage(reversed(messages)), SOX=0xf7, EOX=0xf0):
+        yield MidiMessage(reversed(message)), revslice_
 
 
 
 # ------------------
 # Identity and Setup
 
-def name():
+def name() -> str:
     return 'JB Solaris'
 
-def setupHelp():
-    return '''Settings on the Solaris unit: in the 'Midi' page, switch 'TxSysEx' and 'RxSysEx' on.
+def setupHelp() -> str:
+    return '''Settings: on the Solaris unit, in the 'Midi' page, switch 'TxSysEx' and 'RxSysEx' on.
+
 Capabilities: can send, receive, rename preset and rename parts in Edit Buffer mode only.
 
 **Caution**:
@@ -102,14 +110,16 @@ With a USB3 port, the connection cannot be reestablished, and this will require 
 If you have a Mac and a USB1 port, please report if sending SysEx is working, this could prove valuable to debug this USB problem.
 'We have top men working on it. Top. Men.'
 
-TODO
+DOING:
 Categories
-FUTURE
+Bank descriptors
+
+FUTURE:
 (Random Access) Preset Dump Capability: as soon as Solaris supports it
 Bank Dump Capability: as soon as Solaris supports it
 '''
 
-# def generalMessageDelay():
+# def generalMessageDelay() -> int:
 #     return 50
 
 
@@ -117,11 +127,11 @@ Bank Dump Capability: as soon as Solaris supports it
 # banks
 
 
-def numberOfBanks():
+def numberOfBanks() -> int:
     return 128
 
 
-def numberOfPatchesPerBank():
+def numberOfPatchesPerBank() -> int:
     return 128
 
 
@@ -251,9 +261,9 @@ def bankDescriptors() -> List[Dict]:
     ]
 
 
-def bankSelect(channel, bank):
+def bankSelect(channel:int, bank:int) -> MidiMessage:
     # MIDI CC with controller number 32, which is used by many synth as the bank select controller.
-    return [0xb0 | (channel & 0x0f), 32, bank]
+    return MidiMessage([0xb0 | (channel & 0x0f), 32, bank])
 
 
 
@@ -262,19 +272,19 @@ def bankSelect(channel, bank):
 
 
 # Sending message to force reply by device
-def createDeviceDetectMessage(channel):
-    return [
+def createDeviceDetectMessage(channel:int) -> MidiMessage:
+    return MidiMessage([
         0xf0,  # Start of SysEx (SOX)
         0x7e,  # Non real time
         0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
         0x06,  # General Information
         0x01,  # Identity Request
         0xf7   # End of SysEx (EOX)
-    ]
+    ])
 
 
 # Checking if reply came
-def channelIfValidDeviceResponse(message):
+def channelIfValidDeviceResponse(message:MidiMessage) -> int:
     # match message:
     #     case [
     if len(message) < 16: return -1
@@ -298,7 +308,7 @@ def channelIfValidDeviceResponse(message):
 
 
 # Optionally specifying to not do channel specific detection
-def needsChannelSpecificDetection():
+def needsChannelSpecificDetection() -> bool:
     return False
 
 
@@ -316,8 +326,8 @@ def needsChannelSpecificDetection():
 # The data returned will begin with a Frame Start block followed by all preset blocks and ending with a Frame End block
 
 # Requesting the edit buffer from the synth
-def createEditBufferRequest(channel):
-    return  [
+def createEditBufferRequest(channel:int) -> MidiMessage:
+    return MidiMessage([
         0xf0,  # Start of SysEx (SOX)
         0x00, 0x12, 0x34,  # Manufacturer
         0x7f,  # Device ID
@@ -325,11 +335,11 @@ def createEditBufferRequest(channel):
         0x10,  # Bulk Dump Request
         0x7e, 0x7f, 0x7f,  # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F
         0xf7   # End of SysEx (EOX)
-    ]
+    ])
 
 
 # Handling edit buffer dumps that consist of more than one MIDI message
-def isPartOfEditBufferDump(message):
+def isPartOfEditBufferDump(message:MidiMessage) -> bool:
     # match message:
     #     case [
     if len(message) < 7: return False
@@ -347,7 +357,7 @@ def isPartOfEditBufferDump(message):
 
 
 # Checking if a MIDI message is an edit buffer dump
-def isEditBufferDump(data):
+def isEditBufferDump(data:MidiMessage) -> bool:
     for message, _ in nextSysexMessageReversed(data):
         # match message:
         #     case [
@@ -364,10 +374,11 @@ def isEditBufferDump(data):
             ]:
                 return True
         return False
+    return False
 
 
 # Creating the edit buffer to send
-def convertToEditBuffer(channel, long_message):
+def convertToEditBuffer(channel:int, long_message:MidiMessage) -> MidiMessage:
     return long_message
 
 
@@ -400,7 +411,7 @@ def convertToEditBuffer(channel, long_message):
 
 # high 0x20: preset name
 # high 0x17+p: part/layer name
-def _find_name(data, high=0x20, middle=0x0, low=0x0):
+def _find_name(data:MidiMessage, high:int=0x20, middle:int=0x0, low:int=0x0) -> Tuple[str, slice]:
     ''' return (name,slice_): 'name' is denibbled, 20-character long name (inc. spaces), 'slice_' is the slice in the wole data'''
 
     offset = -1
@@ -430,55 +441,55 @@ def _find_name(data, high=0x20, middle=0x0, low=0x0):
                     if ((s + checksum) & 0x7f) == 0:
                         offset = slice_.start + 7 + 3
                         # Part Name has 20 characters with 2 bytes each
-                        name = denibblize(data[offset:offset+40])
+                        name = denibblize_str(data[offset:offset+40])
                     else:
-                        print("solaris: bad name '" + denibblize(data[offset:offset+40]) + "' checksum " + f'{checksum:02x}')
+                        print("solaris: bad name '" + denibblize_str(data[offset:offset+40]) + "' checksum " + f'{checksum:02x}')
                         
                     break
     return name, slice(offset, offset+40)
 
 
-def _rename(data, new_name, slice_):
+def _rename(data:MidiMessage, new_name:str, slice_:slice) -> MidiMessage:
 
     # make new_name 20-character long
     name = new_name.ljust(20)[:20]
 
     # nibblize it
-    nibblized = nibblize(name)
+    nibblized = nibblize_str(name)
 
     # compute new checksum
     categories = data[slice_.stop:slice_.stop+2]
-    s = sum([0x20,0,0] + nibblized + categories)
+    s = sum(MidiMessage([0x20,0,0]) + nibblized + categories)
     checksum = 0x80 - (s & 0x7f)
     
     # verify checksum just in case
     if (s + checksum) & 0x7 != 0:
         print("solaris: bad new name '" + new_name + "' checksum " + f'{checksum:02x}')
-        return None
+        #return None
 
     # assemble new data
     # 1 + 1 + 1 : cat1 + cat2 + 0xf7
-    new_data = data[:slice_.start] + nibblized + categories + [checksum] + data[slice_.stop+1+1+1:]
+    new_data = data[:slice_.start] + nibblized + categories + MidiMessage([checksum]) + data[slice_.stop+1+1+1:]
 
     return new_data
 
 
-def isDefaultName(patchName):
+def isDefaultName(patchName:MidiMessage) -> bool:
     return patchName == 'INIT'
 
 
-def nameFromDump(data):
+def nameFromDump(data:MidiMessage) -> str:
     name, slice_ = _find_name(data)
     if slice_.start == -1:
-         return "unknown"
+        return "unknown"
 
     return name.strip()
 
 
-def renamePatch(data, new_name):
+def renamePatch(data:MidiMessage, new_name:str) -> MidiMessage:
     _, slice_ = _find_name(data)
     if slice_.start == -1:
-         return
+        return MidiMessage()
     return _rename(data, new_name, slice_)
 
 
@@ -486,24 +497,24 @@ def renamePatch(data, new_name):
 # ---------------------------------
 # Exposing layers/splits of a patch
 
-def numberOfLayers(messages):
+def numberOfLayers(messages:MidiMessage) -> int:
     # TODO: check effective use of layers, but taking into account the allocated voices or part name != INIT?
     return 4
 
 
-def layerName(messages, layerNo):
+def layerName(messages:MidiMessage, layerNo:int) -> str:
     #print("layer:", layerNo, " - ",end="")
     name, slice_ = _find_name(messages, 0x17, 0x0+layerNo)
     if slice_.start == -1:
-         return "unknown"
+        return "unknown"
 
     return name.strip()
 
 
-def setLayerName(messages, layerNo, new_name):
+def setLayerName(messages:MidiMessage, layerNo:int, new_name:str) -> MidiMessage:
     _, slice_ = _find_name(messages, 0x17, 0x0+layerNo)
     if slice_.start == -1:
-         return
+        return MidiMessage()
     return _rename(messages, new_name, slice_)
 
 
@@ -528,11 +539,11 @@ for i in range(1,11):
 # IDEA: rename patch once they are properly tagged
 # IDEA: reorganize banks according to tag (Keys, Bass, Pad etc.)
 
-def storedTags(message) -> List[str]:
+def storedTags(message:MidiMessage) -> List[str]:
     # categories are stored next to the name, so first, get the name position
     _, slice_ = _find_name(message)
     if slice_.start == -1:
-         return [""]
+        return [""]
     cat1 = message[slice_.stop]
     cat2 = message[slice_.stop+1]
     return [_category1[cat1], _category2[cat2]]
