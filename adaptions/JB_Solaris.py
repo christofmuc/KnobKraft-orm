@@ -35,6 +35,7 @@
 # Bank Dump Capability: as soon as Solaris supports it
 
 from typing import List, Dict, Tuple, Iterator
+import sys
 #TypeAlias # 3.10
 
 # ----------------
@@ -104,7 +105,8 @@ Capabilities: can send, receive, rename preset and rename parts in Edit Buffer m
 **Caution**:
 Sending SysEx through the Solaris DIN connection works.
 On Windows, sending SysEx through the Solaris USB connection works.
-On macOS, sending SysEx through a USB3 or a USB2 port from the computer to the Solaris USB currently disconnects the Solaris USB.
+On macOS, sending SysEx through a USB port from the computer to the Solaris USB may disconnect the Solaris USB.
+To prevent that, there is a 15ms delay between each message.
 With a USB2 port, the connection can be reestablished by unplugging/plugging the USB cable.
 With a USB3 port, the connection cannot be reestablished, and this will require a Solaris reboot.
 If you have a Mac and a USB1 port, please report if sending SysEx is working, this could prove valuable to debug this USB problem.
@@ -119,8 +121,11 @@ FUTURE:
 Bank Dump Capability: as soon as Solaris supports it
 '''
 
-# def generalMessageDelay() -> int:
-#     return 50
+def generalMessageDelay() -> int:
+    if sys.platform == 'darwin':
+        return 15
+    else:
+        return 0
 
 
 # -----
