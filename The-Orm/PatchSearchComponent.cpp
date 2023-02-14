@@ -292,7 +292,6 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 	}
 	midikraft::PatchFilter filter(synthMap);
 
-	filter.orderBy = midikraft::PatchOrdering::Order_by_Import_id;
 	filter.importID = ""; // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
 	filter.listID = ""; // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
 	filter.name = nameFilter;
@@ -305,6 +304,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 	filter.categories = catSelected;
 	filter.andCategories = andCategories_.getToggleState();
 	filter.onlyDuplicateNames = onlyDuplicates_.getToggleState();
+	filter.orderBy = filter.onlyDuplicateNames ? midikraft::PatchOrdering::Order_by_Name : midikraft::PatchOrdering::Order_by_Import_id;
 	return filter;
 }
 

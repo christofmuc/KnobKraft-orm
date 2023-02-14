@@ -20,7 +20,7 @@ class PatchButtonPanel : public Component,
 public:
 	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
 
-	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler);
+	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler, std::string const& settingPrefix = "");
 	virtual ~PatchButtonPanel() override;
 
 	void setPatchLoader(TPageLoader pageGetter);
@@ -45,7 +45,12 @@ public:
 	void jumpToPage(int pagenumber);
 
 private:
+	enum class SliderAxis {
+		X_AXIS, Y_AXIS
+	};
+
 	void changeListenerCallback(ChangeBroadcaster* source) override;
+	std::string settingName(SliderAxis axis);
 	void refreshGridSize();
 
 	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
@@ -54,6 +59,7 @@ private:
 	int indexOfActive() const;
 	void setupPageButtons();
 
+	std::string settingPrefix_;
 	std::vector<midikraft::PatchHolder> patches_;
 	std::unique_ptr<PatchButtonGrid<PatchHolderButton>> patchButtons_;
 	std::function<void(midikraft::PatchHolder &)> handler_;

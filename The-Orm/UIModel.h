@@ -19,6 +19,19 @@
 
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
+juce::Identifier const PROPERTY_WINDOW_LIST {"Windows"};
+juce::Identifier const PROPERTY_WINDOW_OPENNESS {"Open"};
+juce::Identifier const PROPERTY_WINDOW_SIZE {"Size"};
+
+juce::Identifier const EPROPERTY_LIBRARY_PATCH_LIST {"LibraryPatchList"};
+juce::Identifier const EPROPERTY_PATCH_CACHE {"PatchHolderCache"};
+juce::Identifier const EPROPERTY_PATCH_MD5 {"MD5"};
+juce::Identifier const EPROPERTY_PATCH_TITLE{ "Title" }; 
+juce::Identifier const EPROPERTY_PATCH_SUBTITLE{ "Subtitle" }; 
+juce::Identifier const EPROPERTY_PATCH_FAVORITE {"Favorite"};
+juce::Identifier const EPROPERTY_PATCH_HIDDEN {"Hidden"};
+juce::Identifier const EPROPERTY_PATCH_COLOR {"Color"};
+
 
 class CurrentSynth : public ChangeBroadcaster {
 public:

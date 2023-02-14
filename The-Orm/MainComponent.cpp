@@ -14,7 +14,8 @@
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
 #include "ExportDialog.h"
-
+#include "SimplePatchGrid.h"
+#include "SecondaryWindow.h"
 #include "Settings.h"
 
 #include "Virus.h"
@@ -243,7 +244,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
 		{7, { "Help", {
 #ifndef _DEBUG
@@ -340,6 +341,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		JUCEApplicationBase::quit();
 	}}},
 		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+		{ "Open 2nd window", { "Open 2nd window", [this]() {
+			openSecondMainWindow(false); 
+		} }},
 		{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
 		{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
 		{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
@@ -516,6 +520,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
 
+	// Check if the secondary main window was open last time we closed
+	openSecondMainWindow(true);
+
 	// Refresh Window title and other things to do when the MainComponent is displayed
 #ifdef WIN32
     MessageManager::callAsync([this]() {
@@ -551,6 +558,11 @@ MainComponent::~MainComponent()
 	// Prevent memory leaks being reported on shutdown
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
+
+	if (sSecondMainWindow) {
+		sSecondMainWindow->storeWindowState();
+		sSecondMainWindow.reset();
+	}
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -1035,3 +1047,19 @@ void MainComponent::aboutBox()
 	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
 }
 
+void MainComponent::openSecondMainWindow(bool fromSettings) 
+{
+	// Start simple, create a new document window
+	if (!sSecondMainWindow) {
+		auto newSelector = new SimplePatchGrid(patchView_.get());
+		sSecondMainWindow = std::make_unique<SecondaryMainWindow>("SecondWindow", 1024, 600, newSelector);
+	}
+
+	if (!fromSettings) {
+		// Show the window, irregardless of what was stored in the settings. This is used to show a window that wasn't shown via stored setting
+		sSecondMainWindow->initialShow();
+		jassert(sSecondMainWindow->isShowing());
+	}
+}
+
+std::unique_ptr<SecondaryMainWindow> MainComponent::sSecondMainWindow;

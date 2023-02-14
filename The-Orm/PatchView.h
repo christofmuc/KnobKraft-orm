@@ -86,9 +86,11 @@ public:
 
 private:
 	friend class PatchSearchComponent;
+	friend class SimplePatchGrid;
 
 	std::vector<CategoryButtons::Category> predefinedCategories();
 
+	int getTotalCount();
 	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	// New for bank management

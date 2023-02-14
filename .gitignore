@@ -9,3 +9,4 @@ adaptions/CompiledAdaptations.h
 codesigning/dsa_priv.pem
 builds.old/
 cmake-build-debug/
+build_python310/
