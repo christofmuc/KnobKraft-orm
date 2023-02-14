@@ -26,6 +26,8 @@
 
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
+#include "I18NHelper.h"
+
 #include <fmt/format.h>
 #include "PatchInterchangeFormat.h"
 #include "Settings.h"
@@ -904,6 +906,9 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 			else {
 				// Send out to Synth into edit buffer
 				if (patch.patch()) {
+					auto patchName = patch.name();
+					string_trim(patchName);
+					spdlog::info("Sending patch {} to {}", patchName, patch.synth()->getName());
 					patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
 				}
 				else {
