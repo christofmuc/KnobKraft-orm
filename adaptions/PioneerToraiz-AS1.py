@@ -35,8 +35,8 @@ def channelIfValidDeviceResponse(message):
             and message[8] == 0b00000000  # Toriaz ID byte 1
             and message[9] == 0b00000000  # Toriaz ID byte 2
             and message[10] == 0b00000001  # Toriaz ID byte 3
-            and message[11] == 0b00001000  # Toriaz ID byte 4
-            and message[12] == 0b00010000):  # Device ID
+            and message[11] == 0b00001000):  # Toriaz ID byte 4
+            #and message[12] == 0b00010000):  # Device ID
         # This is indeed the right package, now extract the MIDI channel from the message
         if message[2] == 0x7f:
             # The Toraiz is set to OMNI. Not a good idea, but let's treat this as channel 1 for now
