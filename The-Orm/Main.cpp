@@ -110,7 +110,11 @@ public:
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
-		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
+
+		// Load Data
+		Data::instance().initializeFromSettings();
+
+		mainWindow = std::make_unique<MainWindow> (getWindowTitle());
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -143,9 +147,6 @@ public:
 #endif
 #endif
 
-		// Load Data
-		Data::instance().initializeFromSettings();
-
 		// Window Title Refresher
 		UIModel::instance()->windowTitle_.addChangeListener(this);
     }
@@ -173,11 +174,11 @@ public:
         // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
+		mainWindow.reset();
+
 		// Save UIModel for next run
 		Data::instance().saveToSettings();
 		UIModel::shutdown();
-
-		mainWindow = nullptr; // (deletes our window)
 
 		// No more Python from here please
 		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
