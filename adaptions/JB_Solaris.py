@@ -41,7 +41,7 @@ import sys
 # ----------------
 # helper functions
 
-MidiMessage = list[int]
+MidiMessage = List[int]
 #MidiMessage = bytes
 
 def m2str(message:MidiMessage) -> str:
