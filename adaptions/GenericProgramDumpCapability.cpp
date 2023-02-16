@@ -127,7 +127,7 @@ namespace knobkraft {
 		{
 			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
-			int programNo = programNumber.toZeroBased();
+			int programNo = programNumber.toZeroBasedWithBank();
 			py::object result = me_->callMethod(kConvertToProgramDump, c, data, programNo);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);

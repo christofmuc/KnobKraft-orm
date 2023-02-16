@@ -419,8 +419,8 @@ namespace midikraft {
 
 	std::string RefaceDX::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		int bank = programNo.toZeroBased() / 8;
-		int patch = programNo.toZeroBased() % 8;
+		int bank = programNo.toZeroBasedDiscardingBank() / 8;
+		int patch = programNo.toZeroBasedDiscardingBank() % 8;
 		return fmt::format("Bank{}-{}", bank, patch);
 	}
 

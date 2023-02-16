@@ -14,7 +14,7 @@
 namespace midikraft {
 
 	KawaiK3Patch::KawaiK3Patch(MidiProgramNumber programNo, Synth::PatchData const &patchdata) 
-		: Patch(programNo.toZeroBased() >= 100 ? KawaiK3::K3_WAVE : KawaiK3::K3_PATCH, patchdata), number_(programNo)
+		: Patch(programNo.toZeroBasedDiscardingBank() >= 100 ? KawaiK3::K3_WAVE : KawaiK3::K3_PATCH, patchdata), number_(programNo)
 	{
 	}
 

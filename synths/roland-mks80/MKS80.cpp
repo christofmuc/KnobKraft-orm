@@ -40,8 +40,8 @@ namespace midikraft {
 
 	std::string MKS80::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		int bank = programNo.toZeroBased() / 8;
-		int patch = programNo.toZeroBased() % 8;
+		int bank = programNo.toZeroBasedDiscardingBank() / 8;
+		int patch = programNo.toZeroBasedDiscardingBank() % 8;
 		return fmt::format("{}{}", (bank + 1), (patch + 1));
 	}
 

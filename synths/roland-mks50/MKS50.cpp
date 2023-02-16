@@ -63,9 +63,9 @@ namespace midikraft {
 	std::shared_ptr<DataFile> MKS50::patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const
 	{
 		// Banks are called group, as the first digit is called bank
-		int group = place.toZeroBased() % 64;
-		int bank = place.toZeroBased() % 8;
-		int no = place.toZeroBased() / 8;
+		int group = place.toZeroBasedWithBank() % 64;
+		int bank = place.toZeroBasedWithBank() % 8;
+		int no = place.toZeroBasedWithBank() / 8;
 		std::string name = fmt::format("{}{}{}", static_cast<char>((static_cast<int>('A') + group)), bank, no);
 		return std::make_shared<MKS50_Patch>(place, name, data);
 	}

@@ -92,7 +92,7 @@ namespace midikraft {
 
 	std::string KorgDW8000::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		return fmt::format("{}{}", ((programNo.toZeroBased() / 8) + 1), ((programNo.toZeroBased() % 8) + 1));
+		return fmt::format("{}{}", (((programNo.toZeroBasedDiscardingBank() % numberOfPatches()) / 8) + 1), ((programNo.toZeroBasedDiscardingBank() % 8) + 1));
 	}
 
 	std::string KorgDW8000::friendlyBankName(MidiBankNumber bankNo) const

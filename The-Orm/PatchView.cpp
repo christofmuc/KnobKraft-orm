@@ -877,7 +877,13 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		if (alsoSendToSynth) {
 			auto alreadyInSynth = database_.getBankPositions(patch.smartSynth(), patch.md5());
 			for (auto inSynth : alreadyInSynth) {
-				spdlog::debug("Patch is already in synth in bank {} at position {}", inSynth.bank().toZeroBased(), inSynth.toZeroBased());
+				if (inSynth.bank().isValid()) {
+					spdlog::debug("Patch is already in synth in bank {} at position {}", inSynth.bank().toZeroBased(), inSynth.toZeroBasedDiscardingBank());
+				}
+				else
+				{
+					spdlog::debug("Patch is already in synth in unknown bank at position {}", inSynth.toZeroBasedDiscardingBank());
+				}
 			}
 			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (midiLocation && midiLocation->channel().isValid() && alreadyInSynth.size() > 0) {
@@ -895,7 +901,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 					auto bankSelect = banks->bankSelectMessages(bankNumberToSelect);
 					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
 				}
-				selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), alreadyInSynth[0].toZeroBased()));
+				selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), alreadyInSynth[0].toZeroBasedDiscardingBank()));
 				patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
 				spdlog::info("Sending program change to {}: program {} {}. {}"
 					, patch.smartSynth()->getName()

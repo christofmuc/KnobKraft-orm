@@ -343,7 +343,7 @@ namespace midikraft {
 		if (programNumber.isBankKnown()) {
 			bankChar = char(programNumber.bank().toZeroBased() + 'a');
 		}
-		int progNo = programNumber.toZeroBased() % numberOfPatches();
+		int progNo = programNumber.toZeroBasedDiscardingBank() % numberOfPatches();
 		return fmt::format("{}{}", bankChar, progNo);
 	}
 
