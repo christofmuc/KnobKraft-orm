@@ -49,5 +49,6 @@ private:
 
 	bool isDirty_;
 	GlowEffect glow;
+	juce::Value number_;
 };
 
