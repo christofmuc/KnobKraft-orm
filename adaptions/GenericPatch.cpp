@@ -273,7 +273,7 @@ namespace knobkraft {
 
 	bool GenericPatch::hasCapability(midikraft::StoredPatchNameCapability **outCapability) const
 	{
-		if (pythonModuleHasFunction(kRenamePatch)) {
+		if (pythonModuleHasFunction(kNameFromDump)) {
 			if (!genericStoredPatchNameCapabilityImpl_) {
 				// Lazy init allowed despite const-ness of method. Smell.
 				GenericPatch *non_const = const_cast<GenericPatch *>(this);
