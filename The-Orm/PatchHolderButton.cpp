@@ -101,7 +101,7 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(holder->patch());
 			if (layers) {
 				if (layers->layerName(0) != layers->layerName(1)) {
-					String multiLineTitle = String(layers->layerName(0)).trim() + "\n" + String(layers->layerName(1)).trim();
+					String multiLineTitle = String(layers->layerName(0)) + "\n" + String(layers->layerName(1));
 					patchValue.setProperty(EPROPERTY_PATCH_NAME, multiLineTitle, nullptr);
 				}
 				else {

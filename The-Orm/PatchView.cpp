@@ -912,9 +912,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 			else {
 				// Send out to Synth into edit buffer
 				if (patch.patch()) {
-					auto patchName = patch.name();
-					string_trim(patchName);
-					spdlog::info("Sending patch {} to {}", patchName, patch.synth()->getName());
+					spdlog::info("Sending patch '{}' to {}", patch.name(), patch.synth()->getName());
 					patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
 				}
 				else {

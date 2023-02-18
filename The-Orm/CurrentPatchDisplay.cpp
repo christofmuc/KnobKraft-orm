@@ -183,12 +183,12 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch->patch());
 	if (layers) {
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
-			TypedNamedValue v("Layer " + String(i), "Patch name", String(layers->layerName(i)).trim(), 20);
+			TypedNamedValue v("Layer " + String(i), "Patch name", String(layers->layerName(i)), 20);
 			metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 		}
 	}
 	else if (patch->patch()) {
-		TypedNamedValue v("Patch name", "Patch name", String(patch->name()).trim(), 20);
+		TypedNamedValue v("Patch name", "Patch name", String(patch->name()), 20);
 		metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 
