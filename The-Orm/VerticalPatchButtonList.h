@@ -23,6 +23,7 @@ public:
 
 	void setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info);
 	void refreshContent();
+	void clearList();
 
 private:
 	std::function<void(MidiProgramNumber, std::string)> dropHandler_;

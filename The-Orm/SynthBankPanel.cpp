@@ -113,9 +113,15 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	addAndMakeVisible(*bankList_);
 
 	showInfoIfRequired();
+
+	// We need to know if our synth is turned off
+	UIModel::instance()->synthList_.addChangeListener(this);
 }
 
-SynthBankPanel::~SynthBankPanel() = default;
+SynthBankPanel::~SynthBankPanel()
+{
+	UIModel::instance()->synthList_.removeChangeListener(this);
+}
 
 void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info)
 {
@@ -138,26 +144,32 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 }
 
 void SynthBankPanel::refresh() {
-	synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);
-	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
-	{
-		auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
-		std::string romText;
-		if (!synthBank_->isWritable()) {
-			romText = " [ROM]";
-		}
-		bankNameAndDate_.setText(fmt::format("Bank '{}'{} ({} ago)"
+	if (synthBank_) {
+		synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);
+		if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
+		{
+			auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
+			std::string romText;
+			if (!synthBank_->isWritable()) {
+				romText = " [ROM]";
+			}
+			bankNameAndDate_.setText(fmt::format("Bank '{}'{} ({} ago)"
 				, midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber())
 				, romText
 				, timeAgo.toStdString())
-			, dontSendNotification);
+				, dontSendNotification);
+		}
+		else
+		{
+			bankNameAndDate_.setText(fmt::format("Bank '{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
+		}
+		bankList_->setPatches(synthBank_, buttonMode_);
+		modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	}
 	else
 	{
-		bankNameAndDate_.setText(fmt::format("Bank '{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
+		bankList_->clearList();
 	}
-	bankList_->setPatches(synthBank_, buttonMode_);
-	modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	showInfoIfRequired();
 }
 
@@ -184,8 +196,18 @@ void SynthBankPanel::resized()
 
 void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-	refresh();
+	if (source == &UIModel::instance()->synthList_)
+	{
+		if (synthBank_) {
+			// Check if our synth is still active, if it is a DiscoverableDevice
+			auto device = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(synthBank_->synth());
+			jassert(device);
+			if (!UIModel::instance()->synthList_.isSynthActive(device)) {
+				synthBank_.reset();
+				refresh();
+			}
+		}
+	}
 }
 
 bool SynthBankPanel::isUserBank() {

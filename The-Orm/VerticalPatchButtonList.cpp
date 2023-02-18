@@ -224,6 +224,11 @@ void VerticalPatchButtonList::refreshContent()
 	list_.updateContent();
 }
 
+void VerticalPatchButtonList::clearList()
+{
+	list_.setModel(nullptr);
+}
+
 void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info)
 {
 	list_.setModel(new PatchListModel(bank, [this](int row) {
