@@ -38,7 +38,7 @@ std::map<int, std::string> bankLookup(std::shared_ptr<midikraft::Synth> synth)
 	return result;
 }
 
-CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallback &callback, TCallback &deleteCallback) : 
+CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallback &callback, TCallback &deleteCallback) :
 	synth_(synth)
 	, isBank_(true)
 	, callback_(callback)
@@ -61,15 +61,6 @@ CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCal
 
 	// Finally we need a default size
 	setBounds(0, 0, 540, 200);
-
-	PropertyEditor::TProperties props;
-	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
-	auto lookup = bankLookup(synth);
-	props.push_back(std::make_shared<TypedNamedValue>("Bank", "General", 0, lookup));
-	nameValue_ = Value(props[0]->value());
-	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
-	bankValue_ = Value(props[1]->value());
-	propertyEditor_.setProperties(props);
 }
 
 CreateListDialog::CreateListDialog(TCallback& callback, TCallback& deleteCallback) : isBank_(false), callback_(callback), deleteCallback_(deleteCallback)
@@ -91,25 +82,31 @@ CreateListDialog::CreateListDialog(TCallback& callback, TCallback& deleteCallbac
 
 	// Finally we need a default size
 	setBounds(0, 0, 540, 200);
-
-	PropertyEditor::TProperties props;
-	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
-	nameValue_ = Value(props[0]->value());
-	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
-	propertyEditor_.setProperties(props);
 }
 
 void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
 {
 	list_ = list;
+	PropertyEditor::TProperties props;
+	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
+	nameValue_ = Value(props[0]->value());
+	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
 	if (list_) {
+		// This is edit mode - only rename and delete are possible
 		nameValue_.setValue(String(list->name()));
 		delete_.setVisible(true);
 	}
 	else {
+		// This is create mode - need to allow rename and bank select if bank, but not delete
 		nameValue_.setValue(isBank_ ? "new bank" : "new list");
 		delete_.setVisible(false);
+		if (isBank_) {
+			auto lookup = bankLookup(synth_);
+			props.push_back(std::make_shared<TypedNamedValue>("Bank", "General", 0, lookup));
+			bankValue_ = Value(props[1]->value());
+		}
 	}
+	propertyEditor_.setProperties(props);
 }
 
 void CreateListDialog::resized()
@@ -182,6 +179,14 @@ void CreateListDialog::notifyResult()
 	String name = nameValue_.getValue();
 	if (list_) {
 		list_->setName(name.toStdString());
+		/* See my comment on #216 why this is a dangerous idea. Not all banks might be compatible, so we need the notion of compatible banks first!
+		if (isBank_) {
+			int bankSelected = bankValue_.getValue();
+			bank_ = MidiBankNumber::fromZeroBase(bankSelected, midikraft::SynthBank::numberOfPatchesInBank(synth_, bankSelected));
+			auto userBank = std::dynamic_pointer_cast<midikraft::UserBank>(list_);
+			jassert(userBank);
+			userBank->updateBank(bank_);
+		}*/
 	}
 	else {
 		// This was create mode!
