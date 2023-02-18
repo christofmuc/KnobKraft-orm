@@ -276,7 +276,7 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 	}
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index) {
+TreeViewNode* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
 	//TODO - this doesn't work. The TreeView from JUCE has no handlers for selected or clicked that do not fire if a drag is started, so 
 	// you can do either the one thing or the other.
@@ -299,7 +299,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 	return node;
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
+TreeViewNode* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
 	std::string synthName = device->getName();
 	auto synthBanksNode = new TreeViewNode("In synth", "banks-" + synthName);
 	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
@@ -359,7 +359,17 @@ TreeViewItem* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 	return synthBanksNode;
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
+bool isBankCompatible(juce::var dropItem)
+{
+	//TODO This should already if it is the correct synth, and later if the bank is of same type
+	String dropItemString = dropItem;
+	auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
+	spdlog::debug("Dragged {}", infos.dump());
+	return midikraft::PatchHolder::dragItemIsList(infos) &&
+		(infos["list_sub_type"] == "synth bank" || infos["list_sub_type"] == "user bank");
+}
+
+TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
 	std::string synthName = device->getName();
 	auto synthBanksNode = new TreeViewNode("User Banks", "stored-banks-" + synthName);
 	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
@@ -392,6 +402,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 							});
 					});
 			};
+
 			result.push_back(addNewItem);
 			return result;
 		};
@@ -399,14 +410,12 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 			synthBanksNode->toggleOpenness();
 		};
 		synthBanksNode->acceptsItem = [](juce::var dropItem) {
-			String dropItemString = dropItem;
-			auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-			return midikraft::PatchHolder::dragItemIsList(infos) && infos["list_sub_type"] == "synth bank";
+			return isBankCompatible(dropItem);
 		};
-		synthBanksNode->onItemDropped = [this](juce::var dropItem, int) {
+		synthBanksNode->onItemDropped = [this, synthBanksNode](juce::var dropItem, int) {
 			String dropItemString = dropItem;
 			auto infos = midikraft::PatchHolder::dragInfoFromString(dropItemString.toStdString());
-			if (midikraft::PatchHolder::dragItemIsList(infos) && infos["list_sub_type"] == "synth bank") {
+			if (isBankCompatible(dropItem)) {
 				if (infos.contains("list_id") && infos.contains("list_name")) {
 					// Create a new list as a copy of the dropped ban)
 					auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
@@ -417,8 +426,31 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 							, loaded_bank->synth()
 							, loaded_bank->bankNumber());
 						copyOfList->setPatches(loaded_list->patches());
-						db_.putPatchList(copyOfList);
-						regenerateImportLists(); // This refreshes the upper tree
+						if (auto userBankSource = std::dynamic_pointer_cast<midikraft::UserBank>(loaded_list)) {
+							// This is a user bank, open the dialog to let the user specify name and new bank number
+							CreateListDialog::showCreateListDialog(nullptr,
+								copyOfList->synth(),
+								TopLevelWindow::getActiveTopLevelWindow(),
+								[this, synthBanksNode, loaded_list](std::shared_ptr<midikraft::PatchList> new_list) {
+									jassert(new_list);
+									if (new_list) {
+										// Copy over patches from droppped list to newly created list
+										new_list->setPatches(loaded_list->patches());
+										db_.putPatchList(new_list);
+										spdlog::info("Created new user bank {} as copy of {}", new_list->name(), loaded_list->name());
+										MessageManager::callAsync([synthBanksNode]() {
+											synthBanksNode->regenerate();
+											});
+									}
+								}, {});
+
+						}
+						else {
+							// This is a synth bank, directly put the new user bank based on it in the database
+							db_.putPatchList(copyOfList);
+							regenerateImportLists(); // This refreshes the upper tree
+							spdlog::info("Created new user bank {} as copy of {}", copyOfList->name(), loaded_list->name());
+						}
 					}
 					else {
 						spdlog::error("Program error - dropped list was not a synth bank after all, can't create new user list");
@@ -431,7 +463,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 	return synthBanksNode;
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
+TreeViewNode* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
 	std::string synthName = synth->getName();
 	auto importsForSynth = new TreeViewNode("By import", "imports-" + synthName);
 	importsForSynth->onGenerateChildren = [this, synthName]() {
@@ -458,7 +490,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 	return importsForSynth;
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode *parent, midikraft::ListInfo list) {
+TreeViewNode* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode *parent, midikraft::ListInfo list) {
 	auto node = new TreeViewNode(list.name, list.id);
 	userLists_[list.id] = node;
 	node->onSelected = [this, list, synth](String clicked) {
@@ -502,7 +534,7 @@ TreeViewItem* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 	return node;
 }
 
-TreeViewItem* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
+TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
 	auto node = new TreeViewNode(list.name, list.id);
 	userLists_[list.id] = node;
 	node->onGenerateChildren = [this, list]() {
