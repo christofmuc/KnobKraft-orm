@@ -153,7 +153,7 @@ void SynthBankPanel::refresh() {
 			if (!synthBank_->isWritable()) {
 				romText = " [ROM]";
 			}
-			bankNameAndDate_.setText(fmt::format("Bank '{}'{} ({} ago)"
+			bankNameAndDate_.setText(fmt::format("'{}'{} ({} ago)"
 				, midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber())
 				, romText
 				, timeAgo.toStdString())
@@ -161,7 +161,7 @@ void SynthBankPanel::refresh() {
 		}
 		else
 		{
-			bankNameAndDate_.setText(fmt::format("Bank '{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
+			bankNameAndDate_.setText(fmt::format("'{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
 		}
 		bankList_->setPatches(synthBank_, buttonMode_);
 		modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
