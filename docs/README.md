@@ -97,7 +97,7 @@ This software is build and run on Windows 10, macOS 10.15, and several Linux dis
 
 It is possible to create an adaptation for a new synthesizer that is not yet on the supported device list. For that, you'll select an existing adaptation that might be close to what you need (e.g. same manufacturer, same device family), and use a text editor to adapt the Python code controlling how to generate the device specific messages required and what to do with the answers from the synth.
 
-If you're up to that, I have written a whole [Programming Guide](/#/Adaptation%20Programming%20Guide) documenting the required and optional methods to be implemented.
+If you're up to that, I have written a whole [Programming Guide](/#/Adaptation Programming Guide) documenting the required and optional methods to be implemented.
 
 I know this is not easy, and most importantly new devices also might require capabilities that are not yet part of the Orm, so please don't hesitate to contact me, I'll try to help!
 
