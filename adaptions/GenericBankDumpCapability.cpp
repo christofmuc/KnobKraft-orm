@@ -18,7 +18,7 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	std::vector<juce::MidiMessage> GenericBankDumpCapability::requestBankDump(MidiBankNumber bankNo) const
+	std::vector<juce::MidiMessage> GenericBankDumpRequestCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
 		py::gil_scoped_acquire acquire;
 		try {

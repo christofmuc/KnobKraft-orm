@@ -15,7 +15,8 @@
 
 namespace midikraft {
 
-	class Virus : public Synth, public SimpleDiscoverableDevice, public HasBanksCapability, public EditBufferCapability, public ProgramDumpCabability, public BankDumpCapability, public SoundExpanderCapability {
+	class Virus : public Synth, public SimpleDiscoverableDevice, public HasBanksCapability, public EditBufferCapability, public ProgramDumpCabability, 
+		public BankDumpRequestCapability, public BankDumpCapability, public SoundExpanderCapability {
 	public:
 		Virus();
 
@@ -47,8 +48,10 @@ namespace midikraft {
 		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const std::vector <MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
 
-		// Bank Dump Capability
+		// BankDumpRequestCapability
 		virtual std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
+
+		// Bank Dump Capability
 		virtual bool isBankDump(const MidiMessage& message) const override;
 		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
 		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;

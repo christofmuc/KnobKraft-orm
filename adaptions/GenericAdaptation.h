@@ -24,6 +24,7 @@ namespace knobkraft {
 	//TODO Some forwards during refactoring
 	class GenericEditBufferCapability;
 	class GenericProgramDumpCapability;
+	class GenericBankDumpRequestCapability;
 	class GenericBankDumpCapability;
 	class GenericHasBanksCapability;
 	class GenericHasBankDescriptorsCapability;
@@ -57,6 +58,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
+		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -121,6 +123,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) const  override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const override;
 		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpRequestCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::BankDumpRequestCapability** outCapability) const override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::HasBanksCapability>& outCapability) const override;
 		virtual bool hasCapability(midikraft::HasBanksCapability** outCapability) const override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::HasBankDescriptorsCapability>& outCapability) const override;
@@ -138,6 +142,9 @@ namespace knobkraft {
 
 		friend class GenericBankDumpCapability;
 		std::shared_ptr<GenericBankDumpCapability> bankDumpCapabilityImpl_;
+
+		friend class GenericBankDumpRequestCapability;
+		std::shared_ptr<GenericBankDumpRequestCapability> bankDumpRequestCapabilityImpl_;
 
 		friend class GenericHasBanksCapability;
 		std::shared_ptr<GenericHasBanksCapability> hasBanksCapabilityImpl_;

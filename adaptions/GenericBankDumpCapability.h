@@ -16,13 +16,24 @@ namespace knobkraft {
 	public:
 		GenericBankDumpCapability(GenericAdaptation *me) : me_(me) {}
         virtual ~GenericBankDumpCapability() = default;
-		std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
+		
 		bool isBankDump(const MidiMessage& message) const override;
 		bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
 		midikraft::TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
 
 	private:
 		GenericAdaptation *me_;
+	};
+
+	class GenericBankDumpRequestCapability : public midikraft::BankDumpRequestCapability {
+	public:
+		GenericBankDumpRequestCapability(GenericAdaptation* me) : me_(me) {}
+		virtual ~GenericBankDumpRequestCapability() = default;
+
+		std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
+
+	private:
+		GenericAdaptation* me_;
 	};
 
 }

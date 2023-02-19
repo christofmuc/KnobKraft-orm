@@ -132,6 +132,7 @@ namespace knobkraft {
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
+		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_= std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		try {
@@ -166,6 +167,7 @@ namespace knobkraft {
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
+		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
 		adaptation_module = adaptationModule;		
 	}
 
@@ -805,6 +807,26 @@ else {
 		midikraft::BankDumpCapability *cap;
 		if (hasCapability(&cap)) {
 			outCapability = bankDumpCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::BankDumpRequestCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kCreateBankDumpRequest)) {
+			*outCapability = dynamic_cast<midikraft::BankDumpRequestCapability*>(bankDumpRequestCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankDumpRequestCapability>& outCapability) const
+	{
+		midikraft::BankDumpRequestCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = bankDumpRequestCapabilityImpl_;
 			return true;
 		}
 		return false;
