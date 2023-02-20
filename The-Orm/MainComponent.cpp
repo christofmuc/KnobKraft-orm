@@ -619,6 +619,7 @@ void MainComponent::createNewDatabase()
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
 			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
 			// Refresh UI
+			UIModel::instance()->clear();
 			UIModel::instance()->currentSynth_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
 			UIModel::instance()->databaseChanged.sendChangeMessage();
@@ -644,6 +645,7 @@ void MainComponent::openDatabase(File& databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
+		UIModel::instance()->clear();
 		try {
 			if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 				recentFiles_.removeFile(databaseFile);

@@ -23,9 +23,9 @@ juce::Identifier const PROPERTY_WINDOW_LIST {"Windows"};
 juce::Identifier const PROPERTY_WINDOW_OPENNESS {"Open"};
 juce::Identifier const PROPERTY_WINDOW_SIZE {"Size"};
 
+// The EphemeralData is not stored on disk, but needs to be cleared via the UIModel clear method when the database changes.
 juce::Identifier const EPROPERTY_LIBRARY_PATCH_LIST {"LibraryPatchList"};
 juce::Identifier const EPROPERTY_PATCH_CACHE {"PatchHolderCache"};
-juce::Identifier const EPROPERTY_PATCH_MD5 {"MD5"};
 juce::Identifier const EPROPERTY_PATCH_NAME{ "Title" }; 
 juce::Identifier const EPROPERTY_PATCH_FAVORITE {"Favorite"};
 juce::Identifier const EPROPERTY_PATCH_HIDDEN {"Hidden"};
@@ -120,6 +120,8 @@ class UIModel {
 public:
 	static UIModel *instance();
 	static void shutdown();
+
+	void clear();
 
 	static midikraft::Synth *currentSynth();
 	static midikraft::Synth* currentSynthOfPatch();

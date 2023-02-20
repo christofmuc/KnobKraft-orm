@@ -11,6 +11,8 @@
 
 #include "UIModel.h"
 
+#include <fmt/format.h>
+
 Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
 	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
 	auto cats = patch.categories();
@@ -75,7 +77,7 @@ void PatchHolderButton::itemDragExit(const SourceDetails& dragSourceDetails)
 juce::ValueTree PatchHolderButton::createValueTwin(midikraft::PatchHolder* patch) {
 	//TODO - this might cause memory growth if we never clear the cache. Can we somehow count how many buttons reference these ephemeral values?
 	auto cache = Data::instance().getEphemeral().getOrCreateChildWithName(EPROPERTY_PATCH_CACHE, nullptr);
-	return cache.getOrCreateChildWithName(juce::Identifier(patch->md5()), nullptr);
+	return cache.getOrCreateChildWithName(juce::Identifier(fmt::format("{}-{}", patch->synth()->getName(), patch->md5())), nullptr);
 }
 
 void PatchHolderButton::rebindButton(ValueTree patchValue) {
