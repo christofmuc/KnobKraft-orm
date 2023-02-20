@@ -12,7 +12,6 @@
 #include "StepSequencer.h"
 #include "PatchHolder.h"
 #include "SynthHolder.h"
-#include "Session.h"
 #include "SynthBank.h"
 
 #include "Data.h"
@@ -84,16 +83,6 @@ private:
 class CurrentPatchValues : public ChangeBroadcaster {
 public:
 	void changedPatch();
-};
-
-class CurrentSession : public ChangeBroadcaster {
-public:
-	void changedSession();
-
-	std::vector<std::shared_ptr<midikraft::SessionPatch>> session() { return sessionPatches;  }
-
-private:
-	std::vector<std::shared_ptr<midikraft::SessionPatch>> sessionPatches;
 };
 
 class CurrentSynthList : public ChangeBroadcaster {
