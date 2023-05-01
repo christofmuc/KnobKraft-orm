@@ -16,7 +16,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
-| Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
+| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont|
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |

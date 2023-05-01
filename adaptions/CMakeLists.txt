@@ -10,6 +10,7 @@ project(KnobKraft-Generic-Adaptation)
 
 set(adaptation_files
 	"AlesisAndromedaA6.py"
+	"BC_Kijimi.py"
 	"Behringer Deepmind 12.py" 
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py" 
