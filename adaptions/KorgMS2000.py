@@ -69,7 +69,8 @@ def channelIfValidDeviceResponse(message):
             and message[5] == 0x42  # KORG ID
             and message[6] == 0x58  # MS2000 Series ID
             and message[7] == 0x00
-            and (message[8] == 0x01 or message[8] == 0x08)  # MS2000 Model (0x8 = MS2000R)
+    # Skip check of family member, all microkorgs seem to be compatible as long as family is 0x58
+            #and (message[8] == 0x01 or message[8] == 0x08 or message[8] == 0x11)  # MS2000 Model (0x8 = MS2000R, 0x11 = Microkorg)
             and message[9] == 0x00):
         # Extract the current MIDI channel from index 2 of the message
         return message[2]
