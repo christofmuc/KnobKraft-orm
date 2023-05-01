@@ -73,7 +73,7 @@ if (MSVC)
     target_compile_options(knobkraft-generic-adaptation PRIVATE /W4 /WX /utf-8 /wd4068)
 else()
     # lots of warnings and all warnings as errors
-    target_compile_options(knobkraft-generic-adaptation PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(knobkraft-generic-adaptation PRIVATE -Wall -Wextra -pedantic -Werror -Wno-attributes)
 endif()
 
 if (MSVC)
