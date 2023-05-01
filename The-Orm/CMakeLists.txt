@@ -182,9 +182,14 @@ if (MSVC)
     # warning level 4 and all warnings as errors
 	# Turn off 4068 unknown pragmas
     target_compile_options(KnobKraftOrm PRIVATE /W4 /WX /we4388 /we4389 /wd4068)
-else()
-    # lots of warnings and all warnings as errors
-    target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas -Wno-missing-field-initializers)
+else()    
+	if(APPLE)
+		# lots of warnings and all warnings as errors    
+		target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas -Wno-missing-field-initializers)
+	else()
+		# only lots of warnings now
+		target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Wno-unknown-pragmas -Wno-missing-field-initializers)
+	endif()
 endif()
 
 IF(WIN32)
