@@ -23,7 +23,7 @@ set(adaptation_files
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" 
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
-	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" 
+	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS-70.py"
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py"

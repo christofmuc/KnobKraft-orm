@@ -25,6 +25,9 @@ format_type_jx10 = 0b00100100
 patch_level = 0b00110000
 tone_level = 0b00100000
 
+tone_a = 0b00000001
+tone_b = 0b00000010
+
 
 #
 # The MKS-70 has multiple formats, and generally devices its data into patches and tones
@@ -67,7 +70,7 @@ def channelIfValidDeviceResponse(message):
     return -1
 
 
-def bankDescriptors(self) -> List[Dict]:
+def bankDescriptors() -> List[Dict]:
     return [{"bank": 0, "name": "Internal Patches", "size": 64, "type": "Patch"},
             {"bank": 1, "name": "Cartridge Patches", "size": 64, "type": "Patch"},
             {"bank": 2, "name": "Internal Tones", "size": 50, "type": "Tone"},
@@ -98,15 +101,23 @@ def createProgramDumpRequest(channel, patch_no):
         raise Exception(f"Invalid patch number given to createProgramDumpRequest: {patch_no}")
 
 
-def isAprMessage(message):
+def isOperationMessage(message, operation):
     if len(message) > 5:
         if (message[0] == 0xF0 and
                 message[1] == roland_id and
-                message[2] == operation_apr and
+                message[2] == operation and
                 message[4] == format_type_jx10):
             return True
     # If the message does not match the expected format, return False
     return False
+
+
+def isBulkMessage(message):
+    return isOperationMessage(message, operation_bld)
+
+
+def isAprMessage(message):
+    return isOperationMessage(message, operation_apr)
 
 
 def isToneMessage(message):
@@ -146,11 +157,11 @@ def convertToProgramDump(channel, message, program_number):
     # A program dump is an PGR message which tells the synth where to store the following APR data
     if isSingleProgramDump(message):
         return message
-        #messages = knobkraft.sysex.splitSysexMessage(message)
-        #group = messages[0][6]  # Use the group of the APR message (either Tone A or Tone B)
-        #program = program_number % 50  # We have 100 programs to address, though the higher 50 are probably in the cartridge
-        #pgr_message = [0xf0, roland_id, operation_pgr, channel & 0x0f, format_type_jx10, 0b00100000, group, 0x00, program, 0x00, 0xf7]
-        #return pgr_message + message
+        # messages = knobkraft.sysex.splitSysexMessage(message)
+        # group = messages[0][6]  # Use the group of the APR message (either Tone A or Tone B)
+        # program = program_number % 50  # We have 100 programs to address, though the higher 50 are probably in the cartridge
+        # pgr_message = [0xf0, roland_id, operation_pgr, channel & 0x0f, format_type_jx10, 0b00100000, group, 0x00, program, 0x00, 0xf7]
+        # return pgr_message + message
     raise Exception("Can only convert single Tone APR messages to a program dump")
 
 
@@ -181,7 +192,7 @@ def nameFromDump(message):
     return 'invalid'
 
 
-def createBankDumpRequest_unavailable(channel, bank):
+def createBankDumpRequest(channel, bank):
     # Ensure channel is in the range of 0-15
     channel = channel & 0x0F
 
@@ -195,14 +206,7 @@ def createBankDumpRequest_unavailable(channel, bank):
 
 
 def isPartOfBankDump(message):
-    return (len(message) >= 8
-            # Check if the message matches the expected format of the MKS-70's bank dump
-            and message[0] == 0xF0
-            and message[1] == 0x41
-            and message[3] == 0x00
-            and message[4] == 0x24
-            and message[5] == 0x30
-            )
+    return isBulkMessage(message)
 
 
 def isBankDumpFinished(messages):
@@ -214,23 +218,39 @@ def isBankDumpFinished(messages):
     return False
 
 
-def extractPatchesFromBank(messages):
+def extractPatchesFromBank(message):
     patches = []
+    if isPartOfBankDump(message):
+        if message[5] == patch_level:
+            print(f"Found patch, ignoring for now!")
+        elif message[5] == tone_level:
+            # This is a tone, construct a proper single program dump (APR) message for it
+            tone_number = message[8]
+            tone_data = message[9:9 + 59]
+            pgr_message = createPgrMessage(tone_number + 100)  # offset by 100 to make sure it is an internal tone number, not a patch number
+            apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, tone_level, tone_a] + tone_data + [0xf7]
+            patches.extend(pgr_message)
+            patches.extend(apr_message)
+            if not isSingleProgramDump(patches):
+                print("Error, created invalid program dump!")
+            else:
+                print(f"Discovered patch {nameFromDump(patches)}")
+        else:
+            print(f"Found invalid message as part of bank dump, program error? {message}")
+    return patches
+
+def old_code():
     patch_length = 72  # The length of each patch in bytes
+    unescaped_message = unescapeSysex(message)
 
-    print("MS1: Input to extractPatchesFromBank:", " ".join(format(x, '02X') for x in messages))
+    print("MS2: Input to isPartOfBankDump:", " ".join(format(x, '02X') for x in message))
+    patch_data_start = 7  # Patch data starts after the header (7 bytes)
+    patch_data_end = len(message) - 2  # Exclude checksum and F7 byte
 
-    for message in messages:
-        unescaped_message = unescapeSysex(message)
-        if isPartOfBankDump(message):
-            print("MS2: Input to isPartOfBankDump:", " ".join(format(x, '02X') for x in message))
-            patch_data_start = 7  # Patch data starts after the header (7 bytes)
-            patch_data_end = len(message) - 2  # Exclude checksum and F7 byte
-
-            # Extract patches from the bank dump message
-            for i in range(patch_data_start, patch_data_end, patch_length):
-                patch_data = unescaped_message[i:i + patch_length]
-                patches.append(patch_data)
+    # Extract patches from the bank dump message
+    for i in range(patch_data_start, patch_data_end, patch_length):
+        patch_data = unescaped_message[i:i + patch_length]
+        patches.append(patch_data)
 
 
 def unescapeSysex(data):
@@ -266,7 +286,8 @@ def calculateFingerprint(message):
 
 
 if __name__ == "__main__":
-    single_apr = knobkraft.sysex.stringToSyx("F0 41 35 00 24 20 01 20 4B 41 4C 49 4D 42 41 20 20 20 40 20 00 00 00 60 40 60 5D 39 00 00 7F 7F 7F 00 60 56 00 7F 40 60 00 37 00 00 2B 51 20 60 77 20 00 40 00 3E 00 0E 26 4A 20 12 31 00 30 20 7F 40 F7")
+    single_apr = knobkraft.sysex.stringToSyx(
+        "F0 41 35 00 24 20 01 20 4B 41 4C 49 4D 42 41 20 20 20 40 20 00 00 00 60 40 60 5D 39 00 00 7F 7F 7F 00 60 56 00 7F 40 60 00 37 00 00 2B 51 20 60 77 20 00 40 00 3E 00 0E 26 4A 20 12 31 00 30 20 7F 40 F7")
     assert isAprMessage(single_apr)
     assert isToneMessage(single_apr)
     pgr = createPgrMessage(129)
