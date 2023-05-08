@@ -45,6 +45,18 @@ def name():
     return "Roland MKS-70"
 
 
+def setupHelp():
+    return """
+The Roland MKS-70 does not allow to initiate a bank dump (all 64 patches and 50 tones) from 
+the device itself. You need to enter receive manual dump via the KnobKraft MIDI menu, and then
+on the device:
+
+How to enter 'BULK DUMP' mode:
+  * Press both MIDI and WRITE button
+  * Select BULK DUMP by ALPHA-DIAL, then press ENTER 
+"""
+
+
 def createDeviceDetectMessage(channel):
     # If I interpret the sysex docs correctly, we can just send a MIDI program change, and it should reply with sysex
     # request Tone #0
@@ -143,6 +155,30 @@ def isPartOfSingleProgramDump(message):
     return isToneMessage(message) or isPatchMessage(message) or isProgramNumberMessage(message)
 
 
+def createEditBufferRequest(channel):
+    # The documentation suggests we could issue a tone number change, and then the synth would send out PRG and APR message on its own
+    # we need to test this, this would be a program change message? But to which program to change to?
+    return []
+
+
+def isEditBufferDump(message):
+    # We define an edit buffer as a single APR message - when the PRG message is missing, we do not know which was the original memory position
+    messages = knobkraft.sysex.splitSysexMessage(message)
+    if len(messages) > 1:
+        return False
+    return isAprMessage(message)
+
+
+def convertToEditBuffer(channel, message):
+    if isEditBufferDump(message):
+        return message
+    elif isSingleProgramDump(message):
+        messages = knobkraft.findSysexDelimiters(message, 2)
+        second_message = message[messages[1][0]:messages[1][1]]
+        return second_message
+    raise Exception("Can only convert edit buffer dumps or single program dumps to edit buffer dumps!")
+
+
 def isSingleProgramDump(message):
     messages = knobkraft.sysex.splitSysexMessage(message)
     if len(messages) > 1:
@@ -154,42 +190,40 @@ def isSingleProgramDump(message):
 
 
 def convertToProgramDump(channel, message, program_number):
-    # A program dump is an PGR message which tells the synth where to store the following APR data
-    if isSingleProgramDump(message):
-        return message
-        # messages = knobkraft.sysex.splitSysexMessage(message)
-        # group = messages[0][6]  # Use the group of the APR message (either Tone A or Tone B)
-        # program = program_number % 50  # We have 100 programs to address, though the higher 50 are probably in the cartridge
-        # pgr_message = [0xf0, roland_id, operation_pgr, channel & 0x0f, format_type_jx10, 0b00100000, group, 0x00, program, 0x00, 0xf7]
-        # return pgr_message + message
+    if isEditBufferDump(message):
+        # The edit buffer message can be sent unmodified, but needs to be prefixed with an PRG message
+        result = createPgrMessage(program_number)
+        result.extend(message)
+        return result
+    elif isSingleProgramDump(message):
+        # A program dump is an PGR message which tells the synth where to store the following APR data. We might want to change
+        # the program position, however, so we need to create a new program message and just keep the APR message
+        messages = knobkraft.sysex.splitSysexMessage(message)
+        result = createPgrMessage(program_number)
+        result.extend(messages[1])
+        return result
     raise Exception("Can only convert single Tone APR messages to a program dump")
 
 
 def nameFromDump(message):
-    if isPartOfBankDump(message):
-        # Extract the patch name bytes from the message
-        patch_name_bytes = message[8:18]
-
-        # Convert the patch name bytes to an ASCII string
-        patch_name = ''.join(chr(byte) for byte in patch_name_bytes)
-        return patch_name
-
-    if isSingleProgramDump(message):
+    base = 7
+    if isEditBufferDump(message):
+        name_message = message
+    elif isSingleProgramDump(message):
         messages = knobkraft.sysex.splitSysexMessage(message)
         # This is an APR message, either a Tone or a Patch
-        if isToneMessage(messages[1]):
-            name_length = 10
-        elif isPatchMessage(messages[1]):
-            name_length = 18
-        else:
-            raise Exception("Message is neither tone nor patch, can't extract name")
-        base = 7
-        patch_name_bytes = messages[1][base:base + name_length]
-        patch_name = ''.join(chr(byte) for byte in patch_name_bytes)
-        return patch_name
-
-    # If the message is not a program dump or part of a bank dump, return an invalid string
-    return 'invalid'
+        name_message = messages[1]
+    else:
+        raise Exception("Message is not a program dump or edit buffer")
+    if isToneMessage(name_message):
+        name_length = 10
+    elif isPatchMessage(name_message):
+        name_length = 18
+    else:
+        raise Exception("Message is neither tone nor patch, can't extract name")
+    patch_name_bytes = name_message[base:base + name_length]
+    patch_name = ''.join(chr(byte) for byte in patch_name_bytes)
+    return patch_name
 
 
 def createBankDumpRequest(channel, bank):
@@ -227,30 +261,17 @@ def extractPatchesFromBank(message):
             # This is a tone, construct a proper single program dump (APR) message for it
             tone_number = message[8]
             tone_data = message[9:9 + 59]
-            pgr_message = createPgrMessage(tone_number + 100)  # offset by 100 to make sure it is an internal tone number, not a patch number
+            #pgr_message = createPgrMessage(tone_number + 100)  # offset by 100 to make sure it is an internal tone number, not a patch number
             apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, tone_level, tone_a] + tone_data + [0xf7]
-            patches.extend(pgr_message)
+            # patches.extend(pgr_message)
             patches.extend(apr_message)
-            if not isSingleProgramDump(patches):
+            if not isEditBufferDump(patches):
                 print("Error, created invalid program dump!")
             else:
                 print(f"Discovered patch {nameFromDump(patches)}")
         else:
             print(f"Found invalid message as part of bank dump, program error? {message}")
     return patches
-
-def old_code():
-    patch_length = 72  # The length of each patch in bytes
-    unescaped_message = unescapeSysex(message)
-
-    print("MS2: Input to isPartOfBankDump:", " ".join(format(x, '02X') for x in message))
-    patch_data_start = 7  # Patch data starts after the header (7 bytes)
-    patch_data_end = len(message) - 2  # Exclude checksum and F7 byte
-
-    # Extract patches from the bank dump message
-    for i in range(patch_data_start, patch_data_end, patch_length):
-        patch_data = unescaped_message[i:i + patch_length]
-        patches.append(patch_data)
 
 
 def unescapeSysex(data):
@@ -270,19 +291,27 @@ def unescapeSysex(data):
 
 
 def calculateFingerprint(message):
-    if isSingleProgramDump(message) or isPartOfBankDump(message):
-        data = unescapeSysex(message[5:-1])
-
-        # You can blank out specific bytes if they should not matter for the fingerprint.
-        # For example, if you want to blank out the patch name bytes (assuming they are at position 8-17):
-        data[8:18] = [0] * 10
-
-        # Calculate the fingerprint from the cleaned payload data
-        fingerprint = hashlib.md5(bytearray(data)).hexdigest()
-        return fingerprint
-
+    if isEditBufferDump(message):
+        # Just take the bytes after the name
+        if isToneMessage(message):
+            name_len = 10
+        elif isPatchMessage(message):
+            name_len = 18
+        else:
+            raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
+        return hashlib.md5(bytearray(message[7 + name_len:-1])).hexdigest()
+    elif isSingleProgramDump(message):
+        messages = knobkraft.findSysexDelimiters(message, 2)
+        second_message = message[messages[1][0]:messages[1][1]]
+        if isToneMessage(second_message):
+            name_len = 10
+        elif isPatchMessage(second_message):
+            name_len = 18
+        else:
+            raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
+        return hashlib.md5(bytearray(second_message[7 + name_len:-1])).hexdigest()
     # If the message is not a program dump or part of a bank dump, return an empty string
-    return ''
+    raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
 
 
 if __name__ == "__main__":
@@ -290,9 +319,19 @@ if __name__ == "__main__":
         "F0 41 35 00 24 20 01 20 4B 41 4C 49 4D 42 41 20 20 20 40 20 00 00 00 60 40 60 5D 39 00 00 7F 7F 7F 00 60 56 00 7F 40 60 00 37 00 00 2B 51 20 60 77 20 00 40 00 3E 00 0E 26 4A 20 12 31 00 30 20 7F 40 F7")
     assert isAprMessage(single_apr)
     assert isToneMessage(single_apr)
+    assert isEditBufferDump(single_apr)
     pgr = createPgrMessage(129)
     pgr_and_apr = pgr + single_apr
     assert isSingleProgramDump(pgr_and_apr)
+    assert not isEditBufferDump(pgr_and_apr)
     assert nameFromDump(pgr_and_apr) == " KALIMBA  "
 
     assert channelIfValidDeviceResponse(single_apr) == 0x00
+    bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
+    patches = []
+    for message in bank_dump:
+        converted = extractPatchesFromBank(message)
+        if len(converted) > 0:
+            # That worked
+            patches.append(converted)
+    assert len(patches) == 50
