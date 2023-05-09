@@ -15,15 +15,17 @@ MIDI_channel_A = 0  # MIDI function 21
 MIDI_channel_B = 1  # MIDI function 31
 MIDI_control_channel = 0  # MIDI function 11. In other synths, this is called the sysex device ID. but here it is used for program change messages
 
-roland_id = 0b01000001
-operation_pgr = 0b00110100
-operation_apr = 0b00110101
-operation_ipr = 0b00110110
-operation_bld = 0b00110111
-format_type_jx10 = 0b00100100
+roland_id = 0b01000001  # = 0x41
 
-patch_level = 0b00110000
-tone_level = 0b00100000
+operation_pgr = 0b00110100  # = 0x34
+operation_apr = 0b00110101  # = 0x35
+operation_ipr = 0b00110110  # = 0x36
+operation_bld = 0b00110111  # = 0x37
+
+format_type_jx10 = 0b00100100  # = 0x24
+
+patch_level = 0b00110000  # = 0x30
+tone_level = 0b00100000  # = 0x20
 
 tone_a = 0b00000001
 tone_b = 0b00000010
@@ -89,7 +91,7 @@ def bankDescriptors() -> List[Dict]:
             {"bank": 3, "name": "Cartridge Tones", "size": 50, "type": "Tone"}]
 
 
-def createPgrMessage(patch_no):
+def createPgrMessage(patch_no, tone_group):
     # Check if we are requesting a patch or a tone
     if 0 <= patch_no < 128:
         return [0xf0, roland_id, operation_pgr, MIDI_control_channel, format_type_jx10, patch_level, 0x01, 0x00, patch_no, 0x00, 0xf7]
@@ -141,18 +143,35 @@ def isPatchMessage(message):
 
 
 def isProgramNumberMessage(message):
-    if len(message) > 5:
-        if (message[0] == 0xF0 and
-                message[1] == roland_id and
-                message[2] == operation_pgr and
-                message[4] == format_type_jx10):
-            return True
-    # If the message does not match the expected format, return False
-    return False
+    return isOperationMessage(message, operation_pgr)
 
 
 def isPartOfSingleProgramDump(message):
     return isToneMessage(message) or isPatchMessage(message) or isProgramNumberMessage(message)
+
+
+def bldToApr(bld_message):
+    if isBulkMessage(bld_message):
+        if bld_message[5] == patch_level:
+            # This is a patch BLD
+            patch_number = bld_message[8]
+            patch_data = denibble(bld_message[9:-1])
+            pgr_message = createPgrMessage(patch_number, None)
+            assert isProgramNumberMessage(pgr_message)
+            #assert len(patch_data) == 51
+            apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, patch_level, 0x01] + patch_data + [0xf7]
+            assert isPatchMessage(apr_message)
+            return pgr_message, apr_message
+        elif bld_message[5] == tone_level:
+            # This is a tone, construct a proper single program dump (APR) message for it
+            tone_number = bld_message[8]
+            tone_data = bld_message[9:-1]
+            pgr_message = createPgrMessage(tone_number + 128, tone_a)  # offset by 128 to make sure it is an internal tone number, not a patch number
+            assert isProgramNumberMessage(pgr_message)
+            assert len(tone_data) == 59
+            apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, tone_level, tone_a] + tone_data + [0xf7]
+            assert isToneMessage(apr_message)
+            return pgr_message, apr_message
 
 
 def createEditBufferRequest(channel):
@@ -161,37 +180,50 @@ def createEditBufferRequest(channel):
     return []
 
 
-def isEditBufferDump(message):
-    # We define an edit buffer as a single APR message - when the PRG message is missing, we do not know which was the original memory position
-    messages = knobkraft.sysex.splitSysexMessage(message)
-    if len(messages) > 1:
+def isEditBufferDump(messages):
+    # We define an edit buffer as a three APR messages
+    # one APR patch
+    # one APR Tone A (upper)
+    # one APR Tone B (lower)
+    index = knobkraft.sysex.findSysexDelimiters(messages)
+    if len(index) < 3:
         return False
-    return isAprMessage(message)
+    return all([isAprMessage(messages[i[0]:i[1]]) for i in index])
 
 
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message
     elif isSingleProgramDump(message):
+        raise Exception("not implemented yet")
         messages = knobkraft.findSysexDelimiters(message, 2)
         second_message = message[messages[1][0]:messages[1][1]]
         return second_message
     raise Exception("Can only convert edit buffer dumps or single program dumps to edit buffer dumps!")
 
 
-def isSingleProgramDump(message):
-    messages = knobkraft.sysex.splitSysexMessage(message)
-    if len(messages) > 1:
+def isSingleProgramDump(messages):
+    index = knobkraft.sysex.findSysexDelimiters(messages)
+    if len(index) == 3:
+        # These should be three BLD messages
+        return all([isBulkMessage(message[index[i][0]:index[i][1]]) for i in range(3)])
+    elif len(index) == 6:
         # Check if the message matches the expected format of the MKS-70's single program dump
-        # It should be one PGR message and one APR message
-        return isProgramNumberMessage(messages[0]) and isAprMessage(messages[1])
+        # It should be three APR messages, one patch and two tones, with an PRG message in front
+        return (isPatchMessage(message[index[1][0]:index[1][1]]) and
+                isToneMessage(message[index[3][0]:index[3][1]]) and
+                isToneMessage(message[index[5][0]:index[5][1]]) and
+                all(isProgramNumberMessage(message[index[i][0]:index[i][1]]) for i in [0, 2, 4])
+                )
     # This does not work, it needs to be two messages
     return False
 
 
 def convertToProgramDump(channel, message, program_number):
+    raise NotImplemented
     if isEditBufferDump(message):
-        # The edit buffer message can be sent unmodified, but needs to be prefixed with an PRG message
+        # The edit buffer message can be sent unmodified, but needs to be prefixed with a PRG message each
+        index = knobkraft.sysex.findSysexDelimiters(message)
         result = createPgrMessage(program_number)
         result.extend(message)
         return result
@@ -208,13 +240,19 @@ def convertToProgramDump(channel, message, program_number):
 def nameFromDump(message):
     base = 7
     if isEditBufferDump(message):
-        name_message = message
+        messages = knobkraft.sysex.splitSysexMessage(message)
+        name_message = messages[0]
     elif isSingleProgramDump(message):
         messages = knobkraft.sysex.splitSysexMessage(message)
-        # This is an APR message, either a Tone or a Patch
-        name_message = messages[1]
+        if len(messages) == 3:
+            # This is a BLD with a nibbled data struct. Need to convert this to APR!
+            _, name_message = bldToApr(messages[0])
+        else:
+            # This is a list of PRG and APR messages, use the patch message
+            name_message = messages[1]
     else:
         raise Exception("Message is not a program dump or edit buffer")
+
     if isToneMessage(name_message):
         name_length = 10
     elif isPatchMessage(name_message):
@@ -226,52 +264,64 @@ def nameFromDump(message):
     return patch_name
 
 
-def createBankDumpRequest(channel, bank):
-    # Ensure channel is in the range of 0-15
-    channel = channel & 0x0F
-
-    # Ensure bank is in the range of 0-1
-    bank = bank & 0x01
-
-    # Create the Bank Dump Request SysEx message
-    bank_dump_request = [0xF0, 0x41, 0x10 | channel, 0x16, 0x11, 0x00, 0x01, bank, 0xF7]
-
-    return bank_dump_request
-
-
 def isPartOfBankDump(message):
     return isBulkMessage(message)
 
 
 def isBankDumpFinished(messages):
-    if messages and isPartOfBankDump(messages[-1]):
-        # Check if the last message in the list is the last part of the bank dump
-        if messages[-1][5] == 0x3F:  # 0x3F is the last patch number in a bank
-            return True
+    return len(messages) == 64 + 50
 
-    return False
+
+g_bank_messages = []
+
+
+def denibble(data):
+    unpacked_data = []
+    for i in range(0, len(data), 2):
+        byte = (data[i+1] & 0x0F) | ((data[i] & 0x0F) << 4)
+        unpacked_data.append(byte)
+    return unpacked_data
 
 
 def extractPatchesFromBank(message):
-    patches = []
+    global g_patches_loaded
     if isPartOfBankDump(message):
-        if message[5] == patch_level:
-            print(f"Found patch, ignoring for now!")
-        elif message[5] == tone_level:
-            # This is a tone, construct a proper single program dump (APR) message for it
-            tone_number = message[8]
-            tone_data = message[9:9 + 59]
-            #pgr_message = createPgrMessage(tone_number + 100)  # offset by 100 to make sure it is an internal tone number, not a patch number
-            apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, tone_level, tone_a] + tone_data + [0xf7]
-            # patches.extend(pgr_message)
-            patches.extend(apr_message)
-            if not isEditBufferDump(patches):
+        # Collect all messages in a global variable, we need them later
+        g_bank_messages.append(message)
+
+    patches = []
+    if len(g_bank_messages) == 64 + 50:
+        print("Found all messages, for a bank, constructing patches with tones")
+        data = []
+        for i in range(64):
+            patch = g_bank_messages[i]
+            # We need to find out which two tones belong to this patch
+            patch_data = denibble(patch[9:-1])
+            data.append(patch_data)
+
+        #for i in range(len(data[0])):
+        #    if all([0 <= data[v][i] < 50 for v in range(64)]):
+        #        print(f"Candidate data index: {i:0x}")
+        for i in range(64):
+            patch = g_bank_messages[i]
+            # We need to find out which two tones belong to this patch
+            patch_data = denibble(patch[9:-1])
+            valid_string = "".join([chr(x) for x in patch_data])
+            upper_tone_number = patch_data[0x14]  # 1d specified, but possibly also 0x1f
+            lower_tone_number = patch_data[0x24]  # 26 specified, but possibly also 0x2e
+            #patch.extend(g_bank_messages[upper_tone_number])
+            #patch.extend(g_bank_messages[lower_tone_number])
+            pgr_patch, apr_patch = bldToApr(patch)
+            pgr_upper_tone, apr_upper_tone = bldToApr(g_bank_messages[upper_tone_number+64])
+            pgr_lower_tone, apr_lower_tone = bldToApr(g_bank_messages[lower_tone_number+64])
+            apr_patch = apr_patch + apr_upper_tone + apr_lower_tone
+
+            if not isEditBufferDump(apr_patch):
                 print("Error, created invalid program dump!")
             else:
-                print(f"Discovered patch {nameFromDump(patches)}")
-        else:
-            print(f"Found invalid message as part of bank dump, program error? {message}")
-    return patches
+                patches.append(apr_patch)
+                print(f"Discovered patch {nameFromDump(apr_patch)}")
+    return len(patches), patches
 
 
 def unescapeSysex(data):
@@ -319,19 +369,22 @@ if __name__ == "__main__":
         "F0 41 35 00 24 20 01 20 4B 41 4C 49 4D 42 41 20 20 20 40 20 00 00 00 60 40 60 5D 39 00 00 7F 7F 7F 00 60 56 00 7F 40 60 00 37 00 00 2B 51 20 60 77 20 00 40 00 3E 00 0E 26 4A 20 12 31 00 30 20 7F 40 F7")
     assert isAprMessage(single_apr)
     assert isToneMessage(single_apr)
-    assert isEditBufferDump(single_apr)
-    pgr = createPgrMessage(129)
-    pgr_and_apr = pgr + single_apr
-    assert isSingleProgramDump(pgr_and_apr)
-    assert not isEditBufferDump(pgr_and_apr)
-    assert nameFromDump(pgr_and_apr) == " KALIMBA  "
+    #assert nameFromDump(single_apr) == " KALIMBA  "
 
     assert channelIfValidDeviceResponse(single_apr) == 0x00
-    bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
+    #bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
+    bank_dump = knobkraft.load_sysex('testData/RolandMKS70_MKSSYNTH.SYX')
     patches = []
-    for message in bank_dump:
-        converted = extractPatchesFromBank(message)
+    for loaded_message in bank_dump:
+        number, converted = extractPatchesFromBank(loaded_message)
         if len(converted) > 0:
             # That worked
-            patches.append(converted)
-    assert len(patches) == 50
+            for patch in converted:
+                patches.append(patch)
+    assert len(patches) == 64
+
+    for patch in patches:
+        assert isEditBufferDump(patch)
+
+    #mks_message = knobkraft.sysex.stringToSyx("f0 41 3a 00 24 30 01 00 00 53 59 4e 54 48 20 42 00 41 53 53 20 2f 20 50 00 41 44 20 20 3f 54 27 00 26 00 4a 13 3d 00 0b 41 00 4e 1f 00 41 0c 43 00 1b 01 4b 0c 10 30 00 03 00 7e 7f 27 04 00 20 40 f7")
+    #assert isPartOfBankDump(mks_message)
