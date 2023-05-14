@@ -21,6 +21,7 @@ operation_pgr = 0b00110100  # = 0x34
 operation_apr = 0b00110101  # = 0x35
 operation_ipr = 0b00110110  # = 0x36
 operation_bld = 0b00110111  # = 0x37
+operation_vec_apr = 0x38  # Guess that those are Vecoven firmware messages
 
 format_type_jx10 = 0b00100100  # = 0x24
 
@@ -115,42 +116,42 @@ def createProgramDumpRequest(channel, patch_no):
         raise Exception(f"Invalid patch number given to createProgramDumpRequest: {patch_no}")
 
 
-def isOperationMessage(message, operation):
+def isOperationMessage(message: List[int], operations: List[int]) -> bool:
     if len(message) > 5:
         if (message[0] == 0xF0 and
                 message[1] == roland_id and
-                message[2] == operation and
+                message[2] in operations and
                 message[4] == format_type_jx10):
             return True
     # If the message does not match the expected format, return False
     return False
 
 
-def isBulkMessage(message):
-    return isOperationMessage(message, operation_bld)
+def isBulkMessage(message: List[int]) -> bool:
+    return isOperationMessage(message, [operation_bld])
 
 
-def isAprMessage(message):
-    return isOperationMessage(message, operation_apr)
+def isAprMessage(message: List[int]) -> bool:
+    return isOperationMessage(message, [operation_apr, operation_vec_apr])
 
 
-def isToneMessage(message):
+def isToneMessage(message: List[int]) -> bool:
     return isAprMessage(message) and message[5] == tone_level
 
 
-def isPatchMessage(message):
+def isPatchMessage(message: List[int]) -> bool:
     return isAprMessage(message) and message[5] == patch_level
 
 
-def isProgramNumberMessage(message):
-    return isOperationMessage(message, operation_pgr)
+def isProgramNumberMessage(message: List[int]) -> bool:
+    return isOperationMessage(message, [operation_pgr])
 
 
-def isPartOfSingleProgramDump(message):
+def isPartOfSingleProgramDump(message: List[int]) -> bool:
     return isToneMessage(message) or isPatchMessage(message) or isProgramNumberMessage(message)
 
 
-def bldToApr(bld_message):
+def bldToApr(bld_message: List[int]):
     if isBulkMessage(bld_message):
         if bld_message[5] == patch_level:
             # This is a patch BLD
@@ -158,7 +159,7 @@ def bldToApr(bld_message):
             patch_data = denibble(bld_message[9:-1])
             pgr_message = createPgrMessage(patch_number, None)
             assert isProgramNumberMessage(pgr_message)
-            #assert len(patch_data) == 51
+            # assert len(patch_data) == 51
             apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, patch_level, 0x01] + patch_data + [0xf7]
             assert isPatchMessage(apr_message)
             return pgr_message, apr_message
@@ -202,18 +203,20 @@ def convertToEditBuffer(channel, message):
     raise Exception("Can only convert edit buffer dumps or single program dumps to edit buffer dumps!")
 
 
-def isSingleProgramDump(messages):
-    index = knobkraft.sysex.findSysexDelimiters(messages)
+def isSingleProgramDump(message):
+    index = knobkraft.sysex.findSysexDelimiters(message)
     if len(index) == 3:
         # These should be three BLD messages
         return all([isBulkMessage(message[index[i][0]:index[i][1]]) for i in range(3)])
     elif len(index) == 6:
         # Check if the message matches the expected format of the MKS-70's single program dump
         # It should be three APR messages, one patch and two tones, with an PRG message in front
+        result = [isProgramNumberMessage(message[index[i][0]:index[i][1]]) for i in [0, 2, 4]]
+        pgrs = all(result)
         return (isPatchMessage(message[index[1][0]:index[1][1]]) and
                 isToneMessage(message[index[3][0]:index[3][1]]) and
                 isToneMessage(message[index[5][0]:index[5][1]]) and
-                all(isProgramNumberMessage(message[index[i][0]:index[i][1]]) for i in [0, 2, 4])
+                pgrs
                 )
     # This does not work, it needs to be two messages
     return False
@@ -278,7 +281,7 @@ g_bank_messages = []
 def denibble(data):
     unpacked_data = []
     for i in range(0, len(data), 2):
-        byte = (data[i+1] & 0x0F) | ((data[i] & 0x0F) << 4)
+        byte = (data[i + 1] & 0x0F) | ((data[i] & 0x0F) << 4)
         unpacked_data.append(byte)
     return unpacked_data
 
@@ -299,7 +302,7 @@ def extractPatchesFromBank(message):
             patch_data = denibble(patch[9:-1])
             data.append(patch_data)
 
-        #for i in range(len(data[0])):
+        # for i in range(len(data[0])):
         #    if all([0 <= data[v][i] < 50 for v in range(64)]):
         #        print(f"Candidate data index: {i:0x}")
         for i in range(64):
@@ -309,11 +312,11 @@ def extractPatchesFromBank(message):
             valid_string = "".join([chr(x) for x in patch_data])
             upper_tone_number = patch_data[0x14]  # 1d specified, but possibly also 0x1f
             lower_tone_number = patch_data[0x24]  # 26 specified, but possibly also 0x2e
-            #patch.extend(g_bank_messages[upper_tone_number])
-            #patch.extend(g_bank_messages[lower_tone_number])
+            # patch.extend(g_bank_messages[upper_tone_number])
+            # patch.extend(g_bank_messages[lower_tone_number])
             pgr_patch, apr_patch = bldToApr(patch)
-            pgr_upper_tone, apr_upper_tone = bldToApr(g_bank_messages[upper_tone_number+64])
-            pgr_lower_tone, apr_lower_tone = bldToApr(g_bank_messages[lower_tone_number+64])
+            pgr_upper_tone, apr_upper_tone = bldToApr(g_bank_messages[upper_tone_number + 64])
+            pgr_lower_tone, apr_lower_tone = bldToApr(g_bank_messages[lower_tone_number + 64])
             apr_patch = apr_patch + apr_upper_tone + apr_lower_tone
 
             if not isEditBufferDump(apr_patch):
@@ -364,15 +367,399 @@ def calculateFingerprint(message):
     raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
 
 
+bulk_mapping_patch = {
+    "A/B Balance": 29,
+    "Dual Detune": 30,
+    "UpperSplitPT": 31,
+    "BendRange": [(32, 1, 3, 0), (40, 1, 2, 1), (62, 1, 1, 2)],
+    "Keymode": [(32, 1, 1, 0), (40, 1, 3, 1), (40, 1, 4, 2), (40, 1, 7, 3)],
+    "LowerSplitPT": 33,
+    "Porta Time": 34,
+    "Total Volume": 35,
+    "AT Vibrato": 36,
+    "AT Brilliance": 37,
+    "AT Volume": 38,
+    "A Tone Nr.": 39,
+    "A-Hold": (40, 1, 1),
+    "A Chromatic Shift": 41,
+    "A Unison Detune": 42,
+    "A LFO Mod Dpth": 43,
+    "A Bender": 44,
+    "B Tone Nr.": 45,
+    "B Chromatic Shift": 46,
+    "B Unison Detune": 47,
+    "B-Hold": (48, 1, 3),
+    "A-Porta": (48, 1, 5),
+    "B LFO Mod Dpth": 49,
+    "B Bender": 50,
+    "Chase Level": 51,
+    "Chase Time": 52,
+    "A-Keyassign": [(53, 1, 6, 0), (53, 1, 7, 1), (56, 1, 3, 2)],
+    "B-Keyassign": [(54, 1, 6, 0), (54, 1, 7, 1), (56, 1, 2, 2)],
+    "B-Porta": (56, 1, 7),
+    "ChaseMode": [(56, 1, 4, 0), (56, 1, 5, 1)],
+    "Chase On/Off": [(63, 1, 2, 0), (63, 1, 5, 1)]
+}
+
+apr_mapping_patch = {
+    "A/B Balance": 25,
+    "Dual Detune": 26,
+    "UpperSplitPT": 27,
+    "LowerSplitPT": 28,
+    "Porta Time": 29,
+    "BendRange": [(30, 2, 5, 0), (59, 1, 0, 2)],
+    "Keymode": [(31, 2, 0, 0), (58, 2, 0, 2)],
+    "Total Volume": 32,
+    "AT Vibrato": 33,
+    "AT Brilliance": 34,
+    "AT Volume": 35,
+    "A Tone Nr.": 36,
+    "A Chromatic Shift": 37,
+    "A-Keyassign": (38, 3, 0),
+    "A Unison Detune": 39,
+    "A-Hold": (40, 1, 0),
+    "A LFO Mod Dpth": 41,
+    "A-Porta": (42, 1, 0),
+    "A Bender": 43,
+    "B Tone Nr.": 45,
+    "B Chromatic Shift": 46,
+    "B-Keyassign": (47, 3, 0),
+    "B Unison Detune": 48,
+    "B-Hold": (49, 1, 0),
+    "B LFO Mod Dpth": 50,
+    "B-Porta": (51, 1, 0),
+    "B Bender": 52,
+    "Chase Level": 54,
+    "Chase Time": 55,
+    "ChaseMode": (56, 2, 0),
+    "Chase On/Off": (57, 2, 0),
+}
+
+bulk_mapping_tone = {
+    "DCO1_tune": 20,
+    "DCO1_lfoDpth": 21,
+    "DCO1_envDpth": 22,
+    "DCO2_tune": 23,
+    "DCO2_fineTun": 24,
+    "DCO2_lfoDpth": 25,
+    "DCO2_envDpth": 26,
+    "PWM1_width": 27,
+    "PWM1_envDpth": 28,
+    "PWM1_lfoDpth": 29,
+    "PWM2_width": 30,
+    "PWM2_envDpth": 31,
+    "PWM2_lfoDpth": 32,
+    "Mix_DCO1": 33,
+    "Mix_DCO2": 34,
+    "Mix_EnvDpth": 35,
+    "VCF_freq": 36,
+    "VCF_res": 37,
+    "VCF_lfo1": 38,
+    "VCF_lfo2": 39,
+    "VCFenvDpth": 40,
+    "VCF_kf": 41,
+    "VCA_level": 42,
+    "LFO1_delay": 43,
+    "LFO1_rate": 44,
+    "LFO1_level": 45,
+    "LFO2_delay": 46,
+    "LFO2_rate": 47,
+    "LFO2_level": 48,
+    "env1_t1": 49,
+    "env1_l1": 50,
+    "env1_t2": 51,
+    "env1_l2": 52,
+    "env1_t3": 53,
+    "env1_l3": 54,
+    "env1_t4": 55,
+    "env2_t1": 56,
+    "env2_l1": 57,
+    "env2_t2": 58,
+    "env2_l2": 59,
+    "env2_t3": 60,
+    "env2_l3": 61,
+    "env2_t4": 62,
+    "env3_att": 63,
+    "env3_decy": 64,
+    "env3_sus": 65,
+    "env3_rel": 66,
+    "env4_att": 67,
+    "env4_decy": 68,
+    "env4_sus": 69,
+    "env4_rel": 70,
+    'dco1rng': [(73, 2, 0, 0)],
+    'dco1wf': [(73, 2, 2, 0)],
+    'dco2rng': [(73, 2, 4, 0)],
+    'dco2wf': [(73, 1, 6, 0), (80, 1, 6, 1)],
+    'dcoXmod': [(74, 2, 0, 0)],
+    'dco1Vel': [(74, 2, 2, 0)],
+    'dco2Vel': [(74, 2, 4, 0)],
+    'mixVel': [(74, 1, 6, 0), (80, 1, 5, 1)],
+    'dco1Lfo': [(75, 2, 0, 0)],
+    'dco2Lfo': [(75, 2, 2, 0)],
+    'pwm1Lfo': [(75, 2, 4, 0)],
+    'pwm2Lfo': [(75, 1, 6, 0), (80, 1, 4, 1)],
+    'pwm1Vel': [(76, 2, 0, 0)],
+    'pwm2Vel': [(76, 2, 2, 0)],
+    'lfo1Sync': [(76, 2, 4, 0)],
+    'lfo2Sync': [(76, 1, 6, 0), (80, 1, 3, 1)],
+    'env1key': [(77, 3, 0, 0)],
+    'env2key': [(77, 3, 3, 0)],
+    'hpf': [(77, 1, 6, 0), (80, 1, 2, 1)],
+    'dco1Env': [(78, 3, 0, 0)],
+    'dco2Env': [(78, 3, 3, 0)],
+    'vcaVel': [(78, 1, 6, 0), (80, 1, 1, 1)],
+    'mixEnv': [(79, 3, 0, 0)],
+    'vcfEnv': [(79, 3, 3, 0)],
+    'vcfVel': [(79, 1, 6, 0), (80, 1, 0, 1)],
+    'vcaEnv': [(81, 2, 0, 0)],
+    'lfo1Wf': [(81, 3, 3, 0)],
+    'chorus': [(81, 1, 6, 0), (85, 1, 3, 1)],
+    'lfo2Wf': [(82, 3, 0, 0)],
+    'env3key': [(82, 3, 3, 0)],
+    'pwm1Env': [(83, 3, 0, 0)],
+    'pwm2Env': [(83, 3, 3, 0)],
+    'env4key': [(84, 3, 0, 0)]
+}
+
+apr_mapping_tone = {
+    "DCO1_tune": 18,
+    "DCO1_lfoDpth": 19,
+    "DCO1_envDpth": 20,
+    "DCO2_tune": 21,
+    "DCO2_fineTun": 22,
+    "DCO2_lfoDpth": 23,
+    "DCO2_envDpth": 24,
+    "PWM1_width": 25,
+    "PWM1_envDpth": 26,
+    "PWM1_lfoDpth": 27,
+    "PWM2_width": 28,
+    "PWM2_envDpth": 29,
+    "PWM2_lfoDpth": 30,
+    "Mix_DCO1": 31,
+    "Mix_DCO2": 32,
+    "Mix_EnvDpth": 33,
+    "VCF_freq": 34,
+    "VCF_res": 35,
+    "VCF_lfo1": 36,
+    "VCF_lfo2": 37,
+    "VCFenvDpth": 38,
+    "VCF_kf": 39,
+    "VCA_level": 40,
+    "LFO1_delay": 41,
+    "LFO1_rate": 42,
+    "LFO1_level": 43,
+    "LFO2_delay": 44,
+    "LFO2_rate": 45,
+    "LFO2_level": 46,
+    "env1_t1": 47,
+    "env1_l1": 48,
+    "env1_t2": 49,
+    "env1_l2": 50,
+    "env1_t3": 51,
+    "env1_l3": 52,
+    "env1_t4": 53,
+    "env2_t1": 54,
+    "env2_l1": 55,
+    "env2_t2": 56,
+    "env2_l2": 57,
+    "env2_t3": 58,
+    "env2_l3": 59,
+    "env2_t4": 60,
+    "env3_att": 61,
+    "env3_decy": 62,
+    "env3_sus": 63,
+    "env3_rel": 64,
+    "env4_att": 65,
+    "env4_decy": 66,
+    "env4_sus": 67,
+    "env4_rel": 68,
+    "dco1rng": (71, 2, 0),
+    "dco1wf": (72, 2, 0),
+    "dco2rng": (73, 2, 0),
+    "dco2wf": (74, 2, 0),
+    "dcoXmod": (75, 2, 0),
+    "dco1Vel": (76, 2, 0),
+    "dco2Vel": (77, 2, 0),
+    "mixVel": (78, 2, 0),
+    "dco1Lfo": (79, 2, 0),
+    "dco2Lfo": (80, 2, 0),
+    "pwm1Lfo": (81, 2, 0),
+    "pwm2Lfo": (82, 2, 0),
+    "pwm1Vel": (83, 2, 0),
+    "pwm2Vel": (84, 2, 0),
+    "lfo1Sync": (85, 2, 0),
+    "lfo2Sync": (86, 2, 0),
+    "env1key": (87, 3, 0),
+    "env2key": (88, 3, 0),
+    "hpf": (89, 2, 0),
+    "dco1Env": (90, 3, 0),
+    "dco2Env": (91, 3, 0),
+    "vcaVel": (92, 2, 0),
+    "mixEnv": (93, 3, 0),
+    "vcfEnv": (94, 3, 0),
+    "vcfVel": (95, 2, 0),
+    "vcaEnv": (96, 2, 0),
+    "lfo1Wf": (97, 3, 0),
+    "chorus": (98, 2, 0),
+    "lfo2Wf": (99, 3, 0),
+    "env3key": (100, 3, 0),
+    "pwm1Env": (102, 3, 0),
+    "pwm2Env": (103, 3, 0),
+    "env4key": (105, 3, 0)
+}
+
+
+def is_parameter_bit(byte, bit, mapping):
+    for param in mapping.values():
+        if isinstance(param, int):
+            if param == byte:
+                return True
+        elif isinstance(param, tuple):
+            if param[0] == byte:
+                if (1 << bit) & (((1 << param[1]) - 1) << param[2]) != 0:
+                    return True
+        elif isinstance(param, list):
+            for par in param:
+                if par[0] == byte:
+                    if (1 << bit) & (((1 << par[1]) - 1) << par[2]) != 0:
+                        return True
+        else:
+            raise Exception("Invalid mapping")
+    return False
+
+
+def read_bits(src_byte, bit_address, bit_width):
+    src_bits = (src_byte >> bit_address) & ((1 << bit_width) - 1)
+    return src_bits
+
+
+def write_bits(prev_value, value, bit_address, bit_width):
+    dst_bits = (value & ((1 << bit_width) - 1)) << bit_address
+    return (prev_value & ~(((1 << bit_width) - 1) << bit_address)) | dst_bits
+
+
+def load_parameter(src_msg, mapping):
+    if isinstance(mapping, list):
+        value = 0
+        for param_info in mapping:
+            src_bits = read_bits(src_msg[param_info[0]], param_info[2], param_info[1])
+            value |= src_bits << param_info[3]
+        return value
+    elif isinstance(mapping, tuple):
+        return read_bits(src_msg[mapping[0]], mapping[2], mapping[1])
+    elif isinstance(mapping, int):
+        return src_msg[mapping]
+    else:
+        raise Exception("Invalid mapping specification - must be int, tuple, or list")
+
+
+def save_parameter(dst_msg, mapping, value):
+    if isinstance(mapping, list):
+        for param_info in mapping:
+            bit_value = (value >> param_info[3]) & ((1 << param_info[1]) - 1)
+            dst_msg[param_info[0]] = write_bits(dst_msg[param_info[0]], bit_value, param_info[2], param_info[1])
+    elif isinstance(mapping, tuple):
+        dst_msg[mapping[0]] = write_bits(dst_msg[mapping[0]], value, mapping[2], mapping[1])
+    elif isinstance(mapping, int):
+        dst_msg[mapping] = value
+    else:
+        raise Exception("Invalid mapping specification - must be int, tuple, or list")
+
+
+def convert_message(src_msg, dst_msg_len: int, src_mapping, dest_mapping):
+    dest_msg = [0] * dst_msg_len
+    for param_name in src_mapping:
+        param_value = load_parameter(src_msg, src_mapping[param_name])
+        save_parameter(dest_msg, dest_mapping[param_name], param_value)
+    return dest_msg
+
+
+bulk_message_length = 66
+bulk_tone_message_length = 88
+apr_message_length = 61
+apr_tone_message_length = 109
+
+result = [0] * bulk_message_length
+save_parameter(result, bulk_mapping_patch["BendRange"], 1)
+result = [0] * bulk_message_length
+save_parameter(result, bulk_mapping_patch["BendRange"], 3)
+result = [0] * apr_message_length
+save_parameter(result, apr_mapping_patch["Keymode"], 2)
+
+
+def test_load_and_save(message_length, mapping_1):
+    for i in range(message_length):  # Iterate over all bytes in the message
+        for j in range(7):  # Iterate over all bits in a byte
+            if not is_parameter_bit(i, j, mapping_1):
+                continue
+            msg = [0] * message_length
+            msg[i] = 1 << j
+
+            # Load all parameters
+            values = {}
+            for key in mapping_1.keys():
+                values[key] = load_parameter(msg, mapping_1[key])
+
+            # Build a new message
+            dst = [0] * message_length
+            for key in mapping_1.keys():
+                save_parameter(dst, mapping_1[key], values[key])
+
+            if msg != dst:
+                assert msg == dst
+
+
+test_load_and_save(bulk_message_length, bulk_mapping_patch)
+test_load_and_save(apr_message_length, apr_mapping_patch)
+test_load_and_save(bulk_tone_message_length, bulk_mapping_tone)
+test_load_and_save(apr_tone_message_length, apr_mapping_tone)
+
+
+def test_conversion(src_message_length, dst_message_length, mapping_1, mapping_2):
+    # Assuming the BULK message is longer
+    message_length = src_message_length
+    for i in range(message_length):  # Iterate over all bytes in the message
+        for j in range(7):  # Iterate over all bits in a byte
+            if not is_parameter_bit(i, j, mapping_1):
+                continue
+
+            # Initialize an all-zero APR message
+            src_msg = [0] * src_message_length
+
+            # Set a single bit in the APR message
+            src_msg[i] = 1 << j
+
+            # Load all parameters
+            values = {}
+            for key in mapping_1.keys():
+                values[key] = load_parameter(src_msg, mapping_1[key])
+
+            # Convert to BULK and back
+            dst_msg = convert_message(src_msg, dst_message_length, mapping_1, mapping_2)
+            src_msg_back = convert_message(dst_msg, src_message_length, mapping_2, mapping_1)
+
+            if src_msg != src_msg_back:
+                # Check that the original message is recovered
+                assert src_msg == src_msg_back, f"Conversion failed for byte {i}, bit {j}"
+
+    print("All conversions succeeded")
+
+
+test_conversion(apr_message_length, bulk_message_length, apr_mapping_patch, bulk_mapping_patch)
+test_conversion(bulk_message_length, apr_message_length, bulk_mapping_patch, apr_mapping_patch)
+test_conversion(apr_tone_message_length, bulk_tone_message_length, apr_mapping_tone, bulk_mapping_tone)
+test_conversion(bulk_tone_message_length, apr_tone_message_length, bulk_mapping_tone, apr_mapping_tone)
+
 if __name__ == "__main__":
     single_apr = knobkraft.sysex.stringToSyx(
         "F0 41 35 00 24 20 01 20 4B 41 4C 49 4D 42 41 20 20 20 40 20 00 00 00 60 40 60 5D 39 00 00 7F 7F 7F 00 60 56 00 7F 40 60 00 37 00 00 2B 51 20 60 77 20 00 40 00 3E 00 0E 26 4A 20 12 31 00 30 20 7F 40 F7")
     assert isAprMessage(single_apr)
     assert isToneMessage(single_apr)
-    #assert nameFromDump(single_apr) == " KALIMBA  "
+    # assert nameFromDump(single_apr) == " KALIMBA  "
 
     assert channelIfValidDeviceResponse(single_apr) == 0x00
-    #bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
+    # bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
     bank_dump = knobkraft.load_sysex('testData/RolandMKS70_MKSSYNTH.SYX')
     patches = []
     for loaded_message in bank_dump:
@@ -386,5 +773,18 @@ if __name__ == "__main__":
     for patch in patches:
         assert isEditBufferDump(patch)
 
-    #mks_message = knobkraft.sysex.stringToSyx("f0 41 3a 00 24 30 01 00 00 53 59 4e 54 48 20 42 00 41 53 53 20 2f 20 50 00 41 44 20 20 3f 54 27 00 26 00 4a 13 3d 00 0b 41 00 4e 1f 00 41 0c 43 00 1b 01 4b 0c 10 30 00 03 00 7e 7f 27 04 00 20 40 f7")
-    #assert isPartOfBankDump(mks_message)
+    # mks_message = knobkraft.sysex.stringToSyx("f0 41 3a 00 24 30 01 00 00 53 59 4e 54 48 20 42 00 41 53 53 20 2f 20 50 00 41 44 20 20 3f 54 27 00 26 00 4a 13 3d 00 0b 41 00 4e 1f 00 41 0c 43 00 1b 01 4b 0c 10 30 00 03 00 7e 7f 27 04 00 20 40 f7")
+    # assert isPartOfBankDump(mks_message)
+
+    patch_prg = knobkraft.sysex.stringToSyx("f0 41 34 00 24 30 01 64 00 f7")
+    patch_apr = knobkraft.sysex.stringToSyx(
+        "f0 41 38 00 24 30 01 20 20 43 41 54 48 45 44 52 41 4c 20 4f 52 47 41 4e 20 50 47 27 26 00 60 00 78 00 00 2e 3c 74 00 4e 01 18 00 01 00 3c 0c 00 4d 01 26 00 01 00 5a 01 1a 00 00 01 f7")
+    utone_prg = knobkraft.sysex.stringToSyx("f0 41 34 00 24 20 01 3c 00 f7")
+    utone_apr = knobkraft.sysex.stringToSyx(
+        "f0 41 38 00 24 20 01 50 49 50 45 20 4f 52 47 41 4e 20 3a 00 00 3a 45 00 00 40 00 00 40 00 00 5b 7f 00 4e 00 00 00 00 3e 50 00 66 00 00 00 00 00 00 00 00 00 00 00 00 7f 00 7f 00 7f 00 2d 00 00 40 2b 67 6c 34 00 00 00 60 40 60 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 60 60 00 50 70 00 70 40 20 00 00 00 00 00 00 10 00 00 f7")
+    ltone_pgr = knobkraft.sysex.stringToSyx("f0 41 34 00 24 20 02 3c 00 f7")
+    ltone_apr = knobkraft.sysex.stringToSyx(
+        "f0 41 38 00 24 20 02 50 49 50 45 20 4f 52 47 41 4e 20 3a 00 00 3a 45 00 00 40 00 00 40 00 00 5b 7f 00 4e 00 00 00 00 3e 50 00 66 00 00 00 00 00 00 00 00 00 00 00 00 7f 00 7f 00 7f 00 2d 00 00 40 2b 67 6c 34 00 00 00 60 40 60 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 60 60 00 50 70 00 70 40 20 00 00 00 00 00 00 10 00 00 f7")
+    all_messages = patch_prg + patch_apr + utone_prg + utone_apr + ltone_pgr + ltone_apr
+    assert isSingleProgramDump(all_messages)
+    print(nameFromDump(all_messages))
