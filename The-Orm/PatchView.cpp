@@ -903,8 +903,9 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 				}
 				selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), alreadyInSynth[0].toZeroBasedDiscardingBank()));
 				patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
-				spdlog::info("Sending program change to {}: program {} {}. {}"
+				spdlog::info("Sending program change to {} for patch {}: program {} {}. {}"
 					, patch.smartSynth()->getName()
+					, patch.name()
 					, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, alreadyInSynth[0])
 					, alreadyInSynth[0].isBankKnown() ? "[known bank]" : "[bank not known!]"
 					, alreadyInSynth.size() > 1 ? fmt::format("Patch is in {} different positions.", alreadyInSynth.size()): "");
