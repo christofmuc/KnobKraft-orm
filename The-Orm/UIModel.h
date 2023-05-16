@@ -31,6 +31,9 @@ juce::Identifier const EPROPERTY_PATCH_HIDDEN {"Hidden"};
 juce::Identifier const EPROPERTY_PATCH_COLOR {"Color"};
 
 
+juce::Identifier const EPROPERTY_MIDI_LOG_LEVEL{ "MIDILog" };
+
+
 class CurrentSynth : public ChangeBroadcaster {
 public:
 	void changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth);

@@ -81,20 +81,39 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		try {
+			midikraft::TPatchVector patchesFound;
 			std::vector<int> vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kExtractPatchesFromBank, vector);
-			midikraft::TPatchVector patchesFound;
-			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
-			auto messages = Sysex::vectorToMessages(byteData);
 			int no = 0;
-			for (auto programDump : messages) {
-				std::vector<uint8> data(programDump.getRawData(), programDump.getRawData() + programDump.getRawDataSize());
-				auto patch = me_->patchFromPatchData(data, MidiProgramNumber::fromZeroBase(no++)); //TODO the no is ignored
-				if (patch) {
-					patchesFound.push_back(patch);
+			if (py::isinstance<py::tuple>(result)) {
+				auto result_tuple = py::cast<py::tuple>(result);
+				int numPatches = py::cast<int>(result_tuple[0]);
+				spdlog::info("Got bank result with {} patches", numPatches);
+				for (auto patchData : py::cast<py::list>(result_tuple[1]))
+				{
+					auto allData = GenericAdaptation::intVectorToByteVector(patchData.cast<std::vector<int>>());
+					std::vector<uint8> data(allData.data(), allData.data() + allData.size());
+					auto patch = me_->patchFromPatchData(data, MidiProgramNumber::fromZeroBase(no++)); //TODO the no is ignored
+					if (patch) {
+						patchesFound.push_back(patch);
+					}
+					else {
+						spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
+					}
 				}
-				else {
-					spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
+			}
+			else {			
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+				auto messages = Sysex::vectorToMessages(byteData);
+				for (auto programDump : messages) {
+					std::vector<uint8> data(programDump.getRawData(), programDump.getRawData() + programDump.getRawDataSize());
+					auto patch = me_->patchFromPatchData(data, MidiProgramNumber::fromZeroBase(no++)); //TODO the no is ignored
+					if (patch) {
+						patchesFound.push_back(patch);
+					}
+					else {
+						spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
+					}
 				}
 			}
 			return patchesFound;

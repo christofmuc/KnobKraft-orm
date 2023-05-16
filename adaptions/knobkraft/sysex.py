@@ -6,6 +6,7 @@
 from typing import List, Tuple
 import binascii
 
+
 def load_sysex(filename, as_single_list=False):
     with open(filename, mode="rb") as midi_messages:
         content = midi_messages.read()

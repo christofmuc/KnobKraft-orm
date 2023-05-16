@@ -57,6 +57,8 @@ const std::string kExportPIF { "exportPIF" };
 const std::string kShowDiff{ "showDiff" };
 const std::string kSynthDetection{ "synthDetection" };
 const std::string kLoopDetection{ "loopDetection" };
+const std::string kFullMidiLog{ "fullMidiLog" };
+const std::string kSysexMidiLog{ "sysexMidiLog" };
 const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
 const std::string kCreateNewAdaptation{ "createNewAdaptation" };
 
@@ -241,7 +243,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
-		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
+		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
@@ -288,6 +290,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}, juce::KeyPress::F2Key } },
 	{ "Check for MIDI loops", { kLoopDetection, [this]() {
 		setupView_->loopDetection();
+	} } },
+	{ "Log all MIDI messages", { kFullMidiLog, [this]() {
+		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::ALL_BUT_REALTIME);
+	} } },
+	{ "Log only Sysex messages", { kSysexMidiLog, [this]() {
+		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::SYSEX_ONLY);
 	} } },
 	{"Set User Adaptation Dir", { kSelectAdaptationDirect, []() {
 		FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
