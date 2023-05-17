@@ -291,10 +291,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	{ "Check for MIDI loops", { kLoopDetection, [this]() {
 		setupView_->loopDetection();
 	} } },
-	{ "Log all MIDI messages", { kFullMidiLog, [this]() {
+	{ "Log all MIDI messages", { kFullMidiLog, []() {
 		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::ALL_BUT_REALTIME);
 	} } },
-	{ "Log only Sysex messages", { kSysexMidiLog, [this]() {
+	{ "Log only Sysex messages", { kSysexMidiLog, []() {
 		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::SYSEX_ONLY);
 	} } },
 	{"Set User Adaptation Dir", { kSelectAdaptationDirect, []() {
