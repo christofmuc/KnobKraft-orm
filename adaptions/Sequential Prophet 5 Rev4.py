@@ -20,6 +20,7 @@ synth = sequential.GenericSequential(name="Sequential Prophet-5",
                                      patches_per_bank=40,
                                      name_len=20,
                                      name_position=65,
+                                     id_list=[0b00110010, 0b00110011],
                                      ).install(this_module)
 
 
