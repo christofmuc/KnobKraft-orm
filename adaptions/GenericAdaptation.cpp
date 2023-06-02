@@ -792,8 +792,7 @@ else {
 	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability  **outCapability) const
 	{
 		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kCreateBankDumpRequest)
-			&& pythonModuleHasFunction(kExtractPatchesFromBank)
+		if (pythonModuleHasFunction(kExtractPatchesFromBank)
 			&& pythonModuleHasFunction(kIsPartOfBankDump)
 			&& pythonModuleHasFunction(kIsBankDumpFinished)) {
 			*outCapability = dynamic_cast<midikraft::BankDumpCapability *>(bankDumpCapabilityImpl_.get());
