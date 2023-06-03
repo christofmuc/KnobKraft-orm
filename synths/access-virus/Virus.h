@@ -54,7 +54,7 @@ namespace midikraft {
 		// Bank Dump Capability
 		virtual bool isBankDump(const MidiMessage& message) const override;
 		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
-		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
+		virtual TPatchVector patchesFromSysexBank(std::vector<MidiMessage> const& messages) const override;
 
 		virtual std::shared_ptr<DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
 

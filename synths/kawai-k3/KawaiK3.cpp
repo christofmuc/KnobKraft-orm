@@ -323,18 +323,20 @@ namespace midikraft {
 		return {};
 	}
 
-	TPatchVector KawaiK3::patchesFromSysexBank(const MidiMessage& message) const
+	TPatchVector KawaiK3::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
 	{
 		TPatchVector result;
-		if (isBankDumpAndNotWaveDump(message)) {
-			// A bank has 50 programs...
-			for (int i = 0; i < 50; i++) {
-				// This is not really efficient, but for now I'd be good with this
-				result.push_back(k3PatchFromSysex(message,i));
+		for (auto const& message : messages) {
+			if (isBankDumpAndNotWaveDump(message)) {
+				// A bank has 50 programs...
+				for (int i = 0; i < 50; i++) {
+					// This is not really efficient, but for now I'd be good with this
+					result.push_back(k3PatchFromSysex(message, i));
+				}
 			}
-		}
-		else {
-			jassertfalse;
+			else {
+				spdlog::error("Failed to convert MIDI message to K3 patches, program error?");
+			}
 		}
 		return result;
 	}
@@ -433,7 +435,7 @@ namespace midikraft {
 				}
 			}
 			else if (isBankDumpAndNotWaveDump(message)) {
-				auto newPatches = patchesFromSysexBank(message);
+				auto newPatches = patchesFromSysexBank({ message });
 				for (auto n : newPatches) {
 					auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(n);
 					if (newPatch) {				

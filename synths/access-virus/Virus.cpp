@@ -12,6 +12,7 @@
 #include "VirusPatch.h"
 
 #include "fmt/format.h"
+#include "spdlog/spdlog.h"
 
 namespace midikraft {
 
@@ -193,11 +194,20 @@ namespace midikraft {
 		return 128;
 	}
 
-	TPatchVector Virus::patchesFromSysexBank(const MidiMessage& message) const
+	TPatchVector Virus::patchesFromSysexBank(std::vector<MidiMessage> const & messages) const
 	{
-		ignoreUnused(message);
-		// Coming here would be a logic error - the Virus has a patch dump request, but the synth will reply with lots of individual patch dumps
-		throw std::logic_error("The method or operation is not implemented.");
+		TPatchVector result;
+		for (auto const& message : messages)
+		{
+			auto patch = patchFromSysex({ message });
+			if (patch) {
+				result.push_back(patch);
+			}
+			else {
+				spdlog::error("Error converting message from bank dump to patch, program error!");
+			}
+		}
+		return result;
 	}
 
 	std::shared_ptr<DataFile> Virus::patchFromSysex(const std::vector <MidiMessage>& message) const

@@ -77,19 +77,20 @@ namespace knobkraft {
 		return false;
 	}
 
-	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(const MidiMessage& message) const
+	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
 	{
+		midikraft::TPatchVector patchesFound;
 		py::gil_scoped_acquire acquire;
-		try {
-			midikraft::TPatchVector patchesFound;
-			std::vector<int> vector = me_->messageToVector(message);
-			py::object result = me_->callMethod(kExtractPatchesFromBank, vector);
-			int no = 0;
-			if (py::isinstance<py::tuple>(result)) {
-				auto result_tuple = py::cast<py::tuple>(result);
-				int numPatches = py::cast<int>(result_tuple[0]);
-				spdlog::info("Got bank result with {} patches", numPatches);
-				for (auto patchData : py::cast<py::list>(result_tuple[1]))
+		if (me_->pythonModuleHasFunction(kExtractPatchesFromAllBankMessages)) {
+			try {
+				// This is the new interface for the bank dump capability - the Python function gets all bank dump messages handed at once and returns a vector
+				// of messages (i.e. a list of lists)
+				std::vector<int> vector = me_->midiMessagesToVector(messages);
+				py::object result = me_->callMethod(kExtractPatchesFromAllBankMessages, vector);
+				int no = 0;
+				auto patches = py::cast<py::list>(result);
+				spdlog::info("Got bank result with {} patches", patches.size());
+				for (auto patchData : patches)
 				{
 					auto allData = GenericAdaptation::intVectorToByteVector(patchData.cast<std::vector<int>>());
 					std::vector<uint8> data(allData.data(), allData.data() + allData.size());
@@ -98,34 +99,51 @@ namespace knobkraft {
 						patchesFound.push_back(patch);
 					}
 					else {
-						spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
+						spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromAllBankMessages);
 					}
 				}
 			}
-			else {			
-				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
-				auto messages = Sysex::vectorToMessages(byteData);
-				for (auto programDump : messages) {
-					std::vector<uint8> data(programDump.getRawData(), programDump.getRawData() + programDump.getRawDataSize());
-					auto patch = me_->patchFromPatchData(data, MidiProgramNumber::fromZeroBase(no++)); //TODO the no is ignored
-					if (patch) {
-						patchesFound.push_back(patch);
-					}
-					else {
-						spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
+			catch (py::error_already_set& ex) {
+				me_->logAdaptationError(kExtractPatchesFromAllBankMessages, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				me_->logAdaptationError(kExtractPatchesFromAllBankMessages, ex);
+			}
+		}
+		else
+		{
+			// Old adaptation interface - the adaptation is handed one MIDI message at a time, but could extract a list of patches from it, but each patch 
+			// needs to be in exactly one MIDI message. This was too restrictive.
+			try {
+				int no = 0;
+				for (auto const& message : messages) {
+					std::vector<int> vector = me_->messageToVector(message);
+					py::object result = me_->callMethod(kExtractPatchesFromBank, vector);
+					std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+					auto patches = Sysex::vectorToMessages(byteData);
+					// Each of theses messages is supposed to represent a single patch (Kawai K3, Access Virus are examples for this)
+					for (auto programDump : patches) {
+						std::vector<uint8> data(programDump.getRawData(), programDump.getRawData() + programDump.getRawDataSize());
+						auto patch = me_->patchFromPatchData(data, MidiProgramNumber::fromZeroBase(no++)); //TODO the no is ignored
+						if (patch) {
+							patchesFound.push_back(patch);
+						}
+						else {
+							spdlog::warn("Adaptation: Could not create patch from data returned from {}", kExtractPatchesFromBank);
+						}
 					}
 				}
 			}
-			return patchesFound;
+			catch (py::error_already_set& ex) {
+				me_->logAdaptationError(kExtractPatchesFromBank, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				me_->logAdaptationError(kExtractPatchesFromBank, ex);
+			}
 		}
-		catch (py::error_already_set &ex) {
-			me_->logAdaptationError(kExtractPatchesFromBank, ex);
-			ex.restore();
-		}
-		catch (std::exception &ex) {
-			me_->logAdaptationError(kExtractPatchesFromBank, ex);
-		}
-		return {};
+		return patchesFound;
 	}
 
 }

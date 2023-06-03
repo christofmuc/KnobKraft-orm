@@ -19,7 +19,7 @@ namespace knobkraft {
 		
 		bool isBankDump(const MidiMessage& message) const override;
 		bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
-		midikraft::TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
+		midikraft::TPatchVector patchesFromSysexBank(std::vector<MidiMessage> const& messages) const override;
 
 	private:
 		GenericAdaptation *me_;

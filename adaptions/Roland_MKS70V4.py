@@ -310,9 +310,6 @@ def isBankDumpFinished(messages):
     return len(messages) == 64 + 50
 
 
-g_bank_messages = []
-
-
 # def denibble(data):
 #     unpacked_data = []
 #     for i in range(0, len(data), 2):
@@ -717,80 +714,77 @@ def convert_into_message(src_msg, dest_msg, src_mapping, dest_mapping) -> None:
         save_parameter(dest_msg, dest_mapping[param_name], param_value)
 
 
-def extractPatchesFromBank(message):
-    global g_bank_messages
-    if isPartOfBankDump(message):
-        # Collect all messages in a global variable, we need them later
-        g_bank_messages.append(message)
+def extractPatchesFromAllBankMessages(messages):
+    if not isBankDumpFinished(messages):
+        # Program error
+        raise Exception("extractPatchesFromAllBankMessages called with too few messages, program error!")
 
     patches = []
-    if len(g_bank_messages) == 64 + 50:
-        tones_used = set()
-        print("Found all messages, for a bank, constructing patches with tones")
-        for i in range(64):
-            patch = g_bank_messages[i]
-            if isOperationMessage(patch, [operation_vec_bld]):
-                # This is an OS 4 Bulk Dump
-                if patch[5] != patch_level:
-                    raise Exception("Expected patch bulk dump message - can't convert. Maybe some messages are missing?")
-                patch_no = patch[8]
-                apr_patch_dump = createMessageHeader(operation_vec_apr, MIDI_control_channel, patch_level) + [0x01] + [0x00] * 53 + [0xf7]
-                convert_into_message(patch, apr_patch_dump, bulk_mapping_patch, apr_mapping_patch)
-                patch_name = "".join([chr(apr_patch_dump[i]) for i in range(7, 25)])
-                # print(f"Read Vecoven patch no {patch_no}: {patch_name}")
+    tones_used = set()
+    print("Found all messages, for a bank, constructing patches with tones")
+    for i in range(64):
+        patch = messages[i]
+        if isOperationMessage(patch, [operation_vec_bld]):
+            # This is an OS 4 Bulk Dump
+            if patch[5] != patch_level:
+                raise Exception("Expected patch bulk dump message - can't convert. Maybe some messages are missing?")
+            patch_no = patch[8]
+            apr_patch_dump = createMessageHeader(operation_vec_apr, MIDI_control_channel, patch_level) + [0x01] + [0x00] * 53 + [0xf7]
+            convert_into_message(patch, apr_patch_dump, bulk_mapping_patch, apr_mapping_patch)
+            patch_name = "".join([chr(apr_patch_dump[i]) for i in range(7, 25)])
+            # print(f"Read Vecoven patch no {patch_no}: {patch_name}")
 
-                # We need to find out which two tones belong to this patch
-                A_tone_number = apr_patch_dump[36]
-                B_tone_number = apr_patch_dump[45]
-                pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, 0x00, patch_no, 0x00, 0xf7]
-                high, low = getToneNumbers(apr_patch_dump)
+            # We need to find out which two tones belong to this patch
+            A_tone_number = apr_patch_dump[36]
+            B_tone_number = apr_patch_dump[45]
+            pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, 0x00, patch_no, 0x00, 0xf7]
+            high, low = getToneNumbers(apr_patch_dump)
 
-                APR_tone_A = []
-                pgr_tone_A = []
-                # The Tones from 50..99 are ROM tones, which are stored in the device and not part of the bank
-                if A_tone_number < 50:
-                    A_tone_bulk = g_bank_messages[64 + A_tone_number]
-                    APR_tone_A = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_a] + [0x00] * 102 + [0xf7]
-                    convert_into_message(A_tone_bulk, APR_tone_A, bulk_mapping_tone, apr_mapping_tone)
-                    pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, 0x00, A_tone_number, 0x00, 0xf7]
+            APR_tone_A = []
+            pgr_tone_A = []
+            # The Tones from 50..99 are ROM tones, which are stored in the device and not part of the bank
+            if A_tone_number < 50:
+                A_tone_bulk = messages[64 + A_tone_number]
+                APR_tone_A = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_a] + [0x00] * 102 + [0xf7]
+                convert_into_message(A_tone_bulk, APR_tone_A, bulk_mapping_tone, apr_mapping_tone)
+                pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, 0x00, A_tone_number, 0x00, 0xf7]
 
-                APR_tone_B = []
-                pgr_tone_B = []
-                if B_tone_number < 50:
-                    B_tone_bulk = g_bank_messages[64 + B_tone_number]
-                    APR_tone_B = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_b] + [0x00] * 102 + [0xf7]
-                    convert_into_message(B_tone_bulk, APR_tone_B, bulk_mapping_tone, apr_mapping_tone)
-                    pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, 0x00, B_tone_number, 0x00, 0xf7]
+            APR_tone_B = []
+            pgr_tone_B = []
+            if B_tone_number < 50:
+                B_tone_bulk = messages[64 + B_tone_number]
+                APR_tone_B = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_b] + [0x00] * 102 + [0xf7]
+                convert_into_message(B_tone_bulk, APR_tone_B, bulk_mapping_tone, apr_mapping_tone)
+                pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, 0x00, B_tone_number, 0x00, 0xf7]
 
-                tones_used.add(A_tone_number)
-                tones_used.add(B_tone_number)
-                apr_patch = pgr_patch + apr_patch_dump + pgr_tone_A + APR_tone_A + pgr_tone_B + APR_tone_B
-            # else:
-            #     # We need to find out which two tones belong to this patch
-            #     patch_data = denibble(patch[9:-1])
-            #
-            #     # We need to find out which two tones belong to this patch
-            #     upper_tone_number = patch_data[0x14]  # 1d specified, but possibly also 0x1f
-            #     lower_tone_number = patch_data[0x24]  # 26 specified, but possibly also 0x2e
-            #     # patch.extend(g_bank_messages[upper_tone_number])
-            #     # patch.extend(g_bank_messages[lower_tone_number])
-            #     pgr_patch, apr_patch = bldToApr(patch)
-            #     pgr_upper_tone, apr_upper_tone = bldToApr(g_bank_messages[upper_tone_number + 64])
-            #     pgr_lower_tone, apr_lower_tone = bldToApr(g_bank_messages[lower_tone_number + 64])
-            #     apr_patch = apr_patch + apr_upper_tone + apr_lower_tone
+            tones_used.add(A_tone_number)
+            tones_used.add(B_tone_number)
+            apr_patch = pgr_patch + apr_patch_dump + pgr_tone_A + APR_tone_A + pgr_tone_B + APR_tone_B
+        # else:
+        #     # We need to find out which two tones belong to this patch
+        #     patch_data = denibble(patch[9:-1])
+        #
+        #     # We need to find out which two tones belong to this patch
+        #     upper_tone_number = patch_data[0x14]  # 1d specified, but possibly also 0x1f
+        #     lower_tone_number = patch_data[0x24]  # 26 specified, but possibly also 0x2e
+        #     # patch.extend(g_bank_messages[upper_tone_number])
+        #     # patch.extend(g_bank_messages[lower_tone_number])
+        #     pgr_patch, apr_patch = bldToApr(patch)
+        #     pgr_upper_tone, apr_upper_tone = bldToApr(g_bank_messages[upper_tone_number + 64])
+        #     pgr_lower_tone, apr_lower_tone = bldToApr(g_bank_messages[lower_tone_number + 64])
+        #     apr_patch = apr_patch + apr_upper_tone + apr_lower_tone
 
-                if not isSingleProgramDump(apr_patch):
-                    print("Error, created invalid program dump!")
-                else:
-                    patches.append(apr_patch)
-                    print(f"Discovered patch {nameFromDump(apr_patch)}")
-        g_bank_messages = []
-        all_tones = set(range(50))
-        unused_tones = all_tones - tones_used
-        if len(unused_tones) > 0:
-            unused_tones_sorted = sorted(list(unused_tones))
-            print(f"This bank contains {len(unused_tones)} unused tones: {', '.join([str(x + 1) for x in unused_tones_sorted])}")
-    return len(patches), patches
+            if not isSingleProgramDump(apr_patch):
+                print("Error, created invalid program dump!")
+            else:
+                patches.append(apr_patch)
+                print(f"Discovered patch {nameFromDump(apr_patch)}")
+    all_tones = set(range(50))
+    unused_tones = all_tones - tones_used
+    if len(unused_tones) > 0:
+        unused_tones_sorted = sorted(list(unused_tones))
+        print(f"This bank contains {len(unused_tones)} unused tones: {', '.join([str(x + 1) for x in unused_tones_sorted])}")
+    return patches
 
 
 def numberFromDump(messages):

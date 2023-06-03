@@ -58,6 +58,7 @@ namespace knobkraft {
 		*kIsPartOfBankDump = "isPartOfBankDump",
 		*kIsBankDumpFinished = "isBankDumpFinished",
 		*kExtractPatchesFromBank = "extractPatchesFromBank",
+		*kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
 		*kNumberOfLayers = "numberOfLayers",
 		*kLayerName = "layerName",
 		*kSetLayerName = "setLayerName",
@@ -94,6 +95,7 @@ namespace knobkraft {
 		kIsPartOfBankDump,
 		kIsBankDumpFinished,
 		kExtractPatchesFromBank,
+		kExtractPatchesFromAllBankMessages,
 		kNumberOfLayers,
 		kLayerName,
 		kSetLayerName,
@@ -792,7 +794,7 @@ else {
 	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability  **outCapability) const
 	{
 		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kExtractPatchesFromBank)
+		if ((pythonModuleHasFunction(kExtractPatchesFromBank) || pythonModuleHasFunction(kExtractPatchesFromAllBankMessages))
 			&& pythonModuleHasFunction(kIsPartOfBankDump)
 			&& pythonModuleHasFunction(kIsBankDumpFinished)) {
 			*outCapability = dynamic_cast<midikraft::BankDumpCapability *>(bankDumpCapabilityImpl_.get());

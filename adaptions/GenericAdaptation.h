@@ -34,7 +34,7 @@ namespace knobkraft {
 		*kNumberOfBanks, * kNumberOfPatchesPerBank, * kBankDescriptors, * kFriendlyBankName, *kBankSelect, 
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
-		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank,
+		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank, *kExtractPatchesFromAllBankMessages,
 		*kNumberOfLayers,
 		*kLayerName,
 		*kSetLayerName,

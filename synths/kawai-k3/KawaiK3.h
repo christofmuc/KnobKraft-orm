@@ -87,7 +87,6 @@ namespace midikraft {
 		virtual MidiProgramNumber getProgramNumber(const std::vector<MidiMessage> &message) const override;
 		virtual std::shared_ptr<DataFile> patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const override;
 		virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const override;
-		virtual TPatchVector patchesFromSysexBank(const MidiMessage& message) const override;
 
 		// BankDumpRequestCapability
 		virtual std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
@@ -95,6 +94,7 @@ namespace midikraft {
 		// Bank Dump Capability
 		virtual bool isBankDump(const MidiMessage& message) const override;
 		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
+		virtual TPatchVector patchesFromSysexBank(std::vector<MidiMessage> const& messages) const override;
 
 		// SoundExpanderCapability
 		virtual MidiChannel getInputChannel() const override;

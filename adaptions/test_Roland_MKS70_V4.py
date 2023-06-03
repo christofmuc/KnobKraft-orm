@@ -99,17 +99,18 @@ def test_MKS70V4():
     assert isToneAprMessage(single_apr)
     # assert nameFromDump(single_apr) == " KALIMBA  "
 
+    # Those are V3 bank dumps, and CANNOT be loaded by this adaptation which only supports the Vecoven firmware. We need to
+    # reverse engineer the bank dump format to be able to convert them into APR messages first!
     assert channelIfValidDeviceResponse(single_apr) == 0x00
-    # bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
-    bank_dump = knobkraft.load_sysex('testData/RolandMKS70_MKSSYNTH.SYX')
+    bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
+    #bank_dump = knobkraft.load_sysex('testData/RolandMKS70_MKSSYNTH.SYX')
     patches = []
-    for loaded_message in bank_dump:
-        number, converted = extractPatchesFromBank(loaded_message)
-        if len(converted) > 0:
-            # That worked
-            for patch in converted:
-                patches.append(patch)
-    # assert len(patches) == 64
+    converted = extractPatchesFromAllBankMessages(bank_dump)
+    if len(converted) > 0:
+        # That worked
+        for patch in converted:
+            patches.append(patch)
+    assert len(patches) == 0
 
     for patch in patches:
         assert isEditBufferDump(patch)
@@ -133,17 +134,16 @@ def test_MKS70V4():
     bank_dump = knobkraft.load_sysex('testData/MKS-70_full_internal_bank_manual_dump.syx')
     patches = []
     assert isBankDumpFinished(bank_dump)
-    for loaded_message in bank_dump:
-        number, converted = extractPatchesFromBank(loaded_message)
-        if len(converted) > 0:
-            # That worked
-            count = 0
-            for patch in converted:
-                assert numberFromDump(patch) == count
-                patches.append(patch)
-                edit_buffer = convertToEditBuffer(0, patch)
-                assert isEditBufferDump(edit_buffer)
-                assert nameFromDump(edit_buffer) == nameFromDump(patch)
-                assert convertToProgramDump(0, edit_buffer, count) == patch
-                count += 1
+    converted = extractPatchesFromAllBankMessages(bank_dump)
+    if len(converted) > 0:
+        # That worked
+        count = 0
+        for patch in converted:
+            assert numberFromDump(patch) == count
+            patches.append(patch)
+            edit_buffer = convertToEditBuffer(0, patch)
+            assert isEditBufferDump(edit_buffer)
+            assert nameFromDump(edit_buffer) == nameFromDump(patch)
+            assert convertToProgramDump(0, edit_buffer, count) == patch
+            count += 1
     assert len(patches) == 64
