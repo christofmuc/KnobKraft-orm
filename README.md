@@ -52,6 +52,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
+| Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
