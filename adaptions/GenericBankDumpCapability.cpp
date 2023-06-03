@@ -85,7 +85,10 @@ namespace knobkraft {
 			try {
 				// This is the new interface for the bank dump capability - the Python function gets all bank dump messages handed at once and returns a vector
 				// of messages (i.e. a list of lists)
-				std::vector<int> vector = me_->midiMessagesToVector(messages);
+				std::vector<std::vector<int>> vector;
+				for (auto message : messages) {
+					vector.push_back(me_->messageToVector(message));
+				}
 				py::object result = me_->callMethod(kExtractPatchesFromAllBankMessages, vector);
 				int no = 0;
 				auto patches = py::cast<py::list>(result);

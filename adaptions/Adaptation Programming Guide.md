@@ -523,6 +523,41 @@ Here is the full example for the Korg MS2000, which has to unescape the sysex, i
             return result
         raise Exception("This code can only read a single message of type 'ALL DATA DUMP'")
 
+The `extractPatchesFromBank` works when each single MIDI message contains one or more patches, and each patch can be represented by a single MIDI message.
+This is true for many very old synths, but newer synths with more complex data structures might require an even more complex function.
+
+Instead of `extractPatchesFromBank`, we can implement the `extractPatchesFromAllBankMessages`. If this is defined, any implementation of extractPatchesFromBank 
+is ignored.
+
+The signature of the `extractPatchesFromAllBankMessages` is this:
+
+    def extractPatchesFromAllBankMessages(messages: List[List[byte]]) -> List[List[byte]]:
+
+As a parameter, it gets a list of MIDI messages. Each MIDI message is in itself a list of bytes.
+The return value is a list of patches. Each patch is another list of bytes. BUT in the returned list of bytes there might be multiple
+MIDI messages concatenated to each other!
+
+Rewriting the function above for the new interface we get this:
+
+    def extractPatchesFromAllBankMessages(messages):
+        all_patches = []
+        for message in messages:
+            channel = message[2] & 0x0f
+            data = unescapeSysex(message[5:-1])
+            # There are different files out there with different number of patches (64 or 128), plus the global data
+            data_pointer = 0
+            result = []
+            while data_pointer + 254 < len(data):
+                # Read one more patch
+                next_patch = data[data_pointer:data_pointer + 254]
+                next_program_dump = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x40] + escapeSysex(next_patch) + [0xf7]
+                print("Found patch " + nameFromDump(next_program_dump))
+                result = result + next_program_dump
+                data_pointer = data_pointer + 254
+            all_patches.append(result)
+        return all_patches
+
+For a way more complex example, have a look at the implementation in the Roland MKS-70 V4 adaptation.
 
 ### Getting the patch's name
 
