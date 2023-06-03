@@ -61,6 +61,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Take 5 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
+| Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | native | |
