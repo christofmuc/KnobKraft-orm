@@ -5,6 +5,9 @@
 #
 
 import hashlib
+from typing import List
+
+import testing
 
 
 def name():
@@ -182,7 +185,7 @@ def friendlyBankName(bank_number):
 
 # Test data picked up by test_adaptation.py
 def test_data():
-    def programs(messages):
-        yield {"message": messages[0], "name": "RADZIC"}
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[0], name= "RADZIC")
 
-    return {"sysex": "testData/Radzic-ESQ1.syx", "program_generator": programs}
+    return testing.TestData(sysex="testData/Radzic-ESQ1.syx", program_generator=programs)

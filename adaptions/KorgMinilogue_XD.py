@@ -6,6 +6,9 @@
 # Based on DeepMind adaptation.  Modified to Minilogue XD version by aka Andy2No
 
 import hashlib  # for fingerprint comparison
+from typing import List
+
+import testing
 
 korg_id = 0x42
 
@@ -358,7 +361,7 @@ def unescapeSysex(sysex):
 
 # Test data picked up by test_adaptation.py
 def test_data():
-    def programs(messages):
-        yield {"message": messages[0], "number": 53, "name": "1982theme"}
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[0], number=53, name="1982theme")
 
-    return {"sysex": "testData/KorgMinilogueXD/1982theme.syx", "program_generator": programs}
+    return testing.TestData(sysex="testData/KorgMinilogueXD/1982theme.syx", program_generator=programs)

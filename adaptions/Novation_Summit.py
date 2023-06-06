@@ -5,6 +5,9 @@
 #   and https://gearspace.com/board/electronic-music-instruments-and-electronic-music-production/1149964-novation-peak-96.html
 #   in turn based on Cedric Tessier's Novation Ultranova adaptatio
 import hashlib
+from typing import List
+
+import testing
 
 NAME_OFFSET = 0x10
 NAME_LEN = 16
@@ -46,7 +49,7 @@ def channelIfValidDeviceResponse(message):
 
 
 def bankDescriptors():
-    return [{"bank": x, "name": f"Bank {chr(ord('A')+x)}", "size": 128, "type": "Single Patch"} for x in range(4)]
+    return [{"bank": x, "name": f"Bank {chr(ord('A') + x)}", "size": 128, "type": "Single Patch"} for x in range(4)]
 
 
 def createEditBufferRequest(channel):
@@ -85,7 +88,7 @@ def numberFromDump(message):
 
 def nameFromDump(message):
     if isSingleProgramDump(message) or isEditBufferDump(message):
-        name = ''.join([chr(x) for x in message[0x10:0x10+16]])
+        name = ''.join([chr(x) for x in message[0x10:0x10 + 16]])
         return name.strip()
     return 'Invalid'
 
@@ -111,12 +114,12 @@ def renamePatch(message, new_name):
         # name is alpha-num + special chars (replace everything else by '_' and pad with spaces)
         clean_name = new_name.strip()[:NAME_LEN].ljust(NAME_LEN, ' ')
         valid_name = [ord(x) if x.isalnum() or x in NAME_SPECIALCHARSET else ord('_') for x in clean_name]
-        return message[:NAME_OFFSET] + valid_name + message[NAME_OFFSET+NAME_LEN:]
+        return message[:NAME_OFFSET] + valid_name + message[NAME_OFFSET + NAME_LEN:]
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
 def friendlyBankName(bank):
-    return f"Bank {chr(ord('A')+(bank % 4))}"
+    return f"Bank {chr(ord('A') + (bank % 4))}"
 
 
 def friendlyProgramName(program):
@@ -125,13 +128,14 @@ def friendlyProgramName(program):
 
 def calculateFingerprint(message):
     # Only fingerprint data outside of the header, beyond the patch name
-    data = message[NAME_OFFSET+NAME_LEN:-1]
+    data = message[NAME_OFFSET + NAME_LEN:-1]
     return hashlib.md5(bytearray(data)).hexdigest()
 
 
 def test_data():
-    def programs(messages):
-        yield {"message": messages[0], "name": "Reflections", "number": 0, "is_edit_buffer": True}
-    return {"sysex": "testData/NovationPeak-Reflections.syx", "program_generator": programs,
-            "rename_name": "Cr4zy Name_$",
-            "friendly_bank_name": (2, 'Bank C')}
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[0], name="Reflections", number=0, is_edit_buffer=True)
+
+    return testing.TestData(sysex="testData/NovationPeak-Reflections.syx", program_generator=programs,
+                            rename_name="Cr4zy Name_$",
+                            friendly_bank_name=(2, 'Bank C'))

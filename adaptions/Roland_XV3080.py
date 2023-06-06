@@ -6,7 +6,9 @@
 
 # Finally owning a classic Roland so I can make a working and tested example on how to implement the Roland Synths
 import sys
+from typing import List
 
+import testing.test_data
 from roland import DataBlock, RolandData, GenericRoland, GenericRolandWithBackwardCompatibility
 from Roland_JV1080 import jv_1080
 from Roland_JV80 import jv_80
@@ -41,6 +43,8 @@ xv_3080_main = GenericRoland("Roland XV-3080",
                              device_family=[0x10, 0x01])  # Interestingly, the XV-3080 seems the first model to support the generic device inquiry
 xv_3080 = GenericRolandWithBackwardCompatibility(xv_3080_main, [jv_80, jv_1080])
 xv_3080.install(this_module)
+
+
 #  and XV-5080 and XV-5050?
 
 
@@ -50,21 +54,23 @@ def setupHelp():
 
 # Test data picked up by test_adaptation.py
 def test_data():
-    def programs(messages):
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = []
         names = ["RedPowerBass", "Sinus QSB", "Super W Bass"]
         i = 0
-        for message in messages:
+        # Extract the first 3 programs from the sysex dump loaded, and yield them with name and number to the test code
+        for message in data.all_messages:
             if xv_3080.isPartOfSingleProgramDump(message):
                 patch.extend(message)
                 if xv_3080.isSingleProgramDump(patch):
-                    yield {"message": patch, "name": names[i], "number": i}
+                    yield testing.ProgramTestData(message=patch, name=names[i], number=i)
                     patch = []
                     i += 1
                     if i >= len(names):
                         break
 
-    return {"sysex": "testData/jv1080_AGSOUND1.SYX", "program_generator": programs,
-            "program_dump_request": "f0 41 10 00 10 11 30 00 00 00 00 00 00 4f 01 f7",
-            "device_detect_call": "f0 7e 00 06 01 f7",
-            "device_detect_reply": "f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7"}
+    return testing.TestData(sysex="testData/jv1080_AGSOUND1.SYX",
+                            program_generator=programs,
+                            program_dump_request="f0 41 10 00 10 11 30 00 00 00 00 00 00 4f 01 f7",
+                            device_detect_call="f0 7e 00 06 01 f7",
+                            device_detect_reply=("f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7", 0))

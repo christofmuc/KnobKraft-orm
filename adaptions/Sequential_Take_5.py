@@ -3,8 +3,12 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
+
 import sequential
 import sys
+
+import testing
 
 this_module = sys.modules[__name__]
 
@@ -22,7 +26,7 @@ sequential.GenericSequential(name="Sequential Take 5",
 
 # Test data picked up by test_adaptation.py
 def test_data():
-    def programs(messages):
-        yield {"message": messages[2], "name": 'Prophetic Sync', "number": 2}
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[2], name='Prophetic Sync', number=2)
 
-    return {"sysex": "testData/Take5_Factory_Set1_v1.0.syx", "program_generator": programs}
+    return testing.TestData(sysex="testData/Take5_Factory_Set1_v1.0.syx", program_generator=programs)

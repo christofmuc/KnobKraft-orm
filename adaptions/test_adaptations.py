@@ -3,10 +3,11 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import Optional
 
 import pytest
 import knobkraft
-
+import testing
 import functools
 
 
@@ -24,27 +25,11 @@ def skip_targets(param_not_none):
     return decorator
 
 
-#
-# Fixtures prepare the test data for the tests below
-#
-class TestData:
-    def __init__(self, adaptation):
-        self.test_dict = adaptation.test_data()
-        self.all_messages = []
-        if "sysex" in self.test_dict:
-            self.sysex_file = self.test_dict["sysex"]
-            self.all_messages = knobkraft.load_sysex(self.sysex_file)
-        if "program_generator" in self.test_dict:
-            self.programs = list(self.test_dict["program_generator"](self.all_messages))
-            self.program_dump = self.programs[0]["message"]
-        if "detection_reply" in self.test_dict:
-            self.detection_reply = self.test_dict["detection_reply"]
-
-
 @pytest.fixture
-def test_data(adaptation):
+def test_data(request) -> Optional[testing.TestData]:
+    adaptation = request.getfixturevalue("adaptation")
     if hasattr(adaptation, "test_data"):
-        return TestData(adaptation)
+        return adaptation.test_data()
     else:
         return None
 
@@ -59,71 +44,64 @@ def test_name_is_not_none(adaptation):
 
 
 @skip_targets("test_data")
-def test_detection(adaptation, test_data: TestData):
-    if hasattr(test_data, "detection_reply"):
-        assert adaptation.channelIfValidDeviceResponse(test_data.detection_reply[0]) == test_data.detection_reply[1]
-    else:
-        pytest.skip(f"detection_reply test data not defined for adaptation {adaptation.name}")
-
-
-@skip_targets("test_data")
-def test_extract_name(adaptation, test_data: TestData):
+def test_extract_name(adaptation, test_data: testing.TestData):
     if hasattr(adaptation, "nameFromDump") and test_data is not None:
         for program in test_data.programs:
-            assert adaptation.nameFromDump(program["message"]) == program["name"]
+            assert adaptation.nameFromDump(program.message.byte_list) == program.name
     else:
         pytest.skip(f"{adaptation.name} has not implemented nameFromDump")
 
 
 @skip_targets("test_data")
-def test_rename(adaptation, test_data: TestData):
+def test_rename(adaptation, test_data: testing.TestData):
     if hasattr(adaptation, "nameFromDump") and hasattr(adaptation, "renamePatch"):
-        binary = test_data.program_dump
-        # Rename to the name it already has
-        renamed = adaptation.renamePatch(binary, adaptation.nameFromDump(binary))
-        # This should not change the extracted name
-        assert adaptation.nameFromDump(renamed) == adaptation.nameFromDump(binary)
-        # This should not change the fingerprint
-        if hasattr(adaptation, "calculateFingerprint"):
-            assert adaptation.calculateFingerprint(renamed) == adaptation.calculateFingerprint(binary)
-        # Now rename
-        if "rename_name" in test_data.test_dict:
-            new_name = test_data.test_dict["rename_name"]
-        else:
-            new_name = "new name"
-        with_new_name = adaptation.renamePatch(binary, new_name)
-        new_name = adaptation.nameFromDump(with_new_name)
-        assert new_name.strip() == new_name.strip()
+        for program in test_data.programs:
+            binary = program.message.byte_list
+            # Rename to the name it already has
+            renamed = adaptation.renamePatch(binary, adaptation.nameFromDump(binary))
+            # This should not change the extracted name
+            assert adaptation.nameFromDump(renamed) == adaptation.nameFromDump(binary)
+            # This should not change the fingerprint
+            if hasattr(adaptation, "calculateFingerprint"):
+                assert adaptation.calculateFingerprint(renamed) == adaptation.calculateFingerprint(binary)
+            # Now rename
+            if program.rename_name is not None:
+                new_name = program.rename_name
+            else:
+                new_name = "new name"
+            with_new_name = adaptation.renamePatch(binary, new_name)
+            new_name = adaptation.nameFromDump(with_new_name)
+            assert new_name == new_name
     else:
         pytest.skip(f"{adaptation.name} has not implemented nameFromDump and renamePatch")
 
 
 @skip_targets("test_data")
-def test_is_program_dump(adaptation, test_data: TestData):
+def test_is_program_dump(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
-        if "is_edit_buffer" in program:
-            assert adaptation.isEditBufferDump(program["message"])
+        if program.is_edit_buffer:
+            assert adaptation.isEditBufferDump(program.message.byte_list)
         else:
-            assert adaptation.isSingleProgramDump(program["message"])
+            assert adaptation.isSingleProgramDump(program.message.byte_list)
 
 
 @skip_targets("test_data")
-def test_convert_to_edit_buffer(adaptation, test_data: TestData):
+def test_convert_to_edit_buffer(adaptation, test_data: testing.TestData):
     if hasattr(adaptation, "convertToEditBuffer") or hasattr(adaptation, "convertToProgramDump"):
         for program_data in test_data.programs:
-            if "target_no" in program_data:
-                target_no = program_data["target_no"]
+            if program_data.target_no is not None:
+                target_no = program_data.target_no
             else:
                 # Choose something random
                 target_no = 11
-            program = program_data["message"]
+            program = program_data.message.byte_list
             if hasattr(adaptation, "isSingleProgramDump") and adaptation.isSingleProgramDump(program):
                 previous_number = 0
                 if hasattr(adaptation, "numberFromDump"):
                     previous_number = adaptation.numberFromDump(program)
                 if hasattr(adaptation, "convertToEditBuffer"):
                     edit_buffer = adaptation.convertToEditBuffer(0x00, program)
-                    if "convert_to_edit_buffer_produces_program_dump" in test_data.test_dict and test_data.test_dict["convert_to_edit_buffer_produces_program_dump"]:
+                    if test_data.convert_to_edit_buffer_produces_program_dump:
                         # This is a special case for the broken implementation of the Andromeda edit buffer
                         assert adaptation.isSingleProgramDump(edit_buffer)
                     else:
@@ -131,7 +109,7 @@ def test_convert_to_edit_buffer(adaptation, test_data: TestData):
                 if not hasattr(adaptation, "convertToProgramDump"):
                     # Not much more we can test here
                     return
-                if "not_idempotent" in test_data.test_dict:
+                if test_data.not_idempotent:
                     pass
                 else:
                     idempotent = adaptation.convertToProgramDump(0x00, program, previous_number)
@@ -156,21 +134,21 @@ def test_convert_to_edit_buffer(adaptation, test_data: TestData):
 
 
 @skip_targets("test_data")
-def test_number_from_dump(adaptation, test_data: TestData):
+def test_number_from_dump(adaptation, test_data: testing.TestData):
     if hasattr(adaptation, "numberFromDump"):
         for program in test_data.programs:
-            assert adaptation.numberFromDump(program["message"]) == program["number"]
+            assert adaptation.numberFromDump(program.message.byte_list) == program.number
     else:
         pytest.skip(f"{adaptation.name} has not implemented numberFromDump")
 
 
 @skip_targets("test_data")
-def test_layer_name(adaptation, test_data: TestData):
+def test_layer_name(adaptation, test_data: testing.TestData):
     if hasattr(adaptation, "layerName"):
         for program in test_data.programs:
-            assert adaptation.layerName(program["message"], 1) == program["second_layer_name"]
-            assert adaptation.isSingleProgramDump(program["message"])
-            new_messages = adaptation.setLayerName(program["message"], 1, 'changed layer')
+            assert adaptation.layerName(program.message.byte_list, 1) == program.second_layer_name
+            assert adaptation.isSingleProgramDump(program.message.byte_list)
+            new_messages = adaptation.setLayerName(program.message.byte_list, 1, 'changed layer')
             assert adaptation.layerName(new_messages, 1) == 'changed layer'
             assert adaptation.isSingleProgramDump(new_messages)
     else:
@@ -178,55 +156,53 @@ def test_layer_name(adaptation, test_data: TestData):
 
 
 @skip_targets("test_data")
-def test_fingerprinting(adaptation, test_data: TestData):
+def test_fingerprinting(adaptation, test_data: testing.TestData):
     if hasattr(adaptation, "calculateFingerprint"):
         for program in test_data.programs:
-            md5 = adaptation.calculateFingerprint(program["message"])
+            md5 = adaptation.calculateFingerprint(program.message.byte_list)
             blank1 = None
             if hasattr(adaptation, "blankedOut"):
-                blank1 = adaptation.blankedOut(program["message"])
+                blank1 = adaptation.blankedOut(program.message.byte_list)
             if hasattr(adaptation, "isSingleProgramDump") and hasattr(adaptation, "convertToProgramDump") and adaptation.isSingleProgramDump(
-                    program["message"]):
+                    program.message.byte_list):
                 # Change program place and make sure the fingerprint didn't change
-                changed_position = adaptation.convertToProgramDump(0x09, program["message"], 0x31)
+                changed_position = adaptation.convertToProgramDump(0x09, program.message.byte_list, 0x31)
                 if hasattr(adaptation, "blankedOut"):
                     blank2 = adaptation.blankedOut(changed_position)
                     assert knobkraft.list_compare(blank1, blank2)
                 assert adaptation.calculateFingerprint(changed_position) == md5
             # Change name and make sure the fingerprint didn't change
             if hasattr(adaptation, "renamePatch"):
-                renamed = adaptation.renamePatch(program["message"], "iixxoo")
+                renamed = adaptation.renamePatch(program.message.byte_list, "iixxoo")
                 assert adaptation.calculateFingerprint(renamed) == md5
     else:
         pytest.skip(f"{adaptation.name} has not implemented calculateFingerprint")
 
 
 @skip_targets("test_data")
-def test_device_detection(adaptation, test_data: TestData):
+def test_device_detection(adaptation, test_data: testing.TestData):
     found = False
-    if "device_detect_call" in test_data.test_dict:
-        assert adaptation.createDeviceDetectMessage(0x00) == knobkraft.stringToSyx(test_data.test_dict["device_detect_call"])
+    if test_data.device_detect_call is not None:
+        assert adaptation.createDeviceDetectMessage(0x00) == test_data.device_detect_call
         found = True
-    if "device_detect_reply" in test_data.test_dict:
-        assert adaptation.channelIfValidDeviceResponse(knobkraft.stringToSyx(test_data.test_dict["device_detect_reply"])) == 0x00
+    if test_data.device_detect_reply is not None:
+        assert adaptation.channelIfValidDeviceResponse(test_data.device_detect_reply[0].byte_list) == test_data.device_detect_reply[1]
         found = True
     if not found:
         pytest.skip(f"{adaptation.name} has not provided test data for the device_detect_call or the device_detect_reply")
 
 
 @skip_targets("test_data")
-def test_program_dump_request(adaptation, test_data: TestData):
-    if "program_dump_request" in test_data.test_dict:
-        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00),
-                                      knobkraft.stringToSyx(test_data.test_dict["program_dump_request"]))
+def test_program_dump_request(adaptation, test_data: testing.TestData):
+    if test_data.program_dump_request is not None:
+        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00), test_data.program_dump_request.byte_list)
     else:
         pytest.skip(f"{adaptation.name} has not provided test data for the program_dump_request")
 
 
 @skip_targets("test_data")
-def test_friendly_bank_name(adaptation, test_data: TestData):
-    if "friendly_bank_name" in test_data.test_dict:
-        bank_data = test_data.test_dict["friendly_bank_name"]
-        assert adaptation.friendlyBankName(bank_data[0]) == bank_data[1]
+def test_friendly_bank_name(adaptation, test_data: testing.TestData):
+    if test_data.friendly_bank_name is not None:
+        assert adaptation.friendlyBankName(test_data.friendly_bank_name[0]) == test_data.friendly_bank_name[1]
     else:
         pytest.skip(f"{adaptation.name} has not implemented friendly_bank_name")

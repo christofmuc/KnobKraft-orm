@@ -5,6 +5,9 @@
 #
 
 import sys
+from typing import List
+
+import testing
 from roland import DataBlock, RolandData, GenericRoland
 
 this_module = sys.modules[__name__]
@@ -33,18 +36,18 @@ jv_1080.install(this_module)
 
 # Test data picked up by test_adaptation.py
 def test_data():
-    def programs(messages):
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = []
         names = ["RedPowerBass", "Sinus QSB", "Super W Bass"]
         i = 0
-        for message in messages:
+        for message in data.all_messages:
             if jv_1080.isPartOfSingleProgramDump(message):
                 patch.extend(message)
                 if jv_1080.isSingleProgramDump(patch):
-                    yield {"message": patch, "name": names[i], "number": i}
+                    yield testing.ProgramTestData(message=patch, name=names[i], number= i)
                     patch = []
                     i += 1
                     if i >= len(names):
                         break
 
-    return {"sysex": "testData/JV1080_AGSOUND1.SYX", "program_generator": programs}
+    return testing.TestData(sysex="testData/JV1080_AGSOUND1.SYX", program_generator=programs)
