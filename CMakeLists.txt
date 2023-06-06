@@ -54,9 +54,13 @@ IF (WIN32)
 		include_directories("${asiosdk_SOURCE_DIR}/common")
 	ENDIF()
 
+	set(PYTHON_EMBED_VERSION_MAJOR 3)
+	set(PYTHON_EMBED_VERSION_MINOR 8)
+	set(PYTHON_EMBED_VERSION_PATCH 10)
+	set(PYTHON_EMBED_VERSION ${PYTHON_EMBED_VERSION_MAJOR}.${PYTHON_EMBED_VERSION_MINOR}.${PYTHON_EMBED_VERSION_PATCH})
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/3.8.10/python-3.8.10-embed-amd64.zip
+		URL https://www.python.org/ftp/python/${PYTHON_EMBED_VERSION}/python-${PYTHON_EMBED_VERSION}-embed-amd64.zip
 		#URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
