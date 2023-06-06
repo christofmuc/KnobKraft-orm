@@ -25,6 +25,34 @@ add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
 
+# Function to parse semver version with optional patch level
+function(parse_semver version major minor patch)
+    set(version_regex "^([0-9]+)\\.([0-9]+)(\\.([0-9]+))?$")
+    if (version MATCHES ${version_regex})
+        set(${major} "${CMAKE_MATCH_1}")
+        set(${minor} "${CMAKE_MATCH_2}")
+        if (DEFINED CMAKE_MATCH_3)
+            set(${patch} "${CMAKE_MATCH_4}")
+        else()
+            set(${patch} "0")
+        endif()
+    else()
+        message(FATAL_ERROR "Invalid semver format")
+    endif()
+endfunction()
+
+# Specify Python version. We use Python 3.8.10 for Windows, because only that way we can still support users with EOL Windows 7 (upgrade now!)
+# For other platforms, we are using Python 3.10
+if(WIN32)
+    # For Windows, specify the exact version to download, as the FetchContent will calculate the download URLs from it
+	set(PYTHON_VERSION_TO_DOWNLOAD "3.8.10" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
+	parse_semver(${PYTHON_VERSION_TO_DOWNLOAD} PYTHON_EMBEDDED_MAJOR PYTHON_EMBEDDED_MINOR PYTHON_EMBEDDED_PATCH)
+	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
+	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
+else()
+	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding.")
+endif()
+
 # On Windows, we need to download external dependencies
 IF (WIN32)
 	# Include useful scripts for CMake    
@@ -54,14 +82,10 @@ IF (WIN32)
 		include_directories("${asiosdk_SOURCE_DIR}/common")
 	ENDIF()
 
-	set(PYTHON_EMBED_VERSION_MAJOR 3)
-	set(PYTHON_EMBED_VERSION_MINOR 8)
-	set(PYTHON_EMBED_VERSION_PATCH 10)
-	set(PYTHON_EMBED_VERSION ${PYTHON_EMBED_VERSION_MAJOR}.${PYTHON_EMBED_VERSION_MINOR}.${PYTHON_EMBED_VERSION_PATCH})
+	set(PYTHON_EMBED_VERSION ${PYTHON_VERSION_TO_EMBED}.${PYTHON_VERSION_TO_EMBED_PATCH_LEVEL})
 	FetchContent_Declare(
 		pythonembedded
-		URL https://www.python.org/ftp/python/${PYTHON_EMBED_VERSION}/python-${PYTHON_EMBED_VERSION}-embed-amd64.zip
-		#URL https://www.python.org/ftp/python/3.10.2/python-3.10.2-embed-amd64.zip
+		URL https://www.python.org/ftp/python/${PYTHON_VERSION_TO_DOWNLOAD}/python-${PYTHON_VERSION_TO_DOWNLOAD}-embed-amd64.zip
 	)
 	FetchContent_MakeAvailable(pythonembedded)
 	set(PYTHON_EMBEDDED_PATH "${pythonembedded_SOURCE_DIR}")
@@ -109,11 +133,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
 # Setup pybind11
-if(WIN32)
-	set(PYTHON_VERSION_TO_EMBED "3.8" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
-else()
-	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding. For Windows, also adjust the embedded fetch in CMakeLists.txt")
-endif()
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
