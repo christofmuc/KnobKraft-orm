@@ -67,11 +67,13 @@ def test_rename(adaptation, test_data: testing.TestData):
             # Now rename
             if program.rename_name is not None:
                 new_name = program.rename_name
+            elif test_data.rename_name is not None:
+                new_name = test_data.rename_name
             else:
                 new_name = "new name"
             with_new_name = adaptation.renamePatch(binary, new_name)
-            new_name = adaptation.nameFromDump(with_new_name)
-            assert new_name == new_name
+            renamed_name = adaptation.nameFromDump(with_new_name)
+            assert new_name.strip() == renamed_name.strip()
     else:
         pytest.skip(f"{adaptation.name} has not implemented nameFromDump and renamePatch")
 
