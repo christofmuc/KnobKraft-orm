@@ -82,7 +82,6 @@ IF (WIN32)
 		include_directories("${asiosdk_SOURCE_DIR}/common")
 	ENDIF()
 
-	set(PYTHON_EMBED_VERSION ${PYTHON_VERSION_TO_EMBED}.${PYTHON_VERSION_TO_EMBED_PATCH_LEVEL})
 	FetchContent_Declare(
 		pythonembedded
 		URL https://www.python.org/ftp/python/${PYTHON_VERSION_TO_DOWNLOAD}/python-${PYTHON_VERSION_TO_DOWNLOAD}-embed-amd64.zip
