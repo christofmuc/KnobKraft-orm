@@ -43,7 +43,7 @@ jv_80.install(this_module)
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         # This is from https://www.sequencer.de/synthesizer/threads/ctrlr-editor-fuer-jv-80-90-880-1000.151640/
         xv_80_edit_buffer = "F0 41 10 46 12 00 08 20 00 43 72 79 73 74 61 6C 20 56 6F 78 20 00 04 7F 55 00 01 7F 7D 0B 63 01 08 6A 40 3E 02 00 00 00 01 00 32 10 F7" \

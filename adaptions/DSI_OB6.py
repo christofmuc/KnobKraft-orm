@@ -31,7 +31,7 @@ def setupHelp():
 
 
 # Test data picked up by test_adaptation.py
-#def test_data():
+#def make_test_data():
 #    def programs(messages):
 #        yield {"message": messages[0], "name": "Cascades", "number": 1}
 #

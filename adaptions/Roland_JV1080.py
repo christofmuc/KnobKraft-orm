@@ -35,7 +35,7 @@ jv_1080.install(this_module)
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = []
         names = ["RedPowerBass", "Sinus QSB", "Super W Bass"]

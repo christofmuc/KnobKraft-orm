@@ -132,10 +132,10 @@ def calculateFingerprint(message):
     return hashlib.md5(bytearray(data)).hexdigest()
 
 
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=data.all_messages[0], name="Reflections", number=0, is_edit_buffer=True)
+        yield testing.ProgramTestData(message=data.all_messages[0], name="Reflections", number=0)
 
-    return testing.TestData(sysex="testData/NovationPeak-Reflections.syx", program_generator=programs,
+    return testing.TestData(sysex="testData/NovationPeak-Reflections.syx", edit_buffer_generator=programs,
                             rename_name="Cr4zy Name_$",
                             friendly_bank_name=(2, 'Bank C'))

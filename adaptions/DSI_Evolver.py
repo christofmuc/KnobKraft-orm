@@ -29,7 +29,7 @@ sequential.GenericSequential(name="DSI Evolver",
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[5], number=261)  # It is bank 3, so it starts at 256 + 5 = 261
 

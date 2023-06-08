@@ -143,7 +143,7 @@ def nibble(message):
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     import binascii
 
     def programs(data) -> List[testing.ProgramTestData]:

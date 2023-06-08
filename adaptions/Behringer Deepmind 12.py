@@ -118,7 +118,7 @@ def convertToProgramDump(channel, message, program_number):
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[0], name="Brass Set 1     ", number=896)
 

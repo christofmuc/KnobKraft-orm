@@ -231,7 +231,7 @@ def bitsSet(byte):
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     import knobkraft
 
     def programs(data) -> List[testing.ProgramTestData]:

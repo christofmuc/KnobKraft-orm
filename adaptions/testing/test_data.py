@@ -38,7 +38,6 @@ class ProgramTestData:
     rename_name: Optional[str] = None
     target_no: Optional[int] = None
     second_layer_name: Optional[str] = None
-    is_edit_buffer: bool = False
 
     def __post_init__(self):
         self.message = make_midi_message(self.message)
@@ -48,6 +47,7 @@ class ProgramTestData:
 class TestData:
     sysex: Optional[str] = None
     program_generator: Optional[Callable[[Any], List[ProgramTestData]]] = None
+    edit_buffer_generator: Optional[Callable[[Any], List[ProgramTestData]]] = None
     program_dump_request: Optional[Union[MidiMessage, List[int], str]] = None
     device_detect_call: Optional[Union[MidiMessage, List[int], str]] = None
     device_detect_reply: Optional[Tuple[Union[MidiMessage, List[int], str], int]] = None
@@ -64,6 +64,10 @@ class TestData:
             self.programs = self.program_generator(self)
         else:
             self.programs = []
+        if self.edit_buffer_generator:
+            self.edit_buffers = self.edit_buffer_generator(self)
+        else:
+            self.edit_buffers = []
         self.program_dump_request = make_midi_message(self.program_dump_request)
         self.device_detect_call = make_midi_message(self.device_detect_call)
         self.device_detect_reply = None if self.device_detect_reply is None else (make_midi_message(self.device_detect_reply[0]), self.device_detect_reply[1])

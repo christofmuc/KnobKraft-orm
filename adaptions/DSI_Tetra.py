@@ -27,7 +27,7 @@ sequential.GenericSequential(name="DSI Tetra",
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[1], name='Tom Sawyer', number= 1)
 

@@ -26,7 +26,7 @@ synth = sequential.GenericSequential(name="DSI Prophet 08",  # DSI product name 
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
+def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[2], name="T8 Strings", number=2)
 
