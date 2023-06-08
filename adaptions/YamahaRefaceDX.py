@@ -4,6 +4,10 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
+import itertools
+from typing import List
+
+import testing
 
 systemSettingsAddress = (0x00, 0x00, 0x00)
 bulkHeaderAddress = (0x0e, 0x0f, 0x00)
@@ -254,27 +258,11 @@ def splitSysexMessage(messages):
     return result
 
 
-def run_tests():
-    with open("testData/refaceDX-00-Piano_1___.syx", "rb") as sysex:
-        raw_data = list(sysex.read())
-        data = splitSysexMessage(raw_data)
-        for d in data:
+def make_test_data():
+    def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        raw_data = list(itertools.chain.from_iterable(test_data.all_messages))
+        for d in test_data.all_messages:
             assert isPartOfEditBufferDump(d)
-        block = dataBlockFromMessage(data[1])
-        assert nameFromDump(raw_data) == "Piano 1   "
-        legacy_format = convertToLegacyFormat(raw_data)
-        back_to_normal = convertFromLegacyFormat(0, legacy_format)
-        assert isEditBufferDump(back_to_normal)
-        assert calculateFingerprint(back_to_normal) == calculateFingerprint(raw_data)
-        assert back_to_normal == raw_data
-        assert convertToEditBuffer(0, raw_data) == raw_data
-        assert convertToEditBuffer(0, legacy_format) == raw_data
+        yield testing.ProgramTestData(message=raw_data, name="Piano 1   ", rename_name="Piano 2   ")
 
-        same_patch = renamePatch(raw_data, "Piano 1")
-        assert same_patch == raw_data
-        new_patch = renamePatch(raw_data, "Piano 2")
-        assert(nameFromDump(new_patch)) == "Piano 2   "
-
-
-if __name__ == "__main__":
-    run_tests()
+    return testing.TestData(sysex="testData/refaceDX-00-Piano_1___.syx", edit_buffer_generator=edit_buffers)

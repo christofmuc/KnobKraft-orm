@@ -75,6 +75,20 @@ def test_extract_name(adaptation, test_data: testing.TestData):
         pytest.fail(f"{adaptation.name()} did not generate a single program with name to test nameFromDump")
 
 
+@require_implemented("nameFromDump")
+@require_testdata("edit_buffers")
+def test_extract_name(adaptation, test_data: testing.TestData):
+    count = 0
+    # Loop all programs created by the generator, and if name is given check that we can extract it!
+    for program in test_data.edit_buffers:
+        if hasattr(program, "name") and program.name is not None:
+            assert adaptation.nameFromDump(program.message.byte_list) == program.name
+            count += 1
+    if count == 0:
+        # Nothing was generated that has a name attached, but nameFromDump was implemented. Fail test!
+        pytest.fail(f"{adaptation.name()} did not generate a single program with name to test nameFromDump")
+
+
 def get_rename_target_name(program, test_data):
     if hasattr(program, "rename_name") and program.rename_name is not None:
         return program.rename_name
@@ -89,8 +103,26 @@ def get_rename_target_name(program, test_data):
 @require_implemented("nameFromDump")
 @require_implemented("renamePatch")
 @require_testdata("programs")
-def test_rename(adaptation, test_data: testing.TestData):
+def test_rename_programs(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
+        binary = program.message.byte_list
+        # Rename to the name it already has
+        renamed = adaptation.renamePatch(binary, adaptation.nameFromDump(binary))
+        # This should not change the extracted name
+        assert adaptation.nameFromDump(renamed) == adaptation.nameFromDump(binary)
+        # Now rename. We might have a specific name specified for this program to use
+        new_name = get_rename_target_name(program, test_data)
+        with_new_name = adaptation.renamePatch(binary, new_name)
+        renamed_name = adaptation.nameFromDump(with_new_name)
+        # Here, we need to strip because the target name specified might not contain enough spaces!
+        assert new_name.strip() == renamed_name.strip()
+
+
+@require_implemented("nameFromDump")
+@require_implemented("renamePatch")
+@require_testdata("edit_buffers")
+def test_rename_edit_buffers(adaptation, test_data: testing.TestData):
+    for program in test_data.edit_buffers:
         binary = program.message.byte_list
         # Rename to the name it already has
         renamed = adaptation.renamePatch(binary, adaptation.nameFromDump(binary))
