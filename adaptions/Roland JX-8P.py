@@ -6,6 +6,9 @@
 
 # Note that for real life usage the native C++ implementation of the Matrix1000 is more powerful and should be used
 # This is an example adaption to show how a fully working adaption can look like
+from typing import List
+
+import testing
 
 
 def name():
@@ -67,3 +70,17 @@ def convertToEditBuffer(channel, message):
     # But we need to poke the channel into position 3
     message[3] = channel if channel != -1 else 0
     return message
+
+
+def make_test_data():
+
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name=" PIANO 1  ")
+        for message in test_data.all_messages[1:]:
+            if isEditBufferDump(message):
+                yield testing.ProgramTestData(message=message)
+            else:
+                print(f'Ignoring unknown message from factory bank sysex {message}')
+
+    return testing.TestData(sysex=R"testData/Roland_JX_8P_FACTORY_BANK_1-32.syx", edit_buffer_generator=make_patches)
+
