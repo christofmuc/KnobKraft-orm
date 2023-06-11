@@ -127,7 +127,6 @@ def convertToProgramDump(channel, message, program_number):
 def make_test_data():
 
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        flat_list = [item for sublist in test_data.all_messages for item in sublist]
         yield testing.ProgramTestData(message=test_data.all_messages[0], name="Okb_TON               ")
 
     return testing.TestData(sysex=R"testData/Waldorf_Kya_Okb_TON.syx", program_generator=make_patches)

@@ -8,6 +8,10 @@
 # https://www.deepsonic.ch/deep/docs_manuals/waldorf_blofeld_sysex_documentation_v.1.04.txt
 # That means that auto detecting is currently not easily possible because we would need to iterate all values
 # Better would be to first detect the device, and then send another message to query for the global parameters for the channel
+from typing import List
+
+import testing
+
 deviceID = 0x00
 
 
@@ -117,3 +121,15 @@ def convertToProgramDump(channel, message, program_number):
     if isEditBufferDump(message) or isSingleProgramDump(message):
         return message[:3] + [deviceID, 0x10, bank, program] + message[7:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
+def make_test_data():
+
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="With Love    WMF")
+
+    return testing.TestData(sysex=R"testData/Waldorf_Blofeld_Blo Factory_2008.syx", program_generator=make_patches)
+
+
+
+
