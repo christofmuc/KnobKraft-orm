@@ -5,6 +5,10 @@
 #
 from ctypes import *
 import binascii
+from typing import List
+
+import knobkraft
+import testing
 
 
 class OPERATOR_PACKED(Structure):
@@ -285,30 +289,18 @@ def checksum(data_block):
     return check_sum & 0x7f
 
 
-def splitSysexMessage(messages):
-    result = []
-    start = 0
-    read = 0
-    while read < len(messages):
-        if messages[read] == 0xf0:
-            start = read
-        elif messages[read] == 0xf7:
-            result.append(messages[start:read + 1])
-        read = read + 1
-    return result
+def make_test_data():
 
-
-def run_tests():
-    with open(R"testData/yamahaDX7II-STUDIOREINE BANK.syx", "rb") as sysex:
-        data = list(sysex.read())
-        messages = splitSysexMessage(data)
-        for message in messages:
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        names_of_first_program = ["Talkbox001", "OrganX01..", "unknown"]
+        count = 0
+        for message in test_data.all_messages:
             assert isPartOfBankDump(message)
-            patchData = extractPatchesFromBank(message)
-            if patchData is not None:
-                patches = splitSysexMessage(patchData)
-                for p in patches:
-                    print(nameFromDump(p))
+            patch_data = extractPatchesFromBank(message)
+            if patch_data is not None:
+                patches = knobkraft.sysex.splitSysex(patch_data)
+                yield testing.ProgramTestData(message=patches[0], name=names_of_first_program[count])
+                count += 1
             if isUniversalBulkDump(message):
                 classification, data_format = getClassFromUniversalBulkDump(message)
                 if classification == "LM  " and data_format == "8973S ":
@@ -319,6 +311,4 @@ def run_tests():
                     print("MIDI receive channel 2", system_data[3])
                     print("MIDI device ID", system_data[14])
 
-
-if __name__ == "__main__":
-    run_tests()
+    return testing.TestData(sysex=R"testData/yamahaDX7II-STUDIOREINE BANK.syx", edit_buffer_generator=make_patches)
