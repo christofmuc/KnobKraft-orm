@@ -2,9 +2,12 @@ from dataclasses import dataclass
 from typing import Optional, Union, List, Callable, Tuple, Any
 import knobkraft
 
+# Define some type aliases for us
+ByteList = List[int]
+
 
 class MidiMessage:
-    def __init__(self, message: Union[List[int], str]):
+    def __init__(self, message: Union[ByteList, str]):
         if isinstance(message, str):
             self.byte_list = knobkraft.stringToSyx(message)
         elif isinstance(message, list):
@@ -30,9 +33,12 @@ def make_midi_message(message: Optional[Union[MidiMessage, List[int], str]]) -> 
         return MidiMessage(message)
 
 
+MidiMessageInitializer = Union[MidiMessage, List[int], str]
+
+
 @dataclass
 class ProgramTestData:
-    message: Union[MidiMessage, List[int], str]
+    message: MidiMessageInitializer
     name: Optional[str] = None
     number: Optional[int] = None
     rename_name: Optional[str] = None
@@ -43,15 +49,20 @@ class ProgramTestData:
         self.message = make_midi_message(self.message)
 
 
+ProgramList = List[ProgramTestData]
+ProgramGenerator = Callable[[Any], ProgramList]
+BankGenerator = Callable[[Any], List]
+
+
 @dataclass
 class TestData:
     sysex: Optional[str] = None
-    program_generator: Optional[Callable[[Any], List[ProgramTestData]]] = None
-    edit_buffer_generator: Optional[Callable[[Any], List[ProgramTestData]]] = None
-    bank_generator: Optional[Callable[[Any], List]] = None
-    program_dump_request: Optional[Union[MidiMessage, List[int], str]] = None
-    device_detect_call: Optional[Union[MidiMessage, List[int], str]] = None
-    device_detect_reply: Optional[Tuple[Union[MidiMessage, List[int], str], int]] = None
+    program_generator: Optional[ProgramGenerator] = None
+    edit_buffer_generator: Optional[ProgramGenerator] = None
+    bank_generator: Optional[BankGenerator] = None
+    program_dump_request: Optional[Union[MidiMessageInitializer, Tuple[int, int, MidiMessageInitializer]]] = None
+    device_detect_call: Optional[MidiMessageInitializer] = None
+    device_detect_reply: Optional[Tuple[MidiMessageInitializer, int]] = None
     friendly_bank_name: Optional[Tuple[int, str]] = None
     convert_to_edit_buffer_produces_program_dump: bool = False
     rename_name: Optional[str] = None
@@ -73,6 +84,9 @@ class TestData:
             self.banks = self.bank_generator(self)
         else:
             self.banks = []
-        self.program_dump_request = make_midi_message(self.program_dump_request)
+        if isinstance(self.program_dump_request, tuple):
+            self.program_dump_request = (self.program_dump_request[0], self.program_dump_request[1], make_midi_message(self.program_dump_request[2]))
+        else:
+            self.program_dump_request = make_midi_message(self.program_dump_request)
         self.device_detect_call = make_midi_message(self.device_detect_call)
         self.device_detect_reply = None if self.device_detect_reply is None else (make_midi_message(self.device_detect_reply[0]), self.device_detect_reply[1])

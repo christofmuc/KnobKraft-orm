@@ -333,7 +333,12 @@ def test_device_detect_reply(adaptation, test_data: testing.TestData):
 @require_implemented("createProgramDumpRequest")
 @require_testdata("program_dump_request")
 def test_program_dump_request(adaptation, test_data: testing.TestData):
-    assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00), test_data.program_dump_request.byte_list)
+    if isinstance(test_data.program_dump_request, tuple):
+        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(test_data.program_dump_request[0], test_data.program_dump_request[1]),
+                                      test_data.program_dump_request[2].byte_list)
+    else:
+        assert knobkraft.list_compare(adaptation.createProgramDumpRequest(0x00, 0x00),
+                                      test_data.program_dump_request.byte_list)
 
 
 @require_implemented("friendlyBankName")
@@ -349,5 +354,12 @@ def test_extract_patches_from_bank(adaptation, test_data: testing.TestData):
         if adaptation.isPartOfBankDump(bank):
             patches = knobkraft.splitSysex(adaptation.extractPatchesFromBank(bank))
             assert len(patches) > 0
+            for patch in patches:
+                # TODO: This seems like a peculiar assumption, that extracted patches are always Single Program Dumps
+                # unless the synth only supports edit buffer dumps
+                if hasattr(adaptation, "isSingleProgramDump"):
+                    assert adaptation.isSingleProgramDump(patch)
+                else:
+                    assert adaptation.isEditBufferDump(patch)
         else:
             print(f"This is not a bank dump: {bank}")
