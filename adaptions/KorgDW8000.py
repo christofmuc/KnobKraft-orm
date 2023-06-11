@@ -3,6 +3,9 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
+
+import testing
 
 
 def name():
@@ -57,11 +60,6 @@ def numberOfPatchesPerBank():
     return 64
 
 
-def nameFromDump(message):
-    # The DW-8000 has no patch name memory, so all patches get the same name for a start
-    return "DW-8000"
-
-
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message[0:2] + [0x30 | channel] + message[3:]
@@ -72,6 +70,10 @@ def friendlyProgramName(program):
     return "%d%d" % (program // 8 + 1, (program % 8) + 1)
 
 
-if __name__ == "__main__":
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        patch = [x for sublist in data.all_messages[0:2] for x in sublist]
+        yield testing.ProgramTestData(message=patch)
+
     assert friendlyProgramName(0) == "11"
-    assert friendlyProgramName(63) == "88"
+    return testing.TestData(sysex="testData/KorgDW8000_bank_a.syx", edit_buffer_generator=programs, friendly_bank_name=(63, "88"))
