@@ -63,7 +63,7 @@ def test_name_is_not_none(adaptation):
 
 @require_implemented("nameFromDump")
 @require_testdata("programs")
-def test_extract_name(adaptation, test_data: testing.TestData):
+def test_extract_name_from_program(adaptation, test_data: testing.TestData):
     count = 0
     # Loop all programs created by the generator, and if name is given check that we can extract it!
     for program in test_data.programs:
@@ -77,7 +77,7 @@ def test_extract_name(adaptation, test_data: testing.TestData):
 
 @require_implemented("nameFromDump")
 @require_testdata("edit_buffers")
-def test_extract_name(adaptation, test_data: testing.TestData):
+def test_extract_name_from_edit_buffer(adaptation, test_data: testing.TestData):
     count = 0
     # Loop all programs created by the generator, and if name is given check that we can extract it!
     for program in test_data.edit_buffers:
