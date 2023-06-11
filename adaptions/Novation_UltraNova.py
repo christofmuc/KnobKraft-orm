@@ -5,7 +5,9 @@
 # based on my own (partial) reverse engineering of Novation UltraNova librarian.
 #
 import hashlib
+from typing import List
 
+import testing
 
 NAME_OFFSET = 15
 NAME_LEN = 16
@@ -180,29 +182,14 @@ def calculateFingerprint(message):
     return hashlib.md5(bytearray(data)).hexdigest()
 
 
-def run_tests():
-    with open("testData/Ultranova_poppy.syx", "rb") as sysex:
-        raw_data = list(sysex.read())
-        assert isSingleProgramDump(raw_data)
-        assert numberFromDump(raw_data) == 35
+def make_test_data():
 
-        buffer = convertToEditBuffer(1, raw_data)
-        assert isEditBufferDump(buffer)
-        assert numberFromDump(buffer) == 0
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        # Additional test for rename
+        patch = test_data.all_messages[0]
+        same = renamePatch(patch, "Cr4zy Name°$    overflow")
+        assert nameFromDump(same) == "Cr4zy Name_$"
 
-        back_dump = convertToProgramDump(1, buffer, 130)
-        assert numberFromDump(back_dump) == 130
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="Poppy", rename_name="Paraver", number=35)
 
-        assert nameFromDump(raw_data) == "Poppy"
-        assert nameFromDump(buffer) == nameFromDump(raw_data)
-        same_patch = renamePatch(raw_data, "Papaver")
-        assert nameFromDump(same_patch) == "Papaver"
-        same_same = renamePatch(same_patch, "Cr4zy Name°$    overflow")
-        assert nameFromDump(same_same) == "Cr4zy Name_$"
-
-        assert calculateFingerprint(same_same) == calculateFingerprint(raw_data)
-        assert friendlyBankName(2) == 'C'
-
-
-if __name__ == "__main__":
-    run_tests()
+    return testing.TestData(sysex=R"testData/Novation_Ultranova_poppy.syx", program_generator=make_patches, friendly_bank_name=(2, 'C'))
