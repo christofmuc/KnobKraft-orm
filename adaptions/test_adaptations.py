@@ -340,3 +340,14 @@ def test_program_dump_request(adaptation, test_data: testing.TestData):
 @require_testdata("friendly_bank_name")
 def test_friendly_bank_name(adaptation, test_data: testing.TestData):
     assert adaptation.friendlyBankName(test_data.friendly_bank_name[0]) == test_data.friendly_bank_name[1]
+
+
+@require_implemented("extractPatchesFromBank")
+@require_testdata("banks")
+def test_extract_patches_from_bank(adaptation, test_data: testing.TestData):
+    for bank in test_data.banks:
+        if adaptation.isPartOfBankDump(bank):
+            patches = knobkraft.splitSysex(adaptation.extractPatchesFromBank(bank))
+            assert len(patches) > 0
+        else:
+            print(f"This is not a bank dump: {bank}")
