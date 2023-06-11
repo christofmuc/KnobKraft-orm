@@ -5,6 +5,10 @@
 #
 
 import hashlib
+import os.path
+from typing import List
+
+import testing
 
 CANNOT_FIND_DATA_BLOCK = "Cannot find the message's data block."
 
@@ -234,3 +238,17 @@ def friendlyBankName(bank_number):
 def friendlyProgramName(program_number):
     """Converts zero-based program numbers within a bank to the format displayed on the Toraiz AS-1."""
     return "P{}".format(program_number + 1)
+
+
+def make_test_data():
+
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="Out Run Bass        ")
+
+    # This test file can be downloaded from https://www.pioneerdj.com/de-de/landing/toraiz/toraiz-as-1/
+    # The license does not allow redistribution, so you need to download it yourself and put it into the testData folder if you want to run the tests
+    if os.path.exists(R"testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank"):
+        return testing.TestData(sysex=R"testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank", program_generator=make_patches)
+    else:
+        return testing.TestData()
+
