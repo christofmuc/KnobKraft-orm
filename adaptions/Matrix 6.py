@@ -3,6 +3,9 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
+
+import testing
 
 
 def name():
@@ -41,15 +44,6 @@ def channelIfValidDeviceResponse(message):
     return -1
 
 
-def createEditBufferRequest(channel):
-    # The Matrix 6/6R has no edit buffer request, in contrast to the later Matrix 1000. Just send some message it likes
-    return createQuickEditModeMessage()
-
-
-def isEditBufferDump(message):
-    return False
-
-
 def numberOfBanks():
     return 1
 
@@ -79,22 +73,32 @@ def nameFromDump(message):
         return ''.join([chr(x if x >= 32 else x + 0x40) for x in patchData[0:8]])
 
 
+def renamePatch(message, new_name):
+    if isSingleProgramDump(message):
+        # The Matrix 6 stores only 6 bit of ASCII, folding the letters into the range 0 to 31
+        valid_name = [ord(x) if ord(x) < 0x60 else (ord(x) - 0x20) for x in new_name]
+        new_name_nibbles = nibble([(valid_name[i] & 0x7f) if i < len(new_name) else 0x20 for i in range(8)])
+        return rebuildChecksum(message[0:5] + new_name_nibbles + message[21:])
+    raise Exception("Not a program dump can't be converted")
+
+
 def createProgramChangeMessage(channel, program):
     # -1 would be an invalid MIDI channel, don't create any message
     return [0xC0 | (channel & 0x0f), program] if channel != -1 else []
-
-
-def convertToEditBuffer(channel, message):
-    if isSingleProgramDump(message):
-        # The Matrix 6 cannot send to the edit buffer, so we send into program 100 and append a program change to it
-        return createQuickEditModeMessage() + message[0:4] + [99] + message[5:] + createProgramChangeMessage(channel, 99)
-    raise Exception("This is not a program dump, can't be converted")
 
 
 def convertToProgramDump(channel, message, program_number):
     if isSingleProgramDump(message):
         return createQuickEditModeMessage() + message[0:4] + [program_number] + message[5:]
     raise Exception("This is not a program dump, can't be converted")
+
+
+def rebuildChecksum(message):
+    if isSingleProgramDump(message):
+        data = denibble(message, 5)
+        checksum = sum(data) & 0x7f
+        return message[:-2] + [checksum, 0xf7]
+    raise Exception("rebuildChecksum only implemented for single patch data yet")
 
 
 def denibble(message, start_index):
@@ -105,6 +109,25 @@ def denibble(message, start_index):
         print("Checksum error in data package from Matrix 6. Checksum is %d but expected was %d. Data package %s" %
               (checksum, expected_checksum, message))
     return denibbled_data_content
+
+
+def nibble(message):
+    result = []
+    for b in message:
+        result.append(b & 0x0f)
+        result.append((b & 0xf0) >> 4)
+    return result
+
+
+def make_test_data():
+    import binascii
+
+    def programs(data) -> List[testing.ProgramTestData]:
+        patch_from_device = "f01006011002040e040b0402030a0300020103060302000c0000000901030001000c00000000000300020000000f0101000000010000000000040600000000010000000000020302000000080200000100060000000d000f030a03000000000000000009000f0300000000000000000f030d020f030000000000000000000000000f030d0204010000000000000f03080200000f030203080200000000090008020f000f010f020f03000000000000000000000000000000000f03000005000e0102030f030f03000000000000000000000000000000000000000001000f030b0003000f03040000000000000002000f030b000b000f030c000400010209000400020004000a00090c01000a000f03040057f7"
+        patch_message = list(binascii.unhexlify(patch_from_device))
+        yield testing.ProgramTestData(message=patch_message, name='BNK2: 16', number=1, rename_name="NEW NAME")
+
+    return testing.TestData(program_generator=programs, not_idempotent=True)
 
 
 # Some debugging and testing code
