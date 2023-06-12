@@ -183,6 +183,8 @@ def test_is_program_dump(adaptation, test_data: testing.TestData):
 @require_implemented("convertToEditBuffer")
 @require_testdata("programs")
 def test_convert_programs_to_edit_buffer(adaptation, test_data: testing.TestData):
+    if not test_data.can_convert_program_to_edit_buffer:
+        pytest.skip("Adaptation flagged as not being able to convert program buffers to edit buffers")
     for program_data in test_data.programs:
         edit_buffer = adaptation.convertToEditBuffer(0x00, program_data.message.byte_list)
         if test_data.convert_to_edit_buffer_produces_program_dump:
@@ -217,6 +219,8 @@ def get_target_program_no(program: testing.ProgramTestData):
 @require_implemented("isSingleProgramDump")
 @require_testdata("edit_buffers")
 def test_convert_edit_buffers_to_programs(adaptation, test_data: testing.TestData):
+    if not test_data.can_convert_edit_buffer_to_program:
+        pytest.skip("Adaptation flagged not being able to converting edit buffers to programs")
     for edit_buffer in test_data.edit_buffers:
         target_no = get_target_program_no(edit_buffer)
         program_buffer = adaptation.convertToProgramDump(0x00, edit_buffer.message.byte_list, target_no)

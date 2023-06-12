@@ -4,7 +4,10 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import sys
-import sequential
+from typing import List
+
+import knobkraft
+import testing
 
 this_module = sys.modules[__name__]
 
@@ -140,53 +143,33 @@ def unescapeSysex(sysex):
     return result
 
 
-#
-# If this is not loaded as a module, but called as a script, run our unit tests
-#
+def make_test_data():
 
+    def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[1], name='/S/Toms/Zap~~Lo', number=0)
 
-if __name__ == "__main__":
-    import unittest
+        flash_sound = knobkraft.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from FLASH.syx")
+        flattened = [f for sublist in flash_sound for f in sublist]
+        yield testing.ProgramTestData(message=flattened, name="/S/Kicks/Basic")
 
-    messages = sequential.load_sysex("testData/Tempest_Factory_Sounds_1.0.syx")
-    #for message in messages:
-        #print(nameFromDump(message))
-    #print(len(messages))
+        flash_sound = knobkraft.load_sysex("testData/Tempest 909 AS1 FLASH.syx")[0]
+        yield testing.ProgramTestData(message=flash_sound, name="/S/Kicks/909 AS 1")
 
-    flash_sound = sequential.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from FLASH.syx")
-    assert(isSingleProgramDump(flash_sound[0]))
-    assert(nameFromDump(flash_sound[0]) == "/S/Kicks/Basic")
+        flash_sound = knobkraft.load_sysex("testData/Tempest Analog 808 Kick v01 FLASH.syx")[0]
+        yield testing.ProgramTestData(message=flash_sound, name="/S/Kicks/ANALOG 808 KICK V1")
 
-    ram_sound = sequential.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from RAM.syx")[0]
-    assert(not isSingleProgramDump(ram_sound))
-    assert(isEditBufferDump(ram_sound))
-    assert(nameFromDump(ram_sound) == "RAM sound 12")
+    def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        ram_sound = knobkraft.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from RAM.syx")[0]
+        yield testing.ProgramTestData(message=ram_sound, name="RAM sound 12")
 
-    as1_sound = sequential.load_sysex("testData/Tempest 909 AS1 RAM.syx")[0]
-    assert(isEditBufferDump(as1_sound))
-    assert(nameFromDump(as1_sound) == "RAM sound 02")
+        as1_sound = knobkraft.load_sysex("testData/Tempest 909 AS1 RAM.syx")[0]
+        yield testing.ProgramTestData(message=as1_sound, name="RAM sound 02")
 
-    flash_sound = sequential.load_sysex("testData/Tempest 909 AS1 FLASH.syx")[0]
-    assert(isSingleProgramDump(flash_sound))
-    assert(nameFromDump(flash_sound) == "/S/Kicks/909 AS 1")
+        as1_sound = knobkraft.load_sysex("testData/Tempest Analog 808 Kick v01 RAM.syx")[0]
+        yield testing.ProgramTestData(message=as1_sound, name="RAM sound 01")
 
-    as1_sound = sequential.load_sysex("testData/Tempest Analog 808 Kick v01 RAM.syx")[0]
-    assert(isEditBufferDump(as1_sound))
-    assert(nameFromDump(as1_sound) == "RAM sound 01")
-
-    flash_sound = sequential.load_sysex("testData/Tempest Analog 808 Kick v01 FLASH.syx")[0]
-    assert(isSingleProgramDump(flash_sound))
-    assert(nameFromDump(flash_sound) == "/S/Kicks/ANALOG 808 KICK V1")
-
-
-    #unittest.TextTestRunner().run(sequential.TestAdaptation.create_tests(this_module,
-    #                                                                     program_dump=messages[1],
-    #                                                                     program_name='/S/Toms/Zap~~Lo'))
-
-
-# Test data picked up by test_adaptation.py
-#def test_data():
-#    def programs(messages):
-#        yield {"message": messages[1], "name": '/S/Toms/Zap~~Lo', "number": 0}
-#
-#    return {"sysex": "testData/Tempest_Factory_Sounds_1.0.syx", "program_generator": programs}
+    return testing.TestData(sysex="testData/Tempest_Factory_Sounds_1.0.syx",
+                            edit_buffer_generator=edit_buffers,
+                            program_generator=programs,
+                            can_convert_program_to_edit_buffer=False,
+                            can_convert_edit_buffer_to_program=False)
