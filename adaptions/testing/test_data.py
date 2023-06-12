@@ -43,6 +43,7 @@ class ProgramTestData:
     number: Optional[int] = None
     rename_name: Optional[str] = None
     dont_rename: Optional[bool] = False
+    change_number_changes_name: Optional[bool] = False
     target_no: Optional[int] = None
     second_layer_name: Optional[str] = None
 

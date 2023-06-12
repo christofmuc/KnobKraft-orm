@@ -237,6 +237,7 @@ def test_convert_programs_to_programs(adaptation, test_data: testing.TestData):
         pytest.skip(f"Skipping program to program conversion test for {adaptation.name()} as it indicates this conversion is not idempotent")
 
     for program_buffer in test_data.programs:
+        original_name = adaptation.nameFromDump(program_buffer.message.byte_list)
         target_no = get_target_program_no(program_buffer)
         rebuild_program = adaptation.convertToProgramDump(0x00, program_buffer.message.byte_list, target_no)
 
@@ -244,8 +245,8 @@ def test_convert_programs_to_programs(adaptation, test_data: testing.TestData):
         assert adaptation.isSingleProgramDump(rebuild_program)
         if hasattr(adaptation, "numberFromDump"):
             assert adaptation.numberFromDump(rebuild_program) == target_no
-        if hasattr(adaptation, "nameFromDump"):
-            assert adaptation.nameFromDump(rebuild_program) == adaptation.nameFromDump(program_buffer.message.byte_list)
+        if hasattr(adaptation, "nameFromDump") and not program_buffer.change_number_changes_name:
+            assert adaptation.nameFromDump(rebuild_program) == original_name
 
 
 @require_implemented("numberFromDump")

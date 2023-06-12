@@ -6,7 +6,9 @@
 import hashlib
 import re
 import binascii
+from typing import List
 
+import testing
 
 bc_manufacturer_id = 0x02  # This is not really Black Corporation, but IDP, probably a lost entry in the ID list?
 command_firmware_version = 0x15  # Seems to be both a request and an answer
@@ -100,22 +102,29 @@ def calculateFingerprint(message):
     raise Exception("Can only fingerprint singleProgramDumps")
 
 
-def run_tests():
-    patch_data = "F0020002000B2200253E3C3A3C3C5D3C003D3D007E3B5E00001D496A1B2D7272287E422A703C3E0068433C2109231F000F6441007E00030001010100000001010000020004000000000000010100010008040000080A010000000100640A00000000000000000101020101010101010101010201010001010101017F7F7F7F7F7F7F7F7F7FF7"
-    patch_data = "f0020002000b2200253e3c3a3c3c5d3c003d3d007e3b5e00001d496a1b2d7272287e422a703c3e0068433c2109231f000f6441007e00030001010100000001010000020004000000000000010100010008040000080a010000000100640a00000000000000000101020101010101010101010201010001010101017f7f7f7f7f7f7f7f7f7ff7"
-    patch_data = "f00200027f2e7e003e5d3d3a3c243c3c613d3d7e513b273b740e5f7e000000636f003b233c3d6c733c3e3d0057645b007e3b7e007e02030301010000000003000000020004000000000000010100010008040000090a010000000000640a00000000000000000101010101010201010101010101020101010101017f7f7f7f7f7f7f7f7f7ff7"
-    patch = list(binascii.unhexlify(patch_data))
-    assert isSingleProgramDump(patch)
-    assert isDefaultName(nameFromDump(patch))
+def make_test_data():
+    def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        patch_data = "F0020002000B2200253E3C3A3C3C5D3C003D3D007E3B5E00001D496A1B2D7272287E422A703C3E0068433C2109231F000F6441007E00030001010100000001010000020004000000000000010100010008040000080A010000000100640A00000000000000000101020101010101010101010201010001010101017F7F7F7F7F7F7F7F7F7FF7"
+        patch = list(binascii.unhexlify(patch_data))
+        assert isDefaultName(nameFromDump(patch))
+        yield testing.ProgramTestData(message=patch, name="Kijimi 2-001", number=256, change_number_changes_name=True)
+        patch_data = "f0020002000b2200253e3c3a3c3c5d3c003d3d007e3b5e00001d496a1b2d7272287e422a703c3e0068433c2109231f000f6441007e00030001010100000001010000020004000000000000010100010008040000080a010000000100640a00000000000000000101020101010101010101010201010001010101017f7f7f7f7f7f7f7f7f7ff7"
+        patch = list(binascii.unhexlify(patch_data))
+        assert isDefaultName(nameFromDump(patch))
+        yield testing.ProgramTestData(message=patch, name="Kijimi 2-001", number=256, change_number_changes_name=True)
+        patch_data = "f00200027f2e7e003e5d3d3a3c243c3c613d3d7e513b273b740e5f7e000000636f003b233c3d6c733c3e3d0057645b007e3b7e007e02030301010000000003000000020004000000000000010100010008040000090a010000000000640a00000000000000000101010101010201010101010101020101010101017f7f7f7f7f7f7f7f7f7ff7"
+        patch = list(binascii.unhexlify(patch_data))
+        assert isDefaultName(nameFromDump(patch))
+        yield testing.ProgramTestData(message=patch, name="Kijimi 2-128", number=383, change_number_changes_name=True)
 
-    different_position = convertToProgramDump(0, patch, 666)
-    assert isSingleProgramDump(different_position)
-    assert numberFromDump(different_position) == 666
-    assert nameFromDump(different_position) == "Kijimi 5-027"
-    assert isDefaultName(nameFromDump(different_position))
+    return testing.TestData(program_generator=programs)
 
-    assert calculateFingerprint(different_position) == calculateFingerprint(patch)
+    #different_position = convertToProgramDump(0, patch, 666)
+    #assert isSingleProgramDump(different_position)
+    #assert numberFromDump(different_position) == 666
+    #assert nameFromDump(different_position) == "Kijimi 5-027"
+    #assert isDefaultName(nameFromDump(different_position))
+
+    #assert calculateFingerprint(different_position) == calculateFingerprint(patch)
 
 
-if __name__ == "__main__":
-    run_tests()
