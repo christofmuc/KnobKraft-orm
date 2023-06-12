@@ -271,6 +271,9 @@ def test_layer_name(adaptation, test_data: testing.TestData):
 def test_set_layer_name(adaptation, test_data: testing.TestData):
     count = 0
     for program in test_data.programs:
+        old_layer_name = adaptation.layerName(program.message.byte_list, 0)
+        new_program = adaptation.setLayerName(program.message.byte_list, 0, old_layer_name)
+        assert knobkraft.list_compare(program.message.byte_list, new_program)
         new_messages = adaptation.setLayerName(program.message.byte_list, 1, 'changed layer')
         assert adaptation.layerName(new_messages, 1) == 'changed layer'
         new_messages = adaptation.setLayerName(program.message.byte_list, 0, 'changed layer')

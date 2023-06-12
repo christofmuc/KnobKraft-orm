@@ -40,9 +40,11 @@ import sys
 
 # ----------------
 # helper functions
+import testing
 
 MidiMessage = List[int]
 #MidiMessage = bytes
+
 
 def m2str(message:MidiMessage) -> str:
     return ' '.join(f'{m:02x}' for m in message)
@@ -53,9 +55,9 @@ def print_midi(message:MidiMessage) -> None:
 
 
 def nibblize_str(data:str) -> MidiMessage:
-    nibblized = MidiMessage()
+    nibblized = []
     for c in data:
-        nibblized += MidiMessage([(ord(c) >> 8) & 0x7f, ord(c) & 0x7f])
+        nibblized += [(ord(c) >> 8) & 0x7f, ord(c) & 0x7f]
     return nibblized
 
 
@@ -71,7 +73,7 @@ def denibblize_str(data:MidiMessage) -> str:
 def nextSysexMessage(messages:MidiMessage, SOX:int=0xf0, EOX:int=0xf7) -> Iterator[Tuple[MidiMessage, slice]]:
     start = 0
     read = 0
-    message = MidiMessage()
+    message = []
     # for i in range(len(messages)):
     #     b = bytes(messages[i:i+1]) # bytes
     #     message = message + b
@@ -81,13 +83,13 @@ def nextSysexMessage(messages:MidiMessage, SOX:int=0xf0, EOX:int=0xf7) -> Iterat
             start = read
         elif b == EOX:
             yield (message, slice(start, read + 1))
-            message = MidiMessage()
+            message = []
         read = read + 1
 
 
 def nextSysexMessageReversed(messages:MidiMessage) -> Iterator[Tuple[MidiMessage, slice]]:
-    for message, revslice_ in nextSysexMessage(MidiMessage(reversed(messages)), SOX=0xf7, EOX=0xf0):
-        yield MidiMessage(reversed(message)), revslice_
+    for message, revslice_ in nextSysexMessage(list(reversed(messages)), SOX=0xf7, EOX=0xf0):
+        yield list(reversed(message)), revslice_
 
 
 
@@ -268,7 +270,7 @@ def bankDescriptors() -> List[Dict]:
 
 def bankSelect(channel:int, bank:int) -> MidiMessage:
     # MIDI CC with controller number 32, which is used by many synth as the bank select controller.
-    return MidiMessage([0xb0 | (channel & 0x0f), 32, bank])
+    return [0xb0 | (channel & 0x0f), 32, bank]
 
 
 
@@ -278,14 +280,14 @@ def bankSelect(channel:int, bank:int) -> MidiMessage:
 
 # Sending message to force reply by device
 def createDeviceDetectMessage(channel:int) -> MidiMessage:
-    return MidiMessage([
+    return [
         0xf0,  # Start of SysEx (SOX)
         0x7e,  # Non real time
         0x7f,  # Device ID (n = 0x00 – 0x0F or 0x7F)
         0x06,  # General Information
         0x01,  # Identity Request
         0xf7   # End of SysEx (EOX)
-    ])
+    ]
 
 
 # Checking if reply came
@@ -332,7 +334,7 @@ def needsChannelSpecificDetection() -> bool:
 
 # Requesting the edit buffer from the synth
 def createEditBufferRequest(channel:int) -> MidiMessage:
-    return MidiMessage([
+    return [
         0xf0,  # Start of SysEx (SOX)
         0x00, 0x12, 0x34,  # Manufacturer
         0x7f,  # Device ID
@@ -340,7 +342,7 @@ def createEditBufferRequest(channel:int) -> MidiMessage:
         0x10,  # Bulk Dump Request
         0x7e, 0x7f, 0x7f,  # base address of Frame Start (high byte 7E) and bank# = 7F and preset# = 7F
         0xf7   # End of SysEx (EOX)
-    ])
+    ]
 
 
 # Handling edit buffer dumps that consist of more than one MIDI message
@@ -366,7 +368,8 @@ def isEditBufferDump(data:MidiMessage) -> bool:
     for message, _ in nextSysexMessageReversed(data):
         # match message:
         #     case [
-        if len(message) < 8: return False
+        if len(message) < 8:
+            return False
         device_id = message[4]
         if message[0:8] == [
                 0xf0,  # Start of SysEx (SOX)
@@ -454,7 +457,7 @@ def _find_name(data:MidiMessage, high:int=0x20, middle:int=0x0, low:int=0x0) -> 
     return name, slice(offset, offset+40)
 
 
-def _rename(data:MidiMessage, new_name:str, slice_:slice) -> MidiMessage:
+def _rename(data:MidiMessage, new_name:str, slice_:slice, high:int=0x20, middle:int=0x0, low:int=0x0) -> MidiMessage:
 
     # make new_name 20-character long
     name = new_name.ljust(20)[:20]
@@ -463,18 +466,27 @@ def _rename(data:MidiMessage, new_name:str, slice_:slice) -> MidiMessage:
     nibblized = nibblize_str(name)
 
     # compute new checksum
-    categories = data[slice_.stop:slice_.stop+2]
-    s = sum(MidiMessage([0x20,0,0]) + nibblized + categories)
-    checksum = 0x80 - (s & 0x7f)
+    if high == 0x20 and middle == 0x00:
+        # The main name has the categories, which need to be included in the checksum
+        checksum_position = slice_.stop+2
+        categories = data[slice_.stop:checksum_position]
+        s = sum([high,middle,low] + nibblized + categories)
+    else:
+        # Layer names have no categories
+        categories = []
+        checksum_position = slice_.stop
+        s = sum([high,middle,low] + nibblized)
+    checksum = (0x80 - (s & 0x7f)) & 0x7f
     
-    # verify checksum just in case
-    if (s + checksum) & 0x7 != 0:
-        print("solaris: bad new name '" + new_name + "' checksum " + f'{checksum:02x}')
-        #return None
-
     # assemble new data
     # 1 + 1 + 1 : cat1 + cat2 + 0xf7
-    new_data = data[:slice_.start] + nibblized + categories + MidiMessage([checksum]) + data[slice_.stop+1+1+1:]
+    new_data = data[:slice_.start] + nibblized + categories + [checksum] + data[checksum_position+1:]
+
+    s = sum(new_data[slice_.start-3:checksum_position]) # 7 = address location
+    checksum = new_data[checksum_position]
+
+    if ((s + checksum) & 0x7f) == 0:
+        print("solaris: bad new name '" + new_name + "' checksum " + f'{checksum:02x}')
 
     return new_data
 
@@ -494,7 +506,7 @@ def nameFromDump(data:MidiMessage) -> str:
 def renamePatch(data:MidiMessage, new_name:str) -> MidiMessage:
     _, slice_ = _find_name(data)
     if slice_.start == -1:
-        return MidiMessage()
+        return []
     return _rename(data, new_name, slice_)
 
 
@@ -519,8 +531,8 @@ def layerName(messages:MidiMessage, layerNo:int) -> str:
 def setLayerName(messages:MidiMessage, layerNo:int, new_name:str) -> MidiMessage:
     _, slice_ = _find_name(messages, 0x17, 0x0+layerNo)
     if slice_.start == -1:
-        return MidiMessage()
-    return _rename(messages, new_name, slice_)
+        return []
+    return _rename(messages, new_name, slice_, high=0x17, middle=0x0+layerNo, low=0x00)
 
 
 
@@ -554,44 +566,25 @@ def storedTags(message:MidiMessage) -> List[str]:
     return [_category1[cat1], _category2[cat2]]
 
 
-
 # -------
 # Testing
-
-
-def run_tests():
+def make_test_data():
     message1 = [240, 0, 18, 52, 16, 16, 17, 126, 127, 127, 4, 247]
     for msg, slice_ in nextSysexMessage(message1):
         assert msg == message1
 
-    with open("testData/JBSolaris-INIT.syx", "rb") as sysex:
-        raw_data = list(sysex.read())
-        assert nameFromDump(raw_data) == "INIT"
+    def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        flat_list = [f for sublist in test_data.all_messages for f in sublist]
+        yield testing.ProgramTestData(message=flat_list, name="INIT", rename_name="SolarisINIT", second_layer_name="INIT")
 
-        # same name produces the same data
-        renamed = renamePatch(raw_data, "INIT")
-        assert len(raw_data) == len(renamed)
-        assert raw_data == renamed
-        check_name = nameFromDump(renamed)
-        assert check_name == "INIT"
-        
-        # different name
-        renamed = renamePatch(raw_data, "SolarisINIT")
-        assert len(raw_data) == len(renamed)
-        assert raw_data != renamed
-        check_name = nameFromDump(renamed)
-        assert check_name == "SolarisINIT"
-    
-    # with open("testData/JBSolaris-RotorDreams.syx", "rb") as sysex:
-    #     raw_data = list(sysex.read())
-    #     assert nameFromDump(raw_data) == "JBaRotor Dreams"
-    #     renamed = renamePatch(raw_data, "JB Rotor Dreams")
-    #     assert len(raw_data) == len(renamed)
-    #     assert raw_data != renamed
-    #     check_name = nameFromDump(renamed)
-    #     assert check_name == "JB Rotor Dreams"
-    #     assert storedTags(raw_data) == ['Mono', 'Synthetic']
+        # TODO Need to think about how to supply multiple sysex files
+        #with open("testData/JBSolaris-RotorDreams.syx", "rb") as sysex:
+        #    raw_data = list(sysex.read())
+        #    # TODO need a test for storedTags!
+        #    assert storedTags(raw_data) == ['Mono', 'Synthetic']
+        #    yield testing.ProgramTestData(message=raw_data, name="JBaRotor Dreams", rename_name="JB Rotor Dreams")
 
+    return testing.TestData(sysex="testData/JBSolaris-INIT.syx", program_generator=programs)
 
 
 def run_midi_tests():
@@ -658,4 +651,4 @@ def run_midi_tests():
 
 
 if __name__ == "__main__":
-    run_tests()
+    run_midi_tests()
