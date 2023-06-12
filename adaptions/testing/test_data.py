@@ -42,6 +42,7 @@ class ProgramTestData:
     name: Optional[str] = None
     number: Optional[int] = None
     rename_name: Optional[str] = None
+    dont_rename: Optional[bool] = False
     target_no: Optional[int] = None
     second_layer_name: Optional[str] = None
 

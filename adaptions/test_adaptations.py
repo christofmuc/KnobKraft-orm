@@ -105,10 +105,13 @@ def get_rename_target_name(program, test_data):
 @require_testdata("programs")
 def test_rename_programs(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
+        if program.dont_rename:
+            continue
         binary = program.message.byte_list
         # Rename to the name it already has
         renamed = adaptation.renamePatch(binary, adaptation.nameFromDump(binary))
         # This should not change the extracted name
+        assert knobkraft.list_compare(binary, renamed)
         assert adaptation.nameFromDump(renamed) == adaptation.nameFromDump(binary)
         # Now rename. We might have a specific name specified for this program to use
         new_name = get_rename_target_name(program, test_data)
@@ -123,6 +126,8 @@ def test_rename_programs(adaptation, test_data: testing.TestData):
 @require_testdata("edit_buffers")
 def test_rename_edit_buffers(adaptation, test_data: testing.TestData):
     for program in test_data.edit_buffers:
+        if program.dont_rename:
+            continue
         binary = program.message.byte_list
         # Rename to the name it already has
         renamed = adaptation.renamePatch(binary, adaptation.nameFromDump(binary))
@@ -142,6 +147,8 @@ def test_rename_edit_buffers(adaptation, test_data: testing.TestData):
 @require_testdata("programs")
 def test_rename_should_not_change_fingerprint(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
+        if program.dont_rename:
+            continue
         binary = program.message.byte_list
         new_name = get_rename_target_name(program, test_data)
         renamed = adaptation.renamePatch(binary, new_name)
