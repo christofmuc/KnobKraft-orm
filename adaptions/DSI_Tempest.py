@@ -148,24 +148,24 @@ def make_test_data():
     def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=test_data.all_messages[1], name='/S/Toms/Zap~~Lo', number=0)
 
-        flash_sound = knobkraft.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from FLASH.syx")
+        flash_sound = knobkraft.load_sysex("testData/DSI_Tempest/Tempest Basic Sound A12 Kick Midi Din from FLASH.syx")
         flattened = [f for sublist in flash_sound for f in sublist]
         yield testing.ProgramTestData(message=flattened, name="/S/Kicks/Basic")
 
-        flash_sound = knobkraft.load_sysex("testData/Tempest 909 AS1 FLASH.syx")[0]
+        flash_sound = knobkraft.load_sysex("testData/DSI_Tempest/Tempest 909 AS1 FLASH.syx")[0]
         yield testing.ProgramTestData(message=flash_sound, name="/S/Kicks/909 AS 1")
 
-        flash_sound = knobkraft.load_sysex("testData/Tempest Analog 808 Kick v01 FLASH.syx")[0]
+        flash_sound = knobkraft.load_sysex("testData/DSI_Tempest/Tempest Analog 808 Kick v01 FLASH.syx")[0]
         yield testing.ProgramTestData(message=flash_sound, name="/S/Kicks/ANALOG 808 KICK V1")
 
     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        ram_sound = knobkraft.load_sysex("testData/Tempest Basic Sound A12 Kick Midi Din from RAM.syx")[0]
+        ram_sound = knobkraft.load_sysex("testData/DSI_Tempest/Tempest Basic Sound A12 Kick Midi Din from RAM.syx")[0]
         yield testing.ProgramTestData(message=ram_sound, name="RAM sound 12")
 
-        as1_sound = knobkraft.load_sysex("testData/Tempest 909 AS1 RAM.syx")[0]
+        as1_sound = knobkraft.load_sysex("testData/DSI_Tempest/Tempest 909 AS1 RAM.syx")[0]
         yield testing.ProgramTestData(message=as1_sound, name="RAM sound 02")
 
-        as1_sound = knobkraft.load_sysex("testData/Tempest Analog 808 Kick v01 RAM.syx")[0]
+        as1_sound = knobkraft.load_sysex("testData/DSI_Tempest/Tempest Analog 808 Kick v01 RAM.syx")[0]
         yield testing.ProgramTestData(message=as1_sound, name="RAM sound 01")
 
     return testing.TestData(sysex="testData/Tempest_Factory_Sounds_1.0.syx",
