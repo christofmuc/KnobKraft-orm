@@ -86,9 +86,17 @@ endforeach()
 
 endif()
 
+# Create the GenericAdaptation2 python module
+pybind11_add_module(orm_synth GenericAdaptation2.cpp)
+set_target_properties(orm_synth PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
+                                         SUFFIX "${PYTHON_MODULE_EXTENSION}")
+target_link_libraries(orm_synth PRIVATE juce-utils midikraft-base ${JUCE_LIBRARIES})
+
+
 # Define additional install files - in our case, all adaptation files and the python modules
 install(DIRECTORY sequential/ DESTINATION bin/sequential)
 install(DIRECTORY roland/ DESTINATION bin/roland)
 install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
 install(FILES ${adaptation_files} DESTINATION bin)
+
 
