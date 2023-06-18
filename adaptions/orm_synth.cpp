@@ -10,7 +10,6 @@ namespace py = pybind11;
 using namespace py::literals;
 using namespace midikraft;
 
-
 // Trampoline class to allow Python to override C++ virtual functions
 // See https://pybind11.readthedocs.io/en/stable/advanced/classes.html
 //
@@ -300,6 +299,9 @@ PYBIND11_MODULE(orm_synth, m)
 		.def_readwrite("size", &BankDescriptor::size)
 		.def_readwrite("is_rom", &BankDescriptor::isROM)
 		.def_readwrite("type", &BankDescriptor::type);
+
+	py::class_<Patch>(m, "Patch")
+		.def(py::init<>());
 
 	py::class_<Synth, PySynth>(m, "Synth")
 		.def(py::init<>())
