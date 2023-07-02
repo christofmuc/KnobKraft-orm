@@ -58,6 +58,7 @@ set(SOURCES
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
+	ModelD.cpp ModelD.h
 	OrmLookAndFeel.cpp OrmLookAndFeel.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h

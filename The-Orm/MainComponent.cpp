@@ -28,6 +28,7 @@
 #include "BCR2000.h"
 #include "MKS80.h"
 #include "MKS50.h"
+#include "ModelD.h"
 
 #include "GenericAdaptation.h"
 #include "PatchInterchangeFormat.h"
@@ -181,6 +182,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// Create the list of all synthesizers!	
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
+	auto modelD = std::make_shared<ModelD>("MOTU M Seres MIDI out", MidiChannel::fromOneBase(1));
+	synths.emplace_back(midikraft::SynthHolder(modelD));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
