@@ -501,6 +501,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
+		//TODO This crashes when the UI is being destroyed while messages are coming in
 		midiLogView_.addMessageToList(message, source, isOut);
 		});
 
