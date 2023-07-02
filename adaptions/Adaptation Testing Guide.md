@@ -18,23 +18,55 @@ The way this works is that you need to implement a single function in your adapt
 
 Details follow below.
 
+## Creating a Python virtual env
+
+Best practice when working with Python is to always use virtual environments of Python for each the various
+projects that might end up on your computer. A virtual environment is like a local, shielded installation of 
+Python in a specific version, into which packages can be installed and uninstalled without modifying the global
+Python installation.
+
+To create a virtual environment to run tests in, use a command line and type
+
+    python -m venv venvdir
+
+This will create a virtual environment in the subdirectory venvdir. We can activate it on Windows with
+
+    venvdir\Scripts\activate
+
+on Linux you'll do
+
+    source venvdir/bin/activate.sh
+
+With the virtual env activated, we can use the pip package manager to install the required packages for running the tests. 
+Just do
+
+    pip install -r .\adaptions\requirements.txt
+
+which will install the pytest package and other prerequisites.
+
+
 ## Running the tests
 
-All tests are implemented as pytest tests, so the correct way to run them all is use the standard method for pytests, just open
-a command line and type:
+All tests are implemented as pytest tests, so the correct way to run them all is use the standard method for pytests, just 
+type in your prepared virtual environment, make sure to cd into the adaptions subdirectory:
 
-    python -m pytest --all . 
+     cd adaptions
+     python -m pytest . -all
 
 This should be run in the source's root directory.
 
 Note this will run all tests in the adaptation directory, so any file starting with ´test_´ will be considered a pytest and run.
 
+Run all generic tests skipping those synth specific tests, just do 
+
+    python -m pytest test_adaptations.py  --all  
+
 If you want to run only the tests for a single adaptation - most likely the one you are currently working on - this is the 
 way to select one adaptation:
 
-    python -m pytest --adaptation "DSI_Tempest.py"
+    python -m pytest test_adaptations.py --adaptation Matrix1000.py
 
-will run only the tests for the DSI_Tempest adaptation. 
+will run only the generic tests on the Matrix1000 adaptation. 
 
 ## Implementing your own tests
 
