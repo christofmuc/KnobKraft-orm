@@ -300,8 +300,8 @@ PYBIND11_MODULE(orm_synth, m)
 		.def_readwrite("is_rom", &BankDescriptor::isROM)
 		.def_readwrite("type", &BankDescriptor::type);
 
-	py::class_<Patch>(m, "Patch")
-		.def(py::init<>());
+	py::class_<DataFile>(m, "Patch")
+		.def(py::init<int>());
 
 	py::class_<Synth, PySynth>(m, "Synth")
 		.def(py::init<>())

@@ -357,7 +357,7 @@ else {
 		if (adaptationDirectory.exists() && adaptationDirectory.isDirectory()) {
 			for (auto f : adaptationDirectory.findChildFiles(File::findFiles, false, "*.py")) {
 				try {
-					if (!f.getFileName().startsWith("test_") && f.getFileName() != "conftest.py") {
+					if (!f.getFileName().startsWith("test_") && f.getFileName() != "conftest.py" && f.getFileName() != "custom_assertions.py" && f.getFileName() != "KorgDW8000.py") {
 						result.push_back(std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString()));
 					}
 				}

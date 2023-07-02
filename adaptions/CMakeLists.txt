@@ -87,7 +87,7 @@ endforeach()
 endif()
 
 # Create the GenericAdaptation2 python module
-pybind11_add_module(orm_synth GenericAdaptation2.cpp)
+pybind11_add_module(orm_synth orm_synth.cpp)
 set_target_properties(orm_synth PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}"
                                          SUFFIX "${PYTHON_MODULE_EXTENSION}")
 target_link_libraries(orm_synth PRIVATE juce-utils midikraft-base ${JUCE_LIBRARIES})
@@ -98,5 +98,6 @@ install(DIRECTORY sequential/ DESTINATION bin/sequential)
 install(DIRECTORY roland/ DESTINATION bin/roland)
 install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
 install(FILES ${adaptation_files} DESTINATION bin)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/orm_synth.cp310-win_amd64.pyd" DESTINATION bin)
 
 

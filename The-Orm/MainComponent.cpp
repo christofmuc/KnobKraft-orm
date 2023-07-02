@@ -216,6 +216,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
 	}
 
+	synths.emplace_back(midikraft::SynthHolder(knobkraft::GenericAdaptation2::loadModule("KorgDW8000"), buttonColour));
+
 	refreshSynthList();
 
 	autodetector_.addChangeListener(&synthList_);
