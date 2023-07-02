@@ -223,6 +223,11 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		${CMAKE_SOURCE_DIR}/adaptions/knobkraft
 		$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
 		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/adaptions/testing
+		$<TARGET_FILE_DIR:KnobKraftOrm>/testing
+		)
 file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptions/*.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "conftest.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "test_.*py")
