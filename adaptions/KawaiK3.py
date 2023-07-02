@@ -90,6 +90,7 @@ def buildSysexFunction(channel, function, sub_command):
     return [0xf0, 0x40, (channel & 0x0f), function, 0x00, 0x01, sub_command, 0xf7]
 
 
+
 if __name__ == "__main__":
     assert isDefaultName("Cartridge 09")
     assert not isDefaultName("Internal 111")
