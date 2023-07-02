@@ -32,6 +32,7 @@ std::vector<T> sortLists(std::vector<T> const& lists, std::function<std::string(
 	// We use the JUCE natural language sort, but for that we need to build a StringArray of the names first...
 	std::map<std::string, T> byName;
 	StringArray names;
+	//TODO This destroys the second import of the same name!
 	for (auto const& list : lists) {
 		byName[key(list)] = list;
 		names.add(key(list));
