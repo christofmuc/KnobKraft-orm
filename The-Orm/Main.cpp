@@ -57,6 +57,10 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 #endif
 #endif
 
+const char* __asan_default_options() {
+	return "verbosity=1:suppression=asan-ignores.txt";
+}
+
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication, private ChangeListener
 {
