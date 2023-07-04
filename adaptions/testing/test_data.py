@@ -41,6 +41,7 @@ class ProgramTestData:
     message: MidiMessageInitializer
     name: Optional[str] = None
     number: Optional[int] = None
+    friendly_number: Optional[str] = None
     rename_name: Optional[str] = None
     dont_rename: Optional[bool] = False
     change_number_changes_name: Optional[bool] = False

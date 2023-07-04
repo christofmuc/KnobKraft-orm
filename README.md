@@ -29,6 +29,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
+| Groove Synthesis | 3rd Wave | alpha | adaptation | |
 | John Bowen | Solaris | beta | adaptation | Contributed by @conversy! | 
 | Kawai | K1/K1m/K1r | beta | adaptation | | 
 | Kawai | K3/K3m | works | native | | 
