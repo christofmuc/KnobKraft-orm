@@ -37,6 +37,6 @@ def setupHelp():
 def make_test_data():
     def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=test_data.all_messages[0], name="Welcome Back Tom!", number=0)
-        yield testing.ProgramTestData(message=test_data.all_messages[200], name="I Dream of Phasing", number=200)
+        yield testing.ProgramTestData(message=test_data.all_messages[200], name="I Dream of Phasing", number=200, friendly_number="200")
 
     return testing.TestData(sysex="testData/Sequential_OB6/OB6_Programs_v1.01.syx", program_generator=programs)

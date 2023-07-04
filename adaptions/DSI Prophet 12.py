@@ -47,6 +47,7 @@ def setupHelp():
 # Test data picked up by test_adaptation.py
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=data.all_messages[5], name='Wurly Trem ModWheel', number=5, second_layer_name= "Electric Standard")
+        yield testing.ProgramTestData(message=data.all_messages[5], name='Wurly Trem ModWheel', number=5, second_layer_name= "Electric Standard",
+                                      friendly_number="bank 1 - 06")
 
     return testing.TestData(sysex="testData/P12_Programs_v1.1c.syx", program_generator=programs)
