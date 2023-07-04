@@ -51,7 +51,7 @@ All tests are implemented as pytest tests, so the correct way to run them all is
 type in your prepared virtual environment, make sure to cd into the adaptions subdirectory:
 
      cd adaptions
-     python -m pytest . -all
+     python -m pytest . --all
 
 This should be run in the source's root directory.
 
