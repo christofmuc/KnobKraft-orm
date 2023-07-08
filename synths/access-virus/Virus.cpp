@@ -141,7 +141,8 @@ namespace midikraft {
 	std::vector<juce::MidiMessage> Virus::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		int bank = programNumber.toZeroBasedWithBank() / numberOfPatches();
-		std::vector<uint8> message({ 0x10 /* Single program dump */, (uint8) (bank + 1) /* 1-based bank number */, (uint8) (programNumber.toZeroBasedWithBank()) /* Program Number 0 to 127 */ });
+		int progNo = programNumber.toZeroBasedDiscardingBank() % numberOfPatches();
+		std::vector<uint8> message({ 0x10 /* Single program dump */, (uint8) (bank + 1) /* 1-based bank number */, (uint8) (progNo) /* Program Number 0 to 127 */ });
 		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(message));
 		uint8 checksum = (MidiHelpers::checksum7bit(message) + deviceID_) & 0x7f;
 		message.push_back(checksum);
