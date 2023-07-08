@@ -10,3 +10,5 @@ codesigning/dsa_priv.pem
 builds.old/
 cmake-build-debug/
 build_python310/
+adaptions/testData/TORAIZ Artist Sound Pack Agreement.pdf
+adaptions/testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank

@@ -5,6 +5,10 @@
 #
 
 # The Roland D-50 implements the Roland Exclusive Format Type IV, and thus is a good Roland example
+from typing import List
+
+import knobkraft
+import testing
 
 roland_id = 0x41  # Roland
 model_id = 0b00010100  # D-50
@@ -37,7 +41,7 @@ def channelIfValidDeviceResponse(message):
 
 
 def nameFromDump(message):
-    patch_parts = splitSysex(message)
+    patch_parts = knobkraft.splitSysex(message)
     command, address, data = parseRolandMessage(patch_parts[6])
     if command == command_dt1 and address == [0x00, 0x03, 0x00]:
         return "".join([character_set[x] for x in data[:18]])
@@ -102,35 +106,17 @@ def index_to_address(index):
     return [index >> 14, (index & 0x3f80) >> 7, index & 0x7f]
 
 
-def splitSysex(byte_list):
-    result = []
-    index = 0
-    while index < len(byte_list):
-        sysex = []
-        if byte_list[index] == 0xf0:
-            # Sysex start
-            while byte_list[index] != 0xf7 and index < len(byte_list):
-                sysex.append(byte_list[index])
-                index += 1
-            sysex.append(0xf7)
-            index += 1
-            result.append(sysex)
-        else:
-            print("Skipping invalid byte", byte_list[index])
-            index += 1
-    return result
+def make_test_data():
 
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        # Quick test of device detect
+        detectMessage = createDeviceDetectMessage(0x7)
+        g_command, g_address, g_data = parseRolandMessage(detectMessage)
+        assert (g_command == command_rq1)
+        assert (g_address == [0x00, 0x01, 0x00])
+        assert (g_data == [0x00, 0x00, 0x40])
 
-if __name__ == "__main__":
-    detectMessage = createDeviceDetectMessage(0x7)
-    g_command, g_address, g_data = parseRolandMessage(detectMessage)
-    assert (g_command == command_rq1)
-    assert (g_address == [0x00, 0x01, 0x00])
-    assert (g_data == [0x00, 0x00, 0x40])
+        patches = loadD50BankDump(test_data.all_messages)
+        yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ")
 
-    with open(R"D:\Christof\Music\RolandD50\BB1_SYX\BobbyBluz_1.syx", "rb") as bankDump:
-        g_sysex = bankDump.read()
-        sysex_messages = splitSysex(g_sysex)
-        patches = loadD50BankDump(sysex_messages)
-        for g_p in patches:
-            print("Found patch", nameFromDump(g_p))
+    return testing.TestData(sysex=R"testData/Roland_D50_DIGITAL DREAMS.syx", program_generator=make_patches)

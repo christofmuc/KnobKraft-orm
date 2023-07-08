@@ -28,7 +28,7 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.getoption("all"):
             adaptations_to_test = []
             for file in os.listdir(os.path.dirname(os.path.realpath(__file__))):
-                if os.path.isfile(file) and file != "conftest.py" and file != "test_adaptations.py" and file.lower().endswith(".py") and not file.lower().startswith("test_"):
+                if os.path.isfile(file) and file != "conftest.py" and file != "custom_assertions.py" and file != "test_adaptations.py" and file.lower().endswith(".py") and not file.lower().startswith("test_"):
                     adaptations_to_test += [file]
             metafunc.parametrize("adaptation", [load_adaptation(a) for a in adaptations_to_test])
         else:

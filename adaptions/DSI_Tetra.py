@@ -3,8 +3,12 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
+
 import sequential
 import sys
+
+import testing
 
 this_module = sys.modules[__name__]
 
@@ -23,8 +27,8 @@ sequential.GenericSequential(name="DSI Tetra",
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
-    def programs(messages):
-        yield {"message": messages[1], "name": 'Tom Sawyer', "number": 1}
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[1], name='Tom Sawyer', number= 1, friendly_number="bank 1 - 2")
 
-    return {"sysex": "testData/Tetra_ProgramsCombos_1.0.syx", "program_generator": programs}
+    return testing.TestData(sysex="testData/Tetra_ProgramsCombos_1.0.syx", program_generator=programs)

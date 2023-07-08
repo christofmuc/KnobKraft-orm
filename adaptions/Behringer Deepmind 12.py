@@ -3,6 +3,9 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
+
+import testing
 from knobkraft import unescapeSysex_deepmind as unescapeSysex
 
 behringer_id = [0x00, 0x20, 0x32]
@@ -115,10 +118,8 @@ def convertToProgramDump(channel, message, program_number):
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
-    def programs(messages):
-        yield {"message": messages[0], "name": "Brass Set 1     ", "number": 896}
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[0], name="Brass Set 1     ", number=896)
 
-    return {"sysex": "testData/DM12_-_Juno_106_Presets_H.syx", "program_generator": programs}
-
-
+    return testing.TestData(sysex="testData/DM12_-_Juno_106_Presets_H.syx", program_generator=programs)

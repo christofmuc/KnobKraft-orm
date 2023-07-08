@@ -3,9 +3,12 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
 
 import sequential
 import sys
+
+import testing
 
 this_module = sys.modules[__name__]
 
@@ -31,8 +34,9 @@ def setupHelp():
 
 
 # Test data picked up by test_adaptation.py
-#def test_data():
-#    def programs(messages):
-#        yield {"message": messages[0], "name": "Cascades", "number": 1}
-#
-#    return {"sysex": "testData/Pro_2_Programs_v1.0a.syx", "program_generator": programs}
+def make_test_data():
+    def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="Welcome Back Tom!", number=0)
+        yield testing.ProgramTestData(message=test_data.all_messages[200], name="I Dream of Phasing", number=200, friendly_number="200")
+
+    return testing.TestData(sysex="testData/Sequential_OB6/OB6_Programs_v1.01.syx", program_generator=programs)

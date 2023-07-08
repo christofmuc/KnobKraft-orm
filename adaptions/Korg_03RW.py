@@ -8,6 +8,10 @@
 #   Built upon the Korg MS2000 file.
 #
 #   This works for program mode only, combination mode seems to be more complex to support
+from typing import List
+
+import knobkraft
+import testing
 
 
 def name():
@@ -194,15 +198,17 @@ def escapeSysex(data):
     return result
 
 
-########################################################################################################################
-#
-# The following functions are not called by the KnobKraft Orm (yet), but I use them to convert ALL DATA DUMPS file from
-# the Internet into individual edit buffer dumps
-#
-def testEscaping():
+def make_test_data():
     testData = [x for x in range(254)]
     escaped = escapeSysex(testData)
     back = unescapeSysex(escaped)
     assert testData == back
 
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        patches = knobkraft.splitSysex(extractPatchesFromBank(data.all_messages[0]))
+        yield testing.ProgramTestData(message=patches[0], name='AnalogFeel')
 
+    def banks(data: testing.TestData) -> List:
+        yield data.all_messages
+
+    return testing.TestData(sysex="testData/Korg_03RW/vicbank1.syx", edit_buffer_generator=programs, bank_generator=banks)

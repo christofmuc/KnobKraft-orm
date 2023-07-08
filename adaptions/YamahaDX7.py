@@ -4,6 +4,10 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 from ctypes import *
+from typing import List
+
+import knobkraft.sysex
+import testing
 
 
 class OPERATOR_PACKED(Structure):
@@ -183,28 +187,13 @@ def checksum(data_block):
     return check_sum & 0x7f
 
 
-def splitSysexMessage(messages):
-    result = []
-    start = 0
-    read = 0
-    while read < len(messages):
-        if messages[read] == 0xf0:
-            start = read
-        elif messages[read] == 0xf7:
-            result.append(messages[start:read + 1])
-        read = read + 1
-    return result
+def make_test_data():
 
-
-def run_tests():
-    with open(R"testData/yamahaDX7-ROM2B.SYX", "rb") as sysex:
-        data = list(sysex.read())
-        assert isPartOfBankDump(data)
-        patches = splitSysexMessage(extractPatchesFromBank(data))
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        flat_list_of_messages = [item for sublist in test_data.all_messages for item in sublist]
+        assert isBankDumpFinished(test_data.all_messages)
+        patches = knobkraft.sysex.splitSysex(extractPatchesFromBank(flat_list_of_messages))
         assert len(patches) == 32
-        for p in patches:
-            print(nameFromDump(p))
+        yield testing.ProgramTestData(patches[0], name="SYN-LEAD 2")
 
-
-if __name__ == "__main__":
-    run_tests()
+    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches)

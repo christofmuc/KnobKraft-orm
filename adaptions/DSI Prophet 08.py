@@ -3,9 +3,12 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
 
 import sequential
 import sys
+
+import testing
 
 this_module = sys.modules[__name__]
 
@@ -23,8 +26,8 @@ synth = sequential.GenericSequential(name="DSI Prophet 08",  # DSI product name 
 
 
 # Test data picked up by test_adaptation.py
-def test_data():
-    def programs(messages):
-        yield {"message": messages[2], "name": "T8 Strings", "number": 2}
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[2], name="T8 Strings", number=2)
 
-    return {"sysex": "testData/Prophet_08_Programs_v1.0.syx", "program_generator": programs}
+    return testing.TestData(sysex="testData/Prophet_08_Programs_v1.0.syx", program_generator=programs)

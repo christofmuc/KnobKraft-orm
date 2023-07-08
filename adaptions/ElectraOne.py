@@ -8,6 +8,9 @@ import re
 
 
 # This uses information from https://docs.electra.one/developers/midiimplementation.html
+from typing import List
+
+import testing
 
 
 def name():
@@ -117,42 +120,35 @@ def presetToJson(message):
 def jsonToPreset(json_data):
     jsonString = json.dumps(json_data, separators=(',', ':'))
     dataBlock = [ord(x) for x in list(jsonString)]
-    return bytearray([0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7])
+    return [0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7]
 
 
 def stringToPreset(jsonString):
     dataBlock = [ord(x) for x in list(jsonString)]
-    return bytearray([0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7])
+    return [0xF0, 0x00, 0x21, 0x45, 0x01, 0x00] + dataBlock + [0xf7]
 
 
-def run_tests():
+def make_test_data():
     defect = [240, 0, 33, 69, 1, 0, 53, 247]
     nameFromDump(defect)
-    with open(R"testData/elektraOne-demo-preset.syx", mode="rb") as preset:
-        content = preset.read()
-        old_name = nameFromDump(content)
-        same = renamePatch(content, old_name)
-        assert same == content
-        new = renamePatch(content, "betterName")
-        assert nameFromDump(new) == "betterName"
 
     # Test parse errors
     invalid_json = '{  "version": 2,  "name" :"ROLAND MKS-80 v3",\n   "data":{  \r\n },  ]}'
-    testCrash = stringToPreset(invalid_json)
+    testCrash = list(stringToPreset(invalid_json))
     assert isEditBufferDump(testCrash)
     name_from_corrupt = nameFromDump(testCrash)
     assert name_from_corrupt == "ROLAND MKS-80 v3"
     not_renamed = renamePatch(testCrash, "do crash")
     assert nameFromDump(not_renamed) == "ROLAND MKS-80 v3"
 
-    with open(R"testData/elektraOne-corrupted-preset.syx", mode="rb") as preset:
-        content = preset.read()
-        old_name = nameFromDump(content)
-        assert old_name == "ROLAND MKS-80 v3"
-        new = renamePatch(content, "betterName")
-        assert nameFromDump(new) == old_name
+    def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        with open(R"testData/elektraOne-demo-preset.syx", mode="rb") as preset:
+            content = preset.read()
+            yield testing.ProgramTestData(message=list(content), name="tx-81z", rename_name="betterName")
 
+        with open(R"testData/elektraOne-corrupted-preset.syx", mode="rb") as preset:
+            content = preset.read()
+            # This cannot be renamed, as the JSON is not parsable. Legacy problems in the ElectraOne editor
+            yield testing.ProgramTestData(message=list(content), name="ROLAND MKS-80 v3", dont_rename=True)
 
-# Some test code that is not run by the KnobKraft Orm on load
-if __name__ == '__main__':
-    run_tests()
+    return testing.TestData(program_generator=programs)

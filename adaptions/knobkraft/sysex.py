@@ -7,7 +7,7 @@ from typing import List, Tuple
 import binascii
 
 
-def load_sysex(filename, as_single_list=False):
+def load_sysex(filename, as_single_list=False) -> List[List[int]]:
     with open(filename, mode="rb") as midi_messages:
         content = midi_messages.read()
         if as_single_list:

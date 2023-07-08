@@ -8,7 +8,9 @@
 import hashlib
 
 from enum import IntEnum
+from typing import List
 
+import testing
 
 MODEL_OFFSET = 0x3
 
@@ -206,18 +208,17 @@ def calculateFingerprint(message):
     return hashlib.md5(bytearray(data)).hexdigest()
 
 
-def run_tests():
-    with open("testData/ZoomMS-CDR.syx", "rb") as sysex:
-        raw_data = list(sysex.read())
-        assert isEditBufferDump(raw_data)
+def make_test_data():
+    def generate(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        raw_data = test_data.all_messages[0]
+
+        # Some additional tests
         assert modelFromDump(raw_data) == Model.MS70CDR
-        assert nameFromDump(raw_data) == "C-D-R"
-        same_patch = renamePatch(raw_data, "CDR")
-        assert nameFromDump(same_patch) == "CDR"
-        same_same = renamePatch(same_patch, "C-D-R<$o  overflow")
+        assert str(modelFromDump(raw_data)) == "MS-70CDR"
+        same_same = renamePatch(raw_data, "C-D-R<$o  overflow")
         assert nameFromDump(same_same) == "C-D-R_$o"
-        assert calculateFingerprint(same_patch) == calculateFingerprint(raw_data)
 
+        # Supply the edit buffer and some test helpers to the generic test routines
+        yield testing.ProgramTestData(message = raw_data, name="C-D-R", rename_name="CDR")
 
-if __name__ == "__main__":
-    run_tests()
+    return testing.TestData(sysex="testData/ZoomMS-CDR.syx", edit_buffer_generator=generate)

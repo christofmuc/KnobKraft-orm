@@ -6,6 +6,10 @@
 
 # https://github.com/eclab/edisyn/blob/master/edisyn/synth/waldorfkyra/WaldorfKyra.java
 # Seems to be the best source for information on the Kyra sysex
+from typing import List
+
+import testing
+
 kyra_id = 0x22
 
 
@@ -98,7 +102,7 @@ def getMessageTypeAndParams(message):
 
 def nameFromDump(message):
     if isSingleProgramDump(message) or isEditBufferDump(message):
-        sdata_base_index = 8
+        sdata_base_index = 10
         name_base_index = 200
         name_length = 22
         return ''.join([chr(x) for x in message[sdata_base_index + name_base_index:sdata_base_index + name_base_index + name_length]])
@@ -108,7 +112,7 @@ def nameFromDump(message):
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message) or isSingleProgramDump(message):
         # Have to set bank to 0x7f and program to 0x00. The checksum does not need to be recalculated
-        return message[:3] + [channel, 0x00] + message[5] + [0x7f, 0x7f] + message[8:]
+        return message[:3] + [channel, 0x00] + [message[5]] + [0x7f, 0x7f] + message[8:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
 
 
@@ -116,5 +120,15 @@ def convertToProgramDump(channel, message, program_number):
     bank = program_number // numberOfPatchesPerBank()
     program = program_number % numberOfPatchesPerBank()
     if isEditBufferDump(message) or isSingleProgramDump(message):
-        return message[:3] + [channel, 0x00] + message[5] + [bank, program] + message[8:]
+        return message[:3] + [channel, 0x00] + [message[5]] + [bank, program] + message[8:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
+def make_test_data():
+
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="Okb_TON               ")
+
+    return testing.TestData(sysex=R"testData/Waldorf_Kya_Okb_TON.syx", program_generator=make_patches)
+
+

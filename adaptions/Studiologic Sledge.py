@@ -3,6 +3,9 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+from typing import List
+
+import testing
 
 sledgeDeviceID = 0x15
 
@@ -105,3 +108,13 @@ def convertToProgramDump(channel, message, program_number):
     if isEditBufferDump(message) or isSingleProgramDump(message):
         return message[:3] + [channel, 0x10, bank, program] + message[7:]
     raise Exception("Neither edit buffer nor program dump - can't be converted")
+
+
+def make_test_data():
+
+    def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="SledgeStab 1    ")
+
+    return testing.TestData(sysex=R"testData/Studiologic_Sledge_Theodosys_Sound_Bank.syx", program_generator=make_patches)
+
+
