@@ -108,6 +108,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           python write_appcast.py
+          python make_github_release.py
 
       - name: Delete key file
         if: startsWith(github.ref, 'refs/tags/')
