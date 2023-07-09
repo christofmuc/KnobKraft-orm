@@ -10,7 +10,7 @@ if version is None:
 
 repo_owner = "christofmuc"
 repo_name = "KnobKraft-orm"
-access_token = os.getenv('RELEASE_ACCESS_TOKEN')
+access_token = os.getenv('GITHUB_TOKEN')
 
 # Markdown-formatted release notes
 with open(os.path.join("release_notes", f"{version}.md"), 'r') as file:

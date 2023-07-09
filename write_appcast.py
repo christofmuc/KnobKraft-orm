@@ -144,9 +144,9 @@ if __name__ == "__main__":
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpfile = os.path.join(tmpdir, "appcast.xml")
-        download_file("https://raw.githubusercontent.com/christofmuc/appcasts/master/KnobKraft-Orm/test_appcast.xml", tmpfile)
+        download_file("https://raw.githubusercontent.com/christofmuc/appcasts/master/KnobKraft-Orm/appcast.xml", tmpfile)
         new_file = add_release(tmpfile, new_version, sparkle_signature)
-        upload_to_github(new_file, "christofmuc", "appcasts", "KnobKraft-Orm/test_appcast.xml", True)
+        upload_to_github(new_file, "christofmuc", "appcasts", "KnobKraft-Orm/appcast.xml", True)
         release_notes = os.path.join("release_notes", f"{new_version}.md")
         release_notes_as_html = convert_markdown_to_html(release_notes)
-        upload_to_github(new_file, "christofmuc", "appcasts", f"KnobKraft-Orm/{new_version}.html", False)
+        upload_to_github(release_notes_as_html, "christofmuc", "appcasts", f"KnobKraft-Orm/{new_version}.html", False)
