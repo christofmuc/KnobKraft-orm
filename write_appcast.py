@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 from datetime import datetime, timezone
 
+import markdown as markdown
 import requests
 from lxml import etree as ET
 
@@ -96,7 +97,7 @@ def get_file_sha(repo_owner, repo_name, file_path, access_token):
     return sha
 
 
-def upload_to_github(updated_xml, repo_owner, repo_name, file_path):
+def upload_to_github(updated_xml, repo_owner, repo_name, file_path, is_update: bool):
     # Encode the XML content as base64
     base64_content = base64.b64encode(updated_xml).decode().strip()
 
@@ -111,12 +112,23 @@ def upload_to_github(updated_xml, repo_owner, repo_name, file_path):
     data = {
         "message": f"Update {file_path}",
         "content": base64_content,
-        "sha": get_file_sha(repo_owner, repo_name, file_path, access_token)
     }
+    if is_update:
+        # The file already exists
+        data["sha"] = get_file_sha(repo_owner, repo_name, file_path, access_token)
 
     # Send the API request to update the file
     response = requests.put(api_url, json=data, headers=headers)
     response.raise_for_status()
+
+
+def convert_markdown_to_html(markdown_file):
+    # Read the Markdown file
+    with open(markdown_file, 'r', encoding='utf-8') as file:
+        markdown_text = file.read()
+
+    # Convert Markdown to HTML
+    return markdown.markdown(markdown_text)
 
 
 if __name__ == "__main__":
@@ -134,4 +146,7 @@ if __name__ == "__main__":
         tmpfile = os.path.join(tmpdir, "appcast.xml")
         download_file("https://raw.githubusercontent.com/christofmuc/appcasts/master/KnobKraft-Orm/test_appcast.xml", tmpfile)
         new_file = add_release(tmpfile, new_version, sparkle_signature)
-        upload_to_github(new_file, "christofmuc", "appcasts", "KnobKraft-Orm/test_appcast.xml")
+        upload_to_github(new_file, "christofmuc", "appcasts", "KnobKraft-Orm/test_appcast.xml", True)
+        release_notes = os.path.join("release_notes", f"{new_version}.md")
+        release_notes_as_html = convert_markdown_to_html(release_notes)
+        upload_to_github(new_file, "christofmuc", "appcasts", f"KnobKraft-Orm/{new_version}.html", False)
