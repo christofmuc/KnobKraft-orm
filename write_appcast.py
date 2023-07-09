@@ -149,4 +149,4 @@ if __name__ == "__main__":
         upload_to_github(new_file, "christofmuc", "appcasts", "KnobKraft-Orm/appcast.xml", True)
         release_notes = os.path.join("release_notes", f"{new_version}.md")
         release_notes_as_html = convert_markdown_to_html(release_notes)
-        upload_to_github(release_notes_as_html, "christofmuc", "appcasts", f"KnobKraft-Orm/{new_version}.html", False)
+        upload_to_github(release_notes_as_html.encode('utf-8'), "christofmuc", "appcasts", f"KnobKraft-Orm/{new_version}.html", False)
