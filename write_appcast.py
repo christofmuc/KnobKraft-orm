@@ -53,7 +53,9 @@ def add_release(filename, version, sparkle_signature):
     }
 
     # Create a new item
-    new_item = ET.SubElement(root.find('channel'), 'item')
+    channel = root.find('channel')
+    new_item = ET.Element('item')
+    channel.insert(0, new_item)  # insert the new item at the beginning
 
     # Add sub-elements to the new item
     ET.SubElement(new_item, 'title').text = new_item_data['title']
