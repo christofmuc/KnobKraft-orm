@@ -19,7 +19,7 @@ with open(os.path.join("release_notes", f"{version}.md"), 'r') as file:
 # Create a release payload with the release notes
 release_payload = {
     "tag_name": version,
-    "name": f"Version {version}",
+    "name": f"{version}",
     "body": release_notes,
     "draft": False,
     "prerelease": False
