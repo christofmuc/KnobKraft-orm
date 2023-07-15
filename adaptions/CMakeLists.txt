@@ -92,5 +92,6 @@ endif()
 install(DIRECTORY sequential/ DESTINATION bin/sequential)
 install(DIRECTORY roland/ DESTINATION bin/roland)
 install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
+install(DIRECTORY testing/ DESTINATION bin/testing)
 install(FILES ${adaptation_files} DESTINATION bin)
 
