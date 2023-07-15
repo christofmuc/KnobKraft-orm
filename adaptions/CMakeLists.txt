@@ -42,6 +42,7 @@ set(adaptation_files_test_only
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
 	"knobkraft/__init__.py" "knobkraft/adaptation_module.py" "knobkraft/sysex.py" "knobkraft/test_helper.py"
+        "testing/__init__.py" "testing/test_data.py"
 )
 
 # Define the sources for the static library
