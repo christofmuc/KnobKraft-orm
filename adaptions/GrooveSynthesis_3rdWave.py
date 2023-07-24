@@ -62,7 +62,7 @@ def convertToEditBuffer(channel, message):
 
 
 def createProgramDumpRequest(channel, program_no):
-    bank = program_no / numberOfPatchesPerBank()
+    bank = program_no // numberOfPatchesPerBank()
     program = program_no % numberOfPatchesPerBank()
     return [0xf0] + groove_synth_id + [0x01, 0b00000101, bank, program, 0xf7]
 
@@ -121,8 +121,10 @@ def friendlyBankName(bank):
     return f"B{bank+1}"
 
 
-def friendlyProgramName(program):
-    return f"P{program+1:.03d}"
+def friendlyProgramName(program_no):
+    bank = program_no // numberOfPatchesPerBank()
+    program = program_no % numberOfPatchesPerBank()
+    return friendlyBankName(bank) + f"-P{program+1:03d}"
 
 
 def make_test_data():
