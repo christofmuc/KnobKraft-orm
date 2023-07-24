@@ -362,6 +362,6 @@ def unescapeSysex(sysex):
 # Test data picked up by test_adaptation.py
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=data.all_messages[0], number=53, name="1982theme")
+        yield testing.ProgramTestData(message=data.all_messages[0], number=53, name="1982theme", friendly_number="054")
 
     return testing.TestData(sysex="testData/KorgMinilogueXD/1982theme.syx", program_generator=programs)

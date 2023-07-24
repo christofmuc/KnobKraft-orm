@@ -187,6 +187,12 @@ def convertToProgramDump(channel, message, program_number):
     raise Exception("Neither edit buffer nor program dump - can't be converted")
 
 
+def numberFromDump(message):
+    if isSingleProgramDump(message):
+        return message[10] * numberOfPatchesPerBank() + message[11]
+    raise Exception("Can only extract the number from program dumps")
+
+
 def unescapeSysex(sysex):
     """Unpacks a 7-bit sysex message into 8-bit bytes."""
     result = []
@@ -243,7 +249,7 @@ def friendlyProgramName(program_number):
 def make_test_data():
 
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=test_data.all_messages[0], name="Out Run Bass        ")
+        yield testing.ProgramTestData(message=test_data.all_messages[0], name="Out Run Bass        ", friendly_number="P1", number=0)
 
     # This test file can be downloaded from https://www.pioneerdj.com/de-de/landing/toraiz/toraiz-as-1/
     # The license does not allow redistribution, so you need to download it yourself and put it into the testData folder if you want to run the tests

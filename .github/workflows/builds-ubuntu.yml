@@ -41,7 +41,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         file: builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz
-
         tags: true
 
     - name: Setup Sentry CLI

@@ -15,6 +15,7 @@ set(adaptation_files
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py" 
 	"Ensoniqesq1.py" 
+	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
 	"KawaiK1.py" 
 	"Korg_03RW.py" "KorgDW6000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
@@ -41,6 +42,7 @@ set(adaptation_files_test_only
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
 	"knobkraft/__init__.py" "knobkraft/adaptation_module.py" "knobkraft/sysex.py" "knobkraft/test_helper.py"
+        "testing/__init__.py" "testing/test_data.py"
 )
 
 # Define the sources for the static library
@@ -97,6 +99,7 @@ target_link_libraries(orm_synth PRIVATE juce-utils midikraft-base ${JUCE_LIBRARI
 install(DIRECTORY sequential/ DESTINATION bin/sequential)
 install(DIRECTORY roland/ DESTINATION bin/roland)
 install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
+install(DIRECTORY testing/ DESTINATION bin/testing)
 install(FILES ${adaptation_files} DESTINATION bin)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/orm_synth.cp310-win_amd64.pyd" DESTINATION bin)
 

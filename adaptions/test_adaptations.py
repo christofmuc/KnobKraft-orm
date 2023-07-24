@@ -266,6 +266,18 @@ def test_number_from_dump(adaptation, test_data: testing.TestData):
         pytest.fail(f"{adaptation.name()} has not created a single program with program number to test numberFromDump")
 
 
+@require_implemented("friendlyProgramName")
+@require_testdata("programs")
+def test_program_name(adaptation, test_data: testing.TestData):
+    count = 0
+    for program in test_data.programs:
+        if program.friendly_number is not None:
+            assert adaptation.friendlyProgramName(adaptation.numberFromDump(program.message.byte_list)) == program.friendly_number
+            count += 1
+    if count == 0:
+        pytest.fail(f"{adaptation.name()} has not created a single program with program number to test numberFromDump")
+
+
 @require_implemented("layerName")
 @require_testdata("programs")
 def test_layer_name(adaptation, test_data: testing.TestData):

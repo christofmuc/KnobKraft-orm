@@ -61,6 +61,13 @@ The data types used in the interface between the main program and the adaptation
 3. Python integer values for simple numbers like MIDI channels, program numbers, or milliseconds
 4. Python booleans True or False for simple options and yes/no decisions
 
+# Testing
+
+Now is a good time, before jumping right into the programming exercise, to think about how you will test that 
+your adaptation code actually works. For this, I have written the 
+[Adaptation Testing Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptions/Adaptation%20Testing%20Guide.md), 
+please check it out!
+
 # List of functions to implement
 
 For the device to function completely within the main program, you need to implement the following list functions not marked optional. The optional functions can be implemented for additional functionality.
