@@ -3,6 +3,7 @@
 
 #include "EditBufferCapability.h"
 #include "HasBanksCapability.h"
+#include "ProgramDumpCapability.h"
 
 #include <pybind11/stl.h>
 
@@ -239,9 +240,84 @@ public:
 	}
 };
 
+class PyProgramDumpCabability : public ProgramDumpCabability
+{
+public:
+	using ProgramDumpCabability::ProgramDumpCabability;
+
+	virtual std::vector<MidiMessage> requestPatch(int patchNo) const override
+	{
+		PYBIND11_OVERRIDE_PURE_NAME(
+			std::vector<MidiMessage>,
+			ProgramDumpCabability,
+			"request_program_dump",
+			requestPatch,
+			patchNo
+			);
+	}
+
+	virtual bool isSingleProgramDump(const std::vector<MidiMessage>& messages) const override
+	{
+		PYBIND11_OVERRIDE_PURE_NAME(
+			bool,
+			ProgramDumpCabability,
+			"is_single_program_dump",
+			isSingleProgramDump,
+			messages
+		);
+	}
+
+	virtual HandshakeReply isMessagePartOfProgramDump(const MidiMessage& message) const {
+		PYBIND11_OVERRIDE_NAME(
+			HandshakeReply,
+			ProgramDumpCabability,
+			"is_part_of_single_dump",
+			isMessagePartOfProgramDump,
+			message
+		);
+	}
+
+	std::shared_ptr<midikraft::DataFile> patchFromProgramDumpSysex(const std::vector<MidiMessage>& message) const override
+	{
+		py::gil_scoped_acquire acquire;
+		// For the Generic Adaptation, this is a nop, as we do not unpack the MidiMessage, but rather store the raw MidiMessage
+		midikraft::Synth::PatchData data;
+		for (auto const& m : message) {
+			std::copy(m.getRawData(), m.getRawData() + m.getRawDataSize(), std::back_inserter(data));
+		}
+		return std::make_shared<DataFile>(0, data);
+	}
+
+
+	virtual MidiProgramNumber getProgramNumber(const std::vector<MidiMessage>& messages) const override
+	{
+		PYBIND11_OVERRIDE_PURE_NAME(
+			MidiProgramNumber,
+			ProgramDumpCabability,
+			"number_from_dump",
+			getProgramNumber,
+			messages
+		);
+	}
+
+	virtual std::vector<MidiMessage> patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
+	{
+		PYBIND11_OVERRIDE_PURE_NAME(
+			std::vector<MidiMessage>,
+			ProgramDumpCabability,
+			"convert_to_program_dump",
+			patchToProgramDumpSysex,
+			patch,
+			programNumber
+		);
+	}
+	
+};
+
+
 juce::MidiMessage midiMesssageFromBytes(std::vector<uint8_t> const& content)
 {
-	return juce::MidiMessage(content.data(), content.size());
+	return juce::MidiMessage(content.data(), (int) content.size());
 }
 
 MidiBankNumber bankFromZeroBasedInt(int bank, int bankSize)
@@ -273,7 +349,8 @@ PYBIND11_MODULE(orm_synth, m)
 			start += step;
 		}
 		return result;
-			});
+			})
+		.def("is_sysex", [](MidiMessage const& message) { return message.isSysEx();  });
 
 	py::class_<MidiBankNumber>(m, "Bank")
 		.def(py::init(&bankFromZeroBasedInt))
@@ -301,7 +378,9 @@ PYBIND11_MODULE(orm_synth, m)
 		.def_readwrite("type", &BankDescriptor::type);
 
 	py::class_<DataFile>(m, "Patch")
-		.def(py::init<int>());
+		.def(py::init<int>())
+		.def("__len__", [](Patch const& patch) { return patch.data().size(); })
+		.def("__getitem__", [](Patch const& patch, int index) { return index < patch.data().size() ? patch.data()[index] : 0;  });
 
 	py::class_<Synth, PySynth>(m, "Synth")
 		.def(py::init<>())
@@ -324,6 +403,15 @@ PYBIND11_MODULE(orm_synth, m)
 		.def("is_part_of_edit_buffer", &EditBufferCapability::isMessagePartOfEditBuffer)
 		.def("convert_to_edit_buffer", &EditBufferCapability::patchToSysex)
 		.def("save_edit_buffer", &EditBufferCapability::saveEditBufferToProgram);
+
+	py::class_<ProgramDumpCabability, PyProgramDumpCabability>(m, "ProgramDumpCapability")
+		.def(py::init<>())
+		.def("request_program_dump", &ProgramDumpCabability::requestPatch)
+		.def("is_single_program_dump",  &ProgramDumpCabability::isSingleProgramDump)
+		.def("is_part_of_program_dump", &ProgramDumpCabability::isMessagePartOfProgramDump)
+		.def("number_from_dump", &ProgramDumpCabability::getProgramNumber)
+		.def("convert_to_program_dump", &ProgramDumpCabability::patchToProgramDumpSysex)
+		;
 
 	py::class_<HasBankDescriptorsCapability, PyHasBankDescriptorsCapability>(m, "BankDescriptorsCapability")
 		.def(py::init<>())
