@@ -156,7 +156,7 @@ def make_test_data():
     def programs(data) -> List[testing.ProgramTestData]:
         patch_from_device = "f01006011002040e040b0402030a0300020103060302000c0000000901030001000c00000000000300020000000f0101000000010000000000040600000000010000000000020302000000080200000100060000000d000f030a03000000000000000009000f0300000000000000000f030d020f030000000000000000000000000f030d0204010000000000000f03080200000f030203080200000000090008020f000f010f020f03000000000000000000000000000000000f03000005000e0102030f030f03000000000000000000000000000000000000000001000f030b0003000f03040000000000000002000f030b000b000f030c000400010209000400020004000a00090c01000a000f03040057f7"
         patch_message = list(binascii.unhexlify(patch_from_device))
-        yield testing.ProgramTestData(message=patch_message, name='BNK2: 16', number=1, rename_name="NEW NAME")
+        yield testing.ProgramTestData(message=patch_message, name='BNK2: 16', number=16, rename_name="NEW NAME")
 
     # Matrix1000 only has uppercase letters, so we need to specify a rename target name for the test
     # Flag for the generic tests that converting a program dump to a program dump might yield a new result, as there are two different
