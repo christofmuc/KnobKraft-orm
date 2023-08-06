@@ -395,13 +395,18 @@ else {
 		auto builtIns = allAdaptationsInOneDirectory(installDirectory.getFullPathName().toStdString());
 		for (auto& builtin : builtIns)
 		{
-			if (std::none_of(result.begin(), result.end(), [&](std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) { return device->getName() == builtin->getName(); }))
-			{
-				result.push_back(builtin);
+			try {
+				if (std::none_of(result.begin(), result.end(), [&](std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) { return device->getName() == builtin->getName(); }))
+				{
+					result.push_back(builtin);
+				}
+				else
+				{
+					spdlog::warn("Overriding built-in adaptation {} (found in user directory {})", builtin->getName(), getAdaptationDirectory().getFullPathName().toStdString());
+				}
 			}
-			else
-			{
-				spdlog::warn("Overriding built-in adaptation {} (found in user directory {})", builtin->getName(), getAdaptationDirectory().getFullPathName().toStdString());
+			catch (std::exception& e) {
+				spdlog::warn("Skipping file: {}", e.what());
 			}
 		}
 		{
