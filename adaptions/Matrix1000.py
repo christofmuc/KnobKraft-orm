@@ -55,7 +55,6 @@ def isEditBufferDump(message):
 
 def bankDescriptors():
     banks = [{"bank": x, "name": bankName(x), "size": 100, "isROM": x >= 2, "type": "Patch"} for x in range(10)]
-    print(banks)
     return banks
 
 
@@ -97,6 +96,14 @@ def renamePatch(message, new_name):
         new_name_nibbles = nibble([(valid_name[i] & 0x7f) if i < len(new_name) else 0x20 for i in range(8)])
         return rebuildChecksum(message[0:5] + new_name_nibbles + message[21:])
     raise Exception("Neither edit buffer nor program dump can't be converted")
+
+
+def numberFromDump(message) -> int:
+    if isSingleProgramDump(message):
+        print(f"it is a single program dump: {message[4]}")
+        return message[4]
+    print(message)
+    return -1
 
 
 def convertToEditBuffer(channel, message):

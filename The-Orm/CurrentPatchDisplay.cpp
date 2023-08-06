@@ -193,11 +193,16 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	}
 
 	// More read only data
+	auto synth = patch->smartSynth();
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Synth", "Meta data", patch->synth()->getName(), 100));
 	metaDataValues_.back()->setEnabled(false);
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Type", "Meta data", getTypeName(patch), 100));
 	metaDataValues_.back()->setEnabled(false);
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Import", "Meta data", getImportName(patch), 100));
+	metaDataValues_.back()->setEnabled(false);
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Program", "Meta data", synth->friendlyProgramName(patch->patchNumber()), 100));
+	metaDataValues_.back()->setEnabled(false);
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Size", "Meta data", fmt::format("{} Bytes", patch->patch()->data().size()), 100));
 	metaDataValues_.back()->setEnabled(false);
 
 	// We need to learn about updates
