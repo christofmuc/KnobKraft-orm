@@ -164,7 +164,7 @@ namespace knobkraft {
 				return result;
 			}
 			else {
-				spdlog::error("Adaptation: method {} not found, fatal!", methodName);
+				spdlog::error("Adaptation {}: method {} not found, fatal!", filepath_, methodName);
 				return pybind11::none();
 			}
 		}
@@ -175,7 +175,6 @@ namespace knobkraft {
 
 		pybind11::module adaptation_module DEFAULT_VISIBILITY;
 		std::string filepath_;
-		std::string adaptationName_;
 	};
 
 }

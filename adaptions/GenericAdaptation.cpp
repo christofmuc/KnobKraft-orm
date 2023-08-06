@@ -33,43 +33,43 @@ using namespace py::literals;
 namespace knobkraft {
 
 	const char
-		*kName = "name",
-		*kNumberOfBanks = "numberOfBanks",
-		*kNumberOfPatchesPerBank = "numberOfPatchesPerBank",
-		*kBankDescriptors = "bankDescriptors",
-		*kBankSelect = "bankSelect",
-		*kCreateDeviceDetectMessage = "createDeviceDetectMessage",
-		*kChannelIfValidDeviceResponse = "channelIfValidDeviceResponse",
-		*kNeedsChannelSpecificDetection = "needsChannelSpecificDetection",
-		*kDeviceDetectWaitMilliseconds = "deviceDetectWaitMilliseconds",
-		*kNameFromDump = "nameFromDump",
-		*kRenamePatch = "renamePatch",
-		*kIsDefaultName = "isDefaultName",
-		*kIsEditBufferDump = "isEditBufferDump",
-		*kIsPartOfEditBufferDump = "isPartOfEditBufferDump",
-		*kCreateEditBufferRequest = "createEditBufferRequest",
-		*kConvertToEditBuffer = "convertToEditBuffer",
-		*kIsSingleProgramDump = "isSingleProgramDump",
-		*kIsPartOfSingleProgramDump = "isPartOfSingleProgramDump",
-		*kCreateProgramDumpRequest = "createProgramDumpRequest",
-		*kConvertToProgramDump = "convertToProgramDump",
-		*kNumberFromDump = "numberFromDump",
-		*kCreateBankDumpRequest = "createBankDumpRequest",
-		*kIsPartOfBankDump = "isPartOfBankDump",
-		*kIsBankDumpFinished = "isBankDumpFinished",
-		*kExtractPatchesFromBank = "extractPatchesFromBank",
-		*kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
-		*kNumberOfLayers = "numberOfLayers",
-		*kLayerName = "layerName",
-		*kSetLayerName = "setLayerName",
-		*kGeneralMessageDelay = "generalMessageDelay",
-		*kCalculateFingerprint = "calculateFingerprint",
-		*kFriendlyBankName = "friendlyBankName",
-		*kFriendlyProgramName = "friendlyProgramName",
-		*kSetupHelp = "setupHelp",
-		*kGetStoredTags = "storedTags";
+		* kName = "name",
+		* kNumberOfBanks = "numberOfBanks",
+		* kNumberOfPatchesPerBank = "numberOfPatchesPerBank",
+		* kBankDescriptors = "bankDescriptors",
+		* kBankSelect = "bankSelect",
+		* kCreateDeviceDetectMessage = "createDeviceDetectMessage",
+		* kChannelIfValidDeviceResponse = "channelIfValidDeviceResponse",
+		* kNeedsChannelSpecificDetection = "needsChannelSpecificDetection",
+		* kDeviceDetectWaitMilliseconds = "deviceDetectWaitMilliseconds",
+		* kNameFromDump = "nameFromDump",
+		* kRenamePatch = "renamePatch",
+		* kIsDefaultName = "isDefaultName",
+		* kIsEditBufferDump = "isEditBufferDump",
+		* kIsPartOfEditBufferDump = "isPartOfEditBufferDump",
+		* kCreateEditBufferRequest = "createEditBufferRequest",
+		* kConvertToEditBuffer = "convertToEditBuffer",
+		* kIsSingleProgramDump = "isSingleProgramDump",
+		* kIsPartOfSingleProgramDump = "isPartOfSingleProgramDump",
+		* kCreateProgramDumpRequest = "createProgramDumpRequest",
+		* kConvertToProgramDump = "convertToProgramDump",
+		* kNumberFromDump = "numberFromDump",
+		* kCreateBankDumpRequest = "createBankDumpRequest",
+		* kIsPartOfBankDump = "isPartOfBankDump",
+		* kIsBankDumpFinished = "isBankDumpFinished",
+		* kExtractPatchesFromBank = "extractPatchesFromBank",
+		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
+		* kNumberOfLayers = "numberOfLayers",
+		* kLayerName = "layerName",
+		* kSetLayerName = "setLayerName",
+		* kGeneralMessageDelay = "generalMessageDelay",
+		* kCalculateFingerprint = "calculateFingerprint",
+		* kFriendlyBankName = "friendlyBankName",
+		* kFriendlyProgramName = "friendlyProgramName",
+		* kSetupHelp = "setupHelp",
+		* kGetStoredTags = "storedTags";
 
-	std::vector<const char *> kAdapatationPythonFunctionNames = {
+	std::vector<const char*> kAdapatationPythonFunctionNames = {
 		kName,
 		kNumberOfBanks,
 		kNumberOfPatchesPerBank,
@@ -107,13 +107,13 @@ namespace knobkraft {
 		kGetStoredTags
 	};
 
-	std::vector<const char *> kMinimalRequiredFunctionNames = {
+	std::vector<const char*> kMinimalRequiredFunctionNames = {
 		kName,
 		kCreateDeviceDetectMessage,
 		kChannelIfValidDeviceResponse,
 	};
 
-	const char *kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
+	const char* kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;
 	std::unique_ptr<py::gil_scoped_release> sGenericAdaptationDontLockGIL;
@@ -128,7 +128,7 @@ namespace knobkraft {
 		using std::runtime_error::runtime_error;
 	};
 
-	GenericAdaptation::GenericAdaptation(std::string const &pythonModuleFilePath) : filepath_(pythonModuleFilePath)
+	GenericAdaptation::GenericAdaptation(std::string const& pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
 		py::gil_scoped_acquire acquire;
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
@@ -136,7 +136,7 @@ namespace knobkraft {
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
-		hasBankDescriptorsCapabilityImpl_= std::make_shared<GenericHasBankDescriptorsCapability>(this);
+		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -150,14 +150,13 @@ namespace knobkraft {
 			}*/
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
-			adaptationName_ = getName(); //TODO - shouldn't call a virtual method here!
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			spdlog::error("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what());
 			ex.restore();
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			spdlog::error("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what());
 			throw FatalAdaptationException("Cannot initialize Adaptation");
 		}
@@ -170,7 +169,7 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
-		adaptation_module = adaptationModule;		
+		adaptation_module = adaptationModule;
 	}
 
 	GenericAdaptation::~GenericAdaptation()
@@ -200,14 +199,13 @@ namespace knobkraft {
 			checkForPythonOutputAndLog();
 			auto newAdaptation = std::make_shared<GenericAdaptation>(py::cast<py::module>(adaptation_module));
 			//if (newAdaptation) newAdaptation->logNamespace();
-			newAdaptation->adaptationName_ = newAdaptation->getName();
 			return newAdaptation;
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			spdlog::error("Adaptation: Failure loading python module {}: {}", moduleName, ex.what());
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			spdlog::error("Adaptation: Failure loading python module {}: {}", moduleName, ex.what());
 		}
 		return nullptr;
@@ -219,14 +217,14 @@ namespace knobkraft {
 			auto name = py::cast<std::string>(adaptation_module.attr("__name__"));
 			auto moduleDict = adaptation_module.attr("__dict__");
 			for (auto a : moduleDict) {
-				spdlog::debug("Found in {} attribute {}", name , py::cast<std::string>(a));
+				spdlog::debug("Found in {} attribute {}", name, py::cast<std::string>(a));
 			}
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			spdlog::error("Adaptation: Failure inspecting python module: {}", ex.what());
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			spdlog::error("Adaptation: Failure inspecting python module: {}", ex.what());
 		}
 	}
@@ -241,10 +239,10 @@ namespace knobkraft {
 #ifdef __APPLE__
 		// macOS might not have Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
 		std::list<String> pythonCandidatePaths = {
-		    "/Library/Frameworks/Python.framework/Versions/3.10",                  // Python Mac installer (python.org/downloads)
-		    "/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10",    // Homebrew Intel: python3
-		    "/opt/homebrew/opt/python3/Frameworks/Python.framework/Versions/3.10", // Homebrew Apple Silicon: python3
-		    "/opt/local/Library/Frameworks/Python.framework/Versions/3.10"         // MacPorts: python310
+			"/Library/Frameworks/Python.framework/Versions/3.10",                  // Python Mac installer (python.org/downloads)
+			"/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10",    // Homebrew Intel: python3
+			"/opt/homebrew/opt/python3/Frameworks/Python.framework/Versions/3.10", // Homebrew Apple Silicon: python3
+			"/opt/local/Library/Frameworks/Python.framework/Versions/3.10"         // MacPorts: python310
 		};
 		String userPythonPath = juce::SystemStats::getEnvironmentVariable("ORM_PYTHON", "");
 		if (userPythonPath != "") {
@@ -253,27 +251,27 @@ namespace knobkraft {
 		bool pythonFound = false;
 
 		for (auto candidate : pythonCandidatePaths) {
-		    File pythonHome(candidate);
-		    if (pythonHome.exists()) {
-		        Py_SetPythonHome(const_cast<wchar_t*>(candidate.toWideCharPointer()));
-		        pythonFound = true;
-		        break;
-		    }
+			File pythonHome(candidate);
+			if (pythonHome.exists()) {
+				Py_SetPythonHome(const_cast<wchar_t*>(candidate.toWideCharPointer()));
+				pythonFound = true;
+				break;
+			}
 		}
 
 		if (!pythonFound) {
-		    // No Python found, don't set path
-		    return;
+			// No Python found, don't set path
+			return;
 		}
 #endif
 		sGenericAdaptationPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
-        File pathToTheOrm = File::getSpecialLocation (File::SpecialLocationType::currentExecutableFile).getParentDirectory();
-        std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
+		File pathToTheOrm = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory();
+		std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
-				+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
-				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("adaptations").getFullPathName().toStdString() + "\")\n" // This is where we place the adaptation modules
-				+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
+			+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
+			+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("adaptations").getFullPathName().toStdString() + "\")\n" // This is where we place the adaptation modules
+			+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
 		py::exec(command);
 #ifdef __APPLE__
 		// For Apple (probably for Linux as well?) we need to append the path "python" to the python sys path, so it will find 
@@ -319,33 +317,33 @@ namespace knobkraft {
 		return  adaptationsDir;
 	}
 
-	void GenericAdaptation::setAdaptationDirectoy(std::string const &directory)
+	void GenericAdaptation::setAdaptationDirectoy(std::string const& directory)
 	{
 		// This will only become active after a restart of the application, as I don't know how to properly clean the Python runtime.
 		Settings::instance().set(kUserAdaptationsFolderSettingsKey, directory);
 	}
 
-	[[nodiscard]] bool GenericAdaptation::createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis) {
+	[[nodiscard]] bool GenericAdaptation::createCompiledAdaptationModule(std::string const& pythonModuleName, std::string const& adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>>& outAddToThis) {
 		py::gil_scoped_acquire acquire;
 		auto newAdaptation = GenericAdaptation::fromBinaryCode(pythonModuleName, adaptationCode);
 		if (newAdaptation) {
-// Now we need to check the name of the compiled adaptation just created, and if it is already present. If yes, don't add it but rather issue a warning
-auto newAdaptationName = newAdaptation->getName();
-if (newAdaptationName != "invalid") {
-	for (auto existing : outAddToThis) {
-		if (existing->getName() == newAdaptationName) {
-			spdlog::warn("Overriding built-in adaptation {} (found in user directory {})",
-				newAdaptationName, getAdaptationDirectory().getFullPathName().toStdString());
-			return true; // Was created successfully, but still is ignored.
-		}
-	}
-	outAddToThis.push_back(newAdaptation);
-	return true;
-}
-else {
-	jassertfalse;
-	spdlog::error("Program error: built-in adaptation {} failed to report name", std::string(pythonModuleName));
-}
+			// Now we need to check the name of the compiled adaptation just created, and if it is already present. If yes, don't add it but rather issue a warning
+			auto newAdaptationName = newAdaptation->getName();
+			if (newAdaptationName != "invalid") {
+				for (auto existing : outAddToThis) {
+					if (existing->getName() == newAdaptationName) {
+						spdlog::warn("Overriding built-in adaptation {} (found in user directory {})",
+							newAdaptationName, getAdaptationDirectory().getFullPathName().toStdString());
+						return true; // Was created successfully, but still is ignored.
+					}
+				}
+				outAddToThis.push_back(newAdaptation);
+				return true;
+			}
+			else {
+				jassertfalse;
+				spdlog::error("Program error: built-in adaptation {} failed to report name", std::string(pythonModuleName));
+			}
 		}
 		return false;
 	}
@@ -358,7 +356,18 @@ else {
 			for (auto f : adaptationDirectory.findChildFiles(File::findFiles, false, "*.py")) {
 				try {
 					if (!f.getFileName().startsWith("test_") && f.getFileName() != "conftest.py") {
-						result.push_back(std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString()));
+						auto module_loaded = std::make_shared<GenericAdaptation>(f.getFileNameWithoutExtension().toStdString());
+						try
+						{
+							auto name = module_loaded->getName();
+							if (name != "Invalid") {
+								spdlog::debug("Loaded module {} answers with name {}", f.getFileName().toStdString(), module_loaded->getName());
+								result.push_back(module_loaded);
+							}
+						}
+						catch (std::exception const& e) {
+							throw FatalAdaptationException(e.what());
+						}
 					}
 				}
 				catch (FatalAdaptationException&) {
@@ -386,8 +395,12 @@ else {
 
 		// First, load user defined adaptations from the directory
 		File adaptationDirectory = getAdaptationDirectory();
+		std::unordered_set<std::string> userAdaptions;
 		if (adaptationDirectory.exists()) {
 			result = allAdaptationsInOneDirectory(adaptationDirectory.getFullPathName().toStdString());
+			for (auto const& userAdaption : result) {
+				userAdaptions.insert(userAdaption->getName());
+			}
 		}
 
 		// Then, load all adaptations in the directory of the current executable
@@ -395,7 +408,7 @@ else {
 		auto builtIns = allAdaptationsInOneDirectory(installDirectory.getFullPathName().toStdString());
 		for (auto& builtin : builtIns)
 		{
-			if (std::none_of(result.begin(), result.end(), [&](std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) { return device->getName() == builtin->getName(); }))
+			if (userAdaptions.find(builtin->getName()) == userAdaptions.end())
 			{
 				result.push_back(builtin);
 			}
@@ -458,14 +471,14 @@ else {
 			spdlog::error("Program error - could not copy {} to {}", adaptation->getSourceFilePath(), target.getFullPathName().toStdString());
 			return false;
 		}
-		else 
+		else
 		{
 			return true;
 		}
 	}
 
 
-	bool GenericAdaptation::pythonModuleHasFunction(std::string const &functionName) const {
+	bool GenericAdaptation::pythonModuleHasFunction(std::string const& functionName) const {
 		py::gil_scoped_acquire acquire;
 		if (!adaptation_module) {
 			return false;
@@ -491,24 +504,24 @@ else {
 			adaptation_module.reload();
 			logNamespace();
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError("reload module", ex);
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError("reload module", ex);
 		}
 	}
 
-	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const
+	std::shared_ptr<midikraft::DataFile> GenericAdaptation::patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const
 	{
 		py::gil_scoped_acquire acquire;
 		ignoreUnused(place);
-		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module &>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module&>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
 		return patch;
 	}
 
-	bool GenericAdaptation::isOwnSysex(MidiMessage const &message) const
+	bool GenericAdaptation::isOwnSysex(MidiMessage const& message) const
 	{
 		py::gil_scoped_acquire acquire;
 		//TODO - if we delegate this to the python code, the "sniff synth" method of the Librarian can be used. But this is currently disabled anyway,
@@ -517,7 +530,7 @@ else {
 		return false;
 	}
 
-	void GenericAdaptation::sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const &midiOutput, std::vector<MidiMessage> const& buffer)
+	void GenericAdaptation::sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kGeneralMessageDelay)) {
@@ -527,11 +540,11 @@ else {
 				// Be a bit careful with this device, do specify a delay when sending messages
 				midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesThrottled(buffer, delay);
 			}
-			catch (py::error_already_set &ex) {
+			catch (py::error_already_set& ex) {
 				logAdaptationError(kGeneralMessageDelay, ex);
 				ex.restore();
 			}
-			catch (std::exception &ex) {
+			catch (std::exception& ex) {
 				logAdaptationError(kGeneralMessageDelay, ex);
 			}
 		}
@@ -550,11 +563,11 @@ else {
 				auto result = callMethod(kFriendlyProgramName, zerobased);
 				return py::cast<std::string>(result);
 			}
-			catch (py::error_already_set &ex) {
+			catch (py::error_already_set& ex) {
 				logAdaptationError(kFriendlyProgramName, ex);
 				ex.restore();
 			}
-			catch (std::exception &ex) {
+			catch (std::exception& ex) {
 				logAdaptationError(kFriendlyProgramName, ex);
 			}
 		}
@@ -571,12 +584,12 @@ else {
 		try {
 			return py::cast<std::string>(callMethod(kSetupHelp));
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kSetupHelp, ex);
 			ex.restore();
 			return Synth::setupHelpText();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kSetupHelp, ex);
 			return Synth::setupHelpText();
 		}
@@ -590,12 +603,12 @@ else {
 			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kCreateDeviceDetectMessage, ex);
 			ex.restore();
 			return {};
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kCreateDeviceDetectMessage, ex);
 			return {};
 		}
@@ -613,17 +626,17 @@ else {
 			return result.cast<int>();
 
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kDeviceDetectWaitMilliseconds, ex);
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kDeviceDetectWaitMilliseconds, ex);
 		}
 		return 200;
 	}
 
-	MidiChannel GenericAdaptation::channelIfValidDeviceResponse(const MidiMessage &message)
+	MidiChannel GenericAdaptation::channelIfValidDeviceResponse(const MidiMessage& message)
 	{
 		py::gil_scoped_acquire acquire;
 		try {
@@ -637,11 +650,11 @@ else {
 				return MidiChannel::invalidChannel();
 			}
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kChannelIfValidDeviceResponse, ex);
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kChannelIfValidDeviceResponse, ex);
 		}
 		return MidiChannel::invalidChannel();
@@ -658,11 +671,11 @@ else {
 			py::object result = callMethod(kNeedsChannelSpecificDetection);
 			return result.cast<bool>();
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kNeedsChannelSpecificDetection, ex);
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kNeedsChannelSpecificDetection, ex);
 		}
 		return true;
@@ -675,11 +688,11 @@ else {
 			py::object result = callMethod(kName);
 			return result.cast<std::string>();
 		}
-		catch (py::error_already_set &ex) {
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kName, ex);
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kName, ex);
 		}
 		return "Invalid";
@@ -692,23 +705,23 @@ else {
 		if (!pythonModuleHasFunction(kCalculateFingerprint)) {
 			return Synth::calculateFingerprint(patch);
 		}
-		
+
 		try {
 			std::vector<int> data(patch->data().data(), patch->data().data() + patch->data().size());
 			py::object result = callMethod(kCalculateFingerprint, data);
-				return result.cast<std::string>();
-			}			
-		catch (py::error_already_set &ex) {
+			return result.cast<std::string>();
+		}
+		catch (py::error_already_set& ex) {
 			logAdaptationError(kCalculateFingerprint, ex);
 			ex.restore();
 		}
-		catch (std::exception &ex) {
+		catch (std::exception& ex) {
 			logAdaptationError(kCalculateFingerprint, ex);
 		}
 		return {};
 	}
 
-	std::vector<int> GenericAdaptation::messageToVector(MidiMessage const &message) {
+	std::vector<int> GenericAdaptation::messageToVector(MidiMessage const& message) {
 		return std::vector<int>(message.getRawData(), message.getRawData() + message.getRawDataSize());
 	}
 
@@ -734,7 +747,7 @@ else {
 		return byteData;
 	}
 
-	juce::MidiMessage GenericAdaptation::vectorToMessage(std::vector<int> const &data)
+	juce::MidiMessage GenericAdaptation::vectorToMessage(std::vector<int> const& data)
 	{
 		auto byteData = intVectorToByteVector(data);
 		return MidiMessage(byteData.data(), (int)byteData.size());
@@ -753,15 +766,15 @@ else {
 		if (pythonModuleHasFunction(kIsEditBufferDump)
 			&& pythonModuleHasFunction(kCreateEditBufferRequest)
 			&& pythonModuleHasFunction(kConvertToEditBuffer)) {
-			*outCapability = dynamic_cast<midikraft::EditBufferCapability *>(editBufferCapabilityImpl_.get());
+			*outCapability = dynamic_cast<midikraft::EditBufferCapability*>(editBufferCapabilityImpl_.get());
 			return true;
 		}
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) const
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::EditBufferCapability>& outCapability) const
 	{
-		midikraft::EditBufferCapability *cap;
+		midikraft::EditBufferCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = editBufferCapabilityImpl_;
 			return true;
@@ -769,21 +782,21 @@ else {
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability  **outCapability) const
+	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability** outCapability) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (pythonModuleHasFunction(kIsSingleProgramDump)
 			&& pythonModuleHasFunction(kCreateProgramDumpRequest)
 			&& pythonModuleHasFunction(kConvertToProgramDump)) {
-			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability *>(programDumpCapabilityImpl_.get());
+			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability*>(programDumpCapabilityImpl_.get());
 			return true;
 		}
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability) const
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability>& outCapability) const
 	{
-		midikraft::ProgramDumpCabability *cap;
+		midikraft::ProgramDumpCabability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = programDumpCapabilityImpl_;
 			return true;
@@ -791,21 +804,21 @@ else {
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability  **outCapability) const
+	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability** outCapability) const
 	{
 		py::gil_scoped_acquire acquire;
 		if ((pythonModuleHasFunction(kExtractPatchesFromBank) || pythonModuleHasFunction(kExtractPatchesFromAllBankMessages))
 			&& pythonModuleHasFunction(kIsPartOfBankDump)
 			&& pythonModuleHasFunction(kIsBankDumpFinished)) {
-			*outCapability = dynamic_cast<midikraft::BankDumpCapability *>(bankDumpCapabilityImpl_.get());
+			*outCapability = dynamic_cast<midikraft::BankDumpCapability*>(bankDumpCapabilityImpl_.get());
 			return true;
 		}
 		return false;
 	}
 
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankDumpCapability>& outCapability) const
 	{
-		midikraft::BankDumpCapability *cap;
+		midikraft::BankDumpCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = bankDumpCapabilityImpl_;
 			return true;
@@ -876,14 +889,14 @@ else {
 		return false;
 	}
 
-	void GenericAdaptation::logAdaptationError(const char *methodName, std::exception &ex) const
+	void GenericAdaptation::logAdaptationError(const char* methodName, std::exception& ex) const
 	{
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();
-		std::string adaptationName = adaptationName_;
+		std::string adaptationName = filepath_;
 		MessageManager::callAsync([adaptationName, methodName, exceptionMessage]() {
 			spdlog::error("Adaptation[{}]: Error calling {}: {}", adaptationName, methodName, exceptionMessage);
-		});
+			});
 	}
 
 }
