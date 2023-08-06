@@ -1,6 +1,7 @@
 [submodule "third_party/JUCE"]
 	path = third_party/JUCE
 	url = https://github.com/WeAreROLI/JUCE.git
+	ignore = dirty
 [submodule "juce-widgets"]
 	path = juce-widgets
 	url = https://github.com/christofmuc/juce-widgets.git
@@ -15,9 +16,11 @@
 [submodule "third_party/SQLiteCpp"]
 	path = third_party/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
+	ignore = dirty
 [submodule "third_party/pybind11"]
 	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
+	ignore = dirty
 [submodule "pytschirp"]
 	path = pytschirp
 	url = https://github.com/christofmuc/pytschirp.git
@@ -26,6 +29,7 @@
 	path = third_party/sentry-native
 	url = https://github.com/getsentry/sentry-native.git
 	branch = master
+	ignore = dirty
 [submodule "third_party/Gin"]
 	path = third_party/Gin
 	url = https://github.com/FigBug/Gin.git
