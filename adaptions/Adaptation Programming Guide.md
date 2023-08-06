@@ -627,6 +627,9 @@ Input is a MIDI message with an edit buffer or program dump, and the new name fo
 
 You can see that it is the responsibility of this method to do a check on the name, and convert to length and character set used by that synth. If the synth is vintage, this might be more involved.
 
+**Important: Modifying the name inside a patch will generate a new patch with the new name in the database instead of the expected renamed patch unless the ´calculateFingerprint` method is 
+also implemented and correctly ignores the name. See section "better duplicate detection" below for more information on how to do this.**
+
 ## Better handling of given names vs default names
 
 Some synths make naming hard. Mainly they fall into two categories:
@@ -673,6 +676,8 @@ The Orm will by default check all bytes from the MIDI message for a patch to see
 To enable better duplicate detection, you need to implement a single optional function that takes a patch MIDI message as input, and shall return a unique key calculated from the relevant bytes of the patch.
 
 What sounds complex can be actually quite simple in Python, for example to calculate the so called fingerprint for a patch for the Prophet 12 synth, this is how you can do it (slightly simplified version here):
+
+    import hashlib
 
     def calculateFingerprint(message):
         data = unescapeSysex(message[6:-1])
