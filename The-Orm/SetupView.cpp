@@ -160,9 +160,9 @@ void SetupView::refreshData() {
 		// Load
 		midikraft::AutoDetection::loadSettings(synth.device().get());
 		// Set output, input, and channel
-		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput().name.toStdString()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->findOrAppendLookup(synth.device()->midiOutput().name.toStdString()));
 		prop++;
-		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiInput().name.toStdString()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->findOrAppendLookup(synth.device()->midiInput().name.toStdString()));
 		prop++;
 		if (!synth.device()->channel().isValid()) {
 			setValueWithoutListeners(properties_[prop++]->value(), 18);
