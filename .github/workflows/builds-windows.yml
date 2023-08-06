@@ -44,6 +44,11 @@ jobs:
           cmake --build build --parallel --config RelWithDebInfo
           cmake --install build --prefix install --config RelWithDebInfo
 
+      - name: Test git describe
+        run: |
+          git status
+          git describe --tags --long --dirty
+
       - name: CMake configure
         env: # We get the SENTRY DSN from the repository's secret store
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
