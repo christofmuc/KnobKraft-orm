@@ -9,6 +9,8 @@ class MidiMessage:
 
     def __getitem__(self, item) -> Union[int, List[int]]: ...
 
+    def is_sysex(self) -> bool: ...
+
 
 class Bank:
 
@@ -58,6 +60,10 @@ class BankDescriptor:
 class Patch:
 
     def __init__(self): ...
+
+    def __len__(self): ...
+
+    def __getitem__(self, item): ...
 
 
 class Synth:
