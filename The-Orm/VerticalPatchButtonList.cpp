@@ -262,7 +262,7 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 	, [this, bank](int startrow, std::string const& list_id, std::string const& list_name) {
 		// This is a bit heavy, but the list itself has never been loaded...
 		int rowCount = listResolver_(list_id, list_name);;
-		for (int i = 0; i < list_.getModel()->getNumRows(); i++) {
+		for (int i = 0; i < list_.getListBoxModel()->getNumRows(); i++) {
 			auto button = list_.getComponentForRowNumber(i);
 			if (button != nullptr) {
 				// This better be a PatchButton!
