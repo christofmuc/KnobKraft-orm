@@ -880,8 +880,9 @@ else {
 	{
 		// This hoop is required to properly process Python created exceptions
 		std::string exceptionMessage = ex.what();
-		MessageManager::callAsync([this, methodName, exceptionMessage]() {
-			spdlog::error("Adaptation[{}]: Error calling {}: {}", adaptationName_, methodName, exceptionMessage);
+		std::string adaptationName = adaptationName_;
+		MessageManager::callAsync([adaptationName, methodName, exceptionMessage]() {
+			spdlog::error("Adaptation[{}]: Error calling {}: {}", adaptationName, methodName, exceptionMessage);
 		});
 	}
 
