@@ -38,10 +38,21 @@ namespace knobkraft {
 			auto patch = me_.lock();
 			if (patch->pythonModuleHasFunction(kNameFromDump)) {
 				try {
+					// Check if we have extracted this name before
+					std::string cachedName;
+					if (adaptation_&& adaptation_->hasName(patch->data(), cachedName)) {
+						spdlog::trace("name cache hit: {}", cachedName);
+						return cachedName;
+					}
 					std::vector<int> v(patch->data().data(), patch->data().data() + patch->data().size());
 					auto result = patch->callMethod(kNameFromDump, v);
 					checkForPythonOutputAndLog();
-					return result.cast<std::string>();
+					std::string extractedName = result.cast<std::string>();
+					spdlog::trace("extracted name via Python: {}", extractedName);
+					if (adaptation_) {
+						adaptation_->insertName(patch->data(), extractedName);
+					}
+					return extractedName;
 				}
 				catch (py::error_already_set& ex) {
 					std::string errorMessage = fmt::format("Error calling {}: {}", kNameFromDump, ex.what());
@@ -74,8 +85,12 @@ namespace knobkraft {
 		});
 	}
 
-	void GenericStoredPatchNameCapability::setName(std::string const &name)
+	void GenericStoredPatchNameCapability::setName(std::string const &newName)
 	{
+		if (name() == newName) {
+			// No need to change the name, as the current calculation already gives the correct result
+			return;
+		}
 		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
 			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
@@ -84,7 +99,7 @@ namespace knobkraft {
 			// Very well, then try to change the name in the patch data
 			try {
 				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
-				py::object result = me_.lock()->callMethod(kRenamePatch, v, name);
+				py::object result = me_.lock()->callMethod(kRenamePatch, v, newName);
 				auto intVector = result.cast<std::vector<int>>();
 				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
 				me_.lock()->setData(byteData);
@@ -263,7 +278,7 @@ namespace knobkraft {
 			if (!genericStoredPatchNameCapabilityImpl_) {
 				// Lazy init allowed despite const-ness of method. Smell.
 				GenericPatch *non_const = const_cast<GenericPatch *>(this);
-				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this());
+				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this(), non_const->me_);
 			}
 			outCapability = genericStoredPatchNameCapabilityImpl_;
 			return true;
@@ -277,7 +292,7 @@ namespace knobkraft {
 			if (!genericStoredPatchNameCapabilityImpl_) {
 				// Lazy init allowed despite const-ness of method. Smell.
 				GenericPatch *non_const = const_cast<GenericPatch *>(this);
-				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this());
+				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this(), non_const->me_);
 			}
 			*outCapability = genericStoredPatchNameCapabilityImpl_.get();
 			return true;

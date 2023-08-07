@@ -26,13 +26,14 @@ namespace knobkraft {
 
 	class GenericStoredPatchNameCapability : public midikraft::StoredPatchNameCapability {
 	public:
-		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me) : me_(me) {}
+		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me, GenericAdaptation const* adaptation) : me_(me), adaptation_(adaptation) {}
         virtual ~GenericStoredPatchNameCapability() = default;
 		void setName(std::string const &name) override;
 		std::string name() const override;
 
 	private:
 		std::weak_ptr<GenericPatch> me_;
+		GenericAdaptation const* adaptation_;
 	};
 
 	class GenericDefaultNameCapability : public midikraft::DefaultNameCapability {

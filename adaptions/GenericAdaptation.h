@@ -133,6 +133,14 @@ namespace knobkraft {
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
 
+		// Name cache
+		bool hasName(Synth::PatchData const& patchData, std::string& outFingerprint) const;
+		void insertName(Synth::PatchData const& patchData, std::string const& inFingerprint) const;
+
+		// Fingerprint cache
+		bool hasFingerprint(Synth::PatchData const& patchData, std::string& outName) const;
+		void insertFingerprint(Synth::PatchData const& patchData, std::string const& inName) const;
+
 	private:
 		friend class GenericEditBufferCapability;
 		std::shared_ptr<GenericEditBufferCapability> editBufferCapabilityImpl_;
@@ -175,6 +183,9 @@ namespace knobkraft {
 
 		pybind11::module adaptation_module DEFAULT_VISIBILITY;
 		std::string filepath_;
+
+		mutable std::map<std::string, std::string> nameCache_;
+		mutable std::map<std::string, std::string> fingerprintCache_;
 	};
 
 }

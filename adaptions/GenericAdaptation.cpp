@@ -707,9 +707,15 @@ namespace knobkraft {
 		}
 
 		try {
+			std::string cachedFingerprint;
+			if (hasFingerprint(patch->data(), cachedFingerprint)) {
+				return cachedFingerprint;
+			}
 			std::vector<int> data(patch->data().data(), patch->data().data() + patch->data().size());
 			py::object result = callMethod(kCalculateFingerprint, data);
-			return result.cast<std::string>();
+			auto calculatedFingerprint = result.cast<std::string>();
+			insertFingerprint(patch->data(), calculatedFingerprint);
+			return calculatedFingerprint;
 		}
 		catch (py::error_already_set& ex) {
 			logAdaptationError(kCalculateFingerprint, ex);
@@ -899,4 +905,43 @@ namespace knobkraft {
 			});
 	}
 
+	bool GenericAdaptation::hasName(Synth::PatchData const& patchData, std::string& outName) const
+	{
+		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		std::string hash = md5hash.toHexString().toStdString();
+		auto found = nameCache_.find(hash);
+		if (found == nameCache_.end()) {
+			return false;
+		}
+		else {
+			outName = found->second;
+			return true;
+		}
+	}
+
+	void GenericAdaptation::insertName(Synth::PatchData const& patchData, std::string const& inName) const {
+		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		std::string hash = md5hash.toHexString().toStdString();
+		nameCache_[hash] = inName;
+	}
+
+	bool GenericAdaptation::hasFingerprint(Synth::PatchData const& patchData, std::string& outFingerprint) const
+	{
+		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		std::string hash = md5hash.toHexString().toStdString();
+		auto found = fingerprintCache_.find(hash);
+		if (found == fingerprintCache_.end()) {
+			return false;
+		}
+		else {
+			outFingerprint = found->second;
+			return true;
+		}
+	}
+
+	void GenericAdaptation::insertFingerprint(Synth::PatchData const& patchData, std::string const& inFingerprint) const {
+		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		std::string hash = md5hash.toHexString().toStdString();
+		fingerprintCache_[hash] = inFingerprint;
+	}
 }
