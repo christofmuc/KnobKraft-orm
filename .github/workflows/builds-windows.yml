@@ -31,12 +31,6 @@ jobs:
       - name: Install Innosetup with NuGet
         run: nuget install Tools.InnoSetup
 
-      - name: Run Python tests first
-        run: |
-          pip install -r requirements.txt
-          cd adaptions
-          python -m pytest --all . -q --no-header
-
       - name: Build and install Sentry
         working-directory: third_party/sentry-native
         run: |
@@ -55,6 +49,12 @@ jobs:
         shell: bash
         run: |
           cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+
+      - name: Run Python tests first
+        run: |
+          pip install -r requirements.txt
+          cd adaptions
+          python -m pytest --all . -q --no-header
 
       - name: CMake build
         run: cmake --build Builds --config RelWithDebInfo --parallel
