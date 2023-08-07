@@ -907,7 +907,7 @@ namespace knobkraft {
 
 	bool GenericAdaptation::hasName(Synth::PatchData const& patchData, std::string& outName) const
 	{
-		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		juce::MD5 md5hash(patchData.data(), patchData.size());
 		std::string hash = md5hash.toHexString().toStdString();
 		auto found = nameCache_.find(hash);
 		if (found == nameCache_.end()) {
@@ -920,14 +920,14 @@ namespace knobkraft {
 	}
 
 	void GenericAdaptation::insertName(Synth::PatchData const& patchData, std::string const& inName) const {
-		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		juce::MD5 md5hash(patchData.data(), patchData.size());
 		std::string hash = md5hash.toHexString().toStdString();
 		nameCache_[hash] = inName;
 	}
 
 	bool GenericAdaptation::hasFingerprint(Synth::PatchData const& patchData, std::string& outFingerprint) const
 	{
-		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		juce::MD5 md5hash(patchData.data(), patchData.size());
 		std::string hash = md5hash.toHexString().toStdString();
 		auto found = fingerprintCache_.find(hash);
 		if (found == fingerprintCache_.end()) {
@@ -940,7 +940,7 @@ namespace knobkraft {
 	}
 
 	void GenericAdaptation::insertFingerprint(Synth::PatchData const& patchData, std::string const& inFingerprint) const {
-		auto md5hash = juce::MD5::MD5(patchData.data(), patchData.size());
+		juce::MD5 md5hash(patchData.data(), patchData.size());
 		std::string hash = md5hash.toHexString().toStdString();
 		fingerprintCache_[hash] = inFingerprint;
 	}
