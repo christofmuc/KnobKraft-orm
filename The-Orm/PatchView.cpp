@@ -664,6 +664,9 @@ midikraft::PatchFilter PatchView::currentFilter()
 	auto filter = patchSearch_->getFilter();
 	filter.importID = sourceFilterID_;
 	filter.listID = listFilterID_;
+	if (!filter.listID.empty()) {
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+	}
 	return filter;
 }
 
