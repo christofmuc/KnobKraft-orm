@@ -40,7 +40,7 @@ on Linux you'll do
 With the virtual env activated, we can use the pip package manager to install the required packages for running the tests. 
 Just do
 
-    pip install -r .\adaptions\requirements.txt
+    pip install -r .\adaptations\requirements.txt
 
 which will install the pytest package and other prerequisites.
 
@@ -48,9 +48,9 @@ which will install the pytest package and other prerequisites.
 ## Running the tests
 
 All tests are implemented as pytest tests, so the correct way to run them all is use the standard method for pytests, just 
-type in your prepared virtual environment, make sure to cd into the adaptions subdirectory:
+type in your prepared virtual environment, make sure to cd into the adaptations subdirectory:
 
-     cd adaptions
+     cd adaptations
      python -m pytest . --all
 
 This should be run in the source's root directory.

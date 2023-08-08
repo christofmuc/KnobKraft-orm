@@ -241,25 +241,25 @@ ENDIF()
 # Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir. Same with roland and knobkraft python modules
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/sequential
+		${CMAKE_SOURCE_DIR}/adaptations/sequential
 		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/roland
+		${CMAKE_SOURCE_DIR}/adaptations/roland
 		$<TARGET_FILE_DIR:KnobKraftOrm>/roland
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/knobkraft
+		${CMAKE_SOURCE_DIR}/adaptations/knobkraft
 		$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/testing
+		${CMAKE_SOURCE_DIR}/adaptations/testing
 		$<TARGET_FILE_DIR:KnobKraftOrm>/testing
 		)
-file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptions/*.py")
+file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptations/*.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "conftest.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "test_.*py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "DSI_OB6.py")

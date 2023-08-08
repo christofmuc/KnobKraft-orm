@@ -246,7 +246,7 @@ add_subdirectory(synths/sequential-ob6)
 add_subdirectory(synths/yamaha-refacedx)
 
 # Add the generic adaptations module, that allows to define synths via Python
-add_subdirectory(adaptions)
+add_subdirectory(adaptations)
 
 # Add the pytchirp module that exposes the synths to Python
 add_subdirectory(pytschirp)

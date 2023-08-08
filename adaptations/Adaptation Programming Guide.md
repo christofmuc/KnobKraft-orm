@@ -65,7 +65,7 @@ The data types used in the interface between the main program and the adaptation
 
 Now is a good time, before jumping right into the programming exercise, to think about how you will test that 
 your adaptation code actually works. For this, I have written the 
-[Adaptation Testing Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptions/Adaptation%20Testing%20Guide.md), 
+[Adaptation Testing Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/Adaptation%20Testing%20Guide.md), 
 please check it out!
 
 # List of functions to implement
@@ -785,11 +785,11 @@ The KnobKraft Orm ships with quite a few examples of adaptations.
 
 All existing adaptations can be found in the directory with the source code, or here at github at 
 
-https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptions
+https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptations
 
 To give you a quick overview which adaptation actually has implemented which functions and capabilities, there is am overview table that you can consult, especially for finding one of the more obscure function usages:
 
-https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptions/implementation_overview.md
+https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/implementation_overview.md
 
 
 The adaptations that are shipped with the KnobKraft Orm are stored in the adaptations subdirectory of the program directory. Check them out there as well.

@@ -47,10 +47,10 @@ Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt67.dll"; DestDir: "{app
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
-Source: "${CMAKE_SOURCE_DIR}\adaptions\sequential\*.*"; DestDir: "{app}\sequential";Flags: ignoreversion
-Source: "${CMAKE_SOURCE_DIR}\adaptions\roland\*.*"; DestDir: "{app}\roland";Flags: ignoreversion
-Source: "${CMAKE_SOURCE_DIR}\adaptions\knobkraft\*.*"; DestDir: "{app}\knobkraft";Flags: ignoreversion
-Source: "${CMAKE_SOURCE_DIR}\adaptions\testing\*.*"; DestDir: "{app}\testing";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptations\sequential\*.*"; DestDir: "{app}\sequential";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptations\roland\*.*"; DestDir: "{app}\roland";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptations\knobkraft\*.*"; DestDir: "{app}\knobkraft";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptations\testing\*.*"; DestDir: "{app}\testing";Flags: ignoreversion
 #include "adaptations.iss"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 ; VC++ redistributable runtime. Extracted by VC2017RedistNeedsInstall(), if needed.
