@@ -42,4 +42,5 @@ jobs:
       with:
         file: build/KnobKraft_Orm-${{env.ORM_VERSION}}-Darwin.dmg
         tags: true
+        draft: false
 

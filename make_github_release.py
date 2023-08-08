@@ -31,10 +31,20 @@ headers = {
     "Authorization": f"Bearer {access_token}",
     "Accept": "application/vnd.github.v3+json"
 }
-response = requests.post(url, json=release_payload, headers=headers)
 
-# Check the response status
-if response.status_code == 201:
-    print("Release created successfully.")
+# Get existing releases
+url_existing_releases = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases"
+existing_releases = requests.get(url_existing_releases, headers=headers).json()
+
+# Check if the release for this version already exists
+existing_release = next((release for release in existing_releases if release['tag_name'] == version), None)
+
+if not existing_release:
+    print("Creating a new release...")
+    response = requests.post(url, json=release_payload, headers=headers)
+    if response.status_code == 201:
+        print("Release created successfully.")
+    else:
+        print("Failed to create the release. Response status:", response.status_code)
 else:
-    print("Failed to create the release. Response status:", response.status_code)
+    print("Found release {version}, skipping creation!")
