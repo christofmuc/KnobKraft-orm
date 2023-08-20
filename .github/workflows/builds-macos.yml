@@ -35,6 +35,12 @@ jobs:
     - name: CMake build
       run: cmake --build build --target package --parallel
 
+    - name: Archive build
+      uses: actions/upload-artifact@v2
+      with:
+        name: Mac installer
+        path: build/KnobKraft_Orm-*-Darwin.dmg
+
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
       env:
