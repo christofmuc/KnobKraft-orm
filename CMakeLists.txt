@@ -50,7 +50,17 @@ if(WIN32)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
 else()
-	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding.")
+	message("Adding python3")
+	find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+	message(STATUS "Python3_FOUND: ${Python3_FOUND}")
+	message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+	message(STATUS "Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+	message(STATUS "Python3_LIBRARIES: ${Python3_LIBRARIES}")
+	message("Adding pybind11")
+	# Pybind11 has the tendency to enable link time optimization (LTO) when it runs on Linux, but sadly I have run into multiple compiler crashes
+	# both on gcc 8.5.0 and gcc 9.2.1. The hard core way to disable this is LDFLAGS=--disable-lto, but after looking at the CMakefiles from pybind11 this does archive-iterators:
+	set(PYBIND11_LTO_CXX_FLAGS "")
+	add_subdirectory("third_party/pybind11")
 endif()
 
 # On Windows, we need to download external dependencies
@@ -109,8 +119,7 @@ ELSEIF(APPLE)
 	if (NOT CMAKE_BUILD_TYPE MATCHES Release)
 		add_compile_definitions(DEBUG)
 	endif()
- 
-    
+
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
@@ -131,17 +140,13 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 # RapidJson is an include-only library, so instead of bothering with their CMake files, just add the include path
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
-# Setup pybind11
-set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
-	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
-ELSE()
-	# Pybind11 has the tendency to enable link time optimization (LTO) when it runs on Linux, but sadly I have run into multiple compiler crashes
-	# both on gcc 8.5.0 and gcc 9.2.1. The hard core way to disable this is LDFLAGS=--disable-lto, but after looking at the CMakefiles from pybind11 this does archive-iterators:
-	set(PYBIND11_LTO_CXX_FLAGS "")
+	# Setup pybind11 for Windows
+	set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
+	message("USING PYTHON ${PYTHON_EXECUTABLE}")
+	set(PYBIND11_PYTHON_VERSION ${PYTHON_VERSION_TO_EMBED})
+	add_subdirectory("third_party/pybind11")
 ENDIF()
-set(PYBIND11_PYTHON_VERSION ${PYTHON_VERSION_TO_EMBED})
-add_subdirectory("third_party/pybind11")
 
 # Define the list of link libraries required on Linux linking with JUCE, this must be used by any executable / module to run standalone
 if(UNIX AND NOT APPLE)
