@@ -66,8 +66,10 @@ add_library(knobkraft-generic-adaptation ${Sources})
 target_include_directories(knobkraft-generic-adaptation PUBLIC ${CMAKE_CURRENT_LIST_DIR} PRIVATE ${JUCE_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} "${icu_SOURCE_DIR}/include")
 if(WIN32)
 	target_link_directories(knobkraft-generic-adaptation PUBLIC "${icu_SOURCE_DIR}/lib64")
+else()
+	set(PYTHON3_LINK_TARGET Python3::Python)
 endif()
-target_link_libraries(knobkraft-generic-adaptation pybind11::embed Python3::Python juce-utils midikraft-base spdlog::spdlog)
+target_link_libraries(knobkraft-generic-adaptation pybind11::embed ${PYTHON3_LINK_TARGET} juce-utils midikraft-base spdlog::spdlog)
 
 # Pedantic about warnings
 if (MSVC)
