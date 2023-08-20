@@ -300,10 +300,7 @@ IF(APPLE)
     SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
     SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
     SET(DIRS ${CMAKE_BINARY_DIR})
-    INSTALL(TARGETS KnobKraftOrm
-        BUNDLE DESTINATION . COMPONENT Runtime
-        RUNTIME DESTINATION bin COMPONENT Runtime
-		)
+    INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION . COMPONENT Runtime)
     INSTALL(CODE "include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
@@ -324,7 +321,6 @@ IF(APPLE)
 ELSE()
 	INSTALL(TARGETS KnobKraftOrm knobkraft-generic-adaptation
 			BUNDLE DESTINATION . COMPONENT Runtime
-			RUNTIME DESTINATION bin COMPONENT Runtime
 			)
 	IF(UNIX)
 		SET(CPACK_BINARY_TGZ ON)

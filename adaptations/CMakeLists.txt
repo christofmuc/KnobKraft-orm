@@ -88,10 +88,11 @@ endforeach()
 
 endif()
 
-# Define additional install files - in our case, all adaptation files and the python modules
-install(DIRECTORY sequential/ DESTINATION bin/sequential)
-install(DIRECTORY roland/ DESTINATION bin/roland)
-install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
-install(DIRECTORY testing/ DESTINATION bin/testing)
-install(FILES ${adaptation_files} DESTINATION bin)
-
+if(UNIX AND NOT APPLE)
+	# Define additional install files - in our case, all adaptation files and the python modules
+	install(DIRECTORY sequential/ DESTINATION bin/sequential)
+	install(DIRECTORY roland/ DESTINATION bin/roland)
+	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
+	install(DIRECTORY testing/ DESTINATION bin/testing)
+	install(FILES ${adaptation_files} DESTINATION bin)
+ENDIF()
