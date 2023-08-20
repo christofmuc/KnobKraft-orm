@@ -101,7 +101,7 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	list(APPEND CMAKE_PREFIX_PATH "/usr/local/Cellar/icu4c/72.1")
+	set(ICU_ROOT "/opt/homebrew/Cellar/icu4c/72.1")
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type

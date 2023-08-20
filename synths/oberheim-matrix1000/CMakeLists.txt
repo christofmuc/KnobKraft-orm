@@ -26,9 +26,6 @@ if(WIN32)
 	target_link_directories(midikraft-oberheim-matrix1000 PUBLIC "${icu_SOURCE_DIR}/lib64")
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog)
 ELSEIF(APPLE)
-	# TODO The way Apple treats the ICU library is interesting. As ucnv.h is missing from the MacOS X 13.1 SDK,
-	# we need to supply an explicit path because the find_library call thinks the SDK's version is complete...
-	target_include_directories(midikraft-oberheim-matrix1000 PRIVATE "/opt/homebrew/Cellar/icu4c/71.1/include")
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog ICU::data ICU::uc)
 ELSE()
 	target_link_libraries(midikraft-oberheim-matrix1000 juce-utils midikraft-base spdlog::spdlog icudata icuuc)
