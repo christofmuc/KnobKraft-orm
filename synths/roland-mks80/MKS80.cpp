@@ -564,6 +564,7 @@ namespace midikraft {
 			checksum = (checksum - *di) & 0x7f;
 			sum += *di;
 		}
+        ignoreUnused(sum);
 		jassert(((sum & 0x7f) + checksum) == 0); // This is the definition from the manual p. 50
 		return checksum;
 	}
