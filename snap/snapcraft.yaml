@@ -20,14 +20,8 @@ parts:
     source-type: git
     cmake-parameters:
       - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.8 -DPYTHON_VERSION_TO_EMBED=3.8 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
-    override-build: |
-      pip3 install wheel setuptools
-      pip3 install conan
-      conan --version
-      conan profile new default --detect --force
-      conan profile update settings.compiler.libcxx=libstdc++11 default
-      conan install -s build_type=Release --build missing ../src
-      snapcraftctl build
+#    override-build: |
+#      snapcraftctl build
     build-packages:
       - pkg-config
       - libcurl4-openssl-dev
