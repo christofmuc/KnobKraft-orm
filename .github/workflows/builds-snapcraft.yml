@@ -13,7 +13,7 @@ jobs:
         git config --global init.defaultBranch main
         
     - name: Checkout repository with tags
-      uses: actions/checkout@v2        
+      uses: actions/checkout@v3
       with:
         ref: ${{ env.BRANCH }}
         fetch-depth: 0
@@ -22,17 +22,15 @@ jobs:
       run: |
         git submodule update --recursive --init --depth 1
 
-    - name: Install Snapcraft with LXD
-      uses: samuelmeuli/action-snapcraft@v2
-      with:
-        use_lxd: true
+    - uses: snapcore/action-build@v1
+      name: Build with snapcore
 
-    - name: Build snap
-      id: vars
-      run: |
-        sg lxd -c 'snapcraft --use-lxd'
-        echo setting output variable to `find $GITHUB_WORKSPACE -maxdepth 1 -type f -name "*.snap" | head -n1)`
-        echo ::set-output name=snap::$(find $GITHUB_WORKSPACE -maxdepth 1 -type f -name "*.snap" | head -n1)
+#    - name: Build snap
+#      id: vars
+#      run: |
+#        sg lxd -c 'snapcraft --use-lxd'
+#        echo setting output variable to `find $GITHUB_WORKSPACE -maxdepth 1 -type f -name "*.snap" | head -n1)`
+#        echo ::set-output name=snap::$(find $GITHUB_WORKSPACE -maxdepth 1 -type f -name "*.snap" | head -n1)
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
