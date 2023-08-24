@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Build KnobKraft Orm with Snapcraft
+name: Snapcraft KnobKraft Orm
 
 on: [push, pull_request]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:    
     - name: Setup main branch name for version detection
       run: |
