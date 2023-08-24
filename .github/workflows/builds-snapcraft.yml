@@ -6,7 +6,7 @@ on: [push, pull_request]
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-18.04
     steps:    
     - name: Setup main branch name for version detection
       run: |
@@ -23,7 +23,7 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - name: Install Snapcraft with LXD
-      uses: samuelmeuli/action-snapcraft@v1
+      uses: samuelmeuli/action-snapcraft@v2
       with:
         use_lxd: true
 
