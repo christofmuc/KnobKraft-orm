@@ -83,6 +83,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
 		patchButtons_->refresh(true);
+		synthBank_->refreshPatch(favoritePatch);
 	}
 	);
 	currentPatchDisplay_->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {

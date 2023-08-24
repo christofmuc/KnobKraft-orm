@@ -24,6 +24,8 @@ public:
 	virtual void resized() override;
 
 	void setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info);
+	void refreshPatch(std::shared_ptr<midikraft::PatchHolder> updatedPatch);
+	void reloadFromDatabase();
 
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;

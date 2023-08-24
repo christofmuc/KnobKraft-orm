@@ -128,7 +128,7 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 	buttonMode_ = info;
 
 	// If we have a synth bank already, move it aside to not lose potential changes to it
-	if (synthBank_) {
+	if (synthBank_ && synthBank_->id() != synthBank->id()) {
 		temporaryBanks_[synthBank_->id()] = synthBank_;
 	}
 
@@ -141,6 +141,44 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 		synthBank_ = temporaryBanks_[synthBank->id()];
 	}
 	refresh();
+}
+
+void SynthBankPanel::refreshPatch(std::shared_ptr<midikraft::PatchHolder> updatedPatch)
+{
+	if (synthBank_) {
+		bool refreshRequired = false;
+		for (auto patch : synthBank_->patches()) {
+			if (patch.md5() == updatedPatch->md5() && patch.smartSynth()->getName() == updatedPatch->smartSynth()->getName()) {
+				synthBank_->updatePatchAtPosition(patch.patchNumber(), *updatedPatch);
+				refreshRequired = true;
+			}
+		}
+		if (refreshRequired)
+		{
+			refresh();
+		}
+	}
+}
+
+void SynthBankPanel::reloadFromDatabase()
+{
+	if (synthBank_)
+	{
+		std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+		auto listInfo = midikraft::ListInfo({ synthBank_->id(), synthBank_->name()});
+		synthMap.emplace(synthBank_->synth()->getName(), synthBank_->synth());
+		// This is not too bad, but actually if the current bank is dirty I should not just lose everything just because a patch was renamed.
+		// I need to reload the patches from the database, but don't modify the list itself (and not it's dirty step!)
+		auto newList = patchDatabase_.getPatchList(listInfo, synthMap);
+		if (auto synthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(newList)) {
+			jassert(synthBank->isDirty());
+			setBank(synthBank, buttonMode_);
+			refresh();
+		}
+		else {
+			spdlog::error("Program error - bank refreshed for SynthBankPanel is no longer a Synthbank");
+		}
+	}
 }
 
 void SynthBankPanel::refresh() {

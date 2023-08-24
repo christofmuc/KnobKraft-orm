@@ -66,8 +66,6 @@ void UIModel::clear()
 {
 	// This is the new property based UI model, eventually everything should migrate here
 	// 
-	// PatchCache, and that needs to be cleared now
-	Data::instance().getEphemeral().removeProperty(EPROPERTY_PATCH_CACHE, nullptr);
 	// Deselect the currently selected list
 	Data::instance().getEphemeralPropertyAsValue(EPROPERTY_LIBRARY_PATCH_LIST) = "";
 }

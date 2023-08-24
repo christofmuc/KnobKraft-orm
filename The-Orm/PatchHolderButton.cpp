@@ -26,15 +26,6 @@ Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Co
 PatchHolderButton::PatchHolderButton(int id, bool isToggle, std::function<void(int)> clickHandler) : PatchButtonWithDropTarget(id, isToggle, clickHandler)
 	, isDirty_(false)
 {
-	Data::ensureEphemeralPropertyExists(EPROPERTY_PATCH_CACHE, "");
-
-	if (emptyButtonValues_.getNumProperties() == 0) {
-		emptyButtonValues_.setProperty(EPROPERTY_PATCH_NAME, String(""), nullptr);
-		emptyButtonValues_.setProperty(EPROPERTY_PATCH_FAVORITE, false, nullptr);
-		emptyButtonValues_.setProperty(EPROPERTY_PATCH_HIDDEN, false, nullptr);
-		Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
-		emptyButtonValues_.setProperty(EPROPERTY_PATCH_COLOR, color.toString(), nullptr);
-	}
 }
 
 void PatchHolderButton::setDirty(bool isDirty)
@@ -74,26 +65,11 @@ void PatchHolderButton::itemDragExit(const SourceDetails& dragSourceDetails)
 	setGlow(false);
 }
 
-juce::ValueTree PatchHolderButton::createValueTwin(midikraft::PatchHolder* patch) {
-	//TODO - this might cause memory growth if we never clear the cache. Can we somehow count how many buttons reference these ephemeral values?
-	auto cache = Data::instance().getEphemeral().getOrCreateChildWithName(EPROPERTY_PATCH_CACHE, nullptr);
-	return cache.getOrCreateChildWithName(juce::Identifier(fmt::format("{}-{}", patch->synth()->getName(), patch->md5())), nullptr);
-}
-
-void PatchHolderButton::rebindButton(ValueTree patchValue) {
-	bindButtonData(patchValue.getPropertyAsValue(EPROPERTY_PATCH_NAME, nullptr));
-	bindSubtitle(number_);
-	bindColour(TextButton::ColourIds::buttonColourId, patchValue.getPropertyAsValue(EPROPERTY_PATCH_COLOR, nullptr));
-	bindFavorite(patchValue.getPropertyAsValue(EPROPERTY_PATCH_FAVORITE, nullptr));
-	bindHidden(patchValue.getPropertyAsValue(EPROPERTY_PATCH_HIDDEN, nullptr));
-}
-
 void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool active, PatchButtonInfo info)
 {
 	setActive(active);
 	
 	if (holder) {
-		auto patchValue = createValueTwin(holder);
 		auto number = juce::String(holder->synth()->friendlyProgramAndBankName(holder->bankNumber(), holder->patchNumber()));
 		auto dragInfo = holder->createDragInfoString();
 		setButtonDragInfo(dragInfo);
@@ -104,51 +80,54 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 			if (layers) {
 				if (layers->layerName(0) != layers->layerName(1)) {
 					String multiLineTitle = String(layers->layerName(0)) + "\n" + String(layers->layerName(1));
-					patchValue.setProperty(EPROPERTY_PATCH_NAME, multiLineTitle, nullptr);
+					setButtonData(multiLineTitle);
 				}
 				else {
-					patchValue.setProperty(EPROPERTY_PATCH_NAME, String(layers->layerName(0)), nullptr);
+					setButtonData(layers->layerName(0));
 				}
 				break;
 			}
 		}
 		// FallThrough
 		case PatchButtonInfo::CenterName:
-			patchValue.setProperty(EPROPERTY_PATCH_NAME, String(holder->name()), nullptr);
+			setButtonData(holder->name());
 			break;
 		case PatchButtonInfo::CenterNumber:
-			patchValue.setProperty(EPROPERTY_PATCH_NAME, String(number), nullptr);
+			setButtonData(number);
 			break;
 		default:
 			// Please make sure your enum bit flags work the way we expect
 			jassertfalse;
-			patchValue.setProperty(EPROPERTY_PATCH_NAME, String(number), nullptr);
+			setButtonData(number);
 		}
 
 		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::SubtitleMask))) {
 		case PatchButtonInfo::NoneMasked:
-			number_ = "";
+			setSubtitle("");
 			break;
 		case PatchButtonInfo::SubtitleNumber:
-			number_ = String(number);
+			setSubtitle(number);
 			break;
 		case PatchButtonInfo::SubtitleSynth:
-			number_ = String(holder->synth() ? holder->synth()->getName() : "");
+			setSubtitle(holder->synth() ? holder->synth()->getName() : "");
 			break;
 		default:
 			jassertfalse;
 			// Your bit masks don't work as you expect
-			number_ = "";
+			setSubtitle("");
 		}
 
-		patchValue.setProperty(EPROPERTY_PATCH_FAVORITE, holder->isFavorite(), nullptr);
-		patchValue.setProperty(EPROPERTY_PATCH_HIDDEN, holder->isHidden(), nullptr);
-		patchValue.setProperty(EPROPERTY_PATCH_COLOR, buttonColourForPatch(*holder, this).toString(), nullptr);
-		rebindButton(patchValue);
+		setPatchColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(*holder, this));
+		setFavorite(holder->isFavorite());
+		setHidden(holder->isHidden());
 	}
 	else {
-		number_ = "";
-		rebindButton(emptyButtonValues_);
+		Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
+		setButtonData("");
+		setSubtitle("");
+		setPatchColour(TextButton::ColourIds::buttonColourId, color);
+		setFavorite(false);
+		setHidden(false);
 	}
 }
 
@@ -165,4 +144,3 @@ void PatchHolderButton::setCurrentInfoForSynth(std::string const& synthname, Pat
 	synth.setProperty(PROPERTY_BUTTON_INFO_TYPE, static_cast<int>(newValue), nullptr);
 }
 
-juce::ValueTree PatchHolderButton::emptyButtonValues_("emptyPatchButton");

@@ -24,11 +24,6 @@ juce::Identifier const PROPERTY_WINDOW_SIZE {"Size"};
 
 // The EphemeralData is not stored on disk, but needs to be cleared via the UIModel clear method when the database changes.
 juce::Identifier const EPROPERTY_LIBRARY_PATCH_LIST {"LibraryPatchList"};
-juce::Identifier const EPROPERTY_PATCH_CACHE {"PatchHolderCache"};
-juce::Identifier const EPROPERTY_PATCH_NAME{ "Title" }; 
-juce::Identifier const EPROPERTY_PATCH_FAVORITE {"Favorite"};
-juce::Identifier const EPROPERTY_PATCH_HIDDEN {"Hidden"};
-juce::Identifier const EPROPERTY_PATCH_COLOR {"Color"};
 
 
 juce::Identifier const EPROPERTY_MIDI_LOG_LEVEL{ "MIDILog" };

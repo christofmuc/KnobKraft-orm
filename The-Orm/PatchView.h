@@ -84,6 +84,9 @@ public:
 	// Special functions
 	void bulkImportPIP(File directory);
 
+	// New for bank management
+	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
+
 private:
 	friend class PatchSearchComponent;
 	friend class SimplePatchGrid;
@@ -92,9 +95,6 @@ private:
 
 	int getTotalCount();
 	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
-
-	// New for bank management
-	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
