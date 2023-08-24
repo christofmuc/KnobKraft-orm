@@ -19,7 +19,7 @@ parts:
     source: .
     source-type: git
     cmake-parameters:
-      - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.8 -DPYTHON_VERSION_TO_EMBED=3.8 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
+      - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.8 -DPYTHON_VERSION_TO_EMBED=3.8
 #    override-build: |
 #      snapcraftctl build
     build-packages:
