@@ -60,3 +60,7 @@ parts:
       - libsecret-1-0
       - libssh-4
       - libwind0-heimdal
+      - libatomic1
+      - libicu66
+      - libjavascriptcoregtk-4.0-18
+      - libpython3.8

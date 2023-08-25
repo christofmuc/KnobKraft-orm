@@ -24,7 +24,13 @@ jobs:
 
     - uses: snapcore/action-build@v1
       name: Build with snapcore
+      id: snapcraft
 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: snap
+        path: ${{ steps.snapcraft.outputs.snap }}
+        
 #    - name: Build snap
 #      id: vars
 #      run: |
