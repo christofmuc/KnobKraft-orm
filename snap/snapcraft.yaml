@@ -16,7 +16,7 @@ apps:
 parts:
   knobkraft-orm:
     # See 'snapcraft plugins'
-    plugin: |
+    plugin: 
       cmake
       python3
     source: .
