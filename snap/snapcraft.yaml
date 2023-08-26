@@ -11,13 +11,17 @@ confinement: classic
 apps:
   knobkraft-orm:
     command: usr/local/bin/KnobKraftOrm
-
+    environment:
+      PYTHONPATH: $SNAP/lib/python3.8/site-packages
 parts:
   knobkraft-orm:
     # See 'snapcraft plugins'
-    plugin: cmake
+    plugin: |
+      cmake
+      python3
     source: .
     source-type: git
+    python-version: 3.8
     cmake-parameters:
       - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.8 -DPYTHON_VERSION_TO_EMBED=3.8
 #    override-build: |
