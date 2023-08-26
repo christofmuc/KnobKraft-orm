@@ -69,4 +69,5 @@ parts:
     plugin: python
     source: adaptations
     source-type: local
-    
+    stage-packages:
+      - python3-venv
