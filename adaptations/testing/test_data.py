@@ -23,6 +23,9 @@ class MidiMessage:
         else:
             return self.byte_list == other
 
+    def __repr__(self):
+        return "[" + ', '.join([f"{x}" for x in self.byte_list]) + "]"
+
 
 def make_midi_message(message: Optional[Union[MidiMessage, List[int], str]]) -> Optional[MidiMessage]:
     if message is None:
