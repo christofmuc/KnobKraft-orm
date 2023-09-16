@@ -37,7 +37,13 @@ class IDM(IntEnum):
 
 
 def name():
-    return "Waldorf MW1"
+    return "Waldorf MicroWave"
+
+
+def setupHelp():
+    return "This adaptation supports both software versions V1.0 and V2.0 of the MicroWave. " \
+            "This is the MicroWave 1 of course, " \
+            "which was not called 1 until the MicroWave 2 came along."
 
 
 def numberOfBanks():
@@ -46,6 +52,11 @@ def numberOfBanks():
 
 def numberOfPatchesPerBank():
     return 64
+
+
+def friendlyProgramName(programNo):
+    return f"A{programNo+1:02d}"
+
 
 
 def needsChannelSpecificDetection():
@@ -132,8 +143,12 @@ def extractPatchesFromBank(message):
                 # Checksum correct
                 for i in range(64):
                     bpr = data_block[i * 180: (i + 1) * 180]
-                    patches += fillChecksum(makeDumpRequest(g_device_id, IDM.BASIC_PROGRAM_DUMP_REQUEST|0x40)[:-2] + \
+                    newpatch = fillChecksum(makeDumpRequest(g_device_id, IDM.BASIC_PROGRAM_DUMP_REQUEST|0x40)[:-2] + \
                         bpr + [0x00, 0xf7])
+                    patches += newpatch
+                    wavetable = newpatch[28]
+                    if wavetable > 31:
+                        print(f"Warning: Patch {nameFromDump(newpatch)} uses user wave table {wavetable} which may not be loaded!")
                 return patches
             print("Checksum error encountered in MW1 bulk dump")
             return []
