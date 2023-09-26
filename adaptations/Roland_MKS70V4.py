@@ -320,7 +320,6 @@ def isBankDumpFinished(messages):
 #     return unpacked_data
 
 def calculateFingerprint(message):
-    #return hashlib.md5(bytearray(message[7:])).hexdigest()
     if isEditBufferDump2(message):
         # Just take the bytes after the name
         if isToneAprMessage(message):
@@ -776,7 +775,7 @@ def extractPatchesFromAllBankMessages(messages):
         #     apr_patch = apr_patch + apr_upper_tone + apr_lower_tone
 
             if not isSingleProgramDump(apr_patch):
-                print("Error, created invalid program dump!")
+                print(f"Error, created invalid program dump: {len(apr_patch)} bytes: {apr_patch}")
             else:
                 patches.append(apr_patch)
                 print(f"Discovered patch {nameFromDump(apr_patch)}")
