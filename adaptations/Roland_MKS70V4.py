@@ -94,10 +94,10 @@ def createMessageHeader(opcode, channel, level):
 def createPgrMessage(patch_no, tone_group):
     # Check if we are requesting a patch or a tone
     if 0 <= patch_no < 128:
-        return createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, 0x00, patch_no, 0x00, 0xf7]
+        return createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, patch_no, 0x00, 0xf7]
     elif 128 <= patch_no < 228:
         tone_number = patch_no - 128
-        return createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_group, 0x00, tone_number, 0x00, 0xf7]
+        return createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_group, tone_number, 0x00, 0xf7]
     raise Exception(f"Invalid patch_no given to createPgrMessage: {patch_no}")
 
 
@@ -738,7 +738,7 @@ def extractPatchesFromAllBankMessages(messages):
             # We need to find out which two tones belong to this patch
             A_tone_number = apr_patch_dump[36]
             B_tone_number = apr_patch_dump[45]
-            pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, 0x00, patch_no, 0x00, 0xf7]
+            pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, patch_no, 0x00, 0xf7]
             high, low = getToneNumbers(apr_patch_dump)
 
             APR_tone_A = []
@@ -748,7 +748,7 @@ def extractPatchesFromAllBankMessages(messages):
                 A_tone_bulk = messages[64 + A_tone_number]
                 APR_tone_A = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_a] + [0x00] * 102 + [0xf7]
                 convert_into_message(A_tone_bulk, APR_tone_A, bulk_mapping_tone, apr_mapping_tone)
-                pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, 0x00, A_tone_number, 0x00, 0xf7]
+                pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, A_tone_number, 0x00, 0xf7]
 
             APR_tone_B = []
             pgr_tone_B = []
@@ -756,7 +756,7 @@ def extractPatchesFromAllBankMessages(messages):
                 B_tone_bulk = messages[64 + B_tone_number]
                 APR_tone_B = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_b] + [0x00] * 102 + [0xf7]
                 convert_into_message(B_tone_bulk, APR_tone_B, bulk_mapping_tone, apr_mapping_tone)
-                pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, 0x00, B_tone_number, 0x00, 0xf7]
+                pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, B_tone_number, 0x00, 0xf7]
 
             tones_used.add(A_tone_number)
             tones_used.add(B_tone_number)
@@ -793,7 +793,7 @@ def numberFromDump(messages):
         return 0
     elif isSingleProgramDump(messages):
         # The first message must be the PRG message of the patch, that's what we need
-        return messages[8]
+        return messages[7]
     elif isBulkMessage(messages):
         # This works for the first patch of a bulk dump, Vecoven format
         return messages[8]
