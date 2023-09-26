@@ -5,6 +5,8 @@
 #
 
 import hashlib
+from copy import copy
+
 import knobkraft
 from typing import Dict, List
 
@@ -189,13 +191,16 @@ def isEditBufferDump2(messages):
     index = knobkraft.sysex.findSysexDelimiters(messages)
     if len(index) < 1:
         return False
-    if not isAprMessage(messages[index[0][0]:index[0][1]]):
+    first = messages[index[0][0]:index[0][1]]
+    if not isPatchAprMessage(first):
         return False
-    if len(index) > 1 and not isAprMessage(messages[index[1][0]:index[1][1]]):
+    tone1, tone2 = getToneNumbers(first)
+    num_tones = (1 if tone1 < 50 else 0) + (1 if tone2 < 50 else 0)
+    if len(index) > 1 and not isToneAprMessage(messages[index[1][0]:index[1][1]]):
         return False
-    if len(index) > 2 and not isAprMessage(messages[index[2][0]:index[2][1]]):
+    if len(index) > 2 and not isToneAprMessage(messages[index[2][0]:index[2][1]]):
         return False
-    return True
+    return len(index) - 1 >= num_tones
 
 
 def convertToEditBuffer(channel, message):
@@ -222,6 +227,8 @@ def isSingleProgramDump(message):
     num_apr = 0
     num_patch = 0
     num_tone = 0
+    upper_tone = None
+    lower_tone = None
     for index in indexes:
         m = message[index[0]:index[1]]
         if isProgramNumberMessage(m):
@@ -230,9 +237,19 @@ def isSingleProgramDump(message):
             num_apr += 1
             if isPatchAprMessage(m):
                 num_patch += 1
+                upper_tone, lower_tone = getToneNumbers(m)
             elif isToneAprMessage(m):
                 num_tone += 1
-    return num_prg == num_apr and num_patch == 1 and num_tone < 3
+    tones_needed = 0
+    if upper_tone and upper_tone < 50:
+        tones_needed += 1
+    if lower_tone and lower_tone < 50:
+        tones_needed += 1
+    done =  num_prg == num_apr and num_patch == 1 and tones_needed <= num_tone
+    if done:
+        #print(f"Program complete with {num_prg}:{num_patch}:{num_tone} messages")
+        pass
+    return done
 
 
 def getToneNumbers(message: List[int]) -> (int, int):
@@ -330,15 +347,18 @@ def calculateFingerprint(message):
             raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
         return hashlib.md5(bytearray(message[7 + name_len:-1])).hexdigest()
     elif isSingleProgramDump(message):
-        messages = knobkraft.findSysexDelimiters(message, 2)
-        second_message = message[messages[1][0]:messages[1][1]]
-        if isToneAprMessage(second_message):
-            name_len = 10
-        elif isPatchAprMessage(second_message):
-            name_len = 18
-        else:
-            raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
-        return hashlib.md5(bytearray(second_message[7 + name_len:-1])).hexdigest()
+        blanked_out = copy(message)
+        messages = knobkraft.findSysexDelimiters(blanked_out)
+        for index in messages:
+            m = blanked_out[index[0]:index[1]]
+            base = 7
+            if isPatchAprMessage(m):
+                name_length = 18
+                m[base:base+name_length] = [ord(" ")] * name_length
+            elif isToneAprMessage(m):
+                name_length = 10
+                m[base:base+name_length] = [ord(" ")] * name_length
+        return hashlib.md5(bytearray(blanked_out)).hexdigest()
     raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
 
 
@@ -790,7 +810,7 @@ def extractPatchesFromAllBankMessages(messages):
 def numberFromDump(messages):
     if isEditBufferDump2(messages):
         return 0
-    elif isSingleProgramDump(messages):
+    elif isProgramNumberMessage(messages):
         # The first message must be the PRG message of the patch, that's what we need
         return messages[7]
     elif isBulkMessage(messages):
