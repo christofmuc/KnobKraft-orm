@@ -140,6 +140,7 @@ def test_MKS70V4():
         count = 0
         for patch in converted:
             assert numberFromDump(patch) == count
+            assert calculateFingerprint(patch) != ""
             patches.append(patch)
             edit_buffer = convertToEditBuffer(0, patch)
             assert isEditBufferDump2(edit_buffer)
