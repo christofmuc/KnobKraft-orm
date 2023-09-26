@@ -8,6 +8,8 @@ import hashlib
 import knobkraft
 from typing import Dict, List
 
+import testing
+
 MIDI_channel_A = 0  # MIDI function 21
 MIDI_channel_B = 1  # MIDI function 31
 MIDI_control_channel = 0  # MIDI function 11. In other synths, this is called the sysex device ID. but here it is used for program change messages
@@ -275,7 +277,7 @@ def convertToProgramDump(channel, message, program_number):
     elif isSingleProgramDump(message):
         # A program dump is an PGR message which tells the synth where to store the following APR data. We might want to change
         # the program position, however, so we need to create a new program message and just keep the APR message
-        messages = knobkraft.sysex.splitSysexMessage(message)
+        messages = knobkraft.sysex.findSysexDelimiters(message)
         result = createPgrMessage(program_number, 0x01)
         result.extend(message[messages[1][0]:])  # Keep everything after that. Note this will keep the tones at their original position,
                                                  # possibly overwriting other tones there. This needs more intelligent memory management
@@ -307,7 +309,7 @@ def isPartOfBankDump(message):
 
 
 def isBankDumpFinished(messages):
-    return len(messages) == 64 + 50
+    return len(messages) >= 64 + 50
 
 
 # def denibble(data):
@@ -318,28 +320,27 @@ def isBankDumpFinished(messages):
 #     return unpacked_data
 
 def calculateFingerprint(message):
-    return hashlib.md5(bytearray(message[7:])).hexdigest()
-    # if isEditBufferDump(message):
-    #     # Just take the bytes after the name
-    #     if isToneAprMessage(message):
-    #         name_len = 10
-    #     elif isPatchAprMessage(message):
-    #         name_len = 18
-    #     else:
-    #         raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
-    #     return hashlib.md5(bytearray(message[7 + name_len:-1])).hexdigest()
-    # elif isSingleProgramDump(message):
-    #     messages = knobkraft.findSysexDelimiters(message, 2)
-    #     second_message = message[messages[1][0]:messages[1][1]]
-    #     if isToneAprMessage(second_message):
-    #         name_len = 10
-    #     elif isPatchAprMessage(second_message):
-    #         name_len = 18
-    #     else:
-    #         raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
-    #     return hashlib.md5(bytearray(second_message[7 + name_len:-1])).hexdigest()
-    # # If the message is not a program dump or part of a bank dump, return an empty string
-    # raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
+    #return hashlib.md5(bytearray(message[7:])).hexdigest()
+    if isEditBufferDump(message):
+        # Just take the bytes after the name
+        if isToneAprMessage(message):
+            name_len = 10
+        elif isPatchAprMessage(message):
+            name_len = 18
+        else:
+            raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
+        return hashlib.md5(bytearray(message[7 + name_len:-1])).hexdigest()
+    elif isSingleProgramDump(message):
+        messages = knobkraft.findSysexDelimiters(message, 2)
+        second_message = message[messages[1][0]:messages[1][1]]
+        if isToneAprMessage(second_message):
+            name_len = 10
+        elif isPatchAprMessage(second_message):
+            name_len = 18
+        else:
+            raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
+        return hashlib.md5(bytearray(second_message[7 + name_len:-1])).hexdigest()
+    raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
 
 
 bulk_mapping_patch = {
@@ -815,3 +816,10 @@ def layerName(messages, layerNo):
             return "ROM"
     raise Exception("Program error in layerName, can't get layerName for message {messages}")
 
+
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        all_patches = extractPatchesFromAllBankMessages(data.all_messages)
+        yield testing.ProgramTestData(message=all_patches[2], name='  V O I C E S     ', second_layer_name="VOICE HISS", number=2, friendly_number="002")
+
+    return testing.TestData(sysex="testData/Roland_MKS70/MKS70_internalBank_manual_dump_MIDIOX.syx", program_generator=programs, friendly_bank_name=(11, "B"))
