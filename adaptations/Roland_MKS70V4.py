@@ -181,7 +181,7 @@ def createEditBufferRequest(channel):
     return []
 
 
-def isEditBufferDump(messages):
+def isEditBufferDump2(messages):
     # We define an edit buffer as one to three APR messages
     # one APR patch
     # one APR Tone A (upper), optional because it might be a ROM tone used
@@ -200,7 +200,7 @@ def isEditBufferDump(messages):
 
 def convertToEditBuffer(channel, message):
     # TODO - channel remapping is not yet implemented
-    if isEditBufferDump(message):
+    if isEditBufferDump2(message):
         return message
     elif isSingleProgramDump(message):
         messages = knobkraft.findSysexDelimiters(message, 6)
@@ -252,7 +252,7 @@ def getToneNumbers(message: List[int]) -> (int, int):
 
 def convertToProgramDump(channel, message, program_number):
     # TODO - channel remapping is not yet implemented
-    if isEditBufferDump(message):
+    if isEditBufferDump2(message):
         # The edit buffer messages can be sent unmodified, but need to be prefixed with a PRG message each
         index = knobkraft.sysex.findSysexDelimiters(message)
         result = []
@@ -321,7 +321,7 @@ def isBankDumpFinished(messages):
 
 def calculateFingerprint(message):
     #return hashlib.md5(bytearray(message[7:])).hexdigest()
-    if isEditBufferDump(message):
+    if isEditBufferDump2(message):
         # Just take the bytes after the name
         if isToneAprMessage(message):
             name_len = 10
@@ -789,7 +789,7 @@ def extractPatchesFromAllBankMessages(messages):
 
 
 def numberFromDump(messages):
-    if isEditBufferDump(messages):
+    if isEditBufferDump2(messages):
         return 0
     elif isSingleProgramDump(messages):
         # The first message must be the PRG message of the patch, that's what we need
@@ -806,7 +806,7 @@ def numberOfLayers(messages):
 
 def layerName(messages, layerNo):
     index = knobkraft.sysex.findSysexDelimiters(messages)
-    if isEditBufferDump(messages):
+    if isEditBufferDump2(messages):
         return nameFromDump(messages[index[layerNo][0]:index[layerNo][1]])
     elif isSingleProgramDump(messages):
         mno = layerNo*2+1

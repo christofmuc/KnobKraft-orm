@@ -113,7 +113,7 @@ def test_MKS70V4():
     assert len(patches) == 0
 
     for patch in patches:
-        assert isEditBufferDump(patch)
+        assert isEditBufferDump2(patch)
 
     # mks_message = knobkraft.sysex.stringToSyx("f0 41 3a 00 24 30 01 00 00 53 59 4e 54 48 20 42 00 41 53 53 20 2f 20 50 00 41 44 20 20 3f 54 27 00 26 00 4a 13 3d 00 0b 41 00 4e 1f 00 41 0c 43 00 1b 01 4b 0c 10 30 00 03 00 7e 7f 27 04 00 20 40 f7")
     # assert isPartOfBankDump(mks_message)
@@ -142,7 +142,7 @@ def test_MKS70V4():
             assert numberFromDump(patch) == count
             patches.append(patch)
             edit_buffer = convertToEditBuffer(0, patch)
-            assert isEditBufferDump(edit_buffer)
+            assert isEditBufferDump2(edit_buffer)
             assert nameFromDump(edit_buffer) == nameFromDump(patch)
             assert convertToProgramDump(0, edit_buffer, count) == patch
             count += 1
