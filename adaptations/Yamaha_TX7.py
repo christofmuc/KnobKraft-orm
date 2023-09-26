@@ -73,7 +73,7 @@ def numberOfPatchesPerBank():
 
 
 def needsChannelSpecificDetection():
-    return False
+    return True
 
 
 def createDeviceDetectMessage(channel):
