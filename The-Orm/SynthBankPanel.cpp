@@ -181,6 +181,18 @@ void SynthBankPanel::reloadFromDatabase()
 	}
 }
 
+void SynthBankPanel::copyPatchNamesToClipboard()
+{
+    if (synthBank_) {
+        StringArray allNames;
+        for (auto const& patch : synthBank_->patches()) {
+            allNames.add(patch.name());
+        }
+        SystemClipboard::copyTextToClipboard(allNames.joinIntoString("\n"));
+    }
+}
+
+
 void SynthBankPanel::refresh() {
 	if (synthBank_) {
 		synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);

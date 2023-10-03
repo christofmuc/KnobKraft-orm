@@ -55,6 +55,7 @@ const std::string kLoadSysEx{ "loadsysEx" };
 const std::string kExportSysEx{ "exportSysex" };
 const std::string kExportPIF { "exportPIF" };
 const std::string kShowDiff{ "showDiff" };
+const std::string kCopyBankPatchNames{ "copyBankPatchNames" };
 const std::string kSynthDetection{ "synthDetection" };
 const std::string kLoopDetection{ "loopDetection" };
 const std::string kFullMidiLog{ "fullMidiLog" };
@@ -242,7 +243,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Export multiple databases..."  },
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
+		{1, { "Edit", { { "Copy patch to clipboard..." }, { kCopyBankPatchNames}, { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
@@ -285,6 +286,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	{ "Show patch comparison", { kShowDiff , [this]() {
 		patchView_->showPatchDiffDialog();
 	} } },
+    { "Copy names of current bank to clipboard...", { kCopyBankPatchNames , [this]() {
+        patchView_->copyBankPatchNamesToClipboard();
+    } } },
 	{ "Quick check connectivity", { kSynthDetection, [this]() {
 		setupView_->quickConfigure();
 	}, juce::KeyPress::F2Key } },

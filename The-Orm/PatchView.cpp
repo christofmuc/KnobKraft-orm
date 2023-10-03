@@ -438,6 +438,11 @@ void PatchView::setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::
 	}
 }
 
+void PatchView::copyBankPatchNamesToClipboard() {
+    synthBank_->copyPatchNamesToClipboard();
+}
+
+
 
 void PatchView::setImportListFilter(String filter)
 {

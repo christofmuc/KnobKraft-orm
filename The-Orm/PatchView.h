@@ -86,6 +86,7 @@ public:
 
 	// New for bank management
 	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
+    void copyBankPatchNamesToClipboard();
 
 private:
 	friend class PatchSearchComponent;
@@ -111,7 +112,7 @@ private:
 
 	void showBank();
 
-	PatchListTree patchListTree_;
+    PatchListTree patchListTree_;
 	std::string sourceFilterID_; // This is the old "import" combo box in new
 	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;

@@ -27,6 +27,8 @@ public:
 	void refreshPatch(std::shared_ptr<midikraft::PatchHolder> updatedPatch);
 	void reloadFromDatabase();
 
+    void copyPatchNamesToClipboard();
+
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
