@@ -584,7 +584,7 @@ def make_test_data():
         #    assert storedTags(raw_data) == ['Mono', 'Synthetic']
         #    yield testing.ProgramTestData(message=raw_data, name="JBaRotor Dreams", rename_name="JB Rotor Dreams")
 
-    return testing.TestData(sysex="testData/JBSolaris-INIT.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/JBSolaris-INIT.syx", edit_buffer_generator=programs)
 
 
 def run_midi_tests():
