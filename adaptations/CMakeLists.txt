@@ -20,7 +20,7 @@ set(adaptation_files
 	"KawaiK1.py" 
 	"Korg_03RW.py" "KorgDW6000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
 	"Matrix 6.py" 
-	"Novation_Summit.py" "Novation_UltraNova.py" 
+	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py"
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
