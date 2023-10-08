@@ -38,12 +38,20 @@ on Linux you'll do
     source venvdir/bin/activate.sh
 
 With the virtual env activated, we can use the pip package manager to install the required packages for running the tests. 
-Just do
+If you are running KnobKraft from the github source code, just do
 
-    pip install -r .\adaptations\requirements.txt
+    pip install -r .\adaptations\testing\requirements.txt
 
-which will install the pytest package and other prerequisites.
+For the installed version you will find the requirements.txt in the testing subdirectory. On Windows that would be e.g.
 
+    pip install -r C:\Users\<your username>\AppData\Local\Programs\KnobKraftOrm\testing\requirements.txt
+
+
+which will install the pytest package and other prerequisites. 
+
+As we only need two packages as of now (this might change in the future), it could be easier to just run 
+
+    pip install pytest mdiutils 
 
 ## Running the tests
 
