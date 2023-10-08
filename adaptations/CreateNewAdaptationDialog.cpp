@@ -71,7 +71,7 @@ namespace knobkraft {
 		auto targetFile = GenericAdaptation::breakOut(template_.getText().toStdString());
 		if (targetFile.has_value()) {
 			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Copied", fmt::format("The selected adaptation was copied into the fie {}.\n\nYou can open it in a Python editor and first change the name to start making a new synth adapation",
-				targetFile.value()));
+				*targetFile));
 			return true;
 		}
 		else {
