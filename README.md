@@ -47,7 +47,6 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-8 | beta | adaptation | |
 | Oberheim | OB-X8 | alpha | adaptation | help needed! |
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
-| Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
@@ -63,10 +62,12 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Take 5 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
+| Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | native | |
+| Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
