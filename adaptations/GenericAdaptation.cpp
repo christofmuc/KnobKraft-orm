@@ -435,7 +435,7 @@ namespace knobkraft {
 		return result;
 	}
 
-	bool GenericAdaptation::breakOut(std::string synthName)
+	std::optional<std::string> GenericAdaptation::breakOut(std::string synthName)
 	{
 		// Find it
 		std::shared_ptr<GenericAdaptation> adaptation;
@@ -449,7 +449,7 @@ namespace knobkraft {
 		}
 		if (!adaptation) {
 			spdlog::error("Program error - could not find adaptation for synth {}", synthName);
-			return false;
+			return {};
 		}
 
 		auto dir = GenericAdaptation::getAdaptationDirectory();
@@ -458,22 +458,22 @@ namespace knobkraft {
 		File sourceFile(adaptation->getSourceFilePath());
 		if (!sourceFile.existsAsFile()) {
 			spdlog::error("Program error - could not find source code for module to break out at {}", adaptation->getSourceFilePath());
-			return false;
+			return {};
 		}
 		File target = dir.getChildFile(sourceFile.getFileName());
 		if (target.exists()) {
 			juce::AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "File exists", "There is already a file for this adaptation, which we will not overwrite.");
-			return false;
+			return {};
 		}
 
 		if (!sourceFile.copyFileTo(target))
 		{
 			spdlog::error("Program error - could not copy {} to {}", adaptation->getSourceFilePath(), target.getFullPathName().toStdString());
-			return false;
+			return {};
 		}
 		else
 		{
-			return true;
+			return target.getFullPathName().toStdString();
 		}
 	}
 
