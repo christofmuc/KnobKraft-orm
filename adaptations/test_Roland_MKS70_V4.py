@@ -129,8 +129,7 @@ def test_MKS70V4():
     # Those are V3 bank dumps, and CANNOT be loaded by this adaptation which only supports the Vecoven firmware. We need to
     # reverse engineer the bank dump format to be able to convert them into APR messages first!
     #assert channelIfValidDeviceResponse(single_apr) == 0x00
-    bank_dump = knobkraft.load_sysex('testData/RolandMKS70_GENLIB-A.SYX')
-    #bank_dump = knobkraft.load_sysex('testData/RolandMKS70_MKSSYNTH.SYX')
+    bank_dump = knobkraft.load_sysex('testData/Roland_MKS70/RolandMKS70_GENLIB-A.SYX')
     patches = []
     converted = extractPatchesFromAllBankMessages(bank_dump)
     if len(converted) > 0:
@@ -158,7 +157,7 @@ def test_MKS70V4():
     assert isSingleProgramDump(all_messages)
 #    print(nameFromDump(all_messages))
 
-    bank_dump = knobkraft.load_sysex('testData/MKS-70_full_internal_bank_manual_dump.syx')
+    bank_dump = knobkraft.load_sysex('testData/Roland_MKS70/MKS-70_full_internal_bank_manual_dump.syx')
     patches = []
     assert isBankDumpFinished(bank_dump)
     converted = extractPatchesFromAllBankMessages(bank_dump)

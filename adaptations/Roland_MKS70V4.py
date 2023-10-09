@@ -155,8 +155,8 @@ def isOperationMessage(message: List[int], operations: List[int]) -> bool:
 
 
 def isBulkMessage(message: List[int]) -> bool:
-    # Refuse to load old (pre V4) bulk messages for now, until we have successfully reverse engineered them
-    return isOperationMessage(message, [operation_vec_bld])
+    # Accept both old and new BLD format, now that we have reverse engineered the first
+    return isOperationMessage(message, [operation_bld, operation_vec_bld])
 
 
 def isAprMessage(message: List[int]) -> bool:
