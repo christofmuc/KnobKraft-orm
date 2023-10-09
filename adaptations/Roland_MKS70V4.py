@@ -179,35 +179,14 @@ def isPartOfSingleProgramDump(message: List[int]) -> bool:
     return isToneAprMessage(message) or isPatchAprMessage(message) or isProgramNumberMessage(message)
 
 
-# def bldToApr(bld_message: List[int]):
-#     if isBulkMessage(bld_message):
-#         if bld_message[5] == patch_level:
-#             # This is a patch BLD
-#             patch_number = bld_message[8]
-#             patch_data = denibble(bld_message[9:-1])
-#             pgr_message = createPgrMessage(patch_number, None)
-#             assert isProgramNumberMessage(pgr_message)
-#             # assert len(patch_data) == 51
-#             apr_message = createMessageHeader(operation_apr, MIDI_control_channel, patch_level) + [0x01] + patch_data + [0xf7]
-#             assert isPatchAprMessage(apr_message)
-#             return pgr_message, apr_message
-#         elif bld_message[5] == tone_level:
-#             # This is a tone, construct a proper single program dump (APR) message for it
-#             tone_number = bld_message[8]
-#             tone_data = bld_message[9:-1]
-#             pgr_message = createPgrMessage(tone_number + 128, tone_a)  # offset by 128 to make sure it is an internal tone number, not a patch number
-#             assert isProgramNumberMessage(pgr_message)
-#             assert len(tone_data) == 59
-#             apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, tone_level, tone_a] + tone_data + [0xf7]
-#             assert isToneAprMessage(apr_message)
-#             return pgr_message, apr_message
-
-
 def createEditBufferRequest(channel):
     # I have not found a way to request the edit buffer from the synth, that is, the transient state of patch and tones.
     # You need to send a program change, but that would recall that program and erase the transient edit buffer.
     # Do nothing here.
     return []
+
+def isEditBufferDump(messages):
+    return isEditBufferDump2(messages)
 
 
 def isEditBufferDump2(messages):
