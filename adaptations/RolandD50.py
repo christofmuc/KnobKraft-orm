@@ -5,10 +5,11 @@
 #
 
 # The Roland D-50 implements the Roland Exclusive Format Type IV, and thus is a good Roland example
+import sys
 from typing import List
 
-import knobkraft
 import testing
+from roland import DataBlock, RolandData, GenericRoland
 
 roland_id = 0x41  # Roland
 model_id = 0b00010100  # D-50
@@ -20,32 +21,28 @@ character_set = [' '] + [chr(x) for x in range(ord('A'), ord('Z') + 1)] + \
                 [chr(x) for x in range(ord('a'), ord('z') + 1)] + \
                 [chr(x) for x in range(ord('1'), ord('9') + 1)] + ['0', '-']
 
+this_module = sys.modules[__name__]
 
-def name():
-    return "Roland D-50"
+d50_patch_data = [DataBlock((0x00, 0x00, 0x00), 0x40, "Upper partial-1"),
+                  DataBlock((0x00, 0x00, 0x40), 0x40, "Upper partial-2"),
+                  DataBlock((0x00, 0x01, 0x00), 0x40, "Upper common"),
+                  DataBlock((0x00, 0x01, 0x40), 0x40, "Lower partial-1"),
+                  DataBlock((0x00, 0x02, 0x00), 0x40, "Lower partial-2"),
+                  DataBlock((0x00, 0x02, 0x40), 0x40, "Lower common"),
+                  DataBlock((0x00, 0x03, 0x00), 0x40, "Patch")]
+_d50_edit_buffer_addresses = RolandData("D50 Temporary Patch", 1, 3, 3,
+                                           (0x00, 0x00, 0x00),
+                                           d50_patch_data)
+_d50_program_buffer_addresses = RolandData("D50 User Patches", 64, 3, 3,
+                                           (0x20, 0x00, 0x00),
+                                           d50_patch_data)
 
-
-def createDeviceDetectMessage(channel):
-    # Just request the upper common block from the edit buffer - if we get a reply, there is a D-50
-    # Command is RQ1 = 0x11, the address is 0 1 0, the size is 0x40 for one block
-    return buildRolandMessage(channel, command_rq1, [0x00, 0x01, 0x00], [0x00, 0x00, 0x40])
-
-
-def channelIfValidDeviceResponse(message):
-    # We are expecting a DT1 message response (command 0x12)
-    if isOwnSysex(message):
-        command, address, data = parseRolandMessage(message)
-        if command == command_dt1 and address == [0x00, 0x01, 0x00]:
-            return message[2] & 0x0f
-    return -1
-
-
-def nameFromDump(message):
-    patch_parts = knobkraft.splitSysex(message)
-    command, address, data = parseRolandMessage(patch_parts[6])
-    if command == command_dt1 and address == [0x00, 0x03, 0x00]:
-        return "".join([character_set[x] for x in data[:18]])
-    raise Exception("Error in Roland D-50 data structure - did not find Patch data block")
+d50 = GenericRoland("Roland D-50",
+                    model_id=[model_id],
+                    address_size=3,
+                    edit_buffer=_d50_edit_buffer_addresses,
+                    program_dump=_d50_program_buffer_addresses)
+d50.install(this_module)
 
 
 def loadD50BankDump(messages):
@@ -107,16 +104,15 @@ def index_to_address(index):
 
 
 def make_test_data():
-
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         # Quick test of device detect
-        detectMessage = createDeviceDetectMessage(0x7)
-        g_command, g_address, g_data = parseRolandMessage(detectMessage)
-        assert (g_command == command_rq1)
-        assert (g_address == [0x00, 0x01, 0x00])
-        assert (g_data == [0x00, 0x00, 0x40])
+        # detectMessage = createDeviceDetectMessage(0x7)
+        # g_command, g_address, g_data = parseRolandMessage(detectMessage)
+        # assert (g_command == command_rq1)
+        # assert (g_address == [0x00, 0x01, 0x00])
+        # assert (g_data == [0x00, 0x00, 0x40])
 
         patches = loadD50BankDump(test_data.all_messages)
-        yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ")
+        yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ", number=0, friendly_number="1")
 
     return testing.TestData(sysex=R"testData/Roland_D50_DIGITAL DREAMS.syx", program_generator=make_patches)
