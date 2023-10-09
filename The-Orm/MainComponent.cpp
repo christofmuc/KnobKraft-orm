@@ -301,14 +301,14 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	{ "Log only Sysex messages", { kSysexMidiLog, []() {
 		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::SYSEX_ONLY);
 	} } },
-	{"Set User Adaptation Dir", { kSelectAdaptationDirect, []() {
+	{"Set User Adaptation Dir...", { kSelectAdaptationDirect, []() {
 		FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
 		if (directoryChooser.browseForDirectory()) {
 			knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
 			juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
 		}
 	} } },
-	{"Create new adaptation", { kCreateNewAdaptation, [this]() {
+	{"Create new adaptation...", { kCreateNewAdaptation, [this]() {
 		setupView_->createNewAdaptation();
 	} } },
 

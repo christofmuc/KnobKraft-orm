@@ -64,6 +64,10 @@ def name():
     return "Yamaha TX7"
 
 
+def setupHelp():
+    return "The TX7 needs to be set to MIDI channel 1 for this adaptation to work. Beware that the memory protection is ignored, so make sure to not rely on it!"
+
+
 def numberOfBanks():
     return 1
 

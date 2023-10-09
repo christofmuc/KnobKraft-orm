@@ -151,4 +151,4 @@ def make_test_data():
             # This cannot be renamed, as the JSON is not parsable. Legacy problems in the ElectraOne editor
             yield testing.ProgramTestData(message=list(content), name="ROLAND MKS-80 v3", dont_rename=True)
 
-    return testing.TestData(program_generator=programs)
+    return testing.TestData(edit_buffer_generator=programs)

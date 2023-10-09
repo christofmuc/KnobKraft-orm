@@ -38,6 +38,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | DW-8000/EX-8000 | works | native | |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
@@ -47,7 +48,6 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-8 | beta | adaptation | |
 | Oberheim | OB-X8 | alpha | adaptation | help needed! |
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
-| Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
@@ -63,10 +63,12 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Take 5 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
+| Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | native | |
+| Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
@@ -156,7 +158,7 @@ The LDFLAGS is required for a certain combination of gcc version/pybind11, else 
 
 If you are inclined to build on Mac, you know what you're doing. I'd recommend to install the build requisites via homebrew like this
 
-    brew install gtk+3 glew boost python3
+    brew install gtk+3 glew boost python3 icu4c
 
 and then run CMake to build the software
 
@@ -164,6 +166,12 @@ and then run CMake to build the software
     cmake --build builds/release 
 
 which will produce a launchable application in a folder called `KnobKraftOrm.app`.
+
+Should you get an error about the required ICU libraries not being found check the CMakeLists.txt file which sets
+a variable called ´ICU_ROOT´ current to ´/opt/homebrew/Cellar/icu4c/72.1´. Check this is still correct, else fix the path.
+
+The reason for the ICU making problems is that there will be an ICU already shipped with the Mac, but being incomplete. So we need
+to install a complete SDK and make sure it takes precedence over the system supplied library.
     
 
 ## Licensing

@@ -56,6 +56,7 @@ namespace knobkraft {
 		launcher.componentToCentreAround = center;
 		launcher.dialogTitle = "Create new Adaptation";
 		launcher.useNativeTitleBar = false;
+		launcher.dialogBackgroundColour = Colours::black;
 		auto window = launcher.launchAsync();
 		ignoreUnused(window);
 	}
@@ -67,14 +68,16 @@ namespace knobkraft {
 			return false;
 		}
 
-		bool worked = GenericAdaptation::breakOut(template_.getText().toStdString());
-		if (worked) {
-			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Copied", "The selected adaptation was copied into the directory %s.\n\nYou can open it in a Python editor and first change the name to start making a new synth adapation");
+		auto targetFile = GenericAdaptation::breakOut(template_.getText().toStdString());
+		if (targetFile.has_value()) {
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Copied", fmt::format("The selected adaptation was copied into the fie {}.\n\nYou can open it in a Python editor and first change the name to start making a new synth adapation",
+				*targetFile));
+			return true;
 		}
 		else {
 			AlertWindow::showMessageBox(AlertWindow::WarningIcon, "Error", "Program error: Something went wrong while copying the adaptation source code.");
+			return false;
 		}
-		return worked;
 	}
 
 	void CreateNewAdaptationDialog::buttonClicked(Button* button)

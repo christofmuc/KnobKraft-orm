@@ -67,6 +67,7 @@ def test_extract_name_from_program(adaptation, test_data: testing.TestData):
     count = 0
     # Loop all programs created by the generator, and if name is given check that we can extract it!
     for program in test_data.programs:
+        #assert adaptation.isSingleProgramDump(program.message.byte_list)
         if hasattr(program, "name") and program.name is not None:
             assert adaptation.nameFromDump(program.message.byte_list) == program.name
             count += 1
@@ -81,6 +82,7 @@ def test_extract_name_from_edit_buffer(adaptation, test_data: testing.TestData):
     count = 0
     # Loop all programs created by the generator, and if name is given check that we can extract it!
     for program in test_data.edit_buffers:
+        #assert adaptation.isEditBufferDump(program.message.byte_list)
         if hasattr(program, "name") and program.name is not None:
             assert adaptation.nameFromDump(program.message.byte_list) == program.name
             count += 1

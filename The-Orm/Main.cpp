@@ -152,7 +152,7 @@ public:
     }
 
 	String getWindowTitle() {
-		return fmt::format("{} - Sysex Librarian V{} [BETA]", getApplicationName(), getOrmVersion());
+		return fmt::format("{} - Sysex Librarian V{}", getApplicationName(), getOrmVersion());
 	}
 
 	void changeListenerCallback(ChangeBroadcaster* source) override

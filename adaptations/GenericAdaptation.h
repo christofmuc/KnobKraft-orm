@@ -108,7 +108,7 @@ namespace knobkraft {
 		static std::vector<std::shared_ptr<GenericAdaptation>> allAdaptationsInOneDirectory(std::string const& directory);
 		static std::vector<std::shared_ptr<GenericAdaptation>> allAdaptations();
 		static std::vector<std::string> getAllBuiltinSynthNames();
-		static bool breakOut(std::string synthName);
+		static std::optional<std::string> breakOut(std::string synthName);
 
 		static std::vector<int> messageToVector(MidiMessage const &message);
 		static std::vector<int> midiMessagesToVector(std::vector<MidiMessage> const& message);

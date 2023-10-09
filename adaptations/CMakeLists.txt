@@ -20,15 +20,15 @@ set(adaptation_files
 	"KawaiK1.py" 
 	"Korg_03RW.py" "KorgDW6000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
 	"Matrix 6.py" 
-	"Novation_Summit.py" "Novation_UltraNova.py" 
+	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py"
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
 	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py"
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
-	"Waldorf Blofeld.py" "Waldorf_Kyra.py"
-	"YamahaDX7.py" "YamahaDX7II.py"
+	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py"
 	"Zoom_MS.py"
 )
 

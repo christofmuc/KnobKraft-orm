@@ -223,4 +223,4 @@ def make_test_data():
     def banks(test_data: testing.TestData) -> List:
         yield bank_message
 
-    return testing.TestData(bank_generator=banks, program_generator=programs)
+    return testing.TestData(bank_generator=banks, edit_buffer_generator=programs)
