@@ -148,12 +148,14 @@ def knobkraft_api(func):
 
 class GenericRoland:
     def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
+                 bank_descriptors: Optional[List[Dict]] = None,
                  category_index: Optional[int] = None,
                  device_family: Optional[List[int]] = None,
                  device_detect_message: Optional[RolandData] = None,
                  device_detect_ids: Optional[List[int]] = None):
         self._name = name
         self.model_id = model_id
+        self.bank_descriptors = bank_descriptors
         self.device_family = device_family  # This is only used in the Identity Reply Message.
         self.device_detect_message = device_detect_message
         self.device_detect_ids = None if device_detect_ids is None else set(device_detect_ids)
@@ -177,7 +179,9 @@ class GenericRoland:
         if self.device_family is not None:
             # Detecting the Roland via an Identity Request message
             # This is a sysex generic device detect message
-            return [0xf0, 0x7e, channel, 0x06, 0x01, 0xf7]
+            # Do not use the channel given, as this might be a MIDI channel but what we need is actually the sysex device ID
+            # For the Juno DS, this would be 0x10, and that is not a MIDI channel, so we are in a bit of a bug situation here
+            return [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7]
         elif self.device_detect_message is not None:
             # Might be an older (pre XV-3080) Roland, try to query for the system common first data block and see if it answers
             address, size = self.device_detect_message.address_and_size_for_sub_request(0, 0)
@@ -216,7 +220,22 @@ class GenericRoland:
 
     @knobkraft_api
     def bankDescriptors(self) -> List[Dict]:
-        return [{"bank": 0, "name": "User Patches", "size": self.program_dump.num_items, "type": "User Patch"}]
+        if self.bank_descriptors is not None:
+            return self.bank_descriptors
+        else:
+            return [{"bank": 0, "name": "User Patches", "size": self.program_dump.num_items, "type": "User Patch"}]
+
+    @knobkraft_api
+    def bankSelect(self, channel, bank):
+        if self.bank_descriptors is not None:
+            if 0 <= bank < len(self.bank_descriptors):
+                bank_info = self.bank_descriptors[bank]
+                return [0xb0 | (channel & 0x0f), 0x00, bank_info["bank_msb"]] + [0xb0 | (channel & 0x0f), 0x20, bank_info["bank_lsb"]]
+            else:
+                raise RuntimeError(f"Bank {bank} given is out of range for bank descriptors!")
+        else:
+            # Hard to guess, let's just switch to bank 0?
+            return [0xb0 | (channel & 0x0f), 0x00, 0]
 
     def isOwnSysex(self, message) -> bool:
         if len(message) > (2 + self._model_id_len):
@@ -301,8 +320,23 @@ class GenericRoland:
 
     @knobkraft_api
     def createProgramDumpRequest(self, channel, patchNo):
-        address, size = self.program_dump.address_and_size_for_sub_request(0, patchNo % self.program_dump.num_items)
-        return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        # Only RAM patches can be addressed directly ROM patches have to be loaded into the edit buffer via bank select program change
+        # Determine the bank number for this patch
+        bankNo = 0
+        banks = self.bankDescriptors()
+        sum = 0
+        while bankNo < len(banks) and banks[bankNo]["size"] + sum < patchNo:
+            sum += banks[bankNo]["size"]
+            bankNo += 1
+        if "isROM" in banks[bankNo] and banks[bankNo]["isROM"]:
+            # This is a ROM bank. We cannot address it via address data, we need to load the patch into the edit buffer
+            programNo = patchNo - sum
+            messages = self.bankSelect(channel, bankNo) + [0xc0 | (channel & 0x0f), programNo]
+            return messages + self.createEditBufferRequest(channel)
+        else:
+            # This can be addressed directly
+            address, size = self.program_dump.address_and_size_for_sub_request(0, patchNo % self.program_dump.num_items)
+            return self.buildRolandMessage(self.device_id, command_rq1, address, size)
 
     def _createFollowUpProgramDumpRequest(self, patchNo, previousRequestNo):
         # Check if there is a follow up data block
