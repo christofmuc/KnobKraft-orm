@@ -4,7 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Union
 import knobkraft
 
 roland_id = 0x41  # Roland
@@ -71,8 +71,8 @@ class DataBlock:
         return [(size >> ((number_of_values - 1 - i) * 7)) & 0x7f for i in range(number_of_values)]
 
     @staticmethod
-    def size_to_number(size) -> int:
-        if isinstance(size, tuple):
+    def size_to_number(size: Union[List, Tuple, int]) -> int:
+        if isinstance(size, tuple) or isinstance(size, list):
             num_values = len(size)
             result = 0
             for i in range(num_values):
@@ -88,7 +88,8 @@ class RolandData:
         self.num_items = num_items  # This is the "bank size" of that data type
         self.num_address_bytes = num_address_bytes
         self.num_size_bytes = num_size_bytes
-        self.base_address = base_address
+        self._base_address = base_address
+        self.base_address_int = DataBlock.size_to_number(base_address)
         self.data_blocks = blocks
         self.size = self.total_size()
         self.allowed_addresses = set([self.absolute_address(x.address) for x in self.data_blocks])
@@ -121,31 +122,23 @@ class RolandData:
         return DataBlock.size_as_7bit_list(self.size * 8, self.num_size_bytes)  # Why times 8?. You can't cross border from one data set into the next
 
     def absolute_address(self, address: Tuple[int]) -> Tuple:
-        return tuple([(address[i] + self.base_address[i]) for i in range(self.num_address_bytes)])
+        address_int = DataBlock.size_to_number(address)
+        return tuple(DataBlock.size_as_7bit_list(address_int + self.base_address_int, self.num_address_bytes))
 
     def address_and_size_for_sub_request(self, sub_request, sub_address) -> Tuple[List[int], List[int]]:
         # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-        concrete_address = [(self.data_blocks[sub_request].address[i] + self.base_address[i]) if i != 1
-                            else (sub_address + self.base_address[i])
-                            for i in range(len(self.data_blocks[sub_request].address))]
+        sub_address_int = (sub_address << 14) if self.num_address_bytes == 4 else (sub_address << 7)
+        concrete_address = DataBlock.size_as_7bit_list(DataBlock.size_to_number(self.data_blocks[sub_request].address) + sub_address_int + self.base_address_int, self.num_address_bytes)
         return concrete_address, DataBlock.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
 
     def subaddress_from_address(self, address: List[int]) -> int:
-        return address[1] - self.base_address[1]
+        offset = DataBlock.size_to_number(tuple(address)) - self.base_address_int
+        return offset >> ((self.num_address_bytes - 2) * 7)
 
-    def reset_to_base_address(self, address) -> Tuple:
-        # The address[1] part is where the program number is stored. To compare addresses we reset it to the base address
-        return tuple([address[i] if i != 1 else self.base_address[i] for i in range(self.num_address_bytes)])
-
-    def address_and_size_for_all_request(self, sub_address) -> Tuple[List[int], List[int]]:
-        # The idea is that if we request the first block, but with the total size of all blocks, the device will send us all messages back.
-        # Somehow that does work, but not as expected. To get all messages from a single patch on an XV-3080, I need to multiply the size by 8???
-
-        # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-        concrete_address = [(self.data_blocks[0].address[i] + self.base_address[i]) if i != 1
-                            else (sub_address + self.base_address[i])
-                            for i in range(len(self.data_blocks[0].address))]
-        return concrete_address, self.total_size_as_list()
+    def find_base_address(self, address: tuple) -> Tuple:
+        int_value = DataBlock.size_to_number(address)
+        sub_address = self.subaddress_from_address(list(address)) << 14
+        return tuple(DataBlock.size_as_7bit_list(int_value - sub_address, self.num_address_bytes))
 
 
 def knobkraft_api(func):
@@ -276,7 +269,7 @@ class GenericRoland:
         if self.isOwnSysex(message):
             command, address = self.getCommandAndAddressFromRolandMessage(message)
             if command == command_dt1:
-                normalized_address = tuple(self.edit_buffer.reset_to_base_address(address))
+                normalized_address = tuple(self.edit_buffer.find_base_address(address))
                 # Find out which data block we got
                 for sub_request in range(len(self.edit_buffer.data_blocks)):
                     if normalized_address == self.edit_buffer.absolute_address(self.edit_buffer.data_blocks[sub_request].address):
@@ -289,7 +282,7 @@ class GenericRoland:
         for message in knobkraft.sysex.findSysexDelimiters(messages):
             if self.isOwnSysex(messages[message[0]:message[1]]):
                 _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
-                addresses.add(tuple(self.edit_buffer.reset_to_base_address(address)))
+                addresses.add(tuple(self.edit_buffer.find_base_address(address)))
         return all(a in addresses for a in self.edit_buffer.allowed_addresses)
 
     @knobkraft_api
@@ -326,7 +319,7 @@ class GenericRoland:
             command, address = self.getCommandAndAddressFromRolandMessage(message)
             if command == command_dt1:
                 patchNo = self.program_dump.subaddress_from_address(address)
-                normalized_address = tuple(self.program_dump.reset_to_base_address(address))
+                normalized_address = tuple(self.program_dump.find_base_address(address))
                 # Find out which data block we got
                 for sub_request in range(len(self.program_dump.data_blocks)):
                     if normalized_address == self.program_dump.absolute_address(self.program_dump.data_blocks[sub_request].address):
@@ -339,7 +332,7 @@ class GenericRoland:
         programs = set()
         for message in knobkraft.sysex.findSysexDelimiters(messages):
             _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
-            addresses.add(self.program_dump.reset_to_base_address(address))
+            addresses.add(self.program_dump.find_base_address(address))
             programs.add(address[1])
         return len(programs) == 1 and all(a in addresses for a in self.program_dump.allowed_addresses)
 
@@ -389,7 +382,7 @@ class GenericRoland:
             return 0
         messages = knobkraft.sysex.findSysexDelimiters(message, 1)
         _, address = self.getCommandAndAddressFromRolandMessage(message[messages[0][0]:messages[0][1]])
-        return address[1] - self.program_dump.base_address[1]
+        return self.program_dump.subaddress_from_address(address)
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:

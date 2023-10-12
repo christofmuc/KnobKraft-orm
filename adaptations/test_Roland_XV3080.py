@@ -1,6 +1,7 @@
 import roland
-from Roland_XV3080 import *
+from Roland_XV3080 import _xv3080_patch_data, xv_3080, xv_3080_main, _xv3080_edit_buffer_addresses
 import knobkraft
+from roland import DataBlock
 
 
 def test_edit_buffers():
@@ -27,6 +28,34 @@ def test_edit_buffers():
     assert xv_3080.isEditBufferDump(edit_buffer1)
     assert xv_3080.isEditBufferDump(edit_buffer2)
     assert xv_3080.calculateFingerprint(edit_buffer1) != xv_3080.calculateFingerprint(edit_buffer2)
+
+
+def test_address_calculation():
+    value = (0x01, 0x02, 0x03, 0x04)
+    as_int = DataBlock.size_to_number(value)
+    as_list = tuple(DataBlock.size_as_7bit_list(as_int, 4))
+    assert value == as_list
+
+    base_block = _xv3080_patch_data[6]
+    assert base_block.address == (0x00, 0x00, 0x22, 0x00)
+    edit_buffer = _xv3080_edit_buffer_addresses
+    assert edit_buffer.absolute_address(base_block.address) == (0x1f, 0x00, 0x22, 0x00)
+    address, size = edit_buffer.address_and_size_for_sub_request(6, 17)
+    assert address == [0x1f, 17, 0x22, 0x00]
+    assert size == DataBlock.size_as_7bit_list(base_block.size, 4)
+
+    # Test 7 bit overflow
+    address, size = edit_buffer.address_and_size_for_sub_request(6, 128)
+    assert address == [0x20, 0, 0x22, 0x00]
+
+    # Test calculating the subaddress
+    assert edit_buffer.subaddress_from_address([0x1f, 0x00, 0x22, 0x00]) == 0x00
+    assert edit_buffer.subaddress_from_address([0x1f, 17, 0x22, 0x00]) == 17
+    assert edit_buffer.subaddress_from_address([0x20, 0x00, 0x22, 0x00]) == 128
+
+    # Test finding the block of an address
+    assert edit_buffer.find_base_address([0x1f, 0x00, 0x22, 0x00]) == (0x1f, 0x00, 0x22 ,0x00)
+    assert edit_buffer.find_base_address([0x1f, 0x7f, 0x22, 0x00]) == (0x1f, 0x00, 0x22 ,0x00)
 
 
 def test_message_creation():
@@ -71,7 +100,7 @@ def test_program_dump_request():
         assert program_place == program_no
         # Check that we can normalize the address also correctly
         assert xv_3080_main.program_dump.absolute_address(xv_3080_main.program_dump.data_blocks[sub_message].address) == \
-               xv_3080_main.program_dump.reset_to_base_address(address)
+               xv_3080_main.program_dump.find_base_address(address)
         # Now check that we can calculate the next request package correctly
         is_part, reply = xv_3080_main.isPartOfSingleProgramDump(message)
         print(reply)
@@ -83,9 +112,8 @@ def test_program_dump_request():
             new_program_no = xv_3080_main.program_dump.subaddress_from_address(reply_address)
             assert program_place == new_program_no
             assert xv_3080_main.program_dump.absolute_address(xv_3080_main.program_dump.data_blocks[sub_message + 1].address) == \
-                xv_3080_main.program_dump.reset_to_base_address(reply_address)
+                xv_3080_main.program_dump.find_base_address(reply_address)
 
         # Process next message
         sub_message += 1
-
 
