@@ -32,9 +32,9 @@ public:
 
 	virtual void resized() override;
 
-	void refreshAllUserLists();
-	void refreshUserList(std::string list_id);
-	void refreshAllImports();
+	void refreshAllUserLists(std::function<void()> onFinished);
+	void refreshUserList(std::string list_id, std::function<void()> onFinished);
+	void refreshAllImports(std::function<void()> onFinished);
 
 	void selectAllIfNothingIsSelected();
 	void selectItemByPath(std::vector<std::string> const& path);
@@ -42,8 +42,8 @@ public:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
 	
 private:
-	void regenerateUserLists();
-	void regenerateImportLists();
+	void regenerateUserLists(std::function<void()> onFinished);
+	void regenerateImportLists(std::function<void()> onFinished);
 
 	void selectSynthLibrary(std::string const& synthName);
 	std::string getSelectedSynth() const;

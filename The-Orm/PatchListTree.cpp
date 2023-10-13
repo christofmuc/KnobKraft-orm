@@ -16,6 +16,13 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
+constexpr char *kAllPatchesTree = "allpatches";
+constexpr char *kLibraryTreePrefix = "library-";
+constexpr char* kSynthBanksPrefix = "banks-";
+constexpr char* kUserBanksPrefix = "stored-banks-";
+constexpr char *kImportsTreePrefix = "imports-";
+constexpr char* kUserListsTree = "userlists";
+
 void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	for (auto& import : imports) {
 		if (import.name.rfind("Imported from file") == 0) {
@@ -72,7 +79,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		synths_[synth.getName()] = synth.synth();
 	}
 
-	allPatchesItem_ = new TreeViewNode("All patches", "allpatches");
+	allPatchesItem_ = new TreeViewNode("All patches", kAllPatchesTree);
 	allPatchesItem_->onSelected = [this](String id) {
         juce::ignoreUnused(id);
 		UIModel::instance()->multiMode_.setMultiSynthMode(true);
@@ -83,7 +90,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		std::vector<TreeViewItem*> result;
 		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
 			std::string synthName = activeSynth->getName();
-			auto synthLibrary = new TreeViewNode(synthName, "library-" + synthName);
+			auto synthLibrary = new TreeViewNode(synthName, kLibraryTreePrefix + synthName);
 			synthLibrary->onGenerateChildren = [this, activeSynth]() {
 				return std::vector<TreeViewItem*>({
 					newTreeViewItemForSynthBanks(activeSynth)
@@ -103,7 +110,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		return result;
 	};
 
-	userListsItem_ = new TreeViewNode("User lists", "userlists");
+	userListsItem_ = new TreeViewNode("User lists", kUserListsTree);
 	userListsItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
@@ -119,9 +126,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 				if (list) {
 					db_.putPatchList(list);
 					spdlog::info("Create new user list named {}", list->name());
-					regenerateUserLists();
-					// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
-					//selectItemByPath({ "userlists", list->id() });
+					regenerateUserLists([]() {});
 				}
 				}, nullptr);
 		};
@@ -145,7 +150,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 			auto copyOfList = std::make_shared<midikraft::PatchList>(fmt::format("Copy of {}", loaded_list->name()));
 			copyOfList->setPatches(loaded_list->patches());
 			db_.putPatchList(copyOfList);
-			refreshAllUserLists();
+			refreshAllUserLists([]() {});
 		}
 	};
 
@@ -180,24 +185,26 @@ PatchListTree::~PatchListTree()
 	CreateListDialog::release();
 }
 
-void PatchListTree::regenerateUserLists() {
+void PatchListTree::regenerateUserLists(std::function<void()> onFinished) {
 	// Need to refresh user lists
 	TreeViewNode* node = dynamic_cast<TreeViewNode*>(userListsItem_);
 	if (node) {
-		MessageManager::callAsync([this, node]() {
+		MessageManager::callAsync([this, node, onFinished]() {
 			node->regenerate();
 			selectAllIfNothingIsSelected();
+			onFinished();
 		});
 	}
 }
 
-void PatchListTree::regenerateImportLists() {
+void PatchListTree::regenerateImportLists(std::function<void()> onFinished) {
 	// Need to refresh user lists
 	TreeViewNode* node = dynamic_cast<TreeViewNode*>(allPatchesItem_);
 	if (node) {
-		MessageManager::callAsync([this, node]() {
+		MessageManager::callAsync([this, node, onFinished]() {
 			node->regenerate();
 			selectAllIfNothingIsSelected();
+			onFinished();
 			});
 	}
 }
@@ -208,19 +215,21 @@ void PatchListTree::resized()
 	treeView_->setBounds(area);
 }
 
-void PatchListTree::refreshAllUserLists()
+void PatchListTree::refreshAllUserLists(std::function<void()> onFinished)
 {
-	MessageManager::callAsync([this]() {
+	MessageManager::callAsync([this, onFinished]() {
 		userListsItem_->regenerate();
 		selectAllIfNothingIsSelected();
+		onFinished();
 	});
 }
 
-void PatchListTree::refreshUserList(std::string list_id)
+void PatchListTree::refreshUserList(std::string list_id, std::function<void()> onFinished)
 {
 	if (userLists_.find(list_id) != userLists_.end()) {
-		MessageManager::callAsync([node = userLists_[list_id]]() {
+		MessageManager::callAsync([node = userLists_[list_id], onFinished]() {
 			node->regenerate();
+			onFinished();
 			});
 	}
 	else {
@@ -228,10 +237,11 @@ void PatchListTree::refreshUserList(std::string list_id)
 	}
 }
 
-void PatchListTree::refreshAllImports()
+void PatchListTree::refreshAllImports(std::function<void()> onFinished)
 {
-	MessageManager::callAsync([this]() {
+	MessageManager::callAsync([this, onFinished]() {
 		allPatchesItem_->regenerate();
+		onFinished();
 		});
 }
 
@@ -301,7 +311,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, m
 
 TreeViewNode* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
 	std::string synthName = device->getName();
-	auto synthBanksNode = new TreeViewNode("In synth", "banks-" + synthName);
+	auto synthBanksNode = new TreeViewNode("In synth", kSynthBanksPrefix + synthName);
 	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
 	if (synth) {
 		synthBanksNode->onSingleClick = [synthBanksNode](String) {
@@ -371,7 +381,7 @@ bool isBankCompatible(juce::var dropItem)
 
 TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> device) {
 	std::string synthName = device->getName();
-	auto synthBanksNode = new TreeViewNode("User Banks", "stored-banks-" + synthName);
+	auto synthBanksNode = new TreeViewNode("User Banks", kUserBanksPrefix + synthName);
 	auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device);
 	if (synth) {
 		synthBanksNode->onGenerateChildren = [this, synth, synthName, synthBanksNode] {
@@ -390,10 +400,8 @@ TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 						spdlog::info("Create new user bank named {}", list->name());
 						MessageManager::callAsync([this, synthBanksNode]() {
 							synthBanksNode->regenerate();
-							regenerateUserLists();
+							regenerateUserLists([]() {});
 							});
-						// This doesn't make any sense, as the list will be empty and you need to browse the library to add stuff into the list?
-						//selectItemByPath({ "userlists", list->id() });
 					}
 					}, [synthBanksNode](std::shared_ptr<midikraft::PatchList> result) {
 						ignoreUnused(result);
@@ -448,7 +456,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 						else {
 							// This is a synth bank, directly put the new user bank based on it in the database
 							db_.putPatchList(copyOfList);
-							regenerateImportLists(); // This refreshes the upper tree
+							regenerateImportLists([]() {}); // This refreshes the upper tree
 							spdlog::info("Created new user bank {} as copy of {}", copyOfList->name(), loaded_list->name());
 						}
 					}
@@ -465,7 +473,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 
 TreeViewNode* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
 	std::string synthName = synth->getName();
-	auto importsForSynth = new TreeViewNode("By import", "imports-" + synthName);
+	auto importsForSynth = new TreeViewNode("By import", kImportsTreePrefix + synthName);
 	importsForSynth->onGenerateChildren = [this, synthName]() {
 		auto importList = db_.getImportsList(UIModel::instance()->synthList_.synthByName(synthName).synth().get());
 		shortenImportNames(importList);
@@ -634,13 +642,13 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				if (new_list) {
 					db_.putPatchList(new_list);
 					spdlog::info("Renamed list from {} to {}", oldname, new_list->name());
-					regenerateUserLists();
+					regenerateUserLists([this]() { selectAllIfNothingIsSelected();  });
 				}
 			}, [this](std::shared_ptr<midikraft::PatchList> new_list) {
 				if (new_list) {
 					db_.deletePatchlist(midikraft::ListInfo({ new_list->id(), new_list->name() }));
 					spdlog::info("Deleted list {}", new_list->name());
-					regenerateUserLists();
+					regenerateUserLists([this]() { selectAllIfNothingIsSelected();  });
 				}
 			});
 	};
@@ -649,14 +657,14 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 
 
 void PatchListTree::selectSynthLibrary(std::string const& synthName) {
-	selectItemByPath({ "allpatches", "library-" + synthName });
+	selectItemByPath({ kAllPatchesTree, kLibraryTreePrefix + synthName });
 }
 
 std::string PatchListTree::getSelectedSynth() const {
 	auto selectedPath = pathOfSelectedItem();
 	for (auto item : selectedPath) {
-		if (item.rfind("library-", 0) == 0) {
-			return item.substr(strlen("library-"));
+		if (item.rfind(kLibraryTreePrefix, 0) == 0) {
+			return item.substr(strlen(kLibraryTreePrefix));
 		}
 	}
 	return "";
@@ -664,7 +672,7 @@ std::string PatchListTree::getSelectedSynth() const {
 
 bool PatchListTree::isUserListSelected() const {
 	auto selectedPath = pathOfSelectedItem();
-	return std::any_of(selectedPath.cbegin(), selectedPath.cend(), [](std::string const& item) { return item == "userlists"; });
+	return std::any_of(selectedPath.cbegin(), selectedPath.cend(), [](std::string const& item) { return item == kUserListsTree; });
 }
 
 std::list<std::string> PatchListTree::pathOfSelectedItem() const {
