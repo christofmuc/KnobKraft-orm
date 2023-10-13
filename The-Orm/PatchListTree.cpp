@@ -16,12 +16,12 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
-constexpr char *kAllPatchesTree = "allpatches";
-constexpr char *kLibraryTreePrefix = "library-";
-constexpr char* kSynthBanksPrefix = "banks-";
-constexpr char* kUserBanksPrefix = "stored-banks-";
-constexpr char *kImportsTreePrefix = "imports-";
-constexpr char* kUserListsTree = "userlists";
+const std::string kAllPatchesTree("allpatches");
+const std::string kLibraryTreePrefix("library-");
+const std::string kSynthBanksPrefix("banks-");
+const std::string kUserBanksPrefix("stored-banks-");
+const std::string kImportsTreePrefix("imports-");
+const std::string kUserListsTree("userlists");
 
 void shortenImportNames(std::vector<midikraft::ImportInfo>& imports) {
 	for (auto& import : imports) {
@@ -664,7 +664,7 @@ std::string PatchListTree::getSelectedSynth() const {
 	auto selectedPath = pathOfSelectedItem();
 	for (auto item : selectedPath) {
 		if (item.rfind(kLibraryTreePrefix, 0) == 0) {
-			return item.substr(strlen(kLibraryTreePrefix));
+			return item.substr(kLibraryTreePrefix.size());
 		}
 	}
 	return "";
