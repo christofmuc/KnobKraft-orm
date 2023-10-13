@@ -12,7 +12,7 @@ from typing import List
 
 import testing
 
-deviceID = 0x00
+deviceID = 0x7f  # Not sure if 0x7f is a valid value, but should autodetect fail how would we know about the MIDI channel?
 
 
 def name():
@@ -21,7 +21,7 @@ def name():
 
 def createDeviceDetectMessage(channel):
     # This is a sysex generic device detect message
-    return [0xf0, 0x7e, channel, 0x06, 0x01, 0xf7]
+    return [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7]
 
 
 def deviceDetectWaitMilliseconds():
