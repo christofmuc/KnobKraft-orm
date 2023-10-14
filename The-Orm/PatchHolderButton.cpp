@@ -46,15 +46,18 @@ void PatchHolderButton::setGlow(bool shouldGlow)
 		// The drop indication colour overrides the isDirty background
 		glow.setGlowProperties(4.0, Colours::gold.withAlpha(0.5f));
 		setComponentEffect(&glow);
+		setBufferedToImage(true);
 	}
 	else {
 		if (isDirty_) {
 			glow.setGlowProperties(4.0, Colours::darkred);
 			setComponentEffect(&glow);
+			setBufferedToImage(true);
 		}
 		else {
 			// Neither
 			setComponentEffect(nullptr);
+			setBufferedToImage(false);
 		}
 	}
 	repaint();
