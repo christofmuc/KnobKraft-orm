@@ -26,6 +26,12 @@ Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Co
 PatchHolderButton::PatchHolderButton(int id, bool isToggle, std::function<void(int)> clickHandler) : PatchButtonWithDropTarget(id, isToggle, clickHandler)
 	, isDirty_(false)
 {
+	UIModel::instance()->currentPatch_.addChangeListener(this);
+}
+
+PatchHolderButton::~PatchHolderButton()
+{
+	UIModel::instance()->currentPatch_.removeChangeListener(this);
 }
 
 void PatchHolderButton::setDirty(bool isDirty)
@@ -65,15 +71,13 @@ void PatchHolderButton::itemDragExit(const SourceDetails& dragSourceDetails)
 	setGlow(false);
 }
 
-void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool active, PatchButtonInfo info)
+void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, PatchButtonInfo info)
 {
-	setActive(active);
-	
 	if (holder) {
 		auto number = juce::String(holder->synth()->friendlyProgramAndBankName(holder->bankNumber(), holder->patchNumber()));
 		auto dragInfo = holder->createDragInfoString();
 		setButtonDragInfo(dragInfo);
-
+		md5_ = holder->md5();
 		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::CenterMask))) {
 		case PatchButtonInfo::CenterLayers: {
 			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(holder->patch());
@@ -128,7 +132,9 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, bool acti
 		setPatchColour(TextButton::ColourIds::buttonColourId, color);
 		setFavorite(false);
 		setHidden(false);
+		md5_.reset();
 	}
+	refreshActiveState();
 }
 
 PatchButtonInfo PatchHolderButton::getCurrentInfoForSynth(std::string const& synthname) {
@@ -144,3 +150,18 @@ void PatchHolderButton::setCurrentInfoForSynth(std::string const& synthname, Pat
 	synth.setProperty(PROPERTY_BUTTON_INFO_TYPE, static_cast<int>(newValue), nullptr);
 }
 
+void PatchHolderButton::refreshActiveState()
+{
+	if (md5_.has_value() && UIModel::currentPatch().patch() != nullptr) {
+		setActive(*md5_ == UIModel::currentPatch().md5());
+	}
+	else {
+		setActive(false);
+	}
+}
+
+void PatchHolderButton::changeListenerCallback(ChangeBroadcaster* source) {
+	if (source == &UIModel::instance()->currentPatch_) {
+		refreshActiveState();
+	}
+}

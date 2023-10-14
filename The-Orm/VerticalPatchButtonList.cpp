@@ -107,7 +107,7 @@ public:
 			button_->updateId(rowNo);
 		}
 		thePatch_ = patch; // Need a copy to keep the pointer alive
-		button_->setPatchHolder(&thePatch_, false, info);
+		button_->setPatchHolder(&thePatch_, info);
 		button_->setDirty(dirty);
 	}
 
