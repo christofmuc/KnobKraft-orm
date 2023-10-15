@@ -4,7 +4,7 @@
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
-Questions and help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github. 
+Questions and help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github.
 
 
 | Manufacturer  | Synth | Status | Type | Kudos |
@@ -30,9 +30,9 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Electra | one | works | adaptation |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
 | Groove Synthesis | 3rd Wave | works | adaptation | |
-| John Bowen | Solaris | beta | adaptation | Contributed by @conversy! | 
-| Kawai | K1/K1m/K1r | beta | adaptation | | 
-| Kawai | K3/K3m | works | native | | 
+| John Bowen | Solaris | beta | adaptation | Contributed by @conversy! |
+| Kawai | K1/K1m/K1r | beta | adaptation | |
+| Kawai | K3/K3m | works | native | |
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
@@ -49,6 +49,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X8 | alpha | adaptation | help needed! |
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Roland | JX-8P | alpha | adaptation | |
+| Roland | Juno-DS | in progress | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
@@ -123,7 +124,7 @@ Clone with submodules from github
 
 The recursive clone with  submodules is required to retrieve the following additional modules already into the right spot inside the source tree:
 
-1. We use the magnificent [JUCE library](https://juce.com/) to immensly reduce the amount of work we have to do. 
+1. We use the magnificent [JUCE library](https://juce.com/) to immensly reduce the amount of work we have to do.
 
 4. The configure step will download (on Windows) the almighty [boost](https://www.boost.org/) library, sorry for the bloat but I simply had no time to remove the dependency yet. All my professional projects of course rely on boost, so it is a natural to incorporate it here as well.
 
@@ -163,7 +164,7 @@ If you are inclined to build on Mac, you know what you're doing. I'd recommend t
 and then run CMake to build the software
 
     cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-    cmake --build builds/release 
+    cmake --build builds/release
 
 which will produce a launchable application in a folder called `KnobKraftOrm.app`.
 
@@ -172,7 +173,7 @@ a variable called ´ICU_ROOT´ current to ´/opt/homebrew/Cellar/icu4c/72.1´. C
 
 The reason for the ICU making problems is that there will be an ICU already shipped with the Mac, but being incomplete. So we need
 to install a complete SDK and make sure it takes precedence over the system supplied library.
-    
+
 
 ## Licensing
 
@@ -180,7 +181,7 @@ As some substantial work has gone into the development of this, I decided to off
 
 ## Contributing
 
-All pull requests and issues welcome, I will try to get back to you as soon as I can. Due to the dual licensing please be aware that I will need to request transfer of copyright on accepting a PR. 
+All pull requests and issues welcome, I will try to get back to you as soon as I can. Due to the dual licensing please be aware that I will need to request transfer of copyright on accepting a PR.
 
 ## Acknowledgements
 
@@ -203,7 +204,7 @@ For bug reports, thanks to Iulian from the Facebook M1000 group!
 This is by far not the first attempt at solving the challenge, I only hope it is the last and this time for good with the help of the community. These are similar projects which I found during my wanderings through the net, some of these still available, some nearly lost in the mist of time. In no particular order:
 
 | Name  | OpenSource | OS | Languange | Looks like it started | Driver-Design | User-extensible |
-| ------------- | ------------- | --- | --- | --- | -- | -- | 
+| ------------- | ------------- | --- | --- | --- | -- | -- |
 | eMagic's SoundDiver |No | Win, Mac | ? | 1995 | Data-driven | Yes |
 | [Universal Manager](https://www.nilsschneider.de/wp/2020/06/28/universal-manager-updated-after-15-years/) |  No | Win32 | ? | 2005 | Data-driven | Yes |
 | [JSynthLib](http://www.jsynthlib.org/) | Yes | Win, Linux | Java |    1999 | [Java code](https://sourceforge.net/p/jsynthlib/jsynthlib/ci/master/tree/) | Yes |
@@ -223,4 +224,4 @@ This is by far not the first attempt at solving the challenge, I only hope it is
 
 ## About the author
 
-Christof is a lifelong software developer having worked in various industries, and can't stop his programming hobby anyway. 
+Christof is a lifelong software developer having worked in various industries, and can't stop his programming hobby anyway.
