@@ -32,6 +32,8 @@ public:
 
 	void setPatchText(std::shared_ptr<midikraft::PatchHolder> patch);
 
+	std::function<void()> forceResize;
+
 private:
 	CategoryButtons categories_;
 	PatchTextBox patchAsText_;
