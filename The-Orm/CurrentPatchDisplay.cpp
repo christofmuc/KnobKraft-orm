@@ -25,9 +25,11 @@
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
 	categories_(categories, categoryUpdateHandler, false, false)
+	, patchAsText_(false)
 {
 	addAndMakeVisible(categories_);
 	categories_.setButtonSize(LAYOUT_BUTTON_WIDTH, LAYOUT_TOUCHBUTTON_HEIGHT);
+	addChildComponent(patchAsText_);
 }
 
 void MetaDataArea::setActive(std::set<CategoryButtons::Category> const& activeCategories) 
@@ -45,20 +47,28 @@ std::vector<CategoryButtons::Category> MetaDataArea::selectedCategories() const
 	return categories_.selectedCategories();
 }
 
+void MetaDataArea::setPatchText(std::shared_ptr<midikraft::PatchHolder> patch)
+{
+	patchAsText_.fillTextBox(patch);
+	patchAsText_.setVisible(patch && patch->patch());
+}
+
 void MetaDataArea::resized()
 {
 	auto area = getLocalBounds();
 
 	// Make sure our component is large enough!
-	categories_.setBounds(area); 
+	auto desiredBounds = categories_.determineSubAreaForButtonLayout(this, Rectangle<int>(0, 0, area.getWidth(), 10000));
+	categories_.setBounds(area.removeFromTop((int) desiredBounds.getHeight())); 
 	//categories_.setBounds(area.withTrimmedRight(LAYOUT_INSET_NORMAL)); // Leave room for the scrollbar on the right
+	patchAsText_.setBounds(area.withTrimmedTop(2 * LAYOUT_INSET_NORMAL).withHeight((int) patchAsText_.desiredHeight()));
 }
 
 int MetaDataArea::getDesiredHeight(int width) 
 {
 	// Given the width, determine the required height of the flex box button layout
 	auto desiredBounds = categories_.determineSubAreaForButtonLayout(this, Rectangle<int>(0, 0, width, 10000));
-	return static_cast<int>(desiredBounds.getHeight());
+	return static_cast<int>(desiredBounds.getHeight() + patchAsText_.desiredHeight() + 2 * LAYOUT_INSET_NORMAL);
 }
 
 CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
@@ -91,7 +101,6 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 
 	metaDataScroller_.setViewedComponent(&metaData_, false);
 	addAndMakeVisible(metaDataScroller_);
-	addAndMakeVisible(patchAsText_);
 
 	if (Settings::instance().keyIsSet("MetaDataLayout")) {
 		lastOpenState_ = Settings::instance().get("MetaDataLayout");
@@ -128,9 +137,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		}
 		metaData_.setActive(buttonCategories);
 
-		if (patchAsText_.isVisible()) {
-			patchAsText_.fillTextBox(patch);
-		}
+		metaData_.setPatchText(patch);
 	}
 	else {
 		reset();
@@ -141,8 +148,8 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 	if (lastOpenState_.isNotEmpty()) {
 		propertyEditor_.fromLayout(lastOpenState_);
 		lastOpenState_.clear();
-		resized();
 	}
+	resized();
 }
 
 String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
@@ -258,7 +265,7 @@ void CurrentPatchDisplay::reset()
 	favorite_.setToggleState(false, dontSendNotification);
 	hide_.setToggleState(false, dontSendNotification);
 	metaData_.setActive({});
-	patchAsText_.fillTextBox(nullptr);
+	metaData_.setPatchText(nullptr);
 	resized();
 }
 
@@ -268,8 +275,6 @@ void CurrentPatchDisplay::resized()
 
 	if (area.getWidth() < area.getHeight() * 1.5) {
 		// Portrait
-		patchAsText_.setVisible(true);
-
 		auto topRow = area.removeFromTop(LAYOUT_TOUCHBUTTON_HEIGHT);
 		name_.setBounds(topRow);
 
@@ -293,16 +298,9 @@ void CurrentPatchDisplay::resized()
 		auto metaDataWidth = area.getWidth() - LAYOUT_INSET_NORMAL; // Allow for the vertical scrollbar on the right hand side!
 		metaData_.setSize(metaDataWidth, metaData_.getDesiredHeight(metaDataWidth));
 		metaDataScroller_.setBounds(area.withTrimmedTop(LAYOUT_INSET_NORMAL));
-
-		//SimpleLogger::instance()->postMessage("Height is " + String(categories_.getChildComponent(categories_.getNumChildComponents() - 1)->getBottom()));
-		// Upper 25% of rest, tag buttons
-		//categories_.setBounds(area.removeFromTop(area.getHeight()/4).withTrimmedTop(LAYOUT_INSET_NORMAL));
-		//patchAsText_.setBounds(area);
-		patchAsText_.setVisible(false); // Feature to be enabled later
 	}
 	else {
 		// Landscape - the classical layout originally done for the Portrait Tablet
-		patchAsText_.setVisible(false);
 
 		// Split the top row in three parts, with the centered one taking 240 px (the patch name)
 		auto topRow = area.removeFromTop(LAYOUT_TOUCHBUTTON_HEIGHT);

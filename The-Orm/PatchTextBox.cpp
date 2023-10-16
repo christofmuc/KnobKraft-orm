@@ -12,7 +12,7 @@
 
 #include <fmt/format.h>
 
-PatchTextBox::PatchTextBox() : mode_(DisplayMode::PARAMS)
+PatchTextBox::PatchTextBox(bool showParams /* = true */) : showParams_(showParams), mode_(showParams ? DisplayMode::PARAMS : DisplayMode::HEX)
 {
 	document_ = std::make_unique<CodeDocument>();
 	textBox_ = std::make_unique<CodeEditorComponent>(*document_, nullptr);
@@ -23,26 +23,28 @@ PatchTextBox::PatchTextBox() : mode_(DisplayMode::PARAMS)
 	addAndMakeVisible(*textBox_);
 
 	addAndMakeVisible(hexBased_);
-	hexBased_.setButtonText("Show hex values");
-	hexBased_.setClickingTogglesState(true);
-	hexBased_.setRadioGroupId(3, dontSendNotification);
-	hexBased_.onClick = [this]() {
-		mode_ = DisplayMode::HEX;
-		refreshText();
-	};
+	hexBased_.setButtonText(showParams_ ? "Show hex values" : "Hex Dump");
+	if (showParams_) {
+		hexBased_.setClickingTogglesState(true);
+		hexBased_.setRadioGroupId(3, dontSendNotification);
+		hexBased_.onClick = [this]() {
+			mode_ = DisplayMode::HEX;
+			refreshText();
+		};
 
-	addAndMakeVisible(textBased_);
-	textBased_.setButtonText("Show parameter values");
-	textBased_.setToggleState(true, dontSendNotification);
-	textBased_.setRadioGroupId(3, dontSendNotification);
-	textBased_.setClickingTogglesState(true);
-	textBased_.setVisible(false);
-	textBased_.onClick = [this]() {
-		mode_ = DisplayMode::PARAMS;
-		refreshText();
-	};
+		addAndMakeVisible(textBased_);
+		textBased_.setButtonText("Show parameter values");
+		textBased_.setToggleState(true, dontSendNotification);
+		textBased_.setRadioGroupId(3, dontSendNotification);
+		textBased_.setClickingTogglesState(true);
+		textBased_.setVisible(false);
+		textBased_.onClick = [this]() {
+			mode_ = DisplayMode::PARAMS;
+			refreshText();
+		};
 
-	hexBased_.setToggleState(true, dontSendNotification);
+		hexBased_.setToggleState(true, dontSendNotification);
+	}
 }
 
 void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
@@ -51,14 +53,16 @@ void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
 
 	if (patch) {
 		// If there is detailed parameter information, also show the second option
-		auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
-		if (parameterDetails) {
-			textBased_.setVisible(true);
-		}
-		else {
-			mode_ = DisplayMode::HEX;
-			textBased_.setVisible(false);
-			hexBased_.setToggleState(true, dontSendNotification);
+		if (showParams_) {
+			auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
+			if (parameterDetails) {
+				textBased_.setVisible(true);
+			}
+			else {
+				mode_ = DisplayMode::HEX;
+				textBased_.setVisible(false);
+				hexBased_.setToggleState(true, dontSendNotification);
+			}
 		}
 		refreshText();
 	}
@@ -86,6 +90,10 @@ void PatchTextBox::resized()
 	textBased_.setBounds(topRow.removeFromLeft(100));
 
 	textBox_->setBounds(area);
+
+	if (lastLayoutedWidth_.has_value() && *lastLayoutedWidth_ != area.getWidth() && patch_) {
+		refreshText();
+	}
 }
 
 String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> patch)
@@ -96,13 +104,25 @@ String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> pat
 	String result;
 	std::vector<uint8> binaryData = patch->patch()->data();
 
+	// Find out how many characters we can display
+	auto fontUsed = textBox_->getFont();
+	auto width = textBox_->getWidth();
+	std::string testLine = "0000";
+	int testLineLength = 0;
+	do {
+		testLine += " 00";
+		testLineLength += 1;
+	} while (fontUsed.getStringWidth(testLine) < width - 22);
+	testLineLength = std::max(testLineLength-1, 1);
+	lastLayoutedWidth_ = width;
+
 	uint8 *line = binaryData.data();
 	int consumed = 0;
 	while (consumed < (int)binaryData.size()) {
 		uint8 posLSB = consumed & 0xff;
 		uint8 posMSB = (consumed >> 8) & 0xff;
 		result += String::toHexString(&posMSB, 1, 1) + String::toHexString(&posLSB, 1, 1) + " ";
-		int lineLength = std::min(8, ((int)binaryData.size()) - consumed);
+		int lineLength = std::min(testLineLength, ((int)binaryData.size()) - consumed);
 		String hex = String::toHexString(line, lineLength, 1);
 		result += hex;
 		result += "\n";
@@ -112,6 +132,12 @@ String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> pat
 	}
 
 	return result;
+}
+
+float PatchTextBox::desiredHeight() const {
+	auto fontUsed = textBox_->getFont();
+	auto linesNeeded = document_->getNumLines();
+	return fontUsed.getHeight() * (linesNeeded + 4);
 }
 
 String PatchTextBox::makeTextDocument(std::shared_ptr<midikraft::PatchHolder> patch) {

@@ -30,9 +30,11 @@ public:
 
 	int getDesiredHeight(int width);
 
+	void setPatchText(std::shared_ptr<midikraft::PatchHolder> patch);
+
 private:
-	TextEditor patchDescription_;
 	CategoryButtons categories_;
+	PatchTextBox patchAsText_;
 };
 
 class CurrentPatchDisplay : public Component,
@@ -77,7 +79,6 @@ private:
 	Viewport metaDataScroller_;
 	MetaDataArea metaData_;
 	
-	PatchTextBox patchAsText_;
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler_;
 	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
 
