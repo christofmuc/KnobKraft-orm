@@ -216,6 +216,9 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Size", "Meta data", fmt::format("{} Bytes", patch->patch()->data().size()), 100));
 	metaDataValues_.back()->setEnabled(false);
 
+	// More editable data
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Comment", "Meta data", patch->comment(), 2048, true));
+	
 	// We need to learn about updates
 	for (auto tnv : metaDataValues_) {
 		tnv->value().addListener(this);
@@ -254,6 +257,14 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 			}
 			else {
 				jassertfalse;
+			}
+		}
+		else if (property->name() == "Comment" && value.refersToSameSourceAs(property->value())) {
+			if (currentPatch_) {
+				currentPatch_->setComment(value.getValue().toString().toStdString());
+				setCurrentPatch(currentPatch_);
+				favoriteHandler_(currentPatch_);
+				return;
 			}
 		}
 	}
