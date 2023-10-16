@@ -12,7 +12,7 @@
 
 #include <fmt/format.h>
 
-PatchTextBox::PatchTextBox(bool showParams /* = true */) : showParams_(showParams), mode_(showParams ? DisplayMode::PARAMS : DisplayMode::HEX)
+PatchTextBox::PatchTextBox(std::function<void()> forceResize, bool showParams /* = true */) : forceResize_(forceResize), showParams_(showParams), mode_(showParams ? DisplayMode::PARAMS : DisplayMode::HEX)
 {
 	document_ = std::make_unique<CodeDocument>();
 	textBox_ = std::make_unique<CodeEditorComponent>(*document_, nullptr);
@@ -20,12 +20,14 @@ PatchTextBox::PatchTextBox(bool showParams /* = true */) : showParams_(showParam
 
 	textBox_->setReadOnly(true);
 	textBox_->setLineNumbersShown(false);
-	addAndMakeVisible(*textBox_);
+	addChildComponent(*textBox_);
 
 	addAndMakeVisible(hexBased_);
 	hexBased_.setButtonText(showParams_ ? "Show hex values" : "Hex Dump");
+	hexBased_.setClickingTogglesState(true);
+	
 	if (showParams_) {
-		hexBased_.setClickingTogglesState(true);
+		textBox_->setVisible(true);
 		hexBased_.setRadioGroupId(3, dontSendNotification);
 		hexBased_.onClick = [this]() {
 			mode_ = DisplayMode::HEX;
@@ -44,6 +46,15 @@ PatchTextBox::PatchTextBox(bool showParams /* = true */) : showParams_(showParam
 		};
 
 		hexBased_.setToggleState(true, dontSendNotification);
+	}
+	else {
+		hexBased_.setToggleState(false, dontSendNotification);
+		hexBased_.onClick = [this]() {
+			textBox_->setVisible(hexBased_.getToggleState());
+			if (forceResize_) {
+				forceResize_();
+			}
+		};
 	}
 }
 
@@ -136,7 +147,7 @@ String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> pat
 
 float PatchTextBox::desiredHeight() const {
 	auto fontUsed = textBox_->getFont();
-	auto linesNeeded = document_->getNumLines();
+	auto linesNeeded = (showParams_ || hexBased_.getToggleState()) ? document_->getNumLines() : 0;
 	return fontUsed.getHeight() * (linesNeeded + 4);
 }
 

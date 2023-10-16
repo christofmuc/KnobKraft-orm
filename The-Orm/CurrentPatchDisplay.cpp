@@ -25,7 +25,7 @@
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
 	categories_(categories, categoryUpdateHandler, false, false)
-	, patchAsText_(false)
+	, patchAsText_([this]() { if (forceResize) forceResize();  }, false)
 {
 	addAndMakeVisible(categories_);
 	categories_.setButtonSize(LAYOUT_BUTTON_WIDTH, LAYOUT_TOUCHBUTTON_HEIGHT);
@@ -98,6 +98,10 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	hide_.addListener(this);
 	hide_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::indianred);
 	addAndMakeVisible(hide_);
+
+	metaData_.forceResize = [this]() {
+		resized();
+	};
 
 	metaDataScroller_.setViewedComponent(&metaData_, false);
 	addAndMakeVisible(metaDataScroller_);

@@ -15,7 +15,7 @@ public:
 	enum class DisplayMode {
 		HEX, PARAMS
 	};
-	PatchTextBox(bool showParams = true);
+	PatchTextBox(std::function<void()> forceResize = {}, bool showParams = true);
 
 	void fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch);
 
@@ -30,6 +30,7 @@ public:
 private:
 	void refreshText();
 
+	std::function<void()> forceResize_;
 	bool showParams_;
 	std::shared_ptr<midikraft::PatchHolder> patch_;
 	std::unique_ptr<CodeDocument> document_;
