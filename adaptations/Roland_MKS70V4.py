@@ -5,8 +5,12 @@
 #
 
 import hashlib
+from copy import copy
+
 import knobkraft
 from typing import Dict, List
+
+import testing
 
 MIDI_channel_A = 0  # MIDI function 21
 MIDI_channel_B = 1  # MIDI function 31
@@ -29,17 +33,44 @@ tone_level = 0b00100000  # = 0x20
 tone_a = 0b00000001
 tone_b = 0b00000010
 
+# To cross check, these are the length of the MIDI messages to be constructed
+pgr_len = 10
+patch_apr_len = 61
+tone_legacy_apr_len = 67
+tone_apr_len = 109
 
 #
-# The MKS-70 has multiple formats, and generally devices its data into patches and tones
+# The MKS-70 has multiple formats, and generally divides its data into patches and tones
 # The Tones are more traditionally the sounds, while the patches aggregate two tones plus play controls into a "performance"
 #
-# A patch has 51 bytes of data, of which the first 18 are the name
-# A tone has 59 bytes of data, of which the first 10 are the name
+# Original and V3 formats:
+#
+# APR format 0x35
+# The APR patch message is 61 bytes long, with 53 data bytes
+# The APR tone message is 67 bytes long, with 59 data bytes
+#
+# BLD format 0x37
+# the BLD patch message is 106 bytes long, with the peculiar exception of having 48 data bytes nibbled into 96 wire bytes
+# the BLD tone message is 69 bytes long, with 59 data bytes which ought to be identical to the APR message data bytes
+#
+# Vecoeven V4 formats:
+#
+# APR format 0x38
+# The APR patch message is 61 bytes long, with 53 data bytes
+# The APR tone message is 109 bytes long, with 101 data bytes
+#
+# BLD format 0x3a
+# The BLD patch message is 66 bytes long
+# The BLD tone message is 88 bytes long
+#
+# A PGR message is 10 bytes
 #
 # The two tones used by a patch are addressed by tone number
 # The synth stores 50 tones internally and 50 in the cartridge
 # plus 64 patches internally and 64 in the cartridge
+#
+# Tone numbers 50 and up are ROM tones, and can be referenced, but need not be send or received.
+# Sometimes, the synth does send the ROM tones, so they might be present, we need to be flexible.
 #
 
 def name():
@@ -92,10 +123,10 @@ def createMessageHeader(opcode, channel, level):
 def createPgrMessage(patch_no, tone_group):
     # Check if we are requesting a patch or a tone
     if 0 <= patch_no < 128:
-        return createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, 0x00, patch_no, 0x00, 0xf7]
+        return createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, patch_no, 0x00, 0xf7]
     elif 128 <= patch_no < 228:
         tone_number = patch_no - 128
-        return createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_group, 0x00, tone_number, 0x00, 0xf7]
+        return createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_group, tone_number, 0x00, 0xf7]
     raise Exception(f"Invalid patch_no given to createPgrMessage: {patch_no}")
 
 
@@ -124,8 +155,8 @@ def isOperationMessage(message: List[int], operations: List[int]) -> bool:
 
 
 def isBulkMessage(message: List[int]) -> bool:
-    # Refuse to load old (pre V4) bulk messages for now, until we have successfully reverse engineered them
-    return isOperationMessage(message, [operation_vec_bld])
+    # Accept both old and new BLD format, now that we have reverse engineered the first
+    return isOperationMessage(message, [operation_bld, operation_vec_bld])
 
 
 def isAprMessage(message: List[int]) -> bool:
@@ -133,43 +164,19 @@ def isAprMessage(message: List[int]) -> bool:
 
 
 def isToneAprMessage(message: List[int]) -> bool:
-    return isAprMessage(message) and message[5] == tone_level
+    return isAprMessage(message) and message[5] == tone_level and len(message) in [tone_apr_len, tone_legacy_apr_len]
 
 
 def isPatchAprMessage(message: List[int]) -> bool:
-    return isAprMessage(message) and message[5] == patch_level
+    return isAprMessage(message) and message[5] == patch_level and len(message) == patch_apr_len
 
 
 def isProgramNumberMessage(message: List[int]) -> bool:
-    return isOperationMessage(message, [operation_pgr])
+    return isOperationMessage(message, [operation_pgr]) and len(message) == pgr_len
 
 
 def isPartOfSingleProgramDump(message: List[int]) -> bool:
     return isToneAprMessage(message) or isPatchAprMessage(message) or isProgramNumberMessage(message)
-
-
-# def bldToApr(bld_message: List[int]):
-#     if isBulkMessage(bld_message):
-#         if bld_message[5] == patch_level:
-#             # This is a patch BLD
-#             patch_number = bld_message[8]
-#             patch_data = denibble(bld_message[9:-1])
-#             pgr_message = createPgrMessage(patch_number, None)
-#             assert isProgramNumberMessage(pgr_message)
-#             # assert len(patch_data) == 51
-#             apr_message = createMessageHeader(operation_apr, MIDI_control_channel, patch_level) + [0x01] + patch_data + [0xf7]
-#             assert isPatchAprMessage(apr_message)
-#             return pgr_message, apr_message
-#         elif bld_message[5] == tone_level:
-#             # This is a tone, construct a proper single program dump (APR) message for it
-#             tone_number = bld_message[8]
-#             tone_data = bld_message[9:-1]
-#             pgr_message = createPgrMessage(tone_number + 128, tone_a)  # offset by 128 to make sure it is an internal tone number, not a patch number
-#             assert isProgramNumberMessage(pgr_message)
-#             assert len(tone_data) == 59
-#             apr_message = [0xf0, roland_id, operation_apr, MIDI_control_channel, format_type_jx10, tone_level, tone_a] + tone_data + [0xf7]
-#             assert isToneAprMessage(apr_message)
-#             return pgr_message, apr_message
 
 
 def createEditBufferRequest(channel):
@@ -178,8 +185,11 @@ def createEditBufferRequest(channel):
     # Do nothing here.
     return []
 
-
 def isEditBufferDump(messages):
+    return isEditBufferDump2(messages)
+
+
+def isEditBufferDump2(messages):
     # We define an edit buffer as one to three APR messages
     # one APR patch
     # one APR Tone A (upper), optional because it might be a ROM tone used
@@ -187,21 +197,24 @@ def isEditBufferDump(messages):
     index = knobkraft.sysex.findSysexDelimiters(messages)
     if len(index) < 1:
         return False
-    if not isAprMessage(messages[index[0][0]:index[0][1]]):
+    first = messages[index[0][0]:index[0][1]]
+    if not isPatchAprMessage(first):
         return False
-    if len(index) > 1 and not isAprMessage(messages[index[1][0]:index[1][1]]):
+    tone1, tone2 = getToneNumbers(first)
+    num_tones = (1 if tone1 < 50 else 0) + (1 if tone2 < 50 else 0)
+    if len(index) > 1 and not isToneAprMessage(messages[index[1][0]:index[1][1]]):
         return False
-    if len(index) > 2 and not isAprMessage(messages[index[2][0]:index[2][1]]):
+    if len(index) > 2 and not isToneAprMessage(messages[index[2][0]:index[2][1]]):
         return False
-    return True
+    return len(index) - 1 >= num_tones
 
 
 def convertToEditBuffer(channel, message):
     # TODO - channel remapping is not yet implemented
-    if isEditBufferDump(message):
+    if isEditBufferDump2(message):
         return message
     elif isSingleProgramDump(message):
-        messages = knobkraft.findSysexDelimiters(message, 6)
+        messages = knobkraft.findSysexDelimiters(message)
         result = []
         # Strip the PRG messages from the Single Program Dump to convert it to an edit buffer
         for index in messages:
@@ -220,6 +233,8 @@ def isSingleProgramDump(message):
     num_apr = 0
     num_patch = 0
     num_tone = 0
+    upper_tone = None
+    lower_tone = None
     for index in indexes:
         m = message[index[0]:index[1]]
         if isProgramNumberMessage(m):
@@ -228,17 +243,27 @@ def isSingleProgramDump(message):
             num_apr += 1
             if isPatchAprMessage(m):
                 num_patch += 1
+                upper_tone, lower_tone = getToneNumbers(m)
             elif isToneAprMessage(m):
                 num_tone += 1
-    return num_prg == num_apr and num_patch == 1 and num_tone < 3
+    tones_needed = 0
+    if upper_tone and upper_tone < 50:
+        tones_needed += 1
+    if lower_tone and lower_tone < 50:
+        tones_needed += 1
+    done =  num_prg == num_apr and num_patch == 1 and tones_needed <= num_tone
+    if done:
+        #print(f"Program complete with {num_prg}:{num_patch}:{num_tone} messages")
+        pass
+    return done
 
 
 def getToneNumbers(message: List[int]) -> (int, int):
     if message[5] == patch_level:
         if message[2] == operation_apr:
             # This is a classic APR message from Roland
-            upper_tone_number = message[29]
-            lower_tone_number = message[38]
+            upper_tone_number = message[7+29]
+            lower_tone_number = message[7+38]
             return upper_tone_number, lower_tone_number
         elif message[2] == operation_vec_apr:
             # This is a V4 APR message
@@ -250,7 +275,7 @@ def getToneNumbers(message: List[int]) -> (int, int):
 
 def convertToProgramDump(channel, message, program_number):
     # TODO - channel remapping is not yet implemented
-    if isEditBufferDump(message):
+    if isEditBufferDump2(message):
         # The edit buffer messages can be sent unmodified, but need to be prefixed with a PRG message each
         index = knobkraft.sysex.findSysexDelimiters(message)
         result = []
@@ -275,7 +300,7 @@ def convertToProgramDump(channel, message, program_number):
     elif isSingleProgramDump(message):
         # A program dump is an PGR message which tells the synth where to store the following APR data. We might want to change
         # the program position, however, so we need to create a new program message and just keep the APR message
-        messages = knobkraft.sysex.splitSysexMessage(message)
+        messages = knobkraft.sysex.findSysexDelimiters(message)
         result = createPgrMessage(program_number, 0x01)
         result.extend(message[messages[1][0]:])  # Keep everything after that. Note this will keep the tones at their original position,
                                                  # possibly overwriting other tones there. This needs more intelligent memory management
@@ -284,11 +309,13 @@ def convertToProgramDump(channel, message, program_number):
 
 
 def nameFromDump(message):
+    messages = knobkraft.sysex.findSysexDelimiters(message, 2)
     name_message = message
-    if isSingleProgramDump(message):
-        messages = knobkraft.sysex.findSysexDelimiters(message, 2)
+    if isEditBufferDump2(message):
+        name_message = message[messages[0][0]:messages[0][1]]
+    elif isSingleProgramDump(message):
         # This is a list of PRG and APR messages, use the patch message
-        name_message = message[messages[1][0]:]
+        name_message = message[messages[1][0]:messages[1][1]]
 
     if isToneAprMessage(name_message):
         name_length = 10
@@ -298,7 +325,7 @@ def nameFromDump(message):
         raise Exception("Message is neither tone nor patch, can't extract name")
     base = 7
     patch_name_bytes = name_message[base:base + name_length]
-    patch_name = ''.join(chr(byte if byte >= 10 else byte + 48) for byte in patch_name_bytes)
+    patch_name = ''.join(chr(byte if byte >= 32 else byte + 64) for byte in patch_name_bytes)
     return patch_name
 
 
@@ -307,7 +334,7 @@ def isPartOfBankDump(message):
 
 
 def isBankDumpFinished(messages):
-    return len(messages) == 64 + 50
+    return len(messages) >= 64 + 50
 
 
 # def denibble(data):
@@ -318,29 +345,148 @@ def isBankDumpFinished(messages):
 #     return unpacked_data
 
 def calculateFingerprint(message):
-    return hashlib.md5(bytearray(message[7:])).hexdigest()
-    # if isEditBufferDump(message):
-    #     # Just take the bytes after the name
-    #     if isToneAprMessage(message):
-    #         name_len = 10
-    #     elif isPatchAprMessage(message):
-    #         name_len = 18
-    #     else:
-    #         raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
-    #     return hashlib.md5(bytearray(message[7 + name_len:-1])).hexdigest()
-    # elif isSingleProgramDump(message):
-    #     messages = knobkraft.findSysexDelimiters(message, 2)
-    #     second_message = message[messages[1][0]:messages[1][1]]
-    #     if isToneAprMessage(second_message):
-    #         name_len = 10
-    #     elif isPatchAprMessage(second_message):
-    #         name_len = 18
-    #     else:
-    #         raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
-    #     return hashlib.md5(bytearray(second_message[7 + name_len:-1])).hexdigest()
-    # # If the message is not a program dump or part of a bank dump, return an empty string
-    # raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
+    relevant_messages = []
+    messages = knobkraft.findSysexDelimiters(message)
+    base = 7
+    if isEditBufferDump2(message):
+        for index in messages:
+            m = copy(message[index[0]:index[1]])
+            if isToneAprMessage(m):
+                name_length = 10
+            elif isPatchAprMessage(m):
+                name_length = 18
+            else:
+                raise Exception("Message in Edit Buffer needs to be either a Tone message or a Patch message")
+            m[base:base+name_length] = [ord(" ")] * name_length
+            relevant_messages.extend(m)
+        return hashlib.md5(bytearray(relevant_messages)).hexdigest()
+    elif isSingleProgramDump(message):
+        next_program = -1
+        upper = -2
+        lower = -3
+        for index in messages:
+            m = copy(message[index[0]:index[1]])
+            if isPatchAprMessage(m):
+                name_length = 18
+                upper, lower = getToneNumbers(m)
+                m[base:base+name_length] = [ord(" ")] * name_length
+                relevant_messages.extend(m)
+            elif isToneAprMessage(m):
+                name_length = 10
+                if next_program < 50 and next_program in [upper, lower]:
+                    m[base:base+name_length] = [ord(" ")] * name_length
+                    relevant_messages.extend(m)
+            else:
+                if isProgramNumberMessage(m):
+                    next_program = m[7]
+                continue
+        return hashlib.md5(bytearray(relevant_messages)).hexdigest()
+    raise Exception("Can't calculate fingerprint of non-edit buffer or program dump message")
 
+# Different from the other mapping tables this one needs to be denibbled first!
+bulk_mapping_patch_0x37 = {
+    "Char1": 0,
+    "Char2": 1,
+    "Char3": 2,
+    "Char4": 3,
+    "Char5": 4,
+    "Char6": 5,
+    "Char7": 6,
+    "Char8": 7,
+    "Char9": 8,
+    "Char10": 9,
+    "Char11": (10, 5, 0),
+    "Char12": 11,
+    "Char13": 12,
+    "Char14": 13,
+    "Char15": 14,
+    "Char16": 15,
+    "Char17": 16,
+    "Char18": 17,
+    "A/B Balance": (18, 7, 0),  # a_b_balance
+    "Dual Detune": 19,  # detune
+    "UpperSplitPT": (20, 7, 0),
+    "BendRange": [(18, 1, 7, 0), (26, 1, 7, 1), (47, 1, 0, 2)],
+    "Keymode": [(20, 1, 7, 0), (21, 1, 7, 1), (24, 1, 7, 2), (25, 1, 7, 3)],
+    "LowerSplitPT": (21, 7, 0),
+    "Porta Time": 22,
+    "Total Volume": 23, # denibbled total_volume
+    "AT Vibrato": (24, 7, 0),  # denibbled aftertouch_vibrato
+    "AT Brilliance": (25, 7, 0),  # denibbled aftertouch brightness
+    "AT Volume": (26, 7, 0),  # denibbled aftertouch_volume
+    "A Tone Nr.": (27, 7, 0),  # tone_a
+    "A-Hold": (27, 1, 7), # high nibble in tone A
+    "A Chromatic Shift": 28,  # tone_a_chromatic_shift
+    "A Unison Detune": 29,  # tone_a_unison_detune
+    "A LFO Mod Dpth": (30, 7, 0),  # tone_a_lfo_mod_depth
+    "A Bender": 31,  # tone_a_bender
+    "B Tone Nr.": (32, 7,0), # like tone_a
+    "B-Hold": (32, 1, 7), # high bit of B Tone Nr
+    "B Chromatic Shift": 33,  # like tone_a
+    "B Unison Detune": 34,  # like tone_a
+    "A-Porta": (30, 1, 7), # high bit
+    "B LFO Mod Dpth": (35, 7, 0),  # like tone_a
+    "B Bender": 36,  # like_tone_a
+    "Chase Level": (37, 7, 0),  # chase_play_level
+    "Chase Time": (38, 7, 0),  # chase_play_time
+    "A-Keyassign": (39, 4, 4),
+    "B-Keyassign": (40, 4, 4),
+    "B-Porta": (35, 1, 7),
+    "ChaseMode": [(37, 1, 7, 0), (38, 1, 7, 1)],
+    "Chase On/Off": (45, 2, 7, 0)
+}
+
+apr_mapping_patch_0x37 = {
+    "Char1": 7,
+    "Char2": 8,
+    "Char3": 9,
+    "Char4": 10,
+    "Char5": 11,
+    "Char6": 12,
+    "Char7": 13,
+    "Char8": 14,
+    "Char9": 15,
+    "Char10": 16,
+    "Char11": (17, 5, 0),
+    "Char12": 18,
+    "Char13": 19,
+    "Char14": 20,
+    "Char15": 21,
+    "Char16": 22,
+    "Char17": 23,
+    "Char18": 24,
+    "A/B Balance": 25,
+    "Dual Detune": 26,
+    "UpperSplitPT": 27,
+    "LowerSplitPT": 28,
+    "Porta Time": 29,
+    "BendRange": [(30, 2, 5, 0), (59, 1, 0, 2)],
+    "Keymode": [(17, 2, 5, 0), (58, 2, 0, 2)],
+    "Total Volume": 32,
+    "AT Vibrato": 33,
+    "AT Brilliance": 34,
+    "AT Volume": 35,
+    "A Tone Nr.": 36,
+    "A Chromatic Shift": 37,
+    "A-Keyassign": (38, 3, 0),
+    "A Unison Detune": 39,
+    "A-Hold": (40, 1, 0),
+    "A LFO Mod Dpth": 41,
+    "A-Porta": (42, 1, 0),
+    "A Bender": 43,
+    "B Tone Nr.": 45,
+    "B Chromatic Shift": 46,
+    "B-Keyassign": (47, 3, 0),
+    "B Unison Detune": 48,
+    "B-Hold": (49, 1, 0),
+    "B LFO Mod Dpth": 50,
+    "B-Porta": (51, 1, 0),
+    "B Bender": 52,
+    "Chase Level": 54,
+    "Chase Time": 55,
+    "ChaseMode": (56, 2, 0),
+    "Chase On/Off": (57, 2, 0),
+}
 
 bulk_mapping_patch = {
     "Char1": 9,
@@ -704,7 +850,8 @@ def convert_message(src_msg, dst_msg_len: int, src_mapping, dest_mapping) -> Lis
     dest_msg = [0] * dst_msg_len
     for param_name in src_mapping:
         param_value = load_parameter(src_msg, src_mapping[param_name])
-        save_parameter(dest_msg, dest_mapping[param_name], param_value)
+        if param_value != 0:
+            save_parameter(dest_msg, dest_mapping[param_name], param_value)
     return dest_msg
 
 
@@ -731,54 +878,84 @@ def extractPatchesFromAllBankMessages(messages):
             patch_no = patch[8]
             apr_patch_dump = createMessageHeader(operation_vec_apr, MIDI_control_channel, patch_level) + [0x01] + [0x00] * 53 + [0xf7]
             convert_into_message(patch, apr_patch_dump, bulk_mapping_patch, apr_mapping_patch)
-            patch_name = "".join([chr(apr_patch_dump[i]) for i in range(7, 25)])
-            # print(f"Read Vecoven patch no {patch_no}: {patch_name}")
 
             # We need to find out which two tones belong to this patch
-            A_tone_number = apr_patch_dump[36]
-            B_tone_number = apr_patch_dump[45]
-            pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, 0x00, patch_no, 0x00, 0xf7]
-            high, low = getToneNumbers(apr_patch_dump)
+            pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, patch_no, 0x00, 0xf7]
+            assert len(pgr_patch) == pgr_len
+            A_tone_number, B_tone_number = getToneNumbers(apr_patch_dump)
 
             APR_tone_A = []
             pgr_tone_A = []
             # The Tones from 50..99 are ROM tones, which are stored in the device and not part of the bank
             if A_tone_number < 50:
                 A_tone_bulk = messages[64 + A_tone_number]
-                APR_tone_A = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_a] + [0x00] * 102 + [0xf7]
+                APR_tone_A = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_a] + [0x00] * 101 + [0xf7]
                 convert_into_message(A_tone_bulk, APR_tone_A, bulk_mapping_tone, apr_mapping_tone)
-                pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, 0x00, A_tone_number, 0x00, 0xf7]
+                pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, A_tone_number, 0x00, 0xf7]
 
             APR_tone_B = []
             pgr_tone_B = []
             if B_tone_number < 50:
                 B_tone_bulk = messages[64 + B_tone_number]
-                APR_tone_B = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_b] + [0x00] * 102 + [0xf7]
+                APR_tone_B = createMessageHeader(operation_vec_apr, MIDI_control_channel, tone_level) + [tone_b] + [0x00] * 101 + [0xf7]
                 convert_into_message(B_tone_bulk, APR_tone_B, bulk_mapping_tone, apr_mapping_tone)
-                pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, 0x00, B_tone_number, 0x00, 0xf7]
+                pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, B_tone_number, 0x00, 0xf7]
 
             tones_used.add(A_tone_number)
             tones_used.add(B_tone_number)
+            assert len(apr_patch_dump) == patch_apr_len
+            assert len(APR_tone_A) == tone_apr_len or len(APR_tone_A) == 0
+            assert len(APR_tone_B) == tone_apr_len or len(APR_tone_B) == 0
             apr_patch = pgr_patch + apr_patch_dump + pgr_tone_A + APR_tone_A + pgr_tone_B + APR_tone_B
-        # else:
-        #     # We need to find out which two tones belong to this patch
-        #     patch_data = denibble(patch[9:-1])
-        #
-        #     # We need to find out which two tones belong to this patch
-        #     upper_tone_number = patch_data[0x14]  # 1d specified, but possibly also 0x1f
-        #     lower_tone_number = patch_data[0x24]  # 26 specified, but possibly also 0x2e
-        #     # patch.extend(g_bank_messages[upper_tone_number])
-        #     # patch.extend(g_bank_messages[lower_tone_number])
-        #     pgr_patch, apr_patch = bldToApr(patch)
-        #     pgr_upper_tone, apr_upper_tone = bldToApr(g_bank_messages[upper_tone_number + 64])
-        #     pgr_lower_tone, apr_lower_tone = bldToApr(g_bank_messages[lower_tone_number + 64])
-        #     apr_patch = apr_patch + apr_upper_tone + apr_lower_tone
 
             if not isSingleProgramDump(apr_patch):
-                print("Error, created invalid program dump!")
+                isSingleProgramDump(apr_patch)
+                print(f"Error, created invalid program dump: {len(apr_patch)} bytes: {apr_patch}")
             else:
                 patches.append(apr_patch)
                 print(f"Discovered patch {nameFromDump(apr_patch)}")
+        elif isOperationMessage(patch, [operation_bld]):
+            if patch[5] != patch_level:
+                raise Exception("Expected patch bulk dump message - can't convert. Maybe some messages are missing?")
+            patch_no = patch[8]
+            apr_patch_dump = createMessageHeader(operation_apr, MIDI_control_channel, patch_level) + [0x01] + [0x00] * 53 + [0xf7]
+            denibbled = [patch[9+i*2] << 4 | patch[9+i*2+1] for i in range(48)]
+            convert_into_message(denibbled, apr_patch_dump, bulk_mapping_patch_0x37, apr_mapping_patch_0x37)
+
+            # We need to find out which two tones belong to this patch
+            pgr_patch = createMessageHeader(operation_pgr, MIDI_control_channel, patch_level) + [0x01, patch_no, 0x00, 0xf7]
+            assert len(pgr_patch) == pgr_len
+            A_tone_number, B_tone_number = getToneNumbers(apr_patch_dump)
+
+            APR_tone_A = []
+            pgr_tone_A = []
+            # The Tones from 50..99 are ROM tones, which are stored in the device and not part of the bank
+            if A_tone_number < 50:
+                A_tone_bulk = messages[64 + A_tone_number]
+                APR_tone_A = createMessageHeader(operation_apr, MIDI_control_channel, tone_level) + [tone_a] + A_tone_bulk[9:-1] + [0xf7]
+                pgr_tone_A = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_a, A_tone_number, 0x00, 0xf7]
+
+            APR_tone_B = []
+            pgr_tone_B = []
+            if B_tone_number < 50:
+                B_tone_bulk = messages[64 + B_tone_number]
+                APR_tone_B = createMessageHeader(operation_apr, MIDI_control_channel, tone_level) + [tone_b] + B_tone_bulk[9:-1] + [0xf7]
+                pgr_tone_B = createMessageHeader(operation_pgr, MIDI_control_channel, tone_level) + [tone_b, B_tone_number, 0x00, 0xf7]
+
+            tones_used.add(A_tone_number)
+            tones_used.add(B_tone_number)
+            assert len(apr_patch_dump) == patch_apr_len
+            assert len(APR_tone_A) == tone_legacy_apr_len or len(APR_tone_A) == 0
+            assert len(APR_tone_B) == tone_legacy_apr_len or len(APR_tone_B) == 0
+            apr_patch = pgr_patch + apr_patch_dump + pgr_tone_A + APR_tone_A + pgr_tone_B + APR_tone_B
+
+            if not isSingleProgramDump(apr_patch):
+                isSingleProgramDump(apr_patch)
+                print(f"Error, created invalid program dump: {len(apr_patch)} bytes: {apr_patch}")
+            else:
+                patches.append(apr_patch)
+                print(f"Discovered patch {nameFromDump(apr_patch)}")
+
     all_tones = set(range(50))
     unused_tones = all_tones - tones_used
     if len(unused_tones) > 0:
@@ -788,11 +965,11 @@ def extractPatchesFromAllBankMessages(messages):
 
 
 def numberFromDump(messages):
-    if isEditBufferDump(messages):
+    if isEditBufferDump2(messages):
         return 0
-    elif isSingleProgramDump(messages):
+    elif isOperationMessage(messages, [operation_pgr]):
         # The first message must be the PRG message of the patch, that's what we need
-        return messages[8]
+        return messages[7]
     elif isBulkMessage(messages):
         # This works for the first patch of a bulk dump, Vecoven format
         return messages[8]
@@ -805,8 +982,12 @@ def numberOfLayers(messages):
 
 def layerName(messages, layerNo):
     index = knobkraft.sysex.findSysexDelimiters(messages)
-    if isEditBufferDump(messages):
-        return nameFromDump(messages[index[layerNo][0]:index[layerNo][1]])
+    if isEditBufferDump2(messages):
+        mno = layerNo
+        if mno < len(index):
+            return nameFromDump(messages[index[layerNo][0]:index[layerNo][1]])
+        else:
+            return "ROM"
     elif isSingleProgramDump(messages):
         mno = layerNo*2+1
         if mno < len(index):
@@ -815,3 +996,16 @@ def layerName(messages, layerNo):
             return "ROM"
     raise Exception("Program error in layerName, can't get layerName for message {messages}")
 
+
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        all_patches = extractPatchesFromAllBankMessages(data.all_messages)
+        yield testing.ProgramTestData(message=all_patches[2], name='  V O I C E S     ', second_layer_name="VOICE HISS", number=2, friendly_number="002")
+
+    def edit_buffers(data: testing.TestData) -> List[testing.ProgramTestData]:
+        all_patches = extractPatchesFromAllBankMessages(data.all_messages)
+        edit_buffer = convertToEditBuffer(0, all_patches[2])
+        yield testing.ProgramTestData(message=edit_buffer, name='  V O I C E S     ', second_layer_name="VOICE HISS")
+
+    return testing.TestData(sysex="testData/Roland_MKS70/MKS70_internalBank_manual_dump_MIDIOX.syx", program_generator=programs, friendly_bank_name=(11, "B"),
+                            edit_buffer_generator=edit_buffers)
