@@ -203,6 +203,18 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 		metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 
+	std::string knownPositions;
+	auto alreadyInSynth = database_.getBankPositions(patch->smartSynth(), patch->md5());
+	for (auto const& pos : alreadyInSynth) {
+		if (!knownPositions.empty()) {
+			knownPositions += ", ";
+		}
+		knownPositions += patch->synth()->friendlyProgramAndBankName(pos.isBankKnown() ? pos.bank() : MidiBankNumber::invalid(), pos);
+	}
+	if (knownPositions.empty()) {
+		knownPositions = "no place known";
+	}
+
 	// More read only data
 	auto synth = patch->smartSynth();
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Synth", "Meta data", patch->synth()->getName(), 100));
@@ -212,6 +224,8 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Import", "Meta data", getImportName(patch), 100));
 	metaDataValues_.back()->setEnabled(false);
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Program", "Meta data", synth->friendlyProgramName(patch->patchNumber()), 100));
+	metaDataValues_.back()->setEnabled(false);
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("In synth at", "Meta data", knownPositions, 100));
 	metaDataValues_.back()->setEnabled(false);
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Size", "Meta data", fmt::format("{} Bytes", patch->patch()->data().size()), 100));
 	metaDataValues_.back()->setEnabled(false);
