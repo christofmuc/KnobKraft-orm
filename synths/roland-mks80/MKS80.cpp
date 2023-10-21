@@ -302,7 +302,7 @@ namespace midikraft {
 	void MKS80::changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished)
 	{
 		ignoreUnused(controller, channel, onFinished);
-		throw new std::runtime_error("Invalid state, method not implemented");
+		throw std::runtime_error("Invalid state, method not implemented");
 	}
 
 	MidiChannel MKS80::getInputChannel() const
@@ -324,7 +324,7 @@ namespace midikraft {
 	void MKS80::setMidiControl(MidiController *controller, bool isOn)
 	{
 		ignoreUnused(controller, isOn);
-		throw new std::runtime_error("Invalid state, method not implemented");
+		throw std::runtime_error("Invalid state, method not implemented");
 	}
 
 	struct SysexLoadingState {

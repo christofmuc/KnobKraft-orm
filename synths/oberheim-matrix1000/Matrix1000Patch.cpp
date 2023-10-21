@@ -88,7 +88,7 @@ namespace midikraft {
 		if (intDefinition && intDefinition->valueInPatch(*this, result)) {
 			return result;
 		}
-		throw new std::runtime_error("Invalid parameter");
+		throw std::runtime_error("Invalid parameter");
 	}
 
 	int Matrix1000Patch::param(Matrix1000Param id) const
@@ -106,7 +106,7 @@ namespace midikraft {
 				return *param;
 			}
 		}
-		throw new std::runtime_error("Bogus call");
+		throw std::runtime_error("Bogus call");
 	}
 
 	bool Matrix1000Patch::paramActive(Matrix1000Param id) const

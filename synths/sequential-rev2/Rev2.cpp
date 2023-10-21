@@ -83,7 +83,7 @@ namespace midikraft {
 				//TBD - name irrelevant?
 				return unfilteredData->data();
 			default:
-				throw new std::runtime_error("Invalid argument - unknown data type id");
+				throw std::runtime_error("Invalid argument - unknown data type id");
 			}
 		}
 		else {
