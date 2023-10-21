@@ -92,6 +92,7 @@ set(SOURCES
 	OrmLookAndFeel.cpp OrmLookAndFeel.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
+	PatchHistoryPanel.cpp PatchHistoryPanel.h
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
 	PatchPerSynthList.cpp PatchPerSynthList.h

@@ -213,7 +213,7 @@ void SynthBankPanel::refresh() {
 		{
 			bankNameAndDate_.setText(fmt::format("'{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
 		}
-		bankList_->setPatches(synthBank_, buttonMode_);
+		bankList_->setPatchList(synthBank_, buttonMode_);
 		modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	}
 	else

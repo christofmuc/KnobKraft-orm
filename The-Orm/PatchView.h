@@ -30,6 +30,7 @@
 
 #include "ImportFromSynthDialog.h"
 #include "SynthBankPanel.h"
+#include "PatchHistoryPanel.h"
 
 #include <map>
 
@@ -125,6 +126,7 @@ private:
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
 	std::unique_ptr<SynthBankPanel> synthBank_;
+	std::unique_ptr<PatchHistoryPanel> patchHistory_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 
