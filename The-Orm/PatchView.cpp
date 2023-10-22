@@ -130,7 +130,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(rightSideTab_);
 	rightSideTab_.addTab("Current Patch", Colours::black, currentPatchDisplay_.get(), false);
 	rightSideTab_.addTab("Synth Bank", Colours::black, synthBank_.get(), false);
-	rightSideTab_.addTab("Patch History", Colours::black, patchHistory_.get(), false);
+	rightSideTab_.addTab("Recent Patches", Colours::black, patchHistory_.get(), false);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
 		SplitteredEntry{ box, 15, 5, 40 },
