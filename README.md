@@ -1,4 +1,6 @@
-# A free MIDI Sysex Librarian - The KnobKraft Orm
+<img src="https://user-images.githubusercontent.com/5006524/277113738-73bf9b4f-f089-42b7-bbb2-aa4bf55c1528.png" align="right">
+
+# A free MIDI Sysex Librarian - The KnobKraft Orm 
 
 [![release](https://img.shields.io/github/v/release/christofmuc/KnobKraft-orm?style=plastic)](https://github.com/christofmuc/KnobKraft-orm/releases)
 
