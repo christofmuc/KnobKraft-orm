@@ -2,6 +2,7 @@
 
 #include "LayoutConstants.h"
 #include "UIModel.h"
+#include "PatchView.h"
 
 PatchHistoryPanel::PatchHistoryPanel(PatchView* patchView) : patchView_(patchView)
 	, buttonMode_(static_cast<PatchButtonInfo>(static_cast<int>(PatchButtonInfo::SubtitleSynth) | static_cast<int>(PatchButtonInfo::CenterName)))	
@@ -12,6 +13,9 @@ PatchHistoryPanel::PatchHistoryPanel(PatchView* patchView) : patchView_(patchVie
 	addAndMakeVisible(*history_);
 	UIModel::instance()->currentPatch_.addChangeListener(this);
 	patchHistory_ = std::make_shared<midikraft::PatchList>("History");
+	history_->onPatchClicked = [this](midikraft::PatchHolder& patch) {
+		patchView_->selectPatch(patch, true);
+	};
 
 }
 
