@@ -94,6 +94,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 
 	synthBank_ = std::make_unique<SynthBankPanel>(database_, this);
 	patchHistory_ = std::make_unique<PatchHistoryPanel>(this);
+	similarPatches_ = std::make_unique<SimilarPatchesPanel>(this, database_);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -131,6 +132,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	rightSideTab_.addTab("Current Patch", Colours::black, currentPatchDisplay_.get(), false);
 	rightSideTab_.addTab("Synth Bank", Colours::black, synthBank_.get(), false);
 	rightSideTab_.addTab("Recent Patches", Colours::black, patchHistory_.get(), false);
+	rightSideTab_.addTab("Similars", Colours::black, similarPatches_.get(), false);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
 		SplitteredEntry{ box, 15, 5, 40 },

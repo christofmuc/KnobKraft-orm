@@ -251,6 +251,9 @@ add_subdirectory(adaptations)
 # Add the pytchirp module that exposes the synths to Python
 add_subdirectory(pytschirp)
 
+# Add the custom vp tree implementation
+add_subdirectory(vp-baum)
+
 # Main module
 add_subdirectory(The-Orm)
 

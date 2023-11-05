@@ -106,6 +106,7 @@ set(SOURCES
 	SecondaryWindow.cpp SecondaryWindow.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
+	SimilarPatchesPanel.cpp SimilarPatchesPanel.h
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
@@ -142,6 +143,7 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-yamaha-refacedx
 		knobkraft-generic-adaptation
 		pytschirp_embedded
+		VPBaum
 )
 
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
