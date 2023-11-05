@@ -43,6 +43,10 @@ def numberOfPatchesPerBank():
     return 100
 
 
+def bankSelect(channel, bank):
+    return [0xb0 | (channel & 0x0f), 32, bank]
+
+
 def createEditBufferRequest(channel):
     return [0xf0] + groove_synth_id + [0x01, 0b00000110, 0xf7]
 
