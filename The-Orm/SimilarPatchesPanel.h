@@ -27,7 +27,7 @@ public:
 
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
-	Merkmal *patchToFeatureVector(int key, midikraft::PatchHolder const& patch);
+	Merkmal *patchToFeatureVector(int key, size_t dimension, midikraft::PatchHolder const& patch);
 
 	PatchView* patchView_;
 	midikraft::PatchDatabase& db_;

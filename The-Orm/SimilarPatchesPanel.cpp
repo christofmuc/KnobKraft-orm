@@ -30,14 +30,19 @@ void SimilarPatchesPanel::resized()
 	similarity_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 }
 
-Merkmal * SimilarPatchesPanel::patchToFeatureVector(int key, midikraft::PatchHolder const& patch)
+Merkmal * SimilarPatchesPanel::patchToFeatureVector(int key, size_t dimension, midikraft::PatchHolder const& patch)
 {
 	size_t num_dimensions = patch.patch()->data().size();
-	auto values = new float[num_dimensions];
-	for (size_t i = 0; i < num_dimensions; i++) {
-		values[i] = patch.patch()->data()[i] / 255.0f;
+	auto merkmal = new Merkmal(key, (int)dimension);
+	size_t i;
+	for (i = 0; i < num_dimensions; i++) {
+		merkmal->werte[i] = patch.patch()->data()[i] / 255.0f;
 	}
-	return new Merkmal(key, (int) num_dimensions, values);
+	while (i < dimension) {
+		merkmal->werte[i] = 0.0f;
+		i++;
+	}
+	return merkmal;
 }
 
 void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
@@ -47,16 +52,23 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 		if (UIModel::currentPatch().patch()) {
 			// Build the VPtree
 			EuklidMass cityBlock;
-			size_t dimension = UIModel::currentPatch().patch()->data().size();
-			VPBaum vp_tree("test.vp", &cityBlock, (int)dimension, 16, 2);
 
 			// Load the patches
 			auto allPatches = db_.getPatches(patchView_->currentFilter(), 0, -1);
+			auto max_element = std::max_element(allPatches.cbegin(), allPatches.cend(), [](midikraft::PatchHolder const& a, midikraft::PatchHolder const& b) { 
+				return (a.patch() ? a.patch()->data().size() : 0) < (b.patch() ? b.patch()->data().size() : 0);
+			});
+			size_t max_dimension = 0;
+			if (max_element != allPatches.cend()) {
+				max_dimension = max_element->patch()->data().size();
+			}
 			auto features = new Merkmal * [allPatches.size()];
 			for (size_t i = 0; i < allPatches.size(); i++) {
-				features[i] = patchToFeatureVector((int)i, allPatches[i]);
+				features[i] = patchToFeatureVector((int)i, max_dimension, allPatches[i]);
 			}
 			auto featureSet = new MerkmalsMenge((int)allPatches.size(), features);
+
+			VPBaum vp_tree("test.vp", &cityBlock, (int)max_dimension, 16, 2);
 			long start = vp_tree.speichereMenge(featureSet);
 			vp_tree.info.startSeite = start;
 			vp_tree.speichereInfo();
@@ -67,7 +79,7 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 
 			// Run the VPsearch here
 			float sigma = 0.001f;
-			Merkmal* referencePatch = patchToFeatureVector(-1, UIModel::currentPatch());
+			Merkmal* referencePatch = patchToFeatureVector(-1, max_dimension,  UIModel::currentPatch());
 			VPBaum vp_tree_search("test.vp");
 			KArray* result = vp_tree_search.kNNSuche(referencePatch, 10, &sigma);
 			assert(result != nullptr);
