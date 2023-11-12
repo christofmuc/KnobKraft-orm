@@ -58,6 +58,11 @@ def isEditBufferDump(message):
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message
+    if isSingleProgramDump(message):
+        edit_buffer = message[:5] + [0b00000011] + message[8:]
+        if not isEditBufferDump(edit_buffer):
+            raise Exception("Failed to convert to edit buffer")
+        return edit_buffer
     raise Exception("This is not an edit buffer - can't be converted")
 
 
