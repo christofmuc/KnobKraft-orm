@@ -78,7 +78,7 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 			delete featureSet;
 
 			// Run the VPsearch here
-			float sigma = 0.001f;
+			float sigma = 10000.0f;
 			Merkmal* referencePatch = patchToFeatureVector(-1, max_dimension,  UIModel::currentPatch());
 			VPBaum vp_tree_search("test.vp");
 			KArray* result = vp_tree_search.kNNSuche(referencePatch, 10, &sigma);
