@@ -6,6 +6,7 @@
 import pytest
 
 from Roland_MKS70V4 import *
+from knobkraft import list_compare
 
 bulk_message_length = 66
 bulk_0x37_message_length = 48
@@ -36,6 +37,32 @@ testdata1 = [
 
 
 @pytest.mark.parametrize("message_length, mapping_1", testdata1)
+def test_no_double_mapping(message_length, mapping_1):
+    all_bits = [0] * message_length
+    for item in mapping_1:
+        index = mapping_1[item]
+        if isinstance(index, int):
+            # Standard, assume 7 bits blocked
+            for i in range(7):
+                if all_bits[index] & (1 << i) != 0:
+                    raise Exception(f"Bit {i} of byte {index} has already been used - double mapping error!")
+                all_bits[index] = all_bits[index] | (1<<i)
+        elif isinstance(index, tuple):
+            map = mapping_1[item]
+            index = map[0]
+            width = map[1]
+            shift = map[2]
+            for i in range(width):
+                if all_bits[index] & (1 << (i + shift)) != 0:
+                    raise Exception(f"Bit {i + shift} of byte {index} has already been used - double mapping error!")
+                all_bits[index] = all_bits[index] & (1<<(i+shift))
+    for i in range(message_length):
+        if all_bits[i] != 127:
+            pass
+            #assert(all_bits[i] == 127)
+
+
+@pytest.mark.parametrize("message_length, mapping_1", testdata1)
 def test_load_and_save(message_length, mapping_1):
     for i in range(message_length):  # Iterate over all bytes in the message
         for j in range(7):  # Iterate over all bits in a byte
@@ -59,17 +86,17 @@ def test_load_and_save(message_length, mapping_1):
 
 
 testdata2 = [
-    (apr_message_length, bulk_message_length, apr_mapping_patch, bulk_mapping_patch),
-    (bulk_message_length, apr_message_length, bulk_mapping_patch, apr_mapping_patch),
-    (apr_tone_message_length, bulk_tone_message_length, apr_mapping_tone, bulk_mapping_tone),
-    (bulk_tone_message_length, apr_tone_message_length, bulk_mapping_tone, apr_mapping_tone),
-    (apr_0x37_message_length, bulk_0x37_message_length, apr_mapping_patch_0x37, bulk_mapping_patch_0x37),
-    (bulk_0x37_message_length, apr_0x37_message_length, bulk_mapping_patch_0x37, apr_mapping_patch_0x37),
+    ("Patch APR to BLD", apr_message_length, bulk_message_length, apr_mapping_patch, bulk_mapping_patch),
+    ("Patch BLD to APR", bulk_message_length, apr_message_length, bulk_mapping_patch, apr_mapping_patch),
+    ("Tone APR to BLD", apr_tone_message_length, bulk_tone_message_length, apr_mapping_tone, bulk_mapping_tone),
+    ("Tone BLD to APR", bulk_tone_message_length, apr_tone_message_length, bulk_mapping_tone, apr_mapping_tone),
+    ("Legacy APR to BLD", apr_0x37_message_length, bulk_0x37_message_length, apr_mapping_patch_0x37, bulk_mapping_patch_0x37),
+    ("Legacy BLD to APR", bulk_0x37_message_length, apr_0x37_message_length, bulk_mapping_patch_0x37, apr_mapping_patch_0x37),
 ]
 
 
-@pytest.mark.parametrize("src_message_length, dst_message_length, mapping_1, mapping_2", testdata2)
-def test_conversion(src_message_length, dst_message_length, mapping_1, mapping_2):
+@pytest.mark.parametrize("name, src_message_length, dst_message_length, mapping_1, mapping_2", testdata2)
+def test_conversion(name, src_message_length, dst_message_length, mapping_1, mapping_2):
     message_length = src_message_length
     for i in range(message_length):  # Iterate over all bytes in the message
         for j in range(7):  # Iterate over all bits in a byte
@@ -95,6 +122,11 @@ def test_conversion(src_message_length, dst_message_length, mapping_1, mapping_2
                 # Check that the original message is recovered
                 dst_msg = convert_message(src_msg, dst_message_length, mapping_1, mapping_2)
                 src_msg_back = convert_message(dst_msg, src_message_length, mapping_2, mapping_1)
+                print(f"\nSource values: {values}")
+                target_values = {}
+                for key in mapping_2.keys():
+                    target_values[key] = load_parameter(dst_msg, mapping_2[key])
+                print(f"\nTarget values: {target_values}")
                 assert src_msg == src_msg_back, f"Conversion failed for byte {i}, bit {j}"
 
     print("All conversions succeeded")
@@ -117,6 +149,29 @@ def test_single_tone_apr_0x38():
     assert isToneAprMessage(single_apr)
     assert nameFromDump(single_apr) == "PAD 1     "
     assert not isEditBufferDump2(single_apr)
+
+
+def test_jx8p_import():
+    single_apr = knobkraft.sysex.stringToSyx(
+        "f0 41 35 00 21 20 01 4e 4f 20 45 53 43 41 50 45 20 20 36 7f 44 00 00 3c 7a 00 45 54 00 00 7f 7f 7f 40 40 71 52 7f 00 60 00 38 0f 00 2f 4c 20 60 54 00 2d 7f 00 66 00 54 45 5f 40 00 47 64 52 20 7f 7f f7"
+    )
+    assert isAprMessage(single_apr)
+
+
+def test_compare_ctrlr_and_kk():
+    cr = ["F0 41 38 00 24 30 01 44 55 41 4C 20 50 55 4C 53 45 20 53 59 4E 43 20 20 20 3A 30 27 52 01 00 00 7F 1A 00 00 01 00 00 3F 01 37 00 01 00 02 00 00 41 01 3A 00 01 00 5A 02 1A 00 00 00 F7",
+          "F0 41 38 00 24 20 01 50 55 4C 53 45 53 59 4E 43 31 20 38 03 00 14 3A 7F 00 26 5D 17 53 00 20 5A 00 64 21 00 00 00 3E 21 7F 3C 6B 00 00 24 00 34 7F 52 6E 1A 7F 5E 00 7F 00 7F 00 7F 00 23 63 51 6D 16 41 71 38 00 00 00 40 20 40 20 40 40 00 20 40 60 40 00 00 00 00 40 00 20 50 50 20 10 50 20 60 40 20 40 10 00 10 10 00 10 00 00 F7",
+          "F0 41 38 00 24 20 02 50 55 4C 53 45 53 59 4E 43 32 20 38 03 00 68 45 7A 00 26 5D 17 5B 00 2C 5A 7F 64 21 00 00 00 3E 21 64 3C 6B 00 00 24 00 34 7F 55 70 1D 7F 5E 00 7F 00 7F 00 7F 00 23 63 51 6D 16 41 71 38 00 00 00 40 20 40 20 40 40 00 20 60 40 60 00 00 00 00 40 00 20 50 50 20 10 50 20 60 40 20 40 10 00 10 10 00 10 00 00 F7"]
+
+    print(nameFromDump(knobkraft.sysex.stringToSyx(cr[0])))
+    m = 0
+    bulk = convert_message(knobkraft.sysex.stringToSyx(cr[m]), bulk_message_length, apr_mapping_patch,  bulk_mapping_patch)
+    kk = convert_message(bulk, apr_message_length, bulk_mapping_patch, apr_mapping_patch)
+    list_compare(kk[7:-1], knobkraft.sysex.stringToSyx(cr[m])[7:-1])
+    for m in range(2):
+        bulk = convert_message(knobkraft.sysex.stringToSyx(cr[m+1]), bulk_tone_message_length, apr_mapping_tone,  bulk_mapping_tone)
+        kk = convert_message(bulk, apr_tone_message_length, bulk_mapping_tone, apr_mapping_tone)
+        list_compare(kk[7:-1], knobkraft.sysex.stringToSyx(cr[m+1])[7:-1])
 
 
 def test_old_bank_format():
