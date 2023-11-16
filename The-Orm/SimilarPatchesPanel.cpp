@@ -51,8 +51,7 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 	{
 		if (UIModel::currentPatch().patch()) {
 			// Build the VPtree
-			EuklidMass cityBlock;
-
+			
 			// Load the patches
 			auto allPatches = db_.getPatches(patchView_->currentFilter(), 0, -1);
 			auto max_element = std::max_element(allPatches.cbegin(), allPatches.cend(), [](midikraft::PatchHolder const& a, midikraft::PatchHolder const& b) { 
@@ -68,7 +67,7 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 			}
 			auto featureSet = new MerkmalsMenge((int)allPatches.size(), features);
 
-			VPBaum vp_tree("test.vp", &cityBlock, (int)max_dimension, 16, 2);
+			VPBaum vp_tree("test.vp", std::make_unique<EuklidMass>(), (int)max_dimension, 16, 2);
 			long start = vp_tree.speichereMenge(featureSet);
 			vp_tree.info.startSeite = start;
 			vp_tree.speichereInfo();
