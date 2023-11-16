@@ -25,6 +25,7 @@ operation_bld = 0b00110111  # = 0x37
 operation_vec_apr = 0x38  # Vecoven (OS 4) All Parameters
 operation_vec_bld = 0x3a  # Vecoven (OS 4) Bulk Dump
 
+format_type_jx8p = 0x21
 format_type_jx10 = 0b00100100  # = 0x24
 
 patch_level = 0b00110000  # = 0x30
@@ -148,7 +149,7 @@ def isOperationMessage(message: List[int], operations: List[int]) -> bool:
         if (message[0] == 0xF0 and
                 message[1] == roland_id and
                 message[2] in operations and
-                message[4] == format_type_jx10):
+                message[4] in [format_type_jx10, format_type_jx8p]):
             return True
     # If the message does not match the expected format, return False
     return False
