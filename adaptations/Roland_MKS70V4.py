@@ -24,6 +24,7 @@ operation_ipr = 0b00110110  # = 0x36
 operation_bld = 0b00110111  # = 0x37
 operation_vec_apr = 0x38  # Vecoven (OS 4) All Parameters
 operation_vec_bld = 0x3a  # Vecoven (OS 4) Bulk Dump
+operation_request_edit_buffer = 0x3d  # Vecoven Edit Buffer Request, new from firmware 4.19 and upwards
 
 format_type_jx8p = 0x21
 format_type_jx10 = 0b00100100  # = 0x24
@@ -181,10 +182,9 @@ def isPartOfSingleProgramDump(message: List[int]) -> bool:
 
 
 def createEditBufferRequest(channel):
-    # I have not found a way to request the edit buffer from the synth, that is, the transient state of patch and tones.
-    # You need to send a program change, but that would recall that program and erase the transient edit buffer.
-    # Do nothing here.
-    return []
+    # From firmware 4.19 the Vecoven OS can do an edit buffer request. Try to compose it correctly
+    return createMessageHeader(operation_request_edit_buffer, channel, 0x02) + [0x01, 0x07, 0xf7]
+
 
 def isEditBufferDump(messages):
     return isEditBufferDump2(messages)
