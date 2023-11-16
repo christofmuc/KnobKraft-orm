@@ -72,9 +72,9 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 			long start = vp_tree.speichereMenge(featureSet);
 			vp_tree.info.startSeite = start;
 			vp_tree.speichereInfo();
-			//for (size_t i = 0; i < allPatches.size(); i++) {
-//					delete features[i];
-			//}
+			for (size_t i = 0; i < allPatches.size(); i++) {
+				delete features[i];
+			}
 			delete featureSet;
 
 			// Run the VPsearch here
