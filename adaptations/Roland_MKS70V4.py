@@ -486,7 +486,7 @@ apr_mapping_patch_0x37 = {
     "Chase Level": 54,
     "Chase Time": 55,
     "ChaseMode": (56, 2, 0),
-    "Chase On/Off": (57, 2, 0),
+    "Chase On/Off": (57, 1, 0),
 }
 
 bulk_mapping_patch = {
@@ -511,8 +511,8 @@ bulk_mapping_patch = {
     "A/B Balance": 29,
     "Dual Detune": 30,
     "UpperSplitPT": 31,
-    "BendRange": [(32, 1, 3, 0), (40, 1, 2, 1), (62, 1, 1, 2)],
-    "Keymode": [(32, 1, 1, 0), (40, 1, 3, 1), (40, 1, 4, 2), (40, 1, 7, 3)],
+    "BendRange": [(32, 1, 2, 0), (40, 1, 1, 1), (62, 1, 0, 2)],
+    "Keymode": [(32, 1, 0, 1), (40, 1, 2, 2), (40, 1, 3, 3), (40, 1, 6, 0)],
     "LowerSplitPT": 33,
     "Porta Time": 34,
     "Total Volume": 35,
@@ -520,7 +520,7 @@ bulk_mapping_patch = {
     "AT Brilliance": 37,
     "AT Volume": 38,
     "A Tone Nr.": 39,
-    "A-Hold": (40, 1, 1),
+    "A-Hold": (40, 1, 0),
     "A Chromatic Shift": 41,
     "A Unison Detune": 42,
     "A LFO Mod Dpth": 43,
@@ -528,18 +528,19 @@ bulk_mapping_patch = {
     "B Tone Nr.": 45,
     "B Chromatic Shift": 46,
     "B Unison Detune": 47,
-    "B-Hold": (48, 1, 3),
-    "A-Porta": (48, 1, 5),
+    "B-Hold": (48, 1, 2),
+    "A-Porta": (48, 1, 4),
     "B LFO Mod Dpth": 49,
     "B Bender": 50,
     "Chase Level": 51,
     "Chase Time": 52,
-    "A-Keyassign": [(53, 1, 6, 0), (53, 1, 7, 1), (56, 1, 3, 2)],
-    "B-Keyassign": [(54, 1, 6, 0), (54, 1, 7, 1), (56, 1, 2, 2)],
+    "A-Keyassign": [(53, 1, 5, 0), (53, 1, 6, 1), (56, 1, 1, 2)],
+    "B-Keyassign": [(54, 1, 5, 0), (54, 1, 6, 1), (56, 1, 0, 2)],
     "B-Porta": (56, 1, 7),
-    "ChaseMode": [(56, 1, 4, 0), (56, 1, 5, 1)],
-    "Chase On/Off": [(63, 1, 2, 0), (63, 1, 5, 1)]
+    "ChaseMode": [(56, 1, 3, 1), (56, 1, 4, 0)],
+    "Chase On/Off": (63, 1, 2)
 }
+
 
 apr_mapping_patch = {
     "Char1": 7,
@@ -565,7 +566,7 @@ apr_mapping_patch = {
     "UpperSplitPT": 27,
     "LowerSplitPT": 28,
     "Porta Time": 29,
-    "BendRange": [(30, 2, 5, 0), (59, 1, 0, 2)],
+    "BendRange": [(30, 2, 6, 0), (59, 1, 0, 2)],
     "Keymode": [(31, 2, 0, 0), (58, 2, 0, 2)],
     "Total Volume": 32,
     "AT Vibrato": 33,
@@ -588,11 +589,10 @@ apr_mapping_patch = {
     "B-Porta": (51, 1, 0),
     "B Bender": 52,
     "Chase Level": 54,
-    "Chase Time": 55,
-    "ChaseMode": (56, 2, 0),
-    "Chase On/Off": (57, 2, 0),
+    "ChaseMode": (55, 2, 0),
+    "Chase Time": 56,
+    "Chase On/Off": (57, 1, 0),
 }
-
 bulk_mapping_tone = {
     "Char1": 9,
     "Char2": 10,
