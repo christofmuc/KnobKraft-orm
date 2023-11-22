@@ -17,6 +17,23 @@
 
 class PatchView;
 
+class SimilarityIndex {
+public:
+	SimilarityIndex(std::shared_ptr<midikraft::Synth> synth);
+	~SimilarityIndex();
+
+	void addPatches(std::vector<midikraft::PatchHolder> const& allPatches);
+	KArray* search(midikraft::PatchHolder const& patch);
+	static Merkmal* patchToFeatureVector(int key, size_t dimension, midikraft::PatchHolder const& patch);
+
+
+private:
+	std::string vpFileName_;
+	std::shared_ptr<midikraft::Synth> synth_;
+	int dimensionality_;
+};
+
+
 class SimilarPatchesPanel : public Component, private ChangeListener
 {
 public:
@@ -27,7 +44,6 @@ public:
 
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
-	Merkmal *patchToFeatureVector(int key, size_t dimension, midikraft::PatchHolder const& patch);
 
 	PatchView* patchView_;
 	midikraft::PatchDatabase& db_;
