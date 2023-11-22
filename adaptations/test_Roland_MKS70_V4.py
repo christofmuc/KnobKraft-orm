@@ -180,6 +180,12 @@ def test_old_bank_format():
     assert len(patches) > 0
 
 
+def test_EditBufferRequest():
+    # I don't have documentation yet on the new Vecoven firmware. Check that the string generated matches the comment in the discussion on Github
+    correct_message = knobkraft.sysex.stringToSyx("f0 41 3d 00 24 02 01 07 f7")
+    list_compare(createEditBufferRequest(0), correct_message)
+
+
 def test_MKS70V4():
     # Those are V3 bank dumps, and CANNOT be loaded by this adaptation which only supports the Vecoven firmware. We need to
     # reverse engineer the bank dump format to be able to convert them into APR messages first!
