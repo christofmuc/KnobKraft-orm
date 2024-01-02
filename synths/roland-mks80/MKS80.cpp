@@ -366,7 +366,7 @@ namespace midikraft {
 					for (int i = 4; i < 248 + 4; i++) {
 						checksum = (checksum + message.getSysExData()[i]) & 0x7f;
 					}
-					if ((128 - checksum) != message.getSysExData()[248 + 4]) {
+					if (((128 - checksum) & 0x7f) != message.getSysExData()[248 + 4]) {
 						Sysex::saveSysex("failed_checksum.bin", { message });
 						jassert(false);
 						spdlog::error("Checksum error, aborting!");
