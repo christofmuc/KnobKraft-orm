@@ -7,17 +7,21 @@ import hashlib
 import itertools
 from typing import List
 
+import knobkraft
 import testing
 
 systemSettingsAddress = (0x00, 0x00, 0x00)
 bulkHeaderAddress = (0x0e, 0x0f, 0x00)
 bulkFooterAddress = (0x0f, 0x0f, 0x00)
+bulkProgramHeaderAddress = (0x0e, 0x00, 0x00)  # https://coffeeshopped.com/patch-base/help/synth/yamaha/reface-dx
+bulkProgramFooterAddress = (0x0f, 0x00, 0x00)
 commonVoiceAddress = (0x30, 0x00, 0x00)
 legacyDataLength = 38 + 4 * 28  # The old format stored only the required bytes, none of the sysex stuff
 
 
 def name():
     # This is the same name as the C++ implementation, so it'd better be compatible!
+    return "Yamaha Reface DX"
     return "Yamaha Reface DX adaption"
 
 
@@ -35,7 +39,7 @@ def channelIfValidDeviceResponse(message):
         address = addressFromMessage(message)
         if address == systemSettingsAddress:
             data_block = dataBlockFromMessage(message)
-            channel = data_block[0]
+            channel = data_block[1]  # data_block[0] is the transmit channel
             if channel == 0x10:
                 print("Warning: Your reface DX is set to OMNI MIDI channel. Surprises await!")
                 return 1
@@ -117,6 +121,33 @@ def isLegacyFormat(message):
     return len(message) == legacyDataLength
 
 
+def isSingleProgramDump(messages):
+    return isEditBufferDump(messages)
+
+
+def isPartOfSingleProgramDump(message):
+    return isPartOfEditBufferDump(message)
+
+
+def convertToProgramDump(channel, message, program_number):
+    if isLegacyFormat(message):
+        message = convertFromLegacyFormat(channel, message)
+    if isEditBufferDump(message) or isSingleProgramDump(message):
+        messages = splitSysexMessage(message)
+        messages[0] = buildBulkDumpMessage(channel, (bulkProgramHeaderAddress[0], bulkProgramHeaderAddress[1], program_number), [])
+        messages[6] = buildBulkDumpMessage(channel, (bulkProgramFooterAddress[0], bulkProgramFooterAddress[1], program_number), [])
+        result = []
+        for m in messages:
+            result.extend(m)
+        return result + [0b11000000 | channel, program_number]
+    raise Exception("Can only convert single program dumps to program dumps")
+
+
+def createProgramDumpRequest(channel, patch_no):
+    return [0b11000000 | channel, patch_no] + createEditBufferRequest(channel)
+    #return buildRequest(channel, (bulkHeaderAddress[0], bulkHeaderAddress[1], patch_no))
+
+
 def convertFromLegacyFormat(channel, legacy_data):
     # The legacy_data was produced by the C++ implementation, and is only the used data without all the bulk
     # Wrap this into the 7 MIDI messages required for a proper transfer
@@ -188,7 +219,7 @@ def friendlyBankName(bank):
 def friendlyProgramName(programNo):
     bank = programNo // 8
     patch = programNo % 8
-    return f"Bank{bank}-{patch}"
+    return f"Bank{bank+1}-{patch+1}"
 
 
 def addressFromMessage(message):
@@ -266,3 +297,10 @@ def make_test_data():
         yield testing.ProgramTestData(message=raw_data, name="Piano 1   ", rename_name="Piano 2   ")
 
     return testing.TestData(sysex="testData/refaceDX-00-Piano_1___.syx", edit_buffer_generator=edit_buffers)
+
+
+if __name__ == "__main__":
+    editbuffer =knobkraft.sysex.load_sysex("testData/refaceDX-00-Piano_1___.syx", as_single_list=True)
+    assert isEditBufferDump(editbuffer)
+    program = convertToProgramDump(0, editbuffer, 1)
+    assert isEditBufferDump(program)
