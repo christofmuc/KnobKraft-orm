@@ -32,7 +32,7 @@ void SimilarityIndex::addPatches(std::vector<midikraft::PatchHolder> const& allP
 	}
 	auto featureSet = new MerkmalsMenge((int)allPatches.size(), features);
 
-	dimensionality_ = (int)max_dimension;
+	dimensionality_ = (int)8192; // max_dimension;
 	VPBaum vp_tree(vpFileName_.c_str(), std::make_unique<EuklidMass>(), dimensionality_, 16, 2);
 	long start = vp_tree.speichereMenge(featureSet);
 	vp_tree.info.startSeite = start;
@@ -98,29 +98,30 @@ void SimilarPatchesPanel::resized()
 
 void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == &UIModel::instance()->currentPatch_)
+	ignoreUnused(source);
+	return;
+	/*if (source == &UIModel::instance()->currentPatch_)
 	{
 		if (UIModel::currentPatch().patch()) {
-			// Build the VPtree
-			
-			// Load the patches
-			auto allPatches = db_.getPatches(patchView_->currentFilter(), 0, -1);
-
-			// Build an index
-			SimilarityIndex index(nullptr);
-			index.addPatches(allPatches);
+			// Build the VPtree if not built yet
+			if (!activeIndex_) {
+				activeIndex_ = std::make_unique<SimilarityIndex>(nullptr);
+				// Load the patches
+				allPatches_ = db_.getPatches(patchView_->currentFilter(), 0, -1);
+				activeIndex_->addPatches(allPatches_);
+			}
 
 			// Search
-			auto result = index.search(UIModel::currentPatch());
+			auto result = activeIndex_->search(UIModel::currentPatch());
 
 			// Build a list from the results!
 			std::vector<midikraft::PatchHolder> hits;
 			for (int i = 0; i < result->getNum(); i++) {
-				hits.push_back(allPatches[result->getItem(i)->schluessel]);
+				hits.push_back(allPatches_[result->getItem(i)->schluessel]);
 			}
 			similarList_->setPatches(hits);
 			similarity_->setPatchList(similarList_, buttonMode_);
 
 		}
-	}
+	}*/
 }

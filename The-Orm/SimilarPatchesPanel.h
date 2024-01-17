@@ -50,4 +50,6 @@ private:
 	PatchButtonInfo buttonMode_;
 	std::unique_ptr<VerticalPatchButtonList> similarity_;
 	std::shared_ptr<midikraft::PatchList> similarList_;
+	std::unique_ptr<SimilarityIndex> activeIndex_;
+	std::vector<midikraft::PatchHolder> allPatches_;
 };
