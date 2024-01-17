@@ -70,6 +70,30 @@ def friendlyProgramName(program):
     return "%d%d" % (program // 8 + 1, (program % 8) + 1)
 
 
+def program_change(channel, program_number):
+    return [0xc0 | (channel & 0x0f), program_number]
+
+
+def createStoreToProgramMessage(channel, program_number):
+    # 0x11 is the WRITE_REQUEST message
+    return [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x03, 0x11, program_number & 0x3f, 0xf7]
+
+
+def createProgramDumpRequest(channel, patchNo):
+    return program_change(channel, patchNo) + createEditBufferRequest(channel)
+
+
+def isSingleProgramDump(message):
+    # Single Program Dumps are just edit buffer dumps
+    return isEditBufferDump(message)
+
+
+def convertToProgramDump(channel, message, program_number):
+    if isEditBufferDump(message):
+        return program_change(channel, program_number) + message + createStoreToProgramMessage(channel, program_number)
+    raise Exception("Can only convert edit buffers!")
+
+
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = [x for sublist in data.all_messages[0:2] for x in sublist]
