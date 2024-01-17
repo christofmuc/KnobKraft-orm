@@ -83,4 +83,17 @@ def unescapeSysex_deepmind(sysex):
     return result
 
 
+def denibble_hi_then_lo(message):
+    return [message[x+1] | (message[x] << 4) for x in range(0, len(message), 2)]
 
+
+def denibble_lo_then_hi(message):
+    return [message[x] | (message[x + 1] << 4) for x in range(0, len(message), 2)]
+
+
+def nibble(message):
+    result = []
+    for b in message:
+        result.append(b & 0x0f)
+        result.append((b & 0xf0) >> 4)
+    return result
