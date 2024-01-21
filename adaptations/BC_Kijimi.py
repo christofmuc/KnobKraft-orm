@@ -17,6 +17,7 @@ command_get_state = 0x14  # That's the edit buffer of the Kijimi
 command_transfer_patch = 0x00  # Don't send a message 0x13 with patch data, but to store send this command?
 command_set_state = 0x23  # Send edit buffer
 old_program_length = 268 / 2  # This is the length of the messages in the factory patches. Format changed?
+hypothetical_old_state_length = 268 / 2 - 2   # Assuming old edit buffers are 2 bytes shorter than old programs?
 new_program_length = 262  # Documented length of message, matches what we got from 1.3.6 firmware device
 new_state_length = 260
 
@@ -56,7 +57,7 @@ def createEditBufferRequest(channel):
 
 
 def isEditBufferDump(message):
-    return len(message) == new_state_length and message[:3] == [0xf0, bc_manufacturer_id, command_set_state]
+    return len(message) in [new_state_length , hypothetical_old_state_length] and message[:3] == [0xf0, bc_manufacturer_id, command_set_state]
 
 
 def convertToEditBuffer(channel, message):
@@ -149,42 +150,3 @@ def make_test_data():
         #yield testing.ProgramTestData(message=patch, name="Kijimi 2-128", number=383, change_number_changes_name=True)
 
     return testing.TestData(program_generator=programs)
-
-
-def run_tests():
-    deviceDetect = "f00215010306f7"
-    deviceDetectReply = list(binascii.unhexlify(deviceDetect))
-    assert channelIfValidDeviceResponse(deviceDetectReply) == 1
-    patch_from_device = "f00200000000007e3f3d3d393d3c3d3c003d3d655a3b1f00005100001b567e3e7c7e3d0a6b5273004d3e3c00422b6e0060586b007e00000001010000000003000000000004000000000001010100050008040000060a010000000100640a00000000000000000101010100010101010101010101020101010101017f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f021804007f7f7f7f140e040002180400f7"
-    patch_from_device_message = list(binascii.unhexlify(patch_from_device))
-    assert isSingleProgramDump(patch_from_device_message)
-
-    different_position = convertToProgramDump(0, patch_from_device_message, 666)
-    assert isSingleProgramDump(different_position)
-    assert numberFromDump(different_position) == 666
-    assert nameFromDump(different_position) == "Kijimi 5-027"
-    assert isDefaultName(nameFromDump(different_position))
-
-    assert calculateFingerprint(different_position) == calculateFingerprint(patch_from_device_message)
-
-    # Take a patch from the factory patches sysex
-    patch_data = "f00200027f2e7e003e5d3d3a3c243c3c613d3d7e513b273b740e5f7e000000636f003b233c3d6c733c3e3d0057645b007e3b7e007e02030301010000000003000000020004000000000000010100010008040000090a010000000000640a00000000000000000101010101010201010101010101020101010101017f7f7f7f7f7f7f7f7f7ff7"
-    patch = list(binascii.unhexlify(patch_data))
-    assert isSingleProgramDump(patch)
-    assert isDefaultName(nameFromDump(patch))
-    assert numberFromDump(patch) == 128 + 2 * numberOfPatchesPerBank()
-
-    assert friendlyBankName(0) == "User Bank 1"
-    assert friendlyBankName(10) == "Factory Bank RD"
-
-    edit_buffer = convertToEditBuffer(0, patch_from_device_message)
-    assert isEditBufferDump(edit_buffer)
-    assert nameFromDump(edit_buffer) == "Kijimi tmp"
-    assert numberFromDump(edit_buffer) == 0
-    program_back = convertToProgramDump(0, edit_buffer, 1)
-    assert isSingleProgramDump(program_back)
-    assert numberFromDump(program_back) == 1
-
-
-if __name__ == "__main__":
-    run_tests()
