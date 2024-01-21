@@ -193,8 +193,13 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	// Check if the patch is a layered patch
 	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch->patch());
 	if (layers) {
+		auto titles = layers->layerTitles();
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
-			TypedNamedValue v("Layer " + String(i), "Patch name", String(layers->layerName(i)), 20);
+			String title = "Layer " + String(i);
+			if (i < (int) titles.size()) {
+				title = titles[i];
+			}
+			TypedNamedValue v(title, "Patch name", String(layers->layerName(i)), 20);
 			metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 		}
 	}

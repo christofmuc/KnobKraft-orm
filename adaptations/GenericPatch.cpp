@@ -176,11 +176,37 @@ namespace knobkraft {
 		return 1;
 	}
 
+	std::vector<std::string> GenericLayeredPatchCapability::layerTitles() const {
+		py::gil_scoped_acquire acquire;
+		if (!me_.expired()) {
+			auto patch = me_.lock();
+			if (patch->pythonModuleHasFunction(kLayerTitles)) {
+				try {
+					py::object result = patch->callMethod(kLayerTitles);
+					return py::cast<std::vector<std::string>>(result);
+				}
+				catch (py::error_already_set& ex) {
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kLayerTitles, ex);
+					ex.restore();
+				}
+				catch (std::exception& ex) {
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kLayerTitles, ex);
+				}
+				catch (...) {
+					spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation", kLayerTitles);
+				}
+			}
+		}
+		return {};
+	}
+
 	std::string GenericLayeredPatchCapability::layerName(int layerNo) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
-			auto patch = me_.lock();
+			auto patch = me_.lock();			
 			try {
 				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
 				py::object result = patch->callMethod(kLayerName, v, layerNo);

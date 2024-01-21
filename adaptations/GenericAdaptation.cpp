@@ -60,6 +60,7 @@ namespace knobkraft {
 		* kExtractPatchesFromBank = "extractPatchesFromBank",
 		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
 		* kNumberOfLayers = "numberOfLayers",
+		* kLayerTitles = "friendlyLayerTitles",
 		* kLayerName = "layerName",
 		* kSetLayerName = "setLayerName",
 		* kGeneralMessageDelay = "generalMessageDelay",

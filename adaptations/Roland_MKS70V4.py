@@ -981,6 +981,10 @@ def numberOfLayers(messages):
     return 3
 
 
+def friendlyLayerTitles():
+    return ["Patch", "Upper tone", "Lower tone"]
+
+
 def layerName(messages, layerNo):
     index = knobkraft.sysex.findSysexDelimiters(messages)
     if isEditBufferDump2(messages):

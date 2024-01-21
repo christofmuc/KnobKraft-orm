@@ -194,6 +194,9 @@ class GenericSequential:
     def numberOfLayers(self, messages):
         return self.number_of_layers
 
+    def friendlyLayerTitles(self):
+        return ["Layer A", "Layer B"]
+
     def layerName(self, messages, layerNo):
         dataBlock = self.getDataBlock(messages)
         if len(dataBlock) > 0:
@@ -286,5 +289,6 @@ class GenericSequential:
             setattr(module, 'friendlyProgramName', self.friendly_program_name)
         if self.number_of_layers is not None:
             setattr(module, 'numberOfLayers', self.numberOfLayers)
+            setattr(module, 'friendlyLayerTitles', self.friendlyLayerTitles)
             setattr(module, 'layerName', self.layerName)
             setattr(module, 'setLayerName', self.setLayerName)

@@ -52,6 +52,7 @@ namespace knobkraft {
         virtual ~GenericLayeredPatchCapability() = default;
 		virtual LayerMode layerMode() const override;
 		virtual int numberOfLayers() const override;
+		virtual std::vector<std::string> layerTitles() const override;
 		virtual std::string layerName(int layerNo) const override;
 		virtual void setLayerName(int layerNo, std::string const& layerName) override;
 

@@ -36,6 +36,7 @@ namespace knobkraft {
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank, *kExtractPatchesFromAllBankMessages,
 		*kNumberOfLayers,
+		*kLayerTitles,
 		*kLayerName,
 		*kSetLayerName,
 		*kGetStoredTags

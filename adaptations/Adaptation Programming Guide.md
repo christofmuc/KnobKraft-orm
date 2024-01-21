@@ -742,6 +742,17 @@ Optionally, if you want to allow the user to change a layer name, implement the 
 
 This work like renamePatch, just with the added layerNo parameter.
 
+Optionally, you can implement this to return a list of names for the layers itself, or rather the layer titles. Without it, the
+UI will just display Layer 0, Layer 1, Layer 2, ...
+
+    def friendlyLayerTitles():
+
+To make it work, just return a list of strings like this:
+
+    def friendlyLayerTitles():
+        return ["Patch", "Upper tone", "Lower tone"]
+
+
 ## Importing categories stored in the patch in the synth
 
 Some synths store sound categories or tags. As the KnobKraft Orm has these as a central part of the UI, of course we want to be able to import them as well. It is easy enough and requires two steps: Implementing a function and then defining an import mapping.

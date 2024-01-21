@@ -301,6 +301,10 @@ namespace midikraft {
 		return 2;
 	}
 
+	std::vector<std::string> Rev2Patch::layerTitles() const {
+		return {"Layer A", "Layer B"};
+	}
+
 	std::string Rev2Patch::layerName(int layerNo) const
 	{
 		// The Rev2 has a 20 character patch name storage for each of the 2 layers...	
