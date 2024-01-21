@@ -64,7 +64,8 @@ def splitSysex(byte_list):
             index += 1
             result.append(sysex)
         else:
-            print("Skipping invalid byte", byte_list[index])
+            #print("Skipping invalid byte", )
+            result.append([byte_list[index]])
             index += 1
     return result
 
