@@ -18,7 +18,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
-| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont|
+| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
@@ -31,10 +31,12 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
+| Ensoniq | VFX | alpha | adaptation |  |
 | Groove Synthesis | 3rd Wave | works | adaptation | |
 | John Bowen | Solaris | beta | adaptation | Contributed by @conversy! |
 | Kawai | K1/K1m/K1r | beta | adaptation | |
 | Kawai | K3/K3m | works | native | |
+| Kawai | K4 | alpha | adaptation | |
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | native | |
