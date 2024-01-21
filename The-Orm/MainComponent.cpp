@@ -21,7 +21,6 @@
 #include "Virus.h"
 #include "Rev2.h"
 #include "OB6.h"
-#include "KorgDW8000.h"
 #include "KawaiK3.h"
 #include "Matrix1000.h"
 #include "BCR2000.h"
@@ -182,7 +181,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));

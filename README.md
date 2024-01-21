@@ -39,7 +39,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Kawai | K4 | alpha | adaptation | |
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
-| Korg | DW-8000/EX-8000 | works | native | |
+| Korg | DW-8000/EX-8000 | works | adaptation | |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |

@@ -3,13 +3,15 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import hashlib
+import re
 from typing import List
 
 import testing
 
 
 def name():
-    return "Korg DW-8000 Adaptation"
+    return "Korg DW 8000"
 
 
 def createDeviceDetectMessage(channel):
@@ -42,6 +44,8 @@ def createEditBufferRequest(channel):
 
 
 def isEditBufferDump(message):
+    if isLegacyFormat(message):
+        return True
     # Page 3 - Data Dump
     return (len(message) > 4
             and message[0] == 0xf0
@@ -61,7 +65,9 @@ def numberOfPatchesPerBank():
 
 
 def convertToEditBuffer(channel, message):
-    if isEditBufferDump(message):
+    if isLegacyFormat(message):
+        return convertFromLegacyFormat(channel, message)
+    elif isEditBufferDump(message):
         return message[0:2] + [0x30 | channel] + message[3:]
     raise Exception("This is not an edit buffer - can't be converted")
 
@@ -90,8 +96,33 @@ def isSingleProgramDump(message):
 
 def convertToProgramDump(channel, message, program_number):
     if isEditBufferDump(message):
-        return program_change(channel, program_number) + message + createStoreToProgramMessage(channel, program_number)
+        return message + createStoreToProgramMessage(channel, program_number)
+        #return program_change(channel, program_number) + message + createStoreToProgramMessage(channel, program_number)
     raise Exception("Can only convert edit buffers!")
+
+
+def isLegacyFormat(message):
+    return len(message) == 51
+
+
+def convertFromLegacyFormat(channel, message):
+    return [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x03, 0x40] + message + [0xf7]
+
+
+def convertToLegacyFormat(message):
+    return message[5:-1]
+
+
+def calculateFingerprint(message):
+    # To be backwards compatible with the old C++ implementation of the Korg DW 8000 implementation,
+    # calculate the fingerprint only across the data block
+    if not isLegacyFormat(message):
+        message = message[5:-1]
+    return hashlib.md5(bytearray(message)).hexdigest()
+
+
+def isDefaultName(patchName):
+    return re.match("[1-8][1-8]", patchName) is not None
 
 
 def make_test_data():
