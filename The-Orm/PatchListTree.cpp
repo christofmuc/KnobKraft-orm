@@ -53,17 +53,18 @@ std::vector<T> sortLists(std::vector<T> const& lists, std::function<std::string(
 
 class ImportNameListener : public Value::Listener {
 public:
-	ImportNameListener(midikraft::PatchDatabase& db, std::string importID) : db_(db), importID_(importID) {
+	ImportNameListener(midikraft::PatchDatabase& db, std::string synthName, std::string importID) : db_(db), synthName_(synthName), importID_(importID) {
 	}
 
 	virtual void valueChanged(Value& value) {
 		spdlog::info("Changed name of import to {}", value.getValue().toString());
 		String newValue = value.getValue();
-		db_.renameImport(importID_, newValue.toStdString());
+		db_.renameImport(synthName_, importID_, newValue.toStdString());
 	}
 
 private:
 	midikraft::PatchDatabase& db_;
+	std::string synthName_;
 	std::string importID_;
 };
 
@@ -487,7 +488,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 				if (onImportListSelected)
 					onImportListSelected(id);
 			};
-			node->textValue.addListener(new ImportNameListener(db_, import.id));
+			node->textValue.addListener(new ImportNameListener(db_, synthName, import.id));
 			result.push_back(node);
 		}
 		return result;
