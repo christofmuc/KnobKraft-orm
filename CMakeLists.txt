@@ -243,7 +243,6 @@ add_subdirectory(synths/roland-mks50)
 add_subdirectory(synths/roland-mks80)
 add_subdirectory(synths/sequential-rev2)
 add_subdirectory(synths/sequential-ob6)
-add_subdirectory(synths/yamaha-refacedx)
 
 # Add the generic adaptations module, that allows to define synths via Python
 add_subdirectory(adaptations)

@@ -70,7 +70,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
-| Yamaha | reface DX | works | native | |
+| Yamaha | reface DX | works | adaptation | |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 

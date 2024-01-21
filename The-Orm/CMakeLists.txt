@@ -139,7 +139,6 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
-		midikraft-yamaha-refacedx
 		knobkraft-generic-adaptation
 		pytschirp_embedded
 )
