@@ -165,29 +165,21 @@ namespace midikraft {
 		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(syx));
 		// And now reverse map the 10 characters of the patch name into the bytes
 		//TODO - this needs to be replaced by properly implementing the renamePatch() function
-		/*std::string name = patch->name();
-		//TODO - this should be taken from the MKS50_Patch class
-		const std::string kPatchNameChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
+		auto mks50_patch = std::dynamic_pointer_cast<MKS50_Patch>(patch);
+		if (!mks50_patch) {
+			spdlog::error("Could not cast patch to MKS50 patch - program error, invalid data!");
+			return {};
+		}
+		std::string name = mks50_patch->name();
+		auto nameData = mks50_patch->stringToData(name.substr(0, 10));
 		for (int i = 0; i < 10; i++) {
-			char charToFind;
-			if (i >= name.size()) {
-				jassert(false);
-				charToFind = ' ';
+			if (i >= nameData.size()) {
+				syx.push_back(62);  // Roland Space
 			}
 			else {
-				charToFind = name[i];
+				syx.push_back(nameData[i]);
 			}
-			bool found = false;
-			for (int c = 0; c < kPatchNameChar.size(); c++) {
-				if (kPatchNameChar[c] == charToFind) {
-					syx.push_back((uint8) c);
-					found = true;
-				}
-			}
-			if (!found) {
-				syx.push_back(62); // This should be blank
-			}
-		}*/
+		}
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(syx) });
 	}
 
