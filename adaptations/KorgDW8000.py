@@ -95,6 +95,8 @@ def isSingleProgramDump(message):
 
 
 def convertToProgramDump(channel, message, program_number):
+    if isLegacyFormat(message):
+        message = convertFromLegacyFormat(channel, message)
     if isEditBufferDump(message):
         return message + createStoreToProgramMessage(channel, program_number)
         #return program_change(channel, program_number) + message + createStoreToProgramMessage(channel, program_number)
