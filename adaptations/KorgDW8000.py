@@ -27,6 +27,10 @@ def needsChannelSpecificDetection():
     return True
 
 
+def generalMessageDelay():
+    return 75
+
+
 def channelIfValidDeviceResponse(message):
     # Page 3 of the service manual - Device ID
     if (len(message) > 3
