@@ -172,7 +172,7 @@ namespace midikraft {
 		}
 		std::string name = mks50_patch->name();
 		auto nameData = mks50_patch->stringToData(name.substr(0, 10));
-		for (int i = 0; i < 10; i++) {
+		for (size_t i = 0; i < 10; i++) {
 			if (i >= nameData.size()) {
 				syx.push_back(62);  // Roland Space
 			}
