@@ -33,7 +33,7 @@ namespace midikraft {
 		std::vector<uint8> result;
 		for (char charToFind : name) {
 			bool found = false;
-			for (int c = 0; c < MKS50_Patch::kPatchNameChar.size(); c++) {
+			for (size_t c = 0; c < MKS50_Patch::kPatchNameChar.size(); c++) {
 				if (MKS50_Patch::kPatchNameChar[c] == charToFind) {
 					result.push_back((uint8)c);
 					found = true;
