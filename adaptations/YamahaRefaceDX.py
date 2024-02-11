@@ -332,6 +332,10 @@ def make_test_data():
             assert isPartOfEditBufferDump(d)
         yield testing.ProgramTestData(message=raw_data, name="Piano 1   ", rename_name="Piano 2   ")
 
+        # Test a Soundmondo file
+        message = knobkraft.stringToSyx("F0 43 00 7F 1C 00 04 05 0E 0F 00 5E F7 F0 43 00 7F 1C 00 2A 05 30 00 00 53 6E 61 70 48 61 70 70 79 20 00 00 40 00 02 42 04 00 64 00 00 40 40 40 40 40 40 40 40 03 40 40 07 40 40 00 00 00 21 F7 F0 43 00 7F 1C 00 20 05 31 00 00 01 7F 3A 24 6E 7F 56 00 00 00 00 00 00 00 00 01 01 40 7D 3C 00 00 00 00 40 00 00 00 6E F7 F0 43 00 7F 1C 00 20 05 31 01 00 01 7F 5D 23 5A 7F 3C 00 00 04 0F 06 03 00 00 01 01 3F 70 48 00 00 00 00 40 00 00 00 5F F7 F0 43 00 7F 1C 00 20 05 31 02 00 01 7F 67 3C 5A 7F 60 00 00 04 00 0B 00 00 00 01 01 5C 62 4B 00 00 00 00 40 00 00 00 12 F7 F0 43 00 7F 1C 00 20 05 31 03 00 01 7F 4A 53 5A 7F 66 00 00 08 00 07 00 00 00 01 01 78 60 7F 00 00 00 00 40 00 00 00 43 F7 F0 43 00 7F 1C 00 04 05 0F 0F 00 5D F7")
+        yield testing.ProgramTestData(message=message, name="SnapHappy ", rename_name="Piano 2   ")
+
     def program_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         raw_data = list(itertools.chain.from_iterable(test_data.all_messages))
         for d in test_data.all_messages:
