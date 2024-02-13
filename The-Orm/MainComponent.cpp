@@ -51,6 +51,7 @@ const std::string kFetchEditBuffer{ "fetchEditBuffer" };
 const std::string kReceiveManualDump{ "receiveManualDump" };
 const std::string kLoadSysEx{ "loadsysEx" };
 const std::string kExportSysEx{ "exportSysex" };
+const std::string kExportBank { "exportBank" };
 const std::string kExportPIF { "exportPIF" };
 const std::string kShowDiff{ "showDiff" };
 const std::string kCopyBankPatchNames{ "copyBankPatchNames" };
@@ -241,7 +242,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." }, { kCopyBankPatchNames}, { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
-		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
+		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
@@ -275,6 +276,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}, juce::KeyPress::F3Key } },
 	{ "Export into sysex files", { kExportSysEx , [this]() {
 		patchView_->exportPatches();
+	}}},
+	{ "Export bank into sysex files", { kExportBank, [this]() {
+		patchView_->exportBank();
 	}}},
 	{ "Export into PIF", { kExportPIF, [this]() {
 		patchView_->createPatchInterchangeFile();

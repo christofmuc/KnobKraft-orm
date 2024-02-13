@@ -72,6 +72,7 @@ public:
 	void reindexPatches();
 	void loadPatches();
 	void exportPatches();
+	void exportBank();
 	void createPatchInterchangeFile();
 	void showPatchDiffDialog();
 

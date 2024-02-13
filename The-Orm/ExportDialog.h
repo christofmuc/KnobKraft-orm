@@ -19,7 +19,7 @@ public:
 
 	midikraft::Librarian::ExportParameters getResult();
 
-	static void showExportDialog(Component *centeredAround, std::function<void(midikraft::Librarian::ExportParameters)> callback);	
+	static void showExportDialog(Component *centeredAround, std::string const& title, std::function<void(midikraft::Librarian::ExportParameters)> callback);
 
 	static void shutdown();
 

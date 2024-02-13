@@ -54,7 +54,7 @@ static void dialogClosed(int modalResult, ExportDialog* dialog)
 	}
 }
 
-void ExportDialog::showExportDialog(Component *centeredAround, std::function<void(midikraft::Librarian::ExportParameters)> callback)
+void ExportDialog::showExportDialog(Component *centeredAround, std::string const &title, std::function<void(midikraft::Librarian::ExportParameters)> callback)
 {
 	if (!sExportDialog_) {
 		sExportDialog_ = std::make_unique<ExportDialog>();
@@ -64,7 +64,7 @@ void ExportDialog::showExportDialog(Component *centeredAround, std::function<voi
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(sExportDialog_.get(), false);
 	launcher.componentToCentreAround = centeredAround;
-	launcher.dialogTitle = "Export patches";
+	launcher.dialogTitle = title;
 	launcher.useNativeTitleBar = false;
 	launcher.dialogBackgroundColour = Colours::black;
 	sWindow_ = launcher.launchAsync();
