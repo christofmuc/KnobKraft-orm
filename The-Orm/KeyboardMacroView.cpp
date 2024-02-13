@@ -189,12 +189,10 @@ void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
 	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "}, {4, "Always forward to the fixed synth set below" } };
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", 1, lookup));
-	std::map<int, std::string> synth_list;
-	int i = 1;
-	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
-		synth_list.emplace(i++, s->getName());
-	}
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, synth_list));
+	UIModel::instance()->synthList_.addChangeListener(this);
+	synthListEditor_ = std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, std::map<int, std::string>());
+	refreshSynthList();
+	customMasterkeyboardSetup_.push_back(synthListEditor_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kUseElectraOne, "MIDI Routing", false));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
@@ -203,6 +201,17 @@ void KeyboardMacroView::setupPropertyEditor() {
 	for (auto tnv : customMasterkeyboardSetup_) {
 		tnv->value().addListener(this);
 	}
+	customSetup_.setProperties(customMasterkeyboardSetup_);
+}
+
+void KeyboardMacroView::refreshSynthList()
+{
+	std::map<int, std::string> synth_list;
+	int i = 1;
+	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
+		synth_list.emplace(i++, s->getName());
+	}
+	synthListEditor_->setLookup(synth_list);
 	customSetup_.setProperties(customMasterkeyboardSetup_);
 }
 
@@ -340,6 +349,9 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 		// The list of MIDI devices changed, need to refresh the property editor
 		midiDeviceList_->refreshDeviceList();
 		customSetup_.setProperties(customMasterkeyboardSetup_);
+	}
+	else if (source == &UIModel::instance()->synthList_) {
+		refreshSynthList();
 	}
 	else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
 		// Mode 1 - follow current synth, use that as master keyboard
