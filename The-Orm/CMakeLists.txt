@@ -304,9 +304,11 @@ IF(APPLE)
         BUNDLE DESTINATION . COMPONENT Runtime
         RUNTIME DESTINATION bin COMPONENT Runtime
 		)
-    INSTALL(CODE "include(BundleUtilities)
+    INSTALL(CODE "message(STATUS \"Integrating dynlibs and signing app bundle \${APPS}\")
+    include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+    execute_process(COMMAND codesign --force --deep --sign - \"\${APPS}\" COMMENT \"Signing app bundle\")
     " COMPONENT Runtime)
     
     # Setup CPack variables

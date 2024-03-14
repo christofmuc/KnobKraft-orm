@@ -229,7 +229,52 @@ namespace knobkraft {
 		}
 	}
 
-	void GenericAdaptation::startupGenericAdaptation()
+    StringArray getAllBrewPythonVersions()
+    {
+        ChildProcess process;
+        StringArray pythonVersions;
+
+        // Check if 'brew' is installed
+        if (!process.start("which brew"))
+        {
+            return pythonVersions;
+        }
+
+        // Command to get installed python versions via brew without auto-updating
+        process.start("HOMEBREW_NO_AUTO_UPDATE=1 brew list --versions | grep python@");
+        process.waitForProcessToFinish(2000);
+
+        // Check if process ran successfully
+        if (process.getExitCode() != 0)
+        {
+            spdlog::error("Failed to query homebrew for python packages, exit code was {}", process.getExitCode());
+            return pythonVersions;
+        }
+
+        String output = process.readAllProcessOutput().trim();
+        StringArray lines;
+        lines.addLines(output);
+
+        for (const auto& line : lines)
+        {
+            StringArray tokens;
+            tokens.addTokens(line, " ", "");
+            if (tokens.size() > 1)
+            {
+                String versionName = tokens[0]; // e.g., python@3.10
+                String version = tokens[1]; // e.g., 3.10.0
+
+                // Extract the major and minor version (i.e., 3.10 from 3.10.0)
+                String majorMinorVersion = version.upToLastOccurrenceOf(".", false, true);
+                pythonVersions.add(majorMinorVersion);
+            }
+        }
+
+        return pythonVersions;
+    }
+
+
+    void GenericAdaptation::startupGenericAdaptation()
 	{
 		if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
 			// This is the hard coded way to turn off python integration, just set the ORM_NO_PYTHON environment variable to anything (except NOTSET)

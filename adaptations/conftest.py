@@ -10,6 +10,8 @@ import sys
 
 
 def load_adaptation(adaptation_file):
+    if adaptation_file is None:
+        return None
     # Dynamically load the adaptation and create the generic test suite all adaptations must undergo
     spec = importlib.util.spec_from_file_location(adaptation_file, adaptation_file)
     synth_under_test = importlib.util.module_from_spec(spec)
