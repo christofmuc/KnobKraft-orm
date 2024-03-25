@@ -17,7 +17,7 @@ set(adaptation_files
 	"Ensoniqesq1.py" 
 	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
-	"KawaiK1.py" 
+	"KawaiK1.py" "Kawai K4.py" 
 	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
 	"Matrix 6.py" 
 	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py"
@@ -36,7 +36,6 @@ set(adaptation_files_test_only
 	"KawaiK3.py" 
 	"KorgDW8000.py" 
 	"Matrix1000.py" 
-	"YamahaRefaceDX.py"
 )
 
 set(adaptation_support_files
