@@ -60,6 +60,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
+		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -79,6 +80,9 @@ namespace knobkraft {
 		int deviceDetectSleepMS() override;
 		MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		bool needsChannelSpecificDetection() override;
+
+		// Allow to override the default algorithm to determine how to query a bank
+		virtual midikraft::BankDownloadMethod bankDownloadMethod() const override;
 
 		// The following functions are implemented generically and current cannot be defined in Python
 		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;

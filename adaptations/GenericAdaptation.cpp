@@ -68,7 +68,8 @@ namespace knobkraft {
 		* kFriendlyBankName = "friendlyBankName",
 		* kFriendlyProgramName = "friendlyProgramName",
 		* kSetupHelp = "setupHelp",
-		* kGetStoredTags = "storedTags";
+		* kGetStoredTags = "storedTags",
+		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride";
 
 	std::vector<const char*> kAdapatationPythonFunctionNames = {
 		kName,
@@ -680,6 +681,35 @@ namespace knobkraft {
 			logAdaptationError(kNeedsChannelSpecificDetection, ex);
 		}
 		return true;
+	}
+
+	midikraft::BankDownloadMethod GenericAdaptation::bankDownloadMethod() const {
+		py::gil_scoped_acquire acquire;
+		if (!pythonModuleHasFunction(kIndicateBankDownloadMethod)) {
+			return midikraft::BankDownloadMethod::UNKNOWN;
+		}
+		try
+		{
+			py::object result = callMethod(kIndicateBankDownloadMethod);
+			auto downloadMethod = py::cast<std::string>(result);
+			if (downloadMethod == "EDITBUFFERS") {
+				return midikraft::BankDownloadMethod::EDIT_BUFFERS;
+			} 
+			else if (downloadMethod == "PROGRAMS") {
+				return midikraft::BankDownloadMethod::PROGRAM_BUFFERS;
+			}
+			else {
+				throw std::runtime_error(fmt::format("Illegal return value from bankDownloadMethodOverride:  {}. Use one of EDITBUFFERS or PROGRAMS", downloadMethod));
+			}
+		}
+		catch (py::error_already_set& ex) {
+			logAdaptationError(kIndicateBankDownloadMethod, ex);
+			ex.restore();
+		}
+		catch (std::exception& ex) {
+			logAdaptationError(kIndicateBankDownloadMethod, ex);
+		}
+		return midikraft::BankDownloadMethod::UNKNOWN;
 	}
 
 	std::string GenericAdaptation::getName() const

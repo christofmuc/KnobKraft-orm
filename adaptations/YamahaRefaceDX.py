@@ -175,6 +175,10 @@ def createProgramDumpRequest(channel, patch_no):
     return [0b11000000 | channel, patch_no] + createEditBufferRequest(channel)
 
 
+def bankDownloadMethodOverride():
+    return "EDITBUFFERS"
+
+
 def convertFromLegacyFormat(channel, legacy_data):
     # The legacy_data was produced by the C++ implementation, and is only the used data without all the bulk
     # Wrap this into the 7 MIDI messages required for a proper transfer
