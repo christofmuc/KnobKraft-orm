@@ -22,6 +22,7 @@ jobs:
         brew install boost
         brew reinstall icu4c
         ls /usr/local/Cellar/icu4c/
+        ls -ld /opt/homebrew/opt/icu4c
 
     - uses: actions/setup-python@v3
       with:
