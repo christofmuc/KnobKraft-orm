@@ -50,7 +50,7 @@ if(WIN32)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
 else()
-	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding.")
+	set(PYTHON_VERSION_TO_EMBED "3.9" CACHE STRING "Specify which version of Python should be used for embedding.")
 endif()
 
 # On Windows, we need to download external dependencies
@@ -101,7 +101,10 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	set(ICU_ROOT "/opt/homebrew/opt/icu4c")
+	# For Intel Macs:
+	# set(ICU_ROOT "/usr/local/opt/icu4c")
+	# For Apple silicon:
+	# set(ICU_ROOT "/opt/homebrew/opt/icu4c")
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
