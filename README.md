@@ -163,8 +163,7 @@ The LDFLAGS is required for a certain combination of gcc version/pybind11, else 
 
 If you are inclined to build on Mac, you know what you're doing. I'd recommend to install the build requisites via homebrew like this
 
-    brew install gtk+3 glew boost python3
-    brew reinstall icu4c
+    brew install gtk+3 glew boost python3 icu4c
 
 and then run CMake to build the software
 
@@ -173,8 +172,8 @@ and then run CMake to build the software
 
 which will produce a launchable application in a folder called `KnobKraftOrm.app`.
 
-Should you get an error about the required ICU libraries not being found check the CMakeLists.txt file which sets
-a variable called ´ICU_ROOT´ current to ´/opt/homebrew/Cellar/icu4c/74.2´. Check this is still correct, else fix the path.
+Should you get an error about the required ICU libraries not being found edit the CMakeLists.txt file, where it sets
+a variable called ´ICU_ROOT´.
 
 Use this to find out the install directory of your ICU library:
 
