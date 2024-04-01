@@ -101,7 +101,7 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	set(ICU_ROOT "/opt/homebrew/Cellar/icu4c/72.1")
+	set(ICU_ROOT "/opt/homebrew/opt/icu4c")
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type

@@ -163,7 +163,8 @@ The LDFLAGS is required for a certain combination of gcc version/pybind11, else 
 
 If you are inclined to build on Mac, you know what you're doing. I'd recommend to install the build requisites via homebrew like this
 
-    brew install gtk+3 glew boost python3 icu4c
+    brew install gtk+3 glew boost python3
+    brew reinstall icu4c
 
 and then run CMake to build the software
 
