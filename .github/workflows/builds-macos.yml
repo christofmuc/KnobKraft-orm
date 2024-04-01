@@ -23,7 +23,7 @@ jobs:
         brew reinstall icu4c
         ls /usr/local/Cellar/icu4c/
         echo "ICU4C is installed at: "
-        ls -d `brew --prefix icu4c
+        ls -d `brew --prefix icu4c`
 
     - uses: actions/setup-python@v3
       with:
