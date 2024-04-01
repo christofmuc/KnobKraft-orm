@@ -59,8 +59,7 @@ IF (WIN32)
 	include(FetchContent REQUIRED)
 
     FetchContent_Declare(
-	  icu
-	  URL https://github.com/unicode-org/icu/releases/download/release-67-1/icu4c-67_1-Win64-MSVC2017.zip
+	  icu URL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-Win64-MSVC2019.zip
 	)
 	FetchContent_MakeAvailable(icu)
 
