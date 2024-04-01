@@ -292,6 +292,12 @@ namespace knobkraft {
 
 	void GenericAdaptation::shutdownGenericAdaptation()
 	{
+        if (!sGenericAdaptationPythonEmbeddedGuard)
+        {
+            // No Python had been initialised in the first place, don't shutdown
+            return;
+        }
+
 		// Remove the global release on Python, else the destruction code will fail!
 		{
 			py::gil_scoped_acquire acquire;
