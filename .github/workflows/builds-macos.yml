@@ -28,7 +28,6 @@ jobs:
     - name: CMake configure
       shell: bash
       run: |
-        # This needs to be changed should brew reinstall icu4c suddenly decide to install a newer version of icu4cs
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
 
     - name: CMake build
