@@ -45,7 +45,7 @@ endfunction()
 # For other platforms, we are using Python 3.10
 if(WIN32)
     # For Windows, specify the exact version to download, as the FetchContent will calculate the download URLs from it
-	set(PYTHON_VERSION_TO_DOWNLOAD "3.8.10" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
+	set(PYTHON_VERSION_TO_DOWNLOAD "3.12.2" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
 	parse_semver(${PYTHON_VERSION_TO_DOWNLOAD} PYTHON_EMBEDDED_MAJOR PYTHON_EMBEDDED_MINOR PYTHON_EMBEDDED_PATCH)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
