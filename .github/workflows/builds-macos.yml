@@ -21,9 +21,9 @@ jobs:
       run: |
         brew install boost
         brew reinstall icu4c
-        brew link icu4c --force
         ls /usr/local/Cellar/icu4c/
-        ls -ld /opt/homebrew/opt/icu4c
+        echo "ICU4C is installed at: "
+        ls -d `brew --prefix icu4c
 
     - uses: actions/setup-python@v3
       with:
@@ -32,7 +32,8 @@ jobs:
     - name: CMake configure
       shell: bash
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        # This needs to be changed should brew reinstall icu4c suddenly decide to install a newer version of icu4cs
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=/usr/local/Cellar/icu4c/73.2
 
     - name: CMake build
       run: cmake --build build --target package --parallel
