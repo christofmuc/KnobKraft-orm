@@ -172,8 +172,12 @@ and then run CMake to build the software
 
 which will produce a launchable application in a folder called `KnobKraftOrm.app`.
 
-Should you get an error about the required ICU libraries not being found check the CMakeLists.txt file which sets
-a variable called ´ICU_ROOT´ current to ´/opt/homebrew/Cellar/icu4c/72.1´. Check this is still correct, else fix the path.
+Should you get an error about the required ICU libraries not being found edit the CMakeLists.txt file, where it sets
+a variable called ´ICU_ROOT´.
+
+Use this to find out the install directory of your ICU library:
+
+    ls `brew --prefix icu4c`
 
 The reason for the ICU making problems is that there will be an ICU already shipped with the Mac, but being incomplete. So we need
 to install a complete SDK and make sure it takes precedence over the system supplied library.

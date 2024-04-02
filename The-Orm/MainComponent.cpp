@@ -62,6 +62,8 @@ const std::string kSysexMidiLog{ "sysexMidiLog" };
 const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
 const std::string kCreateNewAdaptation{ "createNewAdaptation" };
 
+extern std::string getOrmVersion();
+
 //
 // Build a spdlog sink that goes into out standard log view
 #include <spdlog/spdlog.h>
@@ -1047,7 +1049,7 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020-2023 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2024 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
 		"\n"
 		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
@@ -1058,7 +1060,7 @@ void MainComponent::aboutBox()
 		"\n"
 		"Icons made by Freepik from www.flaticon.com\n"
 		;
-	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
+	AlertWindow::showMessageBox(AlertWindow::InfoIcon, fmt::format("The KnobKraft Orm Sysex Librarian Version {}", getOrmVersion()), message, "Close");
 }
 
 void MainComponent::openSecondMainWindow(bool fromSettings) 

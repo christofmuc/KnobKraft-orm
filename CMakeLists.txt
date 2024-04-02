@@ -45,12 +45,12 @@ endfunction()
 # For other platforms, we are using Python 3.10
 if(WIN32)
     # For Windows, specify the exact version to download, as the FetchContent will calculate the download URLs from it
-	set(PYTHON_VERSION_TO_DOWNLOAD "3.8.10" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
+	set(PYTHON_VERSION_TO_DOWNLOAD "3.12.2" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
 	parse_semver(${PYTHON_VERSION_TO_DOWNLOAD} PYTHON_EMBEDDED_MAJOR PYTHON_EMBEDDED_MINOR PYTHON_EMBEDDED_PATCH)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
 else()
-	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding.")
+	set(PYTHON_VERSION_TO_EMBED "3.9" CACHE STRING "Specify which version of Python should be used for embedding.")
 endif()
 
 # On Windows, we need to download external dependencies
@@ -59,8 +59,7 @@ IF (WIN32)
 	include(FetchContent REQUIRED)
 
     FetchContent_Declare(
-	  icu
-	  URL https://github.com/unicode-org/icu/releases/download/release-67-1/icu4c-67_1-Win64-MSVC2017.zip
+	  icu URL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-Win64-MSVC2019.zip
 	)
 	FetchContent_MakeAvailable(icu)
 
@@ -101,7 +100,10 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	set(ICU_ROOT "/opt/homebrew/Cellar/icu4c/72.1")
+	# For Intel Macs:
+	# set(ICU_ROOT "/usr/local/opt/icu4c")
+	# For Apple silicon:
+	# set(ICU_ROOT "/opt/homebrew/opt/icu4c")
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type

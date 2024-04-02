@@ -19,9 +19,7 @@ jobs:
 
     - name: Prepare build machine with homebrew
       run: |
-        brew install boost
-        brew reinstall icu4c
-        ls /usr/local/Cellar/icu4c/
+        brew install boost icu4c
 
     - uses: actions/setup-python@v3
       with:
@@ -30,7 +28,7 @@ jobs:
     - name: CMake configure
       shell: bash
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=/usr/local/Cellar/icu4c/73.2
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
 
     - name: CMake build
       run: cmake --build build --target package --parallel
