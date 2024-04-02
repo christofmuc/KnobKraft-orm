@@ -50,7 +50,7 @@ if(WIN32)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
 else()
-	set(PYTHON_VERSION_TO_EMBED "3.9" CACHE STRING "Specify which version of Python should be used for embedding.")
+	set(PYTHON_VERSION_TO_EMBED "3.12" CACHE STRING "Specify which version of Python should be used for embedding.")
 endif()
 
 # On Windows, we need to download external dependencies
