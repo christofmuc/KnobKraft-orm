@@ -18,7 +18,7 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - name: Install dependencies from apt-get
-      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-dev
+      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev
 
     - name: Select proper Python version
       uses: actions/setup-python@v2
@@ -31,7 +31,7 @@ jobs:
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       shell: bash
       run: |
-        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.12 -DPYTHON_VERSION_TO_EMBED=3.12 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
+        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_VERSION_TO_EMBED=3.12 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
 
     - name: CMake build
       run: cmake --build builds --target package -- -j4
