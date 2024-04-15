@@ -223,4 +223,4 @@ def make_test_data():
     def banks(test_data: testing.TestData) -> List:
         yield bank_message
 
-    return testing.TestData(bank_generator=banks, edit_buffer_generator=programs)
+    return testing.TestData(bank_generator=banks, edit_buffer_generator=programs, device_detect_reply=("F0 7E 00 06 02 42 58 00 08 00 07 01 01 00 F7", 0))
