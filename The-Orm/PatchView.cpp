@@ -82,6 +82,8 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(database_, predefinedCategories(),
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
+		int total = getTotalCount();
+		patchButtons_->setTotalCount(total);
 		patchButtons_->refresh(true);
 		synthBank_->refreshPatch(favoritePatch);
 	}
