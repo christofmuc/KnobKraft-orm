@@ -239,12 +239,12 @@ namespace knobkraft {
 		}
 
 #ifdef __APPLE__
-		// macOS might not have Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
+		// macOS might not have Python 3.12 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
 		std::list<String> pythonCandidatePaths = {
-			"/Library/Frameworks/Python.framework/Versions/3.10",                  // Python Mac installer (python.org/downloads)
-			"/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10",    // Homebrew Intel: python3
-			"/opt/homebrew/opt/python3/Frameworks/Python.framework/Versions/3.10", // Homebrew Apple Silicon: python3
-			"/opt/local/Library/Frameworks/Python.framework/Versions/3.10"         // MacPorts: python310
+			"/Library/Frameworks/Python.framework/Versions/3.12",                  // Python Mac installer (python.org/downloads)
+			"/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.12",    // Homebrew Intel: python3
+			"/opt/homebrew/opt/python3/Frameworks/Python.framework/Versions/3.12", // Homebrew Apple Silicon: python3
+			"/opt/local/Library/Frameworks/Python.framework/Versions/3.12"         // MacPorts: python312
 		};
 		String userPythonPath = juce::SystemStats::getEnvironmentVariable("ORM_PYTHON", "");
 		if (userPythonPath != "") {
