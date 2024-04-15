@@ -36,6 +36,7 @@ set(adaptation_files_test_only
 	"KawaiK3.py" 
 	"KorgDW8000.py" 
 	"Matrix1000.py" 
+	"YamahaRefaceDX.py"
 )
 
 set(adaptation_support_files
