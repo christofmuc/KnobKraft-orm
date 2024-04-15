@@ -148,10 +148,12 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		if (infos.contains("list_id") && infos.contains("list_name")) {
 			// Create a new list as a copy of the dropped list (or bank)
 			auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
+			if (loaded_list) {
 			auto copyOfList = std::make_shared<midikraft::PatchList>(fmt::format("Copy of {}", loaded_list->name()));
 			copyOfList->setPatches(loaded_list->patches());
 			db_.putPatchList(copyOfList);
 			refreshAllUserLists([]() {});
+		}
 		}
 	};
 
