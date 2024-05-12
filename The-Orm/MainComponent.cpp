@@ -1055,7 +1055,7 @@ void MainComponent::aboutBox()
 		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
 		"\n"
 		"Other licenses:\n"
-		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
+		"This software is build using JUCE. See https://github.com/juce-framework/JUCE/blob/master/LICENSE.md for details.\n"
 		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
 		"\n"
 		"Icons made by Freepik from www.flaticon.com\n"
