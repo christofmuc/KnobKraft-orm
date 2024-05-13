@@ -63,6 +63,6 @@ def make_test_data():
         messages = knobkraft.splitSysex(program_dump)
         command, address, message = jv_80.parseRolandMessage(messages[0])
         assert address == [0x01, 0x40 + 0x22, 0x20, 0x00]
-        yield testing.ProgramTestData(message=program_dump, name="Crystal Vox", number=0x22)
+        yield testing.ProgramTestData(message=program_dump, name="Crystal Vox ", number=0x22)
 
     return testing.TestData(program_generator=programs)

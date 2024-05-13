@@ -67,7 +67,7 @@ def test_program_dump_request():
         command, address = xv_3080_main.getCommandAndAddressFromRolandMessage(message)
         assert command == roland.command_dt1
         # Check that we can extract the program place correctly
-        program_no = xv_3080_main.program_dump.subaddress_from_address(address)
+        program_no = xv_3080_main._patch_number_from_address(address)
         assert program_place == program_no
         # Check that we can normalize the address also correctly
         assert xv_3080_main.program_dump.absolute_address(xv_3080_main.program_dump.data_blocks[sub_message].address) == \
@@ -80,7 +80,7 @@ def test_program_dump_request():
         if len(reply) > 0:
             command, reply_address = xv_3080_main.getCommandAndAddressFromRolandMessage(reply)
             assert command == roland.command_rq1
-            new_program_no = xv_3080_main.program_dump.subaddress_from_address(reply_address)
+            new_program_no = xv_3080_main._patch_number_from_address(reply_address)
             assert program_place == new_program_no
             assert xv_3080_main.program_dump.absolute_address(xv_3080_main.program_dump.data_blocks[sub_message + 1].address) == \
                 xv_3080_main.program_dump.reset_to_base_address(reply_address)

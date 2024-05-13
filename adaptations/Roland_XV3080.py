@@ -56,7 +56,7 @@ def setupHelp():
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = []
-        names = ["RedPowerBass", "Sinus QSB", "Super W Bass"]
+        names = ["RedPowerBass", "Sinus QSB   ", "Super W Bass"]
         i = 0
         # Extract the first 3 programs from the sysex dump loaded, and yield them with name and number to the test code
         for message in data.all_messages:
