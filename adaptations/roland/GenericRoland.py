@@ -158,7 +158,10 @@ class GenericRoland:
                  category_index: Optional[int] = None,
                  device_family: Optional[List[int]] = None,
                  device_detect_message: Optional[RolandData] = None,
-                 device_detect_ids: Optional[List[int]] = None):
+                 device_detect_ids: Optional[List[int]] = None,
+                 patch_name_message_number: Optional[int] = 0,
+                 patch_name_length: Optional[int] = 12,
+                 use_roland_character_set: Optional[bool] = False):
         self._name = name
         self.model_id = model_id
         self.device_family = device_family  # This is only used in the Identity Reply Message.
@@ -170,6 +173,9 @@ class GenericRoland:
         self.edit_buffer = edit_buffer
         self.program_dump = program_dump
         self.category_index = category_index
+        self.patch_name_message_number = patch_name_message_number
+        self.patch_name_length = patch_name_length
+        self.use_roland_character_set = use_roland_character_set
         # Calculate the fingerprint blank out zones for edit buffer (just the name) and program dump (program position and name)
         edit_buffer.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len)
         program_dump.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len,
@@ -394,10 +400,14 @@ class GenericRoland:
     @knobkraft_api
     def nameFromDump(self, message) -> str:
         if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
-            messages = knobkraft.sysex.findSysexDelimiters(message, 1)
-            _, _, data = self.parseRolandMessage(message[messages[0][0]:messages[0][1]])
-            patch_name = ''.join([chr(x) for x in data[0:12]])
-            return patch_name.strip()
+            msg_no = self.patch_name_message_number
+            messages = knobkraft.sysex.findSysexDelimiters(message, msg_no + 1)
+            _, _, data = self.parseRolandMessage(message[messages[msg_no][0]:messages[msg_no][1]])
+            if self.use_roland_character_set:
+                patch_name = ''.join([character_set[x] for x in data[0:self.patch_name_length]])
+            else:
+                patch_name = ''.join([chr(x) for x in data[0:self.patch_name_length]])
+            return patch_name
         return 'Invalid'
 
     @knobkraft_api
