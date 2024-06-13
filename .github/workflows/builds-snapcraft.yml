@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Snapcraft KnobKraft Orm
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:    
+    - name: Setup main branch name for version detection
+      run: |
+        git config --global init.defaultBranch main
+        
+    - name: Checkout repository with tags
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ env.BRANCH }}
+        fetch-depth: 0
+
+    - name: Additionally checkout submodules - don't use checkout action as it will overwrite refs
+      run: |
+        git submodule update --recursive --init --depth 1
+
+    - uses: snapcore/action-build@v1
+      name: Build with snapcore
+      id: snapcraft
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: snap
+        path: ${{ steps.snapcraft.outputs.snap }}
+        
+#    - name: Build snap
+#      id: vars
+#      run: |
+#        sg lxd -c 'snapcraft --use-lxd'
+#        echo setting output variable to `find $GITHUB_WORKSPACE -maxdepth 1 -type f -name "*.snap" | head -n1)`
+#        echo ::set-output name=snap::$(find $GITHUB_WORKSPACE -maxdepth 1 -type f -name "*.snap" | head -n1)
+
+    - name: Publish release
+      uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        file: ${{ steps.vars.outputs.snap}}
+        tags: true
