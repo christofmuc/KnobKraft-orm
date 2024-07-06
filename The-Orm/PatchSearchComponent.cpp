@@ -10,6 +10,7 @@
 #include "FlexBoxHelper.h"
 
 #include "UIModel.h"
+#include "PatchFilter.h"
 
 namespace {
 
@@ -128,6 +129,23 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	};
 	addAndMakeVisible(buttonDisplayType_);
 
+	// Clear all filters button
+	clearFilters_.setButtonText("Clear filters");
+	clearFilters_.onClick = [this]() {
+		std::vector<std::shared_ptr<midikraft::Synth>> synthList;
+		for (auto& device: UIModel::instance()->synthList_.activeSynths()) {
+			if (auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device)) {
+				synthList.push_back(synth);
+			}
+		}
+		loadFilter(midikraft::PatchFilter(synthList));
+		updateCurrentFilter();
+		patchView_->retrieveFirstPageFromDatabase();
+		clearFilters_.setEnabled(false);
+	};
+	addAndMakeVisible(clearFilters_);
+	clearFilters_.setEnabled(false);
+
 	// Need to initialize multiModeFilter, else we get weird search results
 	multiModeFilter_ = midikraft::PatchFilter({});
 
@@ -196,6 +214,8 @@ void PatchSearchComponent::resized()
 	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
 
+	// Filter clear, sorting, and display choice
+	clearFilters_.setBounds(sortAndDisplayTypeArea.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 	buttonDisplayType_.setBounds(sortAndDisplayTypeArea.removeFromTop(normalFilterHeight).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 
 	area.removeFromTop(normalFilterHeight);
@@ -256,6 +276,7 @@ void PatchSearchComponent::updateCurrentFilter()
 	else {
 		multiModeFilter_ = buildFilter();
 	}
+	clearFilters_.setEnabled(true);
 }
 
 midikraft::PatchFilter PatchSearchComponent::buildFilter() const
