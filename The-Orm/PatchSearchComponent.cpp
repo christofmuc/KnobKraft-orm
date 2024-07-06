@@ -12,9 +12,18 @@
 #include "UIModel.h"
 #include "PatchFilter.h"
 
+#include <spdlog/spdlog.h>
+
 namespace {
 
 	//const char* kAllDataTypesFilter = "All types";
+
+	std::vector<std::pair<String, int>> kSortChoices = {
+		{ "Sort by import", static_cast<int>(midikraft::PatchOrdering::Order_by_Import_id)},
+		{ "Sort by name", static_cast<int>(midikraft::PatchOrdering::Order_by_Name)},
+		{ "Sort by program #", static_cast<int>(midikraft::PatchOrdering::Order_by_ProgramNo)},
+		{ "Sort by bank #", static_cast<int>(midikraft::PatchOrdering::Order_by_BankNo)},
+	};
 
 	std::vector<std::pair<String, int>> kDisplayChoices = {
 		{ "Name and #", static_cast<int>(PatchButtonInfo::NameDisplay)},
@@ -111,6 +120,19 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	addAndMakeVisible(textSearch_);
 	addAndMakeVisible(patchButtons_);
 
+	// Setup Order By ComboBox
+	for (auto sortChoice : kSortChoices) {
+		orderByType_.addItem(sortChoice.first, sortChoice.second);
+	}
+	orderByType_.setTextWhenNothingSelected("Choose sort order");
+	orderByType_.onChange = [this]() {
+		updateCurrentFilter();
+		patchView_->retrieveFirstPageFromDatabase();
+	};
+	addAndMakeVisible(orderByType_);
+
+
+	// Setup Display Type ComboBox
 	int id = 1;
 	for (auto displayChoice : kDisplayChoices) {
 		buttonDisplayType_.addItem(displayChoice.first, id++);
@@ -138,7 +160,10 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 				synthList.push_back(synth);
 			}
 		}
-		loadFilter(midikraft::PatchFilter(synthList));
+		// Make sure to keep the sort order
+		auto defaultFilter = midikraft::PatchFilter(synthList);
+		defaultFilter.orderBy = static_cast<midikraft::PatchOrdering>(orderByType_.getSelectedId());
+		loadFilter(defaultFilter);
 		updateCurrentFilter();
 		patchView_->retrieveFirstPageFromDatabase();
 		clearFilters_.setEnabled(false);
@@ -209,14 +234,15 @@ void PatchSearchComponent::resized()
 	auto catFilterMin = categoryFilters_.determineSubAreaForButtonLayout(this, filterRow);
 	categoryFilters_.setBounds(catFilterMin.toNearestInt());
 
-	int normalFilterHeight = (int) flexBoxSize.getHeight() + categoryFilters_.getHeight();
+	int normalFilterHeight = std::max((int) flexBoxSize.getHeight() + categoryFilters_.getHeight(), 3*LAYOUT_LINE_SPACING);
 
 	auto sourceRow = leftHalf.removeFromTop(normalFilterHeight);
 	textSearch_.setBounds(sourceRow.withSizeKeepingCentre(leftPart, LAYOUT_LARGE_LINE_HEIGHT));
 
 	// Filter clear, sorting, and display choice
-	clearFilters_.setBounds(sortAndDisplayTypeArea.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
-	buttonDisplayType_.setBounds(sortAndDisplayTypeArea.removeFromTop(normalFilterHeight).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
+	clearFilters_.setBounds(sortAndDisplayTypeArea.removeFromTop(LAYOUT_LINE_SPACING).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
+	orderByType_.setBounds(sortAndDisplayTypeArea.removeFromTop(LAYOUT_LINE_SPACING).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
+	buttonDisplayType_.setBounds(sortAndDisplayTypeArea.removeFromTop(LAYOUT_LINE_SPACING).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 
 	area.removeFromTop(normalFilterHeight);
 	// Patch Buttons get the rest
@@ -241,6 +267,10 @@ void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
 
 	// Set name filter
 	textSearch_.setSearchText(filter.name);
+
+	// Set sort order
+	int selectedOrder = static_cast<int>(filter.orderBy);
+	orderByType_.setSelectedId(selectedOrder, dontSendNotification);
 }
 
 bool PatchSearchComponent::isInMultiSynthMode() {
@@ -311,6 +341,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 			synthMap[UIModel::currentSynth()->getName()] = UIModel::instance()->currentSynth_.smartSynth();
 		}
 	}
+
 	midikraft::PatchFilter filter(synthMap);
 
 	filter.importID = ""; // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
@@ -325,7 +356,11 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 	filter.categories = catSelected;
 	filter.andCategories = andCategories_.getToggleState();
 	filter.onlyDuplicateNames = onlyDuplicates_.getToggleState();
-	filter.orderBy = filter.onlyDuplicateNames ? midikraft::PatchOrdering::Order_by_Name : midikraft::PatchOrdering::Order_by_Import_id;
+
+	// Setup sort order
+	//midikraft::PatchOrdering sortOrder = filter.onlyDuplicateNames ? midikraft::PatchOrdering::Order_by_Name : midikraft::PatchOrdering::Order_by_Import_id;
+	auto selectedSortOrder = static_cast<midikraft::PatchOrdering>(orderByType_.getSelectedId());
+	filter.orderBy = selectedSortOrder;
 	return filter;
 }
 
