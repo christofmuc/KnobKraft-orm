@@ -28,7 +28,7 @@ namespace knobkraft {
 	public:
 		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me, GenericAdaptation const* adaptation) : me_(me), adaptation_(adaptation) {}
         virtual ~GenericStoredPatchNameCapability() = default;
-		void setName(std::string const &name) override;
+		bool changeNameStoredInPatch(std::string const &name) override;
 		std::string name() const override;
 
 	private:

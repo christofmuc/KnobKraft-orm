@@ -21,7 +21,7 @@ namespace midikraft {
 		MKS50_Patch(MidiProgramNumber programNumber, std::string const& patchName, Synth::PatchData const& patchData);
 
 		virtual std::string name() const override;
-		virtual void setName(std::string const& name) override;
+		virtual bool changeNameStoredInPatch(std::string const& name) override;
 
 		virtual MidiProgramNumber patchNumber() const override;
 		//virtual void setPatchNumber(MidiProgramNumber patchNumber) override;

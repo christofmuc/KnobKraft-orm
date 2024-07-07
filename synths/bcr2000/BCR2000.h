@@ -114,7 +114,7 @@ namespace midikraft {
 		BCR2000Preset(std::string const &name, Synth::PatchData const &data);
 
 		virtual std::string name() const override;
-		virtual void setName(std::string const& name) override;
+		virtual bool changeNameStoredInPatch(std::string const& name) override;
 
 	private:
 		std::string name_;

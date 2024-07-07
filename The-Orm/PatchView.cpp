@@ -605,8 +605,7 @@ void PatchView::bulkRenamePatches()
 	loadPage(0, 512, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
 		BulkRenameDialog::show(patches, this, [this](std::vector<midikraft::PatchHolder> renamed) {
 			std::vector<midikraft::PatchHolder> newPatches_;
-			size_t numChanged = database_.mergePatchesIntoDatabase(renamed, newPatches_, nullptr, midikraft::PatchDatabase::UPDATE_NAME);
-			spdlog::info("Renamed {} patches in the database!", numChanged);
+			database_.mergePatchesIntoDatabase(renamed, newPatches_, nullptr, midikraft::PatchDatabase::UPDATE_NAME);
 			retrieveFirstPageFromDatabase();
 			});
 		});

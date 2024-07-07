@@ -56,10 +56,11 @@ namespace midikraft {
 		return patchName_;
 	}
 
-	void MKS50_Patch::setName(std::string const& name)
+	bool MKS50_Patch::changeNameStoredInPatch(std::string const& name)
 	{
 		auto data = stringToData(name.substr(0,10));
 		patchName_ = dataToString(data);
+		return true;
 	}
 
 	MidiProgramNumber MKS50_Patch::patchNumber() const

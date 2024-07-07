@@ -21,7 +21,7 @@ namespace midikraft {
 		Rev2Patch(Synth::PatchData const &patchData, MidiProgramNumber programNo);
 
 		virtual std::string name() const override;
-		virtual void setName(std::string const &name) override;
+		virtual bool changeNameStoredInPatch(std::string const &name) override;
 		virtual bool isDefaultName(std::string const &patchName) const override;
 		virtual MidiProgramNumber patchNumber() const override;
 

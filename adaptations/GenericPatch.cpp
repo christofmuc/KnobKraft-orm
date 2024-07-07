@@ -85,16 +85,16 @@ namespace knobkraft {
 		});
 	}
 
-	void GenericStoredPatchNameCapability::setName(std::string const &newName)
+	bool GenericStoredPatchNameCapability::changeNameStoredInPatch(std::string const &newName)
 	{
 		if (name() == newName) {
 			// No need to change the name, as the current calculation already gives the correct result
-			return;
+			return true;
 		}
 		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
 			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
-			if (!me_.lock()->pythonModuleHasFunction(kRenamePatch)) return;
+			if (!me_.lock()->pythonModuleHasFunction(kRenamePatch)) return false;
 
 			// Very well, then try to change the name in the patch data
 			try {
@@ -103,6 +103,7 @@ namespace knobkraft {
 				auto intVector = result.cast<std::vector<int>>();
 				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
 				me_.lock()->setData(byteData);
+				return true;
  			}
 			catch (py::error_already_set &ex) {
 				if (!me_.expired())
@@ -117,6 +118,7 @@ namespace knobkraft {
 				spdlog::error("Adaptation[unknown]: Uncaught exception in {} of Patch of GenericAdaptation", kRenamePatch);
 			}
 		}
+		return false;
 	}
 
 	bool GenericDefaultNameCapability::isDefaultName(std::string const &patchName) const

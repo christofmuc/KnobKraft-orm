@@ -37,7 +37,7 @@ namespace midikraft {
 		return name;
 	}
 
-	void Matrix1000Patch::setName(std::string const &name)
+	bool Matrix1000Patch::changeNameStoredInPatch(std::string const &name)
 	{
 		// The String, coming from the UI, should be UTF8. We need some serious software to get back into ASCII land now
 		// Let's use the ICU library
@@ -69,6 +69,7 @@ namespace midikraft {
 				}
 			}
 		}
+		return true;
 	}
 
 	bool Matrix1000Patch::isDefaultName(std::string const &patchName) const

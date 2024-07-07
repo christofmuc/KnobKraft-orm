@@ -560,19 +560,19 @@ def convertToEditBuffer(channel, message):
     return header + common + footer
 
 
-# def nameFromDump(message):
-#     # Build a "name" based on values from "MIDI PARAMETER CHANGE TABLE (Tone Generator)"
-#     # as Reface CP doesn't have patch names, not even in SysEx.
-#     try:
-#         data = parseSysEx(message)
-#     except Exception as e:
-#         print("[CP] nameFromDump Exception:", e)
-#         return "(Invalid)"
+def nameFromDump(message):
+    # Build a "name" based on values from "MIDI PARAMETER CHANGE TABLE (Tone Generator)"
+    # as Reface CP doesn't have patch names, not even in SysEx.
+    try:
+        data = parseSysEx(message)
+    except Exception as e:
+        print("[CP] nameFromDump Exception:", e)
+        return "(Invalid)"
 
-#     if data.get("Address", []) == DUMP_ADDR_PART_COMMON:
-#         return str(hash(getParameterChangeTable(data["Data"]).values()))
+    if data.get("Address", []) == DUMP_ADDR_PART_COMMON:
+        return str(hash(getParameterChangeTable(data["Data"]).values()))
 
-#     return "(Invalid)"
+    return "(Invalid)"
 
 
 #
