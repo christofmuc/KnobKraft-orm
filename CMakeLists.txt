@@ -82,6 +82,14 @@ IF (WIN32)
 	ENDIF()
 
 	FetchContent_Declare(
+		postgresql
+		# Download the PostgreSQL 16.3 binaries from the official distributor. We need only the include and the library actually, need to look for a smaller distribution
+		URL https://sbp.enterprisedb.com/getfile.jsp?fileid=1259104
+	)
+	FetchContent_MakeAvailable(postgresql)
+	message("${postgresql_SOURCE_DIR} is the location for the postgres libraries")
+
+	FetchContent_Declare(
 		pythonembedded
 		URL https://www.python.org/ftp/python/${PYTHON_VERSION_TO_DOWNLOAD}/python-${PYTHON_VERSION_TO_DOWNLOAD}-embed-amd64.zip
 	)
@@ -227,6 +235,19 @@ add_subdirectory(third_party/json-schema-validator)
 add_subdirectory(third_party/fmt)
 option(SPDLOG_FMT_EXTERNAL "" ON)
 add_subdirectory(third_party/spdlog)
+
+# Add PostgreSQL
+set(PostgreSQL_LIBRARY "${postgresql_SOURCE_DIR}/lib" CACHE STRING "Lib directory for the Postgres SQL server")
+set(PostgreSQL_INCLUDE_DIR "${postgresql_SOURCE_DIR}/include" CACHE STRING "Include directory for the libpq C library for Postgres")
+set(PostgreSQL_TYPE_INCLUDE_DIR "${postgresql_SOURCE_DIR}/include" CACHE STRING "Type include directory for Postgres")
+message("${PostgreSQL_INCLUDE_DIR} is the include dir")
+set(SKIP_BUILD_TEST ON)
+IF (WIN32)
+    set(BUILD_SHARED_LIBS ON)
+ELSE()
+    set(BUILD_SHARED_LIBS OFF)
+ENDIF()
+add_subdirectory(third_party/libpqxx build-pqxx)
 
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
