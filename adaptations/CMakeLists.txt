@@ -28,7 +28,7 @@ set(adaptation_files
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "YamahaRefaceDX.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py"
 	"Zoom_MS.py"
 )
 
