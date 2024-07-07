@@ -18,8 +18,8 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
+      with:
+        xcode-version: latest-stable
 
     - name: Prepare build machine with homebrew
       run: |
