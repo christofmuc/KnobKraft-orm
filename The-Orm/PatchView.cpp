@@ -146,6 +146,8 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		loadPage(skip, limit, currentFilter(), callback);
 	});
 
+	patchButtons_->setButtonSendModes({ "program change", "edit buffer", "automatic"});
+
 	// Register for updates
 	UIModel::instance()->currentPatch_.addChangeListener(this);
 }
@@ -891,6 +893,85 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 	backgroundThread.runThread();
 }
 
+std::vector<MidiProgramNumber> PatchView::patchIsInSynth(midikraft::PatchHolder& patch) {
+	auto alreadyInSynth = database_.getBankPositions(patch.smartSynth(), patch.md5());
+	for (auto inSynth : alreadyInSynth) {
+		if (inSynth.bank().isValid()) {
+			spdlog::debug("Patch is already in synth in bank {} at position {}", inSynth.bank().toZeroBased(), inSynth.toZeroBasedDiscardingBank());
+		}
+		else
+		{
+			spdlog::debug("Patch is already in synth in unknown bank at position {}", inSynth.toZeroBasedDiscardingBank());
+		}
+	}
+	if (alreadyInSynth.size() > 1) {
+		spdlog::debug("Patch {} is in {} different positions.", patch.name(), alreadyInSynth.size());
+	}
+	return alreadyInSynth;
+}
+
+bool PatchView::isSynthConnected(std::shared_ptr<midikraft::Synth> synth) {
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+	return midiLocation && midiLocation->channel().isValid();
+}
+
+std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgramNumber program, midikraft::PatchHolder &patch) {
+	// Default to the bank of the patch in case the given program number contains no bank
+	auto bankNumberToSelect = patch.bankNumber();
+	if (program.isBankKnown()) {
+		bankNumberToSelect = program.bank();
+	}
+
+	std::vector<juce::MidiMessage> selectPatch;
+	if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
+		auto bankSelect = bankDescriptors->bankSelectMessages(bankNumberToSelect);
+		std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+	}
+	else if (auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(patch.smartSynth())) {
+		auto bankSelect = banks->bankSelectMessages(bankNumberToSelect);
+		std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+	}
+
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+	if (midiLocation && midiLocation->channel().isValid()) {
+		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), program.toZeroBasedDiscardingBank()));
+		spdlog::info("Sending program change to {} for patch {}: program {} {}."
+			, patch.smartSynth()->getName()
+			, patch.name()
+			, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, program)
+			, program.isBankKnown() ? "[known bank]" : "[bank not known!]");			
+		return selectPatch;
+	} else {
+		spdlog::error("Program error - Synth {} has not been detected, can't build MIDI messages to select bank and program", patch.smartSynth()->getName());
+		return {};
+	}
+}
+
+void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation,  MidiProgramNumber program, midikraft::PatchHolder &patch) {
+	// We can get away with just a bank select and program change, and will try to select the patch directly
+		// Build the MIDI messages required to select bank and program
+	auto selectPatch = buildSelectBankAndProgramMessages(program, patch);
+	if (selectPatch.size() > 1) {
+		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
+	}
+	else {
+		spdlog::error("Failed to build MIDI bank and program change messages for {}, program error?", patch.smartSynth()->getName());
+	}
+
+}
+
+void PatchView::sendPatchAsSysex(midikraft::PatchHolder &patch) {
+	// Send out to Synth into edit buffer
+	if (patch.patch()) {
+		spdlog::info("Sending sysex for patch '{}' to {}", patch.name(), patch.synth()->getName());
+		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+	}
+	else {
+		spdlog::debug("Empty patch slot selected, can't send to synth");
+	}
+}
+
+
 void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 {
 	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
@@ -905,50 +986,37 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		currentLayer_ = 0;
 
 		if (alsoSendToSynth) {
-			auto alreadyInSynth = database_.getBankPositions(patch.smartSynth(), patch.md5());
-			for (auto inSynth : alreadyInSynth) {
-				if (inSynth.bank().isValid()) {
-					spdlog::debug("Patch is already in synth in bank {} at position {}", inSynth.bank().toZeroBased(), inSynth.toZeroBasedDiscardingBank());
-				}
-				else
-				{
-					spdlog::debug("Patch is already in synth in unknown bank at position {}", inSynth.toZeroBasedDiscardingBank());
-				}
-			}
 			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
-			if (midiLocation && midiLocation->channel().isValid() && alreadyInSynth.size() > 0) {
-				auto bankNumberToSelect = patch.bankNumber();
-				if (alreadyInSynth[0].isBankKnown()) {
-					bankNumberToSelect = alreadyInSynth[0].bank();
+			if (isSynthConnected(patch.smartSynth())) {
+				Data::ensureEphemeralPropertyExists(EPROPERTY_BUTTON_SEND_MODE, "auto");
+				auto synthSpecificSendMode = Data::getEphemeralProperty(EPROPERTY_BUTTON_SEND_MODE);
+
+				auto alreadyInSynth = patchIsInSynth(patch);
+				if (synthSpecificSendMode == "program change") {
+					if (alreadyInSynth.size() > 0) {
+						sendProgramChangeMessagesForPatch(midiLocation, alreadyInSynth[0], patch);
+					}
+					else {
+						spdlog::info("Patch send mode set to program change, but position of patch in synth is unknown. Try to import the banks of the synth first!");
+					}
 				}
-				// We can get away with just a bank select and program change
-				std::vector<juce::MidiMessage> selectPatch;
-				if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
-					auto bankSelect = bankDescriptors->bankSelectMessages(bankNumberToSelect);
-					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+				else if (synthSpecificSendMode == "edit buffer") {
+					sendPatchAsSysex(patch);
 				}
-				else if (auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(patch.smartSynth())) {
-					auto bankSelect = banks->bankSelectMessages(bankNumberToSelect);
-					std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+				else if (synthSpecificSendMode == "automatic") {
+					if (alreadyInSynth.size() > 0) {
+						sendProgramChangeMessagesForPatch(midiLocation, alreadyInSynth[0], patch);
+					}
+					else {
+						sendPatchAsSysex(patch);
+					}
+				} 
+				else {
+					spdlog::error("Unknown send mode '{}' stored in property, program error?", synthSpecificSendMode.operator juce::String().toStdString());
 				}
-				selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), alreadyInSynth[0].toZeroBasedDiscardingBank()));
-				patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
-				spdlog::info("Sending program change to {} for patch {}: program {} {}. {}"
-					, patch.smartSynth()->getName()
-					, patch.name()
-					, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, alreadyInSynth[0])
-					, alreadyInSynth[0].isBankKnown() ? "[known bank]" : "[bank not known!]"
-					, alreadyInSynth.size() > 1 ? fmt::format("Patch is in {} different positions.", alreadyInSynth.size()): "");
 			}
 			else {
-				// Send out to Synth into edit buffer
-				if (patch.patch()) {
-					spdlog::info("Sending patch '{}' to {}", patch.name(), patch.synth()->getName());
-					patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
-				}
-				else {
-					spdlog::info("Empty patch slot selected, can't send to synth");
-				}
+				spdlog::info("{} not detected, skipped sending patch {}", patch.smartSynth()->getName(), patch.name());
 			}
 		}
 	/* }

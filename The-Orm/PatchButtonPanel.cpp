@@ -13,6 +13,8 @@
 #include "LayoutConstants.h"
 #include "Settings.h"
 
+#include "Data.h"
+
 #include <algorithm>
 #include <fmt/format.h>
 
@@ -52,6 +54,19 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 
 	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index, true); });
 	addAndMakeVisible(patchButtons_.get());
+
+	buttonSendMode_.setTextWhenNoChoicesAvailable("<default mode>");
+	buttonSendMode_.onChange = [this]() {
+		// Value changed, update property
+		auto selectedText = buttonSendMode_.getItemText(buttonSendMode_.getSelectedItemIndex());
+		Data::instance().getEphemeralPropertyAsValue(EPROPERTY_BUTTON_SEND_MODE).setValue(selectedText);
+	};
+	Data::ensureEphemeralPropertyExists(EPROPERTY_BUTTON_SEND_MODE, "auto");
+	addAndMakeVisible(buttonSendMode_);
+
+	buttonSendModeLabel_.setText("send mode", NotificationType::dontSendNotification);
+	addAndMakeVisible(buttonSendModeLabel_);
+	//buttonSendModeLabel_.attachToComponent(&buttonSendMode_, true);
 
 	addAndMakeVisible(pageUp_); 
 	pageUp_.setButtonText(">");
@@ -316,6 +331,9 @@ void PatchButtonPanel::resized()
 		}
 	}
 	pageNumberBox.performLayout(pageNumberStrip);
+	auto width_label = buttonSendModeLabel_.getFont().getStringWidth(buttonSendModeLabel_.getText());
+	buttonSendModeLabel_.setBounds(pageNumberStrip.removeFromLeft(width_label));
+	buttonSendMode_.setBounds(pageNumberStrip.removeFromLeft(LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 	gridSizeSliderY_.setBounds(pageNumberStrip.removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));
 	gridSizeSliderX_.setBounds(pageNumberStrip.withTrimmedRight(LAYOUT_SMALL_ICON_WIDTH).removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));
 
@@ -348,6 +366,16 @@ void PatchButtonPanel::buttonClicked(Button* button)
 	else if (button == &pageDown_) {
 		pageDown(false);
 	}
+}
+
+void PatchButtonPanel::setButtonSendModes(std::vector<std::string> const& modes)
+{
+	buttonSendMode_.clear();
+	int index = 1;
+	for (auto const& mode : modes) {
+		buttonSendMode_.addItem(mode, index++);
+	}
+	buttonSendMode_.setSelectedItemIndex(0);
 }
 
 void PatchButtonPanel::pageUp(bool selectNext) {

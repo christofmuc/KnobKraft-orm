@@ -35,6 +35,9 @@ public:
 	void buttonClicked(Button* button) override;
 	void buttonClicked(int buttonIndex, bool triggerHandler);
 
+	// Setup patch send modes
+	void setButtonSendModes(std::vector<std::string> const& modes);
+
 	// Remote control
 	void selectPrevious();
 	void selectNext();
@@ -70,6 +73,8 @@ private:
 	TextButton pageUp_, pageDown_;
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
+	Label buttonSendModeLabel_;
+	ComboBox buttonSendMode_;
 	Label sliderXLabel_;
 	Slider gridSizeSliderX_;
 	Label sliderYLabel_;

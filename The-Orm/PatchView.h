@@ -101,6 +101,15 @@ private:
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
+	// TODO These should go into a more general library
+	std::vector<MidiProgramNumber> patchIsInSynth(midikraft::PatchHolder& patch);
+	static bool isSynthConnected(std::shared_ptr<midikraft::Synth> synth);
+	static std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgramNumber program, midikraft::PatchHolder& patch);
+
+	// Helper functions
+	void sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation, MidiProgramNumber program, midikraft::PatchHolder& patch);
+	static void sendPatchAsSysex(midikraft::PatchHolder& patch);
+
 	void updateLastPath();
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
