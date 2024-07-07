@@ -32,6 +32,20 @@ set(adaptation_files
 	"Zoom_MS.py"
 )
 
+set(adaptation_files_test_shipped
+    "conftest.py"
+    "test_adaptations.py"
+    "test_AndromedaA6.py"
+    "test_BC_Kijimi.py"
+    "test_implementation_status.py"
+    "test_jv80.py"
+    "test_JV1080.py"
+    "test_KorgMS2000.py"
+    "test_Roland_MKS70_V4.py"
+    "test_Roland_XV3080.py"
+    "test_YamahaRefaceDX.py"
+)
+
 set(adaptation_files_test_only
 	"KawaiK3.py" 
 	"KorgDW8000.py" 
@@ -57,6 +71,7 @@ set(Sources
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
+        ${adaptation_files_test_shipped}
 	${adaptation_files_test_only}
 	${adaptation_support_files}
 )
@@ -83,6 +98,9 @@ if (MSVC)
 set(INSTALLER_FILE_LIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/../The-Orm/adaptations.iss")
 file(WRITE ${INSTALLER_FILE_LIST_FILE} "; Auto generated, don't edit'\n")
 foreach(ADAPTATION ${adaptation_files})
+file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
+endforeach()
+foreach(ADAPTATION ${adaptation_files_test_shipped})
 file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
 endforeach()
 
