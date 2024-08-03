@@ -77,7 +77,19 @@ def old_channelIfValidDeviceResponse(message):
     return -1
 
 
-def loadD50BankDump(messages):
+def isPartOfBankDump(message):
+    if isOwnSysex(message):
+        command, address, data = parseRolandMessage(message)
+        if command == command_dt1:
+            return True
+    return False
+
+
+def isBankDumpFinished(messages):
+    return all([isPartOfBankDump(message) for message in messages]) and len(messages) == 135
+
+
+def extractPatchesFromAllBankMessages(messages):
     # The Bank dumps of the D-50 basically are just a lists of messages with the whole memory content of the synth
     # We need to put them together, and then can read the individual data items from the RAM
     synth_ram = [0xff] * (address_to_index([0x04, 0x0c, 0x08]) + 376)
@@ -144,8 +156,10 @@ def make_test_data():
         assert (g_address == [0x00, 0x01, 0x00])
         assert (g_data == [0x00, 0x00, 0x40])
 
-        patches = loadD50BankDump(test_data.all_messages)
+        patches = extractPatchesFromAllBankMessages(test_data.all_messages)
+        assert not d_50.isPartOfSingleProgramDump(test_data.all_messages[0])
         yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ")
         yield testing.ProgramTestData(message=patches[17], name="DIMENSIONAL PAD   ")
 
-    return testing.TestData(sysex=R"testData/Roland_D50_DIGITAL DREAMS.syx", edit_buffer_generator=make_patches)
+    #return testing.TestData(sysex=R"testData/Roland_D50_DIGITAL DREAMS.syx", edit_buffer_generator=make_patches)
+    return testing.TestData(sysex=R"testData/RolandD50/D50 sound bank Descent into Madness by Carl Johnson.syx", edit_buffer_generator=make_patches)
