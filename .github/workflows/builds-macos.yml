@@ -56,19 +56,17 @@ jobs:
         echo "DMG_FILE_NAME=$DMG_FILE_NAME" >> $GITHUB_ENV
       shell: bash
 
-    - name: Notarize the Application
-      uses: apple-actions/macos-notarize@v1
+    - name: Notarize Release Build
+      uses: lando/notarize-action@v2
       with:
-        primary-bundle-id: de.gmx.ruch.christof.knobkraftorm
-        path: ${{ env.DMG_FILE_NAME }}
-      env:
-        AC_USERNAME: ${{ secrets.APPLE_ID }}
-        AC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        AC_TEAM_ID: ${{ secrets.TEAM_ID }}
+        product-path: ${{ env.DMG_FILE_NAME }}
+        appstore-connect-username: ${{ secrets.APPLE_ID }}
+        appstore-connect-password: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        appstore-connect-team-id: ${{ secrets.TEAM_ID }}
 
     - name: Staple Notarization Ticket
       run: |
-        xcrun stapler staple YourAppName.dmg
+        xcrun stapler staple ${DMG_FILE_NAME}
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
