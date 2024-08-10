@@ -186,6 +186,7 @@ ELSEIF(APPLE)
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 			MACOSX_BUNDLE TRUE
+			CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_LIST_DIR}/Info.plist
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
 		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
 		)
@@ -198,6 +199,13 @@ ELSEIF(APPLE)
 			COMMAND codesign --force --sign "Developer ID Application: ${APPLE_DEVELOPER_IDENTITY}" ${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg
 			COMMENT "Code signing the DMG file..."
 		)
+
+	# Export the name of the DMG file for github pipeline
+	add_custom_command(TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E echo "DMG_FILE_NAME=${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg" > ${CMAKE_BINARY_DIR}/DMG_FILE_NAME.txt
+			COMMENT "Exporting DMG file name..."
+			)
+
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 

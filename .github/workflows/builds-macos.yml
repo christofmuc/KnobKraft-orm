@@ -48,6 +48,28 @@ jobs:
     - name: CMake build
       run: cmake --build build --target package --parallel
 
+    - name: Read DMG File Name
+        id: read_dmg_name
+        run: |
+          # Read the DMG file name from the text file
+          DMG_FILE_NAME=$(cat build/DMG_FILE_NAME.txt)
+          echo "DMG_FILE_NAME=$DMG_FILE_NAME" >> $GITHUB_ENV
+        shell: bash
+
+    - name: Notarize the Application
+      uses: apple-actions/macos-notarize@v1
+      with:
+        primary-bundle-id: de.gmx.ruch.christof.knobkraftorm
+        path: ${{ env.DMG_FILE_NAME }}
+      env:
+        AC_USERNAME: ${{ secrets.APPLE_ID }}
+        AC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        AC_TEAM_ID: ${{ secrets.TEAM_ID }}
+
+      - name: Staple Notarization Ticket
+        run: |
+          xcrun stapler staple YourAppName.dmg
+
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
       env:
