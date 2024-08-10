@@ -185,8 +185,18 @@ ELSEIF(APPLE)
 		spdlog::spdlog
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
+			MACOSX_BUNDLE TRUE
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
 		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+		)
+
+
+	# Define the code signing command for the DMG
+	add_custom_command(TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E echo "Creating DMG and signing it..."
+			COMMAND ${CMAKE_MAKE_PROGRAM} package
+			COMMAND codesign --force --sign \"Apple Development: christof.ruch@gmx.de \(7QDJ5QGTNS\)\" ${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg
+			COMMENT "Code signing the DMG file..."
 		)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
@@ -308,7 +318,7 @@ IF(APPLE)
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
-    set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
+    set(CPACK_PACKAGE_VENDOR "Christof Ruch")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
 	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
     
@@ -316,6 +326,9 @@ IF(APPLE)
     SET(CPACK_BINARY_DRAGNDROP ON)
     SET(CPACK_BINARY_TGZ OFF)
     SET(CPACK_BINARY_STGZ OFF)
+	set(CPACK_DMG_VOLUME_NAME "KnobKraftOrm")
+	set(CPACK_DMG_FORMAT "UDZO")
+
     INCLUDE(CPack)
 ELSE()
 	INSTALL(TARGETS KnobKraftOrm knobkraft-generic-adaptation
