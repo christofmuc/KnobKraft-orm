@@ -49,12 +49,12 @@ jobs:
       run: cmake --build build --target package --parallel
 
     - name: Read DMG File Name
-        id: read_dmg_name
-        run: |
-          # Read the DMG file name from the text file
-          DMG_FILE_NAME=$(cat build/DMG_FILE_NAME.txt)
-          echo "DMG_FILE_NAME=$DMG_FILE_NAME" >> $GITHUB_ENV
-        shell: bash
+      id: read_dmg_name
+      run: |
+        # Read the DMG file name from the text file
+        DMG_FILE_NAME=$(cat build/DMG_FILE_NAME.txt)
+        echo "DMG_FILE_NAME=$DMG_FILE_NAME" >> $GITHUB_ENV
+      shell: bash
 
     - name: Notarize the Application
       uses: apple-actions/macos-notarize@v1
