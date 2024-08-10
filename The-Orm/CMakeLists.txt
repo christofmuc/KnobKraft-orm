@@ -195,7 +195,7 @@ ELSEIF(APPLE)
 	add_custom_command(TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E echo "Creating DMG and signing it..."
 			COMMAND ${CMAKE_MAKE_PROGRAM} package
-			COMMAND codesign --force --sign \"Apple Development: christof.ruch@gmx.de \(7QDJ5QGTNS\)\" ${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg
+			COMMAND codesign --force --sign "Developer ID Application: ${APPLE_DEVELOPER_IDENTITY}" ${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg
 			COMMENT "Code signing the DMG file..."
 		)
 ELSEIF(UNIX)
