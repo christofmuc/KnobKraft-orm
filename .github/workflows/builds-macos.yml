@@ -46,7 +46,7 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
 
     - name: CMake build
-      run: cmake --build build --target package --parallel
+      run: cmake --build build --parallel
 
     - name: Read DMG File Name
       id: read_dmg_name
