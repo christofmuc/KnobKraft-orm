@@ -34,6 +34,17 @@ jobs:
       run: |
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
 
+    - name: Import Developer Certificate
+      run: |
+        echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+        security create-keychain -p "" build.keychain
+        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        security default-keychain -s build.keychain
+      env:
+        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+
     - name: CMake build
       run: cmake --build build --target package --parallel
 
