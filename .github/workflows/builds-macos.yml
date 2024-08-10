@@ -66,9 +66,9 @@ jobs:
         AC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         AC_TEAM_ID: ${{ secrets.TEAM_ID }}
 
-      - name: Staple Notarization Ticket
-        run: |
-          xcrun stapler staple YourAppName.dmg
+    - name: Staple Notarization Ticket
+      run: |
+        xcrun stapler staple YourAppName.dmg
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
