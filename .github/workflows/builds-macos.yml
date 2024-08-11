@@ -6,7 +6,7 @@ on: push
 
 jobs:
   build-macos:
-    runs-on: macos-12
+    runs-on: macos-13 
     timeout-minutes: 40
     steps:
     - name: Checkout repository with tags
