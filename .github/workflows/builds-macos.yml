@@ -61,7 +61,7 @@ jobs:
         echo Waiting for XProtect process...; while pgrep XProtect; do sleep 3; done;
 
     - name: CMake build
-      run: cmake --build build --target package --parallel --verbose
+      run: cmake --build build --target package --verbose
 
     - name: Read DMG File Name
       id: read_dmg_name
