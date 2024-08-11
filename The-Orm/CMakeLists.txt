@@ -209,7 +209,7 @@ ELSEIF(APPLE)
 
 	# Export the name of the DMG file for github pipeline
 	add_custom_command(TARGET KnobKraftOrm POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E echo "DMG_FILE_NAME=${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg" > ${CMAKE_BINARY_DIR}/DMG_FILE_NAME.txt
+			COMMAND ${CMAKE_COMMAND} -E echo "${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg" > ${CMAKE_BINARY_DIR}/DMG_FILE_NAME.txt
 			COMMENT "Exporting DMG file name..."
 			)
 
