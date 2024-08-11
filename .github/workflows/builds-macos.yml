@@ -23,8 +23,8 @@ jobs:
         xcode-version: latest-stable
 
     - name: Install latest CMake.
-        uses: lukka/get-cmake@latest
-        
+      uses: lukka/get-cmake@latest
+
     - name: Prepare build machine with homebrew
       run: |
         brew install boost icu4c
