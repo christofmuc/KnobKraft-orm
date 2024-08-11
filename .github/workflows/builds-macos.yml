@@ -47,7 +47,7 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
 
     - name: CMake build
-      run: cmake --build build --target package --parallel
+      run: cmake --build build --parallel
 
     - name: Work around macOS runner problem
       # https://github.com/actions/runner-images/issues/7522
@@ -58,7 +58,7 @@ jobs:
         echo Waiting for XProtect process...; while pgrep XProtect; do sleep 3; done;
 
     - name: CMake build
-      run: cmake --build build --parallel
+      run: cmake --build build --target package --parallel --verbose
 
     - name: Read DMG File Name
       id: read_dmg_name
