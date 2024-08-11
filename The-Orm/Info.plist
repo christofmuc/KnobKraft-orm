@@ -4,7 +4,7 @@
     <dict>
         <!-- Application Identifier -->
         <key>CFBundleIdentifier</key>
-        <string>de.gmx.ruch.christof.knobkraftorm</string>
+        <string>de.gmx.christof.knobkraftorm</string>
 
         <!-- Application Name -->
         <key>CFBundleName</key>

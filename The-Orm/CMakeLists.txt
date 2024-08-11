@@ -187,18 +187,25 @@ ELSEIF(APPLE)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 			MACOSX_BUNDLE TRUE
 			CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_LIST_DIR}/Info.plist
-		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
-		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
-		)
+			MACOSX_BUNDLE_ICON_FILE icon_orm.icns
+			MACOSX_BUNDLE_BUNDLE_NAME KnobKraft_Orm
+			MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+			MACOSX_BUNDLE_GUI_IDENTIFIER de.gmx.christof.knobkraftorm
+			)
 
+	# Define the code signing command
+#	add_custom_command(TARGET KnobKraftOrm POST_BUILD
+#			COMMAND "codesign --deep --force --verbose --sign \"Developer ID Application: Christof Ruch (98WQ3X9M7Q)\" $<TARGET_BUNDLE_DIR:KnobKraftOrm>"
+#			COMMENT "Code signing the app..."
+#			)
 
 	# Define the code signing command for the DMG
-	add_custom_command(TARGET KnobKraftOrm POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E echo "Creating DMG and signing it..."
-			COMMAND ${CMAKE_MAKE_PROGRAM} package
-			COMMAND codesign --force --sign "Developer ID Application: ${APPLE_DEVELOPER_IDENTITY}" ${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg
-			COMMENT "Code signing the DMG file..."
-		)
+	#add_custom_command(TARGET KnobKraftOrm POST_BUILD
+	#		COMMAND ${CMAKE_COMMAND} -E echo "Creating DMG and signing it..."
+	#		COMMAND ${CMAKE_MAKE_PROGRAM} package
+	#		COMMAND codesign --force --sign "Developer ID Application: ${APPLE_DEVELOPER_IDENTITY}" ${CMAKE_BINARY_DIR}/KnobKraft_Orm-${KnobKraftOrm_VERSION}-Darwin.dmg
+	#		COMMENT "Code signing the DMG file..."
+	#		)
 
 	# Export the name of the DMG file for github pipeline
 	add_custom_command(TARGET KnobKraftOrm POST_BUILD
@@ -317,11 +324,16 @@ IF(APPLE)
     SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
     SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
     SET(DIRS ${CMAKE_BINARY_DIR})
-    INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION . COMPONENT Runtime)
+	SET(CODESIGN_CERTIFICATE_NAME "Developer ID Application: ${APPLE_DEVELOPER_IDENTITY}")
+    INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
     INSTALL(CODE "include(BundleUtilities)
-	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
-    " COMPONENT Runtime)
+		set(BU_CHMOD_BUNDLE_ITEMS TRUE)
+		message(STATUS \"Integrating dynlibs and signing app bundle \$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
+			fixup_bundle(\"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\"  \"\"  \"\" IGNORE_ITEM \"Python\")
+			execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements \"${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements\" --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
+		"
+#    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+    )
     
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
@@ -334,7 +346,7 @@ IF(APPLE)
     SET(CPACK_BINARY_DRAGNDROP ON)
     SET(CPACK_BINARY_TGZ OFF)
     SET(CPACK_BINARY_STGZ OFF)
-	set(CPACK_DMG_VOLUME_NAME "KnobKraftOrm")
+	#set(CPACK_DMG_VOLUME_NAME "KnobKraftOrm")
 	#set(CPACK_DMG_FORMAT "UDZO")
 
     INCLUDE(CPack)
