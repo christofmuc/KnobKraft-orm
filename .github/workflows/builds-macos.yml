@@ -35,7 +35,12 @@ jobs:
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
 
     - name: CMake build
-      run: cmake --build build --target package --parallel
+      run: |
+        echo Workaround for github macOS hdiutils problem
+        echo killing...; sudo pkill -9 XProtect >/dev/null || true;
+        echo waiting...; while pgrep XProtect; do sleep 3; done;
+        export CPACK_COMMAND_HDIUTIL="/usr/bin/sudo /usr/bin/hdiutil -debug"
+        cmake --build build --target package --parallel
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
