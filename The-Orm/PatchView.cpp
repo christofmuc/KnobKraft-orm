@@ -950,7 +950,7 @@ void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::Mid
 	// We can get away with just a bank select and program change, and will try to select the patch directly
 		// Build the MIDI messages required to select bank and program
 	auto selectPatch = buildSelectBankAndProgramMessages(program, patch);
-	if (selectPatch.size() > 1) {
+	if (selectPatch.size() > 0) {
 		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
 	}
 	else {
