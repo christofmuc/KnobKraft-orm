@@ -987,8 +987,8 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		if (alsoSendToSynth) {
 			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (isSynthConnected(patch.smartSynth())) {
-				Data::ensureEphemeralPropertyExists(EPROPERTY_BUTTON_SEND_MODE, "auto");
-				auto synthSpecificSendMode = Data::getEphemeralProperty(EPROPERTY_BUTTON_SEND_MODE);
+				UIModel::ensureSynthSpecificPropertyExists(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic");
+				auto synthSpecificSendMode = UIModel::instance()->getSynthSpecificPropertyAsValue(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic").getValue();
 
 				auto alreadyInSynth = patchIsInSynth(patch);
 				if (synthSpecificSendMode == "program change") {

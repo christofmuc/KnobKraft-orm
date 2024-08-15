@@ -192,6 +192,17 @@ bool CurrentMultiMode::multiSynthMode() const
 	return multiSynthMode_;
 }
 
+std::string UIModel::currentSynthNameOrMultiOrEmpty() {
+	// Get the name of the current Synth, or "multiMode" if activated, or empty if no synth
+	if (UIModel::instance()->multiMode_.multiSynthMode()) {
+		return "MultiSynth";
+	}
+	if (auto newCurrentSynth = UIModel::instance()->currentSynth()) {
+		return newCurrentSynth->getName();
+	}
+	return "";
+}
+
 ValueTree UIModel::ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) {
 	
 	auto synths = Data::instance().get().getOrCreateChildWithName(PROPERTY_SYNTH_LIST, nullptr);

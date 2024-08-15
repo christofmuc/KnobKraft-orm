@@ -55,18 +55,20 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index, true); });
 	addAndMakeVisible(patchButtons_.get());
 
-	buttonSendMode_.setTextWhenNoChoicesAvailable("<default mode>");
+	buttonSendMode_.setTextWhenNoChoicesAvailable("<none selected>");
 	buttonSendMode_.onChange = [this]() {
 		// Value changed, update property
 		auto selectedText = buttonSendMode_.getItemText(buttonSendMode_.getSelectedItemIndex());
-		Data::instance().getEphemeralPropertyAsValue(EPROPERTY_BUTTON_SEND_MODE).setValue(selectedText);
+		auto currentSynth = UIModel::currentSynthNameOrMultiOrEmpty();
+		if (!currentSynth.empty()) {
+			auto oldValue = UIModel::getSynthSpecificPropertyAsValue(currentSynth, PROPERTY_COMBOBOX_SENDMODE, "automatic");
+			oldValue = selectedText;
+		}
 	};
-	Data::ensureEphemeralPropertyExists(EPROPERTY_BUTTON_SEND_MODE, "auto");
 	addAndMakeVisible(buttonSendMode_);
 
 	buttonSendModeLabel_.setText("send mode", NotificationType::dontSendNotification);
 	addAndMakeVisible(buttonSendModeLabel_);
-	//buttonSendModeLabel_.attachToComponent(&buttonSendMode_, true);
 
 	addAndMakeVisible(pageUp_); 
 	pageUp_.setButtonText(">");
@@ -375,7 +377,6 @@ void PatchButtonPanel::setButtonSendModes(std::vector<std::string> const& modes)
 	for (auto const& mode : modes) {
 		buttonSendMode_.addItem(mode, index++);
 	}
-	buttonSendMode_.setSelectedItemIndex(0);
 }
 
 void PatchButtonPanel::pageUp(bool selectNext) {
@@ -415,6 +416,25 @@ void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->multiMode_) {
 		refreshGridSize();
+		if (UIModel::instance()->multiMode_.multiSynthMode()) {
+			buttonSendModeLabel_.setVisible(false);
+			buttonSendMode_.setVisible(false);
+		}
+		else {
+			buttonSendModeLabel_.setVisible(true);
+			buttonSendMode_.setVisible(true);
+			std::string synthName = UIModel::currentSynthNameOrMultiOrEmpty();
+			if (!synthName.empty()) {
+				UIModel::ensureSynthSpecificPropertyExists(synthName, PROPERTY_COMBOBOX_SENDMODE, "automatic");
+				auto value = UIModel::instance()->getSynthSpecificPropertyAsValue(synthName, PROPERTY_COMBOBOX_SENDMODE, "automatic").getValue();
+				for (int i = 0; i < buttonSendMode_.getNumItems(); i++) {
+					if (buttonSendMode_.getItemText(i) == value.toString()) {
+						buttonSendMode_.setSelectedItemIndex(i);
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 
