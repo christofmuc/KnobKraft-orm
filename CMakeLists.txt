@@ -228,6 +228,16 @@ add_subdirectory(third_party/fmt)
 option(SPDLOG_FMT_EXTERNAL "" ON)
 add_subdirectory(third_party/spdlog)
 
+# SQLpp11
+include(FetchContent)
+FetchContent_Declare(sqlpp11
+    GIT_REPOSITORY  https://github.com/rbock/sqlpp11
+    GIT_TAG         origin/main
+)
+FetchContent_MakeAvailable(sqlpp11)
+
+#add_subdirectory(sqlpp11)
+
 # Import MidiKraft infrastructure 
 add_subdirectory(juce-utils)
 add_subdirectory(juce-widgets)
