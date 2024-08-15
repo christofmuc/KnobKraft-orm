@@ -1078,17 +1078,28 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 	if (fillParameters.fillMode == CreateListDialog::TListFillMode::None) {
 		finishedCallback();
 	}
-	else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
-		loadPage(0, fillParameters.number, currentFilter(), [list, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
-			list->setPatches(patches);
-			finishedCallback();
-			});
-	}
-	else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
-		loadPage(0, -1, currentFilter(), [list, fillParameters, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
-			list->setPatches(getRandomSubset(patches, fillParameters.number));
-			finishedCallback();
-			});
+	else  {
+		auto filter = currentFilter();
+		auto synthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(list);
+		int patchesDesired = fillParameters.number;
+		if (synthBank) {
+			// This is a synth bank, restrict the filter to deliver only patches for the synth that the bank is for
+			filter.synths.clear();
+			filter.synths[synthBank->synth()->getName()] = synthBank->synth();
+			patchesDesired = synthBank->patchCapacity();
+		}
+		if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
+			loadPage(0, patchesDesired, filter, [list, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+				list->setPatches(patches);
+				finishedCallback();
+				});
+		}
+		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
+			loadPage(0, -1, filter, [list, patchesDesired, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+				list->setPatches(getRandomSubset(patches, patchesDesired));
+				finishedCallback();
+				});
+		}
 	}
 }
 

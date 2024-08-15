@@ -125,16 +125,17 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
             juce::ignoreUnused(id);
 			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters) {
 				if (list) {
-					spdlog::info("Create new user list named {}", list->name());
 					if (onPatchListFill) {
 						onPatchListFill(list, fillParameters, [this, list]() {
 							db_.putPatchList(list);
 							regenerateUserLists([]() {});
+							spdlog::info("Create new user list named {}", list->name());
 							});
 					}
 					else {
 						db_.putPatchList(list);
 						regenerateUserLists([]() {});
+						spdlog::info("Create new user list named {}", list->name());
 					}
 				}
 				}, nullptr);
@@ -407,15 +408,24 @@ TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
                 juce::ignoreUnused(id);
 				CreateListDialog::showCreateListDialog(nullptr, synth, TopLevelWindow::getActiveTopLevelWindow(), [this, synthBanksNode](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters) {
 					if (list) {
-						if (fillParameters.fillMode != CreateListDialog::None) {
-
+						if (onPatchListFill) {
+							onPatchListFill(list, fillParameters, [this, synthBanksNode, list]() {
+								db_.putPatchList(list);
+								spdlog::info("Created new user bank named {}", list->name());
+								MessageManager::callAsync([this, synthBanksNode]() {
+									synthBanksNode->regenerate();
+									regenerateUserLists([]() {});
+									});
+								});
 						}
-						db_.putPatchList(list);
-						spdlog::info("Create new user bank named {}", list->name());
-						MessageManager::callAsync([this, synthBanksNode]() {
-							synthBanksNode->regenerate();
-							regenerateUserLists([]() {});
+						else {
+							db_.putPatchList(list);
+							spdlog::info("Created new user bank named {}", list->name());
+							MessageManager::callAsync([this, synthBanksNode]() {
+								synthBanksNode->regenerate();
+								regenerateUserLists([]() {});
 							});
+						}
 					}
 					}, [synthBanksNode](std::shared_ptr<midikraft::PatchList> result) {
 						ignoreUnused(result);
