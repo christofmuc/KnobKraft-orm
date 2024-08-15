@@ -38,7 +38,7 @@ std::map<int, std::string> bankLookup(std::shared_ptr<midikraft::Synth> synth)
 	return result;
 }
 
-CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallback &callback, TCallback &deleteCallback) :
+CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallbackWithFill&callback, TCallback &deleteCallback) :
 	synth_(synth)
 	, isBank_(true)
 	, callback_(callback)
@@ -60,10 +60,10 @@ CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCal
 	delete_.setVisible(false);
 
 	// Finally we need a default size
-	setBounds(0, 0, 540, 200);
+	setBounds(0, 0, 540, 300);
 }
 
-CreateListDialog::CreateListDialog(TCallback& callback, TCallback& deleteCallback) : isBank_(false), callback_(callback), deleteCallback_(deleteCallback)
+CreateListDialog::CreateListDialog(TCallbackWithFill& callback, TCallback& deleteCallback) : isBank_(false), callback_(callback), deleteCallback_(deleteCallback)
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -81,7 +81,7 @@ CreateListDialog::CreateListDialog(TCallback& callback, TCallback& deleteCallbac
 	delete_.setVisible(false);
 
 	// Finally we need a default size
-	setBounds(0, 0, 540, 200);
+	setBounds(0, 0, 540, 300);
 }
 
 void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
@@ -104,6 +104,13 @@ void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
 			auto lookup = bankLookup(synth_);
 			props.push_back(std::make_shared<TypedNamedValue>("Bank", "General", 0, lookup));
 			bankValue_ = Value(props[1]->value());
+		}
+		std::map<int, std::string> populateModes = { {0, "No fill"}, { 1, "First patches"}, { 2, "Random patches"} };
+		props.push_back(std::make_shared<TypedNamedValue>("Auto-fill from grid", "Populate", 0, populateModes));
+		fillMode_ = Value(props.back()->value());
+		if (!isBank_) {
+			props.push_back(std::make_shared<TypedNamedValue>("Maximum number of patches", "Populate", 64, 0, 4096));
+			patchNumber_ = Value(props.back()->value());
 		}
 	}
 	propertyEditor_.setProperties(props);
@@ -130,7 +137,7 @@ static void dialogClosed(int modalResult, CreateListDialog* dialog)
 	}
 }
 
-void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::SynthBank> list, std::shared_ptr<midikraft::Synth> synth, Component* centeredAround, TCallback callback, TCallback deleteCallback)
+void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::SynthBank> list, std::shared_ptr<midikraft::Synth> synth, Component* centeredAround, TCallbackWithFill callback, TCallback deleteCallback)
 {
 	if (!sCreateListDialog_) {
 		sCreateListDialog_ = std::make_unique<CreateListDialog>(synth, callback, deleteCallback);
@@ -149,7 +156,7 @@ void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::SynthBank
 	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sCreateListDialog_.get()));
 }
 
-void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback, TCallback deleteCallback)
+void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallbackWithFill callback, TCallback deleteCallback)
 {
 	if (!sCreateListDialog_) {
 		sCreateListDialog_ = std::make_unique<CreateListDialog>(callback, deleteCallback);
@@ -199,7 +206,15 @@ void CreateListDialog::notifyResult()
 			list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
 		}
 	}
-	callback_(list_);
+	TFillParameters fillParameters{ TListFillMode::None, 0 };
+	if (static_cast<int>(fillMode_.getValue()) == 1) {
+		fillParameters.fillMode = TListFillMode::Top;
+	}
+	else if (static_cast<int>(fillMode_.getValue()) == 2) {
+		fillParameters.fillMode = TListFillMode::Random;
+	}
+	fillParameters.number = patchNumber_.getValue();
+	callback_(list_, fillParameters);
 }
 
 void CreateListDialog::buttonClicked(Button* button) {

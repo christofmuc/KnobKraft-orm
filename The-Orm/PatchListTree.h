@@ -11,6 +11,8 @@
 #include "PatchDatabase.h"
 #include "SynthHolder.h"
 #include "TreeViewNode.h"
+#include "CreateListDialog.h"
+
 
 class PatchListTree : public Component, private ChangeListener {
 public:
@@ -18,6 +20,8 @@ public:
 	typedef std::function<void(std::shared_ptr<midikraft::Synth>, MidiBankNumber)> TBankSelectionHandler;
 	typedef std::function<void(std::shared_ptr<midikraft::Synth>, String)> TUserBankSelectionHandler;
 	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
+	typedef std::function<void(std::shared_ptr<midikraft::PatchList>, CreateListDialog::TFillParameters, std::function<void()>)> TPatchListFillHandler;
+
 
 	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
 	virtual ~PatchListTree() override;
@@ -29,6 +33,7 @@ public:
 	TSelectionHandler onUserListChanged;
 
 	TPatchSelectionHandler onPatchSelected;
+	TPatchListFillHandler onPatchListFill;
 
 	virtual void resized() override;
 

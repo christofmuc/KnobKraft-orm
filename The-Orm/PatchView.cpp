@@ -41,6 +41,9 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
+#include <random>
+#include <algorithm>
+
 const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths) :
@@ -71,6 +74,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	};
 	patchListTree_.onPatchSelected = [this](midikraft::PatchHolder patch) {
 		selectPatch(patch, false);
+	};
+	patchListTree_.onPatchListFill = [this](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters parameters, std::function<void()> finishedCallback) {
+		fillList(list, parameters, finishedCallback);
 	};
 
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
@@ -1043,5 +1049,46 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 			}
 		}
 	}*/
+}
+
+template <typename T>
+std::vector<T> getRandomSubset(const std::vector<T>& original, std::size_t subsetSize) {
+	// Copy the original vector
+	std::vector<T> shuffled = original;
+
+	// If subsetSize is larger than the original vector size, limit it
+	if (subsetSize > original.size()) {
+		subsetSize = original.size();
+	}
+
+	// Create a random engine with a seed based on the current time
+	std::random_device rd;
+	std::default_random_engine rng(rd());
+
+	// Shuffle the copied vector
+	std::shuffle(shuffled.begin(), shuffled.end(), rng);
+
+	// Create a vector to store the subset
+	std::vector<T> subset(shuffled.begin(), shuffled.begin() + subsetSize);
+
+	return subset;
+}
+
+void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback) {
+	if (fillParameters.fillMode == CreateListDialog::TListFillMode::None) {
+		finishedCallback();
+	}
+	else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
+		loadPage(0, fillParameters.number, currentFilter(), [list, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+			list->setPatches(patches);
+			finishedCallback();
+			});
+	}
+	else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
+		loadPage(0, -1, currentFilter(), [list, fillParameters, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+			list->setPatches(getRandomSubset(patches, fillParameters.number));
+			finishedCallback();
+			});
+	}
 }
 

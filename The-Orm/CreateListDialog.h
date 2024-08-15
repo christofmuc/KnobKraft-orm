@@ -15,16 +15,26 @@
 
 class CreateListDialog : public Component, private TextButton::Listener {
 public:
+	enum TListFillMode {
+		None, 
+		Top,
+		Random
+	};
+	struct TFillParameters {
+		TListFillMode fillMode;
+		int number;
+	};
 	typedef std::function<void(std::shared_ptr<midikraft::PatchList> result)> TCallback;
+	typedef std::function<void(std::shared_ptr<midikraft::PatchList> result, TFillParameters fillParameters)> TCallbackWithFill;
 
-	CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallback& callback, TCallback& deleteCallback);
-	CreateListDialog(TCallback& callback, TCallback& deleteCallback);
+	CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallbackWithFill& callback, TCallback& deleteCallback);
+	CreateListDialog(TCallbackWithFill& callback, TCallback& deleteCallback);
 	void setList(std::shared_ptr<midikraft::PatchList> list);
 
 	virtual void resized() override;
 
-	static void showCreateListDialog(std::shared_ptr<midikraft::SynthBank> list, std::shared_ptr<midikraft::Synth> synth, Component* centeredAround, TCallback callback, TCallback deleteCallback);
-	static void showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback, TCallback deleteCallback);
+	static void showCreateListDialog(std::shared_ptr<midikraft::SynthBank> list, std::shared_ptr<midikraft::Synth> synth, Component* centeredAround, TCallbackWithFill callback, TCallback deleteCallback);
+	static void showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallbackWithFill callback, TCallback deleteCallback);
 	static void release();
 
 	void notifyResult();
@@ -41,11 +51,13 @@ private:
 	std::shared_ptr<midikraft::PatchList> list_;
 	Value nameValue_;
 	Value bankValue_;
+	Value fillMode_;
+	Value patchNumber_;
 	PropertyEditor propertyEditor_;
 	TextButton ok_;
 	TextButton cancel_;
 	TextButton delete_;
-	TCallback callback_;
+	TCallbackWithFill callback_;
 	TCallback deleteCallback_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CreateListDialog)

@@ -123,11 +123,19 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		auto addNewItem = new TreeViewNode("Add new list", "");
 		addNewItem->onSingleClick = [this](String id) {
             juce::ignoreUnused(id);
-			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list) {
+			CreateListDialog::showCreateListDialog(nullptr, TopLevelWindow::getActiveTopLevelWindow(), [this](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters) {
 				if (list) {
-					db_.putPatchList(list);
 					spdlog::info("Create new user list named {}", list->name());
-					regenerateUserLists([]() {});
+					if (onPatchListFill) {
+						onPatchListFill(list, fillParameters, [this, list]() {
+							db_.putPatchList(list);
+							regenerateUserLists([]() {});
+							});
+					}
+					else {
+						db_.putPatchList(list);
+						regenerateUserLists([]() {});
+					}
 				}
 				}, nullptr);
 		};
@@ -397,8 +405,11 @@ TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 			auto addNewItem = new TreeViewNode("Add new user bank", "");
 			addNewItem->onSingleClick = [this, synth, synthBanksNode](String id) {
                 juce::ignoreUnused(id);
-				CreateListDialog::showCreateListDialog(nullptr, synth, TopLevelWindow::getActiveTopLevelWindow(), [this, synthBanksNode](std::shared_ptr<midikraft::PatchList> list) {
+				CreateListDialog::showCreateListDialog(nullptr, synth, TopLevelWindow::getActiveTopLevelWindow(), [this, synthBanksNode](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters) {
 					if (list) {
+						if (fillParameters.fillMode != CreateListDialog::None) {
+
+						}
 						db_.putPatchList(list);
 						spdlog::info("Create new user bank named {}", list->name());
 						MessageManager::callAsync([this, synthBanksNode]() {
@@ -442,7 +453,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForStoredBanks(std::shared_ptr<midik
 							CreateListDialog::showCreateListDialog(nullptr,
 								copyOfList->synth(),
 								TopLevelWindow::getActiveTopLevelWindow(),
-								[this, synthBanksNode, loaded_list](std::shared_ptr<midikraft::PatchList> new_list) {
+								[this, synthBanksNode, loaded_list](std::shared_ptr<midikraft::PatchList> new_list, CreateListDialog::TFillParameters ) {
 									jassert(new_list);
 									if (new_list) {
 										// Copy over patches from droppped list to newly created list
@@ -523,7 +534,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 		CreateListDialog::showCreateListDialog(std::dynamic_pointer_cast<midikraft::SynthBank>(bank),
 			synth,
 			TopLevelWindow::getActiveTopLevelWindow(),
-			[this, oldname, parent](std::shared_ptr<midikraft::PatchList> new_list) {
+			[this, oldname, parent](std::shared_ptr<midikraft::PatchList> new_list, CreateListDialog::TFillParameters) {
 				jassert(new_list);
 				if (new_list) {
 					db_.putPatchList(new_list);
@@ -640,7 +651,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 		std::string oldname = node->text().toStdString();
 		CreateListDialog::showCreateListDialog(std::make_shared<midikraft::PatchList>(node->id().toStdString(), node->text().toStdString()),
 			TopLevelWindow::getActiveTopLevelWindow(),
-			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list) {
+			[this, oldname](std::shared_ptr<midikraft::PatchList> new_list, CreateListDialog::TFillParameters) {
 				jassert(new_list);
 				if (new_list) {
 					db_.putPatchList(new_list);
