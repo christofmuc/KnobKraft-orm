@@ -588,6 +588,10 @@ MainComponent::~MainComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 
 	Logger::setCurrentLogger(nullptr);
+
+	// Make sure to destroy the UI before the synths in order to unregister all message handlers
+	patchView_.reset();
+	settingsView_.reset();
 }
 
 #ifdef USE_SPARKLE
