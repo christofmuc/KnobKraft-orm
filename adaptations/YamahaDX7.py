@@ -111,6 +111,16 @@ def isBankDumpFinished(messages):
     return any([isPartOfBankDump(m) for m in messages])
 
 
+def list_compare(list1, list2):
+    worked = True
+    for i in range(len(list1)):
+        if list1[i] != list2[i]:
+            print(f"Position {i}: {list1[i]} vs {list2[i]}")
+            worked = False
+    assert worked
+
+
+
 def extractPatchesFromBank(message):
     patches = []
     if isPartOfBankDump(message):
@@ -120,7 +130,10 @@ def extractPatchesFromBank(message):
             if checksum(data_block) == message[-2]:
                 # Checksum correct
                 for i in range(32):
-                    voice = packedVoiceToSingleVoice(data_block[i * 128: (i + 1) * 128])
+                    packed_voice = data_block[i * 128: (i + 1) * 128]
+                    voice = packedVoiceToSingleVoice(packed_voice)
+                    reverse = singleVoiceToPackedVoice(voice)
+                    list_compare(packed_voice, reverse)
                     patches += singlePatchFromVoice(voice)
                 return patches
             print("Checksum error encountered in DX7 bulk dump")
@@ -128,6 +141,14 @@ def extractPatchesFromBank(message):
         print("Got DX7 bulk dump of invalid length - data length is %d but was expected to be %d" % (
         len(data_block), (0x20 << 7)))
     return []
+
+
+def createBankDump(patches: List[List[int]]):
+    # Build a bank dump message from a list of individual patches
+    for patch in patches:
+        if isEditBufferDump(patch):
+            # This is a single voice dump, extract the
+            voice_data = patch[6:-2]
 
 
 def nameFromDump(message):
@@ -174,6 +195,68 @@ def packedVoiceToSingleVoice(packed):
     dest.append(source.transpose)
     dest += source.name
     return dest
+
+
+def singleVoiceToPackedVoice(single):
+    # Initialize the packed VOICE_PACKED structure
+    packed = VOICE_PACKED()
+
+    index = 0
+
+    # Fill in the operators
+    for op in packed.operators:
+        op.first_section[:] = single[index:index + 11]
+        index += 11
+        op.scale_left_curve = single[index] & 0x03
+        op.scale_right_curve = (single[index] >> 2) & 0x03
+        index += 1
+        op.rate_scale = single[index] & 0x07
+        op.detune = (single[index] >> 3) & 0x0F
+        index += 1
+        op.amp_mod_sensivity = single[index] & 0x03
+        op.key_vel_sensivity = (single[index] >> 2) & 0x07
+        index += 1
+        op.output_level = single[index]
+        index += 1
+        op.osc_mode = single[index] & 0x01
+        op.freq_coarse = (single[index] >> 1) & 0x1F
+        index += 1
+        op.freq_fine = single[index]
+        index += 1
+        op.detune = single[index]
+        index += 1
+
+    # Fill in the envelope data
+    packed.envs[:] = single[index:index + 8]
+    index += 8
+
+    # Fill in the algorithm, feedback, and oscillator key sync
+    packed.algorithm = single[index] & 0x1F
+    index += 1
+    packed.feedback = single[index] & 0x07
+    packed.osc_key_sync = (single[index] >> 3) & 0x01
+    index += 1
+
+    # Fill in the LFO data
+    packed.lfo[:] = single[index:index + 4]
+    index += 4
+    packed.lfo_sync = single[index] & 0x01
+    packed.lfo_wave = (single[index] >> 1) & 0x07
+    packed.lfo_pitch_mod_sens = (single[index] >> 4) & 0x0F
+    index += 1
+
+    # Fill in the transpose value
+    packed.transpose = single[index]
+    index += 1
+
+    # Fill in the voice name
+    packed.name[:] = single[index:index + 10]
+
+    # Convert the packed structure to a byte buffer
+    packed_data = bytes(packed)
+
+    # Return the packed data as a bytearray
+    return list(bytearray(packed_data))
 
 
 def singlePatchFromVoice(voice):

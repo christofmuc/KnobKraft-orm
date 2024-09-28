@@ -149,6 +149,30 @@ namespace knobkraft {
 		return patchesFound;
 	}
 
+	std::vector<MidiMessage> GenericBankDumpCreationCapability::createBankDumpMessages(midikraft::TPatchVector const& patches) const {
+		std::vector<MidiMessage> messages;
+		py::gil_scoped_acquire acquire;
+		if (me_->pythonModuleHasFunction(kCreateBankDump)) {
+			try {
+				std::vector<std::vector<int>> inputPatchMessages;
+				for (auto const& patch : patches) {
+					std::vector<int> vector = me_->midiMessagesToVector(patch->asMidiMessages());
+					inputPatchMessages.push_back(vector);
+				}
+				
+				py::object result = me_->callMethod(kExtractPatchesFromBank, inputPatchMessages);
+			}
+			catch (py::error_already_set& ex) {
+				me_->logAdaptationError(kExtractPatchesFromBank, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				me_->logAdaptationError(kExtractPatchesFromBank, ex);
+			}
+		}
+		return messages;
+	}
+
 }
 
 
