@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Ubuntu KnobKraft Orm
+name: Ubuntu 24 KnobKraft Orm
 
 on: [push]
 
 jobs:
-  build-linux:
+  build-ubuntu-24:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout repository with tags
