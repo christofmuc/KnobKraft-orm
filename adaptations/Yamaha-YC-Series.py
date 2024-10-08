@@ -450,7 +450,7 @@ def convertToEditBuffer(channel: int, messages: list[int]):
             if address[0] in [0x0E, 0x0F]:
                 message[0x08 : 0x08 + 3] = [address[0], 0x7F, 0x00]
             # Need to rebuild checksum for each message, as address was modified.
-            message[-2] = ((sum(message[0x07:-2]) & 0x7F) ^ 0x7F) + 1
+            message[-2] = 0x80 - (sum(message[0x07:-2]) & 0x7F)
             result.extend(message)
     else:
         raise Exception("convertToEditBuffer - unxpected messages")
@@ -742,7 +742,7 @@ def renamePatch(messages: list[int], new_name: str) -> list[int]:
             split_messages[2][data_offset + i] = ord(" ")
 
         # Need to rebuild message checksum as data was modified.
-        split_messages[2][-2] = ((sum(split_messages[2][0x07:-2]) & 0x7F) ^ 0x7F) + 1
+        split_messages[2][-2] = 0x80 - (sum(split_messages[2][0x07:-2]) & 0x7F)
     return [
         item for sublist in split_messages for item in sublist
     ]  # flatten list[list[int]] -> list[int]
