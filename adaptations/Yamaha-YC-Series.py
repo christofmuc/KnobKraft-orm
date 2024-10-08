@@ -155,7 +155,7 @@ import hashlib
 # KnobKraft Exports
 
 #
-# Required Functions (Identity, Storage Size, Device Detection)
+# Identity
 #
 
 
@@ -163,18 +163,43 @@ def name() -> str:
     return "Yamaha YC61/YC73/YC88"
 
 
+#
+# Storage size
+#
+
+
+# def bankDescriptors() -> list[Dict]:
+#     # Yamaha YC has 20 banks each with 8 sounds, numbered 1-1 through 20-8.
+#     return [
+#         {
+#             "bank": x,
+#             "name": f"Bank {x + 1}",
+#             "size": 8,
+#             "type": "Patch",
+#             "isROM": False,
+#         }
+#         for x in range(20)
+#     ]
+
+
 def bankDescriptors() -> list[Dict]:
-    # Yamaha YC has 20 banks each with 8 sounds, numbered 1-1 through 20-8.
+    # To work around a KnobKraft issue, using a single "bank" of 160 patches.
+    # https://github.com/christofmuc/KnobKraft-orm/issues/343
     return [
         {
-            "bank": x,
-            "name": f"Bank {x + 1}",
-            "size": 8,
+            "bank": 0,
+            "name": "Patches",
+            "size": 20 * 8,
             "type": "Patch",
             "isROM": False,
         }
-        for x in range(20)
     ]
+
+
+#
+#
+# Device detection
+#
 
 
 def createDeviceDetectMessage(channel: int) -> list[int]:
@@ -579,7 +604,7 @@ def numberFromDump(messages: list[int]) -> int:
     if address[0] == 0x0E and 0 <= pp <= 19 and 0 <= n <= 7:
         return pp * 8 + n
 
-    raise Exception("numberFromDump - unexptected sysex")
+    raise Exception("numberFromDump - unexpected sysex")
 
 
 def convertToProgramDump(
@@ -610,29 +635,71 @@ def convertToProgramDump(
 #     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
 #     def program_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
 
-###############################################################################
-# Patch/Bank/Program names
+
+#
+# Better duplicate detection
+#
 
 
 def calculateFingerprint(messages: list[int]) -> str:
     split_messages = splitSysexMessage(messages)
 
+    # Set name to blank, so that name isn't considered when calculating fingerprint.
+
     # split_messages[2] has "Live Set Sound Zone Common" [46 00 00]
     address = split_messages[2][8 : 8 + 3]
 
-    if address == [0x46, 0x00, 0x00]:
+    if address == [0x46, 0x00, 0x00]:  # Sanity check
         data_offset = 0x0B
         for i in range(15):
             split_messages[2][data_offset + i] = ord(
                 " "
             )  # 0 isn't a valid name character, so use space.
+    else:
+        raise Exception("calculateFingerprint: invalid message")
 
-    # joined_messages = list(itertools.chain.from_iterable(split_messages))
-    joined_messages = []
-    for message in split_messages:
-        joined_messages.extend(message)
+    # Set bank and program number to 0 so these aren't considered either.
+
+    # split_messages[0] has Header
+    address = split_messages[0][8 : 8 + 3]
+    if address[0] == 0x0E:  # Sanity check
+        # Zero out bank and program number from header/footer (pp=0-19; n=0-7)
+        # [+08] <ah am al>
+        split_messages[2][8 : 8 + 3] = [address[0], 0, 0]
+    else:
+        raise Exception("calculateFingerprint: invalid message")
+
+    # split_messages[-1] has Footer
+    address = split_messages[-1][8 : 8 + 3]
+    if address[0] == 0x0F:  # Sanity check
+        # Zero out bank and program number from header/footer (pp=0-19; n=0-7)
+        # [+08] <ah am al>
+        split_messages[2][8 : 8 + 3] = [address[0], 0, 0]
+    else:
+        raise Exception("calculateFingerprint: invalid message")
+
+    joined_messages = [
+        item for sublist in split_messages for item in sublist
+    ]  # flatten list[list[int]] -> list[int]
 
     return hashlib.md5(bytearray(joined_messages)).hexdigest()
+
+
+#
+# Better handling of given names vs default names
+#
+
+
+def isDefaultName(patchName: str) -> bool:
+    """Determine if patch name is considered "Default"
+
+    Args:
+        patchName (str): patch name
+
+    Returns:
+        bool: True name is "Default".
+    """
+    return patchName == "Init Sound"
 
 
 def nameFromDump(messages: list[int]) -> str:
@@ -643,7 +710,7 @@ def nameFromDump(messages: list[int]) -> str:
     address = split_messages[2][8 : 8 + 3]
 
     if address == [0x46, 0x00, 0x00]:
-        # First 15 bytes of data ASCII name (not null terminated)
+        # First 15 bytes of data is ASCII name (not null terminated)
         data_offset = 0x0B
         return "".join(
             [chr(x) for x in split_messages[2][data_offset + 0 : data_offset + 0 + 15]]
@@ -652,14 +719,42 @@ def nameFromDump(messages: list[int]) -> str:
     raise Exception("numberFromDump: live set sound zone common not found")
 
 
-# def isDefaultName(patchName: str) -> bool:
-# def renamePatch(messages: list[list[int]], new_name):
+#
+# Renaming patches
+#
 
 
-# TODO: Not called by Knobkraft?
+def renamePatch(messages: list[int], new_name: str) -> list[int]:
+    split_messages = splitSysexMessage(messages)
+    # print(f"renamePatch called. new_name {new_name} split_messages {listListToHexString(split_messages)}")
+
+    # split_messages[2] has "Live Set Sound Zone Common" [46 00 00]
+    address = split_messages[2][8 : 8 + 3]
+
+    if address == [0x46, 0x00, 0x00]:
+        max_chars = 15
+        used_char = min(max_chars, len(new_name))
+        # First 15 bytes of data is ASCII name (not null terminated)
+        data_offset = 0x0B
+        for i in range(used_char):
+            split_messages[2][data_offset + i] = ord(new_name[i])
+        for i in range(used_char, max_chars):
+            split_messages[2][data_offset + i] = ord(" ")
+
+    return [
+        item for sublist in split_messages for item in sublist
+    ]  # flatten list[list[int]] -> list[int]
+
+
+#
+# Better bank names
+#
+
 # def friendlyBankName(bank_number: int) -> str:
-#     print(f'friendlyBankName called. bank_number {bank_number}')
-#     return f'{bank_number+1}'
+
+#
+# Better program number names
+#
 
 
 def friendlyProgramName(program: int) -> str:
@@ -669,6 +764,18 @@ def friendlyProgramName(program: int) -> str:
     #  Use 1-based index for UI
     # print(f"friendlyProgramName called. program {program} -> bank {bank+1} program {program+1}")
     return f"{bank+1}-{program+1}"
+
+
+#
+# Leaving helpful setup information specific for a synth
+#
+
+
+def setupHelp():
+    return (
+        "Yamaha YC61/73/88\n\n"
+        "Owners manual available at https://usa.yamaha.com/files/download/other_assets/4/1311174/yc61_en_om_a0.pdf"
+    )
 
 
 ###############################################################################
