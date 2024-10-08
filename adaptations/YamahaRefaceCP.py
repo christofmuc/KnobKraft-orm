@@ -138,7 +138,7 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
         int: -1, if the message handed in is not the device response we had been expecting, or valid MIDI channel [0..15]
     """
     if not isYamahaSysExMessage(message):
-        return False
+        return -1
 
     # Bulk Dump: F0, 43, 0n, gh, gl, bh, bl, id, ah, am, al, dt, ..., cc, F7
     # Data format as described in "MIDI PARAMETER CHANGE TABLE (SYSTEM)"
