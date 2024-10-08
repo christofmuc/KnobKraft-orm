@@ -206,7 +206,7 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
     # Bulk Dump: F0, 43, 0n, gh, gl, bh, bl, id, ah, am, al, dt, ..., cc, F7
 
     if not isYamahaSysExMessage(message):
-        return False
+        return -1
 
     model_id = message[7]
     if message[7] != 0x09:  # Model ID (09 = YC)
@@ -284,7 +284,7 @@ def createEditBufferRequest(channel: int) -> list[int]:
     # MIDI PARAMETER CHANGE TABLE (BULK CONTROL)
     # 9 = YC61/YC73/YC88
     # [0e 7f 00] = Current Sound Buffer
-    return makeYamahaDumpRequestMessage(channel, 0, 0x0E, 0x7F, 0x00)
+    return makeYamahaDumpRequestMessage(channel, 9, 0x0E, 0x7F, 0x00)
 
 
 def isPartOfEditBufferDump(message: list[int]) -> bool:
@@ -580,7 +580,7 @@ def numberFromDump(messages: list[int]) -> int:
     if address[0] == 0x0E and 0 <= pp <= 19 and 0 <= n <= 7:
         return pp * 8 + n
 
-    raise Exception("numberFromDump - unexptected sysex")
+    raise Exception("numberFromDump - unexpected sysex")
 
 
 def convertToProgramDump(
