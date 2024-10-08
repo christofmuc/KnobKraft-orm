@@ -34,21 +34,23 @@ jobs:
         cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_VERSION_TO_EMBED=3.12 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
 
     - name: CMake build
-      run: cmake --build builds --target package -- -j4
+      run: |
+        cmake --build builds --target package -- -j4
+        mv builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Ubuntu24.tar.gz
 
     - name: Upload artifact for testing outside of a release
       uses: actions/upload-artifact@v4
       with:
         name: ubuntu24-release
         path: |
-          builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz
+          builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Ubuntu24.tar.gz
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        file: builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz
+        file: builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Ubuntu24.tar.gz
         tags: true
         draft: false
 
