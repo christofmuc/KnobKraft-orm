@@ -36,6 +36,13 @@ jobs:
     - name: CMake build
       run: cmake --build builds --target package -- -j4
 
+    - name: Upload artifact for testing outside of a release
+      uses: actions/upload-artifact@v4
+      with:
+        name: ubuntu22-release
+        path: |
+          builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz
+
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
       env:

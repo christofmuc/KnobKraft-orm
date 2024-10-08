@@ -116,15 +116,19 @@ ELSEIF(APPLE)
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
-	# Include useful scripts for CMake
-	find_package(PkgConfig REQUIRED) 
-	find_package(OpenGL)
+    # Include useful scripts for CMake
+    find_package(PkgConfig REQUIRED)
+    find_package(OpenGL)
 
-	# These calls create special `PkgConfig::<MODULE>` variables
-	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
-	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
-	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.1)
-	find_package(ICU REQUIRED data uc)
+    # These calls create special `PkgConfig::<MODULE>` variables
+    pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+    pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
+    pkg_check_modules(WEBKIT IMPORTED_TARGET webkit2gtk-4.1)
+    if (NOT WEBKIT_FOUND EQUAL 1)
+        # If 4.1 is not available, we need 4.0
+        pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+    endif()
+    find_package(ICU REQUIRED data uc)
 ENDIF()
 
 # We need to put our own CMake helpers on the module path
