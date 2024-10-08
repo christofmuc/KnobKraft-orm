@@ -187,9 +187,9 @@ def createDeviceDetectMessage(channel: int) -> list[int]:
         list[int]: Single MIDI message or multiple MIDI messages in the form of a single list of byte-values integers used to detect the device.
     """
 
-    # 9 = YC61/YC73/YC88
-    # [20 00 00] = System Common
-    return makeYamahaDumpRequestMessage(channel, 9, 0x20, 0x00, 0x00)
+    # Model ID (09 = YC61/YC73/YC88)
+    # System Common [20 00 00]
+    return makeYamahaDumpRequestMessage(channel, 9, [0x20, 0x00, 0x00])
 
 
 def channelIfValidDeviceResponse(message: list[int]) -> int:
@@ -208,13 +208,13 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
     if not isYamahaSysExMessage(message):
         return -1
 
-    model_id = message[7]
-    if message[7] != 0x09:  # Model ID (09 = YC)
-        return -1
-
     # byte_count is {id, ah, am, al, data...}, or len(data)+4
     # TODO: Is this << 7 ("7-in-8 encoding") or << 8?
     byte_count = message[5] << 8 | message[6]
+
+    model_id = message[7]
+    if message[7] != 0x09:  # Model ID (09 = YC)
+        return -1
 
     # ah, am, am: SYSTEM COMMON (20 00 00)
     address = message[8 : 8 + 3]
@@ -267,7 +267,6 @@ def deviceDetectWaitMilliseconds() -> int:
 # Also, if no other capabilities are implemented and the synth reacts on program
 # change messages, it will be used by the Librarian to retrieve, one by one,
 # all patches from the synth.
-#
 
 
 def createEditBufferRequest(channel: int) -> list[int]:
@@ -282,9 +281,9 @@ def createEditBufferRequest(channel: int) -> list[int]:
     # print(f"createEditBufferRequest called. channel {channel}")
 
     # MIDI PARAMETER CHANGE TABLE (BULK CONTROL)
-    # 9 = YC61/YC73/YC88
-    # [0e 7f 00] = Current Sound Buffer
-    return makeYamahaDumpRequestMessage(channel, 9, 0x0E, 0x7F, 0x00)
+    # Model ID (09 = YC61/YC73/YC88)
+    # 0e 7f 00: Current Sound Buffer
+    return makeYamahaDumpRequestMessage(channel, 9, [0x0E, 0x7F, 0x00])
 
 
 def isPartOfEditBufferDump(message: list[int]) -> bool:
@@ -457,9 +456,9 @@ def createProgramDumpRequest(channel: int, patchNo: int) -> list[int]:
     pp = patchNo // 8
     n = patchNo % 8
 
-    # 9 = YC61/YC73/YC88
-    # [0e pp 0n] = Bulk Header: Live Set Sound User (pp=0-19; n=0-7)
-    return makeYamahaDumpRequestMessage(channel, 9, 0x0E, pp, n)
+    # Model ID (09 = YC61/YC73/YC88)
+    # 0e pp 0n Bulk Header: Live Set Sound User (pp=0-19; n=0-7)
+    return makeYamahaDumpRequestMessage(channel, 9, [0x0E, pp, n])
 
 
 def isPartOfSingleProgramDump(message: list[int]) -> bool:
@@ -580,7 +579,7 @@ def numberFromDump(messages: list[int]) -> int:
     if address[0] == 0x0E and 0 <= pp <= 19 and 0 <= n <= 7:
         return pp * 8 + n
 
-    raise Exception("numberFromDump - unexpected sysex")
+    raise Exception("numberFromDump - unexptected sysex")
 
 
 def convertToProgramDump(
@@ -623,12 +622,12 @@ def calculateFingerprint(messages: list[int]) -> str:
 
     if address == [0x46, 0x00, 0x00]:
         data_offset = 0x0B
-        # Make name all spaces so that the same patch that's been renamed will be seen as a duplicate.
         for i in range(15):
             split_messages[2][data_offset + i] = ord(
                 " "
             )  # 0 isn't a valid name character, so use space.
 
+    # joined_messages = list(itertools.chain.from_iterable(split_messages))
     joined_messages = []
     for message in split_messages:
         joined_messages.extend(message)
@@ -773,7 +772,7 @@ def dumpYamahaSysex(prefix: str, message: list[int]):
     data = message[data_offset : data_offset + data_byte_count]
 
     print(
-        f"{prefix}: '{YamahaYcSysExAddressToString(address)}' {byteListToHexString(address)}"
+        f"{prefix}: '{YamahaSysExAddressToString(address)}' {byteListToHexString(address)}"
     )
     print(f"data ({len(data)}):", byteListToHexString(data))
 
@@ -789,6 +788,7 @@ def isYamahaSysExMessage(message: list[int]) -> bool:
         or message[1] != 0x43  # Yamaha specific SysEx identifier
         or message[3] != 0x7F  # Yamaha group number high
         or message[4] != 0x1C  # Yamaha group number low
+        or message[7] != 0x09  # Model ID (09 = YC)
     ):
         return False
 
@@ -809,20 +809,20 @@ def getYamahaSysexMessageAddresses(messages: list[list[int]]) -> list[list[int]]
 
 
 def makeYamahaDumpRequestMessage(
-    device_number: int, model_id: int, address_h: int, address_m: int, address_l: int
+    device_number: int, model_id: int, address: list[int]
 ) -> list[int]:
     # (3-4-5) DUMP REQUEST
     # Bulk Dump Request: F0, 43, 2n, gh, gl, id, ah, am, al, F7
     return [
         0xF0,  # Exclusive status
         0x43,  # YAMAHA ID
-        0x20 | device_number,  # Device Number
+        0x20 | (device_number & 0x0F),  # Device Number
         0x7F,  # Group ID High
         0x1C,  # Group ID Low
         model_id,
-        address_h,  # Address High
-        address_m,  # Address Mid
-        address_l,  # Address Low
+        address[0],  # Address High
+        address[1],  # Address Mid
+        address[2],  # Address Low
         0xF7,  # End of Exclusive
     ]
 
@@ -832,7 +832,7 @@ def makeYamahaDumpRequestMessage(
 #
 
 
-def YamahaYcSysExAddressToString(address: list[int]) -> str:
+def YamahaSysExAddressToString(address: list[int]) -> str:
     # 0e pp 0n Bulk Header: Live Set Sound User (pp=0-19; n=0-7)
     if address[0] == 0x0E:
         return f"Bulk Header (pp={address[1]}; n={address[2] & 0xf})"
