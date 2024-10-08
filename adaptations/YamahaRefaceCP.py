@@ -125,7 +125,7 @@ def createDeviceDetectMessage(channel: int) -> list[int]:
     """
     # Model ID 04 = Reface CP
     # System [00 00 00]
-    return makeYamahaDumpRequestMessage(channel, 4, 0x00, 0x00, 0x00)
+    return makeYamahaDumpRequestMessage(channel, 4, [0x00, 0x00, 0x00])
 
 
 def channelIfValidDeviceResponse(message: list[int]) -> int:
@@ -215,8 +215,8 @@ def createEditBufferRequest(channel):
         _type_: single MIDI message that makes the device send its Edit Buffer
     """
     # Model ID 04 = Reface CP
-    # 0e 0f 00: Tg Bulk Header
-    return makeYamahaDumpRequestMessage(channel, 4, 0x0E, 0x0F, 0x00)
+    # 0e 0f 00: TG Bulk Header
+    return makeYamahaDumpRequestMessage(channel, 4, [0x0E, 0x0F, 0x00])
 
 
 def isPartOfEditBufferDump(message: list[int]) -> bool:
@@ -434,19 +434,19 @@ def getYamahaSysexMessageAddresses(messages: list[list[int]]) -> list[list[int]]
 
 
 def makeYamahaDumpRequestMessage(
-    device_number: int, model_id: int, address_h: int, address_m: int, address_l: int
+    device_number: int, model_id: int, address: list[int]
 ) -> list[int]:
     # (3-4-4) DUMP REQUEST
     # Bulk Dump Request: F0, 43, 2n, gh, gl, id, ah, am, al, F7
     return [
         0xF0,  # Exclusive status
         0x43,  # YAMAHA ID
-        0x20 | device_number,  # Device Number
+        0x20 | (device_number & 0x0F),  # Device Number
         0x7F,  # Group ID High
         0x1C,  # Group ID Low
         model_id,
-        address_h,  # Address High
-        address_m,  # Address Mid
-        address_l,  # Address Low
+        address[0],  # Address High
+        address[1],  # Address Mid
+        address[2],  # Address Low
         0xF7,  # End of Exclusive
     ]
