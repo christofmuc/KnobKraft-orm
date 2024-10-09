@@ -113,7 +113,6 @@
 # https://soundmondo.yamahasynth.com/voices?reface=CP&user=16054
 
 
-import hashlib
 from typing import Dict
 
 ###############################################################################
@@ -293,7 +292,6 @@ def isEditBufferDump(messages: list[int]) -> bool:
     # they've been combined with calls to isPartOfEditBufferDump
     split_messages = splitSysexMessage(messages)
     addresses = getYamahaSysexMessageAddresses(split_messages)
-    header = addresses[0]
 
     # print(f"isEditBufferDump addresses {listListToHexString(addresses)}")
 
@@ -345,13 +343,27 @@ def nameFromDump(messages: list[int]) -> str:
     data_offset = 0x0B
     data = split_messages[1][data_offset:-2]
 
-    # Only referencing know indices in TG table.
-    # See "MIDI PARAMETER CHANGE TABLE (Tone Generator)"
-    name = ""
-    for i in range(2, 0xD + 1):
-        name += SevenBitEncode(data[i])
+    # Example:
+    # data = [ 0xe5, 0x66 ]
+    # 111001 010110 0110 (57, 22, 6) = 5WG
 
-    print(f"data {byteListToHexString(data)} -> name {name}")
+    # len(table) = 64 (6 bits)
+    table = [
+        *range(ord("A"), ord("Z") + 1),
+        *range(ord("a"), ord("z") + 1),
+        *range(ord("0"), ord("9") + 1),
+        ord("_"),
+        ord("-"),
+    ]
+
+    # Only referencing fields that are used [2..D]
+    # See "MIDI PARAMETER CHANGE TABLE (Tone Generator)"
+    binary_data = "".join("{0:>08b}".format(data[i]) for i in range(2, 0xD + 1))
+    name = ""
+    for i in range(0, len(binary_data), 6):
+        print(int(binary_data[i : i + 6], base=2))
+        name += chr(table[int(binary_data[i : i + 6], base=2)])
+
     return name
 
 
@@ -376,21 +388,6 @@ def setupHelp():
 
 ###############################################################################
 # Helper methods (internal)
-
-
-def SevenBitEncode(byte: int) -> str:
-    # len(table) == 64, for 6 bits of data
-    table = [
-        *range(ord("A"), ord("Z") + 1),
-        *range(ord("a"), ord("z") + 1),
-        *range(ord("0"), ord("9") + 1),
-        ord("_"),
-        ord("@"),
-    ]
-    if byte > 64:
-        return f'!{chr(table[byte & 0b111111])}'
-
-    return chr(table[byte & 0b111111])
 
 
 def byteListToHexString(data: list[int]) -> str:
