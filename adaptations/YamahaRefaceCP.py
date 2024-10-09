@@ -66,11 +66,39 @@
 # TG Common     30 00 00    SIZE = 20
 # Bulk Footer   0f 0f 00    SIZE = 4
 
-# See "MIDI PARAMETER CHANGE TABLE (SYSTEM)" in the manual for the data format
-# of the block that's returned from a SYSTEM dump request.
+# MIDI PARAMETER CHANGE TABLE (SYSTEM)
+# (Data format of the block that's returned from a SYSTEM dump request)
+# =====================================================================
+# 00    00-0F,7F MIDI transmit channel          1-16, off
+# 01    00-0F,7F MIDI receive channel           1-16, All (Omni)
+# 02    00-00      Master Tune                     -102.4 – +102.3 (cent)
+# 03    00-07
+# 04    00-0F
+# 05    00-0F
+# 06    00-01   Local Control                   off,ON
+# 07    34-4C   Master Transpose                -12 - +12 (semitones)
+# 0B    00-01   Sustain Pedal Select            FC3, FC4/5
+# 0C    00-01   Auto Power-Off                  off,ON
+# 0D    00-01   Speaker Output                  off,ON
+# 0E    00-01   MIDI Control                    off,ON
 
-# See "MIDI PARAMETER CHANGE TABLE (Tone Generator)" in the manual for the data
-# format of the block that's returned from a TG  dump request.
+# MIDI PARAMETER CHANGE TABLE (Tone Generator)
+# (data format of the block that's returned from a TG dump request)
+# =================================================================
+# 00    00-7F   Volume                          0-127
+# 02    00-05   Wave Type (TYPE)                Rd I, Rd II, Wr, Clv, Toy, CP
+# 03    00-7F   Drive (DRIVE)                   0-127
+# 04    00-02   Effect 1 Type (TREMOLO/WAH)     thru (middle position), tremolo (TREMOLO), wah (WAH)
+# 05    00-7F   Effect 1 Depth (DEPTH)          0-127
+# 06    00-7F   Effect 1 Rate (RATE)            0-127
+# 07    00-02   Effect 2 Type (CHORUS/PHASER)   thru (middle position), chorus (CHORUS), phaser (PHASER)
+# 08    00-7F   Effect 2 Depth (DEPTH)          0-127
+# 09    00-7F   Effect 2 Speed (SPEED)          0-127
+# 0A    00-02   Effect 3 Type (D.DELAY/A.DELAY) thru (middle position), Digital Delay (D.DELAY), Analog Delay (A.DELAY)
+# 0B    00-7F   Effect 3 Depth (DEPTH)          0-127
+# 0C    00-7F   Effect 3 Rate (TIME)            0-127
+# 0D    00-7F   Reverb Depth (REVERB DEPTH)     0-127
+# Total Size = 16. All other fields are reserved for future use.
 
 # References:
 #
@@ -182,7 +210,7 @@ def needsChannelSpecificDetection() -> bool:
     Returns:
         bool: True if the createDeviceDetectMessage() should be called once for each of the 16 possible MIDI channels and MIDI outputs
     """
-    return False
+    return True
 
 
 def deviceDetectWaitMilliseconds() -> int:
@@ -314,7 +342,37 @@ def nameFromDump(messages: list[int]) -> str:
     if address != [0x30, 0x00, 0x00]:
         raise Exception("numberFromDump: TG data not found")
 
-    return hashlib.md5(bytearray(split_messages[1])).hexdigest()
+    data_offset = 0x0B
+    data = split_messages[1][data_offset:-2]
+
+    # Only referencing know indices in TG table.
+    # See "MIDI PARAMETER CHANGE TABLE (Tone Generator)"
+    name = ""
+    for i in range(2, 0xD + 1):
+        b = data[i]
+        name += chr((b >> 4) + 65) + chr((b & 0b1111) + 97)
+
+    print(f"data {byteListToHexString(data)} -> name {name}")
+    return name
+
+
+#
+# Leaving helpful setup information specific for a synth
+#
+
+
+def setupHelp():
+    return (
+        "Yamaha reface CP\n"
+        "\n"
+        "Owner's Manual: https://usa.yamaha.com/files/download/other_assets/6/438816/reface_en_om_b0.pdf\n"
+        "Reference Manual: https://usa.yamaha.com/files/download/other_assets/7/438827/reface_en_rm_a0.pdf\n"
+        "Data List: https://usa.yamaha.com/files/download/other_assets/7/794817/reface_en_dl_b0.pdf\n"
+        "\n"
+        "To enable MIDI control, with unit off, hold E2 and turn unit on."
+        "The [TYPE] knob’s Clv lamp and the lamps from the TREMOLO/WAH to D.DELAY/A.DELAY sections light up to indicate MIDI control is on."
+        "If the lights flash, MIDI control is off."
+    )
 
 
 ###############################################################################
