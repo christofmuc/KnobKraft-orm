@@ -349,8 +349,7 @@ def nameFromDump(messages: list[int]) -> str:
     # See "MIDI PARAMETER CHANGE TABLE (Tone Generator)"
     name = ""
     for i in range(2, 0xD + 1):
-        b = data[i]
-        name += chr((b >> 4) + 65) + chr((b & 0b1111) + 97)
+        name += SevenBitEncode(data[i])
 
     print(f"data {byteListToHexString(data)} -> name {name}")
     return name
@@ -377,6 +376,21 @@ def setupHelp():
 
 ###############################################################################
 # Helper methods (internal)
+
+
+def SevenBitEncode(byte: int) -> str:
+    # len(table) == 64, for 6 bits of data
+    table = [
+        *range(ord("A"), ord("Z") + 1),
+        *range(ord("a"), ord("z") + 1),
+        *range(ord("0"), ord("9") + 1),
+        ord("_"),
+        ord("@"),
+    ]
+    if byte > 64:
+        return f'!{chr(table[byte & 0b111111])}'
+
+    return chr(table[byte & 0b111111])
 
 
 def byteListToHexString(data: list[int]) -> str:
