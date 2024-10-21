@@ -161,12 +161,15 @@ void PatchButtonPanel::setPatchLoader(TPageLoader pageGetter)
 	pageLoader_ = pageGetter;
 }
 
-void PatchButtonPanel::setTotalCount(int totalCount)
+void PatchButtonPanel::setTotalCount(int totalCount, bool resetToPageOne /* = true */)
 {
-	pageBase_ = pageNumber_ = 0;
 	totalSize_ = totalCount;
 	numPages_ = totalCount / pageSize_;
 	if (totalCount % pageSize_ != 0) numPages_++;
+	if (resetToPageOne || pageBase_ >= totalCount) {
+		// Either we want to jump back to page 1, or the current page is no longer possible as the totalCount is smaller than the current's page first element index
+		pageBase_ = pageNumber_ = 0;
+	}
 }
 
 void PatchButtonPanel::changeGridSize(int newWidth, int newHeight) {

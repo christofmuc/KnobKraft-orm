@@ -89,7 +89,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
 		int total = getTotalCount();
-		patchButtons_->setTotalCount(total);
+		patchButtons_->setTotalCount(total, false);
 		patchButtons_->refresh(true);
 		synthBank_->refreshPatch(favoritePatch);
 	}
@@ -193,7 +193,7 @@ int PatchView::getTotalCount() {
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
 	int total = getTotalCount();
-	patchButtons_->setTotalCount(total);
+	patchButtons_->setTotalCount(total, true);
 	patchButtons_->refresh(true); // This kicks of loading the first page
 	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, juce::Uuid().toString(), nullptr);
 }
