@@ -257,6 +257,42 @@ void PatchListTree::refreshAllImports(std::function<void()> onFinished)
 		});
 }
 
+void PatchListTree::refreshParentOfListId(std::string const& list_id, std::function<void()> onFinished) {
+	MessageManager::callAsync([this, list_id, onFinished] {
+			// Walk the tree and find the node for the given list id
+			std::deque<juce::TreeViewItem*> items;
+			items.push_back(treeView_->getRootItem());
+			while (!items.empty()) {
+				TreeViewItem* node = items.front();
+				items.pop_front();
+				// Check if this is a node for the list we're looking for
+				auto treeviewnode = dynamic_cast<TreeViewNode*>(node);
+				if (treeviewnode) {
+					if (treeviewnode->id().toStdString() == list_id) {
+						// Found, fresh the parent
+						auto parent = treeviewnode->getParentItem();
+						auto parentitem = dynamic_cast<TreeViewNode*>(parent);
+						if (parentitem) {
+							parentitem->regenerate();
+							onFinished();
+							return;
+						}
+						else {
+							spdlog::error("Program error: Parent has no regenerate capability, failed to refresh tree view");
+							return;
+						}
+					}
+				}
+
+				// Inspect the children
+				for (int i = 0; i < node->getNumSubItems(); i++) {
+					items.push_back(node->getSubItem(i));
+				}
+			}
+			spdlog::error("Program error: Did not find node for list ID {}, failed to refresh tree view", list_id);
+		});
+}
+
 void PatchListTree::selectAllIfNothingIsSelected()
 {
 	if (treeView_->getNumSelectedItems() == 0) {

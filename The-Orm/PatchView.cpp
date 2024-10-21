@@ -517,7 +517,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 				spdlog::info("Deleted list {}", list_name);
 				if (listFilterID_ == list_id) {
 				}
-				patchListTree_.refreshAllUserLists([]() {});
+				patchListTree_.refreshParentOfListId(list_id, []() {});
 			}
 			return;
 		}

@@ -40,6 +40,7 @@ public:
 	void refreshAllUserLists(std::function<void()> onFinished);
 	void refreshUserList(std::string list_id, std::function<void()> onFinished);
 	void refreshAllImports(std::function<void()> onFinished);
+	void refreshParentOfListId(std::string const& list_id, std::function<void()> onFinished);
 
 	void selectAllIfNothingIsSelected();
 	void selectItemByPath(std::vector<std::string> const& path);
