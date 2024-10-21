@@ -1081,22 +1081,39 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 	else  {
 		auto filter = currentFilter();
 		auto synthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(list);
-		int patchesDesired = fillParameters.number;
+		size_t patchesDesired = fillParameters.number;
+		size_t minimumPatches = 0;
 		if (synthBank) {
 			// This is a synth bank, restrict the filter to deliver only patches for the synth that the bank is for
 			filter.synths.clear();
 			filter.synths[synthBank->synth()->getName()] = synthBank->synth();
 			patchesDesired = synthBank->patchCapacity();
+			if (synthBank->bankNumber().bankSize() >= 0) {
+				minimumPatches = (size_t) synthBank->bankNumber().bankSize();
+			}
+			else {
+				spdlog::error("Program error: Unknown bank size, can't fill bank with unknown number of patches");
+				return;
+			}
 		}
 		if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
-			loadPage(0, patchesDesired, filter, [list, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+			loadPage(0, (int) patchesDesired, filter, [list, finishedCallback, minimumPatches](std::vector<midikraft::PatchHolder> patches) {
+				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
+				while (patches.size() < minimumPatches) {
+					patches.push_back(patches.back());
+				}
 				list->setPatches(patches);
 				finishedCallback();
 				});
 		}
 		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
-			loadPage(0, -1, filter, [list, patchesDesired, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
-				list->setPatches(getRandomSubset(patches, patchesDesired));
+			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
+				auto randomPatches = getRandomSubset(patches, patchesDesired);
+				while (randomPatches.size() < minimumPatches) {
+					randomPatches.push_back(randomPatches.back());
+				}
+				list->setPatches(randomPatches);
 				finishedCallback();
 				});
 		}
