@@ -502,7 +502,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string list_name = infos["list_name"];
 			database_.removePatchFromList(list_id, infos["synth"], infos["md5"], infos["order_num"]);
 			spdlog::info("Removed patch {} from list {}", patch_name,  list_name);
-			patchListTree_.refreshUserList(list_id, []() {});
+			patchListTree_.refreshChildrenOfListId(list_id, []() {});
 			if (listFilterID_ == list_id) {
 				retrieveFirstPageFromDatabase();
 			}

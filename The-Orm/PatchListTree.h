@@ -38,8 +38,8 @@ public:
 	virtual void resized() override;
 
 	void refreshAllUserLists(std::function<void()> onFinished);
-	void refreshUserList(std::string list_id, std::function<void()> onFinished);
 	void refreshAllImports(std::function<void()> onFinished);
+	void refreshChildrenOfListId(std::string const& list_id, std::function<void()> onFinished);
 	void refreshParentOfListId(std::string const& list_id, std::function<void()> onFinished);
 
 	void selectAllIfNothingIsSelected();
@@ -55,6 +55,7 @@ private:
 	std::string getSelectedSynth() const;
 	bool isUserListSelected() const;
 	std::list<std::string> pathOfSelectedItem() const;
+	TreeViewNode* findNodeForListID(std::string const& list_id);
 
 	TreeViewNode* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
 	TreeViewNode* newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
@@ -73,6 +74,5 @@ private:
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewNode* allPatchesItem_;
 	TreeViewNode* userListsItem_;
-	std::map<std::string, TreeViewNode*> userLists_;
 };
 

@@ -116,7 +116,6 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 		std::vector<TreeViewItem*> result;
 		auto userLists = db_.allPatchLists();
 		userLists = sortLists<midikraft::ListInfo>(userLists, [](const midikraft::ListInfo& info) { return info.name;  });
-		userLists_.clear();
 		for (auto const& list : userLists) {
 			result.push_back(newTreeViewItemForPatchList(list));
 		}
@@ -236,19 +235,6 @@ void PatchListTree::refreshAllUserLists(std::function<void()> onFinished)
 	});
 }
 
-void PatchListTree::refreshUserList(std::string list_id, std::function<void()> onFinished)
-{
-	if (userLists_.find(list_id) != userLists_.end()) {
-		MessageManager::callAsync([node = userLists_[list_id], onFinished]() {
-			node->regenerate();
-			onFinished();
-			});
-	}
-	else {
-		jassertfalse;
-	}
-}
-
 void PatchListTree::refreshAllImports(std::function<void()> onFinished)
 {
 	MessageManager::callAsync([this, onFinished]() {
@@ -257,39 +243,62 @@ void PatchListTree::refreshAllImports(std::function<void()> onFinished)
 		});
 }
 
+TreeViewNode* PatchListTree::findNodeForListID(std::string const& list_id) {
+	// Walk the tree and find the node for the given list id
+	std::deque<juce::TreeViewItem*> items;
+	items.push_back(treeView_->getRootItem());
+	while (!items.empty()) {
+		TreeViewItem* node = items.front();
+		items.pop_front();
+		// Check if this is a node for the list we're looking for
+		auto treeviewnode = dynamic_cast<TreeViewNode*>(node);
+		if (treeviewnode && (treeviewnode->id().toStdString() == list_id)) {
+				return treeviewnode;
+		}
+
+		// Inspect the children
+		for (int i = 0; i < node->getNumSubItems(); i++) {
+			items.push_back(node->getSubItem(i));
+		}
+	}
+	return nullptr;
+}
+
+void PatchListTree::refreshChildrenOfListId(std::string const& list_id, std::function<void()> onFinished) {
+	MessageManager::callAsync([this, list_id, onFinished] {
+		auto node = findNodeForListID(list_id);
+		if (node != nullptr) {
+			node->regenerate();
+			onFinished();
+		}
+		else
+		{
+			spdlog::error("Program error: Did not find node for list ID {}, failed to refresh tree view", list_id);
+		};
+		});
+}
+
 void PatchListTree::refreshParentOfListId(std::string const& list_id, std::function<void()> onFinished) {
 	MessageManager::callAsync([this, list_id, onFinished] {
-			// Walk the tree and find the node for the given list id
-			std::deque<juce::TreeViewItem*> items;
-			items.push_back(treeView_->getRootItem());
-			while (!items.empty()) {
-				TreeViewItem* node = items.front();
-				items.pop_front();
-				// Check if this is a node for the list we're looking for
-				auto treeviewnode = dynamic_cast<TreeViewNode*>(node);
-				if (treeviewnode) {
-					if (treeviewnode->id().toStdString() == list_id) {
-						// Found, fresh the parent
-						auto parent = treeviewnode->getParentItem();
-						auto parentitem = dynamic_cast<TreeViewNode*>(parent);
-						if (parentitem) {
-							parentitem->regenerate();
-							onFinished();
-							return;
-						}
-						else {
-							spdlog::error("Program error: Parent has no regenerate capability, failed to refresh tree view");
-							return;
-						}
-					}
-				}
-
-				// Inspect the children
-				for (int i = 0; i < node->getNumSubItems(); i++) {
-					items.push_back(node->getSubItem(i));
-				}
+		auto node = findNodeForListID(list_id);
+		if (node != nullptr) {
+			// Found, fresh the parent
+			auto parent = node->getParentItem();
+			auto parentitem = dynamic_cast<TreeViewNode*>(parent);
+			if (parentitem) {
+				parentitem->regenerate();
+				onFinished();
+				return;
 			}
+			else {
+				spdlog::error("Program error: Parent has no regenerate capability, failed to refresh tree view");
+				return;
+			}
+		}
+		else
+		{
 			spdlog::error("Program error: Did not find node for list ID {}, failed to refresh tree view", list_id);
+		};
 		});
 }
 
@@ -560,7 +569,6 @@ TreeViewNode* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 
 TreeViewNode* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode *parent, midikraft::ListInfo list) {
 	auto node = new TreeViewNode(list.name, list.id);
-	userLists_[list.id] = node;
 	node->onSelected = [this, list, synth](String clicked) {
         juce::ignoreUnused(clicked);
 		UIModel::instance()->multiMode_.setMultiSynthMode(false);
@@ -604,7 +612,6 @@ TreeViewNode* PatchListTree::newTreeViewItemForUserBank(std::shared_ptr<midikraf
 
 TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo list) {
 	auto node = new TreeViewNode(list.name, list.id);
-	userLists_[list.id] = node;
 	node->onGenerateChildren = [this, list]() {
 		auto patchList = db_.getPatchList(list, synths_);
 		std::vector<TreeViewItem*> result;
