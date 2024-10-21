@@ -505,7 +505,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
-		midiLogView_.addMessageToList(message, source, isOut);
+		midiLogView_.log().addMessageToList(message, source, isOut);
 		});
 
 	// Do a quickconfigure
