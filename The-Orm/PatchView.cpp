@@ -386,7 +386,7 @@ void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, M
 	}
 }
 
-void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
+void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, std::function<void()> finishedHandler)
 {
 	if (!bankToSend) return;
 
@@ -399,7 +399,7 @@ void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend
 			if (bankToSend->synth() /*&& device->wasDetected()*/) {
 				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
 				progressWindow->launchThread();
-				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [bankToSend, finishedHandler, progressWindow](bool completed) {
+				librarian_.sendBankToSynth(*bankToSend, progressWindow.get(), [bankToSend, finishedHandler, progressWindow](bool completed) {
 					progressWindow->signalThreadShouldExit();
 					if (completed) {
 						bankToSend->clearDirty();

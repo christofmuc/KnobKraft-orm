@@ -45,23 +45,29 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	sendButton_.setButtonText("Send to synth");
 	sendButton_.onClick = [this]() {
 		if (patchView_ && synthBank_) {
+			auto activeSynthBank = synthBank_;
+			
 			if (isUserBank()) {
-				patchView_->sendBankToSynth(synthBank_, true,  []() {
-					spdlog::info("Bank sent successfully!");
-				});
-			} 
-			else
-			{
-				patchView_->sendBankToSynth(synthBank_, false, [this]() {
-					// Save it in the database now that we have successfully sent it to the synth
-					patchDatabase_.putPatchList(synthBank_);
-					// Mark the bank as not modified
-					synthBank_->clearDirty();
-					refresh();
-				});
+				// Retrieve the corresponding active synth bank
+				auto activeSynthBankId = midikraft::ActiveSynthBank::makeId(synthBank_->synth(), synthBank_->bankNumber());
+				midikraft::ListInfo info = {activeSynthBankId, ""};
+				auto activeSynthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(patchView_->retrieveListFromDatabase(info));
+				if(!activeSynthBank)
+					return;
+				
+				// Update active synth bank from user bank
+				for(auto& patch : synthBank_->patches())
+					activeSynthBank->changePatchAtPosition (patch.patchNumber(), patch);
 			}
-		}
 
+			patchView_->sendBankToSynth(activeSynthBank, [this]() {
+				// Save it in the database now that we have successfully sent it to the synth
+				patchDatabase_.putPatchList(synthBank_);
+				// Mark the bank as not modified
+				synthBank_->clearDirty();
+				refresh();
+			});
+		}
 	};
 
 	exportButton_.setButtonText("Export bank");
