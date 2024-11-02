@@ -102,6 +102,9 @@ namespace knobkraft {
 
 	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const std::vector<MidiMessage>& message) const
 	{
+        if (!isSingleProgramDump(message)) {
+            return MidiProgramNumber::invalidProgram();
+        }
 		py::gil_scoped_acquire acquire;
 		if (me_->pythonModuleHasFunction("numberFromDump")) {
 			try {
