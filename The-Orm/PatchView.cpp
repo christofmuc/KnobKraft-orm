@@ -1096,7 +1096,13 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 				return;
 			}
 		}
-		if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
+
+        if(database_.getPatchesCount(currentFilter()) == 0) {
+            spdlog::error("The list can't be filled, there are no patches in the database matching the current filter.");
+            return;
+        }
+
+        if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
 			loadPage(0, (int) patchesDesired, filter, [list, finishedCallback, minimumPatches](std::vector<midikraft::PatchHolder> patches) {
 				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
 				while (patches.size() < minimumPatches) {
