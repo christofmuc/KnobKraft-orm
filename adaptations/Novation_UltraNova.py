@@ -126,7 +126,7 @@ def isSingleProgramDump(message):
 
 def numberFromDump(message):
     if not isSingleProgramDump(message):
-        return 0
+        return -1
     bank = message[11]
     bank = bank - 1 if bank > 0 else 0  # some program patch have bank == 0
     program = message[12]

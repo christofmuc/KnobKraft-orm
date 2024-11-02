@@ -107,7 +107,13 @@ namespace knobkraft {
 			try {
 				auto vector = GenericAdaptation::midiMessagesToVector(message);
 				py::object result = me_->callMethod(kNumberFromDump, vector);
-				return MidiProgramNumber::fromZeroBase(result.cast<int>());
+                int programNumberReturned = result.cast<int>();
+                if (programNumberReturned >= 0) {
+                    return MidiProgramNumber::fromZeroBase(programNumberReturned);
+                }
+                else {
+                    return MidiProgramNumber::invalidProgram();
+                }
 			}
 			catch (py::error_already_set &ex) {
 				me_->logAdaptationError(kNumberFromDump, ex);
@@ -117,7 +123,7 @@ namespace knobkraft {
 				me_->logAdaptationError(kNumberFromDump, ex);
 			}
 		}
-		return MidiProgramNumber::fromZeroBase(0);
+		return MidiProgramNumber::invalidProgram();
 	}
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(std::shared_ptr<midikraft::DataFile> patch, MidiProgramNumber programNumber) const
