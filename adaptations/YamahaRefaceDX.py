@@ -257,9 +257,7 @@ def friendlyProgramName(programNo):
 
 
 def numberFromDump(message):
-    if isEditBufferDump(message):
-        return 0
-    elif isSingleProgramDump(message):
+    if isSingleProgramDump(message):
         # The program number is in the bulkprogramheader
         return message[10]
     raise Exception("Can only extract program number from SingleProgramDumps!")

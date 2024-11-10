@@ -400,7 +400,8 @@ Additionally, when you have implement all three functions to enable the ProgramD
 
     def numberFromDump(message)
 
-which will be used if present to detect the original program slot location stored in a program dump for archival purposes.
+which will be used if present to detect the original program slot location stored in a program dump for archival purposes. This should return -1 in case
+the message is not a program dump (but e.g. an edit buffer dump which has no number stored).
 
 ### Requesting a specific program at a specific memory position
 
