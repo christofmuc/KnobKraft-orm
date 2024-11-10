@@ -336,7 +336,7 @@ void PatchButtonPanel::resized()
 		}
 	}
 	pageNumberBox.performLayout(pageNumberStrip);
-	auto width_label = buttonSendModeLabel_.getFont().getStringWidth(buttonSendModeLabel_.getText());
+	auto width_label = TextLayout::getStringWidth(buttonSendModeLabel_.getFont(), buttonSendModeLabel_.getText());
 	buttonSendModeLabel_.setBounds(pageNumberStrip.removeFromLeft(width_label));
 	buttonSendMode_.setBounds(pageNumberStrip.removeFromLeft(LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 	gridSizeSliderY_.setBounds(pageNumberStrip.removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));

@@ -123,7 +123,7 @@ String PatchTextBox::makeHexDocument(std::shared_ptr<midikraft::PatchHolder> pat
 	do {
 		testLine += " 00";
 		testLineLength += 1;
-	} while (fontUsed.getStringWidth(testLine) < width - 22);
+	} while (TextLayout::getStringWidth(fontUsed, testLine) < width - 22);
 	testLineLength = std::max(testLineLength-1, 1);
 	lastLayoutedWidth_ = width;
 

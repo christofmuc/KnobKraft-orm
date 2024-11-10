@@ -1,6 +1,7 @@
 builds/
 *__pycache__*
 .idea/
+.vscode/
 adaptations/CompiledAdaptions.h
 third_party/Tools.InnoSetup.6.0.5/
 builds6/
