@@ -674,7 +674,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				// Add all patches of the dragged list to the target ist
 				auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
 				if (AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "Add list to list?"
-					, fmt::format("This will add all {} patches of the list '{}' to the list '{}' at the given position. Continue?", loaded_list->patches().size(), infos["list_name"], list.name
+					, fmt::format("This will add all {} patches of the list '{}' to the list '{}' at the given position. Continue?", loaded_list->patches().size(), (std::string) infos["list_name"], list.name
 					))) {
 					for (auto& patch : loaded_list->patches()) {
 						db_.addPatchToList(list, patch, insertIndex++);

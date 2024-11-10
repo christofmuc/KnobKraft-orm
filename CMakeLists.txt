@@ -6,8 +6,9 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-# Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
+# Target a specific MacOS version.
+# JUCE 8 refuses to build for anything older than 10.11, so let's try that.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
 
 # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
 add_compile_definitions(JSON_HAS_CPP_14)
@@ -18,7 +19,8 @@ project(KnobKraft_Orm)
 option(ASAN "Use Address Sanitization for Debug version (Windows only for now)" OFF)
 
 # Since we also build MacOS, we need C++ 17. Which is not a bad thing.
-set(CMAKE_CXX_STANDARD 17)
+# Gin requests C++ 20.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
@@ -116,15 +118,19 @@ ELSEIF(APPLE)
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
-	# Include useful scripts for CMake
-	find_package(PkgConfig REQUIRED) 
-	find_package(OpenGL)
+    # Include useful scripts for CMake
+    find_package(PkgConfig REQUIRED)
+    find_package(OpenGL)
 
-	# These calls create special `PkgConfig::<MODULE>` variables
-	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
-	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
-	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
-	find_package(ICU REQUIRED data uc)
+    # These calls create special `PkgConfig::<MODULE>` variables
+    pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+    pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
+    pkg_check_modules(WEBKIT IMPORTED_TARGET webkit2gtk-4.1)
+    if (NOT WEBKIT_FOUND EQUAL 1)
+        # If 4.1 is not available, we need 4.0
+        pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+    endif()
+    find_package(ICU REQUIRED data uc)
 ENDIF()
 
 # We need to put our own CMake helpers on the module path
