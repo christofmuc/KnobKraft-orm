@@ -108,8 +108,6 @@ def isDefaultName(patchName):
 
 
 def numberFromDump(message):
-    if isEditBufferDump(message):
-        return 0
     if isSingleProgramDump(message):
         return message[3] * numberOfPatchesPerBank() + message[4]
     raise Exception("Only single program dumps have program numbers")

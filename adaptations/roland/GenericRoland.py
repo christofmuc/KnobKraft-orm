@@ -551,7 +551,7 @@ class GenericRolandWithBackwardCompatibility:
         model = self.model_from_message(message)
         if model is not None:
             return model.numberFromDump(message)
-        return 0
+        return -1
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:

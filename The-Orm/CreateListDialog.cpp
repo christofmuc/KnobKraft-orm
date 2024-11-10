@@ -213,7 +213,7 @@ void CreateListDialog::notifyResult()
 	else if (static_cast<int>(fillMode_.getValue()) == 2) {
 		fillParameters.fillMode = TListFillMode::Random;
 	}
-	fillParameters.number = patchNumber_.getValue();
+	fillParameters.number = (size_t) (patchNumber_.getValue().operator int());
 	callback_(list_, fillParameters);
 }
 

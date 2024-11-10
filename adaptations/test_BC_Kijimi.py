@@ -30,7 +30,6 @@ def test_BC_Kijimi():
     edit_buffer = convertToEditBuffer(0, patch_from_device_message)
     assert isEditBufferDump(edit_buffer)
     assert nameFromDump(edit_buffer) == "Kijimi tmp"
-    assert numberFromDump(edit_buffer) == 0
     program_back = convertToProgramDump(0, edit_buffer, 1)
     assert isSingleProgramDump(program_back)
     assert numberFromDump(program_back) == 1

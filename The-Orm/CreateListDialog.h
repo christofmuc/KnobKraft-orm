@@ -22,7 +22,7 @@ public:
 	};
 	struct TFillParameters {
 		TListFillMode fillMode;
-		int number;
+		size_t number;
 	};
 	typedef std::function<void(std::shared_ptr<midikraft::PatchList> result)> TCallback;
 	typedef std::function<void(std::shared_ptr<midikraft::PatchList> result, TFillParameters fillParameters)> TCallbackWithFill;

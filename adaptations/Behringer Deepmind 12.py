@@ -91,8 +91,6 @@ def nameFromDump(message):
 def numberFromDump(message) -> int:
     if isSingleProgramDump(message):
         return message[8] * numberOfPatchesPerBank() + message[9]
-    elif isEditBufferDump(message):
-        return 0
     return -1
 
 

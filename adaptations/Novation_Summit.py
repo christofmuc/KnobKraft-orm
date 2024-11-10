@@ -80,7 +80,7 @@ def isSingleProgramDump(message):
 
 def numberFromDump(message):
     if not isSingleProgramDump(message):
-        return 0
+        return -1
     bank = message[12] % 4  # Not more than 4 banks allowed
     program = message[13] % 128  # Maximum 128 programs per bank
     return bank * 128 + program
