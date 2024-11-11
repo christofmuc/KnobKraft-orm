@@ -459,15 +459,13 @@ void PatchView::copyBankPatchNamesToClipboard() {
 
 void PatchView::setImportListFilter(String filter)
 {
-	listFilterID_ = "";
-	sourceFilterID_ = filter.toStdString();
+	listFilterID_ = filter.toStdString();
 	retrieveFirstPageFromDatabase();
 }
 
 void PatchView::setUserListFilter(String filter)
 {
 	listFilterID_ = filter.toStdString();
-	sourceFilterID_ = "";
 	retrieveFirstPageFromDatabase();
 }
 
@@ -680,7 +678,6 @@ void PatchView::selectFirstPatch()
 midikraft::PatchFilter PatchView::currentFilter()
 {
 	auto filter = patchSearch_->getFilter();
-	filter.importID = sourceFilterID_;
 	filter.listID = listFilterID_;
 	if (!filter.listID.empty()) {
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
@@ -694,7 +691,6 @@ midikraft::PatchFilter PatchView::bankFilter(std::shared_ptr<midikraft::Synth> s
 	midikraft::PatchFilter filter({ synth });
 	filter.turnOnAll();
 
-	filter.importID = "";
 	filter.listID = listID;
 	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 	return filter;
