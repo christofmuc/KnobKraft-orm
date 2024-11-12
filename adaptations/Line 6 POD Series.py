@@ -1,9 +1,19 @@
 # Line 6 POD Adaptation for Knobkraft-ORM.
-# Only verified with a Line 6 POD 1.0 device. Should be easily enhanced to support other POD devices.
+# Only verified with a Line 6 POD 1.0 device. Probably works with other POD devices.
+#
+# Would like to hear input from owners of other POD devices,
+# e.g. POD 2.0, POD Pro, Bass POD, (Bass) PODxt, POD X3, Pocket POD, (Bass) Floor POD Plus
+# however, I've been unable to find Sysex specifications for these devices.
 
 # References:
 # POD Midi / Sysex Specification and Notes
 # https://www.midimanuals.com/manuals/line_6/pod/sysex/pod_sysex_english.pdf
+#
+# POD Pro Midi / Sysex Specification and Notes
+# https://synthmanuals.com/manuals/line_6/pod_pro/sysex/pod_pro_sysex_english.pdf
+#
+# Bass POD Pro Midi / Sysex Specification and Notes
+# https://synthmanuals.com/manuals/line_6/bass_pod_pro/sysex/bass_pod_pro_sysex_english.pdf
 #
 # KnobKraft Orm Adaptation Programming Guide
 # https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/Adaptation%20Programming%20Guide.md
@@ -12,7 +22,7 @@ from typing import Dict
 from enum import Enum
 
 ##############################################################################
-# SysEx FORMAT
+# SysEx FORMAT for POD 1.0:
 
 # UNIVERSAL DEVICE INQUIRY:
 #
@@ -140,6 +150,8 @@ def createDeviceDetectMessage(channel: int) -> list[int]:
     Returns:
         list[int]: Single MIDI message or multiple MIDI messages in the form of a single list of byte-values integers used to detect the device.
     """
+
+    #  If <chan> = 7F (Universal All Device Call) POD Pro will respond with the channel also set to 7F.
     return [
         0xF0,  # SOX
         0x7E,
@@ -163,26 +175,32 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
     if message[0] != 0xF0 or message[-1] != 0xF7:
         print("Not SYSEX")
 
-    if message[5 : 7 + 1] != [0x00, 0x01, 0x0C]:
-        print(f"Not Line 6 (Fast Forward) Manufacturer ID. Found {message[5:7+1]}")
-        return -1
-
     if message[1] != 0x7E or message[3] != 0x06 or message[4] != 0x02:
         print("Not Universal Device Inquiry Response")
         return -1
 
     channel = message[2]
+
+    # We sent 7F as <chan> to UNIVERSAL DEVICE INQUIRY, so we'll get 7F back.
     if channel == 0x7F:
-        print("POD set to OMNI.")
         channel = 0
 
-    pod_id = message[9] << 8 | message[8]
-    if pod_id != 0x0000:
-        print(f"WARNING: Pod ID {pod_id} is untested.")
+    if message[5 : 7 + 1] != [0x00, 0x01, 0x0C]:
+        print(f"Not Line 6 (Fast Forward) Manufacturer ID. Found {message[5:7+1]}")
+        return -1
 
-    pod_member = message[11] << 8 | message[10]
-    if pod_member != 0x0100:
-        print(f"WARNING: Pod member {pod_member} is untested.")
+    product_family_id = message[9] << 8 | message[8]
+    if product_family_id != 0x0000:
+        # 0x0000 = POD Product Family ID (LSB first)
+        # 0x0200 = Bass POD Product Family ID
+        print(f"WARNING: Pod ID {product_family_id} is untested.")
+
+    product_family_member = message[11] << 8 | message[10]
+    if product_family_member != 0x0100:
+        # 0x0000 = Bass POD Product Family Member (Bass POD)
+        # 0x0100 = POD Product Family Member  (POD 1.0)
+        # 0x0400 = POD Product Family Member (POD Pro)
+        print(f"WARNING: Pod member {product_family_member} is untested.")
 
     version = (
         "".join([chr(x) for x in message[12 : 13 + 1]])
@@ -191,7 +209,7 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
     )
 
     print(
-        f"Found POD: channel {channel}; id {pod_id}; member {pod_member}; version {version}"
+        f"Found POD: id 0x{product_family_id:04x}; member 0x{product_family_member:04x}; version {version}"
     )
 
     return channel
@@ -425,7 +443,11 @@ def nameFromDump(message: list[int]) -> str:
 
 
 def setupHelp():
-    return "Line 6 POD Adaptation"
+    return (
+        "Line 6 POD Adaptation\n"
+        "\n"
+        "Only verified with POD 1.0, but likely works with other POD devices."
+    )
 
 
 ###############################################################################
