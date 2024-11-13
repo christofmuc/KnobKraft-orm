@@ -47,6 +47,23 @@ from enum import Enum
 # xx xx xx xx       Software revision, ASCII (ex. 30 31 30 30  = '0100' = 1.00)
 # F7                EOX
 
+# Product identifiers
+#
+# PRODUCT           FAMILY  MEMBER  NOTES
+# ------------      ------  ------  -------------------------------------------
+# POD 1.0           0x0000  0x0100                36 programs, 71 bytes each.
+# POD 2.0           0x0000  0x0300  (unverified)  36 programs
+# POD Pro           0x0000  0x0400  (unverified)  36 programs
+# Pocket POD        0x0000  0x0600  (unverified) 124 programs
+#
+# These are probably too different to be supported?
+# PODxt             0x0003  0x0002  (unverified)
+# PODxt Pro         0x0003  0x0005  (unverified)
+# Bass PODxt        0x0003  0x0006  (unverified)
+# Bass PODxt Pro    0x0003  0x0007  (unverified)
+# PODxt Live        0x0003  0x000a  (unverified)
+# Bass PODxt Live   0x0003  0x000b  (unverified)
+
 # DATA DUMP FORMAT:
 #
 # POD sends and receives Program and Global dump data in High-Low Nibbilized format.
@@ -189,18 +206,14 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
         print(f"Not Line 6 (Fast Forward) Manufacturer ID. Found {message[5:7+1]}")
         return -1
 
-    product_family_id = message[9] << 8 | message[8]
+    product_family_id = message[8] | message[9] << 8
     if product_family_id != 0x0000:
-        # 0x0000 = POD Product Family ID (LSB first)
-        # 0x0200 = Bass POD Product Family ID
-        print(f"WARNING: Pod ID {product_family_id} is untested.")
+        print(f"WARNING: Pod ID {product_family_id:04x} found, but not supported.")
+        return -1
 
-    product_family_member = message[11] << 8 | message[10]
+    product_family_member = message[10] | message[11] << 8
     if product_family_member != 0x0100:
-        # 0x0000 = Bass POD Product Family Member (Bass POD)
-        # 0x0100 = POD Product Family Member  (POD 1.0)
-        # 0x0400 = POD Product Family Member (POD Pro)
-        print(f"WARNING: Pod member {product_family_member} is untested.")
+        print(f"WARNING: Pod member {product_family_member:04x} is untested.")
 
     version = (
         "".join([chr(x) for x in message[12 : 13 + 1]])
