@@ -173,7 +173,7 @@ def channelIfValidDeviceResponse(message: list[int]) -> int:
         or a valid MIDI channel 0..15 indicating which channel the device is currently configured for.
     """
     if message[0] != 0xF0 or message[-1] != 0xF7:
-        print("Not SYSEX")
+        return -1
 
     if message[1] != 0x7E or message[3] != 0x06 or message[4] != 0x02:
         print("Not Universal Device Inquiry Response")
