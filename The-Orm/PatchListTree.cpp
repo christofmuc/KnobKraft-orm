@@ -51,21 +51,20 @@ std::vector<T> sortLists(std::vector<T> const& lists, std::function<std::string(
 	return result;
 }
 
-class ImportNameListener : public Value::Listener {
+class ListNameListener : public Value::Listener {
 public:
-	ImportNameListener(midikraft::PatchDatabase& db, std::string synthName, std::string importID) : db_(db), synthName_(synthName), importID_(importID) {
+	ListNameListener(midikraft::PatchDatabase& db, std::string listID) : db_(db), listID_(listID) {
 	}
 
 	virtual void valueChanged(Value& value) {
 		spdlog::info("Changed name of import to {}", value.getValue().toString());
 		String newValue = value.getValue();
-		db_.renameImport(synthName_, importID_, newValue.toStdString());
+		db_.renameList(listID_, newValue.toStdString());
 	}
 
-private:
+private:	
 	midikraft::PatchDatabase& db_;
-	std::string synthName_;
-	std::string importID_;
+	std::string listID_;
 };
 
 PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft::SynthHolder> const& synths)
@@ -556,7 +555,7 @@ TreeViewNode* PatchListTree::newTreeViewItemForImports(std::shared_ptr<midikraft
 				if (onImportListSelected)
 					onImportListSelected(id);
 			};
-			node->textValue.addListener(new ImportNameListener(db_, synthName, import.id));
+			node->textValue.addListener(new ListNameListener(db_, import.id));
 			result.push_back(node);
 		}
 		return result;
