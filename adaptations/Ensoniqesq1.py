@@ -1,14 +1,12 @@
 #
 #   Copyright (c) 2020 Christof Ruch. All rights reserved.
-#   Ensoniq ESQ-1 Adaptation version 0.9 by Mark Peters, 2021.
+#   Ensoniq ESQ-1 Adaptation version 0.92 by Mark Peters, 2024.
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+#   Change since 0.91:
+#   Added sysex messages to convertToEditBuffer() to avoid manual reset.
 
 import hashlib
-from typing import List
-
-import testing
-
 
 def name():
     return "Ensoniq ESQ-1"
@@ -16,13 +14,10 @@ def name():
 
 def setupHelp():
     return "The Ensoniq ESQ-1 must be prepared to receive programs via sysex.\n\n" \
-           "  1. Press black MIDI button - to open MIDI settings.\n" \
-           "  2. Press grey bottom-right 'soft' button - to select MIDI Enable features.\n" \
-           "  3. Press white Up data-entry button - to enable SX.\n" \
-           "  4. Press black Internal button - to select a program page.\n\n" \
-           "If a program has been received from the Knobkraft ORM and is in the ESQ-1 edit buffer,\n" \
-           "it must be saved or cleared with *EXIT* before another program can be received.\n\n" \
-           "This adaptation should work with the ESQ-M and SQ-80 too, but this has not been tested."
+        "  1. Press black MIDI button - to open MIDI settings.\n" \
+        "  2. Press grey bottom-right 'soft' button - to select MIDI Enable features.\n" \
+        "  3. Press white Up data-entry button - to enable SX.\n\n" \
+        "This adaptation should work with the ESQ-M and SQ-80 too, but this has not been tested."
 
 
 def deviceDetectWaitMilliseconds():
@@ -50,21 +45,21 @@ def channelIfValidDeviceResponse(message):
     # ESQ-M Musician's Manual p 111 and SQ-80 Musician's Manual p 196 for their Device ID Messages:
     # The ESQ-1 responds with this message regardless of whether SX is enabled on the MIDI page.
     if (len(message) > 7
-            and message[0] == 0b11110000  # f0 Sysex
-            and message[1] == 0b01111110  # 7e Non-real-time message
-            # byte 2: 00-0f Base MIDI Channel
-            and message[3] == 0b00000110  # 06 General Information message code
-            and message[4] == 0b00000010  # 02 Device ID Message code
-            and message[5] == 0b00001111  # 0f ENSONIQ System Exclusive manufacturer's code
-            and message[6] == 0b00000010  # 02 ESQ Product Family code (lsb)
-            and message[7] == 0b00000000):  # 00 ESQ Product Family code (msb)
-        # byte 8: 01 ESQ-1 Family Member code (lsb) ESQ-1: 01; ESQ-M: 10; SQ-80: 11.
-        # byte 9: 00 ESQ-1 Family Member code (msb)
-        # byte 10: 00 Software revision information
-        # byte 11: 00 - unused -
-        # byte 12: 32 Minor Version number (decimal fraction)
-        # byte 13: 03 Major Version number (integer portion)
-        # byte 14: f7 End of Exclusive
+        and message[0] == 0b11110000  # f0 Sysex
+        and message[1] == 0b01111110  # 7e Non-real-time message
+                                      # byte 2: 00-0f Base MIDI Channel       
+        and message[3] == 0b00000110  # 06 General Information message code
+        and message[4] == 0b00000010  # 02 Device ID Message code
+        and message[5] == 0b00001111  # 0f ENSONIQ System Exclusive manufacturer's code
+        and message[6] == 0b00000010  # 02 ESQ Product Family code (lsb)
+        and message[7] == 0b00000000):# 00 ESQ Product Family code (msb)
+                                      # byte 8: 01 ESQ-1 Family Member code (lsb) ESQ-1: 01; ESQ-M: 10; SQ-80: 11.
+                                      # byte 9: 00 ESQ-1 Family Member code (msb)  
+                                      # byte 10: 00 Software revision information
+                                      # byte 11: 00 - unused - 
+                                      # byte 12: 32 Minor Version number (decimal fraction)
+                                      # byte 13: 03 Major Version number (integer portion)
+                                      # byte 14: f7 End of Exclusive
         return message[2]
     return -1
 
@@ -77,12 +72,12 @@ def createEditBufferRequest(channel):
 def isEditBufferDump(message):
     # See ESQ-1 Musician's Manual appendix pp A-5 and A-6 for single-program header.
     return (len(message) > 4
-            and message[0] == 0xf0  # Sysex
-            and message[1] == 0x0f  # Ensoniq
-            and message[2] == 0x02  # ESQ-1
-            # byte 3: MIDI channel
-            and message[4] == 0x01  # Single Program Dump
-            )
+        and message[0] == 0xf0  # Sysex
+        and message[1] == 0x0f  # Ensoniq
+        and message[2] == 0x02  # ESQ-1
+                                # byte 3: MIDI channel
+        and message[4] == 0x01  # Single Program Dump
+        )
 
 
 def createProgramDumpRequest(channel, program_number):
@@ -105,12 +100,12 @@ def createBankDumpRequest(channel, bank):
 def isPartOfBankDump(message):
     # See ESQ-1 Musician's Manual appendix pp A-5 and A-6 for all-program header.
     return (len(message) > 4
-            and message[0] == 0xf0  # Sysex
-            and message[1] == 0x0f  # Ensoniq
-            and message[2] == 0x02  # ESQ-1
-            # byte 3: MIDI channel
-            and message[4] == 0x02  # All Program Dump
-            )
+        and message[0] == 0xf0  # Sysex
+        and message[1] == 0x0f  # Ensoniq
+        and message[2] == 0x02  # ESQ-1
+                                # byte 3: MIDI channel
+        and message[4] == 0x02  # All Program Dump
+        )
 
 
 def isBankDumpFinished(messages):
@@ -152,25 +147,28 @@ def numberOfPatchesPerBank():
 def nameFromDump(message):
     # The 6 characters of the name are encoded immediately after the header, in 2 bytes per character.
     name = ''
-    if len(message) > 17:  # 5 bytes of sysex header plus 12 bytes for name
-        oddchrs = {  # The ESQ-1 has some peculiar non-ASCII characters, safely approximated thus:
-            95: "v", 33: "0.", 35: "1.", 37: "2.", 40: "3.", 41: "4.", 58: "5.", 59: "6.", 91: "7.", 92: "8.", 93: "9."
+    if len(message) > 17: # 5 bytes of sysex header plus 12 bytes for name
+        oddchrs = { # The ESQ-1 has some peculiar non-ASCII characters, safely approximated thus:
+            0: " ", 34: "``", 39: "`", 95: "v",
+            33: "0.", 35: "1.", 37: "2.", 40: "3.", 41: "4.", 58: "5.", 59: "6.", 91: "7.", 92: "8.", 93: "9."
         }
         i = 0
         while i < 12:
-            code = message[i + 5] + message[i + 6] * 16  # decode little endian hex
+            code = message[i + 5] + message[i + 6] * 16 # decode little endian hex
             if code in oddchrs:
-                name += oddchrs[code]  # lookup peculiar character(s), otherwise...
+                name += oddchrs[code] # lookup peculiar character(s) to use
             else:
-                name += chr(code)  # ...use ordinary ASCII
+                name += chr(code) # use ordinary ASCII
             i += 2
     return name
 
 
 def convertToEditBuffer(channel, message):
     # Instead of just returning the same message, this ensures that the most recently chosen channel is used.
+    # As of version 1.92, this includes two system-exclusive messages suggested by troach242 on github, which circumvents
+    # the need to manually exit the input buffer after each program load.
     if isEditBufferDump(message):
-        return message[:3] + [channel] + message[4:]
+        return [0xF0, 0x0F, 0x02, 0x00, 0x0E, 0x26, 0x59, 0x22, 0x55, 0xF7] + message[:3] + [channel] + message[4:] + [0xF0, 0x0F, 0x02, 0x00, 0x0E, 0x2F, 0x62, 0xF7]
 
 
 def calculateFingerprint(message):
@@ -181,11 +179,3 @@ def calculateFingerprint(message):
 
 def friendlyBankName(bank_number):
     return "Internal"
-
-
-# Test data picked up by test_adaptation.py
-def make_test_data():
-    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=data.all_messages[0], name= "RADZIC")
-
-    return testing.TestData(sysex="testData/Radzic-ESQ1.syx", program_generator=programs)
