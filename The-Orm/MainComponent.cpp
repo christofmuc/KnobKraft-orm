@@ -53,6 +53,7 @@ const std::string kLoadSysEx{ "loadsysEx" };
 const std::string kExportSysEx{ "exportSysex" };
 const std::string kExportBank { "exportBank" };
 const std::string kExportPIF { "exportPIF" };
+const std::string kExportMidnam { "exportMidnam" };
 const std::string kShowDiff{ "showDiff" };
 const std::string kCopyBankPatchNames{ "copyBankPatchNames" };
 const std::string kSynthDetection{ "synthDetection" };
@@ -244,7 +245,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." }, { kCopyBankPatchNames}, { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
-		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kShowDiff} }}},
+		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kExportMidnam },  { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
@@ -284,6 +285,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}}},
 	{ "Export into PIF", { kExportPIF, [this]() {
 		patchView_->createPatchInterchangeFile();
+	} } },
+	{ "Export into midnam", { kExportMidnam, [this]() {
+		patchView_->exportMidnamFile();
 	} } },
 	{ "Show patch comparison", { kShowDiff , [this]() {
 		patchView_->showPatchDiffDialog();
