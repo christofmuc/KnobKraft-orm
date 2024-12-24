@@ -19,7 +19,6 @@ jobs:
 
     - name: Bootstrap MacPorts
       uses: melusina-org/setup-macports@v1
-        id: 'macports'
 
     - uses: maxim-lobanov/setup-xcode@v1
       with:
