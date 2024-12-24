@@ -166,7 +166,7 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	};
 
 	TreeViewNode* root = new TreeViewNode("ROOT", "");
-	root->onGenerateChildren = [=]() {
+	root->onGenerateChildren = [this]() {
 		return std::vector<TreeViewItem*>({ allPatchesItem_, userListsItem_ });
 	};
 	treeView_->setRootItem(root);
