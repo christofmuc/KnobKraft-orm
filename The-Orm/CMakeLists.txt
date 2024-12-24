@@ -178,8 +178,10 @@ IF(WIN32)
 		${SPARKLE_DEPENDENCY}
 		)
 ELSEIF(APPLE)
-	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+	target_link_libraries(KnobKraftOrm PRIVATE
+		${JUCE_LIBRARIES}
 		ICU::data ICU::uc
+		${MIDIKRAFT_LIBRARIES}
 		SQLiteCpp
 		sqlite3
 		gin
