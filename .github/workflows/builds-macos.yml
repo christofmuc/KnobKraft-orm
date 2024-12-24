@@ -26,7 +26,7 @@ jobs:
 
     - name: Install ICU via MacPorts, because they can do universal binaries!
       run: |
-        port install icu
+        port install icu +universal
 
     - name: Prepare build machine with homebrew
       run: |
