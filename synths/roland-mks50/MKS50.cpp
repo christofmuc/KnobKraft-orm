@@ -63,9 +63,9 @@ namespace midikraft {
 	std::shared_ptr<DataFile> MKS50::patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber place) const
 	{
 		// Banks are called group, as the first digit is called bank
-		int group = place.toZeroBased() % 64;
-		int bank = place.toZeroBased() % 8;
-		int no = place.toZeroBased() / 8;
+		int group = place.toZeroBasedWithBank() % 64;
+		int bank = place.toZeroBasedWithBank() % 8;
+		int no = place.toZeroBasedWithBank() / 8;
 		std::string name = fmt::format("{}{}{}", static_cast<char>((static_cast<int>('A') + group)), bank, no);
 		return std::make_shared<MKS50_Patch>(place, name, data);
 	}
@@ -165,29 +165,21 @@ namespace midikraft {
 		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(syx));
 		// And now reverse map the 10 characters of the patch name into the bytes
 		//TODO - this needs to be replaced by properly implementing the renamePatch() function
-		/*std::string name = patch->name();
-		//TODO - this should be taken from the MKS50_Patch class
-		const std::string kPatchNameChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
-		for (int i = 0; i < 10; i++) {
-			char charToFind;
-			if (i >= name.size()) {
-				jassert(false);
-				charToFind = ' ';
+		auto mks50_patch = std::dynamic_pointer_cast<MKS50_Patch>(patch);
+		if (!mks50_patch) {
+			spdlog::error("Could not cast patch to MKS50 patch - program error, invalid data!");
+			return {};
+		}
+		std::string name = mks50_patch->name();
+		auto nameData = mks50_patch->stringToData(name.substr(0, 10));
+		for (size_t i = 0; i < 10; i++) {
+			if (i >= nameData.size()) {
+				syx.push_back(62);  // Roland Space
 			}
 			else {
-				charToFind = name[i];
+				syx.push_back(nameData[i]);
 			}
-			bool found = false;
-			for (int c = 0; c < kPatchNameChar.size(); c++) {
-				if (kPatchNameChar[c] == charToFind) {
-					syx.push_back((uint8) c);
-					found = true;
-				}
-			}
-			if (!found) {
-				syx.push_back(62); // This should be blank
-			}
-		}*/
+		}
 		return std::vector<MidiMessage>({ MidiHelpers::sysexMessage(syx) });
 	}
 

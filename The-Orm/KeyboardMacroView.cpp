@@ -12,6 +12,7 @@
 #include "Settings.h"
 #include "UIModel.h"
 
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
@@ -188,12 +189,10 @@ void KeyboardMacroView::setupPropertyEditor() {
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kAutomaticSetup, "Setup", true));
 	std::map<int, std::string> lookup = { {1, "No forwarding"}, {2, "Forward to selected synth"}, { 3, "Forward to synth of current patch "}, {4, "Always forward to the fixed synth set below" } };
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kRouteMasterkeyboard, "MIDI Routing", 1, lookup));
-	std::map<int, std::string> synth_list;
-	int i = 1;
-	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
-		synth_list.emplace(i++, s->getName());
-	}
-	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, synth_list));
+	UIModel::instance()->synthList_.addChangeListener(this);
+	synthListEditor_ = std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, std::map<int, std::string>());
+	refreshSynthList();
+	customMasterkeyboardSetup_.push_back(synthListEditor_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kUseElectraOne, "MIDI Routing", false));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
@@ -202,6 +201,17 @@ void KeyboardMacroView::setupPropertyEditor() {
 	for (auto tnv : customMasterkeyboardSetup_) {
 		tnv->value().addListener(this);
 	}
+	customSetup_.setProperties(customMasterkeyboardSetup_);
+}
+
+void KeyboardMacroView::refreshSynthList()
+{
+	std::map<int, std::string> synth_list;
+	int i = 1;
+	for (auto s : UIModel::instance()->synthList_.activeSynths()) {
+		synth_list.emplace(i++, s->getName());
+	}
+	synthListEditor_->setLookup(synth_list);
 	customSetup_.setProperties(customMasterkeyboardSetup_);
 }
 
@@ -218,42 +228,43 @@ void KeyboardMacroView::refreshUI() {
 
 void KeyboardMacroView::loadFromSettings() {
 	auto json = Settings::instance().get("MacroDefinitions");
-	try {
-		var macros = JSON::parse(String(json));
-		if (macros.isArray()) {
-			for (var macro : *macros.getArray()) {
-				if (macro.isObject()) {
-					std::set<int> midiNoteValues;
-					auto notes = macro.getProperty("Notes", var());
-					if (notes.isArray()) {
-						for (var noteVar : *notes.getArray()) {
-							if (noteVar.isInt()) {
-								midiNoteValues.insert((int)noteVar);
+	if (!json.empty()) {
+		try {
+			auto macros = nlohmann::json::parse(json);
+			if (macros.is_array()) {
+				for (auto macro : macros) {
+					if (macro.is_object()) {
+						std::set<int> midiNoteValues;
+						auto notes = macro["Notes"];
+						if (notes.is_array()) {
+							for (auto noteVar : notes) {
+								if (noteVar.is_number_integer()) {
+									midiNoteValues.insert((int)noteVar);
+								}
 							}
 						}
-					}
-					auto event = macro.getProperty("Event", var());
-					KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
-					if (event.isString()) {
-						String eventString = event;
-						macroEventCode = KeyboardMacro::fromText(eventString.toStdString());
-					}
-					if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
-						macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+						auto event = macro["Event"];
+						KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
+						if (event.is_string()) {
+							std::string eventString = event;
+							macroEventCode = KeyboardMacro::fromText(eventString);
+						}
+						if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
+							macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+						}
 					}
 				}
 			}
-		}
 
-		for (auto& prop : customMasterkeyboardSetup_) {
-			std::string storedValue = Settings::instance().get(prop->name().toStdString());
-			int intValue = std::atoi(storedValue.c_str());
-			prop->value().setValue(intValue);
+			for (auto& prop : customMasterkeyboardSetup_) {
+				std::string storedValue = Settings::instance().get(prop->name().toStdString());
+				int intValue = std::atoi(storedValue.c_str());
+				prop->value().setValue(intValue);
+			}
 		}
-	}
-	catch (...) {
-		// Uncatchable JUCE exception
-		spdlog::error("Keyboard macro definition corrupt in settings file, not loading!");
+		catch (nlohmann::json::parse_error& e) {
+			spdlog::error("Keyboard macro definition corrupt in settings file, not loading. Error is {}", e.what());
+		}
 	}
 }
 
@@ -324,14 +335,11 @@ void KeyboardMacroView::valueChanged(Value& value)
 }
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
-	int forwardMode = customMasterkeyboardSetup_.valueByName(kRouteMasterkeyboard).getValue();
-	if (forwardMode == 2 || forwardMode == 3 || forwardMode == 4) {
-		String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
-		if (masterkeyboardDevice.isNotEmpty()) {
-            auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
-			midikraft::MidiController::instance()->enableMidiInput(device);
-			spdlog::info("Opening master keyboard device {}, waiting for messages", masterkeyboardDevice);
-		}
+	String masterkeyboardDevice = customMasterkeyboardSetup_.typedNamedValueByName(kInputDevice)->lookupValue();
+	if (masterkeyboardDevice.isNotEmpty()) {
+        auto device = midikraft::MidiController::instance()->getMidiInputByName(masterkeyboardDevice.toStdString());
+		midikraft::MidiController::instance()->enableMidiInput(device);
+		spdlog::info("Opening master keyboard device {}, waiting for messages", masterkeyboardDevice);
 	}
 }
 
@@ -341,6 +349,9 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 		// The list of MIDI devices changed, need to refresh the property editor
 		midiDeviceList_->refreshDeviceList();
 		customSetup_.setProperties(customMasterkeyboardSetup_);
+	}
+	else if (source == &UIModel::instance()->synthList_) {
+		refreshSynthList();
 	}
 	else if (customMasterkeyboardSetup_.valueByName(kAutomaticSetup).getValue()) {
 		// Mode 1 - follow current synth, use that as master keyboard

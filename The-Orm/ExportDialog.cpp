@@ -11,9 +11,9 @@ static std::function<void(midikraft::Librarian::ExportParameters)> sCallback_;
 ExportDialog::ExportDialog()
 {
 	// Properties to edit...
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Sysex format", "Export options", midikraft::Librarian::PROGRAM_DUMPS,
+	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Sysex format", "", midikraft::Librarian::PROGRAM_DUMPS,
 		{ {midikraft::Librarian::PROGRAM_DUMPS, "Sysex format individual program dumps"}, { midikraft::Librarian::EDIT_BUFFER_DUMPS, "Sysex format individual edit buffer dumps" } })));
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("File format", "Export options", midikraft::Librarian::MANY_FILES, 
+	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("File format", "", midikraft::Librarian::MANY_FILES, 
 		{ {midikraft::Librarian::MANY_FILES, "Each patch separately into a file"}, { midikraft::Librarian::ZIPPED_FILES, "Each patch separately into a file, but all zipped up" }, 
 		{ midikraft::Librarian::ONE_FILE, "One sysex file with all messages" }, { midikraft::Librarian::MID_FILE, "One MIDI file (SMF) to play from a player or DAW" } })));
 
@@ -54,7 +54,7 @@ static void dialogClosed(int modalResult, ExportDialog* dialog)
 	}
 }
 
-void ExportDialog::showExportDialog(Component *centeredAround, std::function<void(midikraft::Librarian::ExportParameters)> callback)
+void ExportDialog::showExportDialog(Component *centeredAround, std::string const &title, std::function<void(midikraft::Librarian::ExportParameters)> callback)
 {
 	if (!sExportDialog_) {
 		sExportDialog_ = std::make_unique<ExportDialog>();
@@ -64,9 +64,8 @@ void ExportDialog::showExportDialog(Component *centeredAround, std::function<voi
 	DialogWindow::LaunchOptions launcher;
 	launcher.content.set(sExportDialog_.get(), false);
 	launcher.componentToCentreAround = centeredAround;
-	launcher.dialogTitle = "Export patches";
+	launcher.dialogTitle = title;
 	launcher.useNativeTitleBar = false;
-	launcher.dialogBackgroundColour = Colours::black;
 	sWindow_ = launcher.launchAsync();
 	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sExportDialog_.get()));
 

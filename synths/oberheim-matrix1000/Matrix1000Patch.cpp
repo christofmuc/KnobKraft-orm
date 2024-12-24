@@ -37,7 +37,7 @@ namespace midikraft {
 		return name;
 	}
 
-	void Matrix1000Patch::setName(std::string const &name)
+	bool Matrix1000Patch::changeNameStoredInPatch(std::string const &name)
 	{
 		// The String, coming from the UI, should be UTF8. We need some serious software to get back into ASCII land now
 		// Let's use the ICU library
@@ -69,6 +69,7 @@ namespace midikraft {
 				}
 			}
 		}
+		return true;
 	}
 
 	bool Matrix1000Patch::isDefaultName(std::string const &patchName) const
@@ -88,7 +89,7 @@ namespace midikraft {
 		if (intDefinition && intDefinition->valueInPatch(*this, result)) {
 			return result;
 		}
-		throw new std::runtime_error("Invalid parameter");
+		throw std::runtime_error("Invalid parameter");
 	}
 
 	int Matrix1000Patch::param(Matrix1000Param id) const
@@ -106,7 +107,7 @@ namespace midikraft {
 				return *param;
 			}
 		}
-		throw new std::runtime_error("Bogus call");
+		throw std::runtime_error("Bogus call");
 	}
 
 	bool Matrix1000Patch::paramActive(Matrix1000Param id) const

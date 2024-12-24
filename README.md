@@ -1,10 +1,12 @@
-# A free MIDI Sysex Librarian - The KnobKraft Orm
+<img src="https://user-images.githubusercontent.com/5006524/277113738-73bf9b4f-f089-42b7-bbb2-aa4bf55c1528.png" align="right">
+
+# A free MIDI Sysex Librarian - The KnobKraft Orm 
 
 [![release](https://img.shields.io/github/v/release/christofmuc/KnobKraft-orm?style=plastic)](https://github.com/christofmuc/KnobKraft-orm/releases)
 
 If you are looking for a modern, free Sysex Librarian for your synth, you have found the right place! This is the place where the KnobKraft Orm is created, a modern cross-platform Sysex Librarian for your MIDI gear.
 
-Questions and help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github. 
+Questions and help with implementing new synths wanted! Or if you have found a bug, also feel free to report directly here on Github.
 
 
 | Manufacturer  | Synth | Status | Type | Kudos |
@@ -16,7 +18,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
-| Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
+| Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
@@ -29,14 +31,18 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
-| John Bowen | Solaris | beta | adaptation | Contributed by @conversy! | 
-| Kawai | K1/K1m/K1r | beta | adaptation | | 
-| Kawai | K3/K3m | works | native | | 
+| Ensoniq | VFX | alpha | adaptation |  |
+| Groove Synthesis | 3rd Wave | works | adaptation | |
+| John Bowen | Solaris | beta | adaptation | Contributed by @conversy! |
+| Kawai | K1/K1m/K1r | beta | adaptation | |
+| Kawai | K3/K3m | works | native | |
+| Kawai | K4 | alpha | adaptation | |
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
-| Korg | DW-8000/EX-8000 | works | native | |
+| Korg | DW-8000/EX-8000 | works | adaptation | |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
@@ -44,13 +50,15 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
 | Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
+| Oberheim | OB-X8 | alpha | adaptation | help needed! |
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
-| Quasimidi | Cyber-6 | alpha | adaptation | |
 | Roland | JX-8P | alpha | adaptation | |
+| Roland | Juno-DS | in progress | adaptation | |
 | Roland | D-50 | in progress | adaptation | |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
+| Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
@@ -60,9 +68,14 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Take 5 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
+| Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
+| Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
-| Yamaha | reface DX | works | native | |
+| Yamaha | reface DX | works | adaptation | |
+| Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
+| Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
+| Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | Thanks to @milnak!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.
@@ -73,7 +86,7 @@ So basically everyone who can read the MIDI spec and can do a little scripting c
 
 # How does it look?
 
-[Disclaimer]: The video shows version 1.0.0, a lot has happened since then.
+[Disclaimer]: The video shows version 1.0.0, a lot has happened since then. Especially the version 2.0.0 introduced the most sought after feature - bank management!
 
 I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well
 
@@ -97,7 +110,9 @@ This software is build and run on Windows 10, macOS 10.15, and several Linux dis
 
 It is possible to create an adaptation for a new synthesizer that is not yet on the supported device list. For that, you'll select an existing adaptation that might be close to what you need (e.g. same manufacturer, same device family), and use a text editor to adapt the Python code controlling how to generate the device specific messages required and what to do with the answers from the synth.
 
-If you're up to that, I have written a whole [Programming Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptions/Adaptation%20Programming%20Guide.md) documenting the required and optional methods to be implemented.
+If you're up to that, I have written a whole [Programming Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/Adaptation%20Programming%20Guide.md) documenting the required and optional methods to be implemented.
+To make sure your code works, you can run it through a generic test suite that all adaptations must pass, find more information
+in the [Adaptation Testing Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/Adaptation%20Testing%20Guide.md), please check it out!)
 
 I know this is not easy, and most importantly new devices also might require capabilities that are not yet part of the Orm, so please don't hesitate to contact me, I'll try to help!
 
@@ -115,7 +130,7 @@ Clone with submodules from github
 
 The recursive clone with  submodules is required to retrieve the following additional modules already into the right spot inside the source tree:
 
-1. We use the magnificent [JUCE library](https://juce.com/) to immensly reduce the amount of work we have to do. 
+1. We use the magnificent [JUCE library](https://juce.com/) to immensly reduce the amount of work we have to do.
 
 4. The configure step will download (on Windows) the almighty [boost](https://www.boost.org/) library, sorry for the bloat but I simply had no time to remove the dependency yet. All my professional projects of course rely on boost, so it is a natural to incorporate it here as well.
 
@@ -150,15 +165,25 @@ The LDFLAGS is required for a certain combination of gcc version/pybind11, else 
 
 If you are inclined to build on Mac, you know what you're doing. I'd recommend to install the build requisites via homebrew like this
 
-    brew install gtk+3 glew boost python3
+    brew install gtk+3 glew boost python3 icu4c
 
 and then run CMake to build the software
 
     cmake -S . -B builds/release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-    cmake --build builds/release 
+    cmake --build builds/release
 
 which will produce a launchable application in a folder called `KnobKraftOrm.app`.
-    
+
+Should you get an error about the required ICU libraries not being found edit the CMakeLists.txt file, where it sets
+a variable called ´ICU_ROOT´.
+
+Use this to find out the install directory of your ICU library:
+
+    ls `brew --prefix icu4c`
+
+The reason for the ICU making problems is that there will be an ICU already shipped with the Mac, but being incomplete. So we need
+to install a complete SDK and make sure it takes precedence over the system supplied library.
+
 
 ## Licensing
 
@@ -166,7 +191,7 @@ As some substantial work has gone into the development of this, I decided to off
 
 ## Contributing
 
-All pull requests and issues welcome, I will try to get back to you as soon as I can. Due to the dual licensing please be aware that I will need to request transfer of copyright on accepting a PR. 
+All pull requests and issues welcome, I will try to get back to you as soon as I can. Due to the dual licensing please be aware that I will need to request transfer of copyright on accepting a PR.
 
 ## Acknowledgements
 
@@ -189,7 +214,7 @@ For bug reports, thanks to Iulian from the Facebook M1000 group!
 This is by far not the first attempt at solving the challenge, I only hope it is the last and this time for good with the help of the community. These are similar projects which I found during my wanderings through the net, some of these still available, some nearly lost in the mist of time. In no particular order:
 
 | Name  | OpenSource | OS | Languange | Looks like it started | Driver-Design | User-extensible |
-| ------------- | ------------- | --- | --- | --- | -- | -- | 
+| ------------- | ------------- | --- | --- | --- | -- | -- |
 | eMagic's SoundDiver |No | Win, Mac | ? | 1995 | Data-driven | Yes |
 | [Universal Manager](https://www.nilsschneider.de/wp/2020/06/28/universal-manager-updated-after-15-years/) |  No | Win32 | ? | 2005 | Data-driven | Yes |
 | [JSynthLib](http://www.jsynthlib.org/) | Yes | Win, Linux | Java |    1999 | [Java code](https://sourceforge.net/p/jsynthlib/jsynthlib/ci/master/tree/) | Yes |
@@ -198,7 +223,7 @@ This is by far not the first attempt at solving the challenge, I only hope it is
 | [CTRLR](https://github.com/RomanKubiak/ctrlr) | Yes | Win, Mac | C++ & Lua | 2015 | Lua code | Yes |
 | [LaserMammoth](https://f0f7.net/fe/#/SysexLibrarian) | Yes | Chrome Web | Javascript & PHP | 2016 | Javascript code | Yes |
 | [MidiManager](https://midimanager.com/) | No | Chrome Web | ? | 2020 | JSON data | Yes |
-|  [Opcode Systems Galaxy](http://web.archive.org/web/19961113040000/http://www.opcode.com/products/gal_gpe/) | No| Mac | ? | 1990 | ? | Yes |
+| [Opcode Systems Galaxy](http://web.archive.org/web/19961113040000/http://www.opcode.com/products/gal_gpe/) | No| Mac | ? | 1990 | ? | Yes |
 | [MidiSynth](http://www.sigabort.co/midisynth.html) | No | Win, Mac | ? | 2015 | ? | No |
 | [Unisynth](http://www.midimetric.com/home.html) | No | Win | C# .net | 1999 | ? | No |
 | [Patch Base](https://coffeeshopped.com/patch-base) | No | iOS, Mac | ? | 2020 | ? | No |
@@ -209,4 +234,4 @@ This is by far not the first attempt at solving the challenge, I only hope it is
 
 ## About the author
 
-Christof is a lifelong software developer having worked in various industries, and can't stop his programming hobby anyway. 
+Christof is a lifelong software developer having worked in various industries, and can't stop his programming hobby anyway.

@@ -50,6 +50,8 @@ private:
 	ToggleButton onlyUntagged_;
 	ToggleButton onlyDuplicates_;
 	ToggleButton andCategories_;
+	TextButton clearFilters_;
+	ComboBox orderByType_;
 	ComboBox buttonDisplayType_;
 
 	midikraft::PatchDatabase& database_;

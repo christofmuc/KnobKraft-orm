@@ -107,7 +107,7 @@ public:
 			button_->updateId(rowNo);
 		}
 		thePatch_ = patch; // Need a copy to keep the pointer alive
-		button_->setPatchHolder(&thePatch_, false, info);
+		button_->setPatchHolder(&thePatch_, info);
 		button_->setDirty(dirty);
 	}
 
@@ -143,7 +143,7 @@ private:
 
 class PatchListModel : public ListBoxModel {
 public:
-	PatchListModel(std::shared_ptr<midikraft::SynthBank> bank, std::function<void(int)> onRowSelected,
+	PatchListModel(std::shared_ptr<midikraft::PatchList> bank, std::function<void(int)> onRowSelected,
 			std::function<void(MidiProgramNumber, std::string)> patchChangeHandler, VerticalPatchButtonList::TListDropHandler listDropHandler, PatchButtonInfo info
 			, TDragHighlightHandler dragHighlightHandler)
 		: bank_(bank)
@@ -168,17 +168,18 @@ public:
 	Component* refreshComponentForRow(int rowNumber, bool isRowSelected, Component* existingComponentToUpdate) override
 	{
 		ignoreUnused(isRowSelected);
+		auto isBank = std::dynamic_pointer_cast<midikraft::SynthBank>(bank_);
 		if (rowNumber < getNumRows()) {
 			if (existingComponentToUpdate) {
 				auto existing = dynamic_cast<PatchButtonRow*>(existingComponentToUpdate);
 				if (existing) {
-					existing->setRow(rowNumber, bank_->patches()[rowNumber], bank_->isPositionDirty(rowNumber), info_);
+					existing->setRow(rowNumber, bank_->patches()[rowNumber], isBank ? isBank->isPositionDirty(rowNumber) : false, info_);
 					return existing;
 				}
 				throw std::runtime_error("This was not the correct row type, can't continue");
 			}
 			auto newComponent = new PatchButtonRow(onRowSelected_, patchChangeHandler_, listDropHandler_, dragHighlightHandler_);
-			newComponent->setRow(rowNumber, bank_->patches()[rowNumber], bank_->isPositionDirty(rowNumber), info_);
+			newComponent->setRow(rowNumber, bank_->patches()[rowNumber], isBank ? isBank->isPositionDirty(rowNumber) : false, info_);
 			return newComponent;
 		}
 		else {
@@ -195,7 +196,7 @@ public:
 	}
 
 private:
-	std::shared_ptr<midikraft::SynthBank> bank_;
+	std::shared_ptr<midikraft::PatchList> bank_;
 	std::function<void(int)> onRowSelected_;
 	std::function<void(MidiProgramNumber, std::string)> patchChangeHandler_;
 	VerticalPatchButtonList::TListDropHandler listDropHandler_;
@@ -224,10 +225,15 @@ void VerticalPatchButtonList::refreshContent()
 	list_.updateContent();
 }
 
-void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info)
+void VerticalPatchButtonList::clearList()
 {
-	list_.setModel(new PatchListModel(bank, [this](int row) {
-		auto patchRow = dynamic_cast<PatchButtonRow *>(list_.getComponentForRowNumber(row));
+	list_.setModel(nullptr);
+}
+
+void VerticalPatchButtonList::setPatchList(std::shared_ptr<midikraft::PatchList> list, PatchButtonInfo info)
+{
+	list_.setModel(new PatchListModel(list, [this](int row) {
+		auto patchRow = dynamic_cast<PatchButtonRow*>(list_.getComponentForRowNumber(row));
 		if (patchRow) {
 			if (onPatchClicked) {
 				midikraft::PatchHolder copy = patchRow->patch();
@@ -241,36 +247,37 @@ void VerticalPatchButtonList::setPatches(std::shared_ptr<midikraft::SynthBank> b
 		else {
 			spdlog::error("No patch known for row {}", row);
 		}
-	},
+		},
 		[this](MidiProgramNumber programPlace, std::string md5) {
-		if (dropHandler_) {
-			dropHandler_(programPlace, md5);
-			list_.updateContent();
-		}
-	}
-	, [this](MidiProgramNumber program, std::string const&list_id, std::string const&list_name) {
-		if (listDropHandler_) {
-			listDropHandler_(program, list_id, list_name);
-		}
-	}
-	, info
-	, [this, bank](int startrow, std::string const& list_id, std::string const& list_name) {
-		// This is a bit heavy, but the list itself has never been loaded...
-		int rowCount = listResolver_(list_id, list_name);;
-		for (int i = 0; i < list_.getModel()->getNumRows(); i++) {
-			auto button = list_.getComponentForRowNumber(i);
-			if (button != nullptr) {
-				// This better be a PatchButton!
-				auto pb = dynamic_cast<PatchButtonRow*>(button);
-				if (pb) {
-					if (pb->button()) {
-						pb->button()->setGlow((i >= startrow && i < startrow + rowCount) && (startrow != -1));
-					}
-				}
-				else {
-					jassertfalse;
-				}
+			if (dropHandler_) {
+				dropHandler_(programPlace, md5);
+				list_.updateContent();
 			}
 		}
-	}));
+			, [this](MidiProgramNumber program, std::string const& list_id, std::string const& list_name) {
+			if (listDropHandler_) {
+				listDropHandler_(program, list_id, list_name);
+			}
+		}
+			, info
+			, [this, list](int startrow, std::string const& list_id, std::string const& list_name) {
+			// This is a bit heavy, but the list itself has never been loaded...
+			int rowCount = listResolver_(list_id, list_name);;
+			for (int i = 0; i < list_.getListBoxModel()->getNumRows(); i++) {
+				auto button = list_.getComponentForRowNumber(i);
+				if (button != nullptr) {
+					// This better be a PatchButton!
+					auto pb = dynamic_cast<PatchButtonRow*>(button);
+					if (pb) {
+						if (pb->button()) {
+							pb->button()->setGlow((i >= startrow && i < startrow + rowCount) && (startrow != -1));
+						}
+					}
+					else {
+						jassertfalse;
+					}
+				}
+			}
+		}));
 }
+

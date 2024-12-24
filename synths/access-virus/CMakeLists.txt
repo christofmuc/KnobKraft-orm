@@ -30,5 +30,5 @@ if (MSVC)
     target_compile_options(midikraft-access-virus PRIVATE /W4 /WX /utf-8)
 else()
     # lots of warnings and all warnings as errors
-    target_compile_options(midikraft-access-virus PRIVATE -Wall -Wextra -pedantic -Werror)
+    target_compile_options(midikraft-access-virus PRIVATE -Wall -Wextra -pedantic -Werror -Wno-deprecated-declarations)
 endif()

@@ -6,5 +6,9 @@
 
 std::string getOrmVersion()
 {
+#ifdef PROJECT_DEV
+    return "@KnobKraftOrm_VERSION@-dev";
+#else
     return "@KnobKraftOrm_VERSION@";
+#endif
 }

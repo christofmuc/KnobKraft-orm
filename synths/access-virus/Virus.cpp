@@ -12,6 +12,7 @@
 #include "VirusPatch.h"
 
 #include "fmt/format.h"
+#include "spdlog/spdlog.h"
 
 namespace midikraft {
 
@@ -140,7 +141,8 @@ namespace midikraft {
 	std::vector<juce::MidiMessage> Virus::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		int bank = programNumber.toZeroBasedWithBank() / numberOfPatches();
-		std::vector<uint8> message({ 0x10 /* Single program dump */, (uint8) (bank + 1) /* 1-based bank number */, (uint8) (programNumber.toZeroBasedWithBank()) /* Program Number 0 to 127 */ });
+		int progNo = programNumber.toZeroBasedDiscardingBank() % numberOfPatches();
+		std::vector<uint8> message({ 0x10 /* Single program dump */, (uint8) (bank + 1) /* 1-based bank number */, (uint8) (progNo) /* Program Number 0 to 127 */ });
 		std::copy(patch->data().begin(), patch->data().end(), std::back_inserter(message));
 		uint8 checksum = (MidiHelpers::checksum7bit(message) + deviceID_) & 0x7f;
 		message.push_back(checksum);
@@ -193,11 +195,20 @@ namespace midikraft {
 		return 128;
 	}
 
-	TPatchVector Virus::patchesFromSysexBank(const MidiMessage& message) const
+	TPatchVector Virus::patchesFromSysexBank(std::vector<MidiMessage> const & messages) const
 	{
-		ignoreUnused(message);
-		// Coming here would be a logic error - the Virus has a patch dump request, but the synth will reply with lots of individual patch dumps
-		throw std::logic_error("The method or operation is not implemented.");
+		TPatchVector result;
+		for (auto const& message : messages)
+		{
+			auto patch = patchFromSysex({ message });
+			if (patch) {
+				result.push_back(patch);
+			}
+			else {
+				spdlog::error("Error converting message from bank dump to patch, program error!");
+			}
+		}
+		return result;
 	}
 
 	std::shared_ptr<DataFile> Virus::patchFromSysex(const std::vector <MidiMessage>& message) const
@@ -334,7 +345,7 @@ namespace midikraft {
 	void Virus::setMidiControl(MidiController *controller, bool isOn)
 	{
 		ignoreUnused(controller, isOn);
-		throw new std::runtime_error("Invalid call");
+		throw std::runtime_error("Invalid call");
 	}
 
 	std::string Virus::friendlyProgramName(MidiProgramNumber programNumber) const
@@ -343,7 +354,7 @@ namespace midikraft {
 		if (programNumber.isBankKnown()) {
 			bankChar = char(programNumber.bank().toZeroBased() + 'a');
 		}
-		int progNo = programNumber.toZeroBased() % numberOfPatches();
+		int progNo = programNumber.toZeroBasedDiscardingBank() % numberOfPatches();
 		return fmt::format("{}{}", bankChar, progNo);
 	}
 

@@ -11,6 +11,8 @@
 #include "PatchDatabase.h"
 #include "SynthHolder.h"
 #include "TreeViewNode.h"
+#include "CreateListDialog.h"
+
 
 class PatchListTree : public Component, private ChangeListener {
 public:
@@ -18,6 +20,8 @@ public:
 	typedef std::function<void(std::shared_ptr<midikraft::Synth>, MidiBankNumber)> TBankSelectionHandler;
 	typedef std::function<void(std::shared_ptr<midikraft::Synth>, String)> TUserBankSelectionHandler;
 	typedef std::function<void(midikraft::PatchHolder)> TPatchSelectionHandler;
+	typedef std::function<void(std::shared_ptr<midikraft::PatchList>, CreateListDialog::TFillParameters, std::function<void()>)> TPatchListFillHandler;
+
 
 	PatchListTree(midikraft::PatchDatabase &db, std::vector<midikraft::SynthHolder> const& synths);
 	virtual ~PatchListTree() override;
@@ -29,12 +33,14 @@ public:
 	TSelectionHandler onUserListChanged;
 
 	TPatchSelectionHandler onPatchSelected;
+	TPatchListFillHandler onPatchListFill;
 
 	virtual void resized() override;
 
-	void refreshAllUserLists();
-	void refreshUserList(std::string list_id);
-	void refreshAllImports();
+	void refreshAllUserLists(std::function<void()> onFinished);
+	void refreshAllImports(std::function<void()> onFinished);
+	void refreshChildrenOfListId(std::string const& list_id, std::function<void()> onFinished);
+	void refreshParentOfListId(std::string const& list_id, std::function<void()> onFinished);
 
 	void selectAllIfNothingIsSelected();
 	void selectItemByPath(std::vector<std::string> const& path);
@@ -42,20 +48,21 @@ public:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
 	
 private:
-	void regenerateUserLists();
-	void regenerateImportLists();
+	void regenerateUserLists(std::function<void()> onFinished);
+	void regenerateImportLists(std::function<void()> onFinished);
 
 	void selectSynthLibrary(std::string const& synthName);
 	std::string getSelectedSynth() const;
 	bool isUserListSelected() const;
 	std::list<std::string> pathOfSelectedItem() const;
+	TreeViewNode* findNodeForListID(std::string const& list_id);
 
-	TreeViewItem* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
-	TreeViewItem* newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
-	TreeViewItem* newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
-	TreeViewItem* newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
-	TreeViewItem* newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode* parent, midikraft::ListInfo list);
-	TreeViewItem* newTreeViewItemForPatchList(midikraft::ListInfo list);
+	TreeViewNode* newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index);
+	TreeViewNode* newTreeViewItemForSynthBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewNode* newTreeViewItemForStoredBanks(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewNode* newTreeViewItemForImports(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	TreeViewNode* newTreeViewItemForUserBank(std::shared_ptr<midikraft::Synth> synth, TreeViewNode* parent, midikraft::ListInfo list);
+	TreeViewNode* newTreeViewItemForPatchList(midikraft::ListInfo list);
 
 	void changeListenerCallback(ChangeBroadcaster* source) override;
 
@@ -67,6 +74,5 @@ private:
 	std::unique_ptr<TreeView> treeView_;
 	TreeViewNode* allPatchesItem_;
 	TreeViewNode* userListsItem_;
-	std::map<std::string, TreeViewNode*> userLists_;
 };
 
