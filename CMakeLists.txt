@@ -108,9 +108,17 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	# Use the macPort version of the icu4c library, as the homebrew version is not available as universal binary
-	#set(ICU_DEBUG 1)
-	set(ICU_ROOT "/opt/local")
+	IF(UNIVERSAL_BINARY)
+		# Use the macPort version of the icu4c library, as the homebrew version is not available as universal binary
+		#set(ICU_DEBUG 1)
+		set(ICU_ROOT "/opt/local")
+	ELSE()
+		# For Intel Macs:
+		message("Using ICU from homebrew for Intel. If you compile for Apple silicon please update the CMakeLists.txt here")
+		set(ICU_ROOT "/usr/local/opt/icu4c")
+		# For Apple silicon:
+		# set(ICU_ROOT "/opt/homebrew/opt/icu4c")
+	ENDIF()
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
