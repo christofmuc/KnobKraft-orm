@@ -31,7 +31,7 @@ jobs:
     - name: Prepare build machine with homebrew
       run: |
         brew install boost
-        brew remove icu4c
+        brew remove --ignore-dependencies icu4c
 
     - uses: actions/setup-python@v3
       with:
