@@ -45,6 +45,13 @@ jobs:
     - name: CMake build
       run: cmake --build build --target package --parallel
 
+    - name: Archive DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DMG image
+          path: |
+            build/KnobKraft_Orm-*.dmg
+
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
       env:
