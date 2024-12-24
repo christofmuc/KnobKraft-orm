@@ -109,9 +109,8 @@ IF (WIN32)
 	endif()
 ELSEIF(APPLE)
 	# Use the macPort version of the icu4c library, as the homebrew version is not available as universal binary
-	list(APPEND CMAKE_PREFIX_PATH "/opt/local/lib")
 	#set(ICU_DEBUG 1)
-	set(ICU_ROOT "/opt/local/lib")
+	set(ICU_ROOT "/opt/local")
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type

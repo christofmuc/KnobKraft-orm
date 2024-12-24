@@ -18,7 +18,8 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - name: Bootstrap MacPorts
-      run: . .github/workflows/bootstrap.sh
+      uses: melusina-org/setup-macports@v1
+        id: 'macports'
 
     - uses: maxim-lobanov/setup-xcode@v1
       with:
@@ -30,8 +31,7 @@ jobs:
 
     - name: Prepare build machine with homebrew
       run: |
-        brew install boost icu4c
-
+        brew install boost
 
     - uses: actions/setup-python@v3
       with:
