@@ -42,7 +42,7 @@ namespace knobkraft {
 		*kGetStoredTags
 		;
 
-	extern std::vector<const char *> kAdapatationPythonFunctionNames;
+	extern std::vector<const char *> kAdaptationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
 #ifndef DEFAULT_VISIBILITY
