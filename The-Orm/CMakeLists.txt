@@ -187,9 +187,13 @@ ELSEIF(APPLE)
 		gin
 		spdlog::spdlog
 		)
-	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
+	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES
+		MACOSX_BUNDLE TRUE
+		MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
+		CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_LIST_DIR}/Info.plist
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
 		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+		MACOSX_BUNDLE_GUI_IDENTIFIER com.knobkraft.orm
 		)
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
@@ -307,12 +311,23 @@ IF(APPLE)
     SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
     SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
     SET(DIRS ${CMAKE_BINARY_DIR})
-    INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION . COMPONENT Runtime)
+
+	#SET(CODESIGN_CERTIFICATE_NAME "Developer ID Application: ${APPLE_DEVELOPER_IDENTITY}")
+	INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
+
+	set(XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
+	set(XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${TEAM_ID})
+	set(XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Developer ID Application")
+	set(XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED TRUE)
+
     INSTALL(CODE "include(BundleUtilities)
-	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
-    " COMPONENT Runtime)
-    
+		set(BU_CHMOD_BUNDLE_ITEMS TRUE)
+		message(STATUS \"Integrating dynlibs and signing app bundle \$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
+			fixup_bundle(\"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\"  \"\"  \"\" IGNORE_ITEM \"Python\")
+			execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements \"${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements\" --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
+		"
+	)
+
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
@@ -320,7 +335,18 @@ IF(APPLE)
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
 	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
 	set(CPACK_COMMAND_HDIUTIL "${CMAKE_CURRENT_LIST_DIR}/hdiutil_repeat.sh")
-    
+	set (CPACK_BUNDLE_APPLE_CERT_APP "${CODESIGN_CERTIFICATE_NAME}")
+	set (CPACK_BUNDLE_APPLE_CODESIGN_PARAMETER "--deep --force --options runtime --timestamp")
+
+	set_target_properties(KnobKraftOrm PROPERTIES
+			XCODE_ATTRIBUTE_CODE_SIGN_STYLE ${XCODE_ATTRIBUTE_CODE_SIGN_STYLE}
+			XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${XCODE_ATTRIBUTE_DEVELOPMENT_TEAM}
+			XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY}
+			XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED ${XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED}
+			XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep --timestamp=http://timestamp.apple.com/ts01  --options=runtime,library"
+			XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
+			)
+
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)
     SET(CPACK_BINARY_TGZ OFF)

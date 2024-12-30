@@ -8,7 +8,8 @@ cmake_minimum_required(VERSION 3.14)
 
 # Target a specific MacOS version.
 # JUCE 8 refuses to build for anything older than 10.11, so let's try that.
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
+# XCode no longer supports anything older than 10.13
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X version to target for deployment")
 
 option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
 if(UNIVERSAL_BINARY)
