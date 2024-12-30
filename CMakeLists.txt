@@ -163,6 +163,9 @@ ELSE()
 ENDIF()
 set(PYBIND11_PYTHON_VERSION ${PYTHON_VERSION_TO_EMBED})
 add_subdirectory("third_party/pybind11")
+find_package(Python REQUIRED Interpreter Development)
+message("Python_Interpreter_FOUND ${Python_Interpreter_FOUND}")
+message("Python_Development.Embed_FOUND ${Python_Development.Embed_FOUND}")
 
 # Define the list of link libraries required on Linux linking with JUCE, this must be used by any executable / module to run standalone
 if(UNIX AND NOT APPLE)
