@@ -305,15 +305,15 @@ ENDIF()
 IF(APPLE)
     # This is supposed to build a relocatable macOS DMG installer when you specify the
     # --target package
-    SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
-    SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
-    SET(DIRS ${CMAKE_BINARY_DIR})
+	SET(CODESIGN_CERTIFICATE_NAME "Developer ID Application: Christof Ruch (98WQ3X9M7Q)")
+
 	INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
     INSTALL(CODE "include(BundleUtilities)
-	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
+		set(BU_CHMOD_BUNDLE_ITEMS TRUE)
+		message(STATUS \"Integrating dynlibs and signing app bundle \$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
+		fixup_bundle(\"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\"  \"\"  \"\" IGNORE_ITEM \"Python\")
+		execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements \"${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements\" --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
     ")
-    
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
