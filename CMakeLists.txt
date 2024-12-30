@@ -180,6 +180,9 @@ if(UNIX AND NOT APPLE)
 
 	# Also, as we will be building a shared module for Python, make sure GCC generates relocatable code suited for inclusion in a shared library
 	add_definitions(-fPIC)
+	# Pybind11 and gcc cause tons of visibility warnings together. This is the recommended way to get rid of them...
+	# https://github.com/pybind/pybind11/discussions/4862
+	add_compile_options(-fvisibility=hidden)
 ENDIF()
 
 # Include the SQLite wrapper for MidiKraft-database. The EXCLUDE_FROM_ALL is to prevent it from adding to the
