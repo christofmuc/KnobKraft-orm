@@ -314,6 +314,7 @@ IF(APPLE)
     set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
 	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
+	set(CPACK_COMMAND_HDIUTIL "${CMAKE_CURRENT_LIST_DIR}/hdiutil_repeat.sh")
     
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)
