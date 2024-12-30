@@ -312,7 +312,7 @@ IF(APPLE)
     INSTALL(CODE "include(BundleUtilities)
 	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
     fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
-    " COMPONENT Runtime)
+    ")
     
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
@@ -329,7 +329,7 @@ IF(APPLE)
     INCLUDE(CPack)
 ELSE()
 	INSTALL(TARGETS KnobKraftOrm knobkraft-generic-adaptation
-			BUNDLE DESTINATION . COMPONENT Runtime
+			BUNDLE DESTINATION .
 			)
 	IF(UNIX)
 		SET(CPACK_BINARY_TGZ ON)
