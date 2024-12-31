@@ -305,15 +305,20 @@ ENDIF()
 IF(APPLE)
     # This is supposed to build a relocatable macOS DMG installer when you specify the
     # --target package
-	SET(CODESIGN_CERTIFICATE_NAME "Developer ID Application: Christof Ruch (98WQ3X9M7Q)")
+	SET(CODESIGN_CERTIFICATE_NAME Developer ID Application: Christof Ruch "(98WQ3X9M7Q)")
+
+	# We need to sign the files as a post build step. Doing this as install step doesn't help because
+	# CPack will already have created a copy and ignore our
+	add_custom_command(
+			TARGET KnobKraftOrm POST_BUILD
+			COMMAND "${CMAKE_COMMAND}" -DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
+				-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
+				-DCODESIGN_CERTIFICATE_NAME="${CODESIGN_CERTIFICATE_NAME}"
+				-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
+	)
 
 	INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
-    INSTALL(CODE "include(BundleUtilities)
-		set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-		message(STATUS \"Integrating dynlibs and signing app bundle \$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
-		fixup_bundle(\"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\"  \"\"  \"\" IGNORE_ITEM \"Python\")
-		execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements \"${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements\" --sign \"${CODESIGN_CERTIFICATE_NAME}\" \"\$<TARGET_BUNDLE_DIR:KnobKraftOrm>\")
-    ")
+
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
