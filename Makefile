@@ -10,12 +10,12 @@ BUILD_DIR=.builds/universal_again
 VERSION=2.4.4.74
 TEAM_ID=98WQ3X9M7Q
 KEYCHAIN_PROFILE=christof-2025
-
 # Make sure to setup a Python that matches the universal build/fat binary or the architecture build
 # This can be really messy if you have - like me - multiple versions of Python installed on the Mac.
 # Closely watch the build output to detect and inconsistencies during configuration, linking, or bundle fixing!
 # Worst case, uninstall all Pythons except the one you want to use.
-PYTHON_TO_USE=/Library/Frameworks/Python.framework/Versions/Current/bin/python3
+PYTHON_SOURCE=/Library/Frameworks/Python.framework/Versions/3.12
+
 
 # Setup variables for the various build artifacts and their names
 KNOBKRAFT=KnobKraft_Orm-$(VERSION)-Darwin
@@ -23,6 +23,10 @@ KNOBKRAFT_APP=$(BUILD_DIR)/The-Orm/KnobKraftOrm.app
 KNOBKRAFT_DMG=$(BUILD_DIR)/$(KNOBKRAFT).dmg
 KNOBKRAFT_MOUNT=/Volumes/$(KNOBKRAFT)
 KNOBKRAFT_MOUNTED_APP=$(KNOBKRAFT_MOUNT)/KnobKraftOrm.app
+
+# Some more paths
+PYTHON_TO_USE=$(PYTHON_SOURCE)/bin/python3
+
 
 all: configure build sign-dmg verify-signed
 
@@ -44,13 +48,13 @@ detach: $(KNOBKRAFT_MOUNT)/KnobKraftOrm.app
 	hdiutil detach $(KNOBKRAFT_MOUNT)
 
 app-signed: attach
-	codesign --verify -v $(KNOBKRAFT_MOUNTED_APP)
+	codesign --verify -v --strict $(KNOBKRAFT_MOUNTED_APP)
 
 binary-signed: $(KNOBKRAFT_APP)
-	codesign --verify -v $(KNOBKRAFT_APP)
+	codesign --verify -v --strict $(KNOBKRAFT_APP)
 
 dmg-signed: $(KNOBKRAFT_DMG)
-	codesign --verify -v $<
+	codesign --verify -v --strict $<
 
 verify-signed: binary-signed app-signed dmg-signed
 
@@ -79,6 +83,10 @@ run-app: $(KNOBKRAFT_APP)
 
 run-dmg: attach
 	open $(KNOBKRAFT_MOUNTED_APP)
+
+debug-codesign:
+	cmake -DPYTHON_SOURCE=$(PYTHON_SOURCE) -DSIGN_DIRECTORY=`pwd`/$(KNOBKRAFT_APP) -DENTITLEMENTS_FILE=./The-Orm/Codesign.entitlements -DCODESIGN_CERTIFICATE_NAME=$(TEAM_ID) -P cmake/codesign.cmake
+
 
 kill:
 	killall KnobKraftOrm
