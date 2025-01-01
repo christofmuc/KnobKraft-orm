@@ -7,7 +7,7 @@
 #
 
 BUILD_DIR=.builds/universal_again
-VERSION=2.4.4.74
+VERSION=2.4.4.78
 TEAM_ID=98WQ3X9M7Q
 KEYCHAIN_PROFILE=christof-2025
 # Make sure to setup a Python that matches the universal build/fat binary or the architecture build
