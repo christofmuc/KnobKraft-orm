@@ -317,6 +317,7 @@ IF(APPLE)
 				-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
 	)
 
+	# This is the one and most important INSTALL directive, without it there is no Orm
 	INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
 
     # Setup CPack variables
