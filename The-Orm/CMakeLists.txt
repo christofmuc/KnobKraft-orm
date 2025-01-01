@@ -186,7 +186,7 @@ ELSEIF(APPLE)
 		sqlite3
 		gin
 		spdlog::spdlog
-		Python::Python
+		pybind11::embed
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
