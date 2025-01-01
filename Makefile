@@ -7,7 +7,7 @@
 #
 
 BUILD_DIR=.builds/universal_again
-VERSION=2.4.4.73
+VERSION=2.4.4.74
 TEAM_ID=98WQ3X9M7Q
 KEYCHAIN_PROFILE=christof-2025
 
@@ -57,7 +57,11 @@ verify-signed: binary-signed app-signed dmg-signed
 sign-dmg: $(KNOBKRAFT_DMG)
 	codesign --force --verbose=2 --sign "$(TEAM_ID)" $<
 
+show-dmg-signature: $(KNOBKRAFT_DMG)
+	codesign -dvvv $<
+
 .PHONY: notarize
+# https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution?language=objc
 notarize: $(KNOBKRAFT_DMG)
 	xcrun notarytool submit $< \
 		--keychain-profile "$(KEYCHAIN_PROFILE)" \
