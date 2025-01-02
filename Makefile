@@ -90,7 +90,7 @@ run-dmg: attach
 	open $(KNOBKRAFT_MOUNTED_APP)
 
 debug-codesign:
-	cmake -DPYTHON_SOURCE=$(PYTHON_SOURCE) -DSIGN_DIRECTORY=`pwd`/$(KNOBKRAFT_APP) -DENTITLEMENTS_FILE=./The-Orm/Codesign.entitlements -DCODESIGN_CERTIFICATE_NAME=$(TEAM_ID) -P cmake/codesign.cmake
+	cmake -DPYTHON_SOURCE=$(PYTHON_SOURCE) -DSIGN_DIRECTORY=`pwd`/$(KNOBKRAFT_APP) -DENTITLEMENTS_FILE=./The-Orm/Codesign.entitlements -DCODESIGN_CERTIFICATE_NAME="$(CODESIGN_CERTIFICATE_NAME)" -P cmake/codesign.cmake
 
 
 kill:
