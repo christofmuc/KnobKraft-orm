@@ -1,6 +1,8 @@
 message(STATUS "Integrating dynlibs and signing app bundle ${SIGN_DIRECTORY}")
 
 # Custom Python Framework embedding
+# this confused me, so I just copy all with rsync
+# https://blog.glyph.im/2024/09/python-macos-framework-builds.html
 set(PYTHON_LIB_DEST_DIR "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/3.12")
 
 # Remove the backslashes from the variable inserted there by passing it around too many times
