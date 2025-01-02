@@ -39,11 +39,12 @@ jobs:
         run: |
           echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
           security create-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 3600 build.keychain
+          security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+          security list-keychains -d user -s build.keychain $(security list-keychains -d user | sed s/\"//g)
           security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
-          security list-keychains -s build.keychain "${OLD_KEYCHAIN_NAMES[@]}"
-          security set-keychain-settings -lut 3600
-          security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+          security find-identity -v
         env:
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
@@ -59,7 +60,7 @@ jobs:
           security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
           touch test.o
           echo Now using the certificate!
-          codesign --verbose --force --timestamp --sign "$APPLE_DEVELOPER_IDENTITY" test.o
+          codesign --verbose --force --timestamp --sign "$APPLE_DEVELOPER_IDENTITY" --keychain build.keychain test.o
           make configure
           make build
           export CODESIGN_CERTIFICATE_NAME="$APPLE_DEVELOPER_IDENTITY"

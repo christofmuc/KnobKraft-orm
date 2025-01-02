@@ -19,7 +19,7 @@ file(GLOB_RECURSE SO_FILES "${SIGN_DIRECTORY}/*.so")
 foreach(SO_FILE IN LISTS SO_FILES)
     message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}': ${SO_FILE}")
     execute_process(
-            COMMAND codesign --verbose --force --timestamp --sign "${CODESIGN_CERTIFICATE_NAME}" "${SO_FILE}"
+            COMMAND codesign --verbose --force --timestamp --sign "${CODESIGN_CERTIFICATE_NAME}"  --keychain build.keychain "${SO_FILE}"
     )
 endforeach()
 
@@ -32,4 +32,4 @@ fixup_bundle("${SIGN_DIRECTORY}"  ""  "" IGNORE_ITEM "Python")
 
 # Lastly, sign our executable
 message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}'")
-execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements "${ENTITLEMENTS_FILE}" --sign "${CODESIGN_CERTIFICATE_NAME}" "${SIGN_DIRECTORY}")
+execute_process(COMMAND codesign --force --timestamp --options runtime --deep --entitlements "${ENTITLEMENTS_FILE}" --sign "${CODESIGN_CERTIFICATE_NAME}"  --keychain build.keychain "${SIGN_DIRECTORY}")
