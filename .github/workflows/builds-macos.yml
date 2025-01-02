@@ -40,21 +40,22 @@ jobs:
     - name: Import Developer Certificate
       run: |
         echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
-        security create-keychain -p "" build.keychain
+        security create-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
         security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
         security list-keychains -s build.keychain "${OLD_KEYCHAIN_NAMES[@]}"
-        security unlock-keychain -p "" build.keychain
+        security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
       env:
         MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
         MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+        MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
 
     - name: Build the MacOS DMG
       shell: bash
       run: |
         export BUILD_TYPE=RelWithDebInfo
         export BUILD_DIR=./build
-        security unlock-keychain -p "" build.keychain
+        security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
         security find-identity -p codesigning -v
         security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
         make
@@ -64,6 +65,7 @@ jobs:
         APPLE_ID: ${{ secrets.APPLE_ID}}
         APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         TEAM_ID: ${{ secrets.TEAM_ID }}
+        MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
 
     - name: Archive DMG artifact
       uses: actions/upload-artifact@v4
