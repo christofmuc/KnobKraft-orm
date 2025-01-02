@@ -56,7 +56,7 @@ jobs:
         make
         make apple
       env:
-        APPLE_DEVELOPER_IDENTITY: ${{ APPLE_DEVELOPER_IDENTITY }}
+        APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
         APPLE_ID: ${{ secrets.APPLE_ID}}
         APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         TEAM_ID: ${{ secrets.TEAM_ID }}
