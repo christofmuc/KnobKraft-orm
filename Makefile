@@ -33,7 +33,7 @@ all: configure build sign-dmg verify-signed
 apple: notarize staple verify-notarization
 
 configure:
-	cmake -S . -B $(BUILD_DIR) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE)
+	cmake -S . -B $(BUILD_DIR) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME=$(TEAM_ID)
 
 build:
 	cmake --build $(BUILD_DIR) --target package -- -j 6

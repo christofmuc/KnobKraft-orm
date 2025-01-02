@@ -303,22 +303,23 @@ IF(WIN32)
 ENDIF()
 
 IF(APPLE)
-    # This is supposed to build a relocatable macOS DMG installer when you specify the
-    # --target package
-	SET(CODESIGN_CERTIFICATE_NAME Developer ID Application: Christof Ruch "(98WQ3X9M7Q)")
+	# This section is supposed to build a relocatable macOS DMG installer when you specify the
+	# --target package
 
-	# We need to sign the files as a post build step. Doing this as install step doesn't help because
-	# CPack will already have created a copy and ignore our
-	get_filename_component(PYTHON_SOURCE_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
-	add_custom_command(
-			TARGET KnobKraftOrm POST_BUILD
-			COMMAND "${CMAKE_COMMAND}"
-			    -DPYTHON_SOURCE="${PYTHON_SOURCE_DIR}/../lib"
-			    -DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
-				-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
-				-DCODESIGN_CERTIFICATE_NAME="${CODESIGN_CERTIFICATE_NAME}"
-				-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
-	)
+	IF(CODESIGN_CERTIFICATE_NAME)
+		# We need to sign the files as a post build step. Doing this as install step doesn't help because
+		# CPack will already have created a copy and ignore our
+		get_filename_component(PYTHON_SOURCE_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
+		add_custom_command(
+				TARGET KnobKraftOrm POST_BUILD
+				COMMAND "${CMAKE_COMMAND}"
+					-DPYTHON_SOURCE="${PYTHON_SOURCE_DIR}/../lib"
+					-DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
+					-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
+					-DCODESIGN_CERTIFICATE_NAME="${CODESIGN_CERTIFICATE_NAME}"
+					-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
+		)
+	ENDIF()
 
 	# This is the one and most important INSTALL directive, without it there is no Orm
 	INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
