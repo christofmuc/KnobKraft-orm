@@ -69,6 +69,7 @@ show-dmg-signature: $(KNOBKRAFT_DMG)
 
 .PHONY: notarize
 # https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution?language=objc
+# https://scriptingosx.com/2021/07/notarize-a-command-line-tool-with-notarytool/
 notarize: $(KNOBKRAFT_DMG)
 	@xcrun notarytool submit $< \
 	    --team-id $(TEAM_ID) \

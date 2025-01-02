@@ -54,8 +54,8 @@ jobs:
       run: |
         export BUILD_TYPE=RelWithDebInfo
         export BUILD_DIR=./build
+        security unlock-keychain -p "" build.keychain
         security find-identity -p codesigning -v
-        security list-keychains
         security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
         make
         make apple

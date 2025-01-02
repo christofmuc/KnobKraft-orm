@@ -35,6 +35,8 @@ jobs:
           security find-identity -p codesigning -v
           security list-keychains
           security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
+          touch test.o
+          codesign --verbose --force --timestamp --sign "$APPLE_DEVELOPER_IDENTITY" test.o
         env:
           APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID}}
