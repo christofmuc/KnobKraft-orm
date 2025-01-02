@@ -7,10 +7,11 @@
 #
 
 BUILD_DIR?=.builds/universal_again
-BUILD_TYPE=?=Debug
+BUILD_TYPE?=Debug
 TEAM_ID?=98WQ3X9M7Q
 
-VERSION=2.4.4.78
+# Determine the version the same way cmake does
+VERSION:=$(shell cmake -P The-Orm/gitversion.cmake 2>&1 >/dev/null)
 
 # Make sure to setup a Python that matches the universal build/fat binary or the architecture build
 # This can be really messy if you have - like me - multiple versions of Python installed on the Mac.
@@ -34,7 +35,7 @@ all: configure build sign-dmg verify-signed
 apple: notarize staple verify-notarization
 
 configure:
-	echo "Configuring build for type $(BUILD_TYPE) in directory $(BUILD_DIR), using Python from $(PYTHON_TO_USE)"
+	@echo "Configuring build for type $(BUILD_TYPE) in directory $(BUILD_DIR), using Python from $(PYTHON_TO_USE)"
 	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME=$(TEAM_ID)
 
 build:
