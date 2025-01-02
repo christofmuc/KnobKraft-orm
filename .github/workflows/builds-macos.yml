@@ -37,13 +37,28 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: CMake configure
+    - name: Import Developer Certificate
+      run: |
+        echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+        security create-keychain -p "" build.keychain
+        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        security default-keychain -s build.keychain
+      env:
+        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+
+    - name: Build the MacOS DMG
       shell: bash
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
-
-    - name: CMake build
-      run: cmake --build build --target package --parallel
+        export BUILD_TYPE=RelWithDebInfo
+        export BUILD_DIR=./build
+        make
+        make apple
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID}}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        TEAM_ID: ${{ secrets.TEAM_ID }}
 
     - name: Archive DMG artifact
       uses: actions/upload-artifact@v4
