@@ -39,7 +39,7 @@ configure:
 	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME=$(TEAM_ID)
 
 build $(KNOBKRAFT_DMG):
-	cmake --build $(BUILD_DIR) --target package --parallel
+	cmake --build $(BUILD_DIR) --target package --parallel $(shell sysctl -n hw.ncpu)
 
 $(KNOBKRAFT_MOUNT): $(KNOBKRAFT_DMG)
 	hdiutil detach $@ ; true
