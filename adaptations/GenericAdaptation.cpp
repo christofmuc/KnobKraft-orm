@@ -286,7 +286,6 @@ namespace knobkraft {
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
 		std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
-			+ "sys.path.append(R\"" + "/Library/Frameworks/Python.framework/Versions/Current/lib/python3.12" + "\")\n" // This is where Linux searches
 			+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
 			+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("adaptations").getFullPathName().toStdString() + "\")\n" // This is where we place the adaptation modules
 			+ "sys.path.append(R\"" + pathToTheOrm.getChildFile("python").getFullPathName().toStdString() + "\")\n"; // This is the path in the Mac DMG
