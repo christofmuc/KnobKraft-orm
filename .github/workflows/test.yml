@@ -36,6 +36,7 @@ jobs:
           security list-keychains
           security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
           touch test.o
+          echo Now using the certificate!
           codesign --verbose --force --timestamp --sign "$APPLE_DEVELOPER_IDENTITY" test.o
         env:
           APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
