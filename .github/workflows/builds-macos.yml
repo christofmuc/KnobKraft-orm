@@ -71,6 +71,8 @@ jobs:
 
     - name: Archive DMG artifact
       uses: actions/upload-artifact@v4
+      when:
+        always
       with:
         name: DMG image
         path: |
