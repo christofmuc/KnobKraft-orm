@@ -36,7 +36,7 @@ apple: notarize staple verify-notarization
 
 configure:
 	@echo "Configuring build for type $(BUILD_TYPE) in directory $(BUILD_DIR), using Python from $(PYTHON_TO_USE)"
-	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME="$(APPLE_DEVELOPER_IDENTITY)"
+	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME="$(TEAM_ID)"
 
 .PHONY: build
 build $(KNOBKRAFT_DMG):
