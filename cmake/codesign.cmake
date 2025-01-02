@@ -3,6 +3,9 @@ message(STATUS "Integrating dynlibs and signing app bundle ${SIGN_DIRECTORY}")
 # Custom Python Framework embedding
 set(PYTHON_LIB_DEST_DIR "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/3.12")
 
+# Remove the backslashes from the variable inserted there by passing it around too many times
+string(REPLACE "\\" "" CODESIGN_CERTIFICATE_NAME "${CODESIGN_CERTIFICATE_NAME}")
+
 # First copy everything
 execute_process(
         COMMAND /bin/bash -c "mkdir -p \"${PYTHON_LIB_DEST_DIR}\" && rsync -av --exclude='__pycache__' --exclude=test --exclude=python.o \"${PYTHON_SOURCE}\" \"${PYTHON_LIB_DEST_DIR}\""
