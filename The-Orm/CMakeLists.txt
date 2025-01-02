@@ -178,8 +178,10 @@ IF(WIN32)
 		${SPARKLE_DEPENDENCY}
 		)
 ELSEIF(APPLE)
-	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+	target_link_libraries(KnobKraftOrm PRIVATE
+		${JUCE_LIBRARIES}
 		ICU::data ICU::uc
+		${MIDIKRAFT_LIBRARIES}
 		SQLiteCpp
 		sqlite3
 		gin
@@ -240,28 +242,33 @@ ENDIF()
 
 # Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir. Same with roland and knobkraft python modules
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptations/sequential
-		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/sequential
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptations/roland
-		$<TARGET_FILE_DIR:KnobKraftOrm>/roland
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/roland
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/roland
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptations/knobkraft
-		$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/knobkraft
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptations/testing
-		$<TARGET_FILE_DIR:KnobKraftOrm>/testing
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/testing
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/testing
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
 file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptations/*.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "conftest.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "test_.*py")
+list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX ".*__pycache__/.*")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "DSI_OB6.py")
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E make_directory 
@@ -312,6 +319,7 @@ IF(APPLE)
     set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
 	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
+	set(CPACK_COMMAND_HDIUTIL "${CMAKE_CURRENT_LIST_DIR}/hdiutil_repeat.sh")
     
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)

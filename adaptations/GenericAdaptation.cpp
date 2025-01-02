@@ -71,7 +71,7 @@ namespace knobkraft {
 		* kGetStoredTags = "storedTags",
 		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride";
 
-	std::vector<const char*> kAdapatationPythonFunctionNames = {
+	std::vector<const char*> kAdaptationPythonFunctionNames = {
 		kName,
 		kNumberOfBanks,
 		kNumberOfPatchesPerBank,

@@ -10,6 +10,12 @@ cmake_minimum_required(VERSION 3.14)
 # JUCE 8 refuses to build for anything older than 10.11, so let's try that.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
 
+option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
+if(UNIVERSAL_BINARY)
+	message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
+	set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+endif()
+
 # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
 add_compile_definitions(JSON_HAS_CPP_14)
 
@@ -102,10 +108,17 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	# For Intel Macs:
-	# set(ICU_ROOT "/usr/local/opt/icu4c")
-	# For Apple silicon:
-	# set(ICU_ROOT "/opt/homebrew/opt/icu4c")
+	IF(UNIVERSAL_BINARY)
+		# Use the macPort version of the icu4c library, as the homebrew version is not available as universal binary
+		#set(ICU_DEBUG 1)
+		set(ICU_ROOT "/opt/local")
+	ELSE()
+		# For Intel Macs:
+		message("Using ICU from homebrew for Intel. If you compile for Apple silicon please update the CMakeLists.txt here")
+		set(ICU_ROOT "/usr/local/opt/icu4c")
+		# For Apple silicon:
+		# set(ICU_ROOT "/opt/homebrew/opt/icu4c")
+	ENDIF()
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
@@ -167,6 +180,9 @@ if(UNIX AND NOT APPLE)
 
 	# Also, as we will be building a shared module for Python, make sure GCC generates relocatable code suited for inclusion in a shared library
 	add_definitions(-fPIC)
+	# Pybind11 and gcc cause tons of visibility warnings together. This is the recommended way to get rid of them...
+	# https://github.com/pybind/pybind11/discussions/4862
+	add_compile_options(-fvisibility=hidden)
 ENDIF()
 
 # Include the SQLite wrapper for MidiKraft-database. The EXCLUDE_FROM_ALL is to prevent it from adding to the
@@ -201,7 +217,6 @@ target_compile_definitions(juce-static
 		JUCE_PLUGINHOST_VST=0
 		JUCE_PLUGINHOST_AU=0
 		DONT_SET_USING_JUCE_NAMESPACE=1
-		JUCE_DISPLAY_SPLASH_SCREEN=0
 		JUCE_REPORT_APP_USAGE=0
 		JUCE_CHECK_MEMORY_LEAKS=0
 		JUCE_QUICKTIME=0
