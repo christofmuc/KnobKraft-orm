@@ -42,6 +42,7 @@ jobs:
           security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
           security list-keychains -s build.keychain "${OLD_KEYCHAIN_NAMES[@]}"
+          security set-keychain-settings -lut 3600
           security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
         env:
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
