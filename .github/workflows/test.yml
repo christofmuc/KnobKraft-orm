@@ -28,13 +28,13 @@ jobs:
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
 
       - name: Test codesign
-          shell: bash
-          run: |
-            export BUILD_TYPE=RelWithDebInfo
-            export BUILD_DIR=./build
-            security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
-          env:
-            APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
-            APPLE_ID: ${{ secrets.APPLE_ID}}
-            APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-            TEAM_ID: ${{ secrets.TEAM_ID }}
+        shell: bash
+        run: |
+          export BUILD_TYPE=RelWithDebInfo
+          export BUILD_DIR=./build
+          security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
+        env:
+          APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID}}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
