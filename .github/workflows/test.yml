@@ -60,6 +60,7 @@ jobs:
           echo Now using the certificate!
           codesign --verbose --force --timestamp --sign "$APPLE_DEVELOPER_IDENTITY" test.o
           make configure
+          make build
           export CODESIGN_CERTIFICATE_NAME="$APPLE_DEVELOPER_IDENTITY"
           make debug-codesign
         env:
