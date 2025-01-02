@@ -38,6 +38,7 @@ configure:
 	@echo "Configuring build for type $(BUILD_TYPE) in directory $(BUILD_DIR), using Python from $(PYTHON_TO_USE)"
 	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME="$(APPLE_DEVELOPER_IDENTITY)"
 
+.PHONY: build
 build $(KNOBKRAFT_DMG):
 	cmake --build $(BUILD_DIR) --target package --parallel $(shell sysctl -n hw.ncpu)
 
