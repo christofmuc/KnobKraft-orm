@@ -17,7 +17,7 @@ file(GLOB_RECURSE SO_FILES "${SIGN_DIRECTORY}/*.so")
 foreach(SO_FILE IN LISTS SO_FILES)
     message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}': ${SO_FILE}")
     execute_process(
-            COMMAND codesign --force --timestamp --sign "${CODESIGN_CERTIFICATE_NAME}" "${SO_FILE}"
+            COMMAND codesign --verbose --force --timestamp --sign "${CODESIGN_CERTIFICATE_NAME}" "${SO_FILE}"
     )
 endforeach()
 
