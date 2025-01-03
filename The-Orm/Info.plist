@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <!-- Application Identifier -->
+        <key>CFBundleIdentifier</key>
+        <string>com.knobkraft.orm</string>
+
+        <!-- Application Name -->
+        <key>CFBundleName</key>
+        <string>KnobKraftOrm</string>
+
+        <!-- Minimum System Version (macOS version) -->
+        <key>LSMinimumSystemVersion</key>
+        <string>10.12</string>
+    </dict>
+</plist>

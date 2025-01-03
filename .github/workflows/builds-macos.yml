@@ -37,16 +37,41 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: CMake configure
+    - name: Import Developer Certificate
+      run: |
+        echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+        security create-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security set-keychain-settings -lut 3600 build.keychain
+        security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security list-keychains -d user -s build.keychain $(security list-keychains -d user | sed s/\"//g)
+        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security find-identity -v
+      env:
+        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+        MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
+        
+    - name: Build the MacOS DMG
       shell: bash
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
-
-    - name: CMake build
-      run: cmake --build build --target package --parallel
+        export BUILD_TYPE=RelWithDebInfo
+        export BUILD_DIR=./build
+        security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security find-identity -p codesigning -v
+        security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
+        make
+        make apple
+      env:
+        APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+        APPLE_ID: ${{ secrets.APPLE_ID}}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        TEAM_ID: ${{ secrets.TEAM_ID }}
+        MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
 
     - name: Archive DMG artifact
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: DMG image
         path: |
