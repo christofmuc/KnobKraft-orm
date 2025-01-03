@@ -8,10 +8,9 @@
 
 BUILD_DIR?=.builds/universal_again
 BUILD_TYPE?=Debug
-TEAM_ID?=98WQ3X9M7Q
 
 # Determine the version the same way cmake does
-VERSION:=$(shell cmake -P The-Orm/gitversion.cmake 2>&1 >/dev/null)
+VERSION=$(shell cmake -P The-Orm/gitversion.cmake 2>&1 >/dev/null)
 
 # Make sure to setup a Python that matches the universal build/fat binary or the architecture build
 # This can be really messy if you have - like me - multiple versions of Python installed on the Mac.
