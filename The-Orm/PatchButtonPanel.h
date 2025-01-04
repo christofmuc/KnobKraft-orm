@@ -24,7 +24,7 @@ public:
 	virtual ~PatchButtonPanel() override;
 
 	void setPatchLoader(TPageLoader pageGetter);
-	void setTotalCount(int totalCount);
+	void setTotalCount(int totalCount, bool resetToPageOne = true);
 	void changeGridSize(int newWidth, int newHeight);
 	void setPatches(std::vector<midikraft::PatchHolder> const& patches, int autoSelectTarget = -1);
 	

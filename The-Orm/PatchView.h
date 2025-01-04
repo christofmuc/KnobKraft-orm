@@ -121,6 +121,8 @@ private:
 	void setUserListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);
 
+	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
+
 	void showBank();
 
     PatchListTree patchListTree_;

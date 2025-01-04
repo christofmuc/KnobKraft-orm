@@ -41,6 +41,9 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
+#include <random>
+#include <algorithm>
+
 const char *kAllPatchesFilter = "All patches";
 
 PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths) :
@@ -72,6 +75,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	patchListTree_.onPatchSelected = [this](midikraft::PatchHolder patch) {
 		selectPatch(patch, false);
 	};
+	patchListTree_.onPatchListFill = [this](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters parameters, std::function<void()> finishedCallback) {
+		fillList(list, parameters, finishedCallback);
+	};
 
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
 		if (UIModel::currentSynth()) {
@@ -83,7 +89,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
 		int total = getTotalCount();
-		patchButtons_->setTotalCount(total);
+		patchButtons_->setTotalCount(total, false);
 		patchButtons_->refresh(true);
 		synthBank_->refreshPatch(favoritePatch);
 	}
@@ -187,7 +193,7 @@ int PatchView::getTotalCount() {
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
 	int total = getTotalCount();
-	patchButtons_->setTotalCount(total);
+	patchButtons_->setTotalCount(total, true);
 	patchButtons_->refresh(true); // This kicks of loading the first page
 	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, juce::Uuid().toString(), nullptr);
 }
@@ -496,7 +502,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string list_name = infos["list_name"];
 			database_.removePatchFromList(list_id, infos["synth"], infos["md5"], infos["order_num"]);
 			spdlog::info("Removed patch {} from list {}", patch_name,  list_name);
-			patchListTree_.refreshUserList(list_id, []() {});
+			patchListTree_.refreshChildrenOfListId(list_id, []() {});
 			if (listFilterID_ == list_id) {
 				retrieveFirstPageFromDatabase();
 			}
@@ -511,7 +517,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 				spdlog::info("Deleted list {}", list_name);
 				if (listFilterID_ == list_id) {
 				}
-				patchListTree_.refreshAllUserLists([]() {});
+				patchListTree_.refreshParentOfListId(list_id, []() {});
 			}
 			return;
 		}
@@ -950,7 +956,7 @@ void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::Mid
 	// We can get away with just a bank select and program change, and will try to select the patch directly
 		// Build the MIDI messages required to select bank and program
 	auto selectPatch = buildSelectBankAndProgramMessages(program, patch);
-	if (selectPatch.size() > 1) {
+	if (selectPatch.size() > 0) {
 		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
 	}
 	else {
@@ -987,8 +993,8 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		if (alsoSendToSynth) {
 			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 			if (isSynthConnected(patch.smartSynth())) {
-				Data::ensureEphemeralPropertyExists(EPROPERTY_BUTTON_SEND_MODE, "auto");
-				auto synthSpecificSendMode = Data::getEphemeralProperty(EPROPERTY_BUTTON_SEND_MODE);
+				UIModel::ensureSynthSpecificPropertyExists(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic");
+				auto synthSpecificSendMode = UIModel::instance()->getSynthSpecificPropertyAsValue(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic").getValue();
 
 				auto alreadyInSynth = patchIsInSynth(patch);
 				if (synthSpecificSendMode == "program change") {
@@ -1043,5 +1049,80 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 			}
 		}
 	}*/
+}
+
+template <typename T>
+std::vector<T> getRandomSubset(const std::vector<T>& original, std::size_t subsetSize) {
+	// Copy the original vector
+	std::vector<T> shuffled = original;
+
+	// If subsetSize is larger than the original vector size, limit it
+	if (subsetSize > original.size()) {
+		subsetSize = original.size();
+	}
+
+	// Create a random engine with a seed based on the current time
+	std::random_device rd;
+	std::default_random_engine rng(rd());
+
+	// Shuffle the copied vector
+	std::shuffle(shuffled.begin(), shuffled.end(), rng);
+
+	// Create a vector to store the subset
+	std::vector<T> subset(shuffled.begin(), shuffled.begin() + subsetSize);
+
+	return subset;
+}
+
+void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback) {
+	if (fillParameters.fillMode == CreateListDialog::TListFillMode::None) {
+		finishedCallback();
+	}
+	else  {
+		auto filter = currentFilter();
+		auto synthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(list);
+		size_t patchesDesired = fillParameters.number;
+		size_t minimumPatches = 0;
+		if (synthBank) {
+			// This is a synth bank, restrict the filter to deliver only patches for the synth that the bank is for
+			filter.synths.clear();
+			filter.synths[synthBank->synth()->getName()] = synthBank->synth();
+			patchesDesired = synthBank->patchCapacity();
+			if (synthBank->bankNumber().bankSize() >= 0) {
+				minimumPatches = (size_t) synthBank->bankNumber().bankSize();
+			}
+			else {
+				spdlog::error("Program error: Unknown bank size, can't fill bank with unknown number of patches");
+				return;
+			}
+		}
+
+        if(database_.getPatchesCount(currentFilter()) == 0) {
+            spdlog::error("The list can't be filled, there are no patches in the database matching the current filter.");
+            return;
+        }
+
+        if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
+			loadPage(0, (int) patchesDesired, filter, [list, finishedCallback, minimumPatches](std::vector<midikraft::PatchHolder> patches) {
+				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
+				while (patches.size() < minimumPatches) {
+					patches.push_back(patches.back());
+				}
+				list->setPatches(patches);
+				finishedCallback();
+				});
+		}
+		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
+			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
+				auto randomPatches = getRandomSubset(patches, patchesDesired);
+				while (randomPatches.size() < minimumPatches) {
+					randomPatches.push_back(randomPatches.back());
+				}
+				list->setPatches(randomPatches);
+				finishedCallback();
+				});
+		}
+	}
 }
 

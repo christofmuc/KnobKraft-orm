@@ -6,7 +6,7 @@ on: push
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
     - name: Checkout repository with tags
       uses: actions/checkout@v2
@@ -17,25 +17,65 @@ jobs:
       run: |
         git submodule update --recursive --init --depth 1
 
+    - name: Bootstrap MacPorts
+      uses: melusina-org/setup-macports@v1
+
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
 
+    - name: Install ICU via MacPorts, because they can do universal binaries!
+      run: |
+        port install icu +universal
+
     - name: Prepare build machine with homebrew
       run: |
-        brew install boost icu4c
+        brew install boost
+        brew remove --ignore-dependencies icu4c
 
     - uses: actions/setup-python@v3
       with:
         python-version: '3.12'
 
-    - name: CMake configure
+    - name: Import Developer Certificate
+      run: |
+        echo "$MACOS_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+        security create-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security set-keychain-settings -lut 3600 build.keychain
+        security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security list-keychains -d user -s build.keychain $(security list-keychains -d user | sed s/\"//g)
+        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security find-identity -v
+      env:
+        MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+        MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
+        
+    - name: Build the MacOS DMG
       shell: bash
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=`brew --prefix icu4c`
+        export BUILD_TYPE=RelWithDebInfo
+        export BUILD_DIR=./build
+        security unlock-keychain -p "$MACOS_TEMPORARY_KEYCHAIN_PASSWORD" build.keychain
+        security find-identity -p codesigning -v
+        security find-certificate -c "$APPLE_DEVELOPER_IDENTITY"
+        make
+        make apple
+      env:
+        APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+        APPLE_ID: ${{ secrets.APPLE_ID}}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        TEAM_ID: ${{ secrets.TEAM_ID }}
+        MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
 
-    - name: CMake build
-      run: cmake --build build --target package --parallel
+    - name: Archive DMG artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: DMG image
+        path: |
+          build/KnobKraft_Orm-*.dmg
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1

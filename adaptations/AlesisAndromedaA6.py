@@ -106,8 +106,6 @@ def numberFromDump(message):
         bank = message[6]
         program = message[7]
         return bank * numberOfPatchesPerBank() + program
-    if isEditBufferDump(message):
-        return 0
     raise Exception("Can only extract number from single program dumps")
 
 

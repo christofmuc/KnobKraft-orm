@@ -13,6 +13,7 @@
 #include "KawaiK3WaveParameter.h"
 
 #include <fmt/format.h>
+#include "SpdLogJuce.h"
 
 namespace midikraft {
 
@@ -140,7 +141,7 @@ namespace midikraft {
 					"  .showvalue on\n"
 					"  .resolution {} {} {} {}\n"
 				 , number_ , paramDef->name()
-					, (knobkraftChannel + 1) , paramDef->paramNo() , 0 , paramDef->maxValue()
+					, (knobkraftChannel + 1) , (int)paramDef->paramNo() , 0 , paramDef->maxValue()
 					//% (channel & 0x0f) % param_ 
 					//% paramDef->maxValue() 
 					, 0 , BCRdefinition::ledMode(ledMode_)

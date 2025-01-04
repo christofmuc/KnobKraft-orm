@@ -89,13 +89,13 @@ namespace knobkraft {
 		infoText += fmt::format("Bank Dump Request Capability has {}been implemented\n", (hasBankDumpRequest ? "" : "not "));
 
 		infoText += "\n\nImplemented functions:\n\n";
-		for (auto functionName : kAdapatationPythonFunctionNames) {
+		for (auto functionName : kAdaptationPythonFunctionNames) {
 			if (adaptationSynth->pythonModuleHasFunction(functionName)) {
 				infoText += fmt::format("def {}()\n",functionName);
 			}
 		}
 		infoText += "\n\nNot implemented functions:\n\n";
-		for (auto functionName : kAdapatationPythonFunctionNames) {
+		for (auto functionName : kAdaptationPythonFunctionNames) {
 			if (!adaptationSynth->pythonModuleHasFunction(functionName)) {
 				infoText += fmt::format("def {}()\n", functionName);
 			}

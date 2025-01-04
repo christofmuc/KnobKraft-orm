@@ -85,6 +85,7 @@ private:
 	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
 
 	TypedNamedValueSet metaDataValues_;
+	TypedNamedValueSet layerNameValues_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)
 };

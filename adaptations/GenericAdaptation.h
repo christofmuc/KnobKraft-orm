@@ -42,18 +42,10 @@ namespace knobkraft {
 		*kGetStoredTags
 		;
 
-	extern std::vector<const char *> kAdapatationPythonFunctionNames;
+	extern std::vector<const char *> kAdaptationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
-#ifndef DEFAULT_VISIBILITY
-#ifdef __GNUC__
-#define DEFAULT_VISIBILITY __attribute__((visibility("default")))
-#else
-#define DEFAULT_VISIBILITY 
-#endif
-#endif
-
-	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
+	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice,
 		public midikraft::RuntimeCapability<midikraft::HasBanksCapability>,
 		public midikraft::RuntimeCapability<midikraft::HasBankDescriptorsCapability>,
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
@@ -186,7 +178,7 @@ namespace knobkraft {
 		static bool createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
-		pybind11::module adaptation_module DEFAULT_VISIBILITY;
+		pybind11::module adaptation_module;
 		std::string filepath_;
 
 		mutable std::map<std::string, std::string> nameCache_;

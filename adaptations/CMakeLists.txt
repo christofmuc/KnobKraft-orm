@@ -28,7 +28,7 @@ set(adaptation_files
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha-YC-Series.py"
 	"Zoom_MS.py"
 )
 
@@ -56,7 +56,7 @@ set(adaptation_files_test_only
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
 	"knobkraft/__init__.py" "knobkraft/adaptation_module.py" "knobkraft/sysex.py" "knobkraft/test_helper.py"
-        "testing/__init__.py" "testing/test_data.py"
+    "testing/__init__.py" "testing/test_data.py"
 )
 
 # Define the sources for the static library
@@ -71,7 +71,7 @@ set(Sources
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
-        ${adaptation_files_test_shipped}
+	${adaptation_files_test_shipped}
 	${adaptation_files_test_only}
 	${adaptation_support_files}
 )
@@ -95,22 +95,21 @@ else()
 endif()
 
 if (MSVC)
-set(INSTALLER_FILE_LIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/../The-Orm/adaptations.iss")
-file(WRITE ${INSTALLER_FILE_LIST_FILE} "; Auto generated, don't edit'\n")
-foreach(ADAPTATION ${adaptation_files})
-file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
-endforeach()
-foreach(ADAPTATION ${adaptation_files_test_shipped})
-file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
-endforeach()
-
+	set(INSTALLER_FILE_LIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/../The-Orm/adaptations.iss")
+	file(WRITE ${INSTALLER_FILE_LIST_FILE} "; Auto generated, don't edit'\n")
+	foreach(ADAPTATION ${adaptation_files})
+		file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
+	endforeach()
+	foreach(ADAPTATION ${adaptation_files_test_shipped})
+		file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
+	endforeach()
 endif()
 
 if(UNIX AND NOT APPLE)
 	# Define additional install files - in our case, all adaptation files and the python modules
-	install(DIRECTORY sequential/ DESTINATION bin/sequential)
-	install(DIRECTORY roland/ DESTINATION bin/roland)
-	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
-	install(DIRECTORY testing/ DESTINATION bin/testing)
-	install(FILES ${adaptation_files} DESTINATION bin)
+	install(DIRECTORY sequential/ DESTINATION bin/sequential FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY roland/ DESTINATION bin/roland FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY testing/ DESTINATION bin/testing FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(FILES ${adaptation_files} DESTINATION bin FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
 ENDIF()

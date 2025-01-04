@@ -1,19 +1,11 @@
-builds/
 *__pycache__*
 .idea/
+.vscode/
 adaptations/CompiledAdaptions.h
 third_party/Tools.InnoSetup.6.0.5/
-builds6/
 The-Orm/sentry-config.h
 adaptations/CompiledAdaptations.h
 codesigning/dsa_priv.pem
-builds.old/
-cmake-build-debug/
-build_python310/
 adaptations/testData/TORAIZ Artist Sound Pack Agreement.pdf
 adaptations/testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank
-build2.0
-build
-build20231003
-build_python38/
-build_new_python/
+.builds

@@ -257,9 +257,7 @@ def friendlyProgramName(programNo):
 
 
 def numberFromDump(message):
-    if isEditBufferDump(message):
-        return 0
-    elif isSingleProgramDump(message):
+    if isSingleProgramDump(message):
         # The program number is in the bulkprogramheader
         return message[10]
     raise Exception("Can only extract program number from SingleProgramDumps!")
@@ -304,15 +302,12 @@ def dataBlockFromMessage(message):
     if isOwnSysex(message):
         data_len = message[5] << 7 | message[6]
         if len(message) == data_len + 9:
-            data_block = message[8:-2]
-            check_sum = -0x05
-            for d in data_block:
-                check_sum -= d
-            if (check_sum & 0x7f) == message[-2]:
-                # Check sum passed
-                return data_block
-            else:
-                raise Exception("Checksum error in reface DX data")
+            # The Check-sum is the value that results in a value of 0 for the
+            # lower 7 bits when the Model ID, Start Address, Data and Check sum itself are added.
+            checksum_block = message[0x07:-1]
+            if (sum(checksum_block) & 0x7f) == 0:
+                # return "Data" block
+                return message[0x08:-2]
     raise Exception("Got corrupt data block in refaceDX data")
 
 

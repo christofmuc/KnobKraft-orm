@@ -75,6 +75,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
+| Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | Thanks to @milnak!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
 Please get back to me if you encounter any issues, or also if you successfully test those marked as alpha or beta. The ones "in progress" are already nearly done and not part of the regular build yet, drop me a note if you want to accelerate.

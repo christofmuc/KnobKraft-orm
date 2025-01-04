@@ -189,6 +189,7 @@ String getImportName(std::shared_ptr<midikraft::PatchHolder> patch)
 void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchHolder> patch)
 {
 	metaDataValues_.clear();
+	layerNameValues_.clear();
 
 	// Check if the patch is a layered patch
 	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch->patch());
@@ -201,6 +202,7 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 			}
 			TypedNamedValue v(title, "Patch name", String(layers->layerName(i)), 20);
 			metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
+			layerNameValues_.push_back(metaDataValues_.back());
 		}
 	}
 	else if (patch->patch()) {
@@ -266,11 +268,16 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 				// A layer name was changed
 				auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(currentPatch_->patch());
 				if (layers) {
-					int i = atoi(property->name().substring(6).toStdString().c_str());
-					layers->setLayerName(i, value.getValue().toString().toStdString());
-					currentPatch_->setName(currentPatch_->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
-					setCurrentPatch(currentPatch_);
-					favoriteHandler_(currentPatch_);
+					for (size_t i = 0; i < layerNameValues_.size(); i++) {
+						if (layerNameValues_[i] == property) {
+							layers->setLayerName((int) i, value.getValue().toString().toStdString());
+							currentPatch_->setName(currentPatch_->name()); // We need to refresh the name in the patch holder to match the name calculated from the 2 layers!
+							setCurrentPatch(currentPatch_);
+							favoriteHandler_(currentPatch_);
+							return;
+						}
+					}
+					spdlog::error("Program error: Failed to find value for property {}", property->name().toStdString());
 					return;
 				}
 			}
@@ -296,6 +303,7 @@ void CurrentPatchDisplay::reset()
 	propertyEditor_.setProperties({});
 	name_.setButtonData("No patch loaded");
 	metaDataValues_.clear();
+	layerNameValues_.clear();
 	favorite_.setToggleState(false, dontSendNotification);
 	hide_.setToggleState(false, dontSendNotification);
 	metaData_.setActive({});
