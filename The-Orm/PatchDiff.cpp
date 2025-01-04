@@ -15,7 +15,7 @@
 #include "DetailedParametersCapability.h"
 
 #include <algorithm>
-#include <boost/format.hpp>
+#include <fmt/format.h>
 // Turn off warning on unknown pragmas for VC++
 #pragma warning(push)
 #pragma warning(disable: 4068)
@@ -28,8 +28,6 @@
 
 class DiffTokenizer : public CodeTokeniser {
 public:
-	DiffTokenizer(CodeDocument &doc) : document_(doc) {}
-
 	void setRangeList(std::vector<Range<int>> &ranges) {
 		ranges_ = ranges;
 	}
@@ -62,7 +60,6 @@ private:
 		PLAIN,
 		DIFF
 	};
-	CodeDocument & document_;
 	std::vector<Range<int>> ranges_;
 };
 
@@ -85,12 +82,12 @@ private:
 	CodeEditorComponent *slave_ = nullptr;
 };
 
-PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : p1_(patch1), p2_(patch2),
-	activeSynth_(activeSynth), p1Document_(new CodeDocument), p2Document_(new CodeDocument)
+PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const &patch1, midikraft::PatchHolder const &patch2) : activeSynth_(activeSynth), p1_(patch1), p2_(patch2),
+	p1Document_(new CodeDocument), p2Document_(new CodeDocument)
 {
 	// Create more components, with more complex bootstrapping
-	tokenizer1_.reset(new DiffTokenizer(*p1Document_.get()));
-	tokenizer2_.reset(new DiffTokenizer(*p2Document_.get()));
+	tokenizer1_.reset(new DiffTokenizer());
+	tokenizer2_.reset(new DiffTokenizer());
 	p1Editor_.reset(new CoupledScrollCodeEditor(*p1Document_, tokenizer1_.get()));
 	p2Editor_.reset(new CoupledScrollCodeEditor(*p2Document_, tokenizer2_.get()));
 	p1Editor_->setSlavedEditor(p2Editor_.get());
@@ -319,7 +316,7 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 		for (int layer = 0; layer < numLayers; layer++) {
 			if (layers) {
 				if (layer > 0) result += "\n";
-				result = result + (boost::format("Layer: %s\n") % layers->layerName(layer)).str();
+				result = result + fmt::format("Layer: {}\n", layers->layerName(layer));
 			}
 			for (auto param : parameterDetails->allParameterDefinitions()) {
 				if (layers) {
@@ -331,7 +328,7 @@ std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, b
 				}
 				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
 				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
-					result = result + (boost::format("%s: %s\n") % param->description() % param->valueInPatchToText(*patch)).str();
+					result = result + fmt::format("{}: {}\n", param->description(), param->valueInPatchToText(*patch));
 				}
 			}
 		}

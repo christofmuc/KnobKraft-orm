@@ -7,8 +7,63 @@
 #include "CreateListDialog.h"
 
 #include "LayoutConstants.h"
+#include "SynthBank.h"
 
-CreateListDialog::CreateListDialog(TCallback &callback, TCallback &deleteCallback) : callback_(callback), deleteCallback_(deleteCallback)
+#include "Capability.h"
+#include "HasBanksCapability.h"
+
+std::map<int, std::string> bankLookup(std::shared_ptr<midikraft::Synth> synth)
+{
+	std::map<int, std::string> result;
+	auto desc = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(synth);
+	if (desc) {
+		int i = 0;
+		for (auto const& d : desc->bankDescriptors())
+		{
+			if (!d.isROM) {
+				result.insert({ i, d.name });
+			}
+			i++;
+		}
+	}
+	else {
+		auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
+		if (banks) {
+			for (int i = 0; i < banks->numberOfBanks(); i++)
+			{
+				result.insert({i, banks->friendlyBankName(MidiBankNumber::fromZeroBase(i, banks->numberOfPatches()))});
+			}
+		}
+	}
+	return result;
+}
+
+CreateListDialog::CreateListDialog(std::shared_ptr<midikraft::Synth> synth, TCallbackWithFill&callback, TCallback &deleteCallback) :
+	synth_(synth)
+	, isBank_(true)
+	, callback_(callback)
+	, deleteCallback_(deleteCallback)
+{
+	addAndMakeVisible(propertyEditor_);
+
+	ok_.setButtonText("OK");
+	ok_.addListener(this);
+	addAndMakeVisible(ok_);
+
+	cancel_.setButtonText("Cancel");
+	cancel_.addListener(this);
+	addAndMakeVisible(cancel_);
+
+	delete_.setButtonText("Delete Bank");
+	delete_.addListener(this);
+	addAndMakeVisible(delete_);
+	delete_.setVisible(false);
+
+	// Finally we need a default size
+	setBounds(0, 0, 540, 300);
+}
+
+CreateListDialog::CreateListDialog(TCallbackWithFill& callback, TCallback& deleteCallback) : isBank_(false), callback_(callback), deleteCallback_(deleteCallback)
 {
 	addAndMakeVisible(propertyEditor_);
 
@@ -26,26 +81,39 @@ CreateListDialog::CreateListDialog(TCallback &callback, TCallback &deleteCallbac
 	delete_.setVisible(false);
 
 	// Finally we need a default size
-	setBounds(0, 0, 540, 200);
-
-	PropertyEditor::TProperties props;
-	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
-	nameValue_ = Value(props[0]->value());
-	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
-	propertyEditor_.setProperties(props);
+	setBounds(0, 0, 540, 300);
 }
 
 void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
 {
 	list_ = list;
+	PropertyEditor::TProperties props;
+	props.push_back(std::make_shared<TypedNamedValue>("Name", "General", "new list", -1));
+	nameValue_ = Value(props[0]->value());
+	jassert(nameValue_.refersToSameSourceAs(props[0]->value()));
 	if (list_) {
+		// This is edit mode - only rename and delete are possible
 		nameValue_.setValue(String(list->name()));
 		delete_.setVisible(true);
 	}
 	else {
-		nameValue_.setValue("new list");
+		// This is create mode - need to allow rename and bank select if bank, but not delete
+		nameValue_.setValue(isBank_ ? "new bank" : "new list");
 		delete_.setVisible(false);
+		if (isBank_) {
+			auto lookup = bankLookup(synth_);
+			props.push_back(std::make_shared<TypedNamedValue>("Bank", "General", 0, lookup));
+			bankValue_ = Value(props[1]->value());
+		}
+		std::map<int, std::string> populateModes = { {0, "No fill"}, { 1, "First patches"}, { 2, "Random patches"} };
+		props.push_back(std::make_shared<TypedNamedValue>("Auto-fill from grid", "Populate", 0, populateModes));
+		fillMode_ = Value(props.back()->value());
+		if (!isBank_) {
+			props.push_back(std::make_shared<TypedNamedValue>("Maximum number of patches", "Populate", 64, 0, 4096));
+			patchNumber_ = Value(props.back()->value());
+		}
 	}
+	propertyEditor_.setProperties(props);
 }
 
 void CreateListDialog::resized()
@@ -64,9 +132,31 @@ static void dialogClosed(int modalResult, CreateListDialog* dialog)
 	if (modalResult == 1 && dialog != nullptr) { // (must check that dialog isn't null in case it was deleted..)
 		dialog->notifyResult();
 	}
+	if (dialog) {
+		dialog->release();
+	}
 }
 
-void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallback callback, TCallback deleteCallback)
+void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::SynthBank> list, std::shared_ptr<midikraft::Synth> synth, Component* centeredAround, TCallbackWithFill callback, TCallback deleteCallback)
+{
+	if (!sCreateListDialog_) {
+		sCreateListDialog_ = std::make_unique<CreateListDialog>(synth, callback, deleteCallback);
+	}
+	sCreateListDialog_->setList(list);
+	sCreateListDialog_->callback_ = callback;
+	sCreateListDialog_->deleteCallback_ = deleteCallback;
+
+	DialogWindow::LaunchOptions launcher;
+	launcher.content.set(sCreateListDialog_.get(), false);
+	launcher.componentToCentreAround = centeredAround;
+	launcher.dialogTitle = list ? "Edit user bank" : "Create user bank";
+	launcher.useNativeTitleBar = false;
+	launcher.dialogBackgroundColour = Colours::black;
+	sWindow_ = launcher.launchAsync();
+	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sCreateListDialog_.get()));
+}
+
+void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList> list, Component* centeredAround, TCallbackWithFill callback, TCallback deleteCallback)
 {
 	if (!sCreateListDialog_) {
 		sCreateListDialog_ = std::make_unique<CreateListDialog>(callback, deleteCallback);
@@ -85,6 +175,7 @@ void CreateListDialog::showCreateListDialog(std::shared_ptr<midikraft::PatchList
 	ModalComponentManager::getInstance()->attachCallback(sWindow_, ModalCallbackFunction::forComponent(dialogClosed, sCreateListDialog_.get()));
 }
 
+
 void CreateListDialog::release()
 {
 	sCreateListDialog_.reset();
@@ -95,12 +186,35 @@ void CreateListDialog::notifyResult()
 	String name = nameValue_.getValue();
 	if (list_) {
 		list_->setName(name.toStdString());
+		/* See my comment on #216 why this is a dangerous idea. Not all banks might be compatible, so we need the notion of compatible banks first!
+		if (isBank_) {
+			int bankSelected = bankValue_.getValue();
+			bank_ = MidiBankNumber::fromZeroBase(bankSelected, midikraft::SynthBank::numberOfPatchesInBank(synth_, bankSelected));
+			auto userBank = std::dynamic_pointer_cast<midikraft::UserBank>(list_);
+			jassert(userBank);
+			userBank->updateBank(bank_);
+		}*/
 	}
 	else {
 		// This was create mode!
-		list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
+		if (isBank_) {
+			int bankSelected = bankValue_.getValue();
+			bank_ = MidiBankNumber::fromZeroBase(bankSelected, midikraft::SynthBank::numberOfPatchesInBank(synth_, bankSelected));
+			list_ = std::make_shared<midikraft::SynthBank>(name.toStdString(), synth_, bank_);
+		}
+		else {
+			list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
+		}
 	}
-	callback_(list_);
+	TFillParameters fillParameters{ TListFillMode::None, 0 };
+	if (static_cast<int>(fillMode_.getValue()) == 1) {
+		fillParameters.fillMode = TListFillMode::Top;
+	}
+	else if (static_cast<int>(fillMode_.getValue()) == 2) {
+		fillParameters.fillMode = TListFillMode::Random;
+	}
+	fillParameters.number = (size_t) (patchNumber_.getValue().operator int());
+	callback_(list_, fillParameters);
 }
 
 void CreateListDialog::buttonClicked(Button* button) {

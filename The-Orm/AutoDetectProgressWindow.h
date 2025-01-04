@@ -16,6 +16,7 @@ class AutoDetectProgressWindow : public ProgressHandlerWindow {
 public:
 	explicit AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths);
     explicit AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths);
+	virtual ~AutoDetectProgressWindow() = default;
 
 	// Implement ThreadWithProgressWindow
 	virtual void run() override;
@@ -25,7 +26,7 @@ public:
 	virtual void onCancel() override;
 
 private:
-	std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths_;
+	std::vector<std::weak_ptr<midikraft::SimpleDiscoverableDevice>> synths_;
 	midikraft::AutoDetection autodetector_;
 };
 

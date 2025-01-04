@@ -49,11 +49,6 @@ void CurrentPatchValues::changedPatch()
 	sendChangeMessage();
 }
 
-void CurrentSession::changedSession()
-{
-	sendChangeMessage();
-}
-
 UIModel * UIModel::instance()
 {
 	if (instance_ == nullptr) {
@@ -65,6 +60,14 @@ UIModel * UIModel::instance()
 void UIModel::shutdown()
 {
 	instance_.reset();
+}
+
+void UIModel::clear()
+{
+	// This is the new property based UI model, eventually everything should migrate here
+	// 
+	// Deselect the currently selected list
+	Data::instance().getEphemeralPropertyAsValue(EPROPERTY_LIBRARY_PATCH_LIST) = "";
 }
 
 midikraft::Synth * UIModel::currentSynth()
@@ -170,9 +173,10 @@ std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> CurrentSynthLi
 bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth)
 {
 	for (auto s : activeSynths()) {
-		if (s->getName() == synth->getName()) {
-			return true;
-		}
+		if (s && synth)
+			if (s->getName() == synth->getName()) {
+				return true;
+			}
 	}
 	return false;
 }
@@ -186,6 +190,17 @@ void CurrentMultiMode::setMultiSynthMode(bool multiMode)
 bool CurrentMultiMode::multiSynthMode() const
 {
 	return multiSynthMode_;
+}
+
+std::string UIModel::currentSynthNameOrMultiOrEmpty() {
+	// Get the name of the current Synth, or "multiMode" if activated, or empty if no synth
+	if (UIModel::instance()->multiMode_.multiSynthMode()) {
+		return "MultiSynth";
+	}
+	if (auto newCurrentSynth = UIModel::instance()->currentSynth()) {
+		return newCurrentSynth->getName();
+	}
+	return "";
 }
 
 ValueTree UIModel::ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue) {

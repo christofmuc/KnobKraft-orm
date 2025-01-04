@@ -12,12 +12,23 @@
 #include "StepSequencer.h"
 #include "PatchHolder.h"
 #include "SynthHolder.h"
-#include "Session.h"
+#include "SynthBank.h"
 
 #include "Data.h"
 
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
+juce::Identifier const PROPERTY_COMBOBOX_SENDMODE {"SynthSendMode"};
+juce::Identifier const PROPERTY_WINDOW_LIST {"Windows"};
+juce::Identifier const PROPERTY_WINDOW_OPENNESS {"Open"};
+juce::Identifier const PROPERTY_WINDOW_SIZE {"Size"};
+
+// The EphemeralData is not stored on disk, but needs to be cleared via the UIModel clear method when the database changes.
+juce::Identifier const EPROPERTY_LIBRARY_PATCH_LIST {"LibraryPatchList"};
+
+
+juce::Identifier const EPROPERTY_MIDI_LOG_LEVEL{ "MIDILog" };
+
 
 class CurrentSynth : public ChangeBroadcaster {
 public:
@@ -73,16 +84,6 @@ public:
 	void changedPatch();
 };
 
-class CurrentSession : public ChangeBroadcaster {
-public:
-	void changedSession();
-
-	std::vector<std::shared_ptr<midikraft::SessionPatch>> session() { return sessionPatches;  }
-
-private:
-	std::vector<std::shared_ptr<midikraft::SessionPatch>> sessionPatches;
-};
-
 class CurrentSynthList : public ChangeBroadcaster {
 public:
 	void setSynthList(std::vector<midikraft::SynthHolder> const &synths);
@@ -108,6 +109,8 @@ public:
 	static UIModel *instance();
 	static void shutdown();
 
+	void clear();
+
 	static midikraft::Synth *currentSynth();
 	static midikraft::Synth* currentSynthOfPatch();
 	static std::shared_ptr<midikraft::Synth> currentSynthOfPatchSmart();
@@ -129,6 +132,7 @@ public:
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
 	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
 
+	static std::string currentSynthNameOrMultiOrEmpty(); // Get the name of the current Synth, or "multiMode" if activated, or empty if no synth
 	static ValueTree ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 	static Value getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 

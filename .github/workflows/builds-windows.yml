@@ -20,7 +20,7 @@ jobs:
       - name: Select proper Python version
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8' 
+          python-version: '3.12'
           architecture: 'x64' 
         
       - name: Install NuGet
@@ -31,18 +31,17 @@ jobs:
       - name: Install Innosetup with NuGet
         run: nuget install Tools.InnoSetup
 
-      - name: Run Python tests first
-        run: |
-          pip install -r requirements.txt
-          cd adaptions
-          python -m pytest --all . -q --no-header
-
       - name: Build and install Sentry
         working-directory: third_party/sentry-native
         run: |
           cmake -B build
           cmake --build build --parallel --config RelWithDebInfo
           cmake --install build --prefix install --config RelWithDebInfo
+
+      - name: Test git describe
+        run: |
+          git status
+          git describe --tags --long --dirty
 
       - name: CMake configure
         env: # We get the SENTRY DSN from the repository's secret store
@@ -51,19 +50,16 @@ jobs:
         run: |
           cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
 
+      - name: Run Python tests first
+        run: |
+          pip install -r requirements.txt
+          cd adaptations
+          python -m pytest --all . -q --no-header
+
       - name: CMake build
         run: cmake --build Builds --config RelWithDebInfo --parallel
 
-      - name: Publish release
-        uses: xresloader/upload-to-github-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          file: Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
-          tags: true
-          draft: true
-
-      - name: Setup Sentry CLI        
+      - name: Setup Sentry CLI
         uses: mathieu-bour/setup-sentry-cli@1.2.0
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -98,6 +94,24 @@ jobs:
         run: |
           builds\_deps\winsparkle-src\bin\sign_update.bat Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe ${{ steps.extract_pem.outputs.SECRET_FILE }} > update.sig
           type update.sig
+
+      - name: Update appcast.xml to add the new release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          python write_appcast.py
+          python make_github_release.py
+        env:
+          APPCAST_ACCESS_TOKEN: ${{ secrets.APPCAST_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload executable into release
+        uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe
+          tags: true
+
 
       - name: Delete key file
         if: startsWith(github.ref, 'refs/tags/')

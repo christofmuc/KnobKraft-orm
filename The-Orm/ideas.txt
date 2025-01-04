@@ -1,25 +1,99 @@
 ﻿Completely unprioritised list of things to do
 =============================================
 
-For 1.17:
-Adaptation tests need documenting
-XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change
-Could simulate an ingest with the predefined names (lol)
+Datenbank Design Probleme
+
+PatchNumbers
+Altes System: Patch Daten von Program Platz trennen. Programm Platz speichern in der Tabelle, Nutzdaten sind egal ob Edit Buffer oder Program Dump
+Neues System: (python) immer die Originalmessage speichern. Daraus ergibt sich evtl der Speicherplatz
+
+Vorteil Alt: Unterstützt auch Synths ohne ProgramNumberStorage, da beim Import eine Nummer generiert wird. Das fehlt beim neuen System
+Vorteil Neu: Keine Redundanz der Daten zwischen Patch, Datenbank, ImportInfo. Was gewinnt denn dann?
 
 
-Bug: When you open the export to sysex dialog in an adaptation and then cancel again, KnobKraft will crash on exit.
+Data Migration 1.x -> 2.0
 
-Carry over:
-* Mac Python warning needs to be bigger, i.e. a dialog box  - Isn't this done?
-* Would expect to choose sort order of patches in grid
-* Could do better layer switch
+Migration: Wo file source oder bulk source mit file source ist und keine BankNumber + ProgramNumber sind, diese erzeugen
+SourceInfo sollte vor der Datenbank Info stehen
+MidiBankNumber null sollte sich eigentlich immer aus der import source füllen lassen?
+From Synth source hat keine Program Number! Das ist ein Problem!
+Matrix - lassen sich program number und bank aus dem Default Name extrahieren!
+
+2.0 Beta 2 - Select Handler
+
+* Could display per patch if it is in Synth or not
+* Need global mode whether a Click on a button would not send to edit buffer, but just a bank select/program change message. 
+* Could allow for single patch retrieval instead of whole bank synth (if mode is available)
+UX - Library does not show what is loaded (e.g. all patches DW8000, or "import .. of OB-6")
+BUG - Kawai shows Wave as #51, but that cannot be assigned. Should be a different bank!
+* Librarian Bank send for MKS80, K3M. -> K3 though also has program dump, so it doesn't actually need bank upload.
+
+2.0 Release
+
+BUG - Hidden state wird in Bank nicht angezeigt ohne Neustart, need ValueTree backing
+BUG  info Overriding built-in import category rules with file C - comes too often now
+BUG - lists are ordered incorrectly in the Library, no longer with order_num. This actually never worked, and should be implemented together with general sorting!
+BUG - Duplicate name search sorts wrong I think. And is utterly slow (try on Reface DX)
+BUG - import einer Bank kann eventuell den Namen eines Patches wieder ändern!
+BUG - Progress dialog geht nicht beim sent der UserBank
+BUG - After import, the new bank is not selected in the tree. Shows warning: Did not find item in tree:
+BUG - Runninng autocategorize does not refresh the bank view
+BUG - The patch list buttons do not subscribe and react on changes to "their" patch. if you add a category, the color doesn't change. Need to somehow refresh better
+BUG - Bulk deleting patches that are in a bank will fail because of foreign key constaint - should rather hide them
+BUG - Single click on already selected item in user list does not load again into current patch (onSelectionChanged vs onClick)
+
+UX -  SynthBank Buttons sollten auch die ButtonInfo benutzen
+UX - can make revert changes for dirty synth bank panel
+UX - Should have a clear/init bank function? (e.g. drop target to drag a patch on a button as "init patch" and multiply?)
+UX - What is the point of the normal download menu item. Should it go away? But then have no download all banks. It certainly needs to be synced somehow
+UX - Don't auto import from tree, just show the window. Then no synth connected warning can also be removed.
+UX - Trashcan should light up when drag target works
+UX - Double click rename should also work for user banks and user lists
+UX - adding new list or bank could use in place editing and put cursor right there instead of the dialog window
+
+UX - Single click handler in user list does not send anymore/actually never sent. Should it?
+
+
+2.1 Release
+
+IMPROV - should have save bank as sysex menu item, Export into file wäre nice.
+DOCS - Adaptation tests need documenting
+LISTS IMPROVEMENT Imports sind auch lists, und sollten immer alle patches enthalten (auch mit anderen Namen etc.). In der Library ist de Patch natürlich nur einmal. Macht das Sinn?
+LISTS IMPROVEMENT Import als Liste auch draggen können
+IDEA - History stack!
+* Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
+* Need easy clear filter button
+* SINGLE SYNTH SETUP MODE
+	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
+	* Half done: The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
+	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth !!!
+
+
+Later
+
+UX - clicking a bank of a different than the current synth needs to switch the current synth. What is loaded into the library? last search.
+IDEA - XV 3080 could somehow supply preset list from manual and invent some build in preset type that cannot be requested but only "sent", with the send command just being a bank switch/program change Could simulate an ingest with the predefined names (lol)
+IMPROV - Could do better layer switch
+IMPROV - Tree could show count of items
+IMPROV - Concrete Layer switching with implentation of layer play mode e.g. stack/split/select one of two. Could be used by Rev2 and MKS80
+
+
+Sollte irgendwo anzeigen können, für welche Synths in der Datenbank Patches sind, auch wenn sie ausgeschaltet sind. Vielleicht eine Database statistik Seite mit Anzahl der Patches pro Synth, Listen, ?
+
+Layer logic
+- need pretty layer names!
+
+Retry logic - the OB-6 and Rev2 seem to be pretty unstable now?
+
+More ideas
+* migrate imports into lists
+* migrate categories into a m:n relationship
 
 Inspiration:
 	Surf! Auto-Surf! Dive!
 
 	AutoPlay The function that sends a test note to the MIDI device whenever an entry is selected
 	AutoAudition Automatically sends a selected entry to the device’s appropriate →edit buffer (see also →Audition
-
 
 Better marketing
 * Should setup github project page
@@ -52,25 +126,17 @@ JD-800
 
 
 Before 2.0
-* Need pretty display name for Synth, to fix initial errors where the synthname is displayed without manufacturer (Matrix 6/R, Matrix 1000)
-* Need easy clear filter button
-* SINGLE SYNTH SETUP MODE
-	* Single Synth Setup could ditch synth selector row and instead but the active indicator above the current patch!
-	* The synth button row could be hidden if only a single Synth is enabled (and the Window Title changed as well?)
-	* The synth configured should be stored in the database, not the settings. Then you can open multiple windows and have one for each synth
 
 LISTS upgrades:
-* Reorder patches in a list - needs dragging within the grid? Or the patches in the tree?
+* Reorder patches in a list - needs dragging within the grid! With insert position indicator...
 * Add lists to PIF export
 * Openness and selection state could be persisted in the database
 * Bulk imports should have children... but can I filter for them? Not until I convert imports to lists!
 * Could allow stored filters (stored searches), which are "smart lists" in Lightroom. Should also store last used search
 	 Stored filters could be single or multi-synth
-* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where?
+* How to send a whole list into the edit buffer? Do I need a "current list" window? If yes, where? Load the list into the bank window?
+* Create a list of the currently loaded patches in all synths (store in list)
 * List folders / lists of lists?
-
-Release 2.0
-* Add Bank Management
 
 Historical 
 https://www.mossgrabers.de/Software/ChangeIt/ChangeIt.html
@@ -88,19 +154,13 @@ User questions
 * How to edit the categories? The automatic_categories.json can be edited when clicking on the Categories menu item Edit auto-categories. On my machine, it is located at C:\Users\Christof\AppData\Roaming\knobkraft. I think I realize there is a problem when no editor is associated with the .jsonc extension. I think it should reveal the file in explorer then?
 * Backup behavior!?	
 
-BANK MANAGEMENT
-* Bank management (github #9)
-* Could add tab "Synth memory" to show current synth's bank. Will need many pages... Could use same filtering, except multi-synth filtering. Click on a button would not send to edit buffer, but just 
-  a bank select/program change message. Will print storage position big on the button. Needs to have concept of ROM banks. Instead of filtering imports you'd filter banks.
-* Has refresh button when you think the database no longer matches the synth, to read all from the synth into the database.
-* Has send button (?) to send full bank into synth (or just delta?). Could show "dirty" map stating this patch is not in the synth
-* How do I do drag and drop from the Library into the bank?
-* Probably needs split screen
+NETWORK SYNC
+Hook up Firebase - what to sync? always?
+Public folders where people can publish patches?
 
 UI/UX
 * Different log levels with error colors
 * Selected button is not really visible in PatchButtonGrid, need something else besides color
-* Edit field should be focused of Change Patch Name box
 * The current patch per synth could be hidable
 * The tags for a patch should only be displayed when assigned, and an add button could allow for tags assignment. This is a one click more, but the display is less cluttered?
 
@@ -136,8 +196,6 @@ KawaiK3 - supported by BCR2000
 OB-6
 + Implement parameter set of OB-6 for patch diff
 
-Behringer RD-8
-+ Need support for Patterns and Songs with display of content?
 
 RefaceDX
 * Parameter set missing
@@ -290,7 +348,6 @@ Big things
 
 More synthesizers
 
- 	+ Behringer RD 8
 	+ Moog Source Encore - can only do bank uploads (?), not single uploads https://www.encoreelectronics.com/smkmanual.pdf. This is a problem until KnobKraft 2.0, I guess. Unless I encode the whole bank dump as a single patch?
 	+ Jupiter 8 Encore - https://www.encoreelectronics.com/jp8mk.pdf can do edit buffer, patch and presets (different types?)
 
@@ -307,6 +364,9 @@ Requested on Reddit
 Librarian for other stuff (should rather do with adaptation?)
 
 	+ Meris pedal
+
+List of other tools
+	http://www.hitsquad.com/smm/freeware/PATCH_EDITORS_LIBRARIANS/
 
 MacOS X installer
   + The Python problem: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi

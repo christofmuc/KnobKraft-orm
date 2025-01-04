@@ -46,9 +46,12 @@ private:
 	CategoryButtons categoryFilters_;
 	ToggleButton onlyFaves_;
 	ToggleButton showHidden_;
+	ToggleButton showUndecided_;
 	ToggleButton onlyUntagged_;
 	ToggleButton onlyDuplicates_;
 	ToggleButton andCategories_;
+	TextButton clearFilters_;
+	ComboBox orderByType_;
 	ComboBox buttonDisplayType_;
 
 	midikraft::PatchDatabase& database_;

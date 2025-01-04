@@ -20,26 +20,49 @@
 #include "UIModel.h"
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
+#include "StoredPatchNameCapability.h"
 #include "ScriptedQuery.h"
-#include "ProgressHandlerWindow.h"
+#include "LibrarianProgressWindow.h"
 
 #include "GenericAdaptation.h" //TODO For the Python runtime. That should probably go to its own place, as Python now is used for more than the GenericAdaptation
 
-#include <boost/format.hpp>
+#include "I18NHelper.h"
+
+#include <fmt/format.h>
 #include "PatchInterchangeFormat.h"
 #include "Settings.h"
 #include "ReceiveManualDumpWindow.h"
 #include "ExportDialog.h"
+#include "BulkRenameDialog.h"
+#include "SynthBank.h"
+
+#include "LayoutConstants.h"
+
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
+
+#include <random>
+#include <algorithm>
 
 const char *kAllPatchesFilter = "All patches";
 
-PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths)
-	: database_(database), librarian_(synths), synths_(synths), 
-	patchListTree_(database, synths),
-	buttonStrip_(1001, LambdaButtonStrip::Direction::Horizontal)
+PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::SynthHolder> const &synths) :
+         patchListTree_(database, synths)
+        , rightSideTab_(juce::TabbedButtonBar::TabsAtTop)
+        , librarian_(synths)
+        , synths_(synths)
+        , database_(database)
 {
+	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
+		setSynthBankFilter(synth, bank);
+		showBank();
+	};
 	patchListTree_.onImportListSelected = [this](String id) {
 		setImportListFilter(id);
+	};
+	patchListTree_.onUserBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, String id) {
+		setUserBankFilter(synth, id.toStdString());
+		showBank();
 	};
 	patchListTree_.onUserListSelected= [this](String id) {
 		setUserListFilter(id);
@@ -52,6 +75,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	patchListTree_.onPatchSelected = [this](midikraft::PatchHolder patch) {
 		selectPatch(patch, false);
 	};
+	patchListTree_.onPatchListFill = [this](std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters parameters, std::function<void()> finishedCallback) {
+		fillList(list, parameters, finishedCallback);
+	};
 
 	patchButtons_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) {
 		if (UIModel::currentSynth()) {
@@ -62,7 +88,10 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(database_, predefinedCategories(),
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
+		int total = getTotalCount();
+		patchButtons_->setTotalCount(total, false);
 		patchButtons_->refresh(true);
+		synthBank_->refreshPatch(favoritePatch);
 	}
 	);
 	currentPatchDisplay_->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {
@@ -70,6 +99,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 			selectPatch(*patch, true);
 		}
 	};
+
+	synthBank_ = std::make_unique<SynthBankPanel>(database_, this);
+	patchHistory_ = std::make_unique<PatchHistoryPanel>(this);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -82,7 +114,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	addAndMakeVisible(box);
 	box->addAndMakeVisible(&patchListTree_);
 	box->addAndMakeVisible(&recycleBin_);
-	recycleBin_.onClicked = [this]() {
+	recycleBin_.onClicked = []() {
 		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Delete functionality", "The trash can is a drag and drop target you can use to delete patches or patch list entries - "
 			"just drag a patch or a list entry onto the trash can and drop it.\nDeleting patch list entries will be done immediately,"
 			" but deleting patches will ask for confirmation, as this is a destructive operation.");
@@ -93,44 +125,34 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		//SimpleLogger::instance()->postMessage("Item dropped: " + dropItemString);
 		deleteSomething(infos);
 	};
+	
+	/*auto centerBox = new LambdaLayoutBox();
+	centerBox->onResized = [this](Component* box) {
+		auto area = box->getLocalBounds();
+		patchSearch_->setBounds(area.removeFromLeft(area.getWidth() / 4 * 3));
+		synthBank_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
+	};
+	centerBox->addAndMakeVisible(*synthBank_);
+	centerBox->addAndMakeVisible(*patchSearch_);*/
+
+	addAndMakeVisible(rightSideTab_);
+	rightSideTab_.addTab("Current Patch", Colours::black, currentPatchDisplay_.get(), false);
+	rightSideTab_.addTab("Synth Bank", Colours::black, synthBank_.get(), false);
+	rightSideTab_.addTab("Recent Patches", Colours::black, patchHistory_.get(), false);
 
 	splitters_ = std::make_unique<SplitteredComponent>("PatchViewSplitter",
 		SplitteredEntry{ box, 15, 5, 40 },
-		SplitteredEntry{ patchSearch_.get(), 70, 40, 90 },
-		SplitteredEntry{ currentPatchDisplay_.get(), 15, 5, 40}, true);
+		SplitteredEntry{ patchSearch_.get(), 50, 40, 90},
+		SplitteredEntry{ &rightSideTab_, 15, 5, 40}, true);
 	addAndMakeVisible(splitters_.get());
 
 	addAndMakeVisible(recycleBin_);
 
-	LambdaButtonStrip::TButtonMap buttons = {
-	{ "retrieveActiveSynthPatches",{ "Import patches from synth", [this]() {
-		retrievePatches();
-	} } },
-	{ "fetchEditBuffer",{ "Import edit buffer from synth", [this]() {
-		retrieveEditBuffer();
-	} } },
-	{ "receiveManualDump",{ "Receive manual dump", [this]() {
-		receiveManualDump();
-	},  } },
-	{ "loadsysEx", { "Import sysex files from computer", [this]() {
-		loadPatches();
-	} } },
-	{ "exportSysex", { "Export into sysex files", [this]() {
-		exportPatches();
-	}}},
-	{ "exportPIF", { "Export into PIF", [this]() {
-		createPatchInterchangeFile();
-	} } },
-	{ "showDiff", { "Show patch comparison", [this]() {
-		showPatchDiffDialog();
-	} } },
-	};
-	buttonStrip_.setButtonDefinitions(buttons);
-	addAndMakeVisible(buttonStrip_);
-	
 	patchButtons_->setPatchLoader([this](int skip, int limit, std::function<void(std::vector< midikraft::PatchHolder>)> callback) {
-		loadPage(skip, limit, callback);
+		loadPage(skip, limit, currentFilter(), callback);
 	});
+
+	patchButtons_->setButtonSendModes({ "program change", "edit buffer", "automatic"});
 
 	// Register for updates
 	UIModel::instance()->currentPatch_.addChangeListener(this);
@@ -139,6 +161,11 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 PatchView::~PatchView()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
+	BulkRenameDialog::release();
+}
+
+void PatchView::showBank() {
+	rightSideTab_.setCurrentTabIndex(1, true);
 }
 
 void PatchView::changeListenerCallback(ChangeBroadcaster* source)
@@ -159,11 +186,29 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 	return result;
 }
 
+int PatchView::getTotalCount() {
+	return database_.getPatchesCount(currentFilter());
+}
+
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
-	int total = database_.getPatchesCount(currentFilter());
-	patchButtons_->setTotalCount(total);
+	int total = getTotalCount();
+	patchButtons_->setTotalCount(total, true);
 	patchButtons_->refresh(true); // This kicks of loading the first page
+	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, juce::Uuid().toString(), nullptr);
+}
+
+std::shared_ptr<midikraft::PatchList>  PatchView::retrieveListFromDatabase(midikraft::ListInfo const& info)
+{
+	if (info.id.empty()) {
+		return nullptr;
+	}
+
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+	for (auto synth : synths_) {
+		synths.emplace(synth.getName(), synth.synth());
+	}
+	return database_.getPatchList(info, synths);
 }
 
 void PatchView::hideCurrentPatch()
@@ -187,12 +232,13 @@ void PatchView::selectNextPatch()
 	patchButtons_->selectNext();
 }
 
-void PatchView::loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
+void PatchView::loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback) {
 	// Kick off loading from the database (could be Internet?)
-	database_.getPatchesAsync(currentFilter(), [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+	database_.getPatchesAsync(filter, [this, callback](midikraft::PatchFilter const filter, std::vector<midikraft::PatchHolder> const &newPatches) {
+        ignoreUnused(filter);
 		// Discard the result when there is a newer filter - another thread will be working on a better result!
-		if (currentFilter() != filter)
-			return;
+		/*if (currentFilter() != filter)
+			return;*/
 
 		// Check if a client-side filter is active (python based)
 		String advancedQuery = patchSearch_->advancedTextSearch();
@@ -215,8 +261,7 @@ void PatchView::resized()
 
 	/*if (area.getWidth() > area.getHeight() * 1.5)*/ {
 		// Landscape layout		
-		buttonStrip_.setBounds(area.removeFromBottom(LAYOUT_LARGE_LINE_SPACING + LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
-		splitters_->setBounds(area);
+		splitters_->setBounds(area.withTrimmedBottom(LAYOUT_INSET_NORMAL));
 	}
 	/*else {
 		// Portrait
@@ -235,9 +280,9 @@ void PatchView::showPatchDiffDialog() {
 
 	if (compareTarget_.synth()->getName() != UIModel::currentPatch().synth()->getName()) {
 		// Should have come either
-		SimpleLogger::instance()->postMessage((boost::format("Can't compare patch %s of synth %s with patch %s of synth %s") %
-			UIModel::currentPatch().patch()->name() % UIModel::currentPatch().synth()->getName()
-			% compareTarget_.patch()->name() % compareTarget_.synth()->getName()).str());
+		spdlog::warn("Can't compare patch {} of synth {} with patch {} of synth {}",
+			UIModel::currentPatch().name(), UIModel::currentPatch().synth()->getName(),
+			compareTarget_.name(), compareTarget_.synth()->getName());
 		return;
 	}
 
@@ -259,6 +304,158 @@ void PatchView::saveCurrentPatchCategories() {
 		patchButtons_->refresh(false);
 	}
 }
+
+void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId)
+{
+	loadPage(0, -1, bankFilter(synth, bankId), [this, synth, bank, bankId](std::vector<midikraft::PatchHolder> patches) {
+		spdlog::info("Bank of {} patches retrieved from database", patches.size());
+
+		// We need to patch the patches' position, so they represent the bank loaded and not their original position on import whenever that was!
+		//TODO - this should possible go into the PatchDatabase code. But it is a load option?
+		int i = 0;
+		for (auto& patch : patches) {
+			patch.setBank(bank);
+			patch.setPatchNumber(MidiProgramNumber::fromZeroBaseWithBank(bank, i++));
+		}
+
+		// Load the bank info from the database as well for the timestamp
+		std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+		synths[synth->getName()] = synth;
+		midikraft::ListInfo info;
+		info.id = bankId; 
+		info.name = ""; // Don't care for the name
+		auto fullInfo = database_.getPatchList(info, synths);
+		if (fullInfo) {
+			auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
+			if (bankList) {
+				synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
+			} 
+		}
+		else {
+			spdlog::error("Program Error: Invalid synth bank, not stored in database. Can't load into panel");
+			return;
+		}
+	});
+}
+
+void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler)
+{
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
+	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+	if (location) {
+		if (location->channel().isValid() && device->wasDetected()) {
+			// We can offer to download the bank from the synth, or rather just do it!
+			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
+			if (synth /*&& device->wasDetected()*/) {
+				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
+				progressWindow->launchThread();
+				progressWindow->setMessage(fmt::format("Importing {} from {}...", midikraft::SynthBank::friendlyBankName(synth, bank), synth->getName()));
+				librarian_.startDownloadingAllPatches(
+					midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
+					synth,
+					bank,
+					progressWindow.get(), [this, progressWindow, finishedHandler, synth, bank](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						progressWindow->signalThreadShouldExit();
+						MessageManager::callAsync([this, patchesLoaded, finishedHandler, synth, bank]() {
+							spdlog::info("Retrieved {} patches from synth", patchesLoaded.size());
+							// First make sure all patches are stored in the database
+							auto enhanced = autoCategorize(patchesLoaded);
+							mergeNewPatches(enhanced); //This is actually async!, should be reflected in the name. Maybe I should open a progress dialog here?
+							// Then store the list of them in the database
+							auto retrievedBank = std::make_shared<midikraft::ActiveSynthBank>(synth, bank, juce::Time::getCurrentTime());
+							retrievedBank->setPatches(patchesLoaded);
+							database_.putPatchList(retrievedBank);
+							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
+							// instead of sending the sysex
+							patchListTree_.refreshAllUserLists([this, synth, bank, finishedHandler]() {
+								loadSynthBankFromDatabase(synth, bank, midikraft::ActiveSynthBank::makeId(synth, bank));
+								if (finishedHandler) {
+									finishedHandler();
+								}
+								});
+							});
+					});
+			}
+		}
+		else {
+			AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
+		}
+	}
+	else {
+		spdlog::error("Invalid operation - cannot retrieve bank from synth that has no MIDI connectivity implemented");
+	}
+}
+
+void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
+{
+	if (!bankToSend) return;
+
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToSend->synth());
+	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToSend->synth());
+	if (location) {
+		if (location->channel().isValid() && device->wasDetected()) {
+			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Sending bank to Synth");
+			progressWindow->setMessage("Starting send");
+			if (bankToSend->synth() /*&& device->wasDetected()*/) {
+				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
+				progressWindow->launchThread();
+				librarian_.sendBankToSynth(*bankToSend, ignoreDirty, progressWindow.get(), [bankToSend, finishedHandler, progressWindow](bool completed) {
+					progressWindow->signalThreadShouldExit();
+					if (completed) {
+						bankToSend->clearDirty();
+						if (finishedHandler) {
+							finishedHandler();
+						}
+					}
+					else {
+						AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::WarningIcon, "Incomplete bank update", "The bank update did not finish, you might or not have a partial bank transferred!");
+					}
+				});
+			}
+		}
+		else {
+			AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
+		}
+	}
+	else {
+		spdlog::error("Invalid operation - cannot send bank to synth that has no MIDI connectivity implemented");
+	}
+}
+
+void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
+	auto bankId = midikraft::ActiveSynthBank::makeId(synth, bank);
+	// Check if this synth bank has ever been loaded
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+	synths[synth->getName()] = synth;
+	if (database_.doesListExist(bankId)) {
+		// It does, so we can safely load and display it
+		loadSynthBankFromDatabase(synth, bank, bankId);
+	}
+	else {
+		// No, first time ever - offer the user to download from the synth if connected
+		retrieveBankFromSynth(synth, bank, [this, synth]() {
+			// After it has been loaded successfully, make sure to select it in the tree 
+			std::string synthName = synth->getName();
+			patchListTree_.selectItemByPath({ "allpatches", "library-" + synthName, "banks-" + synthName});
+		});
+	}
+}
+
+void PatchView::setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId) {
+	if (database_.doesListExist(listId)) {
+		// It does, so we can safely load and display it
+		loadSynthBankFromDatabase(synth, MidiBankNumber::invalid(), listId);
+	}
+	else {
+		jassertfalse;
+	}
+}
+
+void PatchView::copyBankPatchNamesToClipboard() {
+    synthBank_->copyPatchNamesToClipboard();
+}
+
+
 
 void PatchView::setImportListFilter(String filter)
 {
@@ -283,9 +480,17 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string patchName = infos["patch_name"];
 			if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Delete patch from database",
 				"Do you really want to delete the patch " + patchName + " from the database? There is no undo!")) {
-				database_.deletePatches(infos["synth"], { infos["md5"] });
-				SimpleLogger::instance()->postMessage("Deleted patch " + patchName + " from database");
-				patchListTree_.refreshAllUserLists();
+				auto [deleted, hidden] = database_.deletePatches(infos["synth"], { infos["md5"] });
+				if (deleted > 0) {
+					spdlog::info("Deleted patch {} from database", patchName);
+				}
+				else if (hidden > 0 ) {
+					spdlog::warn("Could not delete patch {} from database as it is referred to be at least one bank definition. Removed it from user lists and set it to hidden instead!", patchName);
+				} 
+				else {
+					spdlog::error("Program error, could not delete patch");
+				}
+				patchListTree_.refreshAllUserLists([]() {});
 				patchButtons_->refresh(true);
 			}
 			return;
@@ -296,8 +501,8 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			std::string patch_name = infos["patch_name"];
 			std::string list_name = infos["list_name"];
 			database_.removePatchFromList(list_id, infos["synth"], infos["md5"], infos["order_num"]);
-			SimpleLogger::instance()->postMessage("Removed patch " + patch_name + " from list " + list_name);
-			patchListTree_.refreshUserList(list_id);
+			spdlog::info("Removed patch {} from list {}", patch_name,  list_name);
+			patchListTree_.refreshChildrenOfListId(list_id, []() {});
 			if (listFilterID_ == list_id) {
 				retrieveFirstPageFromDatabase();
 			}
@@ -309,42 +514,25 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 			if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, "Delete list from database",
 				"Do you really want to delete the list " + list_name + " from the database? There is no undo!")) {
 				database_.deletePatchlist(midikraft::ListInfo{ list_id, list_name });
-				SimpleLogger::instance()->postMessage("Deleted list " + list_name);
+				spdlog::info("Deleted list {}", list_name);
 				if (listFilterID_ == list_id) {
 				}
-				patchListTree_.refreshAllUserLists();
+				patchListTree_.refreshParentOfListId(list_id, []() {});
 			}
 			return;
 		}
 	}
-	SimpleLogger::instance()->postMessage("Program error - unknow drop type dropped on recycle bin!");
+	spdlog::error("Program error - unknow drop type dropped on recycle bin!");
 }
-
-class LibrarianProgressWindow : public ProgressHandlerWindow {
-public:
-	LibrarianProgressWindow(midikraft::Librarian &librarian) : ProgressHandlerWindow("Import patches from Synth", "..."), librarian_(librarian) {
-	}
-
-	// Override this from the ThreadWithProgressWindow to understand closing with cancel button!
-	virtual void threadComplete(bool userPressedCancel) override {
-		if (userPressedCancel) {
-			// Make sure to destroy any stray MIDI callback handlers, else we'll get into trouble when we retry the operation
-			librarian_.clearHandlers();
-		}
-	}
-
-private:
-	midikraft::Librarian &librarian_;
-};
 
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
-	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_);
+	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
 	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
-		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth.get(),
+		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
 			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
 			if (!bankNo.empty()) {
 				progressWindow->launchThread();
@@ -376,10 +564,12 @@ void PatchView::retrievePatches() {
 }
 
 std::vector<midikraft::PatchHolder> PatchView::autoCategorize(std::vector<midikraft::PatchHolder> const &patches) {
+	std::vector<midikraft::PatchHolder> result;
 	for (auto p : patches) {
 		p.autoCategorizeAgain(database_.getCategorizer());
+		result.push_back(p);
 	}
-	return patches;
+	return result;
 }
 
 
@@ -396,7 +586,7 @@ void PatchView::retrieveEditBuffer()
 			jassert(patchesLoaded.size() == 1);
 
 			if (patchesLoaded.size() == 1) {
-				SimpleLogger::instance()->postMessage((boost::format("Edit buffer from synth is program %s") % patchesLoaded[0].name()).str());
+				spdlog::info("Current edit buffer from synth is patch '{}'", patchesLoaded[0].name());
 			}
 
 			patchesLoaded = autoCategorize(patchesLoaded);
@@ -416,17 +606,28 @@ void PatchView::retrieveEditBuffer()
 	}
 }
 
+void PatchView::bulkRenamePatches()
+{
+	loadPage(0, 512, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
+		BulkRenameDialog::show(patches, this, [this](std::vector<midikraft::PatchHolder> renamed) {
+			std::vector<midikraft::PatchHolder> newPatches_;
+			database_.mergePatchesIntoDatabase(renamed, newPatches_, nullptr, midikraft::PatchDatabase::UPDATE_NAME);
+			retrieveFirstPageFromDatabase();
+			});
+		});
+}
+
 void PatchView::deletePatches()
 {
 	int totalAffected = totalNumberOfPatches();
-	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Delete all %d patches matching current filter") % totalAffected).str(),
-		(boost::format("Warning, there is no undo operation. Do you really want to delete the %d patches matching the current filter?\n\n"
-			"They will be gone forever, unless you use a backup!") % totalAffected).str())) {
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, fmt::format("Delete all {} patches matching current filter", totalAffected),
+		fmt::format("Warning, there is no undo operation. Do you really want to delete the {} patches matching the current filter?\n\n"
+			"They will be gone forever, unless you use a backup!", totalAffected))) {
 		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
 			"Are you sure?", "Yes", "No")) {
 			int deleted = database_.deletePatches(currentFilter());
-			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", (boost::format("%d patches deleted from database") % deleted).str());
-			//TODO refresh import Filter
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", fmt::format("{} patches deleted from database", deleted));
+			UIModel::instance()->importListChanged_.sendChangeMessage();
 			retrieveFirstPageFromDatabase();
 		}
 	}
@@ -436,21 +637,22 @@ void PatchView::reindexPatches() {
 	// We do reindex all patches of the currently selected synth. It does not make sense to reindex less than that.
 	auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
 	if (!currentSynth) return;
-	auto filter = midikraft::PatchDatabase::allForSynth(currentSynth);
+	midikraft::PatchFilter filter({ currentSynth });
+	filter.turnOnAll(); // Make sure we also reindex hidden entries
 
 	int totalAffected = database_.getPatchesCount(filter);
-	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, (boost::format("Do you want to reindex all %d patches for synth %s?") % totalAffected % currentSynth->getName()).str(),
-		(boost::format("This will reindex the %d patches with the current fingerprinting algorithm.\n\n"
-			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n")
-			% totalAffected).str())) {
+	if (AlertWindow::showOkCancelBox(AlertWindow::QuestionIcon, fmt::format("Do you want to reindex all {} patches for synth {}?", totalAffected, currentSynth->getName()),
+		fmt::format("This will reindex the {} patches with the current fingerprinting algorithm.\n\n"
+			"Hopefully this will get rid of duplicates properly, but if there are duplicates under multiple names you'll end up with a somewhat random result which name is chosen for the de-duplicated patch.\n",
+			totalAffected))) {
 		std::string backupName = database_.makeDatabaseBackup("-before-reindexing");
-		SimpleLogger::instance()->postMessage((boost::format("Created database backup at %s") % backupName).str());
+		spdlog::info("Created database backup at {}", backupName);
 		int countAfterReindexing = database_.reindexPatches(filter);
 		if (countAfterReindexing != -1) {
 			// No error, display user info
 			if (totalAffected > countAfterReindexing) {
 				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful",
-					(boost::format("The reindexing reduced the number of patches from %d to %d due to deduplication.") % totalAffected % countAfterReindexing).str());
+					fmt::format("The reindexing reduced the number of patches from {} to {} due to deduplication.",totalAffected, countAfterReindexing));
 			}
 			else {
 				AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindexing patches successful", "The count of patches did not change, but they are now indexed with the correct fingerprint and should stop duplicating themselves.");
@@ -480,6 +682,21 @@ midikraft::PatchFilter PatchView::currentFilter()
 	auto filter = patchSearch_->getFilter();
 	filter.importID = sourceFilterID_;
 	filter.listID = listFilterID_;
+	if (!filter.listID.empty()) {
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+	}
+	return filter;
+}
+
+midikraft::PatchFilter PatchView::bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID)
+{
+	// We want to load all patches for this synth that are in the bank list given
+	midikraft::PatchFilter filter({ synth });
+	filter.turnOnAll();
+
+	filter.importID = "";
+	filter.listID = listID;
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 	return filter;
 }
 
@@ -493,16 +710,16 @@ public:
 	virtual void run() override {
 		std::vector<midikraft::PatchHolder> outNewPatches;
 		if (patchesLoaded_.size() == 0) {
-			SimpleLogger::instance()->postMessage("No patches contained in data, nothing to upload.");
+			spdlog::warn("No patches contained in data, nothing to upload.");
 		}
 		else {
 			auto numberNew = database_.mergePatchesIntoDatabase(patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
 			if (numberNew > 0) {
-				SimpleLogger::instance()->postMessage((boost::format("Retrieved %d new or changed patches from the synth, uploaded to database") % numberNew).str());
+				spdlog::info("Retrieved {} new or changed patches from the synth, uploaded to database", numberNew);
 				finished_(outNewPatches);
 			}
 			else {
-				SimpleLogger::instance()->postMessage("All patches already known to database");
+				spdlog::info("All patches already known to database");
 				finished_({});
 			}
 		}
@@ -543,10 +760,21 @@ void PatchView::receiveManualDump() {
 
 void PatchView::loadPatches() {
 	if (UIModel::currentSynth()) {
-		auto patches = librarian_.loadSysexPatchesFromDisk(UIModel::instance()->currentSynth_.smartSynth(), database_.getCategorizer());
+		auto synth = UIModel::instance()->currentSynth_.smartSynth();
+		auto patches = librarian_.loadSysexPatchesFromDisk(synth, database_.getCategorizer());
 		if (patches.size() > 0) {
-			auto enhanced = autoCategorize(patches);
-			mergeNewPatches(enhanced);
+			// If the synth does not offer stored patch names, the names of these patches will be useless defaults only.
+			// Open the new bulk rename dialog to allow the user to fix it immediately.
+			if (midikraft::Capability::hasCapability<midikraft::StoredPatchNameCapability>(patches[0].patch())) {
+				auto enhanced = autoCategorize(patches);
+				mergeNewPatches(enhanced);
+			}
+			else {
+				BulkRenameDialog::show(patches, this, [this](std::vector<midikraft::PatchHolder> renamedPatches) {
+					auto enhanced = autoCategorize(renamedPatches);
+					mergeNewPatches(enhanced);
+				});
+			}
 		}
 	}
 }
@@ -575,7 +803,7 @@ public:
 				std::vector<midikraft::PatchHolder> outNewPatches;
 				auto numberNew = db_.mergePatchesIntoDatabase(patches, outNewPatches, nullptr, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
 				if (numberNew > 0) {
-					SimpleLogger::instance()->postMessage("Loaded " + String(numberNew) + " additional patches from file " + pip.getFullPathName());
+					spdlog::info("Loaded {} additional patches from file {}", numberNew, pip.getFullPathName());
 				}
 			}
 
@@ -600,12 +828,27 @@ void PatchView::bulkImportPIP(File directory) {
 
 void PatchView::exportPatches()
 {
-	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
-		ExportDialog::showExportDialog(this, [this, patches](midikraft::Librarian::ExportParameters params) {
+	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
+		ExportDialog::showExportDialog(this, "Export patches", [this, patches](midikraft::Librarian::ExportParameters params) {
 			librarian_.saveSysexPatchesToDisk(params, patches);
 		});
 	});
 }
+
+void PatchView::exportBank()
+{
+	auto currentBank = synthBank_->getCurrentSynthBank();
+	if (currentBank) {
+		auto patches = currentBank->patches();
+		ExportDialog::showExportDialog(this, "Export bank", [this, patches](midikraft::Librarian::ExportParameters params) {
+			librarian_.saveSysexPatchesToDisk(params, patches);
+			});
+	}
+	else {
+		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Nothing to export",  "Please select a bank first!");
+	}
+}
+
 
 void PatchView::updateLastPath() {
 	if (lastPathForPIF_.empty()) {
@@ -620,7 +863,7 @@ void PatchView::updateLastPath() {
 
 void PatchView::createPatchInterchangeFile()
 {
-	loadPage(0, -1, [this](std::vector<midikraft::PatchHolder> patches) {
+	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
 		updateLastPath();
 		FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
 		if (pifChooser.browseForFileToSave(true)) {
@@ -636,22 +879,103 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 		// Back to UI thread
 		MessageManager::callAsync([this, outNewPatches]() {
 			if (outNewPatches.size() > 0) {
-				patchListTree_.refreshAllImports();
-				// Select this import
-				auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
-				if (info) {
-					if (midikraft::SourceInfo::isEditBufferImport(info)) {
-						patchListTree_.selectItemByPath({ "allpatches", "library-" + UIModel::currentSynth()->getName(), "EditBufferImport" });
+				patchListTree_.refreshAllImports([outNewPatches, this]() {
+					// Select this import
+					auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
+					if (info) {
+						auto name = UIModel::currentSynth()->getName();
+						if (midikraft::SourceInfo::isEditBufferImport(info)) {
+							patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, "EditBufferImport" });
+						}
+						else {
+							patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, info->md5(UIModel::currentSynth()) });
+						}
 					}
-					else {
-						patchListTree_.selectItemByPath({ "allpatches", "library-" + UIModel::currentSynth()->getName(), info->md5(UIModel::currentSynth())});
-					}
-				}
+					});
 			}
 		});
 	});
 	backgroundThread.runThread();
 }
+
+std::vector<MidiProgramNumber> PatchView::patchIsInSynth(midikraft::PatchHolder& patch) {
+	auto alreadyInSynth = database_.getBankPositions(patch.smartSynth(), patch.md5());
+	for (auto inSynth : alreadyInSynth) {
+		if (inSynth.bank().isValid()) {
+			spdlog::debug("Patch is already in synth in bank {} at position {}", inSynth.bank().toZeroBased(), inSynth.toZeroBasedDiscardingBank());
+		}
+		else
+		{
+			spdlog::debug("Patch is already in synth in unknown bank at position {}", inSynth.toZeroBasedDiscardingBank());
+		}
+	}
+	if (alreadyInSynth.size() > 1) {
+		spdlog::debug("Patch {} is in {} different positions.", patch.name(), alreadyInSynth.size());
+	}
+	return alreadyInSynth;
+}
+
+bool PatchView::isSynthConnected(std::shared_ptr<midikraft::Synth> synth) {
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+	return midiLocation && midiLocation->channel().isValid();
+}
+
+std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgramNumber program, midikraft::PatchHolder &patch) {
+	// Default to the bank of the patch in case the given program number contains no bank
+	auto bankNumberToSelect = patch.bankNumber();
+	if (program.isBankKnown()) {
+		bankNumberToSelect = program.bank();
+	}
+
+	std::vector<juce::MidiMessage> selectPatch;
+	if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
+		auto bankSelect = bankDescriptors->bankSelectMessages(bankNumberToSelect);
+		std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+	}
+	else if (auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(patch.smartSynth())) {
+		auto bankSelect = banks->bankSelectMessages(bankNumberToSelect);
+		std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
+	}
+
+	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+	if (midiLocation && midiLocation->channel().isValid()) {
+		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), program.toZeroBasedDiscardingBank()));
+		spdlog::info("Sending program change to {} for patch {}: program {} {}."
+			, patch.smartSynth()->getName()
+			, patch.name()
+			, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, program)
+			, program.isBankKnown() ? "[known bank]" : "[bank not known!]");			
+		return selectPatch;
+	} else {
+		spdlog::error("Program error - Synth {} has not been detected, can't build MIDI messages to select bank and program", patch.smartSynth()->getName());
+		return {};
+	}
+}
+
+void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation,  MidiProgramNumber program, midikraft::PatchHolder &patch) {
+	// We can get away with just a bank select and program change, and will try to select the patch directly
+		// Build the MIDI messages required to select bank and program
+	auto selectPatch = buildSelectBankAndProgramMessages(program, patch);
+	if (selectPatch.size() > 0) {
+		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
+	}
+	else {
+		spdlog::error("Failed to build MIDI bank and program change messages for {}, program error?", patch.smartSynth()->getName());
+	}
+
+}
+
+void PatchView::sendPatchAsSysex(midikraft::PatchHolder &patch) {
+	// Send out to Synth into edit buffer
+	if (patch.patch()) {
+		spdlog::info("Sending sysex for patch '{}' to {}", patch.name(), patch.synth()->getName());
+		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+	}
+	else {
+		spdlog::debug("Empty patch slot selected, can't send to synth");
+	}
+}
+
 
 void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 {
@@ -659,7 +983,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
 	// It could be that we clicked on the patch that is already loaded?
-	if (patch.patch() != UIModel::currentPatch().patch() || !layers) {
+//	if (patch.patch() != UIModel::currentPatch().patch() || !layers) {
 		//SimpleLogger::instance()->postMessage("Selected patch " + patch.patch()->patchName());
 		//logger_->postMessage(patch.patch()->patchToTextRaw(true));
 
@@ -667,10 +991,40 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		currentLayer_ = 0;
 
 		if (alsoSendToSynth) {
-			// Send out to Synth
-			patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+			if (isSynthConnected(patch.smartSynth())) {
+				UIModel::ensureSynthSpecificPropertyExists(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic");
+				auto synthSpecificSendMode = UIModel::instance()->getSynthSpecificPropertyAsValue(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic").getValue();
+
+				auto alreadyInSynth = patchIsInSynth(patch);
+				if (synthSpecificSendMode == "program change") {
+					if (alreadyInSynth.size() > 0) {
+						sendProgramChangeMessagesForPatch(midiLocation, alreadyInSynth[0], patch);
+					}
+					else {
+						spdlog::info("Patch send mode set to program change, but position of patch in synth is unknown. Try to import the banks of the synth first!");
+					}
+				}
+				else if (synthSpecificSendMode == "edit buffer") {
+					sendPatchAsSysex(patch);
+				}
+				else if (synthSpecificSendMode == "automatic") {
+					if (alreadyInSynth.size() > 0) {
+						sendProgramChangeMessagesForPatch(midiLocation, alreadyInSynth[0], patch);
+					}
+					else {
+						sendPatchAsSysex(patch);
+					}
+				} 
+				else {
+					spdlog::error("Unknown send mode '{}' stored in property, program error?", synthSpecificSendMode.operator juce::String().toStdString());
+				}
+			}
+			else {
+				spdlog::info("{} not detected, skipped sending patch {}", patch.smartSynth()->getName(), patch.name());
+			}
 		}
-	}
+	/* }
 	else {
 		if (alsoSendToSynth) {
 			// Toggle through the layers, if the patch is a layered patch...
@@ -679,20 +1033,95 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 			}
 			auto layerSynth = midikraft::Capability::hasCapability<midikraft::LayerCapability>(patch.smartSynth());
 			if (layerSynth) {
-				SimpleLogger::instance()->postMessage((boost::format("Switching to layer %d") % currentLayer_).str());
+				spdlog::info("Switching to layer {}", currentLayer_);
 				//layerSynth->switchToLayer(currentLayer_);
 				auto allMessages = layerSynth->layerToSysex(patch.patch(), 1, 0);
 				auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 				if (location) {
 					int totalSize = 0;
 					totalSize = std::accumulate(allMessages.cbegin(), allMessages.cend(), totalSize, [](int acc, MidiMessage const& m) { return m.getRawDataSize() + acc; });
-					SimpleLogger::instance()->postMessage((boost::format("Sending %d messages, total size %d bytes") % allMessages.size() % totalSize).str());
+					spdlog::debug("Sending {} messages, total size {} bytes", allMessages.size(), totalSize);
 					patch.synth()->sendBlockOfMessagesToSynth(location->midiOutput(), allMessages);
 				}
 				else {
 					jassertfalse;
 				}
 			}
+		}
+	}*/
+}
+
+template <typename T>
+std::vector<T> getRandomSubset(const std::vector<T>& original, std::size_t subsetSize) {
+	// Copy the original vector
+	std::vector<T> shuffled = original;
+
+	// If subsetSize is larger than the original vector size, limit it
+	if (subsetSize > original.size()) {
+		subsetSize = original.size();
+	}
+
+	// Create a random engine with a seed based on the current time
+	std::random_device rd;
+	std::default_random_engine rng(rd());
+
+	// Shuffle the copied vector
+	std::shuffle(shuffled.begin(), shuffled.end(), rng);
+
+	// Create a vector to store the subset
+	std::vector<T> subset(shuffled.begin(), shuffled.begin() + subsetSize);
+
+	return subset;
+}
+
+void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback) {
+	if (fillParameters.fillMode == CreateListDialog::TListFillMode::None) {
+		finishedCallback();
+	}
+	else  {
+		auto filter = currentFilter();
+		auto synthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(list);
+		size_t patchesDesired = fillParameters.number;
+		size_t minimumPatches = 0;
+		if (synthBank) {
+			// This is a synth bank, restrict the filter to deliver only patches for the synth that the bank is for
+			filter.synths.clear();
+			filter.synths[synthBank->synth()->getName()] = synthBank->synth();
+			patchesDesired = synthBank->patchCapacity();
+			if (synthBank->bankNumber().bankSize() >= 0) {
+				minimumPatches = (size_t) synthBank->bankNumber().bankSize();
+			}
+			else {
+				spdlog::error("Program error: Unknown bank size, can't fill bank with unknown number of patches");
+				return;
+			}
+		}
+
+        if(database_.getPatchesCount(currentFilter()) == 0) {
+            spdlog::error("The list can't be filled, there are no patches in the database matching the current filter.");
+            return;
+        }
+
+        if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
+			loadPage(0, (int) patchesDesired, filter, [list, finishedCallback, minimumPatches](std::vector<midikraft::PatchHolder> patches) {
+				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
+				while (patches.size() < minimumPatches) {
+					patches.push_back(patches.back());
+				}
+				list->setPatches(patches);
+				finishedCallback();
+				});
+		}
+		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
+			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
+				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
+				auto randomPatches = getRandomSubset(patches, patchesDesired);
+				while (randomPatches.size() < minimumPatches) {
+					randomPatches.push_back(randomPatches.back());
+				}
+				list->setPatches(randomPatches);
+				finishedCallback();
+				});
 		}
 	}
 }

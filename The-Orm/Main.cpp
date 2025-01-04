@@ -4,7 +4,7 @@
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
 
-#include "JuceHeader.h"
+#include <juce_gui_basics/juce_gui_basics.h>
 
 #include "MainComponent.h"
 
@@ -17,6 +17,8 @@
 #include "embedded_module.h"
 
 #include <memory>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 #include "version.cpp"
 
@@ -39,7 +41,7 @@ static void print_envelope(sentry_envelope_t *envelope, void *unused_state)
 	char *s = sentry_envelope_serialize(envelope, &size_out);
 	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
 	if (SimpleLogger::instance()) {
-		SimpleLogger::instance()->postMessage("Sentry: " + std::string(s));
+		spdlog::debug("Sentry: {}", std::string(s));
 	}
 	sentry_free(s);
 	sentry_envelope_free(envelope);
@@ -50,10 +52,7 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 	ignoreUnused(level, args, userdata);
 	char buffer[2048];
 	vsnprintf_s(buffer, 2048, message, args);
-	// As Sentry will still log during shutdown, in this instance we must really check if logging is still a good idea
-	if (SimpleLogger::instance()) {
-		SimpleLogger::instance()->postMessage("Sentry: " + std::string(buffer));
-	}
+	spdlog::debug("Sentry: {}",  std::string(buffer));
 }
 #endif
 #endif
@@ -95,7 +94,7 @@ public:
 		}
 		else {
 			if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
-				SimpleLogger::instance()->postMessage("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
+				spdlog::warn("Turning off Python integration because environment variable ORM_NO_PYTHON found - you will have less synths!");
 			}
 			else {
 				AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "No Python installation found",
@@ -111,7 +110,11 @@ public:
 		if (v4) {
 			v4->setColourScheme(LookAndFeel_V4::getMidnightColourScheme());
 		}
-		mainWindow = std::make_unique<MainWindow> (getWindowTitle()); 
+
+		// Load Data
+		Data::instance().initializeFromSettings();
+
+		mainWindow = std::make_unique<MainWindow> (getWindowTitle());
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -144,15 +147,12 @@ public:
 #endif
 #endif
 
-		// Load Data
-		Data::instance().initializeFromSettings();
-
 		// Window Title Refresher
 		UIModel::instance()->windowTitle_.addChangeListener(this);
     }
 
 	String getWindowTitle() {
-		return getApplicationName() + String(" - Sysex Librarian V" + getOrmVersion());
+		return fmt::format("{} - Sysex Librarian V{}", getApplicationName(), getOrmVersion());
 	}
 
 	void changeListenerCallback(ChangeBroadcaster* source) override
@@ -174,14 +174,14 @@ public:
         // Add your application's shutdown code here...
 		SimpleLogger::shutdown(); // That needs to be shutdown before deleting the MainWindow, because it wants to log into that!
 		
-		// No more Python from here please
-		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
-
-		mainWindow = nullptr; // (deletes our window)
+		mainWindow.reset();
 
 		// Save UIModel for next run
 		Data::instance().saveToSettings();
 		UIModel::shutdown();
+
+		// No more Python from here please
+		knobkraft::GenericAdaptation::shutdownGenericAdaptation();
 
 		// Shutdown MIDI subsystem after all windows are gone
 		midikraft::MidiController::shutdown();
@@ -250,8 +250,9 @@ public:
 #else
 			if (Settings::instance().keyIsSet("mainWindowSize")) {
 				// Restore window size
+				auto main = new MainComponent(false);
 				restoreWindowStateFromString(Settings::instance().get("mainWindowSize"));
-				setContentOwned(new MainComponent(false), false);
+				setContentOwned(main, false);
 			}
 			else {
 				// Calculate best size for first start. 

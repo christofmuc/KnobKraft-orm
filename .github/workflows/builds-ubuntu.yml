@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Ubuntu KnobKraft Orm
+name: Ubuntu 22 KnobKraft Orm
 
 on: [push]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build-ubuntu-22:
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository with tags
       uses: actions/checkout@v2
@@ -18,17 +18,30 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - name: Install dependencies from apt-get
-      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev
+      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev
+
+    - name: Select proper Python version
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+        architecture: 'x64'
 
     - name: CMake configure
       env: # We get the SENTRY DSN from the repository's secret store
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       shell: bash
       run: |
-        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_EXECUTABLE=/usr/bin/python3.8 -DPYTHON_VERSION_TO_EMBED=3.8 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
+        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_VERSION_TO_EMBED=3.12 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
 
     - name: CMake build
       run: cmake --build builds --target package -- -j4
+
+    - name: Upload artifact for testing outside of a release
+      uses: actions/upload-artifact@v4
+      with:
+        name: ubuntu22-release
+        path: |
+          builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz
 
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
@@ -36,8 +49,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         file: builds/KnobKraft_Orm-${{env.ORM_VERSION}}-Linux.tar.gz
-
         tags: true
+        draft: false
 
     - name: Setup Sentry CLI
       uses: mathieu-bour/setup-sentry-cli@1.2.0

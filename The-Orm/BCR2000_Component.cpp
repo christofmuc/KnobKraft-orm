@@ -23,7 +23,8 @@
 
 #include "MidiHelpers.h"
 
-#include <boost/format.hpp>
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
 
 const char* kLastPathBCL = "lastPathBCL";
 
@@ -34,7 +35,7 @@ std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
-BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : bcr2000_(bcr), updateSynthListener_(this), updateControllerListener_(this), librarian_({})
+BCR2000_Component::BCR2000_Component(std::shared_ptr<midikraft::BCR2000> bcr) : updateSynthListener_(this), updateControllerListener_(this), bcr2000_(bcr), librarian_({})
 {
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -319,12 +320,12 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 						auto messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
 						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
 						if (location) {
-							SimpleLogger::instance()->postMessage((boost::format("Sending message to %s to update %s to new value %s")
-								% UIModel::currentSynthOfPatch()->getName() % param->name() % param->valueInPatchToText(*patch_)).str());
+							spdlog::debug("Sending message to {} to update {} to new value {}",
+								UIModel::currentSynthOfPatch()->getName(), param->name(), param->valueInPatchToText(*patch_));
 							UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
 						}
 						else {
-							SimpleLogger::instance()->postMessage("Error: Synth does not provide location information, can't send data to it");
+							spdlog::error("Synth does not provide location information, can't send data to it");
 						}
 					}
 					else {
@@ -338,7 +339,7 @@ void BCR2000_Component::UpdateSynthListener::valueTreePropertyChanged(ValueTree&
 				}
 			}
 		}
-		SimpleLogger::instance()->postMessage("Error, failed to find parameter definition for property " + property.toString());
+		spdlog::error("Failed to find parameter definition for property {}", property.toString());
 	}
 	else {
 		//SimpleLogger::instance()->postMessage("Can't update, Synth does not support DetailedParamtersCapability");
@@ -349,7 +350,7 @@ void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* so
 {
 	auto synth = UIModel::currentSynthOfPatch();
 	auto location = dynamic_cast<midikraft::MidiLocationCapability*>(synth);
-	if (!location || location->midiInput() == source->getName().toStdString()) {
+	if (!location || location->midiInput().name == source->getName()) {
 		auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
 		if (syncCap) {
 			int outValue;
@@ -411,7 +412,7 @@ BCR2000_Component::UpdateControllerListener::~UpdateControllerListener()
 
 void BCR2000_Component::UpdateControllerListener::listenForMidiMessages(MidiInput* source, MidiMessage message) {
 	// Check if that is a message we need to take seriously
-	if (source->getName().toStdString() == papa_->bcr2000_->midiInput()) {
+	if (source->getName() == papa_->bcr2000_->midiInput().name) {
 		// This at least is a message from our controller
 		auto detailedParameters = dynamic_cast<midikraft::DetailedParametersCapability*>(UIModel::currentSynthOfPatch());
 		for (auto param : detailedParameters->allParameterDefinitions()) {

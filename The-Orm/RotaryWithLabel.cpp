@@ -6,7 +6,8 @@
 
 #include "RotaryWithLabel.h"
 
-#include <boost/format.hpp>
+#include <fmt/format.h>
+#include "SpdLogJuce.h"
 
 RotaryWithLabel::RotaryWithLabel()
 {
@@ -44,7 +45,7 @@ void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 			int v = (int)trunc(value);
 			auto lookup = param->lookup();
 			if (lookup.find(v) != lookup.end()) {
-				return (boost::format("%s:\n%s") % param->name() % lookup[v]).str();
+				return fmt::format("{}:\n{}", param->name(), lookup[v]);
 			}
 			else {
 				return "invalid";
@@ -54,12 +55,16 @@ void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 	case ValueType::Bool:
 	case ValueType::Integer:
 		valueToText_ = [param](double value) {
-			return (boost::format("%s:\n%d") % param->name() % (int)trunc(value)).str();
+			return fmt::format("{}:\n{}", param->name(),  (int)trunc(value));
 		};
 		break;
 	case ValueType::String:
+    case ValueType::Filename:
+    case ValueType::Pathname:
+    case ValueType::Color:
 		jassertfalse; // A rotary dial for a string property doesn't make sense?
 		break;
+
 	}
 	label.setText(param->name(), dontSendNotification);
 }

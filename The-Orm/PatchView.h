@@ -8,7 +8,6 @@
 
 #include "JuceHeader.h"
 
-#include "LambdaButtonStrip.h"
 #include "Librarian.h"
 #include "MidiController.h"
 #include "Logger.h"
@@ -30,6 +29,8 @@
 #include "AutomaticCategory.h"
 
 #include "ImportFromSynthDialog.h"
+#include "SynthBankPanel.h"
+#include "PatchHistoryPanel.h"
 
 #include <map>
 
@@ -50,6 +51,11 @@ public:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
 	void retrieveFirstPageFromDatabase();
+	std::shared_ptr<midikraft::PatchList> retrieveListFromDatabase(midikraft::ListInfo const& info);
+	void loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId);
+	void retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler);
+	void sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler);
+	void selectPatch(midikraft::PatchHolder& patch, bool alsoSendToSynth);
 
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();
@@ -59,8 +65,16 @@ public:
 	void retrieveEditBuffer();
 
 	// Protected functions that are potentially dangerous and are only called via the main menu
+	void retrievePatches();
+	void bulkRenamePatches();
+	void receiveManualDump();
 	void deletePatches();
 	void reindexPatches();
+	void loadPatches();
+	void exportPatches();
+	void exportBank();
+	void createPatchInterchangeFile();
+	void showPatchDiffDialog();
 
 	// Additional functions for the auto thumbnailer
 	int totalNumberOfPatches();
@@ -72,42 +86,59 @@ public:
 	// Special functions
 	void bulkImportPIP(File directory);
 
+	// New for bank management
+	midikraft::PatchFilter bankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listID);
+    void copyBankPatchNamesToClipboard();
+
 private:
 	friend class PatchSearchComponent;
+	friend class SimplePatchGrid;
 
 	std::vector<CategoryButtons::Category> predefinedCategories();
 
-	void loadPage(int skip, int limit, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
-
-	void retrievePatches();
+	int getTotalCount();
+	void loadPage(int skip, int limit, midikraft::PatchFilter const& filter, std::function<void(std::vector<midikraft::PatchHolder>)> callback);
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
-	void loadPatches();	
-	void receiveManualDump();
-	void exportPatches();
+	// TODO These should go into a more general library
+	std::vector<MidiProgramNumber> patchIsInSynth(midikraft::PatchHolder& patch);
+	static bool isSynthConnected(std::shared_ptr<midikraft::Synth> synth);
+	static std::vector<MidiMessage> buildSelectBankAndProgramMessages(MidiProgramNumber program, midikraft::PatchHolder& patch);
+
+	// Helper functions
+	void sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation, MidiProgramNumber program, midikraft::PatchHolder& patch);
+	static void sendPatchAsSysex(midikraft::PatchHolder& patch);
+
 	void updateLastPath();
-	void createPatchInterchangeFile();
+
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
-	void selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth);
-	void showPatchDiffDialog();
+	
 	void saveCurrentPatchCategories();
+	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
+	void setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId);
 	void setImportListFilter(String filter);
 	void setUserListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);
 
-	PatchListTree patchListTree_;
+	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
+
+	void showBank();
+
+    PatchListTree patchListTree_;
 	std::string sourceFilterID_; // This is the old "import" combo box in new
 	std::string listFilterID_;
 	std::unique_ptr<SplitteredComponent> splitters_;
+	TabbedComponent rightSideTab_;
 
 	RecycleBin recycleBin_;
 
 	Label patchLabel_;
-	LambdaButtonStrip buttonStrip_;
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
+	std::unique_ptr<SynthBankPanel> synthBank_;
+	std::unique_ptr<PatchHistoryPanel> patchHistory_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 

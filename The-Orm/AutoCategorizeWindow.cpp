@@ -6,6 +6,8 @@
 
 #include "AutoCategorizeWindow.h"
 
+#include <spdlog/spdlog.h>
+
 void AutoCategorizeWindow::run()
 {
 	// Load the auto category file and re-categorize everything!
@@ -18,7 +20,7 @@ void AutoCategorizeWindow::run()
 		if (patch.autoCategorizeAgain(detector_)) {
 			if (threadShouldExit()) break;
 			// This was changed, updating database
-			SimpleLogger::instance()->postMessage("Updating patch " + String(patch.name()) + " with new categories");
+			spdlog::info("Updating patch {} with new categories", patch.name());
 			database_->putPatch(patch);
 		}
 		setProgress(tick++ / (double)patches.size());

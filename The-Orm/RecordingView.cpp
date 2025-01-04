@@ -12,9 +12,15 @@
 #include "Settings.h"
 #include "AutoThumbnailingDialog.h"
 
-RecordingView::RecordingView(PatchView &patchView) : patchView_(patchView), deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false),
-	recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV), buttons_(1111, LambdaButtonStrip::Direction::Horizontal),
-	midiSender_(48000)
+#include <spdlog/spdlog.h>
+#include "SpdLogJuce.h"
+
+RecordingView::RecordingView(PatchView &patchView) :
+    patchView_(patchView)
+    , deviceSelector_(deviceManager_, 1, 2, 1, 1, false, false, true, false)
+    , recorder_(File::getCurrentWorkingDirectory(), "knobkraft-audio-log", RecordingType::WAV)
+    , midiSender_(48000)
+    , buttons_(1111, LambdaButtonStrip::Direction::Horizontal)
 {
 	addAndMakeVisible(deviceSelector_);
 
@@ -25,12 +31,12 @@ RecordingView::RecordingView(PatchView &patchView) : patchView_(patchView), devi
 		// Try to parse this as XML
 		xml = XmlDocument::parse(xmlString);
 		if (!xml) {
-			SimpleLogger::instance()->postMessage("Settings file corrupt, error parsing audio setup");
+			spdlog::error("Settings file corrupt, error parsing audio setup");
 		}
 	}
 	auto audioError = deviceManager_.initialise(1, 0, xml.get(), true);
 	if (!audioError.isEmpty()) {
-		SimpleLogger::instance()->postMessage("Error initializing audio device manager: " + audioError);
+		spdlog::error("Error initializing audio device manager: {}", audioError);
 	}
 	deviceManager_.addAudioCallback(&recorder_);
 
