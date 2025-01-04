@@ -579,7 +579,7 @@ void PatchView::retrieveEditBuffer()
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
 	if (activeSynth && midiLocation) {
 		midikraft::runMidiCoroutineWithCallback < std::vector<midikraft::PatchHolder>>(
-			librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), activeSynth, nullptr),
+			librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()), activeSynth, nullptr, {}),
 			[this](std::vector<midikraft::PatchHolder> const& patchesLoaded) {
 				// There should only be one edit buffer, just check that this is true here
 				jassert(patchesLoaded.size() == 1);

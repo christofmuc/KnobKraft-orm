@@ -20,7 +20,14 @@
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/stl.h>
+#ifdef _MSC_VER
+#pragma warning ( pop )
+#endif
 #include <memory>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"

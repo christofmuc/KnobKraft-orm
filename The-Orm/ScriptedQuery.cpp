@@ -11,8 +11,15 @@
 
 #include "Logger.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
 #include <spdlog/spdlog.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace py = pybind11;
 using namespace pybind11::literals;

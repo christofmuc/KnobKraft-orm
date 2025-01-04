@@ -366,7 +366,7 @@ void BCR2000_Component::UpdateSynthListener::listenForMidiMessages(MidiInput* so
 			if (programChangeCap) {
 				programChangeCap->gotProgramChange(MidiProgramNumber::fromZeroBase(message.getProgramChangeNumber()));
 				if (location) {
-					auto patch = midikraft::awaitMidiCoroutine(papa_->librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()), UIModel::currentSynthOfPatchSmart(), nullptr));
+					auto patch = midikraft::awaitMidiCoroutine(papa_->librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()), UIModel::currentSynthOfPatchSmart(), nullptr, {}));
 					if (patch.size() > 0 && patch[0].patch()) {
 						updateAllKnobsFromPatch(patch[0].patch());
 					}
