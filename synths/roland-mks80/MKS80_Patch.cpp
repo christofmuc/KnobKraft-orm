@@ -206,7 +206,7 @@ namespace midikraft {
 		case MKS80_Patch::APR_Section::TONE_LOWER: return data_.data() + 30 + 48;
 		}
 		jassertfalse;
-		throw new std::runtime_error("Invalid APR Section value");
+		throw std::runtime_error("Invalid APR Section value");
 	}
 
 	juce::uint8 * MKS80_Patch::dataSection(MKS80_Parameter::ParameterType type, MKS80_Parameter::SynthSection section)

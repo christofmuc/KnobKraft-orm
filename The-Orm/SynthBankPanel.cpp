@@ -61,6 +61,12 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				});
 			}
 		}
+
+	};
+
+	exportButton_.setButtonText("Export bank");
+	exportButton_.onClick = [this]() {
+		patchView_->exportBank();
 	};
 
 	bankList_ = std::make_unique<VerticalPatchButtonList>([this](MidiProgramNumber programPlace, std::string md5) {
@@ -108,21 +114,28 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);
 	addAndMakeVisible(saveButton_);
+	addAndMakeVisible(exportButton_);
 	addAndMakeVisible(sendButton_);
 	addAndMakeVisible(modified_);
 	addAndMakeVisible(*bankList_);
 
 	showInfoIfRequired();
+
+	// We need to know if our synth is turned off
+	UIModel::instance()->synthList_.addChangeListener(this);
 }
 
-SynthBankPanel::~SynthBankPanel() = default;
+SynthBankPanel::~SynthBankPanel()
+{
+	UIModel::instance()->synthList_.removeChangeListener(this);
+}
 
 void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info)
 {
 	buttonMode_ = info;
 
 	// If we have a synth bank already, move it aside to not lose potential changes to it
-	if (synthBank_) {
+	if (synthBank_ && synthBank_->id() != synthBank->id()) {
 		temporaryBanks_[synthBank_->id()] = synthBank_;
 	}
 
@@ -137,27 +150,88 @@ void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, Pa
 	refresh();
 }
 
-void SynthBankPanel::refresh() {
-	synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);
-	if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
-	{
-		auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
-		std::string romText;
-		if (!synthBank_->isWritable()) {
-			romText = " [ROM]";
+void SynthBankPanel::refreshPatch(std::shared_ptr<midikraft::PatchHolder> updatedPatch)
+{
+	if (synthBank_) {
+		bool refreshRequired = false;
+		for (auto patch : synthBank_->patches()) {
+			if (patch.md5() == updatedPatch->md5() && patch.smartSynth()->getName() == updatedPatch->smartSynth()->getName()) {
+				synthBank_->updatePatchAtPosition(patch.patchNumber(), *updatedPatch);
+				refreshRequired = true;
+			}
 		}
-		bankNameAndDate_.setText(fmt::format("Bank '{}'{} ({} ago)"
+		if (refreshRequired)
+		{
+			refresh();
+		}
+	}
+}
+
+void SynthBankPanel::reloadFromDatabase()
+{
+	if (synthBank_)
+	{
+		std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+		auto listInfo = midikraft::ListInfo({ synthBank_->id(), synthBank_->name()});
+		synthMap.emplace(synthBank_->synth()->getName(), synthBank_->synth());
+		// This is not too bad, but actually if the current bank is dirty I should not just lose everything just because a patch was renamed.
+		// I need to reload the patches from the database, but don't modify the list itself (and not it's dirty step!)
+		auto newList = patchDatabase_.getPatchList(listInfo, synthMap);
+		if (auto synthBank = std::dynamic_pointer_cast<midikraft::SynthBank>(newList)) {
+			jassert(synthBank->isDirty());
+			setBank(synthBank, buttonMode_);
+			refresh();
+		}
+		else {
+			spdlog::error("Program error - bank refreshed for SynthBankPanel is no longer a Synthbank");
+		}
+	}
+}
+
+std::shared_ptr<midikraft::SynthBank> SynthBankPanel::getCurrentSynthBank() const
+{
+	return synthBank_;
+}
+
+void SynthBankPanel::copyPatchNamesToClipboard()
+{
+    if (synthBank_) {
+        StringArray allNames;
+        for (auto const& patch : synthBank_->patches()) {
+            allNames.add(patch.name());
+        }
+        SystemClipboard::copyTextToClipboard(allNames.joinIntoString("\n"));
+    }
+}
+
+
+void SynthBankPanel::refresh() {
+	if (synthBank_) {
+		synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);
+		if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
+		{
+			auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
+			std::string romText;
+			if (!synthBank_->isWritable()) {
+				romText = " [ROM]";
+			}
+			bankNameAndDate_.setText(fmt::format("'{}'{} ({} ago)"
 				, midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber())
 				, romText
 				, timeAgo.toStdString())
-			, dontSendNotification);
+				, dontSendNotification);
+		}
+		else
+		{
+			bankNameAndDate_.setText(fmt::format("'{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
+		}
+		bankList_->setPatchList(synthBank_, buttonMode_);
+		modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	}
 	else
 	{
-		bankNameAndDate_.setText(fmt::format("Bank '{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
+		bankList_->clearList();
 	}
-	bankList_->setPatches(synthBank_, buttonMode_);
-	modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	showInfoIfRequired();
 }
 
@@ -165,7 +239,7 @@ void SynthBankPanel::resized()
 {
 	auto bounds = getLocalBounds();
 
-	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 2).reduced(LAYOUT_INSET_NORMAL);
+	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 3).reduced(LAYOUT_INSET_NORMAL);
 
 	instructions_.setBounds(header);
 
@@ -175,6 +249,7 @@ void SynthBankPanel::resized()
 	resyncButton_.setBounds(upperButton);
 	saveButton_.setBounds(upperButton);
 	sendButton_.setBounds(headerRightSide.removeFromTop(LAYOUT_BUTTON_HEIGHT + LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
+	exportButton_.setBounds(headerRightSide.removeFromTop(LAYOUT_BUTTON_HEIGHT + LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
 	synthName_.setBounds(header.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT));
 	bankNameAndDate_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
 	modified_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
@@ -184,8 +259,18 @@ void SynthBankPanel::resized()
 
 void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-	refresh();
+	if (source == &UIModel::instance()->synthList_)
+	{
+		if (synthBank_) {
+			// Check if our synth is still active, if it is a DiscoverableDevice
+			auto device = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(synthBank_->synth());
+			jassert(device);
+			if (!UIModel::instance()->synthList_.isSynthActive(device)) {
+				synthBank_.reset();
+				refresh();
+			}
+		}
+	}
 }
 
 bool SynthBankPanel::isUserBank() {
@@ -202,4 +287,5 @@ void SynthBankPanel::showInfoIfRequired() {
 	resyncButton_.setVisible(showBank && !isUser);
 	saveButton_.setVisible(showBank && isUser && synthBank_->isDirty());
 	sendButton_.setVisible(showBank && synthBank_->isWritable());
+	exportButton_.setVisible(showBank );
 }

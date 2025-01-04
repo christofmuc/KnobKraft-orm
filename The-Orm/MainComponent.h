@@ -9,7 +9,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "LogView.h"
-#include "MidiLogView.h"
+#include "MidiLogPanel.h"
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
 #include "DebounceTimer.h"
@@ -22,8 +22,11 @@
 #include "SynthList.h"
 #include "LambdaMenuModel.h"
 #include "LambdaButtonStrip.h"
+#include "LambdaValueListener.h"
 #include "PatchPerSynthList.h"
 #include "PatchListTree.h"
+
+#include "SecondaryWindow.h"
 
 #include "PatchView.h"
 #include "SettingsView.h"
@@ -73,6 +76,9 @@ private:
 	void refreshSynthList();
 	static void aboutBox();
 
+	void openSecondMainWindow(bool fromSettings);
+	static std::unique_ptr<SecondaryMainWindow> sSecondMainWindow;
+
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 	
 	// Helper function because of JUCE API
@@ -102,7 +108,7 @@ private:
 	std::unique_ptr<PatchView> patchView_;
 	std::unique_ptr<KeyboardMacroView> keyboardView_;
 	std::unique_ptr<SplitteredComponent> splitter_;
-	MidiLogView midiLogView_;
+	MidiLogPanel midiLogView_;
 	knobkraft::AdaptationView adaptationView_;
 	InsetBox midiLogArea_;
 	std::unique_ptr<SettingsView> settingsView_;
@@ -114,6 +120,8 @@ private:
 	InsetBox logArea_;
 
 	std::shared_ptr<spdlog::logger> spdLogger_;
+
+	ListenerSet listeners_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

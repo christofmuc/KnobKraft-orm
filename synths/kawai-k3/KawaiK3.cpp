@@ -159,11 +159,11 @@ namespace midikraft {
 
 	std::string KawaiK3::friendlyProgramName(MidiProgramNumber programNo) const
 	{
-		switch (programNo.toZeroBased()) {
+		switch (programNo.toZeroBasedDiscardingBank()) {
 		case 100: return "Internal Wave";
 		case 101: return "Cartridge Wave";
 		default:
-			return fmt::format("{:02d}", programNo.toOneBased());
+			return fmt::format("{:02d}", programNo.toOneBasedWithBank());
 		}
 	}
 
@@ -271,7 +271,7 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> KawaiK3::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
-		return { k3PatchToSysex(patch->data(), programNumber.toZeroBased(), false) };
+		return { k3PatchToSysex(patch->data(), programNumber.toZeroBasedDiscardingBank(), false) };
 	}
 
 	std::shared_ptr<Patch> KawaiK3::k3PatchFromSysex(const MidiMessage& message, int indexIntoBankDump /* = 0 */) const {
@@ -323,18 +323,20 @@ namespace midikraft {
 		return {};
 	}
 
-	TPatchVector KawaiK3::patchesFromSysexBank(const MidiMessage& message) const
+	TPatchVector KawaiK3::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
 	{
 		TPatchVector result;
-		if (isBankDumpAndNotWaveDump(message)) {
-			// A bank has 50 programs...
-			for (int i = 0; i < 50; i++) {
-				// This is not really efficient, but for now I'd be good with this
-				result.push_back(k3PatchFromSysex(message,i));
+		for (auto const& message : messages) {
+			if (isBankDumpAndNotWaveDump(message)) {
+				// A bank has 50 programs...
+				for (int i = 0; i < 50; i++) {
+					// This is not really efficient, but for now I'd be good with this
+					result.push_back(k3PatchFromSysex(message, i));
+				}
 			}
-		}
-		else {
-			jassertfalse;
+			else {
+				spdlog::error("Failed to convert MIDI message to K3 patches, program error?");
+			}
 		}
 		return result;
 	}
@@ -433,7 +435,7 @@ namespace midikraft {
 				}
 			}
 			else if (isBankDumpAndNotWaveDump(message)) {
-				auto newPatches = patchesFromSysexBank(message);
+				auto newPatches = patchesFromSysexBank({ message });
 				for (auto n : newPatches) {
 					auto newPatch = std::dynamic_pointer_cast<KawaiK3Patch>(n);
 					if (newPatch) {				
@@ -542,7 +544,7 @@ namespace midikraft {
 		switch (dataFile->dataTypeID())
 		{
 		case K3_PATCH:
-			return { k3PatchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBased(), false), k3PatchToSysex(dataFile->data(), static_cast<int>(WaveType::USER_WAVE), true) };
+			return { k3PatchToSysex(dataFile->data(), kFakeEditBuffer.toZeroBasedDiscardingBank(), false), k3PatchToSysex(dataFile->data(), static_cast<int>(WaveType::USER_WAVE), true) };
 		case K3_WAVE:
 			return { k3PatchToSysex(dataFile->data(), 100, false) };
 		default:
@@ -683,7 +685,7 @@ namespace midikraft {
 				spdlog::info("Got patch write confirmation from K3");
 				MidiBuffer midiBuffer;
                 midiBuffer.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), 1), 1); // Any program can be used
-                midiBuffer.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBased()), 2);
+                midiBuffer.addEvent(MidiMessage::programChange(channel().toOneBasedInt(), kFakeEditBuffer.toZeroBasedDiscardingBank()), 2);
 				controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(midiBuffer);
 				// We ignore the result of these sends, just hope for the best
 			}

@@ -30,9 +30,13 @@ public:
 
 	int getDesiredHeight(int width);
 
+	void setPatchText(std::shared_ptr<midikraft::PatchHolder> patch);
+
+	std::function<void()> forceResize;
+
 private:
-	TextEditor patchDescription_;
 	CategoryButtons categories_;
+	PatchTextBox patchAsText_;
 };
 
 class CurrentPatchDisplay : public Component,
@@ -77,11 +81,11 @@ private:
 	Viewport metaDataScroller_;
 	MetaDataArea metaData_;
 	
-	PatchTextBox patchAsText_;
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler_;
 	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
 
 	TypedNamedValueSet metaDataValues_;
+	TypedNamedValueSet layerNameValues_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurrentPatchDisplay)
 };

@@ -53,7 +53,7 @@ public:
 
 const char *kSetupHint1 = "In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
 	"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.";
-const char *kSetupHint2 = "First please select at least one synth to use, then turn it on and press auto-configure to detect if a working bi-directional connection can be made.\n\n";
+const char *kSetupHint2 = "First please select at least one synth to use, then turn it on and press auto-detect to detect if a working bi-directional connection can be made.\n\n";
 
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
@@ -160,9 +160,9 @@ void SetupView::refreshData() {
 		// Load
 		midikraft::AutoDetection::loadSettings(synth.device().get());
 		// Set output, input, and channel
-		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiOutput().name.toStdString()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->findOrAppendLookup(synth.device()->midiOutput().name.toStdString()));
 		prop++;
-		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->indexOfValue(synth.device()->midiInput().name.toStdString()));
+		setValueWithoutListeners(properties_[prop]->value(), properties_[prop]->findOrAppendLookup(synth.device()->midiInput().name.toStdString()));
 		prop++;
 		if (!synth.device()->channel().isValid()) {
 			setValueWithoutListeners(properties_[prop++]->value(), 18);

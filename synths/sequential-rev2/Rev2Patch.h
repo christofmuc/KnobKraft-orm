@@ -21,7 +21,7 @@ namespace midikraft {
 		Rev2Patch(Synth::PatchData const &patchData, MidiProgramNumber programNo);
 
 		virtual std::string name() const override;
-		virtual void setName(std::string const &name) override;
+		virtual bool changeNameStoredInPatch(std::string const &name) override;
 		virtual bool isDefaultName(std::string const &patchName) const override;
 		virtual MidiProgramNumber patchNumber() const override;
 
@@ -30,6 +30,7 @@ namespace midikraft {
 		// Interface for layered Patches (for the Librarian)
 		virtual LayerMode layerMode() const override;
 		virtual int numberOfLayers() const override;
+		virtual std::vector<std::string> layerTitles() const override;
 		virtual std::string layerName(int layerNo) const override;
 		virtual void setLayerName(int layerNo, std::string const &layerName) override;
 

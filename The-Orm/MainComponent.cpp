@@ -14,16 +14,15 @@
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
 #include "ExportDialog.h"
-
+#include "SimplePatchGrid.h"
+#include "SecondaryWindow.h"
 #include "Settings.h"
 
 #include "Virus.h"
 #include "Rev2.h"
 #include "OB6.h"
-#include "KorgDW8000.h"
 #include "KawaiK3.h"
 #include "Matrix1000.h"
-#include "RefaceDX.h"
 #include "BCR2000.h"
 #include "MKS80.h"
 #include "MKS50.h"
@@ -52,12 +51,18 @@ const std::string kFetchEditBuffer{ "fetchEditBuffer" };
 const std::string kReceiveManualDump{ "receiveManualDump" };
 const std::string kLoadSysEx{ "loadsysEx" };
 const std::string kExportSysEx{ "exportSysex" };
+const std::string kExportBank { "exportBank" };
 const std::string kExportPIF { "exportPIF" };
 const std::string kShowDiff{ "showDiff" };
+const std::string kCopyBankPatchNames{ "copyBankPatchNames" };
 const std::string kSynthDetection{ "synthDetection" };
 const std::string kLoopDetection{ "loopDetection" };
+const std::string kFullMidiLog{ "fullMidiLog" };
+const std::string kSysexMidiLog{ "sysexMidiLog" };
 const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
 const std::string kCreateNewAdaptation{ "createNewAdaptation" };
+
+extern std::string getOrmVersion();
 
 //
 // Build a spdlog sink that goes into out standard log view
@@ -146,16 +151,25 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	//spdLogger_->set_pattern("%Y-%m-%d %H:%M:%S.%e%z %l [%t] %v");
 	spdlog::set_default_logger(spdLogger_);
 	spdlog::flush_every(std::chrono::milliseconds(50));
-	spdlog::set_level(spdlog::level::debug);
+	spdlog::set_level(spdlog::level::trace);
 	spdlog::info("Launching KnobKraft Orm");
 
 	auto customDatabase = Settings::instance().get("LastDatabase");
 	File databaseFile(customDatabase);
 	if (databaseFile.existsAsFile()) {
-		database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
+		//TODO
+		// This is not openDatabase, because that expects the database_ pointer to be already initialized.
+		// Refactoring would be to create a database without a loaded file state.
+		try {
+			database_ = std::make_unique<midikraft::PatchDatabase>(customDatabase, midikraft::PatchDatabase::OpenMode::READ_WRITE);
+		}
+		catch (midikraft::PatchDatabaseException& e) {
+			spdlog::error("Critical error trying to open database, maybe wrong version? Creating a new empty database instead. Error was '{}'", e.what());
+			database_ = std::make_unique<midikraft::PatchDatabase>(false);
+		}
 	}
 	else {
-		database_ = std::make_unique<midikraft::PatchDatabase>();
+		database_ = std::make_unique<midikraft::PatchDatabase>(false);
 	}
 	recentFiles_.setMaxNumberOfItems(10);
 	if (Settings::instance().keyIsSet("RecentFiles")) {
@@ -170,14 +184,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptations
@@ -230,11 +242,11 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Export multiple databases..."  },
 				{ "Merge multiple databases..."  },
 				{ "Quit" } } } },
-		{1, { "Edit", { { "Copy patch to clipboard..." },  { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
-		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection} }}},
-		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
+		{1, { "Edit", { { "Copy patch to clipboard..." }, { kCopyBankPatchNames}, { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
+		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
+		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{5, { "View", { { "Scale 75%" }, { "Scale 100%" }, { "Scale 125%" }, { "Scale 150%" }, { "Scale 175%" }, { "Scale 200%" }}}},
+		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
 		{7, { "Help", {
 #ifndef _DEBUG
@@ -267,26 +279,38 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	{ "Export into sysex files", { kExportSysEx , [this]() {
 		patchView_->exportPatches();
 	}}},
+	{ "Export bank into sysex files", { kExportBank, [this]() {
+		patchView_->exportBank();
+	}}},
 	{ "Export into PIF", { kExportPIF, [this]() {
 		patchView_->createPatchInterchangeFile();
 	} } },
 	{ "Show patch comparison", { kShowDiff , [this]() {
 		patchView_->showPatchDiffDialog();
 	} } },
+    { "Copy names of current bank to clipboard...", { kCopyBankPatchNames , [this]() {
+        patchView_->copyBankPatchNamesToClipboard();
+    } } },
 	{ "Quick check connectivity", { kSynthDetection, [this]() {
 		setupView_->quickConfigure();
 	}, juce::KeyPress::F2Key } },
 	{ "Check for MIDI loops", { kLoopDetection, [this]() {
 		setupView_->loopDetection();
 	} } },
-	{"Set User Adaptation Dir", { kSelectAdaptationDirect, []() {
+	{ "Log all MIDI messages", { kFullMidiLog, []() {
+		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::ALL_BUT_REALTIME);
+	} } },
+	{ "Log only Sysex messages", { kSysexMidiLog, []() {
+		midikraft::MidiController::instance()->setMidiLogLevel(midikraft::MidiLogLevel::SYSEX_ONLY);
+	} } },
+	{"Set User Adaptation Dir...", { kSelectAdaptationDirect, []() {
 		FileChooser directoryChooser("Please select the directory to store your user adaptations...", File(knobkraft::GenericAdaptation::getAdaptationDirectory()));
 		if (directoryChooser.browseForDirectory()) {
 			knobkraft::GenericAdaptation::setAdaptationDirectoy(directoryChooser.getResult().getFullPathName().toStdString());
 			juce::AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Restart required", "Your new adaptations directory will only be used after a restart of the application!");
 		}
 	} } },
-	{"Create new adaptation", { kCreateNewAdaptation, [this]() {
+	{"Create new adaptation...", { kCreateNewAdaptation, [this]() {
 		setupView_->createNewAdaptation();
 	} } },
 
@@ -331,6 +355,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		JUCEApplicationBase::quit();
 	}}},
 		//, 0x51 /* Q */, ModifierKeys::ctrlModifier}}
+		{ "Open 2nd window", { "Open 2nd window", [this]() {
+			openSecondMainWindow(false); 
+		} }},
 		{ "Scale 75%", { "Scale 75%", [this]() { setZoomFactor(0.75f); }}},
 		{ "Scale 100%", { "Scale 100%", [this]() { setZoomFactor(1.0f); }}},
 		{ "Scale 125%", { "Scale 125%", [this]() { setZoomFactor(1.25f); }}},
@@ -478,7 +505,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
-		midiLogView_.addMessageToList(message, source, isOut);
+		midiLogView_.log().addMessageToList(message, source, isOut);
 		});
 
 	// Do a quickconfigure
@@ -506,6 +533,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		auto initialSize = mainScreenSize.reduced(100);
 		setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
+
+	// Check if the secondary main window was open last time we closed
+	openSecondMainWindow(true);
 
 	// Refresh Window title and other things to do when the MainComponent is displayed
 #ifdef WIN32
@@ -543,6 +573,11 @@ MainComponent::~MainComponent()
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
 
+	if (sSecondMainWindow) {
+		sSecondMainWindow->storeWindowState();
+		sSecondMainWindow.reset();
+	}
+
 #ifdef USE_SPARKLE
 #ifdef WIN32
 	win_sparkle_cleanup();
@@ -553,6 +588,10 @@ MainComponent::~MainComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 
 	Logger::setCurrentLogger(nullptr);
+
+	// Make sure to destroy the UI before the synths in order to unregister all message handlers
+	patchView_.reset();
+	settingsView_.reset();
 }
 
 #ifdef USE_SPARKLE
@@ -598,6 +637,7 @@ void MainComponent::createNewDatabase()
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
 			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
 			// Refresh UI
+			UIModel::instance()->clear();
 			UIModel::instance()->currentSynth_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
 			UIModel::instance()->databaseChanged.sendChangeMessage();
@@ -623,16 +663,23 @@ void MainComponent::openDatabase(File& databaseFile)
 {
 	if (databaseFile.existsAsFile()) {
 		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
-		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
-			recentFiles_.removeFile(databaseFile);
-			persistRecentFileList();
-			// That worked, new database file is in use!
-			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
-			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
-			// Refresh UI
-			UIModel::instance()->currentSynth_.sendChangeMessage();
-			UIModel::instance()->windowTitle_.sendChangeMessage();
-			UIModel::instance()->databaseChanged.sendChangeMessage();
+		UIModel::instance()->clear();
+		try {
+			if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
+				recentFiles_.removeFile(databaseFile);
+				persistRecentFileList();
+				// That worked, new database file is in use!
+				Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
+				Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
+				// Refresh UI
+				UIModel::instance()->currentSynth_.sendChangeMessage();
+				UIModel::instance()->windowTitle_.sendChangeMessage();
+				UIModel::instance()->databaseChanged.sendChangeMessage();
+			}
+		}
+		catch (midikraft::PatchDatabaseException& e) {
+			spdlog::error("Critical error trying to open database, maybe wrong version? Creating a new empty database instead. Error was '{}'", e.what());
+			database_ = std::make_unique<midikraft::PatchDatabase>(false);
 		}
 	}
 }
@@ -1006,17 +1053,35 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020-2023 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2024 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
+		"\n"
+		"The homepage of the project is https://github.com/christofmuc/KnobKraft-orm\n"
 		"\n"
 		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
 		"\n"
 		"Other licenses:\n"
-		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
+		"This software is build using JUCE. See https://github.com/juce-framework/JUCE/blob/master/LICENSE.md for details.\n"
 		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
 		"\n"
 		"Icons made by Freepik from www.flaticon.com\n"
 		;
-	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
+	AlertWindow::showMessageBox(AlertWindow::InfoIcon, fmt::format("The KnobKraft Orm Sysex Librarian Version {}", getOrmVersion()), message, "Close");
 }
 
+void MainComponent::openSecondMainWindow(bool fromSettings) 
+{
+	// Start simple, create a new document window
+	if (!sSecondMainWindow) {
+		auto newSelector = new SimplePatchGrid(patchView_.get());
+		sSecondMainWindow = std::make_unique<SecondaryMainWindow>("SecondWindow", 1024, 600, newSelector);
+	}
+
+	if (!fromSettings) {
+		// Show the window, irregardless of what was stored in the settings. This is used to show a window that wasn't shown via stored setting
+		sSecondMainWindow->initialShow();
+		jassert(sSecondMainWindow->isShowing());
+	}
+}
+
+std::unique_ptr<SecondaryMainWindow> MainComponent::sSecondMainWindow;

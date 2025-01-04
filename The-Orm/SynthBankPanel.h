@@ -24,6 +24,12 @@ public:
 	virtual void resized() override;
 
 	void setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info);
+	void refreshPatch(std::shared_ptr<midikraft::PatchHolder> updatedPatch);
+	void reloadFromDatabase();
+
+	std::shared_ptr<midikraft::SynthBank> getCurrentSynthBank() const;
+
+    void copyPatchNamesToClipboard();
 
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
@@ -43,6 +49,7 @@ private:
 	TextButton resyncButton_;
 	TextButton saveButton_;
 	TextButton sendButton_;
+	TextButton exportButton_;
 	std::unique_ptr<VerticalPatchButtonList> bankList_;
 
 	// Use this to store potentially modified banks should the user switch back and forth

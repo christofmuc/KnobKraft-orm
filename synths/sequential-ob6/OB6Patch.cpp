@@ -23,7 +23,7 @@ namespace midikraft {
 		return result;
 	}
 
-	void OB6Patch::setName(std::string const &name)
+	bool OB6Patch::changeNameStoredInPatch(std::string const &name)
 	{
 		int baseIndex = 107;
 		for (int i = 0; i < 20; i++) {
@@ -35,6 +35,7 @@ namespace midikraft {
 				setAt(baseIndex + i, ' ');
 			}
 		}
+		return true;
 	}
 
 	bool OB6Patch::isDefaultName(std::string const &patchName) const

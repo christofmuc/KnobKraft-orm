@@ -83,7 +83,7 @@ namespace midikraft {
 				//TBD - name irrelevant?
 				return unfilteredData->data();
 			default:
-				throw new std::runtime_error("Invalid argument - unknown data type id");
+				throw std::runtime_error("Invalid argument - unknown data type id");
 			}
 		}
 		else {
@@ -574,7 +574,7 @@ namespace midikraft {
 	std::vector<juce::MidiMessage> Rev2::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
 		// Create a program data dump message
-		int programPlace = programNumber.toZeroBased();
+		int programPlace = programNumber.toZeroBasedDiscardingBank() % 128;
 		int bank = programPlace / 128;
 		if (programNumber.bank().isValid()) {
 			bank = programNumber.bank().toZeroBased();
@@ -623,12 +623,12 @@ namespace midikraft {
 	std::string Rev2::friendlyProgramName(MidiProgramNumber programNo) const
 	{
 		// The Rev2 has 8 banks of 128 patches, in two sections U and F called U1 to U4 and F1 to F4
-		int bank = programNo.toZeroBased() / 128;
+		int bank = programNo.toZeroBasedWithBank() / 128;
 		if (programNo.bank().isValid()) {
 			bank = programNo.bank().toZeroBased();
 		}
 		int section = bank / 4;
-		int program = programNo.toZeroBased() % 128;
+		int program = programNo.toZeroBasedDiscardingBank() % 128;
 		return fmt::format("{}{} P{}", (section == 0 ? "U" : "F"), ((bank % 4) + 1), (program+1));
 	}
 

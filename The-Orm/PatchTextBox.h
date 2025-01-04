@@ -15,24 +15,29 @@ public:
 	enum class DisplayMode {
 		HEX, PARAMS
 	};
-	PatchTextBox();
+	PatchTextBox(std::function<void()> forceResize = {}, bool showParams = true);
 
 	void fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch);
 
 	virtual void resized() override;
 
-	static String makeHexDocument(std::shared_ptr<midikraft::PatchHolder> patch);
+	String makeHexDocument(std::shared_ptr<midikraft::PatchHolder> patch);
 	static String makeTextDocument(std::shared_ptr<midikraft::PatchHolder> patch);
 	static std::string patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive);
+
+	float desiredHeight() const;
 
 private:
 	void refreshText();
 
+	std::function<void()> forceResize_;
+	bool showParams_;
 	std::shared_ptr<midikraft::PatchHolder> patch_;
 	std::unique_ptr<CodeDocument> document_;
 	std::unique_ptr<CodeEditorComponent> textBox_;
 	TextButton hexBased_, textBased_;
 	DisplayMode mode_;
+	std::optional<int> lastLayoutedWidth_;
 };
 
 

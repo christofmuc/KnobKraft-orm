@@ -259,10 +259,11 @@ namespace midikraft {
 		return "invalid patch";
 	}
 
-	void Rev2Patch::setName(std::string const &name)
+	bool Rev2Patch::changeNameStoredInPatch(std::string const &name)
 	{
 		// This is ignored, if you want to change the name, you have to change both layer's names
 		ignoreUnused(name);
+		return true;
 	}
 
 	bool Rev2Patch::isDefaultName(std::string const &patchName) const
@@ -299,6 +300,10 @@ namespace midikraft {
 	{
 		// The Rev2 always has 2 layers, one might be an init patch, but we wouldn't know?
 		return 2;
+	}
+
+	std::vector<std::string> Rev2Patch::layerTitles() const {
+		return {"Layer A", "Layer B"};
 	}
 
 	std::string Rev2Patch::layerName(int layerNo) const

@@ -190,7 +190,7 @@ namespace midikraft {
 	std::string Matrix1000::friendlyProgramName(MidiProgramNumber programNo) const
 	{
 		// The Matrix does a 3 digit display, with the first patch being "000" and the highest being "999"s 
-		return fmt::format("{:03d}", programNo.toZeroBased());
+		return fmt::format("{:03d}", programNo.toZeroBasedWithBank());
 	}
 
 	std::string Matrix1000::friendlyBankName(MidiBankNumber bankNo) const
@@ -242,7 +242,7 @@ namespace midikraft {
 
 	std::vector<juce::MidiMessage> Matrix1000::patchToProgramDumpSysex(std::shared_ptr<DataFile> patch, MidiProgramNumber programNumber) const
 	{
-		uint8 programNo = (uint8)(programNumber.toZeroBased() % 100);
+		uint8 programNo = (uint8)(programNumber.toZeroBasedDiscardingBank() % 100);
 		std::vector<uint8> singleProgramDump({ MIDI_ID.OBERHEIM, MIDI_ID.MATRIX6_1000, MIDI_COMMAND.SINGLE_PATCH_DATA, programNo });
 		auto patchdata = escapeSysex(patch->data());
 		std::copy(patchdata.begin(), patchdata.end(), std::back_inserter(singleProgramDump));
@@ -423,7 +423,7 @@ namespace midikraft {
 	void Matrix1000::changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished)
 	{
 		ignoreUnused(controller, channel, onFinished);
-		throw new std::runtime_error("Illegal state");
+		throw std::runtime_error("Illegal state");
 	}
 
 	MidiChannel Matrix1000::getInputChannel() const
@@ -444,7 +444,7 @@ namespace midikraft {
 	void Matrix1000::setMidiControl(MidiController *controller, bool isOn)
 	{
 		ignoreUnused(controller, isOn);
-		throw new std::runtime_error("Illegal state");
+		throw std::runtime_error("Illegal state");
 	}
 
 	/*std::vector<std::string> Matrix1000::presetNames()

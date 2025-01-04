@@ -20,11 +20,11 @@ class PatchButtonPanel : public Component,
 public:
 	typedef std::function<void(int, int, std::function<void(std::vector<midikraft::PatchHolder>)>)> TPageLoader;
 
-	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler);
+	PatchButtonPanel(std::function<void(midikraft::PatchHolder &)> handler, std::string const& settingPrefix = "");
 	virtual ~PatchButtonPanel() override;
 
 	void setPatchLoader(TPageLoader pageGetter);
-	void setTotalCount(int totalCount);
+	void setTotalCount(int totalCount, bool resetToPageOne = true);
 	void changeGridSize(int newWidth, int newHeight);
 	void setPatches(std::vector<midikraft::PatchHolder> const& patches, int autoSelectTarget = -1);
 	
@@ -33,7 +33,10 @@ public:
 	void resized() override;
 
 	void buttonClicked(Button* button) override;
-	void buttonClicked(int buttonIndex);
+	void buttonClicked(int buttonIndex, bool triggerHandler);
+
+	// Setup patch send modes
+	void setButtonSendModes(std::vector<std::string> const& modes);
 
 	// Remote control
 	void selectPrevious();
@@ -45,7 +48,12 @@ public:
 	void jumpToPage(int pagenumber);
 
 private:
+	enum class SliderAxis {
+		X_AXIS, Y_AXIS
+	};
+
 	void changeListenerCallback(ChangeBroadcaster* source) override;
+	std::string settingName(SliderAxis axis);
 	void refreshGridSize();
 
 	String createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch);
@@ -54,6 +62,7 @@ private:
 	int indexOfActive() const;
 	void setupPageButtons();
 
+	std::string settingPrefix_;
 	std::vector<midikraft::PatchHolder> patches_;
 	std::unique_ptr<PatchButtonGrid<PatchHolderButton>> patchButtons_;
 	std::function<void(midikraft::PatchHolder &)> handler_;
@@ -64,6 +73,8 @@ private:
 	TextButton pageUp_, pageDown_;
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
+	Label buttonSendModeLabel_;
+	ComboBox buttonSendMode_;
 	Label sliderXLabel_;
 	Slider gridSizeSliderX_;
 	Label sliderYLabel_;

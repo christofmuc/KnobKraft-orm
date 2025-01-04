@@ -6,13 +6,26 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(KnobKraftOrm VERSION 2.0.0)
+# Get the version from our sub cmakefile
+execute_process(
+		COMMAND sh -c "cmake -P '${CMAKE_CURRENT_LIST_DIR}/gitversion.cmake' >/dev/null"
+		ERROR_VARIABLE PROJECT_VERSION
+)
+# Cleanup output
+string(REGEX REPLACE "^[[:space:]]+|[[:space:]]+$" "" PROJECT_VERSION "${PROJECT_VERSION}")
+string(REGEX REPLACE "\n$" "" PROJECT_VERSION "${PROJECT_VERSION}")
+message(STATUS "Project version is ${PROJECT_VERSION}")
 
-# Export this variable to be use by the Azure pipeline to know how the installers are called
-SET(KNOBKRAFT_ORM_VERSION ${KnobKraftOrm_VERSION} CACHE STRING "Version of KnobKraft Orm")
-# Output the weird string Azure pipeline uses to parse a value into a variable. I hope.
-MESSAGE("##vso[task.setvariable variable=ormVersionNumber]${KnobKraftOrm_VERSION}")
+# Start project
+project(KnobKraftOrm VERSION ${PROJECT_VERSION})
 
+# Now you can use PROJECT_DEV_TAG in your CMake scripts or in your code to handle the "-dev" part.
+# For example, you could add a preprocessor definition that your code could use:
+if(PROJECT_DEV_TAG STREQUAL "-dev")
+    add_definitions(-DPROJECT_DEV)
+endif()
+
+# Export this variable to be use by the Azure
 # Append the version number to the github action environment file to be used by subsequent steps 
 if(DEFINED ENV{GITHUB_ENV})
 file(APPEND $ENV{GITHUB_ENV} "ORM_VERSION=${KnobKraftOrm_VERSION}")
@@ -58,9 +71,11 @@ set(SOURCES
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
 	Main.cpp
+	MidiLogPanel.cpp MidiLogPanel.h
 	OrmLookAndFeel.cpp OrmLookAndFeel.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
 	PatchDiff.cpp PatchDiff.h
+	PatchHistoryPanel.cpp PatchHistoryPanel.h
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
@@ -71,8 +86,10 @@ set(SOURCES
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h
+	SecondaryWindow.cpp SecondaryWindow.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
+	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
 	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
@@ -99,13 +116,11 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-access-virus
 		midikraft-behringer-bcr2000
 		midikraft-kawai-k3
-		midikraft-korg-dw8000
 		midikraft-oberheim-matrix1000
 		midikraft-roland-mks50 
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
-		midikraft-yamaha-refacedx
 		knobkraft-generic-adaptation
 		pytschirp_embedded
 )
@@ -145,12 +160,15 @@ IF(WIN32)
 		${SPARKLE_DEPENDENCY}
 		)
 ELSEIF(APPLE)
-	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+	target_link_libraries(KnobKraftOrm PRIVATE
+		${JUCE_LIBRARIES}
 		ICU::data ICU::uc
+		${MIDIKRAFT_LIBRARIES}
 		SQLiteCpp
 		sqlite3
 		gin
 		spdlog::spdlog
+		pybind11::embed
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
 		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
@@ -178,10 +196,16 @@ endif()
 # Pedantic about warnings
 if (MSVC)
     # warning level 4 and all warnings as errors
-    target_compile_options(KnobKraftOrm PRIVATE /W4 /WX /we4388 /we4389)
-else()
-    # lots of warnings and all warnings as errors
-    target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas -Wno-missing-field-initializers)
+	# Turn off 4068 unknown pragmas
+    target_compile_options(KnobKraftOrm PRIVATE /W4 /WX /we4388 /we4389 /wd4068)
+else()    
+	if(APPLE)
+		# lots of warnings and all warnings as errors    
+		target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas -Wno-missing-field-initializers)
+	else()
+		# only lots of warnings now
+		target_compile_options(KnobKraftOrm PRIVATE -Wall -Wextra -pedantic -Wno-unknown-pragmas -Wno-missing-field-initializers)
+	endif()
 endif()
 
 IF(WIN32)
@@ -189,35 +213,45 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc67.dll" "${icu_SOURCE_DIR}/bin64/icudt67.dll" 
+					"${icu_SOURCE_DIR}/bin64/icuuc74.dll" "${icu_SOURCE_DIR}/bin64/icudt74.dll"
 					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${PYTHON_EMBEDDED_PATH}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll"
+					"${PYTHON_EMBEDDED_PATH}/python${PYTHON_VERSION_TO_COPY}.dll"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 
 # Installation - we want to copy the sequential module directory as a subdirectory to the binary output dir. Same with roland and knobkraft python modules
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/sequential
-		$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/sequential
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/sequential
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/roland
-		$<TARGET_FILE_DIR:KnobKraftOrm>/roland
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/roland
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/roland
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/adaptions/knobkraft
-		$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/knobkraft
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
-file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptions/*.py")
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/testing
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/testing
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
+		)
+file(GLOB ADAPTATION_PYTHON_FILES "${CMAKE_SOURCE_DIR}/adaptations/*.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "conftest.py")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "test_.*py")
+list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX ".*__pycache__/.*")
 list(FILTER ADAPTATION_PYTHON_FILES EXCLUDE REGEX "DSI_OB6.py")
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E make_directory 
@@ -251,26 +285,34 @@ IF(WIN32)
 ENDIF()
 
 IF(APPLE)
-    # This is supposed to build a relocatable macOS DMG installer when you specify the
-    # --target package
-    SET(MY_RELEASE_DIR ${CMAKE_BINARY_DIR}/macInstaller)
-    SET(APPS "\${CMAKE_INSTALL_PREFIX}/KnobKraftOrm.app")
-    SET(DIRS ${CMAKE_BINARY_DIR})
-    INSTALL(TARGETS KnobKraftOrm
-        BUNDLE DESTINATION . COMPONENT Runtime
-        RUNTIME DESTINATION bin COMPONENT Runtime
+	# This section is supposed to build a relocatable macOS DMG installer when you specify the
+	# --target package
+
+	IF(CODESIGN_CERTIFICATE_NAME)
+		# We need to sign the files as a post build step. Doing this as install step doesn't help because
+		# CPack will already have created a copy and ignore our
+		get_filename_component(PYTHON_SOURCE_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
+		add_custom_command(
+				TARGET KnobKraftOrm POST_BUILD
+				COMMAND "${CMAKE_COMMAND}"
+					-DPYTHON_SOURCE="${PYTHON_SOURCE_DIR}/../lib"
+					-DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
+					-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
+					-DCODESIGN_CERTIFICATE_NAME="${CODESIGN_CERTIFICATE_NAME}"
+					-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
 		)
-    INSTALL(CODE "include(BundleUtilities)
-	set(BU_CHMOD_BUNDLE_ITEMS TRUE)
-    fixup_bundle(\"${APPS}\"  \"\"  \"${DIRS}\" IGNORE_ITEM \"Python\")
-    " COMPONENT Runtime)
-    
+	ENDIF()
+
+	# This is the one and most important INSTALL directive, without it there is no Orm
+	INSTALL(TARGETS KnobKraftOrm BUNDLE DESTINATION .)
+
     # Setup CPack variables
     set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.png")
     set(CPACK_PACKAGE_VERSION ${KnobKraftOrm_VERSION})
-    set(CPACK_PACKAGE_VENDOR "Christof Ruch Beratungs UG (haftungsbeschraenkt)")
+    set(CPACK_PACKAGE_VENDOR "Christof Ruch")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/redist/agpl-3.0.txt")
 	#set(CPACK_RESOURCE_FILE_README "${CMAKE_PROJECT_DIR}/readme.md")
+	set(CPACK_COMMAND_HDIUTIL "${CMAKE_CURRENT_LIST_DIR}/hdiutil_repeat.sh")
     
     # Select only the dmg generator for now
     SET(CPACK_BINARY_DRAGNDROP ON)
@@ -279,8 +321,7 @@ IF(APPLE)
     INCLUDE(CPack)
 ELSE()
 	INSTALL(TARGETS KnobKraftOrm knobkraft-generic-adaptation
-			BUNDLE DESTINATION . COMPONENT Runtime
-			RUNTIME DESTINATION bin COMPONENT Runtime
+			BUNDLE DESTINATION .
 			)
 	IF(UNIX)
 		SET(CPACK_BINARY_TGZ ON)
