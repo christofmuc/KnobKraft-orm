@@ -7,7 +7,16 @@
 #pragma once
 
 #include <string>
+
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/pybind11.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 
 class PyStdErrOutStreamRedirect {
 public:
