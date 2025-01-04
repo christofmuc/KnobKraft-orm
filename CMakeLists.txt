@@ -10,14 +10,16 @@ cmake_minimum_required(VERSION 3.14)
 # JUCE 8 refuses to build for anything older than 10.11, so let's try that.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
 
-option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
-if(UNIVERSAL_BINARY)
-	message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
-	set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
-endif()
+IF(APPLE)
+	option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
+	if(UNIVERSAL_BINARY)
+		message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
+		set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+	endif()
 
-# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
-add_compile_definitions(JSON_HAS_CPP_14)
+	# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
+	add_compile_definitions(JSON_HAS_CPP_14)
+ENDIF()
 
 project(KnobKraft_Orm)
 
