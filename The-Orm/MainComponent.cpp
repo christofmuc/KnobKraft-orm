@@ -425,7 +425,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	#endif 
 	#endif
 #ifdef USE_SPARKLE
-			{ "Check for updates...", { "Check for updates...", [this] {
+			{ "Check for updates...", { "Check for updates...", [] {
 #ifdef WIN32
 				win_sparkle_check_update_with_ui();
 #endif

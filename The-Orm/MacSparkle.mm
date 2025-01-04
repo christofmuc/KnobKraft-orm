@@ -9,6 +9,11 @@
 #import <Foundation/Foundation.h>
 #import <Sparkle/Sparkle.h>
 
+// This does not follow the new procedure at https://sparkle-project.org/documentation/programmatic-setup/ yet
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 class SparkleAutoUpdate::Impl
 {
 public:
@@ -33,3 +38,5 @@ void SparkleAutoUpdate::checkForUpdates()
 {
   [d->updater checkForUpdates : nil];
 }
+
+#pragma clang diagnostic pop

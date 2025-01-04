@@ -138,7 +138,7 @@ ELSEIF(APPLE)
 	IF(SPARKLE_UPDATES)
 		FetchContent_Declare(
 			sparkleframework
-			URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
+			URL https://github.com/sparkle-project/Sparkle/releases/download/2.6.4/Sparkle-2.6.4.tar.xz
 		)
 		FetchContent_MakeAvailable(sparkleframework)
     ENDIF()
