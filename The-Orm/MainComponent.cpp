@@ -554,6 +554,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
     MessageManager::callAsync([]() {
         UIModel::instance()->windowTitle_.sendChangeMessage();
     });
+#endif
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
