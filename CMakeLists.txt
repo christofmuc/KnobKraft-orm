@@ -18,7 +18,7 @@ endif()
 
 # Required for Sparkle
 IF(APPLE)
-set(BUILD_WITH_INSTALL_RPATH YES)
+	set(BUILD_WITH_INSTALL_RPATH YES)
 ENDIF()
 
 # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
@@ -135,7 +135,7 @@ ELSEIF(APPLE)
 		add_compile_definitions(DEBUG)
 	endif()
 
-	if (SPARKLE_UPDATES)
+	IF(SPARKLE_UPDATES)
 		FetchContent_Declare(
 			sparkleframework
 			URL https://github.com/sparkle-project/Sparkle/releases/download/2.0.0/Sparkle-2.0.0.tar.xz
@@ -168,7 +168,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
 # Setup pybind11
-#set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
+set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
 ELSE()
