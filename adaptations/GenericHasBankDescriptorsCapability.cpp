@@ -9,8 +9,15 @@
 #include "GenericAdaptation.h"
 #include "Sysex.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace py = pybind11;
 
