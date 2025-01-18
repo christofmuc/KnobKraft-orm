@@ -3,6 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import hashlib
 from typing import List
 
 import testing
@@ -93,6 +94,15 @@ def renamePatch(message: List[int], new_name: str) -> List[int]:
         name_params = [(ord(c), 0) for c in new_name.ljust(12, " ")]
         return message[:8] + [item for sublist in name_params for item in sublist] + message[32:]
     raise Exception("Can only rename Presets!")
+
+
+def calculateFingerprint(message: List[int]):
+    if isSingleProgramDump(message):
+        data = message[8:-1]
+        # Blank out name, 12 characters stored as 14 bit values
+        data[0:24] = [0] * 24
+        return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
+    raise Exception("Can only fingerprint Presets")
 
 
 # Test data picked up by test_adaptation.py
