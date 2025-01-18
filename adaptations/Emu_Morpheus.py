@@ -32,6 +32,11 @@ def needsChannelSpecificDetection():
     return True
 
 
+def deviceDetectWaitMilliseconds():
+    # Better safe than sorry, let's start with a 300 ms delay
+    return 300
+
+
 def channelIfValidDeviceResponse(message):
     if (len(message) > 5
             and message[0:3] == [0xf0, EMU_ID, MORPHEUS_ID]
@@ -81,6 +86,13 @@ def convertToProgramDump(device_id, message, program_number):
         # Need to construct a new program dump from a single program dump. Keep the protocol version intact
         return message[0:3] + [device_id & 0x0f] + message[4:6] + [program_number & 0x7f, (program_number >> 7) & 0x7f] + message[8:]
     raise Exception("Can only convert program dumps")
+
+
+def renamePatch(message: List[int], new_name: str) -> List[int]:
+    if isSingleProgramDump(message):
+        name_params = [(ord(c), 0) for c in new_name.ljust(12, " ")]
+        return message[:8] + [item for sublist in name_params for item in sublist] + message[32:]
+    raise Exception("Can only rename Presets!")
 
 
 # Test data picked up by test_adaptation.py
