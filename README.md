@@ -43,6 +43,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | DW-8000/EX-8000 | works | adaptation | |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
@@ -61,6 +62,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | MKS-50 | alpha | native | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
+| Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
@@ -106,6 +108,10 @@ You can always use the source to build it yourself, please read on for more inst
 ## Supported platforms
 
 This software is build and run on Windows 10, macOS 10.15, and several Linux distributions. Note that this is not a commercial project, and as I am using Windows mostly expect some hiccups. But I will get back to you if you report a bug and try to resolve it!
+
+## In the press
+
+@mslinn has written a nice intro with some instructions over at the blog, hop over and have a look: https://mslinn.com/av_studio/720-knobkraft.html.
 
 # Building your own adaptation for a synthesizer
 
