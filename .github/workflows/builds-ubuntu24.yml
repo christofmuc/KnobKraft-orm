@@ -18,7 +18,9 @@ jobs:
         git submodule update --recursive --init --depth 1
 
     - name: Install dependencies from apt-get
-      run: sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.1-dev libglew-dev libjack-dev libicu-dev
+      run: |
+        cmake --version
+        sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.1-dev libglew-dev libjack-dev libicu-dev cmake
 
     - name: Select proper Python version
       uses: actions/setup-python@v2
