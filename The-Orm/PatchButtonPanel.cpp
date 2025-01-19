@@ -13,6 +13,8 @@
 #include "LayoutConstants.h"
 #include "Settings.h"
 
+#include "Data.h"
+
 #include <algorithm>
 #include <fmt/format.h>
 
@@ -52,6 +54,21 @@ PatchButtonPanel::PatchButtonPanel(std::function<void(midikraft::PatchHolder &)>
 
 	patchButtons_ = std::make_unique<PatchButtonGrid<PatchHolderButton>>(gridWidth_, gridHeight_, [this](int index) { buttonClicked(index, true); });
 	addAndMakeVisible(patchButtons_.get());
+
+	buttonSendMode_.setTextWhenNoChoicesAvailable("<none selected>");
+	buttonSendMode_.onChange = [this]() {
+		// Value changed, update property
+		auto selectedText = buttonSendMode_.getItemText(buttonSendMode_.getSelectedItemIndex());
+		auto currentSynth = UIModel::currentSynthNameOrMultiOrEmpty();
+		if (!currentSynth.empty()) {
+			auto oldValue = UIModel::getSynthSpecificPropertyAsValue(currentSynth, PROPERTY_COMBOBOX_SENDMODE, "automatic");
+			oldValue = selectedText;
+		}
+	};
+	addAndMakeVisible(buttonSendMode_);
+
+	buttonSendModeLabel_.setText("send mode", NotificationType::dontSendNotification);
+	addAndMakeVisible(buttonSendModeLabel_);
 
 	addAndMakeVisible(pageUp_); 
 	pageUp_.setButtonText(">");
@@ -144,12 +161,15 @@ void PatchButtonPanel::setPatchLoader(TPageLoader pageGetter)
 	pageLoader_ = pageGetter;
 }
 
-void PatchButtonPanel::setTotalCount(int totalCount)
+void PatchButtonPanel::setTotalCount(int totalCount, bool resetToPageOne /* = true */)
 {
-	pageBase_ = pageNumber_ = 0;
 	totalSize_ = totalCount;
 	numPages_ = totalCount / pageSize_;
 	if (totalCount % pageSize_ != 0) numPages_++;
+	if (resetToPageOne || pageBase_ >= totalCount) {
+		// Either we want to jump back to page 1, or the current page is no longer possible as the totalCount is smaller than the current's page first element index
+		pageBase_ = pageNumber_ = 0;
+	}
 }
 
 void PatchButtonPanel::changeGridSize(int newWidth, int newHeight) {
@@ -274,7 +294,6 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 	bool multiSynthMode = UIModel::instance()->multiMode_.multiSynthMode();
 
 	// Now set the button text and colors
-	int active = indexOfActive();
 	for (size_t i = 0; i < std::max(patchButtons_->size(), patches_.size()); i++) {
 		if (i < patchButtons_->size()) {
 			auto button = patchButtons_->buttonWithIndex((int) i);
@@ -285,11 +304,11 @@ void PatchButtonPanel::refresh(bool async, int autoSelectTarget /* = -1 */) {
 						static_cast<int>(PatchButtonInfo::SubtitleSynth) | (static_cast<int>(displayMode) & static_cast<int>(PatchButtonInfo::CenterMask))
 						);
 				}
-				button->setPatchHolder(&patches_[i], static_cast<int>(i) == active, displayMode);
+				button->setPatchHolder(&patches_[i], displayMode);
 				refreshThumbnail((int)i);
 			}
 			else {
-				button->setPatchHolder(nullptr, false, PatchButtonInfo::CenterName);
+				button->setPatchHolder(nullptr, PatchButtonInfo::CenterName);
 				button->clearThumbnailFile();
 			}
 		}
@@ -317,6 +336,9 @@ void PatchButtonPanel::resized()
 		}
 	}
 	pageNumberBox.performLayout(pageNumberStrip);
+	float width_label = TextLayout::getStringWidth(buttonSendModeLabel_.getFont(), buttonSendModeLabel_.getText());
+	buttonSendModeLabel_.setBounds(pageNumberStrip.removeFromLeft((int) width_label));
+	buttonSendMode_.setBounds(pageNumberStrip.removeFromLeft(LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_NORMAL).withTrimmedLeft(LAYOUT_INSET_NORMAL));
 	gridSizeSliderY_.setBounds(pageNumberStrip.removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));
 	gridSizeSliderX_.setBounds(pageNumberStrip.withTrimmedRight(LAYOUT_SMALL_ICON_WIDTH).removeFromRight(LAYOUT_BUTTON_WIDTH + LAYOUT_SMALL_ICON_WIDTH));
 
@@ -348,6 +370,15 @@ void PatchButtonPanel::buttonClicked(Button* button)
 	}
 	else if (button == &pageDown_) {
 		pageDown(false);
+	}
+}
+
+void PatchButtonPanel::setButtonSendModes(std::vector<std::string> const& modes)
+{
+	buttonSendMode_.clear();
+	int index = 1;
+	for (auto const& mode : modes) {
+		buttonSendMode_.addItem(mode, index++);
 	}
 }
 
@@ -388,6 +419,25 @@ void PatchButtonPanel::changeListenerCallback(ChangeBroadcaster* source)
 	}
 	else if (source == &UIModel::instance()->currentSynth_ || source == &UIModel::instance()->multiMode_) {
 		refreshGridSize();
+		if (UIModel::instance()->multiMode_.multiSynthMode()) {
+			buttonSendModeLabel_.setVisible(false);
+			buttonSendMode_.setVisible(false);
+		}
+		else {
+			buttonSendModeLabel_.setVisible(true);
+			buttonSendMode_.setVisible(true);
+			std::string synthName = UIModel::currentSynthNameOrMultiOrEmpty();
+			if (!synthName.empty()) {
+				UIModel::ensureSynthSpecificPropertyExists(synthName, PROPERTY_COMBOBOX_SENDMODE, "automatic");
+				auto value = UIModel::instance()->getSynthSpecificPropertyAsValue(synthName, PROPERTY_COMBOBOX_SENDMODE, "automatic").getValue();
+				for (int i = 0; i < buttonSendMode_.getNumItems(); i++) {
+					if (buttonSendMode_.getItemText(i) == value.toString()) {
+						buttonSendMode_.setSelectedItemIndex(i);
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 

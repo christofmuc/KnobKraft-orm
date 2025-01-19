@@ -10,8 +10,15 @@
 
 #include "Sysex.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace py = pybind11;
 
@@ -102,12 +109,21 @@ namespace knobkraft {
 
 	MidiProgramNumber GenericProgramDumpCapability::getProgramNumber(const std::vector<MidiMessage>& message) const
 	{
+        if (!isSingleProgramDump(message)) {
+            return MidiProgramNumber::invalidProgram();
+        }
 		py::gil_scoped_acquire acquire;
 		if (me_->pythonModuleHasFunction("numberFromDump")) {
 			try {
 				auto vector = GenericAdaptation::midiMessagesToVector(message);
 				py::object result = me_->callMethod(kNumberFromDump, vector);
-				return MidiProgramNumber::fromZeroBase(result.cast<int>());
+                int programNumberReturned = result.cast<int>();
+                if (programNumberReturned >= 0) {
+                    return MidiProgramNumber::fromZeroBase(programNumberReturned);
+                }
+                else {
+                    return MidiProgramNumber::invalidProgram();
+                }
 			}
 			catch (py::error_already_set &ex) {
 				me_->logAdaptationError(kNumberFromDump, ex);
@@ -117,7 +133,7 @@ namespace knobkraft {
 				me_->logAdaptationError(kNumberFromDump, ex);
 			}
 		}
-		return MidiProgramNumber::fromZeroBase(0);
+		return MidiProgramNumber::invalidProgram();
 	}
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(std::shared_ptr<midikraft::DataFile> patch, MidiProgramNumber programNumber) const
@@ -127,6 +143,10 @@ namespace knobkraft {
 		{
 			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
+            if (c < 0) {
+                spdlog::warn("unknown channel in patchToProgramDumpSysex, defaulting to MIDI channel 1");
+                c = 0;
+            }
 			int programNo = programNumber.toZeroBasedWithBank();
 			py::object result = me_->callMethod(kConvertToProgramDump, c, data, programNo);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());

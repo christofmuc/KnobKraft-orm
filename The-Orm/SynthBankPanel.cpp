@@ -61,6 +61,12 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 				});
 			}
 		}
+
+	};
+
+	exportButton_.setButtonText("Export bank");
+	exportButton_.onClick = [this]() {
+		patchView_->exportBank();
 	};
 
 	bankList_ = std::make_unique<VerticalPatchButtonList>([this](MidiProgramNumber programPlace, std::string md5) {
@@ -108,6 +114,7 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 	addAndMakeVisible(bankNameAndDate_);
 	addAndMakeVisible(resyncButton_);
 	addAndMakeVisible(saveButton_);
+	addAndMakeVisible(exportButton_);
 	addAndMakeVisible(sendButton_);
 	addAndMakeVisible(modified_);
 	addAndMakeVisible(*bankList_);
@@ -181,6 +188,11 @@ void SynthBankPanel::reloadFromDatabase()
 	}
 }
 
+std::shared_ptr<midikraft::SynthBank> SynthBankPanel::getCurrentSynthBank() const
+{
+	return synthBank_;
+}
+
 void SynthBankPanel::copyPatchNamesToClipboard()
 {
     if (synthBank_) {
@@ -213,7 +225,7 @@ void SynthBankPanel::refresh() {
 		{
 			bankNameAndDate_.setText(fmt::format("'{}' loading into '{}'", synthBank_->name(), synthBank_->targetBankName()), dontSendNotification);
 		}
-		bankList_->setPatches(synthBank_, buttonMode_);
+		bankList_->setPatchList(synthBank_, buttonMode_);
 		modified_.setText(synthBank_->isDirty() ? "modified" : "", dontSendNotification);
 	}
 	else
@@ -227,7 +239,7 @@ void SynthBankPanel::resized()
 {
 	auto bounds = getLocalBounds();
 
-	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 2).reduced(LAYOUT_INSET_NORMAL);
+	auto header = bounds.removeFromTop(LAYOUT_LARGE_LINE_SPACING * 3).reduced(LAYOUT_INSET_NORMAL);
 
 	instructions_.setBounds(header);
 
@@ -237,6 +249,7 @@ void SynthBankPanel::resized()
 	resyncButton_.setBounds(upperButton);
 	saveButton_.setBounds(upperButton);
 	sendButton_.setBounds(headerRightSide.removeFromTop(LAYOUT_BUTTON_HEIGHT + LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
+	exportButton_.setBounds(headerRightSide.removeFromTop(LAYOUT_BUTTON_HEIGHT + LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL));
 	synthName_.setBounds(header.removeFromTop(LAYOUT_LARGE_LINE_HEIGHT));
 	bankNameAndDate_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
 	modified_.setBounds(header.removeFromTop(LAYOUT_TEXT_LINE_HEIGHT));
@@ -274,4 +287,5 @@ void SynthBankPanel::showInfoIfRequired() {
 	resyncButton_.setVisible(showBank && !isUser);
 	saveButton_.setVisible(showBank && isUser && synthBank_->isDirty());
 	sendButton_.setVisible(showBank && synthBank_->isWritable());
+	exportButton_.setVisible(showBank );
 }

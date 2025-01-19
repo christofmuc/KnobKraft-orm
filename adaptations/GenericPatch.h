@@ -15,7 +15,14 @@
 #include "LayeredPatchCapability.h"
 #include "StoredTagCapability.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -28,7 +35,7 @@ namespace knobkraft {
 	public:
 		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me, GenericAdaptation const* adaptation) : me_(me), adaptation_(adaptation) {}
         virtual ~GenericStoredPatchNameCapability() = default;
-		void setName(std::string const &name) override;
+		bool changeNameStoredInPatch(std::string const &name) override;
 		std::string name() const override;
 
 	private:
@@ -52,6 +59,7 @@ namespace knobkraft {
         virtual ~GenericLayeredPatchCapability() = default;
 		virtual LayerMode layerMode() const override;
 		virtual int numberOfLayers() const override;
+		virtual std::vector<std::string> layerTitles() const override;
 		virtual std::string layerName(int layerNo) const override;
 		virtual void setLayerName(int layerNo, std::string const& layerName) override;
 

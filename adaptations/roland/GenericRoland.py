@@ -12,6 +12,7 @@ command_rq1 = 0x11
 command_dt1 = 0x12
 
 # Construct the Roland character set as specified in the MIDI implementation
+# This is only used by very old Synths like the Roland D-50/D-550
 character_set = [' '] + [chr(x) for x in range(ord('A'), ord('Z') + 1)] + \
                 [chr(x) for x in range(ord('a'), ord('z') + 1)] + \
                 [chr(x) for x in range(ord('1'), ord('9') + 1)] + ['0', '-']
@@ -83,7 +84,7 @@ class DataBlock:
 
 
 class RolandData:
-    def __init__(self, data_name: str, num_items: int, num_address_bytes: int, num_size_bytes: int, base_address: Tuple, blocks: List[DataBlock]):
+    def __init__(self, data_name: str, num_items: int, num_address_bytes: int, num_size_bytes: int, base_address: Tuple, blocks: List[DataBlock], uses_consecutive_addresses: Optional[bool] = False):
         self.data_name = data_name
         self.num_items = num_items  # This is the "bank size" of that data type
         self.num_address_bytes = num_address_bytes
@@ -94,6 +95,7 @@ class RolandData:
         self.size = self.total_size()
         self.allowed_addresses = set([self.absolute_address(x.address) for x in self.data_blocks])
         self.blank_out_zones = None
+        self.uses_consecutive_addresses = uses_consecutive_addresses
 
     def make_black_out_zones(self, model_id_length: int, program_position: int = None, name_blankout: Tuple[int, int, int] = None):
         # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
@@ -126,19 +128,44 @@ class RolandData:
         return tuple(DataBlock.size_as_7bit_list(address_int + self.base_address_int, self.num_address_bytes))
 
     def address_and_size_for_sub_request(self, sub_request, sub_address) -> Tuple[List[int], List[int]]:
-        # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-        sub_address_int = (sub_address << 14) if self.num_address_bytes == 4 else (sub_address << 7)
-        concrete_address = DataBlock.size_as_7bit_list(DataBlock.size_to_number(self.data_blocks[sub_request].address) + sub_address_int + self.base_address_int, self.num_address_bytes)
+        if self.uses_consecutive_addresses:
+            base_number = DataBlock.size_to_number(tuple(self.base_address))
+            address = DataBlock.size_to_number(tuple(self.data_blocks[sub_request].address))
+            multiplier = sub_address * self.size
+            target_address = base_number + address + multiplier
+            concrete_address = DataBlock.size_as_7bit_list(target_address, self.num_address_bytes)
+        else:
+            # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
+            concrete_address = [(self.data_blocks[sub_request].address[i] + self.base_address[i]) if i != 1
+                                else (sub_address + self.base_address[i])
+                                for i in range(len(self.data_blocks[sub_request].address))]
         return concrete_address, DataBlock.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
 
-    def subaddress_from_address(self, address: List[int]) -> int:
-        offset = DataBlock.size_to_number(tuple(address)) - self.base_address_int
-        return offset >> ((self.num_address_bytes - 2) * 7)
+    def reset_to_base_address(self, address) -> Tuple:
+        if self.uses_consecutive_addresses:
+            address_as_number = DataBlock.size_to_number(tuple(address))
+            base_number = DataBlock.size_to_number(tuple(self.base_address))
+            if address_as_number >= base_number:
+                normalized_address = address_as_number - base_number
+                # Calculate the normalized addressed modulo the size of the data blocks
+                normalized_address = normalized_address % self.total_size()
+                readjusted_base = base_number + normalized_address
+                return tuple(DataBlock.size_as_7bit_list(readjusted_base, self.num_address_bytes))
+            else:
+                return tuple(address)
+        else:
+            # The address[1] part is where the program number is stored. To compare addresses we reset it to the base address
+            return tuple([address[i] if i != 1 else self.base_address[i] for i in range(self.num_address_bytes)])
 
-    def find_base_address(self, address: tuple) -> Tuple:
-        int_value = DataBlock.size_to_number(address)
-        sub_address = self.subaddress_from_address(list(address)) << 14
-        return tuple(DataBlock.size_as_7bit_list(int_value - sub_address, self.num_address_bytes))
+    def address_and_size_for_all_request(self, sub_address) -> Tuple[List[int], List[int]]:
+        # The idea is that if we request the first block, but with the total size of all blocks, the device will send us all messages back.
+        # Somehow that does work, but not as expected. To get all messages from a single patch on an XV-3080, I need to multiply the size by 8???
+
+        # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
+        concrete_address = [(self.data_blocks[0].address[i] + self.base_address[i]) if i != 1
+                            else (sub_address + self.base_address[i])
+                            for i in range(len(self.data_blocks[0].address))]
+        return concrete_address, self.total_size_as_list()
 
 
 def knobkraft_api(func):
@@ -152,7 +179,11 @@ class GenericRoland:
                  category_index: Optional[int] = None,
                  device_family: Optional[List[int]] = None,
                  device_detect_message: Optional[RolandData] = None,
-                 device_detect_ids: Optional[List[int]] = None):
+                 device_detect_ids: Optional[List[int]] = None,
+                 patch_name_message_number: Optional[int] = 0,
+                 patch_name_length: Optional[int] = 12,
+                 use_roland_character_set: Optional[bool] = False,
+                 uses_consecutive_addresses: Optional[bool] = False):
         self._name = name
         self.model_id = model_id
         self.bank_descriptors = bank_descriptors
@@ -165,6 +196,10 @@ class GenericRoland:
         self.edit_buffer = edit_buffer
         self.program_dump = program_dump
         self.category_index = category_index
+        self.patch_name_message_number = patch_name_message_number
+        self.patch_name_length = patch_name_length
+        self.use_roland_character_set = use_roland_character_set
+        self.uses_consecutive_addresses = uses_consecutive_addresses
         # Calculate the fingerprint blank out zones for edit buffer (just the name) and program dump (program position and name)
         edit_buffer.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len)
         program_dump.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len,
@@ -352,7 +387,7 @@ class GenericRoland:
         if self.isOwnSysex(message):
             command, address = self.getCommandAndAddressFromRolandMessage(message)
             if command == command_dt1:
-                patchNo = self.program_dump.subaddress_from_address(address)
+                patchNo = self._patch_number_from_address(address)
                 normalized_address = tuple(self.program_dump.find_base_address(address))
                 # Find out which data block we got
                 for sub_request in range(len(self.program_dump.data_blocks)):
@@ -367,7 +402,7 @@ class GenericRoland:
         for message in knobkraft.sysex.findSysexDelimiters(messages):
             _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
             addresses.add(self.program_dump.find_base_address(address))
-            programs.add(address[1])
+            programs.add(self._patch_number_from_address(address))
         return len(programs) == 1 and all(a in addresses for a in self.program_dump.allowed_addresses)
 
     @knobkraft_api
@@ -410,21 +445,33 @@ class GenericRoland:
     def calculateFingerprint(self, message):
         return hashlib.md5(bytearray(self.blankedOut(message))).hexdigest()
 
+    def _patch_number_from_address(self, address):
+        if self.uses_consecutive_addresses:
+            address_as_number = DataBlock.size_to_number(tuple(address))
+            base_as_number = DataBlock.size_to_number(tuple(self.program_dump.base_address))
+            return (address_as_number - base_as_number) // self.program_dump.size
+        else:
+            return address[1] - self.program_dump.base_address[1]
+
     @knobkraft_api
     def numberFromDump(self, message) -> int:
         if not self.isSingleProgramDump(message):
             return 0
         messages = knobkraft.sysex.findSysexDelimiters(message, 1)
         _, address = self.getCommandAndAddressFromRolandMessage(message[messages[0][0]:messages[0][1]])
-        return self.program_dump.subaddress_from_address(address)
+        return self._patch_number_from_address(address)
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:
         if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
-            messages = knobkraft.sysex.findSysexDelimiters(message, 1)
-            _, _, data = self.parseRolandMessage(message[messages[0][0]:messages[0][1]])
-            patch_name = ''.join([chr(x) for x in data[0:12]])
-            return patch_name.strip()
+            msg_no = self.patch_name_message_number
+            messages = knobkraft.sysex.findSysexDelimiters(message, msg_no + 1)
+            _, _, data = self.parseRolandMessage(message[messages[msg_no][0]:messages[msg_no][1]])
+            if self.use_roland_character_set:
+                patch_name = ''.join([character_set[x] for x in data[0:self.patch_name_length]])
+            else:
+                patch_name = ''.join([chr(x) for x in data[0:self.patch_name_length]])
+            return patch_name
         return 'Invalid'
 
     @knobkraft_api
@@ -540,7 +587,7 @@ class GenericRolandWithBackwardCompatibility:
         model = self.model_from_message(message)
         if model is not None:
             return model.numberFromDump(message)
-        return 0
+        return -1
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:

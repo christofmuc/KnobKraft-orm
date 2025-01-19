@@ -6,11 +6,20 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-# Target a specific MacOS version (I have no idea which version I need, so let's try with Mavericks)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X version to target for deployment")
+# Target a specific MacOS version.
+# JUCE 8 refuses to build for anything older than 10.11, so let's try that.
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
 
-# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
-add_compile_definitions(JSON_HAS_CPP_14)
+IF(APPLE)
+	option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
+	if(UNIVERSAL_BINARY)
+		message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
+		set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+	endif()
+
+	# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
+	add_compile_definitions(JSON_HAS_CPP_14)
+ENDIF()
 
 project(KnobKraft_Orm)
 
@@ -18,7 +27,8 @@ project(KnobKraft_Orm)
 option(ASAN "Use Address Sanitization for Debug version (Windows only for now)" OFF)
 
 # Since we also build MacOS, we need C++ 17. Which is not a bad thing.
-set(CMAKE_CXX_STANDARD 17)
+# Gin requests C++ 20.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
@@ -45,12 +55,12 @@ endfunction()
 # For other platforms, we are using Python 3.10
 if(WIN32)
     # For Windows, specify the exact version to download, as the FetchContent will calculate the download URLs from it
-	set(PYTHON_VERSION_TO_DOWNLOAD "3.8.10" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
+	set(PYTHON_VERSION_TO_DOWNLOAD "3.12.2" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
 	parse_semver(${PYTHON_VERSION_TO_DOWNLOAD} PYTHON_EMBEDDED_MAJOR PYTHON_EMBEDDED_MINOR PYTHON_EMBEDDED_PATCH)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
 else()
-	set(PYTHON_VERSION_TO_EMBED "3.10" CACHE STRING "Specify which version of Python should be used for embedding.")
+	set(PYTHON_VERSION_TO_EMBED "3.12" CACHE STRING "Specify which version of Python should be used for embedding.")
 endif()
 
 # On Windows, we need to download external dependencies
@@ -59,8 +69,7 @@ IF (WIN32)
 	include(FetchContent REQUIRED)
 
     FetchContent_Declare(
-	  icu
-	  URL https://github.com/unicode-org/icu/releases/download/release-67-1/icu4c-67_1-Win64-MSVC2017.zip
+	  icu URL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-Win64-MSVC2019.zip
 	)
 	FetchContent_MakeAvailable(icu)
 
@@ -101,7 +110,17 @@ IF (WIN32)
 	add_compile_options(/fsanitize=address)
 	endif()
 ELSEIF(APPLE)
-	set(ICU_ROOT "/opt/homebrew/Cellar/icu4c/72.1")
+	IF(UNIVERSAL_BINARY)
+		# Use the macPort version of the icu4c library, as the homebrew version is not available as universal binary
+		#set(ICU_DEBUG 1)
+		set(ICU_ROOT "/opt/local")
+	ELSE()
+		# For Intel Macs:
+		message("Using ICU from homebrew for Intel. If you compile for Apple silicon please update the CMakeLists.txt here")
+		set(ICU_ROOT "/usr/local/opt/icu4c")
+		# For Apple silicon:
+		# set(ICU_ROOT "/opt/homebrew/opt/icu4c")
+	ENDIF()
 	find_package(ICU REQUIRED data uc)
 
 	# Supress a warning from juce_TargetPlatform by letting it know the build type
@@ -114,15 +133,19 @@ ELSEIF(APPLE)
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)
-	# Include useful scripts for CMake
-	find_package(PkgConfig REQUIRED) 
-	find_package(OpenGL)
+    # Include useful scripts for CMake
+    find_package(PkgConfig REQUIRED)
+    find_package(OpenGL)
 
-	# These calls create special `PkgConfig::<MODULE>` variables
-	pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
-	pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
-	pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
-	find_package(ICU REQUIRED data uc)
+    # These calls create special `PkgConfig::<MODULE>` variables
+    pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
+    pkg_check_modules(GLEW REQUIRED IMPORTED_TARGET glew)
+    pkg_check_modules(WEBKIT IMPORTED_TARGET webkit2gtk-4.1)
+    if (NOT WEBKIT_FOUND EQUAL 1)
+        # If 4.1 is not available, we need 4.0
+        pkg_check_modules(WEBKIT REQUIRED IMPORTED_TARGET webkit2gtk-4.0)
+    endif()
+    find_package(ICU REQUIRED data uc)
 ENDIF()
 
 # We need to put our own CMake helpers on the module path
@@ -159,6 +182,9 @@ if(UNIX AND NOT APPLE)
 
 	# Also, as we will be building a shared module for Python, make sure GCC generates relocatable code suited for inclusion in a shared library
 	add_definitions(-fPIC)
+	# Pybind11 and gcc cause tons of visibility warnings together. This is the recommended way to get rid of them...
+	# https://github.com/pybind/pybind11/discussions/4862
+	add_compile_options(-fvisibility=hidden)
 ENDIF()
 
 # Include the SQLite wrapper for MidiKraft-database. The EXCLUDE_FROM_ALL is to prevent it from adding to the
@@ -193,7 +219,6 @@ target_compile_definitions(juce-static
 		JUCE_PLUGINHOST_VST=0
 		JUCE_PLUGINHOST_AU=0
 		DONT_SET_USING_JUCE_NAMESPACE=1
-		JUCE_DISPLAY_SPLASH_SCREEN=0
 		JUCE_REPORT_APP_USAGE=0
 		JUCE_CHECK_MEMORY_LEAKS=0
 		JUCE_QUICKTIME=0
@@ -222,6 +247,7 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(third_party/json)
 option(JSON_VALIDATOR_INSTALL "" OFF)
 add_subdirectory(third_party/json-schema-validator)
+option(FMT_INSTALL "" OFF)
 add_subdirectory(third_party/fmt)
 option(SPDLOG_FMT_EXTERNAL "" ON)
 add_subdirectory(third_party/spdlog)
@@ -237,13 +263,11 @@ add_subdirectory(MidiKraft)
 add_subdirectory(synths/access-virus)
 add_subdirectory(synths/bcr2000)
 add_subdirectory(synths/kawai-k3)
-add_subdirectory(synths/korg-dw8000)
 add_subdirectory(synths/oberheim-matrix1000)
 add_subdirectory(synths/roland-mks50)
 add_subdirectory(synths/roland-mks80)
 add_subdirectory(synths/sequential-rev2)
 add_subdirectory(synths/sequential-ob6)
-add_subdirectory(synths/yamaha-refacedx)
 
 # Add the generic adaptations module, that allows to define synths via Python
 add_subdirectory(adaptations)

@@ -38,7 +38,7 @@ jv_1080.install(this_module)
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = []
-        names = ["RedPowerBass", "Sinus QSB", "Super W Bass"]
+        names = ["RedPowerBass", "Sinus QSB   ", "Super W Bass"]
         i = 0
         for message in data.all_messages:
             if jv_1080.isPartOfSingleProgramDump(message):

@@ -24,7 +24,7 @@ public:
 	virtual ~PatchButtonPanel() override;
 
 	void setPatchLoader(TPageLoader pageGetter);
-	void setTotalCount(int totalCount);
+	void setTotalCount(int totalCount, bool resetToPageOne = true);
 	void changeGridSize(int newWidth, int newHeight);
 	void setPatches(std::vector<midikraft::PatchHolder> const& patches, int autoSelectTarget = -1);
 	
@@ -34,6 +34,9 @@ public:
 
 	void buttonClicked(Button* button) override;
 	void buttonClicked(int buttonIndex, bool triggerHandler);
+
+	// Setup patch send modes
+	void setButtonSendModes(std::vector<std::string> const& modes);
 
 	// Remote control
 	void selectPrevious();
@@ -70,6 +73,8 @@ private:
 	TextButton pageUp_, pageDown_;
 	OwnedArray<TextButton> pageNumbers_;
 	OwnedArray<Label> ellipsis_;
+	Label buttonSendModeLabel_;
+	ComboBox buttonSendMode_;
 	Label sliderXLabel_;
 	Slider gridSizeSliderX_;
 	Label sliderYLabel_;

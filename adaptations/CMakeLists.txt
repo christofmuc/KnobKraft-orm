@@ -14,22 +14,38 @@ set(adaptation_files
 	"Behringer Deepmind 12.py" 
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py" 
-	"Ensoniqesq1.py" 
+	"Emu_Morpheus.py"
+	"Ensoniqesq1.py" "Ensoniq_VFX.py"
 	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
-	"KawaiK1.py" 
-	"Korg_03RW.py" "KorgDW6000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
+	"KawaiK1.py" "Kawai K4.py" 
+	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py"
+    "Line_6_POD_Series.py"
 	"Matrix 6.py" 
 	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py"
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
-	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py"
+	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py"
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha-YC-Series.py"
 	"Zoom_MS.py"
+)
+
+set(adaptation_files_test_shipped
+    "conftest.py"
+    "test_adaptations.py"
+    "test_AndromedaA6.py"
+    "test_BC_Kijimi.py"
+    "test_implementation_status.py"
+    "test_jv80.py"
+    "test_JV1080.py"
+    "test_KorgMS2000.py"
+    "test_Roland_MKS70_V4.py"
+    "test_Roland_XV3080.py"
+    "test_YamahaRefaceDX.py"
 )
 
 set(adaptation_files_test_only
@@ -42,7 +58,7 @@ set(adaptation_files_test_only
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
 	"knobkraft/__init__.py" "knobkraft/adaptation_module.py" "knobkraft/sysex.py" "knobkraft/test_helper.py"
-        "testing/__init__.py" "testing/test_data.py"
+    "testing/__init__.py" "testing/test_data.py"
 )
 
 # Define the sources for the static library
@@ -57,6 +73,7 @@ set(Sources
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
+	${adaptation_files_test_shipped}
 	${adaptation_files_test_only}
 	${adaptation_support_files}
 )
@@ -80,19 +97,21 @@ else()
 endif()
 
 if (MSVC)
-set(INSTALLER_FILE_LIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/../The-Orm/adaptations.iss")
-file(WRITE ${INSTALLER_FILE_LIST_FILE} "; Auto generated, don't edit'\n")
-foreach(ADAPTATION ${adaptation_files})
-file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
-endforeach()
-
+	set(INSTALLER_FILE_LIST_FILE "${CMAKE_CURRENT_BINARY_DIR}/../The-Orm/adaptations.iss")
+	file(WRITE ${INSTALLER_FILE_LIST_FILE} "; Auto generated, don't edit'\n")
+	foreach(ADAPTATION ${adaptation_files})
+		file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
+	endforeach()
+	foreach(ADAPTATION ${adaptation_files_test_shipped})
+		file(APPEND ${INSTALLER_FILE_LIST_FILE} "Source: \"${CMAKE_CURRENT_LIST_DIR}/${ADAPTATION}\"; DestDir: \"{app}\\adaptations\"\n")
+	endforeach()
 endif()
 
 if(UNIX AND NOT APPLE)
 	# Define additional install files - in our case, all adaptation files and the python modules
-	install(DIRECTORY sequential/ DESTINATION bin/sequential)
-	install(DIRECTORY roland/ DESTINATION bin/roland)
-	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft)
-	install(DIRECTORY testing/ DESTINATION bin/testing)
+	install(DIRECTORY sequential/ DESTINATION bin/sequential FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY roland/ DESTINATION bin/roland FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY testing/ DESTINATION bin/testing FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
 	install(FILES ${adaptation_files} DESTINATION bin)
 ENDIF()

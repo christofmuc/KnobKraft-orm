@@ -21,10 +21,8 @@
 #include "Virus.h"
 #include "Rev2.h"
 #include "OB6.h"
-#include "KorgDW8000.h"
 #include "KawaiK3.h"
 #include "Matrix1000.h"
-#include "RefaceDX.h"
 #include "BCR2000.h"
 #include "MKS80.h"
 #include "MKS50.h"
@@ -53,6 +51,7 @@ const std::string kFetchEditBuffer{ "fetchEditBuffer" };
 const std::string kReceiveManualDump{ "receiveManualDump" };
 const std::string kLoadSysEx{ "loadsysEx" };
 const std::string kExportSysEx{ "exportSysex" };
+const std::string kExportBank { "exportBank" };
 const std::string kExportPIF { "exportPIF" };
 const std::string kShowDiff{ "showDiff" };
 const std::string kCopyBankPatchNames{ "copyBankPatchNames" };
@@ -62,6 +61,8 @@ const std::string kFullMidiLog{ "fullMidiLog" };
 const std::string kSysexMidiLog{ "sysexMidiLog" };
 const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
 const std::string kCreateNewAdaptation{ "createNewAdaptation" };
+
+extern std::string getOrmVersion();
 
 //
 // Build a spdlog sink that goes into out standard log view
@@ -183,14 +184,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	std::vector<midikraft::SynthHolder>  synths;
 	Colour buttonColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::highlightedFill);
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Matrix1000>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KorgDW8000>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::RefaceDX>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));
 
 	// Now adding all adaptations
@@ -245,7 +244,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 				{ "Quit" } } } },
 		{1, { "Edit", { { "Copy patch to clipboard..." }, { kCopyBankPatchNames}, { "Bulk rename patches..."},  {"Delete patches..."}, {"Reindex patches..."}}}},
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
-		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportPIF}, { kShowDiff} }}},
+		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
@@ -279,6 +278,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}, juce::KeyPress::F3Key } },
 	{ "Export into sysex files", { kExportSysEx , [this]() {
 		patchView_->exportPatches();
+	}}},
+	{ "Export bank into sysex files", { kExportBank, [this]() {
+		patchView_->exportBank();
 	}}},
 	{ "Export into PIF", { kExportPIF, [this]() {
 		patchView_->createPatchInterchangeFile();
@@ -503,7 +505,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Install our MidiLogger
 	midikraft::MidiController::instance()->setMidiLogFunction([this](const MidiMessage& message, const String& source, bool isOut) {
-		midiLogView_.addMessageToList(message, source, isOut);
+		midiLogView_.log().addMessageToList(message, source, isOut);
 		});
 
 	// Do a quickconfigure
@@ -586,6 +588,10 @@ MainComponent::~MainComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 
 	Logger::setCurrentLogger(nullptr);
+
+	// Make sure to destroy the UI before the synths in order to unregister all message handlers
+	patchView_.reset();
+	settingsView_.reset();
 }
 
 #ifdef USE_SPARKLE
@@ -1047,18 +1053,20 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020-2023 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2024 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
+		"\n"
+		"The homepage of the project is https://github.com/christofmuc/KnobKraft-orm\n"
 		"\n"
 		"This software is provided 'as-is,' without any express or implied warranty. In no event shall the author be held liable for any damages arising from the use of this software.\n"
 		"\n"
 		"Other licenses:\n"
-		"This software is build using JUCE, who might want to track your IP address. See https://github.com/WeAreROLI/JUCE/blob/develop/LICENSE.md for details.\n"
+		"This software is build using JUCE. See https://github.com/juce-framework/JUCE/blob/master/LICENSE.md for details.\n"
 		"The installer provided also contains the Microsoft Visual Studio 2017 Redistributable Package.\n"
 		"\n"
 		"Icons made by Freepik from www.flaticon.com\n"
 		;
-	AlertWindow::showMessageBox(AlertWindow::InfoIcon, "About", message, "Close");
+	AlertWindow::showMessageBox(AlertWindow::InfoIcon, fmt::format("The KnobKraft Orm Sysex Librarian Version {}", getOrmVersion()), message, "Close");
 }
 
 void MainComponent::openSecondMainWindow(bool fromSettings) 

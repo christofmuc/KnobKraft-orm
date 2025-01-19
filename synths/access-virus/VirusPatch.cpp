@@ -64,10 +64,11 @@ namespace midikraft {
 		return result;
 	}
 
-	void VirusPatch::setName(std::string const &name)
+	bool VirusPatch::changeNameStoredInPatch(std::string const &name)
 	{
 		ignoreUnused(name);
 		//TODO
+		return false;
 	}
 
 	bool VirusPatch::isDefaultName(std::string const &patchName) const

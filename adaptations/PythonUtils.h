@@ -7,15 +7,16 @@
 #pragma once
 
 #include <string>
-#include <pybind11/pybind11.h>
 
-#ifndef DEFAULT_VISIBILITY
-#ifdef __GNUC__
-#define DEFAULT_VISIBILITY __attribute__((visibility("default")))
-#else
-#define DEFAULT_VISIBILITY 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
 #endif
+#include <pybind11/pybind11.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
 #endif
+
 
 class PyStdErrOutStreamRedirect {
 public:
@@ -29,8 +30,8 @@ public:
 	void flushToLogger(std::string const &logDomain);
 
 private:
-	pybind11::object _stdout DEFAULT_VISIBILITY;
-	pybind11::object _stderr DEFAULT_VISIBILITY;
-	pybind11::object _stdout_buffer DEFAULT_VISIBILITY;
-	pybind11::object _stderr_buffer DEFAULT_VISIBILITY;
+	pybind11::object _stdout;
+	pybind11::object _stderr;
+	pybind11::object _stdout_buffer;
+	pybind11::object _stderr_buffer;
 };

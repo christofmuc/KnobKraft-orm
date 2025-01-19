@@ -596,9 +596,10 @@ namespace midikraft {
 		return name_;
 	}
 
-	void BCR2000Preset::setName(std::string const& name) {
+	bool BCR2000Preset::changeNameStoredInPatch(std::string const& name) {
 		juce::ignoreUnused(name);
 		spdlog::error("Renaming BCR2000 presets is not implemented yet!");
+		return false;
 	}
 
 	std::string BCR2000::BCRError::toDisplayString() const

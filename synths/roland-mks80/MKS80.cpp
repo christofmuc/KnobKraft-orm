@@ -302,7 +302,7 @@ namespace midikraft {
 	void MKS80::changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished)
 	{
 		ignoreUnused(controller, channel, onFinished);
-		throw new std::runtime_error("Invalid state, method not implemented");
+		throw std::runtime_error("Invalid state, method not implemented");
 	}
 
 	MidiChannel MKS80::getInputChannel() const
@@ -324,7 +324,7 @@ namespace midikraft {
 	void MKS80::setMidiControl(MidiController *controller, bool isOn)
 	{
 		ignoreUnused(controller, isOn);
-		throw new std::runtime_error("Invalid state, method not implemented");
+		throw std::runtime_error("Invalid state, method not implemented");
 	}
 
 	struct SysexLoadingState {
@@ -366,7 +366,7 @@ namespace midikraft {
 					for (int i = 4; i < 248 + 4; i++) {
 						checksum = (checksum + message.getSysExData()[i]) & 0x7f;
 					}
-					if ((128 - checksum) != message.getSysExData()[248 + 4]) {
+					if (((128 - checksum) & 0x7f) != message.getSysExData()[248 + 4]) {
 						Sysex::saveSysex("failed_checksum.bin", { message });
 						jassert(false);
 						spdlog::error("Checksum error, aborting!");

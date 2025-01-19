@@ -30,6 +30,7 @@
 
 #include "ImportFromSynthDialog.h"
 #include "SynthBankPanel.h"
+#include "PatchHistoryPanel.h"
 
 #include <map>
 
@@ -71,6 +72,7 @@ public:
 	void reindexPatches();
 	void loadPatches();
 	void exportPatches();
+	void exportBank();
 	void createPatchInterchangeFile();
 	void showPatchDiffDialog();
 
@@ -99,6 +101,15 @@ private:
 
 	std::vector<midikraft::PatchHolder> autoCategorize(std::vector<midikraft::PatchHolder> const &patches);
 
+	// TODO These should go into a more general library
+	std::vector<MidiProgramNumber> patchIsInSynth(midikraft::PatchHolder& patch);
+	static bool isSynthConnected(std::shared_ptr<midikraft::Synth> synth);
+	static std::vector<MidiMessage> buildSelectBankAndProgramMessages(MidiProgramNumber program, midikraft::PatchHolder& patch);
+
+	// Helper functions
+	void sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation, MidiProgramNumber program, midikraft::PatchHolder& patch);
+	static void sendPatchAsSysex(midikraft::PatchHolder& patch);
+
 	void updateLastPath();
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
@@ -109,6 +120,8 @@ private:
 	void setImportListFilter(String filter);
 	void setUserListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);
+
+	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
 
 	void showBank();
 
@@ -125,6 +138,7 @@ private:
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
 	std::unique_ptr<SynthBankPanel> synthBank_;
+	std::unique_ptr<PatchHistoryPanel> patchHistory_;
 	std::unique_ptr<ImportFromSynthDialog> importDialog_;
 	std::unique_ptr<PatchDiff> diffDialog_;
 

@@ -29,6 +29,7 @@ private:
 	void loadFromSettings();
 	void saveSettings();
 	bool isMacroState(KeyboardMacro const &macro);
+	void refreshSynthList();
 	void refreshUI();
 
 	void turnOnMasterkeyboardInput();
@@ -41,6 +42,7 @@ private:
 	MidiKeyboardComponent keyboard_;
 	std::shared_ptr<MidiDevicePropertyEditor> midiDeviceList_; // Listen to this to get notified of newly available devices!
 	ElectraOneRouter controllerRouter_;
+	std::shared_ptr<TypedNamedValue> synthListEditor_;
 
 	OwnedArray<MacroConfig> configs_;
 

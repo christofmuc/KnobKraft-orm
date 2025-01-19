@@ -345,7 +345,7 @@ namespace midikraft {
 	void Virus::setMidiControl(MidiController *controller, bool isOn)
 	{
 		ignoreUnused(controller, isOn);
-		throw new std::runtime_error("Invalid call");
+		throw std::runtime_error("Invalid call");
 	}
 
 	std::string Virus::friendlyProgramName(MidiProgramNumber programNumber) const

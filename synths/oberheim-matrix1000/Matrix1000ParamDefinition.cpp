@@ -121,7 +121,7 @@ namespace midikraft {
 				return *param;
 			}
 		}
-		throw new std::runtime_error("Invalid Matrix 1000 param ID");
+		throw std::runtime_error("Invalid Matrix 1000 param ID");
 	}
 
 	midikraft::SynthParameterDefinition::ParamType Matrix1000ParamDefinition::type() const

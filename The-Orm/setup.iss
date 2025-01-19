@@ -42,8 +42,8 @@ Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppExeName}"; DestDir: "
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppName}.pdb"; DestDir: "{app}"; 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy deleteafterinstall
 Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc67.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt67.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc74.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt74.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion

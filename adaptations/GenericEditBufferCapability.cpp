@@ -11,8 +11,15 @@
 
 #include "GenericPatch.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace py = pybind11;
 
@@ -108,6 +115,10 @@ namespace knobkraft {
 		try {
 			auto data = patch->data();
 			int c = me_->channel().toZeroBasedInt();
+            if (c < 0) {
+                c = 0;
+                spdlog::warn("Channel is unknown in patchToSysex, defaulting to MIDI channel 1");
+            }
 			py::object result = me_->callMethod(kConvertToEditBuffer, c, data);
 			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
 			return Sysex::vectorToMessages(byteData);

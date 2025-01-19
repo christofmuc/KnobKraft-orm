@@ -8,8 +8,14 @@
 
 #include "GenericAdaptation.h"
 
-#include <pybind11/embed.h>
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/stl.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace py = pybind11;
 
@@ -85,16 +91,16 @@ namespace knobkraft {
 		});
 	}
 
-	void GenericStoredPatchNameCapability::setName(std::string const &newName)
+	bool GenericStoredPatchNameCapability::changeNameStoredInPatch(std::string const &newName)
 	{
 		if (name() == newName) {
 			// No need to change the name, as the current calculation already gives the correct result
-			return;
+			return true;
 		}
 		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
 			// set name is an optional method - if it is not implemented, the name in the patch is never changed, the name displayed in the Librarian is
-			if (!me_.lock()->pythonModuleHasFunction(kRenamePatch)) return;
+			if (!me_.lock()->pythonModuleHasFunction(kRenamePatch)) return false;
 
 			// Very well, then try to change the name in the patch data
 			try {
@@ -103,6 +109,7 @@ namespace knobkraft {
 				auto intVector = result.cast<std::vector<int>>();
 				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(intVector);
 				me_.lock()->setData(byteData);
+				return true;
  			}
 			catch (py::error_already_set &ex) {
 				if (!me_.expired())
@@ -117,6 +124,7 @@ namespace knobkraft {
 				spdlog::error("Adaptation[unknown]: Uncaught exception in {} of Patch of GenericAdaptation", kRenamePatch);
 			}
 		}
+		return false;
 	}
 
 	bool GenericDefaultNameCapability::isDefaultName(std::string const &patchName) const
@@ -176,11 +184,37 @@ namespace knobkraft {
 		return 1;
 	}
 
+	std::vector<std::string> GenericLayeredPatchCapability::layerTitles() const {
+		py::gil_scoped_acquire acquire;
+		if (!me_.expired()) {
+			auto patch = me_.lock();
+			if (patch->pythonModuleHasFunction(kLayerTitles)) {
+				try {
+					py::object result = patch->callMethod(kLayerTitles);
+					return py::cast<std::vector<std::string>>(result);
+				}
+				catch (py::error_already_set& ex) {
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kLayerTitles, ex);
+					ex.restore();
+				}
+				catch (std::exception& ex) {
+					if (!me_.expired())
+						me_.lock()->logAdaptationError(kLayerTitles, ex);
+				}
+				catch (...) {
+					spdlog::error("Uncaught exception in {} of Patch of GenericAdaptation", kLayerTitles);
+				}
+			}
+		}
+		return {};
+	}
+
 	std::string GenericLayeredPatchCapability::layerName(int layerNo) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_.expired()) {
-			auto patch = me_.lock();
+			auto patch = me_.lock();			
 			try {
 				std::vector<int> v(me_.lock()->data().data(), me_.lock()->data().data() + me_.lock()->data().size());
 				py::object result = patch->callMethod(kLayerName, v, layerNo);

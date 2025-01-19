@@ -423,7 +423,7 @@ namespace midikraft {
 	void Matrix1000::changeInputChannel(MidiController *controller, MidiChannel channel, std::function<void()> onFinished)
 	{
 		ignoreUnused(controller, channel, onFinished);
-		throw new std::runtime_error("Illegal state");
+		throw std::runtime_error("Illegal state");
 	}
 
 	MidiChannel Matrix1000::getInputChannel() const
@@ -444,7 +444,7 @@ namespace midikraft {
 	void Matrix1000::setMidiControl(MidiController *controller, bool isOn)
 	{
 		ignoreUnused(controller, isOn);
-		throw new std::runtime_error("Illegal state");
+		throw std::runtime_error("Illegal state");
 	}
 
 	/*std::vector<std::string> Matrix1000::presetNames()

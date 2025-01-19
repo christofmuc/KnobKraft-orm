@@ -20,7 +20,14 @@
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/stl.h>
+#ifdef _MSC_VER
+#pragma warning ( pop )
+#endif
 #include <memory>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
@@ -29,6 +36,7 @@ namespace py = pybind11;
 using namespace py::literals;
 
 #include <fmt/format.h>
+#include <string>
 
 namespace knobkraft {
 
@@ -60,6 +68,7 @@ namespace knobkraft {
 		* kExtractPatchesFromBank = "extractPatchesFromBank",
 		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
 		* kNumberOfLayers = "numberOfLayers",
+		* kLayerTitles = "friendlyLayerTitles",
 		* kLayerName = "layerName",
 		* kSetLayerName = "setLayerName",
 		* kGeneralMessageDelay = "generalMessageDelay",
@@ -67,9 +76,10 @@ namespace knobkraft {
 		* kFriendlyBankName = "friendlyBankName",
 		* kFriendlyProgramName = "friendlyProgramName",
 		* kSetupHelp = "setupHelp",
-		* kGetStoredTags = "storedTags";
+		* kGetStoredTags = "storedTags",
+		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride";
 
-	std::vector<const char*> kAdapatationPythonFunctionNames = {
+	std::vector<const char*> kAdaptationPythonFunctionNames = {
 		kName,
 		kNumberOfBanks,
 		kNumberOfPatchesPerBank,
@@ -229,6 +239,35 @@ namespace knobkraft {
 		}
 	}
 
+#ifdef __APPLE__
+    bool initEmbeddedPythonFramework(String pythonHome) {
+        std::wstring home(pythonHome.toWideCharPointer());
+
+        PyStatus status;
+
+        PyConfig config;
+        PyConfig_InitPythonConfig(&config);
+
+        // Implicit pre-initialization. After this, we cannot call Py_Initialize anymore but must call
+        // config modifying functions.
+        status = PyConfig_Read(&config);
+        if (PyStatus_Exception(status)) {
+            goto done;
+        }
+
+        PyConfig_SetString(&config, &config.home, const_cast<wchar_t *>(home.c_str()));
+        if (PyStatus_Exception(status)) {
+            goto done;
+        }
+        return true;
+
+    done:
+        PyConfig_Clear(&config);
+        spdlog::error("Failed to initialize embedded Python. Error status is {}", status.err_msg);
+        return false;
+    }
+#endif
+
 	void GenericAdaptation::startupGenericAdaptation()
 	{
 		if (juce::SystemStats::getEnvironmentVariable("ORM_NO_PYTHON", "NOTSET") != "NOTSET") {
@@ -236,37 +275,22 @@ namespace knobkraft {
 			return;
 		}
 
+        File pathToTheOrm = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory();
 #ifdef __APPLE__
-		// macOS might not have Python 3.10 installed. We will check if we can find the appropriate Framework directory, and turn Python off in case we can't find it.
-		std::list<String> pythonCandidatePaths = {
-			"/Library/Frameworks/Python.framework/Versions/3.10",                  // Python Mac installer (python.org/downloads)
-			"/usr/local/opt/python3/Frameworks/Python.framework/Versions/3.10",    // Homebrew Intel: python3
-			"/opt/homebrew/opt/python3/Frameworks/Python.framework/Versions/3.10", // Homebrew Apple Silicon: python3
-			"/opt/local/Library/Frameworks/Python.framework/Versions/3.10"         // MacPorts: python310
-		};
-		String userPythonPath = juce::SystemStats::getEnvironmentVariable("ORM_PYTHON", "");
-		if (userPythonPath != "") {
-			pythonCandidatePaths.emplace_front(userPythonPath);
-		}
-		bool pythonFound = false;
-
-		for (auto candidate : pythonCandidatePaths) {
-			File pythonHome(candidate);
-			if (pythonHome.exists()) {
-				Py_SetPythonHome(const_cast<wchar_t*>(candidate.toWideCharPointer()));
-				pythonFound = true;
-				break;
-			}
-		}
-
-		if (!pythonFound) {
-			// No Python found, don't set path
-			return;
-		}
+        File pythonHome(pathToTheOrm.getFullPathName() + "/../Frameworks/Python.framework/Versions/Current");
+        if (pythonHome.exists()) {
+            if (!initEmbeddedPythonFramework(pythonHome.getFullPathName())) {
+                return;
+            }
+        }
+        else {
+            // No Python found, don't set path
+            spdlog::error("Expected Python Framework at {}, bundle problem?", pythonHome.getFullPathName().toStdString());
+            return;
+        }
 #endif
 		sGenericAdaptationPythonEmbeddedGuard = std::make_unique<py::scoped_interpreter>();
 		sGenericAdaptationPyOutputRedirect = std::make_unique<PyStdErrOutStreamRedirect>();
-		File pathToTheOrm = File::getSpecialLocation(File::SpecialLocationType::currentExecutableFile).getParentDirectory();
 		std::cout << pathToTheOrm.getFullPathName().toStdString() << std::endl;
 		std::string command = "import sys\nsys.path.append(R\"" + getAdaptationDirectory().getFullPathName().toStdString() + "\")\n"
 			+ "sys.path.append(R\"" + pathToTheOrm.getFullPathName().toStdString() + "\")\n" // This is where Linux searches
@@ -290,6 +314,12 @@ namespace knobkraft {
 
 	void GenericAdaptation::shutdownGenericAdaptation()
 	{
+        if (!sGenericAdaptationPythonEmbeddedGuard)
+        {
+            // No Python had been initialised in the first place, don't shutdown
+            return;
+        }
+
 		// Remove the global release on Python, else the destruction code will fail!
 		{
 			py::gil_scoped_acquire acquire;
@@ -679,6 +709,35 @@ namespace knobkraft {
 			logAdaptationError(kNeedsChannelSpecificDetection, ex);
 		}
 		return true;
+	}
+
+	midikraft::BankDownloadMethod GenericAdaptation::bankDownloadMethod() const {
+		py::gil_scoped_acquire acquire;
+		if (!pythonModuleHasFunction(kIndicateBankDownloadMethod)) {
+			return midikraft::BankDownloadMethod::UNKNOWN;
+		}
+		try
+		{
+			py::object result = callMethod(kIndicateBankDownloadMethod);
+			auto downloadMethod = py::cast<std::string>(result);
+			if (downloadMethod == "EDITBUFFERS") {
+				return midikraft::BankDownloadMethod::EDIT_BUFFERS;
+			} 
+			else if (downloadMethod == "PROGRAMS") {
+				return midikraft::BankDownloadMethod::PROGRAM_BUFFERS;
+			}
+			else {
+				throw std::runtime_error(fmt::format("Illegal return value from bankDownloadMethodOverride:  {}. Use one of EDITBUFFERS or PROGRAMS", downloadMethod));
+			}
+		}
+		catch (py::error_already_set& ex) {
+			logAdaptationError(kIndicateBankDownloadMethod, ex);
+			ex.restore();
+		}
+		catch (std::exception& ex) {
+			logAdaptationError(kIndicateBankDownloadMethod, ex);
+		}
+		return midikraft::BankDownloadMethod::UNKNOWN;
 	}
 
 	std::string GenericAdaptation::getName() const

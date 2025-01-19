@@ -16,6 +16,36 @@ namespace midikraft {
 	// How nice of Roland to specify the character mapping!
 	const std::string MKS50_Patch::kPatchNameChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
 
+	std::string MKS50_Patch::dataToString(std::vector<uint8> data) {
+		std::string name;
+		for (int byteValue: data) {
+			if (byteValue < 64) {
+				name += MKS50_Patch::kPatchNameChar[byteValue];
+			}
+			else {
+				name += "!";
+			}
+		}
+		return name;
+	}
+
+	std::vector<uint8> MKS50_Patch::stringToData(std::string name) {
+		std::vector<uint8> result;
+		for (char charToFind : name) {
+			bool found = false;
+			for (size_t c = 0; c < MKS50_Patch::kPatchNameChar.size(); c++) {
+				if (MKS50_Patch::kPatchNameChar[c] == charToFind) {
+					result.push_back((uint8)c);
+					found = true;
+				}
+			}
+			if (!found) {
+				result.push_back(62); // This should be blank
+			}
+		}
+		return result;
+	}
+
 	MKS50_Patch::MKS50_Patch(MidiProgramNumber programNumber, std::string const& patchName, Synth::PatchData const& patchData) :
 		Patch(static_cast<int>(MKS50DataType::ALL), patchData), programNumber_(programNumber), patchName_(patchName)
 	{
@@ -26,10 +56,11 @@ namespace midikraft {
 		return patchName_;
 	}
 
-	void MKS50_Patch::setName(std::string const& name)
+	bool MKS50_Patch::changeNameStoredInPatch(std::string const& name)
 	{
-		juce::ignoreUnused(name);
-		spdlog::error("Renaming patches for the MKS50 is not implemented yet!");
+		auto data = stringToData(name.substr(0,10));
+		patchName_ = dataToString(data);
+		return true;
 	}
 
 	MidiProgramNumber MKS50_Patch::patchNumber() const
@@ -129,15 +160,11 @@ namespace midikraft {
 		std::vector<uint8> aprData;
 		std::copy(message.getSysExData() + 6, message.getSysExData() + 36 + 6, std::back_inserter(aprData));
 		std::string name;
+		std::vector<uint8> nameData;
 		for (int index = 36 + 6; index < 46 + 6; index++) {
-			auto c = message.getSysExData()[index];
-			if (c < 64) {
-				name += MKS50_Patch::kPatchNameChar[c];
-			}
-			else {
-				name += "!";
-			}
+			nameData.push_back(message.getSysExData()[index]);
 		}
+		name = dataToString(nameData);
 		return std::make_shared<MKS50_Patch>(MidiProgramNumber::invalidProgram(), name, aprData);
 	}
 

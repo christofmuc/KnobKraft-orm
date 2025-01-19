@@ -400,7 +400,8 @@ Additionally, when you have implement all three functions to enable the ProgramD
 
     def numberFromDump(message)
 
-which will be used if present to detect the original program slot location stored in a program dump for archival purposes.
+which will be used if present to detect the original program slot location stored in a program dump for archival purposes. This should return -1 in case
+the message is not a program dump (but e.g. an edit buffer dump which has no number stored).
 
 ### Requesting a specific program at a specific memory position
 
@@ -741,6 +742,17 @@ Optionally, if you want to allow the user to change a layer name, implement the 
     def setLayerName(self, messages, layerNo, new_name):
 
 This work like renamePatch, just with the added layerNo parameter.
+
+Optionally, you can implement this to return a list of names for the layers itself, or rather the layer titles. Without it, the
+UI will just display Layer 0, Layer 1, Layer 2, ...
+
+    def friendlyLayerTitles():
+
+To make it work, just return a list of strings like this:
+
+    def friendlyLayerTitles():
+        return ["Patch", "Upper tone", "Lower tone"]
+
 
 ## Importing categories stored in the patch in the synth
 

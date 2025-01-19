@@ -9,7 +9,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "LogView.h"
-#include "MidiLogView.h"
+#include "MidiLogPanel.h"
 #include "PatchButtonGrid.h"
 #include "InsetBox.h"
 #include "DebounceTimer.h"
@@ -108,7 +108,7 @@ private:
 	std::unique_ptr<PatchView> patchView_;
 	std::unique_ptr<KeyboardMacroView> keyboardView_;
 	std::unique_ptr<SplitteredComponent> splitter_;
-	MidiLogView midiLogView_;
+	MidiLogPanel midiLogView_;
 	knobkraft::AdaptationView adaptationView_;
 	InsetBox midiLogArea_;
 	std::unique_ptr<SettingsView> settingsView_;

@@ -24,7 +24,9 @@ operation_ipr = 0b00110110  # = 0x36
 operation_bld = 0b00110111  # = 0x37
 operation_vec_apr = 0x38  # Vecoven (OS 4) All Parameters
 operation_vec_bld = 0x3a  # Vecoven (OS 4) Bulk Dump
+operation_request_edit_buffer = 0x3d  # Vecoven Edit Buffer Request, new from firmware 4.19 and upwards
 
+format_type_jx8p = 0x21
 format_type_jx10 = 0b00100100  # = 0x24
 
 patch_level = 0b00110000  # = 0x30
@@ -148,7 +150,7 @@ def isOperationMessage(message: List[int], operations: List[int]) -> bool:
         if (message[0] == 0xF0 and
                 message[1] == roland_id and
                 message[2] in operations and
-                message[4] == format_type_jx10):
+                message[4] in [format_type_jx10, format_type_jx8p]):
             return True
     # If the message does not match the expected format, return False
     return False
@@ -180,10 +182,9 @@ def isPartOfSingleProgramDump(message: List[int]) -> bool:
 
 
 def createEditBufferRequest(channel):
-    # I have not found a way to request the edit buffer from the synth, that is, the transient state of patch and tones.
-    # You need to send a program change, but that would recall that program and erase the transient edit buffer.
-    # Do nothing here.
-    return []
+    # From firmware 4.19 the Vecoven OS can do an edit buffer request. Try to compose it correctly
+    return createMessageHeader(operation_request_edit_buffer, channel, 0x02) + [0x01, 0x07, 0xf7]
+
 
 def isEditBufferDump(messages):
     return isEditBufferDump2(messages)
@@ -485,7 +486,7 @@ apr_mapping_patch_0x37 = {
     "Chase Level": 54,
     "Chase Time": 55,
     "ChaseMode": (56, 2, 0),
-    "Chase On/Off": (57, 2, 0),
+    "Chase On/Off": (57, 1, 0),
 }
 
 bulk_mapping_patch = {
@@ -510,8 +511,8 @@ bulk_mapping_patch = {
     "A/B Balance": 29,
     "Dual Detune": 30,
     "UpperSplitPT": 31,
-    "BendRange": [(32, 1, 3, 0), (40, 1, 2, 1), (62, 1, 1, 2)],
-    "Keymode": [(32, 1, 1, 0), (40, 1, 3, 1), (40, 1, 4, 2), (40, 1, 7, 3)],
+    "BendRange": [(32, 1, 2, 0), (40, 1, 1, 1), (62, 1, 0, 2)],
+    "Keymode": [(32, 1, 0, 1), (40, 1, 2, 2), (40, 1, 3, 3), (40, 1, 6, 0)],
     "LowerSplitPT": 33,
     "Porta Time": 34,
     "Total Volume": 35,
@@ -519,7 +520,7 @@ bulk_mapping_patch = {
     "AT Brilliance": 37,
     "AT Volume": 38,
     "A Tone Nr.": 39,
-    "A-Hold": (40, 1, 1),
+    "A-Hold": (40, 1, 0),
     "A Chromatic Shift": 41,
     "A Unison Detune": 42,
     "A LFO Mod Dpth": 43,
@@ -527,18 +528,19 @@ bulk_mapping_patch = {
     "B Tone Nr.": 45,
     "B Chromatic Shift": 46,
     "B Unison Detune": 47,
-    "B-Hold": (48, 1, 3),
-    "A-Porta": (48, 1, 5),
+    "B-Hold": (48, 1, 2),
+    "A-Porta": (48, 1, 4),
     "B LFO Mod Dpth": 49,
     "B Bender": 50,
     "Chase Level": 51,
     "Chase Time": 52,
-    "A-Keyassign": [(53, 1, 6, 0), (53, 1, 7, 1), (56, 1, 3, 2)],
-    "B-Keyassign": [(54, 1, 6, 0), (54, 1, 7, 1), (56, 1, 2, 2)],
+    "A-Keyassign": [(53, 1, 5, 0), (53, 1, 6, 1), (56, 1, 1, 2)],
+    "B-Keyassign": [(54, 1, 5, 0), (54, 1, 6, 1), (56, 1, 0, 2)],
     "B-Porta": (56, 1, 7),
-    "ChaseMode": [(56, 1, 4, 0), (56, 1, 5, 1)],
-    "Chase On/Off": [(63, 1, 2, 0), (63, 1, 5, 1)]
+    "ChaseMode": [(56, 1, 3, 1), (56, 1, 4, 0)],
+    "Chase On/Off": (63, 1, 2)
 }
+
 
 apr_mapping_patch = {
     "Char1": 7,
@@ -564,7 +566,7 @@ apr_mapping_patch = {
     "UpperSplitPT": 27,
     "LowerSplitPT": 28,
     "Porta Time": 29,
-    "BendRange": [(30, 2, 5, 0), (59, 1, 0, 2)],
+    "BendRange": [(30, 2, 6, 0), (59, 1, 0, 2)],
     "Keymode": [(31, 2, 0, 0), (58, 2, 0, 2)],
     "Total Volume": 32,
     "AT Vibrato": 33,
@@ -587,11 +589,10 @@ apr_mapping_patch = {
     "B-Porta": (51, 1, 0),
     "B Bender": 52,
     "Chase Level": 54,
-    "Chase Time": 55,
-    "ChaseMode": (56, 2, 0),
-    "Chase On/Off": (57, 2, 0),
+    "ChaseMode": (55, 2, 0),
+    "Chase Time": 56,
+    "Chase On/Off": (57, 1, 0),
 }
-
 bulk_mapping_tone = {
     "Char1": 9,
     "Char2": 10,
@@ -978,6 +979,10 @@ def numberFromDump(messages):
 
 def numberOfLayers(messages):
     return 3
+
+
+def friendlyLayerTitles():
+    return ["Patch", "Upper tone", "Lower tone"]
 
 
 def layerName(messages, layerNo):

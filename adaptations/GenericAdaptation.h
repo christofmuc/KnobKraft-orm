@@ -15,7 +15,14 @@
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
@@ -36,29 +43,23 @@ namespace knobkraft {
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank, *kExtractPatchesFromAllBankMessages,
 		*kNumberOfLayers,
+		*kLayerTitles,
 		*kLayerName,
 		*kSetLayerName,
 		*kGetStoredTags
 		;
 
-	extern std::vector<const char *> kAdapatationPythonFunctionNames;
+	extern std::vector<const char *> kAdaptationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
-#ifndef DEFAULT_VISIBILITY
-#ifdef __GNUC__
-#define DEFAULT_VISIBILITY __attribute__((visibility("default")))
-#else
-#define DEFAULT_VISIBILITY 
-#endif
-#endif
-
-	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
+	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice,
 		public midikraft::RuntimeCapability<midikraft::HasBanksCapability>,
 		public midikraft::RuntimeCapability<midikraft::HasBankDescriptorsCapability>,
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
+		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -78,6 +79,9 @@ namespace knobkraft {
 		int deviceDetectSleepMS() override;
 		MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		bool needsChannelSpecificDetection() override;
+
+		// Allow to override the default algorithm to determine how to query a bank
+		virtual midikraft::BankDownloadMethod bankDownloadMethod() const override;
 
 		// The following functions are implemented generically and current cannot be defined in Python
 		std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData &data, MidiProgramNumber place) const override;
@@ -181,7 +185,7 @@ namespace knobkraft {
 		static bool createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
-		pybind11::module adaptation_module DEFAULT_VISIBILITY;
+		pybind11::module adaptation_module;
 		std::string filepath_;
 
 		mutable std::map<std::string, std::string> nameCache_;

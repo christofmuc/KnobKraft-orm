@@ -18,6 +18,7 @@
 
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
+juce::Identifier const PROPERTY_COMBOBOX_SENDMODE {"SynthSendMode"};
 juce::Identifier const PROPERTY_WINDOW_LIST {"Windows"};
 juce::Identifier const PROPERTY_WINDOW_OPENNESS {"Open"};
 juce::Identifier const PROPERTY_WINDOW_SIZE {"Size"};
@@ -131,6 +132,7 @@ public:
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes
 	ChangeBroadcaster databaseChanged; // Listen to this when you need to know a new database was opened
 
+	static std::string currentSynthNameOrMultiOrEmpty(); // Get the name of the current Synth, or "multiMode" if activated, or empty if no synth
 	static ValueTree ensureSynthSpecificPropertyExists(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 	static Value getSynthSpecificPropertyAsValue(std::string const& synthName, juce::Identifier const& property, var const& defaultValue);
 

@@ -3,7 +3,7 @@
 #
 #   with the help from https://gearspace.com/board/showpost.php?p=15306436&postcount=1566
 #   and https://gearspace.com/board/electronic-music-instruments-and-electronic-music-production/1149964-novation-peak-96.html
-#   in turn based on Cedric Tessier's Novation Ultranova adaptatio
+#   in turn based on Cedric Tessier's Novation Ultranova adaptation
 import hashlib
 from typing import List
 
@@ -71,7 +71,7 @@ def isOwnSysex(message):
 def createProgramDumpRequest(channel, patchNo):
     bank = patchNo // 128
     program = patchNo % 128
-    return [0xf0] + novation_id + summit_id + [0x41, 0x00, 0x00, 0x00, bank, program, 0xf7]
+    return [0xf0] + novation_id + summit_id + [0x41, 0x00, 0x00, 0x00, bank + 1, program, 0xf7]
 
 
 def isSingleProgramDump(message):
@@ -80,7 +80,7 @@ def isSingleProgramDump(message):
 
 def numberFromDump(message):
     if not isSingleProgramDump(message):
-        return 0
+        return -1
     bank = message[12] % 4  # Not more than 4 banks allowed
     program = message[13] % 128  # Maximum 128 programs per bank
     return bank * 128 + program
