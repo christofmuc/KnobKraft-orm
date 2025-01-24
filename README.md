@@ -13,6 +13,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | ------------- | ------------- | --- | --- | --- |
 | Access  | Virus A, B, Classic, KB, Indigo  | works | native | |
 | Access  | Virus C  | beta | native | Thanks to guavadude@gs |
+| Akai | AX80 | beta | adaptation | Thaks to O.S.R.C. on YT for the nudge |
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | works | adaptation | |

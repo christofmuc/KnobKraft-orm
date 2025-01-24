@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 3.14)
 project(KnobKraft-Generic-Adaptation)
 
 set(adaptation_files
+        "Akai_AX80.py"
 	"AlesisAndromedaA6.py"
 	"BC_Kijimi.py"
 	"Behringer Deepmind 12.py" 
