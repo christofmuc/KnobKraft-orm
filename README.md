@@ -31,6 +31,8 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet Rev2 | works | native | |
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
+| Elektron | Analog Rytm | alpha | adaptation | Thanks to @RadekPilich for the request! |
+| Elektron | Digitone | alpha | adaptation |  |
 | E-mu | Morpheus | works | adaptation | Thanks to Kid Who for testing! |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
 | Ensoniq | VFX/VFX-SD | works | adaptation | Thanks to @dancingdog for testing! |
