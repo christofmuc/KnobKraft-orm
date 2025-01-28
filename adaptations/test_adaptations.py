@@ -69,6 +69,7 @@ def test_extract_name_from_program(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
         #assert adaptation.isSingleProgramDump(program.message.byte_list)
         if hasattr(program, "name") and program.name is not None:
+            knobkraft.list_compare(adaptation.nameFromDump(program.message.byte_list), program.name)
             assert adaptation.nameFromDump(program.message.byte_list) == program.name
             count += 1
     if count == 0:

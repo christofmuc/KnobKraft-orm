@@ -46,6 +46,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
+| Moog | Voyager | beta | adaptation | Thanks to @troach242 for the nudge! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
