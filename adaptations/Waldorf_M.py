@@ -43,7 +43,7 @@ def channelIfValidDeviceResponse(message):
 
 
 def bankDescriptors():
-    return [{"bank": 0, "name": f"RAM", "size": 64, "type": "Patch"}]
+    return [{"bank": x, "name": f"Bank {x+1}", "size": 128, "type": "Patch"} for x in range(16)]
 
 
 def createEditBufferRequest(device_id):
