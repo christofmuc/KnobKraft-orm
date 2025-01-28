@@ -1,18 +1,24 @@
 #
-#   Copyright (c) 2022 Christof Ruch. All rights reserved.
+#   Copyright (c) 2022-2023 Christof Ruch. All rights reserved.
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+
+# Finally owning a classic Roland so I can make a working and tested example on how to implement the Roland Synths
 import hashlib
-from typing import List, Tuple, Optional, Dict, Union
-import knobkraft
+import sys
+from typing import List, Union, Tuple, Optional, Dict
+
+import knobkraft.sysex
+import testing.test_data
+
+this_module = sys.modules[__name__]
 
 roland_id = 0x41  # Roland
 command_rq1 = 0x11
 command_dt1 = 0x12
 
 # Construct the Roland character set as specified in the MIDI implementation
-# This is only used by very old Synths like the Roland D-50/D-550
 character_set = [' '] + [chr(x) for x in range(ord('A'), ord('Z') + 1)] + \
                 [chr(x) for x in range(ord('a'), ord('z') + 1)] + \
                 [chr(x) for x in range(ord('1'), ord('9') + 1)] + ['0', '-']
@@ -61,11 +67,11 @@ categories = {
 }
 
 
-class DataBlock:
+class DataBlock_:
     def __init__(self, address: tuple, size, block_name: str):
         self.address = address
         self.block_name = block_name
-        self.size = DataBlock.size_to_number(size)
+        self.size = DataBlock_.size_to_number(size)
 
     @staticmethod
     def size_as_7bit_list(size, number_of_values) -> List[int]:
@@ -83,19 +89,18 @@ class DataBlock:
             return size
 
 
-class RolandData:
-    def __init__(self, data_name: str, num_items: int, num_address_bytes: int, num_size_bytes: int, base_address: Tuple, blocks: List[DataBlock], uses_consecutive_addresses: Optional[bool] = False):
+class RolandData_:
+    def __init__(self, data_name: str, num_items: int, num_address_bytes: int, num_size_bytes: int, base_address: Tuple, blocks: List[DataBlock_]):
         self.data_name = data_name
         self.num_items = num_items  # This is the "bank size" of that data type
         self.num_address_bytes = num_address_bytes
         self.num_size_bytes = num_size_bytes
         self._base_address = base_address
-        self.base_address_int = DataBlock.size_to_number(base_address)
+        self.base_address_int = DataBlock_.size_to_number(base_address)
         self.data_blocks = blocks
         self.size = self.total_size()
         self.allowed_addresses = set([self.absolute_address(x.address) for x in self.data_blocks])
         self.blank_out_zones = None
-        self.uses_consecutive_addresses = uses_consecutive_addresses
 
     def make_black_out_zones(self, model_id_length: int, program_position: int = None, name_blankout: Tuple[int, int, int] = None):
         # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
@@ -121,51 +126,26 @@ class RolandData:
         return sum([f.size for f in self.data_blocks])
 
     def total_size_as_list(self) -> List[int]:
-        return DataBlock.size_as_7bit_list(self.size * 8, self.num_size_bytes)  # Why times 8?. You can't cross border from one data set into the next
+        return DataBlock_.size_as_7bit_list(self.size * 8, self.num_size_bytes)  # Why times 8?. You can't cross border from one data set into the next
 
     def absolute_address(self, address: Tuple[int]) -> Tuple:
-        address_int = DataBlock.size_to_number(address)
-        return tuple(DataBlock.size_as_7bit_list(address_int + self.base_address_int, self.num_address_bytes))
+        address_int = DataBlock_.size_to_number(address)
+        return tuple(DataBlock_.size_as_7bit_list(address_int + self.base_address_int, self.num_address_bytes))
 
     def address_and_size_for_sub_request(self, sub_request, sub_address) -> Tuple[List[int], List[int]]:
-        if self.uses_consecutive_addresses:
-            base_number = DataBlock.size_to_number(tuple(self.base_address))
-            address = DataBlock.size_to_number(tuple(self.data_blocks[sub_request].address))
-            multiplier = sub_address * self.size
-            target_address = base_number + address + multiplier
-            concrete_address = DataBlock.size_as_7bit_list(target_address, self.num_address_bytes)
-        else:
-            # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-            concrete_address = [(self.data_blocks[sub_request].address[i] + self.base_address[i]) if i != 1
-                                else (sub_address + self.base_address[i])
-                                for i in range(len(self.data_blocks[sub_request].address))]
-        return concrete_address, DataBlock.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
-
-    def reset_to_base_address(self, address) -> Tuple:
-        if self.uses_consecutive_addresses:
-            address_as_number = DataBlock.size_to_number(tuple(address))
-            base_number = DataBlock.size_to_number(tuple(self.base_address))
-            if address_as_number >= base_number:
-                normalized_address = address_as_number - base_number
-                # Calculate the normalized addressed modulo the size of the data blocks
-                normalized_address = normalized_address % self.total_size()
-                readjusted_base = base_number + normalized_address
-                return tuple(DataBlock.size_as_7bit_list(readjusted_base, self.num_address_bytes))
-            else:
-                return tuple(address)
-        else:
-            # The address[1] part is where the program number is stored. To compare addresses we reset it to the base address
-            return tuple([address[i] if i != 1 else self.base_address[i] for i in range(self.num_address_bytes)])
-
-    def address_and_size_for_all_request(self, sub_address) -> Tuple[List[int], List[int]]:
-        # The idea is that if we request the first block, but with the total size of all blocks, the device will send us all messages back.
-        # Somehow that does work, but not as expected. To get all messages from a single patch on an XV-3080, I need to multiply the size by 8???
-
         # Patch in the sub_address (i.e. the item in the bank). Assume the sub-item is always at position #1 in the tuple
-        concrete_address = [(self.data_blocks[0].address[i] + self.base_address[i]) if i != 1
-                            else (sub_address + self.base_address[i])
-                            for i in range(len(self.data_blocks[0].address))]
-        return concrete_address, self.total_size_as_list()
+        sub_address_int = (sub_address << 14) if self.num_address_bytes == 4 else (sub_address << 7)
+        concrete_address = DataBlock_.size_as_7bit_list(DataBlock_.size_to_number(self.data_blocks[sub_request].address) + sub_address_int + self.base_address_int, self.num_address_bytes)
+        return concrete_address, DataBlock_.size_as_7bit_list(self.data_blocks[sub_request].size, self.num_size_bytes)
+
+    def subaddress_from_address(self, address: List[int]) -> int:
+        offset = DataBlock_.size_to_number(tuple(address)) - self.base_address_int
+        return offset >> ((self.num_address_bytes - 2) * 7)
+
+    def find_base_address(self, address: tuple) -> Tuple:
+        int_value = DataBlock_.size_to_number(address)
+        sub_address = self.subaddress_from_address(list(address)) << 14
+        return tuple(DataBlock_.size_as_7bit_list(int_value - sub_address, self.num_address_bytes))
 
 
 def knobkraft_api(func):
@@ -173,17 +153,13 @@ def knobkraft_api(func):
     return func
 
 
-class GenericRoland:
-    def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData, program_dump: RolandData,
+class GenericRoland_:
+    def __init__(self, name: str, model_id: List[int], address_size: int, edit_buffer: RolandData_, program_dump: RolandData_,
                  bank_descriptors: Optional[List[Dict]] = None,
                  category_index: Optional[int] = None,
                  device_family: Optional[List[int]] = None,
-                 device_detect_message: Optional[RolandData] = None,
-                 device_detect_ids: Optional[List[int]] = None,
-                 patch_name_message_number: Optional[int] = 0,
-                 patch_name_length: Optional[int] = 12,
-                 use_roland_character_set: Optional[bool] = False,
-                 uses_consecutive_addresses: Optional[bool] = False):
+                 device_detect_message: Optional[RolandData_] = None,
+                 device_detect_ids: Optional[List[int]] = None):
         self._name = name
         self.model_id = model_id
         self.bank_descriptors = bank_descriptors
@@ -196,10 +172,6 @@ class GenericRoland:
         self.edit_buffer = edit_buffer
         self.program_dump = program_dump
         self.category_index = category_index
-        self.patch_name_message_number = patch_name_message_number
-        self.patch_name_length = patch_name_length
-        self.use_roland_character_set = use_roland_character_set
-        self.uses_consecutive_addresses = uses_consecutive_addresses
         # Calculate the fingerprint blank out zones for edit buffer (just the name) and program dump (program position and name)
         edit_buffer.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len)
         program_dump.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len,
@@ -360,7 +332,7 @@ class GenericRoland:
         bankNo = 0
         banks = self.bankDescriptors()
         sum = 0
-        while bankNo < len(banks) and banks[bankNo]["size"] + sum < patchNo:
+        while bankNo < len(banks) and banks[bankNo]["size"] + sum <= patchNo:
             sum += banks[bankNo]["size"]
             bankNo += 1
         if "isROM" in banks[bankNo] and banks[bankNo]["isROM"]:
@@ -387,7 +359,7 @@ class GenericRoland:
         if self.isOwnSysex(message):
             command, address = self.getCommandAndAddressFromRolandMessage(message)
             if command == command_dt1:
-                patchNo = self._patch_number_from_address(address)
+                patchNo = self.program_dump.subaddress_from_address(address)
                 normalized_address = tuple(self.program_dump.find_base_address(address))
                 # Find out which data block we got
                 for sub_request in range(len(self.program_dump.data_blocks)):
@@ -402,7 +374,7 @@ class GenericRoland:
         for message in knobkraft.sysex.findSysexDelimiters(messages):
             _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
             addresses.add(self.program_dump.find_base_address(address))
-            programs.add(self._patch_number_from_address(address))
+            programs.add(address[1])
         return len(programs) == 1 and all(a in addresses for a in self.program_dump.allowed_addresses)
 
     @knobkraft_api
@@ -445,33 +417,21 @@ class GenericRoland:
     def calculateFingerprint(self, message):
         return hashlib.md5(bytearray(self.blankedOut(message))).hexdigest()
 
-    def _patch_number_from_address(self, address):
-        if self.uses_consecutive_addresses:
-            address_as_number = DataBlock.size_to_number(tuple(address))
-            base_as_number = DataBlock.size_to_number(tuple(self.program_dump.base_address))
-            return (address_as_number - base_as_number) // self.program_dump.size
-        else:
-            return address[1] - self.program_dump.base_address[1]
-
     @knobkraft_api
     def numberFromDump(self, message) -> int:
         if not self.isSingleProgramDump(message):
             return 0
         messages = knobkraft.sysex.findSysexDelimiters(message, 1)
         _, address = self.getCommandAndAddressFromRolandMessage(message[messages[0][0]:messages[0][1]])
-        return self._patch_number_from_address(address)
+        return self.program_dump.subaddress_from_address(address)
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:
         if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
-            msg_no = self.patch_name_message_number
-            messages = knobkraft.sysex.findSysexDelimiters(message, msg_no + 1)
-            _, _, data = self.parseRolandMessage(message[messages[msg_no][0]:messages[msg_no][1]])
-            if self.use_roland_character_set:
-                patch_name = ''.join([character_set[x] for x in data[0:self.patch_name_length]])
-            else:
-                patch_name = ''.join([chr(x) for x in data[0:self.patch_name_length]])
-            return patch_name
+            messages = knobkraft.sysex.findSysexDelimiters(message, 1)
+            _, _, data = self.parseRolandMessage(message[messages[0][0]:messages[0][1]])
+            patch_name = ''.join([chr(x) for x in data[0:12]])
+            return patch_name.strip()
         return 'Invalid'
 
     @knobkraft_api
@@ -495,125 +455,81 @@ class GenericRoland:
                 setattr(module, a, getattr(self, a))
 
 
-class GenericRolandWithBackwardCompatibility:
-    def __init__(self, main_model: GenericRoland, compatible_models: List[GenericRoland]):
-        self.main_model = GenericRoland(main_model.name(), main_model.model_id, main_model.address_size, main_model.edit_buffer,
-                                        main_model.program_dump,
-                                        category_index=main_model.category_index,
-                                        device_family=main_model.device_family,
-                                        device_detect_message=main_model.device_detect_message,
-                                        device_detect_ids=main_model.device_detect_ids)
-        self.models_supported = [main_model] + compatible_models
 
-    def model_from_message(self, message) -> Optional[GenericRoland]:
-        for synth in self.models_supported:
-            if synth.isOwnSysex(message):
-                return synth
-        return None
 
-    @knobkraft_api
-    def name(self):
-        return self.main_model.name()
+_juno_ds_patch_data = [DataBlock_((0x00, 0x00, 0x00, 0x00), 0x50, "Patch common"),
+                      DataBlock_((0x00, 0x00, 0x02, 0x00), (0x01, 0x11), "Patch common MFX"),
+                      DataBlock_((0x00, 0x00, 0x04, 0x00), 0x54, "Patch common Chorus"),
+                      DataBlock_((0x00, 0x00, 0x06, 0x00), 0x53, "Patch common Reverb"),
+                      DataBlock_((0x00, 0x00, 0x10, 0x00), 0x29, "Patch common Tone Mix Table"),
+                      DataBlock_((0x00, 0x00, 0x20, 0x00), (0x01, 0x1a), "Tone 1"),
+                      DataBlock_((0x00, 0x00, 0x22, 0x00), (0x01, 0x1a), "Tone 2"),
+                      DataBlock_((0x00, 0x00, 0x24, 0x00), (0x01, 0x1a), "Tone 3"),
+                      DataBlock_((0x00, 0x00, 0x26, 0x00), (0x01, 0x1a), "Tone 4")]
+_juno_ds_edit_buffer_addresses = RolandData_("Juno-DS Temporary Patch/Drum (patch mode part 1)", 1, 4, 4,
+                                           (0x1f, 0x00, 0x00, 0x00),
+                                           _juno_ds_patch_data)
+_juno_ds_program_buffer_addresses = RolandData_("Juno-DS User Patches", 256, 4, 4,
+                                              (0x30, 0x00, 0x00, 0x00),
+                                              _juno_ds_patch_data)
 
-    @knobkraft_api
-    def createDeviceDetectMessage(self, channel: int) -> List[int]:
-        return self.main_model.createDeviceDetectMessage(channel)
+juno_ds = GenericRoland_("Roland Juno-DS",
+                        model_id=[0x00, 0x00, 0x3a],
+                        address_size=4,
+                        bank_descriptors=[{"bank": 0, "name": "User Patches 1", "size": 128, "type": "User Patch", "bank_msb": 87, "bank_lsb": 0},
+                                          {"bank": 1, "name": "User Patches 2", "size": 128, "type": "User Patch", "bank_msb": 87, "bank_lsb": 1},
+                                          {"bank": 2, "name": "Preset Patches 1", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 64, "isROM": True},
+                                          {"bank": 3, "name": "Preset Patches 2", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 65, "isROM": True},
+                                          {"bank": 4, "name": "Preset Patches 3", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 66, "isROM": True},
+                                          {"bank": 5, "name": "Preset Patches 4", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 67, "isROM": True},
+                                          {"bank": 6, "name": "Preset Patches 5", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 68, "isROM": True},
+                                          {"bank": 7, "name": "Preset Patches 6", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 69, "isROM": True},
+                                          {"bank": 8, "name": "Preset Patches 7", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 70, "isROM": True},
+                                          {"bank": 9, "name": "Preset Patches 7", "size": 128, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 71, "isROM": True},
+                                          {"bank": 10, "name": "Preset Patches 7", "size": 64, "type": "Preset Patch", "bank_msb": 87, "bank_lsb": 72, "isROM": True},
+                                          {"bank": 11, "name": "DS Patches 1", "size": 128, "type": "DS Patch", "bank_msb": 87, "bank_lsb": 73, "isROM": True},
+                                          {"bank": 12, "name": "DS Patches 2", "size": 56, "type": "DS Patch", "bank_msb": 87, "bank_lsb": 74, "isROM": True},
+                                          {"bank": 13, "name": "EXP 04", "size": 50, "type": "Expansion Patch", "bank_msb": 93, "bank_lsb": 1, "isROM": True},
+                                          {"bank": 14, "name": "EXP 06", "size": 128, "type": "Expansion Patch", "bank_msb": 93, "bank_lsb": 2, "isROM": True},
+                                          ],
+                        edit_buffer=_juno_ds_edit_buffer_addresses,
+                        program_dump=_juno_ds_program_buffer_addresses,
+                        category_index=0x0c,
+                        device_family=[0x3a, 0x02, 0x02])
+juno_ds.install(this_module)
 
-    @knobkraft_api
-    def channelIfValidDeviceResponse(self, message: List[int]) -> int:
-        # The Roland usually will reply on a Universal Device Identity Reply message
-        return self.main_model.channelIfValidDeviceResponse(message)
 
-    @knobkraft_api
-    def needsChannelSpecificDetection(self) -> bool:
-        return self.main_model.needsChannelSpecificDetection()
+# Test data picked up by test_adaptation.py
+def make_test_data():
+    return testing.TestData(device_detect_call="f0 7e 7f 06 01 f7",
+                            device_detect_reply=("f0 7e 10 06 02 41 3a 02 02 00 00 03 00 00 f7", 0))
 
-    @knobkraft_api
-    def bankDescriptors(self):
-        return self.main_model.bankDescriptors()
 
-    @knobkraft_api
-    def createEditBufferRequest(self, _channel) -> List[int]:
-        return self.main_model.createEditBufferRequest(self.main_model.device_id)
+def test_program_dump():
+    message = knobkraft.sysex.stringToSyx("f0 41 10 00 00 3a 12 30 7f 26 00 7f 40 40 00 40 40 00 40 01 00 00 00 7f 00 00 7f 7f 00 01 01 01 00 00 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 00 00 00 00 01 00 00 00 00 00 00 00 00 01 00 00 00 00 4a 40 40 40 40 40 28 50 28 00 40 22 5e 40 40 00 7f 40 01 40 00 40 40 01 40 40 40 40 00 0a 0a 40 00 7f 7f 7f 00 40 3c 03 01 60 40 40 40 00 0a 0a 0a 7f 7f 7f 01 05 0c 02 00 00 40 00 00 00 40 40 40 40 01 05 0c 02 00 00 40 00 00 00 40 40 40 40 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 3a f7")
+    assert juno_ds.isPartOfSingleProgramDump(message)
 
-    @knobkraft_api
-    def isPartOfEditBufferDump(self, message) -> bool:
-        model = self.model_from_message(message)
-        # Accept a certain set of addresses
-        if model is not None:
-            return model.isPartOfEditBufferDump(message)
-        return False
 
-    @knobkraft_api
-    def isEditBufferDump(self, data) -> bool:
-        model = self.model_from_message(data)
-        if model is not None:
-            return model.isEditBufferDump(data)
-        return False
+def test_create_program_dump():
+    # A low program number is a direct address request, because the user banks can be retrieved via memory address
+    request = juno_ds.createProgramDumpRequest(1, 70)
+    command, address, data = juno_ds.parseRolandMessage(request)
+    assert command == 0x11
+    assert address == [0x30, 70, 0x00, 0x00]
 
-    @knobkraft_api
-    def convertToEditBuffer(self, _channel, message):
-        model = self.model_from_message(message)
-        return model.convertToEditBuffer(model.device_id, message)
+    # A higher program number points into a ROM bank, and will issue bank select messages, a program select, and then an edit buffer request
+    request = juno_ds.createProgramDumpRequest(1, 300)
+    assert request[0:3] == [0xb1, 0x00, 87]
+    assert request[3:6] == [0xb1, 0x20, 64]
+    assert request[6:8] == [0xc1, 300 - 256]
+    command, address, data = juno_ds.parseRolandMessage(request[8:])
+    assert command == 0x11
+    assert address == [0x1f, 0x00, 0x00, 0x00]
 
-    @knobkraft_api
-    def createProgramDumpRequest(self, _channel, patchNo):
-        return self.main_model.createProgramDumpRequest(self.main_model.device_id, patchNo)
-
-    @knobkraft_api
-    def isPartOfSingleProgramDump(self, message):
-        # Accept a certain set of addresses
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.isPartOfSingleProgramDump(message)
-        return False
-
-    @knobkraft_api
-    def isSingleProgramDump(self, data):
-        model = self.model_from_message(data)
-        if model is not None:
-            return model.isSingleProgramDump(data)
-        return False
-
-    @knobkraft_api
-    def convertToProgramDump(self, _channel, message, program_number):
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.convertToProgramDump(self.main_model.device_id, message, program_number)
-        raise Exception("Can only convert edit buffers and program dumps of one of the compatible synths!")
-
-    @knobkraft_api
-    def numberFromDump(self, message) -> int:
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.numberFromDump(message)
-        return -1
-
-    @knobkraft_api
-    def nameFromDump(self, message) -> str:
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.nameFromDump(message)
-        return 'Invalid'
-
-    @knobkraft_api
-    def calculateFingerprint(self, message) -> int:
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.calculateFingerprint(message)
-        raise Exception("Can't fingerprint data that is not of one of the defined Roland Synths")
-
-    @knobkraft_api
-    def storedTags(self, message) -> List[str]:
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.storedTags(message)
-        return []
-
-    def install(self, module):
-        # This is required because the original KnobKraft modules are not objects, but rather a module namespace with
-        # methods declared. Expose our objects methods in the top level module namespace so the C++ code finds it
-        for a in dir(self):
-            if callable(getattr(self, a)) and hasattr(getattr(self, a), "_is_knobkraft"):
-                # this was helpful: http://stupidpythonideas.blogspot.com/2013/06/how-methods-work.html
-                setattr(module, a, getattr(self, a))
+    request = juno_ds.createProgramDumpRequest(1, 512)
+    assert request[0:3] == [0xb1, 0x00, 87]
+    assert request[3:6] == [0xb1, 0x20, 66]
+    assert request[6:8] == [0xc1, 0]
+    command, address, data = juno_ds.parseRolandMessage(request[8:])
+    assert command == 0x11
+    assert address == [0x1f, 0x00, 0x00, 0x00]
