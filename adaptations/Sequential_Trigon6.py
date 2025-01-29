@@ -18,9 +18,9 @@ this_module = sys.modules[__name__]
 synth = sequential.GenericSequential(name="Sequential Trigon-6",
                                      device_id=0b00111001,
                                      banks=10,
-                                     patches_per_bank=128,
+                                     patches_per_bank=100,
                                      name_len=20,
-                                     name_position=100,
+                                     name_position=116,
                                      ).install(this_module)
 
 
