@@ -78,6 +78,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Waldorf | Blofeld | beta | adaptation | |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
+| Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | reface DX | works | adaptation | |
