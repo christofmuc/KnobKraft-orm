@@ -79,7 +79,7 @@ def isSingleProgramDump(message):
     return isOwnSysex(message) and len(message) > 6 and message[6] in [AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND]
 
 
-def convertToSingleProgramDump(device_id: int, message: List[int], patch_no: int) -> List[int]:
+def convertToProgramDump(device_id: int, message: List[int], patch_no: int) -> List[int]:
     if isSingleProgramDump(message):
         return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
     raise "Can only convert single program dumps"
