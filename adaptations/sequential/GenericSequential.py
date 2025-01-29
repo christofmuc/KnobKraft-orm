@@ -24,10 +24,12 @@ import hashlib
 # Prophet 5  - 0b00110010 0x32 (this is the Rev 4 of course) or 0b00110011 0x33 (Desktop module?)
 # Take 5     -            0x35 (they left 0x34 empty - maybe the desktop Prophet 5 and...?)
 # Trigon-6   - 0b00111001 0x39 (the manual is not updated but uses the Prophet 6 ID)
+# Teo-5      - 0b01011010 0x5a (the manual is not updated but uses the Take 5 ID) - this also additionally uses the MIDI ID for Oberheim, 0x10
 
 class GenericSequential:
 
     def __init__(self, name, device_id, banks, patches_per_bank,
+                 manufacturer=0x01,  # Default is Sequential, obviously
                  name_len=None,
                  name_position=None,
                  file_version=None,
@@ -45,6 +47,7 @@ class GenericSequential:
             self.__id_list = id_list
         self.__banks = banks
         self.__patches_per_bank = patches_per_bank
+        self.__manufacturer = manufacturer
         self.__name_len = name_len
         self.__name_position = name_position
         self.__file_version = file_version
@@ -78,7 +81,7 @@ class GenericSequential:
                 and message[1] == 0x7e  # Non-realtime
                 and message[3] == 0x06  # Device request
                 and message[4] == 0x02  # Device request reply
-                and message[5] == 0x01  # Sequential / Dave Smith Instruments
+                and message[5] == self.__manufacturer
                 and message[6] in self.__id_list):
             # Family seems to be different, the Prophet 12 has (0x01, 0x00, 0x00) while the Evolver has (0, 0, 0)
             # and message[7] == 0x01  # Family MS is 1
@@ -106,7 +109,7 @@ class GenericSequential:
     def isEditBufferDump(self, message):
         return (len(message) > 3
                 and message[0] == 0xf0
-                and message[1] == 0x01  # Sequential
+                and message[1] == self.__manufacturer
                 and message[2] in self.__id_list
                 and (self.__file_version is None and message[3] == 0b00000011  # Edit Buffer Data
                      or message[3] == self.__file_version and message[4] == 0b00000011))  # Edit Buffer Data
@@ -125,15 +128,15 @@ class GenericSequential:
         program = patchNo % self.numberOfPatchesPerBank()
         if self.__file_version is None:
             # Modern style
-            return [0xf0, 0x01, self.__id, 0b00000101, bank, program, 0xf7]
+            return [0xf0, self.__manufacturer, self.__id, 0b00000101, bank, program, 0xf7]
         else:
             # Evolver style
-            return [0xf0, 0x01, self.__id, self.__file_version, 0b00000101, bank, program, 0xf7]
+            return [0xf0, self.__manufacturer, self.__id, self.__file_version, 0b00000101, bank, program, 0xf7]
 
     def isSingleProgramDump(self, message):
         return (len(message) > 3
                 and message[0] == 0xf0
-                and message[1] == 0x01  # Sequential
+                and message[1] == self.__manufacturer
                 and message[2] in self.__id_list
                 and (self.__file_version is None and message[3] == 0b00000010  # Program Data
                      or message[3] == self.__file_version and message[4] == 0b00000010))  # Program Data
