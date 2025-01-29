@@ -23,6 +23,7 @@ import hashlib
 # Pro 3      - 0b00110001 0x31
 # Prophet 5  - 0b00110010 0x32 (this is the Rev 4 of course) or 0b00110011 0x33 (Desktop module?)
 # Take 5     -            0x35 (they left 0x34 empty - maybe the desktop Prophet 5 and...?)
+# Trigon-6   - 0b00111001 0x39 (the manual is not updated but uses the Prophet 6 ID)
 
 class GenericSequential:
 

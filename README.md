@@ -70,10 +70,11 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
-| Sequential | Prophet 5 Rev 4 | works | adaptation | |
-| Sequential | Prophet 6 | beta | adaptation | |
+| Sequential | Prophet-5 Rev 4 | works | adaptation | |
+| Sequential | Prophet-6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
 | Sequential | Take 5 | beta | adaptation | |
+| Sequential | Trigon-6 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
