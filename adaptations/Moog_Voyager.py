@@ -76,7 +76,7 @@ def convertToEditBuffer(device_id, message):
     elif isSingleProgramDump(message):
         # Drop the program number and change type to PANEL_DUMP
         return message[:3] + [device_id & 0x7f, PANEL_DUMP] + message[6:]
-    raise "Can only convert edit buffers or single programs"
+    raise Exception("Can only convert edit buffers or single programs")
 
 
 def createProgramDumpRequest(device_id, patchNo):
@@ -150,7 +150,7 @@ def layerName(messages, layerNo):
     elif layerNo == 1:
         return layer2
     else:
-        raise "Layer number must be 0 or 1"
+        raise Exception("Layer number must be 0 or 1")
 
 
 def renamePatchInternal(message: List[int], new_name: List[int]) -> List[int]:
@@ -159,7 +159,7 @@ def renamePatchInternal(message: List[int], new_name: List[int]) -> List[int]:
     elif isEditBufferDump(message):
         data_start = 5
     else:
-        raise "Can only rename edit buffers or program buffers"
+        raise Exception("Can only rename edit buffers or program buffers")
     assert len(new_name) == 24
     data = unpack_sysex(message[data_start:-1])
     data[84:84+24] = new_name
@@ -177,7 +177,7 @@ def setLayerName(messages, layerNo, new_name):
         name_list[-1] |= 0x80
         name_list.extend([ord(c) for c in new_name])
     else:
-        raise "LayerNo must be 0 or 1"
+        raise Exception("LayerNo must be 0 or 1")
 
     # Ensure the list is exactly 24 items long, padding with 0x20 if necessary
     name_list = name_list[:24] + [0x20] * (24 - len(name_list))
