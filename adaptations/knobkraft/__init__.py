@@ -5,3 +5,9 @@
 #
 from .sysex import *
 from .test_helper import *
+
+
+def knobkraft_api(func):
+    func._is_knobkraft = True
+    return func
+

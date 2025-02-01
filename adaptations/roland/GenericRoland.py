@@ -6,6 +6,7 @@
 import hashlib
 from typing import List, Tuple, Optional, Dict
 import knobkraft
+from knobkraft import knobkraft_api
 
 roland_id = 0x41  # Roland
 command_rq1 = 0x11
@@ -164,11 +165,6 @@ class RolandData:
                             else (sub_address + self.base_address[i])
                             for i in range(len(self.data_blocks[0].address))]
         return concrete_address, self.total_size_as_list()
-
-
-def knobkraft_api(func):
-    func._is_knobkraft = True
-    return func
 
 
 class GenericRoland:
