@@ -72,34 +72,40 @@ def isSingleProgramDump(message: List[int]) -> bool:
 
 def nameFromDump(message: List[int]) -> str:
     if isSingleProgramDump(message):
-        data = message[8:-1]
-        return ''.join([chr(x) for x in data[0:24:2]])
+        # Extract the name from the sysex message
+        name_bytes = message[7:7+2*12]  # 12 characters * 2 bytes = 24 bytes
+        name = []
+        for i in range(0, 24, 2):
+            # Combine the low byte and high byte to get the character value
+            char_value = name_bytes[i] + (name_bytes[i + 1] << 7)
+            name.append(chr(char_value))
+        return ''.join(name)
     return 'invalid'
 
 
 def numberFromDump(message: List[int]) -> int:
     if isSingleProgramDump(message):
-        return message[6] + (message[7] << 7)
+        return message[5] + (message[6] << 7)
     return -1
 
 
 def convertToProgramDump(device_id, message, program_number):
     if isSingleProgramDump(message):
         # Need to construct a new program dump from a single program dump. Keep the protocol version intact
-        return message[0:3] + [device_id & 0x0F] + message[4:6] + [program_number & 0x7F, (program_number >> 7) & 0x7F] + message[8:]
+        return message[0:3] + [device_id & 0x0F] + message[4:5] + [program_number & 0x7F, (program_number >> 7) & 0x7F] + message[7:]
     raise Exception("Can only convert program dumps")
 
 
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isSingleProgramDump(message):
         name_params = [(ord(c), 0) for c in new_name.ljust(12, " ")]
-        return message[:8] + [item for sublist in name_params for item in sublist] + message[32:]
+        return message[:7] + [item for sublist in name_params for item in sublist] + message[31:]
     raise Exception("Can only rename Presets!")
 
 
 def calculateFingerprint(message: List[int]):
     if isSingleProgramDump(message):
-        data = message[8:-1]
+        data = message[7:-1]
         # Blank out name, 12 characters stored as 14-bit values
         data[0:24] = [0] * 24
         return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
@@ -109,7 +115,7 @@ def calculateFingerprint(message: List[int]):
 # Test data picked up by test_adaptation.py
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=data.all_messages[0], name="Proteus:Init", number=0)  # Adjusted test data for Proteus
-        yield testing.ProgramTestData(message=data.all_messages[63], name="-defPreset-", number=63)
+        yield testing.ProgramTestData(message=data.all_messages[0], name="FMstylePiano", number=64)  # Adjusted test data for Proteus
+        yield testing.ProgramTestData(message=data.all_messages[63], name="BarberPole  ", number=127)
 
     return testing.TestData(sysex="testData/E-mu_Proteus/Proteus1Presets.syx", program_generator=programs)
