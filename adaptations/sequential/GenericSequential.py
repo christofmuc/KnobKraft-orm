@@ -5,7 +5,6 @@
 #
 import hashlib
 
-
 # Documenting the Sequential/DSI device_IDs here for all sequential modules
 #
 # Evolver    - 0b00100000 0x20 (same as Poly Evolver and all other Evolvers)
@@ -24,20 +23,26 @@ import hashlib
 # Prophet 5  - 0b00110010 0x32 (this is the Rev 4 of course) or 0b00110011 0x33 (Desktop module?)
 # Take 5     -            0x35 (they left 0x34 empty - maybe the desktop Prophet 5 and...?)
 # Trigon-6   - 0b00111001 0x39 (the manual is not updated but uses the Prophet 6 ID)
+# OB-X8      -            0x58 (the manual is not updated, see https://forum.sequential.com/index.php?topic=8073
 # Teo-5      - 0b01011010 0x5a (the manual is not updated but uses the Take 5 ID) - this also additionally uses the MIDI ID for Oberheim, 0x10
+from typing import List, Optional, Callable, Tuple
+
 
 class GenericSequential:
 
     def __init__(self, name, device_id, banks, patches_per_bank,
-                 manufacturer=0x01,  # Default is Sequential, obviously
-                 name_len=None,
-                 name_position=None,
-                 file_version=None,
-                 id_list=None,
+                 manufacturer: int = 0x01,  # Default is Sequential, obviously
+                 name_len: int = None,
+                 name_position: int = None,
+                 name_info_function = None,
+                 #name_info_function: Callable[[List[int]], Tuple[int, int]] = None,
+                 file_version: int = None,
+                 id_list: Optional[List[int]] = None,
+                 program_data_ids: Optional[List[int]] = None,
                  blank_out_zones=None,
-                 friendlyBankName=None,
-                 friendlyProgramName=None,
-                 numberOfLayers=None,
+                 friendlyBankName: Callable[[int], str] = None,
+                 friendlyProgramName: Callable[[int], str] = None,
+                 numberOfLayers: int = None,
                  layerNameIndex=None):
         self.__id = device_id
         self.__name = name
@@ -45,18 +50,25 @@ class GenericSequential:
             self.__id_list = [device_id]
         else:
             self.__id_list = id_list
+        if program_data_ids is None:
+            # All synths except the Oberheim OB-X8 have only one type. It has single and combi programs.
+            self.__program_id_list = [0b00000010]
+        else:
+            self.__program_id_list = program_data_ids
         self.__banks = banks
         self.__patches_per_bank = patches_per_bank
         self.__manufacturer = manufacturer
         self.__name_len = name_len
         self.__name_position = name_position
+        self.__name_pos_function = name_info_function
         self.__file_version = file_version
-        self._blank_out_zones = None
-        if blank_out_zones is None:
-            if name_position is not None and name_len is not None:
+        self._blank_out_zones = blank_out_zones
+        # Automatic blank out of name for fingerprinting
+        if name_position is not None and name_len is not None:
+            if blank_out_zones is None:
                 self._blank_out_zones = [(name_position, name_len)]
-        else:
-            self._blank_out_zones = blank_out_zones + [(name_position, name_len)]
+            else:
+                self._blank_out_zones.append((name_position, name_len))
         self.friendly_bank_name = friendlyBankName
         self.friendly_program_name = friendlyProgramName
         self.number_of_layers = numberOfLayers
@@ -138,16 +150,22 @@ class GenericSequential:
                 and message[0] == 0xf0
                 and message[1] == self.__manufacturer
                 and message[2] in self.__id_list
-                and (self.__file_version is None and message[3] == 0b00000010  # Program Data
-                     or message[3] == self.__file_version and message[4] == 0b00000010))  # Program Data
+                and (self.__file_version is None and message[3] in self.__program_id_list
+                     or message[3] == self.__file_version and message[4] in self.__program_id_list))  # Program Data
 
     def nameFromDump(self, message):
-        dataBlock = self.getDataBlock(message)
-        if len(dataBlock) > 0:
-            patchData = self.unescapeSysex(dataBlock)
-            layer_a_name = ''.join(
-                [chr(x) for x in patchData[self.__name_position:self.__name_position + self.__name_len]]).strip()
-            return layer_a_name
+        if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
+            dataBlock = self.getDataBlock(message)
+            if len(dataBlock) > 0:
+                patchData = self.unescapeSysex(dataBlock)
+                if self.__name_pos_function is not None:
+                    pos, length = self.__name_pos_function(message)
+                else:
+                    pos = self.__name_position
+                    length = self.__name_len
+                layer_a_name = ''.join(
+                    [chr(x) for x in patchData[pos:pos + length]]).strip()
+                return layer_a_name
         return "Invalid"
 
     def numberFromDump(self, message):
@@ -171,7 +189,7 @@ class GenericSequential:
         if self.isEditBufferDump(message):
             return message[0:3 + self.extraOffset()] + [0b00000010] + [bank, program] + message[4 + self.extraOffset():]
         elif self.isSingleProgramDump(message):
-            return message[0:3 + self.extraOffset()] + [0b00000010] + [bank, program] + message[6 + self.extraOffset():]
+            return message[0:3 + self.extraOffset()] + [message[3 + self.extraOffset()]] + [bank, program] + message[6 + self.extraOffset():]
         raise Exception("Neither edit buffer nor program dump - can't be converted")
 
     def friendlyBankName(self, bank):
@@ -182,6 +200,12 @@ class GenericSequential:
     def calculateFingerprint(self, message):
         raw = self.getDataBlock(message)
         data = self.unescapeSysex(raw)
+        if self.__name_pos_function is not None:
+            # Special case - the name position is not fixed but based on the message type. Calculate it and append to the blank out
+            if self._blank_out_zones is None:
+                self._blank_out_zones = [self.__name_pos_function(message)]
+            else:
+                self._blank_out_zones.append(self.__name_pos_function(message))
         # Blank out all blank out zones, normally this is the name (or layer names)
         if self._blank_out_zones is not None:
             for zone in self._blank_out_zones:
@@ -279,7 +303,7 @@ class GenericSequential:
         setattr(module, 'bankSelect', self.bankSelect)
         setattr(module, 'createProgramDumpRequest', self.createProgramDumpRequest)
         setattr(module, 'isSingleProgramDump', self.isSingleProgramDump)
-        if self.__name_len is not None and self.__name_position is not None:
+        if (self.__name_len is not None and self.__name_position is not None) or self.__name_pos_function is not None:
             setattr(module, 'nameFromDump', self.nameFromDump)
         setattr(module, 'numberFromDump', self.numberFromDump)
         setattr(module, 'convertToEditBuffer', self.convertToEditBuffer)

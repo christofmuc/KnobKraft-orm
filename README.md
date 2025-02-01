@@ -57,7 +57,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
 | Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
-| Oberheim | OB-X8 | alpha | adaptation | help needed! |
+| Oberheim | OB-X8 | beta | adaptation | help needed! |
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | in progress | adaptation | |
