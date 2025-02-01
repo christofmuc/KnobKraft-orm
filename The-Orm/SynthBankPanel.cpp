@@ -121,13 +121,15 @@ SynthBankPanel::SynthBankPanel(midikraft::PatchDatabase& patchDatabase, PatchVie
 
 	showInfoIfRequired();
 
-	// We need to know if our synth is turned off
+	// We need to know if our synth is turned off or the database changes
 	UIModel::instance()->synthList_.addChangeListener(this);
+	UIModel::instance()->databaseChanged.addChangeListener(this);
 }
 
 SynthBankPanel::~SynthBankPanel()
 {
 	UIModel::instance()->synthList_.removeChangeListener(this);
+	UIModel::instance()->databaseChanged.removeChangeListener(this);
 }
 
 void SynthBankPanel::setBank(std::shared_ptr<midikraft::SynthBank> synthBank, PatchButtonInfo info)
@@ -269,6 +271,14 @@ void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
 				synthBank_.reset();
 				refresh();
 			}
+		}
+	}
+	else if (source == &UIModel::instance()->databaseChanged) 
+	{
+		if (synthBank_) {
+			synthBank_.reset();
+			temporaryBanks_.clear();
+			refresh();
 		}
 	}
 }

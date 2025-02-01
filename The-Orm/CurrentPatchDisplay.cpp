@@ -110,13 +110,15 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 		lastOpenState_ = Settings::instance().get("MetaDataLayout");
 	}
 
-	// We need to recolor in case the categories are changed
+	// We need to recolor in case the categories are changed, or the database
 	UIModel::instance()->categoriesChanged.addChangeListener(this);
+	UIModel::instance()->databaseChanged.addChangeListener(this);
 }
 
 CurrentPatchDisplay::~CurrentPatchDisplay()
 {
 	UIModel::instance()->categoriesChanged.removeChangeListener(this);
+	UIModel::instance()->databaseChanged.removeChangeListener(this);
 	Settings::instance().set("MetaDataLayout", propertyEditor_.getLayout().toStdString());
 }
 
@@ -421,16 +423,22 @@ void CurrentPatchDisplay::paint(Graphics& g)
 
 void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 {
-	ignoreUnused(source);
-	std::vector<CategoryButtons::Category> result;
-	for (const auto& c : database_.getCategories()) {
-		if (c.def()->isActive) {
-			result.emplace_back(c.category(), c.color());
+	if (source == &UIModel::instance()->categoriesChanged) {
+		ignoreUnused(source);
+		std::vector<CategoryButtons::Category> result;
+		for (const auto& c : database_.getCategories()) {
+			if (c.def()->isActive) {
+				result.emplace_back(c.category(), c.color());
+			}
 		}
+		metaData_.setCategories(result);
+		refreshNameButtonColour();
+		resized();
 	}
-	metaData_.setCategories(result);
-	refreshNameButtonColour();
-	resized();
+	else if (source == &UIModel::instance()->databaseChanged)
+	{
+		reset();
+	}
 }
 
 void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {

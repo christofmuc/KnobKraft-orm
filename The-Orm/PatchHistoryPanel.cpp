@@ -12,6 +12,7 @@ PatchHistoryPanel::PatchHistoryPanel(PatchView* patchView) : patchView_(patchVie
 		[this](std::string const&, std::string const&) { return (int) patchHistory_->patches().size(); });
 	addAndMakeVisible(*history_);
 	UIModel::instance()->currentPatch_.addChangeListener(this);
+	UIModel::instance()->databaseChanged.addChangeListener(this);
 	patchHistory_ = std::make_shared<midikraft::PatchList>("History");
 	history_->onPatchClicked = [this](midikraft::PatchHolder& patch) {
 		patchView_->selectPatch(patch, true);
@@ -22,6 +23,7 @@ PatchHistoryPanel::PatchHistoryPanel(PatchView* patchView) : patchView_(patchVie
 PatchHistoryPanel::~PatchHistoryPanel()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
+	UIModel::instance()->databaseChanged.removeChangeListener(this);
 }
 
 void PatchHistoryPanel::resized()
@@ -36,5 +38,8 @@ void PatchHistoryPanel::changeListenerCallback(ChangeBroadcaster* source)
 	{
 		patchHistory_->insertPatchAtTopAndRemoveDuplicates(UIModel::currentPatch());
 		history_->setPatchList(patchHistory_, buttonMode_);
+	}
+	else if (source == &UIModel::instance()->databaseChanged) {
+		history_->setPatchList({}, buttonMode_);
 	}
 }
