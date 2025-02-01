@@ -116,13 +116,24 @@ def isOwnSysex(message):
 
 def nameFromDump(message):
     if isSingleProgramDump(message):
+        data_type = (message[6] - AR_SYSEX_DUMP_ID_BASE) % 6
+        if data_type == AR_TYPE_KIT:
+            return "some kit"
+        elif data_type == AR_TYPE_SONG:
+            return "some song"
+        elif data_type == AR_TYPE_SETTINGS:
+            return "some settings"
+        elif data_type == AR_TYPE_GLOBAL:
+            return "global data"
+        else:
+            # Patterns and Sounds have a name
         message_length = message[-3] << 7 | message[-2]
         if message_length + 10 != len(message):
-            raise "Ignoring invalid sysex message with wrong length data"
+                raise Exception("Ignoring invalid sysex message with wrong length data")
         stored_checksum = message[-5] << 7 | message[-4]
         packed_data, checksum = unescapeSysexElektron(message[0x0a:-5])
         if checksum != stored_checksum:
-            raise "Checksum error in patch"
+                raise Exception("Checksum error in patch")
         real_message = packed_data
         name = ""
         dataIndex = 12
@@ -135,13 +146,17 @@ def nameFromDump(message):
 
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isSingleProgramDump(message):
+        data_type = (message[6] - AR_SYSEX_DUMP_ID_BASE) % 6
+        if data_type in [AR_TYPE_KIT, AR_TYPE_GLOBAL, AR_TYPE_SETTINGS, AR_TYPE_SONG]:
+            # No way to rename these
+            return message
         data, checksum = unescapeSysexElektron(message[10:-5])
         data[12:12 + 16] = [ord(c) for c in new_name.ljust(16, chr(0x00))]
         escaped_data, new_checksum = escapeSysexElektron(data)
         checksum_hi = (new_checksum >> 7) & 0x7f
         checksum_lo = new_checksum & 0x7f
         return message[:10] + escaped_data + [checksum_hi, checksum_lo] + message[-3:]
-    raise "Can only rename program dumps!"
+    raise Exception("Can only rename program dumps!")
 
 
 def numberFromDump(message):
