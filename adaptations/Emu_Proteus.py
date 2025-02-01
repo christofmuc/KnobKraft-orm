@@ -110,6 +110,6 @@ def calculateFingerprint(message: List[int]):
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[0], name="Proteus:Init", number=0)  # Adjusted test data for Proteus
-        yield testing.ProgramTestData(message=data.all_messages[127], name="-defPreset-", number=127)
+        yield testing.ProgramTestData(message=data.all_messages[63], name="-defPreset-", number=63)
 
-    return testing.TestData(sysex="testData/E-mu_Proteus/proteus.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/E-mu_Proteus/Proteus1Presets.syx", program_generator=programs)
