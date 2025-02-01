@@ -6,10 +6,11 @@
 import hashlib
 from typing import List, Dict
 
-import knobkraft.sysex
+import testing
 from knobkraft import unescapeSysex_deepmind
 
-oberheim_obx8_id = [0x10, 0x58]
+OBERHEIM_ID = 0x10
+OBX8_ID = 0x58
 single_program = 0x02
 combi_program = 0x07
 
@@ -76,7 +77,7 @@ def convertToProgramDump(channel, message, patchNo):
     if isSingleProgramDump(message) and isSingle(message):
         bank_no = patchNo / 0x80
         patch_no = patchNo % 0x80
-        return [0xf0] + oberheim_obx8_id + [single_program, bank_no, patch_no] + message[6:]
+        return [0xf0] + [OBERHEIM_ID, OBX8_ID] + [single_program, bank_no, patch_no] + message[6:]
     raise Exception("Only program dumps can be converted")
 
 
@@ -113,26 +114,18 @@ def calculateFingerprint(message):
 
 
 def isOberheimX8(message):
-    return message[1:3] == oberheim_obx8_id
+    return message[1] == OBERHEIM_ID and message[2] == OBX8_ID
 
 
-# End of implementation for KnobKraft. Tests follow
+# Test data picked up by test_adaptation.py
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        program_string = "F0 10 58 02 04 7F 00 01 00 00 20 00 01 01 00 00 00 00 01 00 00 00 00 00 00 00 00 00 01 00 02 00 2F 00 00 01 00 01 00 00 56 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 56 00 00 00 00 00 00 00 00 3A 00 3A 64 7F 20 20 00 00 00 00 00 0C 7F 00 07 05 00 00 01 01 00 33 01 01 00 01 01 00 0C 18 24 30 04 3C 00 49 7F 00 01 7F 00 7F 7F 04 00 42 61 73 00 69 63 20 50 72 6F 67 00 72 61 6D 00 00 00 00 00 00 00 00 00 7F 00 00 00 7F 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 F7"
+        yield testing.ProgramTestData(message=program_string,name="Basic Program", number=0x04 * 0x80 + 0x7f)
 
-def run_tests():
-    program_string = "F0 10 58 02 04 7F 00 01 00 00 20 00 01 01 00 00 00 00 01 00 00 00 00 00 00 00 00 00 01 00 02 00 2F 00 00 01 00 01 00 00 56 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 56 00 00 00 00 00 00 00 00 3A 00 3A 64 7F 20 20 00 00 00 00 00 0C 7F 00 07 05 00 00 01 01 00 33 01 01 00 01 01 00 0C 18 24 30 04 3C 00 49 7F 00 01 7F 00 7F 7F 04 00 42 61 73 00 69 63 20 50 72 6F 67 00 72 61 6D 00 00 00 00 00 00 00 00 00 7F 00 00 00 7F 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 F7"
-    program_message = knobkraft.sysex.stringToSyx(program_string)
-    assert isSingleProgramDump(program_message)
-    assert numberFromDump(program_message) == 0x04 * 0x80 + 0x7f
-    assert nameFromDump(program_message) == "Basic Program"
-    print(nameFromDump(program_message))
+        combi_program_string = "F0 10 58 07 00 03 00 00 02 00 44 65 66 61 00 75 6C 74 20 53 70 6C 00 69 74 00 00 00 00 00 00 00 00 02 00 00 33 01 00 01 01 01 00 0C 18 24 00 30 3C 02 56 00 00 00 00 00 0C 01 01 00 00 02 00 7F 00 02 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 1F 00 3B 24 00 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 20 3C 7F 24 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 F7"
+        yield testing.ProgramTestData(message=combi_program_string, name="Default Split", number=5 * 128 + 3)
 
-    combi_program_string = "F0 10 58 07 00 03 00 00 02 00 44 65 66 61 00 75 6C 74 20 53 70 6C 00 69 74 00 00 00 00 00 00 00 00 02 00 00 33 01 00 01 01 01 00 0C 18 24 00 30 3C 02 56 00 00 00 00 00 0C 01 01 00 00 02 00 7F 00 02 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 1F 00 3B 24 00 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 20 3C 7F 24 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 F7"
-    combi_program_message = knobkraft.sysex.stringToSyx(combi_program_string)
-    assert isSingleProgramDump(combi_program_message)
-    assert numberFromDump(combi_program_message) == 5 * 128 + 3
-    combi_name = nameFromDump(combi_program_message)
-    assert combi_name == "Default Split"
+        yield testing.ProgramTestData(message=data.all_messages[0], name="Jersey Girl B", number=22)
 
-
-if __name__ == "__main__":
-    run_tests()
+    return testing.TestData(sysex="testData/Oberheim_OBX8/OBx8-prest.syx", program_generator=programs, friendly_bank_name=(11, "B"))

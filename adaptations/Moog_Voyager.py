@@ -7,7 +7,7 @@
 # https://github.com/eclab/edisyn/blob/master/edisyn/synth/waldorfm/WaldorfM.java#L1952
 import hashlib
 from copy import copy
-from typing import List
+from typing import List, Tuple
 
 import knobkraft.sysex
 import testing
@@ -98,28 +98,91 @@ def numberFromDump(message: List[int]) -> int:
 
 
 def nameFromDump(message: List[int]) -> str:
+    full, _, _ = nameFromDumpInternal(message)
+    return full
+
+
+def split_into_lines(int_list):
+    line1 = []
+    line2 = []
+    current_line = line1
+
+    for num in int_list:
+        # Check if the highest bit is set (assuming 8-bit integers)
+        if num & 0x80:
+            # Clear the highest bit to get the actual character
+            current_line.append(chr(num & 0x7F))
+            # Switch to the second line
+            current_line = line2
+        else:
+            current_line.append(chr(num))
+
+    # Convert the lists of characters into strings
+    line1 = ''.join(line1)
+    line2 = ''.join(line2)
+
+    return (line1, line2)
+
+
+def nameFromDumpInternal(message: List[int]) -> Tuple[str, str, str]:
     if isSingleProgramDump(message):
         data = unpack_sysex(message[6:-1])
     elif isEditBufferDump(message):
         data = unpack_sysex(message[5:-1])
     else:
-        return "invalid"
-    #line1 = "".join([chr(x) for x in data[84:84+11]])
-    #line2 = "".join([chr(x) for x in data[84+12:84+12+11]])
-    #return f"{line1} {line2}"
-    return "".join([chr(x) for x in data[84:84+24]])
+        return "invalid", "invalid", ""
+    line1, line2 = split_into_lines(data[84:84+24])
+    return line1 + line2, line1, line2
 
 
-def renamePatch(message: List[int], new_name: str) -> List[int]:
+def numberOfLayers(messages):
+    return 2
+
+
+def friendlyLayerTitles():
+    return ["Line 1", "Line 2"]
+
+
+def layerName(messages, layerNo):
+    full, layer1, layer2 = nameFromDumpInternal(messages)
+    if layerNo == 0:
+        return layer1
+    elif layerNo == 1:
+        return layer2
+    else:
+        raise "Layer number must be 0 or 1"
+
+
+def renamePatchInternal(message: List[int], new_name: List[int]) -> List[int]:
     if isSingleProgramDump(message):
         data_start = 6
     elif isEditBufferDump(message):
         data_start = 5
     else:
         raise "Can only rename edit buffers or program buffers"
+    assert len(new_name) == 24
     data = unpack_sysex(message[data_start:-1])
-    data[84:84+24] = [ord(c)for c in new_name.ljust(24, " ")]
+    data[84:84+24] = new_name
     return message[:data_start] + pack_sysex(data) + [0xf7]
+
+
+def setLayerName(messages, layerNo, new_name):
+    full, layer1, layer2 = nameFromDumpInternal(messages)
+    if layerNo == 0:
+        name_list = [ord(c) for c in new_name]
+        name_list[-1] |= 0x80
+        name_list.extend([ord(c) for c in layer2])
+    elif layerNo == 1:
+        name_list = [ord(c) for c in layer1]
+        name_list[-1] |= 0x80
+        name_list.extend([ord(c) for c in new_name])
+    else:
+        raise "LayerNo must be 0 or 1"
+
+    # Ensure the list is exactly 24 items long, padding with 0x20 if necessary
+    name_list = name_list[:24] + [0x20] * (24 - len(name_list))
+    name_list[-1] |= 0x80
+    return renamePatchInternal(messages, name_list)
 
 
 def convertToProgramDump(device_id, message, program_number):
@@ -229,19 +292,19 @@ def pack_sysex(midi_data):
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         program_data = [0xF0, 0x04, 0x01, 0x00, 0x03, 0x00, 0x03, 0x4C, 0x1C, 0x5C, 0x11, 0x40, 0x46, 0x02, 0x19, 0x00, 0x00, 0x00, 0x40, 0x08, 0x00, 0x00, 0x00, 0x60, 0x01, 0x00, 0x00, 0x42, 0x08, 0x00, 0x68, 0x00, 0x00, 0x00, 0x41, 0x03, 0x1C, 0x3F, 0x00, 0x08, 0x42, 0x28, 0x06, 0x60, 0x17, 0x00, 0x6B, 0x40, 0x04, 0x04, 0x00, 0x10, 0x5C, 0x7F, 0x40, 0x78, 0x43, 0x62, 0x0F, 0x00, 0x20, 0x00, 0x4D, 0x00, 0x00, 0x00, 0x7D, 0x1F, 0x7C, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x78, 0x7F, 0x41, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x7F, 0x03, 0x05, 0x00, 0x5C, 0x7F, 0x3F, 0x7C, 0x68, 0x76, 0x0F, 0x3F, 0x00, 0x40, 0x3F, 0x53, 0x6A, 0x41, 0x2B, 0x26, 0x0E, 0x48, 0x29, 0x61, 0x6E, 0x01, 0x01, 0x02, 0x14, 0x08, 0x10, 0x20, 0x40, 0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x00, 0x05, 0x10, 0x06, 0x00, 0x19, 0x00, 0x66, 0x00, 0x00, 0x70, 0x1F, 0x06, 0x00, 0x00, 0x00, 0x04, 0x04, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0xF7]
-        yield testing.ProgramTestData(message=program_data, number=0, name='Super Saw  \xa0           \xa0')
+        yield testing.ProgramTestData(message=program_data, number=0, name='Super Saw               ')
 
         all_programs = extractPatchesFromBank(data.all_messages[0])
         messages = knobkraft.splitSysex(all_programs)
-        yield testing.ProgramTestData(message=messages[0], name="Tasty Moog \xa0Bass       \xa0", number=0)
-        yield testing.ProgramTestData(message=messages[17], name="Clean      \xa0Machine    \xa0", number=17)
-        yield testing.ProgramTestData(message=messages[127], name="Stuttering \xa0Evolution  \xa0", number=127)
+        yield testing.ProgramTestData(message=messages[0], name="Tasty Moog  Bass        ", number=0, second_layer_name="Bass        ")
+        yield testing.ProgramTestData(message=messages[17], name="Clean       Machine     ", number=17)
+        yield testing.ProgramTestData(message=messages[127], name="Stuttering  Evolution   ", number=127)
 
     def edit_buffers(data: testing.TestData) -> List[testing.ProgramTestData]:
         all_programs = extractPatchesFromBank(data.all_messages[0])
         messages = knobkraft.splitSysex(all_programs)
-        yield testing.ProgramTestData(message=convertToEditBuffer(12, messages[0]), name="Tasty Moog \xa0Bass       \xa0")
-        yield testing.ProgramTestData(message=convertToEditBuffer(11, messages[17]), name="Clean      \xa0Machine    \xa0")
+        yield testing.ProgramTestData(message=convertToEditBuffer(12, messages[0]), name="Tasty Moog  Bass        ")
+        yield testing.ProgramTestData(message=convertToEditBuffer(11, messages[17]), name="Clean       Machine     ")
 
     def banks(data: testing.TestData) -> List[testing.ProgramTestData]:
         bank_dump = data.all_messages[0]

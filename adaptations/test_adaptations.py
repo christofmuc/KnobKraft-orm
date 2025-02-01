@@ -89,7 +89,7 @@ def test_extract_name_from_edit_buffer(adaptation, test_data: testing.TestData):
             count += 1
     if count == 0:
         # Nothing was generated that has a name attached, but nameFromDump was implemented. Fail test!
-        pytest.fail(f"{adaptation.name()} did not generate a single program with name to test nameFromDump")
+        pytest.fail(f"{adaptation.name()} did not generate a single edit buffer with name to test nameFromDump")
 
 
 def get_rename_target_name(program, test_data):
@@ -302,10 +302,10 @@ def test_set_layer_name(adaptation, test_data: testing.TestData):
         old_layer_name = adaptation.layerName(program.message.byte_list, 0)
         new_program = adaptation.setLayerName(program.message.byte_list, 0, old_layer_name)
         assert knobkraft.list_compare(program.message.byte_list, new_program)
-        new_messages = adaptation.setLayerName(program.message.byte_list, 1, 'changed layer')
-        assert adaptation.layerName(new_messages, 1) == 'changed layer'
-        new_messages = adaptation.setLayerName(program.message.byte_list, 0, 'changed layer')
-        assert adaptation.layerName(new_messages, 0) == 'changed layer'
+        new_messages = adaptation.setLayerName(program.message.byte_list, 1, 'changedlayer')
+        assert adaptation.layerName(new_messages, 1) == 'changedlayer'
+        new_messages = adaptation.setLayerName(program.message.byte_list, 0, 'changedlayer')
+        assert adaptation.layerName(new_messages, 0) == 'changedlayer'
         count += 1
     if count == 0:
         pytest.fail(f"{adaptation.name} has not created a single program to test set_layer_name")
@@ -319,7 +319,7 @@ def test_fingerprinting_of_programs(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
         md5 = adaptation.calculateFingerprint(program.message.byte_list)
         # Change program place and make sure the fingerprint didn't change
-        changed_position = adaptation.convertToProgramDump(0x09, program.message.byte_list, 0x31)
+        changed_position = adaptation.convertToProgramDump(0x09, program.message.byte_list, get_target_program_no(program))
         assert adaptation.calculateFingerprint(changed_position) == md5
 
 

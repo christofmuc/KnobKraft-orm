@@ -4,6 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
+from copy import copy
 from typing import Optional, List, Tuple
 
 # This is taken from the Monomachine Manual p. 147/C-1 Appendix C Sysex Reference
@@ -52,8 +53,14 @@ def _createRequest(device_id: int, patch_no: int, data_type: int):
 
 
 def bankDescriptors():
-    # As a start, offer the bank of the 128 Kits only
-    return [{"bank": 0, "name": "Kits", "size": 128, "type": "Kit"}]
+    # Offer the obvious possible variations of data patterns
+    # Missing are songs, settings, globals.
+    return [{"bank": 0, "name": "Kits", "size": 128, "type": "Kit"},
+            {"bank": 1, "name": "KitsX", "size": 128, "type": "Kit"},
+            {"bank": 2, "name": "Sounds", "size": 128, "type": "Sound"},
+            {"bank": 3, "name": "SoundsX", "size": 128, "type": "Sound"},
+            {"bank": 4, "name": "Patterns", "size": 128, "type": "Pattern"},
+            {"bank": 5, "name": "PatternsX", "size": 128, "type": "Pattern"},]
 
 
 def createDeviceDetectMessage(device_id):
@@ -72,15 +79,30 @@ def channelIfValidDeviceResponse(message):
 
 
 def createProgramDumpRequest(device_id: int, patch_no: int) -> List[int]:
-    return _createRequest(device_id, patch_no, AR_TYPE_SOUND)
+    # Our internal number just go from 0..6*128, but each set of 128 is in a different bank and of different type
+    data_type = patch_no // 256
+    data_item = patch_no % 256
+    return _createRequest(device_id, data_item, data_type)
 
 
 def isSingleProgramDump(message):
-    return isOwnSysex(message) and len(message) > 6 and message[6] in [AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND]
+    return isOwnSysex(message) and len(message) > 6 \
+           and message[6] in [AR_SYSEX_DUMP_ID_BASE + AR_TYPE_KIT,
+                              AR_SYSEX_DUMPX_ID_BASE + AR_TYPE_KIT,
+                              AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND,
+                              AR_SYSEX_DUMPX_ID_BASE + AR_TYPE_SOUND,
+                              AR_SYSEX_DUMP_ID_BASE + AR_TYPE_PATTERN,
+                              AR_SYSEX_DUMPX_ID_BASE + AR_TYPE_PATTERN]
 
 
 def convertToProgramDump(device_id: int, message: List[int], patch_no: int) -> List[int]:
     if isSingleProgramDump(message):
+        data_type = (message[6] - AR_SYSEX_DUMP_ID_BASE) % 6
+        assert patch_no // 256 == data_type
+        new_item_no = patch_no % 256
+        if new_item_no > 127:
+            new_item_no -= 127
+            data_type += 6
         return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
     raise "Can only convert single program dumps"
 
@@ -124,8 +146,23 @@ def renamePatch(message: List[int], new_name: str) -> List[int]:
 
 def numberFromDump(message):
     if isSingleProgramDump(message):
-        return message[9]
+        item = message[9]
+        data_type = message[6] - AR_SYSEX_DUMP_ID_BASE
+        if data_type > 5:
+            item += 128
+            data_type -= 6
+        return data_type * 256 + item
     raise "Can only extract number from sound dump"
+
+
+def friendlyProgramName(program):
+    type_names = ["Kit", "Sound", "Pattern", "Song", "Settings", "Global"]
+    data_type = program // 256
+    item = program % 256
+    if data_type > 5:
+        item -= 128
+        data_type -= 6
+    return "%s %03d" % (type_names[data_type], program % 128)
 
 
 def calculateFingerprint(message: List[int]) -> str:
@@ -183,7 +220,12 @@ def make_test_data():
         for message in data.all_messages:
             print(nameFromDump(message))
         # This bank has no patch numbers, they are all 0
-        yield testing.ProgramTestData(message=data.all_messages[0], name="909 TRIANGLE", number=0)
-        yield testing.ProgramTestData(message=data.all_messages[5], name="CLASSIC 909 KIC", number=0)
+        yield testing.ProgramTestData(message=data.all_messages[0], name="909 TRIANGLE", number=256, target_no=280, friendly_number="Sound 000")
+        yield testing.ProgramTestData(message=data.all_messages[5], name="CLASSIC 909 KIC", number=256, target_no=280, friendly_number="Sound 000")
+
+        # Poke these to be X dumps
+        x_message = copy(data.all_messages[5])
+        x_message[6] = AR_SYSEX_DUMPX_ID_BASE + AR_TYPE_SOUND
+        yield testing.ProgramTestData(message=x_message, name="CLASSIC 909 KIC", number=384, target_no=280, friendly_number="Sound 000")
 
     return testing.TestData(sysex="testData/Elektron_AnalogRytm/909kicks.syx", program_generator=programs)

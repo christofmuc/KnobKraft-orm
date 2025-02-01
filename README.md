@@ -13,7 +13,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | ------------- | ------------- | --- | --- | --- |
 | Access  | Virus A, B, Classic, KB, Indigo  | works | native | |
 | Access  | Virus C  | beta | native | Thanks to guavadude@gs |
-| Akai | AX80 | beta | adaptation | Thaks to O.S.R.C. on YT for the nudge |
+| Akai | AX80 | beta | adaptation | Thanks to O.S.R.C. on YT for the nudge |
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | works | adaptation | |
@@ -31,8 +31,8 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet Rev2 | works | native | |
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
-| Elektron | Analog Rytm | alpha | adaptation | Thanks to @RadekPilich for the request! |
-| Elektron | Digitone | alpha | adaptation |  |
+| Elektron | Analog Rytm | beta | adaptation | Thanks to @RadekPilich for the request! |
+| Elektron | Digitone | alpha | adaptation |  This needs more work, owners please provide feedback so we can complete it. |
 | E-mu | Morpheus | works | adaptation | Thanks to Kid Who for testing! |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
 | Ensoniq | VFX/VFX-SD | works | adaptation | Thanks to @dancingdog for testing! |
@@ -48,7 +48,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
-| Moog | Voyager | beta | adaptation | Thanks to @troach242 for the nudge! |
+| Moog | Voyager | works | adaptation | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
@@ -77,6 +77,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Trigon-6 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
+| Waldorf | M | alpha | adaptation | Thanks to @RadekPilich for testing! |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
