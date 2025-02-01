@@ -83,7 +83,7 @@ def isSingleProgramDump(message):
 def convertToSingleProgramDump(device_id: int, message: List[int], patch_no: int) -> List[int]:
     if isSingleProgramDump(message):
         return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
-    raise "Can only convert single program dumps"
+    raise Exception("Can only convert single program dumps")
 
 
 def isOwnSysex(message):
@@ -97,11 +97,11 @@ def nameFromDump(message):
     if isSingleProgramDump(message):
         message_length = message[-3] << 7 | message[-2]
         if message_length + 10 != len(message):
-            raise "Ignoring invalid sysex message with wrong length data"
+            raise Exception("Ignoring invalid sysex message with wrong length data")
         stored_checksum = message[-5] << 7 | message[-4]
         packed_data, checksum = unescapeSysexElektron(message[0x0a:-5])
         if checksum != stored_checksum:
-            raise "Checksum error in patch"
+            raise Exception("Checksum error in patch")
         real_message = packed_data
         name = ""
         dataIndex = 12
@@ -120,13 +120,13 @@ def renamePatch(message: List[int], new_name: str) -> List[int]:
         checksum_hi = (new_checksum >> 7) & 0x7f
         checksum_lo = new_checksum & 0x7f
         return message[:10] + escaped_data + [checksum_hi, checksum_lo] + message[-3:]
-    raise "Can only rename program dumps!"
+    raise Exception("Can only rename program dumps!")
 
 
 def numberFromDump(message):
     if isSingleProgramDump(message):
         return message[9]
-    raise "Can only extract number from sound dump"
+    raise Exception("Can only extract number from sound dump")
 
 
 def calculateFingerprint(message: List[int]) -> str:

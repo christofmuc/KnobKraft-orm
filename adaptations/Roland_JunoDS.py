@@ -410,7 +410,7 @@ class GenericRoland_:
             return self._apply_blankout(message.copy(), self.edit_buffer.blank_out_zones)
         elif self.isSingleProgramDump(message):
             return self._apply_blankout(message.copy(), self.program_dump.blank_out_zones)
-        raise "Only works with edit buffers and program dumps"
+        raise Exception("Only works with edit buffers and program dumps")
 
     @knobkraft_api
     def calculateFingerprint(self, message):
