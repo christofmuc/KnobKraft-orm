@@ -7,7 +7,7 @@
 # https://github.com/eclab/edisyn/blob/master/edisyn/synth/waldorfm/WaldorfM.java#L1952
 import hashlib
 from copy import copy
-from typing import List
+from typing import List, Optional
 
 import testing
 
@@ -18,6 +18,8 @@ REQUEST_PATCH = 0x74
 SINGLE_PATCH = 0x72
 BANK_SIZE = 128
 
+DEVICE_ID_DETECTED: Optional[int] = None  # If auto detection works, we can save the real device ID here
+
 
 def name():
     return "Waldorf M"
@@ -25,6 +27,7 @@ def name():
 
 def createDeviceDetectMessage(device_id):
     # Just request the edit buffer - allegedly, it does not use the device id so that could be quick
+    # The parameter is ignored, it defaults to 0x7f 127 when it hasn't been detected yet
     return createEditBufferRequest(127)
 
 
@@ -38,8 +41,13 @@ def deviceDetectWaitMilliseconds():
 
 def channelIfValidDeviceResponse(message):
     if isEditBufferDump(message):
+        DEVICE_ID_DETECTED = message[3]
         return message[3] & 0x0f
     return -1
+
+
+def _device_id():
+    return DEVICE_ID_DETECTED if DEVICE_ID_DETECTED is not None else 0x7f
 
 
 def bankDescriptors():
@@ -47,7 +55,7 @@ def bankDescriptors():
 
 
 def createEditBufferRequest(device_id):
-    return [0xf0, WALDORF_ID, WALDORF_M, device_id, REQUEST_PATCH, 0x00, 0x00, 0x00, 0xf7]
+    return [0xf0, WALDORF_ID, WALDORF_M, _device_id(), REQUEST_PATCH, 0x00, 0x00, 0x00, 0xf7]
 
 
 def isEditBufferDump(message: List[int]) -> bool:
@@ -61,20 +69,21 @@ def isEditBufferDump(message: List[int]) -> bool:
 
 
 def convertToEditBuffer(device_id, message):
+    new_message = copy(message)
+    new_message[3] = _device_id()
     if isEditBufferDump(message):
-        return message
+        return new_message
     elif isSingleProgramDump(message):
-        new_message = copy(message)
         new_message[32] = 0x00
         new_message[33] = 0x00
         return new_message
-    raise "Can only convert edit buffers or single programs"
+    raise Exception("Can only convert edit buffers or single programs")
 
 
 def createProgramDumpRequest(device_id, patchNo):
     bank = patchNo // BANK_SIZE + 1
     program = patchNo % BANK_SIZE
-    return [0xf0, WALDORF_ID, WALDORF_M, 127, REQUEST_PATCH, 0x00, bank & 0x7f, program & 0x7f, 0xf7]
+    return [0xf0, WALDORF_ID, WALDORF_M, _device_id(), REQUEST_PATCH, 0x00, bank & 0x7f, program & 0x7f, 0xf7]
 
 
 def isSingleProgramDump(message: List[int]) -> bool:
@@ -104,7 +113,7 @@ def nameFromDump(message: List[int]) -> str:
 def convertToProgramDump(device_id, message, program_number):
     if isSingleProgramDump(message) or isEditBufferDump(message):
         # Need to construct a new program dump from a single program dump.
-        new_message =  message[0:3] + [127] + message[4:]
+        new_message =  message[0:3] + [_device_id()] + message[4:]
         new_message[32] = program_number // BANK_SIZE + 1
         new_message[33] = program_number % BANK_SIZE
         return new_message
