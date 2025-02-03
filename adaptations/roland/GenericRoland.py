@@ -4,7 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Union
 import knobkraft
 
 roland_id = 0x41  # Roland
@@ -96,16 +96,22 @@ class RolandData:
         self.blank_out_zones = None
         self.uses_consecutive_addresses = uses_consecutive_addresses
 
-    def make_black_out_zones(self, model_id_length: int, program_position: int = None, name_blankout: Tuple[int, int, int] = None):
+    def make_black_out_zones(self, model_id_length: int, program_position: Union[int, Tuple[int, int]] = None, device_id_position: int = None, name_blankout: Tuple[int, int, int] = None):
         # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
         # message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
         data_block_overhead = 3 + model_id_length + 1 + 2 + self.num_address_bytes
         self.blank_out_zones = []
-        # Ignore checksums, because they might include the program position and will be different for an edit buffer and a program dump
-        #self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
+        # Ignore checksums, because they might include the program position and name and will be different for an edit buffer and a program dump
+        self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
+        if device_id_position is not None:
+            # We want the fingerprint to ignore the device ID
+            self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + device_id_position, 1) for x in range(len(self.data_blocks))]
         if program_position is not None:
             # We want the fingerprint to ignore the program position
-            self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
+            if isinstance(program_position, tuple):
+                self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position[0], program_position[1]) for x in range(len(self.data_blocks))]
+            else:
+                self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
         if name_blankout is not None:
             self.blank_out_zones += [(self._start_index_of_block(name_blankout[0], data_block_overhead) + data_block_overhead - 2
                                       + name_blankout[1], name_blankout[2])]
