@@ -77,7 +77,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Trigon-6 | beta | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
-| Waldorf | M | alpha | adaptation | Thanks to @RadekPilich for testing! |
+| Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
