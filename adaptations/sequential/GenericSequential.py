@@ -173,7 +173,7 @@ class GenericSequential:
             return 0
         elif self.isSingleProgramDump(message):
             return message[4 + self.extraOffset()] * self.numberOfPatchesPerBank() + message[5 + self.extraOffset()]
-        raise "Data is neither edit buffer nor program dump, can't extract number"
+        raise Exception("Data is neither edit buffer nor program dump, can't extract number")
 
     def convertToEditBuffer(self, channel, message):
         if self.isEditBufferDump(message):

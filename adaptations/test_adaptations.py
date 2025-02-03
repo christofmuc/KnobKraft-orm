@@ -329,7 +329,7 @@ def test_fingerprinting_of_programs(adaptation, test_data: testing.TestData):
 @require_implemented("blankedOut")
 @require_testdata("programs")
 def test_blanked_out(adaptation, test_data: testing.TestData):
-    # The blank out is a generic mechanism to implement fingerprinting so names/program places and the like don't change thr fingerprint
+    # The blank out is a generic mechanism to implement fingerprinting so names/program places and the like don't change the fingerprint
     # But it is not required, just a helpful notion when implementing this. The advantage here is that the test is more
     # meaningful in showing where the blank out fails than if you get just two different md5...
     for program in test_data.programs:

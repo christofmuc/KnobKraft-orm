@@ -104,7 +104,7 @@ def convertToProgramDump(device_id: int, message: List[int], patch_no: int) -> L
             new_item_no -= 127
             data_type += 6
         return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
-    raise "Can only convert single program dumps"
+    raise Exception("Can only convert single program dumps")
 
 
 def isOwnSysex(message):
@@ -116,32 +116,47 @@ def isOwnSysex(message):
 
 def nameFromDump(message):
     if isSingleProgramDump(message):
-        message_length = message[-3] << 7 | message[-2]
-        if message_length + 10 != len(message):
-            raise "Ignoring invalid sysex message with wrong length data"
-        stored_checksum = message[-5] << 7 | message[-4]
-        packed_data, checksum = unescapeSysexElektron(message[0x0a:-5])
-        if checksum != stored_checksum:
-            raise "Checksum error in patch"
-        real_message = packed_data
-        name = ""
-        dataIndex = 12
-        while real_message[dataIndex] != 0 and dataIndex < 12 + 16:
-            name += chr(real_message[dataIndex])
-            dataIndex += 1
-        return name
+        data_type = (message[6] - AR_SYSEX_DUMP_ID_BASE) % 6
+        if data_type == AR_TYPE_KIT:
+            return "some kit"
+        elif data_type == AR_TYPE_SONG:
+            return "some song"
+        elif data_type == AR_TYPE_SETTINGS:
+            return "some settings"
+        elif data_type == AR_TYPE_GLOBAL:
+            return "global data"
+        else:
+            # Patterns and Sounds have a name
+            message_length = message[-3] << 7 | message[-2]
+            if message_length + 10 != len(message):
+                raise Exception("Ignoring invalid sysex message with wrong length data")
+            stored_checksum = message[-5] << 7 | message[-4]
+            packed_data, checksum = unescapeSysexElektron(message[0x0a:-5])
+            if checksum != stored_checksum:
+                raise Exception("Checksum error in patch")
+            real_message = packed_data
+            name = ""
+            dataIndex = 12
+            while real_message[dataIndex] != 0 and dataIndex < 12 + 16:
+                name += chr(real_message[dataIndex])
+                dataIndex += 1
+            return name
     return "Invalid"
 
 
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isSingleProgramDump(message):
+        data_type = (message[6] - AR_SYSEX_DUMP_ID_BASE) % 6
+        if data_type in [AR_TYPE_KIT, AR_TYPE_GLOBAL, AR_TYPE_SETTINGS, AR_TYPE_SONG]:
+            # No way to rename these
+            return message
         data, checksum = unescapeSysexElektron(message[10:-5])
         data[12:12 + 16] = [ord(c) for c in new_name.ljust(16, chr(0x00))]
         escaped_data, new_checksum = escapeSysexElektron(data)
         checksum_hi = (new_checksum >> 7) & 0x7f
         checksum_lo = new_checksum & 0x7f
         return message[:10] + escaped_data + [checksum_hi, checksum_lo] + message[-3:]
-    raise "Can only rename program dumps!"
+    raise Exception("Can only rename program dumps!")
 
 
 def numberFromDump(message):
@@ -152,7 +167,7 @@ def numberFromDump(message):
             item += 128
             data_type -= 6
         return data_type * 256 + item
-    raise "Can only extract number from sound dump"
+    raise Exception("Can only extract number from sound dump")
 
 
 def friendlyProgramName(program):
