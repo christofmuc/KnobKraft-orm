@@ -120,6 +120,10 @@ def calculateFingerprint(message: List[int]):
     raise Exception("Can only fingerprint Presets")
 
 
+def bankSelect(channel, bank):
+    return [0xb0 | (channel & 0x0f), 32, bank]
+
+
 # Test data picked up by test_adaptation.py
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
