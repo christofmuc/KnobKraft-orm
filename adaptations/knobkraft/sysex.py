@@ -6,6 +6,21 @@
 from typing import List, Tuple
 import binascii
 
+import umidiparser
+from umidiparser import MidiFile
+
+
+def load_midi(filename, as_single_list=False) -> List[List[int]]:
+    result = []
+    for event in MidiFile(filename):
+        if event.status == umidiparser.SYSEX:
+            message = [0xf0] + list(event.data) + [0xf7]
+            if as_single_list:
+                result.extend(message)
+            else:
+                result.append(message)
+    return result
+
 
 def load_sysex(filename, as_single_list=False) -> List[List[int]]:
     with open(filename, mode="rb") as midi_messages:
