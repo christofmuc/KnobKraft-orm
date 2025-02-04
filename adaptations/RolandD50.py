@@ -11,7 +11,13 @@ from copy import copy
 from typing import List, Optional, Tuple, Dict, Union
 
 import knobkraft
-from knobkraft import knobkraft_api
+
+
+def knobkraft_api(func):
+    func._is_knobkraft = True
+    return func
+
+
 import testing
 from roland import DataBlock
 
