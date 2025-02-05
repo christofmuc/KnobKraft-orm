@@ -394,3 +394,24 @@ def test_extract_patches_from_bank(adaptation, test_data: testing.TestData):
                     assert adaptation.isEditBufferDump(patch)
         else:
             print(f"This is not a bank dump: {bank}")
+
+
+@require_implemented("extractPatchesFromAllBankMessages")
+@require_testdata("banks")
+def test_extract_patches_from_all_bank_messages(adaptation, test_data: testing.TestData):
+    for bank in test_data.banks:
+        bank_messages = []
+        for message in knobkraft.splitSysexMessage(bank):
+            if adaptation.isPartOfBankDump(message):
+                bank_messages.extend(message)
+            patches = knobkraft.splitSysex(adaptation.extractPatchesFromAllBankMessages(bank))
+            assert len(patches) > 0
+            for patch in patches:
+                # TODO: This seems like a peculiar assumption, that extracted patches are always Single Program Dumps
+                # unless the synth only supports edit buffer dumps
+                if hasattr(adaptation, "isSingleProgramDump"):
+                    assert adaptation.isSingleProgramDump(patch)
+                else:
+                    assert adaptation.isEditBufferDump(patch)
+        else:
+            print(f"This is not a bank dump: {bank}")
