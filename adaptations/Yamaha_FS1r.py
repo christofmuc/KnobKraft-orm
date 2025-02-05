@@ -73,8 +73,7 @@ def make_test_data():
         for d in messages:
             if yamaha_fs1r.isPartOfSingleProgramDump(d):
                 program_data.append(d)
-        program_dump = convertToProgramDump(1, raw_data, 17)
-        yield testing.ProgramTestData(message=program_dump, name="Piano 1   ", rename_name="Piano 2   ", number=17, friendly_number="Bank3-2")
+        yield testing.ProgramTestData(message=program_data[0], name="Piano 1   ", rename_name="Piano 2   ", number=17, friendly_number="Bank3-2")
 
     return testing.TestData(program_generator=program_buffers)
 
