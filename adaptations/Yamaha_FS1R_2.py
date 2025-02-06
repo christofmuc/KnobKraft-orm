@@ -4,6 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import itertools
+from copy import copy
 from typing import List
 
 import knobkraft
@@ -84,28 +85,30 @@ def bankDescriptors():
             {"bank": 1, "name": "Voices", "size": 128, "type": "Voice", "isROM": False, }]
 
 
+def _nameLength(message):
+    if isPerformance(message):
+        return 12
+    elif isVoice(message):
+        return 10
+    else:
+        raise Exception("neither a performance nor a voice")
+
+
 def nameFromDump(message):
-    if isSingleProgramDump(message):
-        if isPerformance(message):
-            name_len = 12
-        elif isVoice(message):
-            name_len = 10
-        else:
-            return "invalid"
+    if isSingleProgramDump(message) or isEditBufferDump(message):
+        name_len = _nameLength(message)
         return "".join([chr(x) for x in dataBlockFromMessage(message)[:name_len]])
     return "Invalid"
 
 
-#def renamePatch(message, new_name):
-#    messages = knobkraft.splitSysex(message)
-#    common_voice_data = dataBlockFromMessage(messages[1])[3:]
-#    used_char = min(10, len(new_name))
-#    for i in range(used_char):
-#        common_voice_data[i] = ord(new_name[i])
-#    for i in range(used_char, 10):
-#        common_voice_data[i] = ord(" ")
-#    messages[1] = buildBulkDumpMessage(0, commonVoiceAddress, common_voice_data)
-#    return [item for sublist in messages for item in sublist]  # flatten again
+def renamePatch(message, new_name):
+    if isSingleProgramDump(message):
+        name_len = _nameLength(message)
+        name_list = [ord(x) for x in new_name.ljust(name_len, " ")]
+        result = copy(message)
+        result[9:9+name_len] = name_list
+        return recalculateChecksum(result)
+    raise Exception("can only rename single program dumps!")
 
 
 # def createEditBufferRequest(channel):
@@ -123,49 +126,26 @@ def nameFromDump(message):
 #         address = addressFromMessage(message)
 #         return address in [PERFORMANCE_EDIT_BUFFER_ADDRESS, VOICE_EDIT_BUFFFER_PART1, VOICE_EDIT_BUFFFER_PART2, VOICE_EDIT_BUFFFER_PART3, VOICE_EDIT_BUFFFER_PART4]
 #     return False
-#
-#
-# def isEditBufferDump2(data):
-#     if isOwnSysex(data):
-#         messages = knobkraft.splitSysexMessage(data)
-#         if len(messages) != 5:
-#             return False
-#         all_five = [False, False, False, False, False]
-#         for m in messages:
-#             address = addressFromMessage(m)
-#             if address == PERFORMANCE_EDIT_BUFFER_ADDRESS:
-#                 all_five[0] = True
-#             elif address == VOICE_EDIT_BUFFFER_PART1:
-#                 all_five[1] = True
-#             elif address == VOICE_EDIT_BUFFFER_PART2:
-#                 all_five[2] = True
-#             elif address == VOICE_EDIT_BUFFFER_PART3:
-#                 all_five[3] = True
-#             elif address == VOICE_EDIT_BUFFFER_PART4:
-#                 all_five[4] = True
-#         return all(all_five)
-#     return False
-#
-#
-# def convertToEditBuffer(channel, data):
-#     if isEditBufferDump(data):
-#         return data
-#         #result = []
-#         #messages = knobkraft.splitSysex(data)
-#         #for message in messages:
-#         #    # Recompose the message with the new channel in the lower 4 bits
-#         #    result.extend(changeChannelInMessage(channel, message))
-#         #return result
-#     elif isSingleProgramDump(data):
-#         #result = []
-#         #messages = knobkraft.splitSysex(data)
-#         #result.extend(buildBulkDumpMessage(channel, bulkHeaderAddress, []))
-#         #for message in messages[1:6]:
-#         #    result.extend(message)
-#         #result.extend(buildBulkDumpMessage(channel, bulkFooterAddress, []))
-#         #return result
-#         return []
-#     raise Exception("Not an edit buffer dump!")
+
+
+def isEditBufferDump(data):
+    if isOwnSysex(data):
+        address = addressFromMessage(data)
+        return address == PERFORMANCE_EDIT_BUFFER_ADDRESS or address == VOICE_EDIT_BUFFFER_PART1
+    return False
+
+
+def convertToEditBuffer(channel, data):
+    if isEditBufferDump(data):
+        return data
+    elif isSingleProgramDump(data):
+        program = copy(data)
+        if isVoice(data):
+            setAddress(program, VOICE_EDIT_BUFFFER_PART1)
+        elif isPerformance(data):
+            setAddress(program, PERFORMANCE_EDIT_BUFFER_ADDRESS)
+        return recalculateChecksum(program)
+    raise Exception("Can't convert to edit buffer dump!")
 
 
 def isSingleProgramDump(data):
@@ -174,14 +154,13 @@ def isSingleProgramDump(data):
 
 
 def convertToProgramDump(channel, message, program_number):
-    if isSingleProgramDump(message):
+    if isSingleProgramDump(message) or isEditBufferDump(message):
         new_message = message[:2] + [DEVICE_ID_DETECTED & 0x0f] + message[3:8] + [program_number % 128] + message[9:]
-        assert sum(message[4:-2]) % 128 == 0
-        assert sum([-m for m in message[4:-3]]) & 0x7f == message[-3]
-        recalculateChecksum = sum([-m for m in new_message[4:-3]]) & 0x7f
-        new_message[-3] = recalculateChecksum
-        dataBlockFromMessage(new_message)
-        return new_message
+        if isVoice(message):
+            setAddress(new_message, VOICE_ADDRESS + [program_number & 0x7f])
+        elif isPerformance(message):
+            setAddress(new_message, PERFORMANCE_ADDRESS + [program_number & 0x7f])
+        return recalculateChecksum(new_message)
     raise Exception("Can only convert single program dumps to program dumps")
 
 
@@ -241,12 +220,16 @@ def addressFromMessage(message):
     raise Exception("Got invalid data block")
 
 
+def setAddress(message, address):
+    message[6:9] = address
+
+
 def isPerformance(message):
-    return isOwnSysex(message) and addressFromMessage(message)[:2] == PERFORMANCE_ADDRESS
+    return isOwnSysex(message) and addressFromMessage(message)[:2] == PERFORMANCE_ADDRESS or addressFromMessage(message) == PERFORMANCE_EDIT_BUFFER_ADDRESS
 
 
 def isVoice(message):
-    return isOwnSysex(message) and addressFromMessage(message)[:2] == VOICE_ADDRESS
+    return isOwnSysex(message) and addressFromMessage(message)[:2] == VOICE_ADDRESS or addressFromMessage(message) == VOICE_EDIT_BUFFFER_PART1
 
 
 def dataBlockFromMessage(message):
@@ -261,7 +244,19 @@ def dataBlockFromMessage(message):
                 data_block =  message[0x09:-3]
                 assert len(data_block) == data_len
                 return data_block
-    raise Exception("Got corrupt data block in refaceDX data")
+    raise Exception("Got corrupt data block")
+
+
+def recalculateChecksum(message):
+    if isOwnSysex(message):
+        data_len = message[4] << 7 | message[5]
+        if len(message) == data_len + 12:
+            changed = copy(message)
+            checksum_block = message[0x04:-3]
+            checksum = sum([-x for x in checksum_block]) & 0x7f
+            changed[-3] = checksum
+            return changed
+    raise Exception("Got corrupt data block")
 
 
 def buildRequest(device_id, address):
@@ -274,27 +269,23 @@ def buildRequest(device_id, address):
 
 def make_test_data():
     messages = load_midi("testData/Yamaha_FS1R/Vdfs1r01.mid")
+    program_data = []
+    for d in messages:
+        if isSingleProgramDump(d):
+            program_data.append(d)
 
     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        raw_data = list(itertools.chain.from_iterable(test_data.all_messages))
-        for d in test_data.all_messages:
-            isPartOfEditBufferDump(d)
-        yield testing.ProgramTestData(message=raw_data, name="Piano 1   ", rename_name="Piano 2   ")
-
-        # Test a Soundmondo file
-        message = knobkraft.stringToSyx("F0 43 00 7F 1C 00 04 05 0E 0F 00 5E F7 F0 43 00 7F 1C 00 2A 05 30 00 00 53 6E 61 70 48 61 70 70 79 20 00 00 40 00 02 42 04 00 64 00 00 40 40 40 40 40 40 40 40 03 40 40 07 40 40 00 00 00 21 F7 F0 43 00 7F 1C 00 20 05 31 00 00 01 7F 3A 24 6E 7F 56 00 00 00 00 00 00 00 00 01 01 40 7D 3C 00 00 00 00 40 00 00 00 6E F7 F0 43 00 7F 1C 00 20 05 31 01 00 01 7F 5D 23 5A 7F 3C 00 00 04 0F 06 03 00 00 01 01 3F 70 48 00 00 00 00 40 00 00 00 5F F7 F0 43 00 7F 1C 00 20 05 31 02 00 01 7F 67 3C 5A 7F 60 00 00 04 00 0B 00 00 00 01 01 5C 62 4B 00 00 00 00 40 00 00 00 12 F7 F0 43 00 7F 1C 00 20 05 31 03 00 01 7F 4A 53 5A 7F 66 00 00 08 00 07 00 00 00 01 01 78 60 7F 00 00 00 00 40 00 00 00 43 F7 F0 43 00 7F 1C 00 04 05 0F 0F 00 5D F7")
-        yield testing.ProgramTestData(message=message, name="SnapHappy ", rename_name="Piano 2   ")
+        edit1 = convertToEditBuffer(0x01, program_data[0])
+        yield testing.ProgramTestData(message=edit1, name="HARDPNO PF  ", rename_name="Piano 2   ")
+        edit2 = convertToEditBuffer(0x01, program_data[255])
+        yield testing.ProgramTestData(message=edit2, name="Sitar     ", target_no=244, rename_name="Piano 2   ")
 
     def program_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        program_data = []
-        for d in messages:
-            if isSingleProgramDump(d):
-                program_data.append(d)
         yield testing.ProgramTestData(message=program_data[0], name="HARDPNO PF  ", rename_name="Piano 2   ", number=0, friendly_number="Bank3-2")
         yield testing.ProgramTestData(message=program_data[127], name="Sitar       ", rename_name="Piano 2   ", number=127, friendly_number="Bank3-2")
         yield testing.ProgramTestData(message=program_data[128], name="HARDPNO PF", rename_name="Piano 2   ", number=128, target_no=140, friendly_number="Bank3-2")
         yield testing.ProgramTestData(message=program_data[255], name="Sitar     ", rename_name="Piano 2   ", number=255, target_no=244, friendly_number="Bank3-2")
 
-    return testing.TestData(program_generator=program_buffers)
+    return testing.TestData(program_generator=program_buffers, edit_buffer_generator=edit_buffers)
 
 
