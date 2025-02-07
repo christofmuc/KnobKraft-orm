@@ -57,11 +57,16 @@ def name():
 
 def createDeviceDetectMessage(device_id):
     # Just send a request for the system settings address
-    return buildRequest(device_id, SYSTEM_SETTINGS_ADDRESS)
+    # Use 0x30 as device_id base, just like SoundDiver
+    return buildRequest(device_id, 0x20, SYSTEM_SETTINGS_ADDRESS)
 
 
 def needsChannelSpecificDetection():
     return True
+
+
+def deviceDetectWaitMilliseconds():
+    return 500
 
 
 def channelIfValidDeviceResponse(message):
@@ -111,11 +116,11 @@ def renamePatch(message, new_name):
 
 def createEditBufferRequest(channel):
     # How do we request the Voices? Just send all requests at once?
-    return buildRequest(channel, PERFORMANCE_EDIT_BUFFER_ADDRESS) + \
-           buildRequest(channel, VOICE_EDIT_BUFFFER_PART1) + \
-           buildRequest(channel, VOICE_EDIT_BUFFFER_PART2) + \
-           buildRequest(channel, VOICE_EDIT_BUFFFER_PART3) + \
-           buildRequest(channel, VOICE_EDIT_BUFFFER_PART4)
+    return buildRequest(channel, 0x20, PERFORMANCE_EDIT_BUFFER_ADDRESS) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART1) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART2) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART3) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART4)
 
 
 def isEditBufferDump(data):
@@ -157,10 +162,10 @@ def convertToProgramDump(channel, message, program_number):
 def createProgramDumpRequest(channel, patch_no):
     if 0 <= patch_no < 128:
         # Request performance
-        return buildRequest(DEVICE_ID_DETECTED, PERFORMANCE_ADDRESS + [patch_no])
+        return buildRequest(DEVICE_ID_DETECTED, 0x20, PERFORMANCE_ADDRESS + [patch_no])
     elif 128 <= patch_no < 256:
         # Request voice
-        return buildRequest(DEVICE_ID_DETECTED, VOICE_ADDRESS + [patch_no])
+        return buildRequest(DEVICE_ID_DETECTED, 0x20, VOICE_ADDRESS + [patch_no])
     raise Exception("Can only request 128 performances or 128 voices")
 
 #def calculateFingerprint(message):
@@ -229,8 +234,8 @@ def recalculateChecksum(message):
     raise Exception("Got corrupt data block")
 
 
-def buildRequest(device_id, address):
-    return [0xf0, YAMAHA_ID, 0x20 | (device_id & 0x0f), YAMAHA_FS1R, address[0], address[1], address[2], 0xf7]
+def buildRequest(device_id, device_id_base, address):
+    return [0xf0, YAMAHA_ID, device_id_base | (device_id & 0x0f), YAMAHA_FS1R, address[0], address[1], address[2], 0xf7]
 
 
 def make_test_data():
@@ -255,6 +260,8 @@ def make_test_data():
         #yield testing.ProgramTestData(message=program_data[128], name="HARDPNO PF", rename_name="Piano 2   ", number=128, target_no=140, friendly_number="Bank3-2")
         #yield testing.ProgramTestData(message=program_data[255], name="Sitar     ", rename_name="Piano 2   ", number=255, target_no=244, friendly_number="Bank3-2")
 
-    return testing.TestData(program_generator=program_buffers, edit_buffer_generator=edit_buffers)
+    return testing.TestData(program_generator=program_buffers, edit_buffer_generator=edit_buffers,
+                            device_detect_call="F0 43 20 5E 00 00 00 F7",
+                            device_detect_reply=("f0 43 00 5e 00 4c 00 00 00 40 00 00 00 00 00 40 02 01 00 00 00 00 00 00 00 01 00 01 01 01 01 10 11 12 13 14 15 16 0d 04 02 50 51 3c 7f 3c 7f 3c 7f 3c 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 06 f7", 0x00))
 
 
