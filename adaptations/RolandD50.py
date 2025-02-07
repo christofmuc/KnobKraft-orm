@@ -567,6 +567,9 @@ def make_test_data():
         yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ")
         yield testing.ProgramTestData(message=patches[17], name="DIMENSIONAL PAD   ")
 
+        onemore = knobkraft.load_sysex("testData/Roland_D50/vibraphone edit buffer.syx", as_single_list=True)
+        yield testing.ProgramTestData(message=onemore, name="Vibraphone        ")
+
     def make_programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         patches = extractPatchesFromAllBankMessages(test_data.all_messages)
         prog0 = d_50.convertToProgramDump(11, patches[0], 12)
