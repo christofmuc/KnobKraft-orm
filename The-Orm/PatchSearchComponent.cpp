@@ -344,7 +344,6 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 
 	midikraft::PatchFilter filter(synthMap);
 
-	filter.importID = ""; // Import filter is not controlled by the PatchSearchComponent anymore, but by the PatchView
 	filter.listID = ""; // List filter is not controlled by the PatchSearchComponent, but rather inserted by the PatchView who knows about the selection in the right hand tree view
 	filter.name = nameFilter;
 	filter.onlyFaves = onlyFaves_.getToggleState();
