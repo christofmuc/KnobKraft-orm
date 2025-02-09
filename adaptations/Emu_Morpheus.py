@@ -91,7 +91,7 @@ def convertToProgramDump(device_id, message, program_number):
 
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isSingleProgramDump(message):
-        name_params = [(ord(c), 0) for c in new_name.ljust(12, " ")]
+        name_params = [(ord(c), 0) for c in new_name.ljust(12, " ")][:12]
         return message[:8] + [item for sublist in name_params for item in sublist] + message[32:]
     raise Exception("Can only rename Presets!")
 

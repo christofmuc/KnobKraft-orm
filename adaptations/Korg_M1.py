@@ -79,7 +79,7 @@ def nameFromDump(message):
 
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isEditBufferDump(message):
-        new_name_list = [ord(c) for c in new_name.ljust(10, " ")]
+        new_name_list = [ord(c) for c in new_name.ljust(10, " ")][:10]
         data = unescapeSysex(message[5:-1])
         return message[:5] + escapeSysex(new_name_list + data[10:]) + [0xf7]
     raise Exception("Can only rename program data dumps!")

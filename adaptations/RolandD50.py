@@ -444,7 +444,7 @@ class NonGenericRoland:
                     result.append(len(character_set)-1)
             return result
         else:
-            return [ord(c) for c in name.ljust(self.patch_name_length, " ")]
+            return [ord(c) for c in name.ljust(self.patch_name_length, " ")][:self.patch_name_length]
 
     @knobkraft_api
     def renamePatch(self, message, new_name) -> List[int]:
