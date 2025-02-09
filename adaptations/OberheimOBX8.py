@@ -40,7 +40,7 @@ sequential.GenericSequential(name="Oberheim OB-X8",
                              program_data_ids=[SINGLE_PROGRAM, COMBI_PROGRAM],
                              banks=8,
                              patches_per_bank=128,
-                             name_len=13,
+                             name_len=20,
                              name_info_function=name_info,
                              friendlyBankName=bankName
                              ).install(this_module)
