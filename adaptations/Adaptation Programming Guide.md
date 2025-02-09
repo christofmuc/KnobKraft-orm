@@ -113,7 +113,7 @@ It should return a list of banks, and each bank is described by a the following 
 
   * "bank" [int] - The number of the bank. Should be zero-based
   * "name" [str] - The friendly name of the bank
-  * "size" [int] - The number of items in this bank. This allows for banks of differenct sizes for one synth
+  * "size" [int] - The number of items in this bank. This allows for banks of different sizes for one synth
   * "type" [str] - A text describing the type of data in this bank. Could be "Patch", "Tone", "Song", "Rhythm" or whatever else is stored in banks. Will be displayed in the metadata.
   * "isROM" [bool] - Use this to indicate for later bank management functionality that the bank can be read, but not written to
 
