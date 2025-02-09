@@ -313,19 +313,8 @@ class NonGenericRoland:
         if self.isEditBufferDump(message) or self.isSingleProgramDump(message):
             # We need to poke the device ID and the edit buffer address into the messages
             msg_no = 0
-            split = knobkraft.sysex.splitSysexMessage(message)
-            if len(split) != len(self.edit_buffer.data_blocks):
-                addresses = set()
-                for s in split:
-                    command, address, data = self.parseRolandMessage(s)
-                    if tuple(address) in addresses:
-                        raise Exception(f"Duplicate address in edit buffer, invalid patch: {address}. Message: {knobkraft.syxToString(s)}")
-                    else:
-                        addresses.add(tuple(address))
-                raise Exception(f"Unknown address in edit buffer: {list(addresses)}")
-            else:
-                for m in split:
-                    command, address, data = self.parseRolandMessage(m)
+            for message in knobkraft.sysex.splitSysexMessage(message):
+                command, address, data = self.parseRolandMessage(message)
                 edit_buffer_address, _ = self.edit_buffer.address_and_size_for_sub_request(msg_no, 0x00)
                 editBuffer = editBuffer + self.buildRolandMessage(self.device_id, command_dt1, edit_buffer_address, data)
                 msg_no += 1
