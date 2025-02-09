@@ -74,7 +74,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Prophet-6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
 | Sequential | Take 5 | beta | adaptation | |
-| Sequential | Trigon-6 | beta | adaptation | |
+| Sequential | Trigon-6 | works | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
 | Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |
