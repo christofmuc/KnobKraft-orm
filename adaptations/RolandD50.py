@@ -94,6 +94,8 @@ class NonGenericRolandData:
     def address_and_size_for_sub_request(self, sub_request, sub_address) -> Tuple[List[int], List[int]]:
         if self.uses_consecutive_addresses:
             base_number = DataBlock.size_to_number(tuple(self.base_address))
+            if not (0 <= sub_request < len(self.data_blocks)):
+                raise Exception("Invalid subrequest index given")
             address = DataBlock.size_to_number(tuple(self.data_blocks[sub_request].address))
             multiplier = sub_address * self.size
             target_address = base_number + address + multiplier
@@ -236,6 +238,8 @@ class NonGenericRoland:
         return 4 + self._model_id_len
 
     def buildRolandMessage(self, device, command_id, address, data) -> List[int]:
+        if not all([0 <= d < 128 for d in data]):
+            raise Exception("Invalid data, uninitalized memory!")
         message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
         message[-2] = self.roland_checksum(message[self._checksum_start():-2])
         return message
@@ -429,7 +433,7 @@ class NonGenericRoland:
     def _asciiToRoland(self, name: str):
         if self.use_roland_character_set:
             result = []
-            for c in name.ljust(self.patch_name_length, " "):
+            for c in name[:self.patch_name_length].ljust(self.patch_name_length, " "):
                 found = False
                 for i in range(len(character_set)):
                     if character_set[i] == c:
@@ -570,6 +574,17 @@ def make_test_data():
         onemore = knobkraft.load_sysex("testData/Roland_D50/vibraphone edit buffer.syx", as_single_list=True)
         yield testing.ProgramTestData(message=onemore, name="Vibraphone        ")
 
+        testbank = knobkraft.load_sysex("testData/Roland_D50/testbank_d50.syx")
+        edit_buffer = []
+        for message in testbank:
+            if d_50.isPartOfEditBufferDump(message):
+                edit_buffer.extend(message)
+            else:
+                assert False, "Expected only edit buffer dumps here"
+            if d_50.isEditBufferDump(edit_buffer):
+                yield testing.ProgramTestData(message=edit_buffer)
+                edit_buffer.clear()
+
     def make_programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         patches = extractPatchesFromAllBankMessages(test_data.all_messages)
         prog0 = d_50.convertToProgramDump(11, patches[0], 12)
@@ -592,5 +607,6 @@ def make_test_data():
     return testing.TestData(sysex=R"testData/Roland_D50/Roland_D50_DIGITAL DREAMS.syx", edit_buffer_generator=make_patches,
                             program_generator=make_programs,
                             bank_generator=bankGenerator,
+                            banks_are_edit_buffers=True,
                             device_detect_call="f0 41 00 14 11 00 00 00 00 00 40 40 f7",
                             device_detect_reply=(patches[0], 0))
