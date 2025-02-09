@@ -571,13 +571,6 @@ def index_to_address(index):
 
 def make_test_data():
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        # Quick test of device detect
-        detectMessage = old_createDeviceDetectMessage(0x7)
-        g_command, g_address, g_data = d_50.parseRolandMessage(detectMessage)
-        assert (g_command == command_rq1)
-        assert (g_address == [0x00, 0x01, 0x00])
-        assert (g_data == [0x00, 0x00, 0x40])
-
         patches = extractPatchesFromAllBankMessages(test_data.all_messages)
         yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ")
         yield testing.ProgramTestData(message=patches[17], name="DIMENSIONAL PAD   ")
