@@ -61,7 +61,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
-| Roland | D-50 | in progress | adaptation | |
+| Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
