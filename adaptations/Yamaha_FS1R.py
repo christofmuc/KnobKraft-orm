@@ -3,8 +3,10 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import dataclasses
+import hashlib
 from copy import copy
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Dict
 
 import knobkraft
 import testing
@@ -14,25 +16,34 @@ YAMAHA_FS1R=0x5e
 SYSTEM_SETTINGS_ADDRESS=[0x00, 0x00, 0x00]
 PERFORMANCE_EDIT_BUFFER_ADDRESS=[0x10, 0x00, 0x00]
 PERFORMANCE_ADDRESS=[0x11, 0x00]  # Internal PERFORMANCE. Hi, med fixed, Lo is the number of the performance (0-127)
-VOICE_EDIT_BUFFFER_PART1=[0x40, 0x00, 0x00]
-VOICE_EDIT_BUFFFER_PART2=[0x41, 0x00, 0x00]
-VOICE_EDIT_BUFFFER_PART3=[0x42, 0x00, 0x00]
-VOICE_EDIT_BUFFFER_PART4=[0x43, 0x00, 0x00]
+VOICE_EDIT_BUFFER_PART1=[0x40, 0x00, 0x00]
+VOICE_EDIT_BUFFER_PART2=[0x41, 0x00, 0x00]
+VOICE_EDIT_BUFFER_PART3=[0x42, 0x00, 0x00]
+VOICE_EDIT_BUFFER_PART4=[0x43, 0x00, 0x00]
 VOICE_ADDRESS=[0x51, 0x00]  # Internal VOICE
 
 DEVICE_ID_DETECTED=0x00
 
 # Build an index structure to detect VOICE EDIT BUFFERS
 EDIT_BUFFER_ADDRESSES=set()
-EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFFER_PART1))
-EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFFER_PART2))
-EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFFER_PART3))
-EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFFER_PART4))
+EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFER_PART1))
+EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFER_PART2))
+EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFER_PART3))
+EDIT_BUFFER_ADDRESSES.add(tuple(VOICE_EDIT_BUFFER_PART4))
 EDIT_BUFFER_VOICE_ADDRESSES=copy(EDIT_BUFFER_ADDRESSES)
 EDIT_BUFFER_ADDRESSES.add(tuple(PERFORMANCE_EDIT_BUFFER_ADDRESS))
 
-CURRENT_PERFORMANCE_STRUCTURE: Optional[set] =None
-CURRENT_OPEN_VOICE_REQUESTS: Optional[set] =None
+
+@dataclasses.dataclass
+class VoiceReference:
+    part: int
+    bank: int
+    program: int
+    user: bool
+
+
+CURRENT_PERFORMANCE_STRUCTURE: Optional[List[VoiceReference]] = None
+CURRENT_OPEN_VOICE_REQUESTS: Optional[Set[int]] = None
 
 # class DataBlock:
 #     def __init__(self, address, size, name):
@@ -69,7 +80,7 @@ def name():
 
 def createDeviceDetectMessage(device_id):
     # Just send a request for the system settings address
-    # Use 0x30 as device_id base, just like SoundDiver
+    # We could also use 0x30 as device_id base, just like SoundDiver
     return buildRequest(device_id, 0x20, SYSTEM_SETTINGS_ADDRESS)
 
 
@@ -141,10 +152,10 @@ def renamePatch(message, new_name):
 def createEditBufferRequest(channel):
     # How do we request the Voices? Just send all requests at once?
     return buildRequest(channel, 0x20, PERFORMANCE_EDIT_BUFFER_ADDRESS) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART1) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART2) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART3) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFFER_PART4)
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART1) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART2) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART3) + \
+           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART4)
 
 
 def isPartOfEditBufferDump(message):
@@ -173,7 +184,7 @@ def convertToEditBuffer(channel, data):
         return data
     elif isSingleProgramDump(data):
         num_voices = 0
-        voice_addresses = [VOICE_EDIT_BUFFFER_PART1, VOICE_EDIT_BUFFFER_PART2, VOICE_EDIT_BUFFFER_PART3, VOICE_EDIT_BUFFFER_PART4]
+        voice_addresses = [VOICE_EDIT_BUFFER_PART1, VOICE_EDIT_BUFFER_PART2, VOICE_EDIT_BUFFER_PART3, VOICE_EDIT_BUFFER_PART4]
         result = []
         for sub in knobkraft.findSysexDelimiters(data):
             sub_message = copy(data[sub[0]:sub[1]])
@@ -198,27 +209,26 @@ def createProgramDumpRequest(channel, patch_no):
     raise Exception("Can only request 128 performances")
 
 
-def _extractReferencedUserVoices(performance_message, need_order = False) -> Union[set,list]:
-    if need_order:
-        result = []
-    else:
-        result = set()
+def _extractReferencedUserVoices(performance_message) -> List[VoiceReference]:
+    result = []
     performance_data = dataBlockFromMessage(performance_message)
     if len(performance_data) == 400:
         # Got a single data block with all messages
         part_start = 80 + 112
+        part = 0
         for part_index in range(part_start, part_start + 4 * 52, 52):
             part_bank = performance_data[part_index + 1]
             part_program = performance_data[part_index + 2]
-            if part_bank == 1:
-                # Assume this is a user part, not a preset
-                if need_order:
-                    result.append(part_program)
-                else:
-                    result.add(part_program)
+            # Assume this part_bank == 1 is a user part, not a preset
+            result.append(VoiceReference(part=part, bank=part_bank, program=part_program, user=part_bank==1))
+            part += 1
         return result
     else:
         raise Exception(f"Got performance data of unknown size: {len(performance_data)}")
+
+
+def _setOfUserVoices(voices: List[VoiceReference]):
+    return set([ref.program for ref in filter(lambda x: x.user, voices)])
 
 
 def isPartOfSingleProgramDump(message):
@@ -227,17 +237,24 @@ def isPartOfSingleProgramDump(message):
         address = addressFromMessage(message)
         if address[:2] == PERFORMANCE_ADDRESS:
             if CURRENT_PERFORMANCE_STRUCTURE is not None:
-                raise Exception("Program logic error, second performance found before the voices of the first!")
+                # This is a second performance before we got the voices, this is more likely a bank dump
+                return False
             CURRENT_PERFORMANCE_STRUCTURE = _extractReferencedUserVoices(message)
-            CURRENT_OPEN_VOICE_REQUESTS = copy(CURRENT_PERFORMANCE_STRUCTURE)
+            CURRENT_OPEN_VOICE_REQUESTS = _setOfUserVoices(CURRENT_PERFORMANCE_STRUCTURE)
         elif address[:2] == VOICE_ADDRESS:
+            if CURRENT_PERFORMANCE_STRUCTURE is None:
+                return False
             voice_no = address[2]
-            if voice_no not in CURRENT_PERFORMANCE_STRUCTURE:
+            found = False
+            for ref in CURRENT_PERFORMANCE_STRUCTURE:
+                if ref.program == voice_no:
+                    found = True
+            if not found:
                 # This is a voice, but not one of those we requested
                 return False
 
         # Now request the next voice
-        if len(CURRENT_PERFORMANCE_STRUCTURE) > 0:
+        if CURRENT_OPEN_VOICE_REQUESTS and len(CURRENT_OPEN_VOICE_REQUESTS) > 0:
             # Request the first of the user voices
             return True, buildRequest(DEVICE_ID_DETECTED, 0x20, VOICE_ADDRESS + [CURRENT_OPEN_VOICE_REQUESTS.pop()])
         else:
@@ -256,7 +273,7 @@ def isSingleProgramDump(data):
             if len(sub_message) > 8:
                 address = addressFromMessage(sub_message)
                 if address[:2] == PERFORMANCE_ADDRESS:
-                    voices_required = _extractReferencedUserVoices(sub_message)
+                    voices_required = _setOfUserVoices(_extractReferencedUserVoices(sub_message))
                 elif address[:2] == VOICE_ADDRESS:
                     voices_found.add(address[2])
 
@@ -272,22 +289,49 @@ def isSingleProgramDump(data):
 
 
 def convertToProgramDump(channel, message, program_number):
-    if isSingleProgramDump(message) or isEditBufferDump(message):
-        new_message = message[:2] + [DEVICE_ID_DETECTED & 0x0f] + message[3:8] + [program_number % 128] + message[9:]
-        if isVoice(message):
-            setAddress(new_message, VOICE_ADDRESS + [program_number & 0x7f])
-        elif isPerformance(message):
-            setAddress(new_message, PERFORMANCE_ADDRESS + [program_number & 0x7f])
-        return recalculateChecksum(new_message)
+    program_buffer = False
+    edit_buffer = isEditBufferDump(message)
+    if not edit_buffer:
+        program_buffer = isSingleProgramDump(message)
+    if program_buffer or edit_buffer:
+        voices = None
+        result = []
+        for sub in knobkraft.findSysexDelimiters(message):
+            sub_message = copy(message[sub[0]:sub[1]])
+            if isPerformance(sub_message):
+                voices = _extractReferencedUserVoices(sub_message)
+                setAddress(sub_message, PERFORMANCE_ADDRESS + [program_number & 0x7f])
+            elif isVoice(sub_message):
+                if voices is None:
+                    raise Exception("Need performance message before Voice message!")
+                if edit_buffer:
+                    part_no = addressFromMessage(sub_message)[0] - VOICE_EDIT_BUFFER_PART1[0]
+                    setAddress(sub_message, VOICE_ADDRESS + [voices[part_no].program])
+                    if not voices[part_no].user:
+                        raise Exception("Got Voice edit buffer for voice which is not a user voice. Where to store?")
+            else:
+                raise Exception("Got unexpected message which is neither voice nor performance!")
+            setDeviceId(sub_message, DEVICE_ID_DETECTED)
+            result.extend(recalculateChecksum(sub_message))
+        return result
     raise Exception("Can only convert single program dumps to program dumps")
 
 
-
-
-#def calculateFingerprint(message):
-#    for i in range(10):
-#        message[i] = 0
-#    return hashlib.md5(bytearray(message)).hexdigest()
+def calculateFingerprint(message):
+    if isEditBufferDump(message) or isSingleProgramDump(message):
+        data = []
+        for sub in knobkraft.findSysexDelimiters(message):
+            sub_message = message[sub[0]:sub[1]]
+            if isPerformance(sub_message):
+                # Erase the name
+                name_len = _nameLength(sub_message)
+                cleared = copy(dataBlockFromMessage(sub_message))
+                cleared[:name_len] = [0x00] * name_len
+                data.extend(cleared)
+            else:
+                data.extend(dataBlockFromMessage(sub_message))
+        return hashlib.md5(bytearray(data)).hexdigest()
+    raise Exception("Can fingerprint only edit buffer dumps or single program dumps")
 
 
 def isOwnSysex(message):
@@ -314,6 +358,10 @@ def addressFromMessage(message):
 
 def setAddress(message, address):
     message[6:9] = address
+
+
+def setDeviceId(message, deviceId):
+    message[2] = deviceId
 
 
 def isPerformance(message):
@@ -355,9 +403,25 @@ def buildRequest(device_id, device_id_base, address):
     return [0xf0, YAMAHA_ID, device_id_base | (device_id & 0x0f), YAMAHA_FS1R, address[0], address[1], address[2], 0xf7]
 
 
+def isPartOfBankDump(message):
+    return isOwnSysex(message) and len(message) > 8 and (isPerformance(message) or isVoice(message))
+
+
+def isBankDumpFinished(messages: List[List[int]]):
+    performances = 0
+    voices = 0
+    for message in messages:
+        if isPartOfBankDump(message):
+            if isPerformance(message):
+                performances += 1
+            elif isVoice(message):
+                voices += 1
+    return performances == 128 and voices == 128
+
+
 def extractPatchesFromAllBankMessages(messages):
     performances = []
-    voices = {}
+    voices:Dict[int, List[int]] = {}  # Map voice no to message representing that voice
     for message in messages:
         if isPerformance(message):
             performances.append(message)
@@ -376,11 +440,12 @@ def extractPatchesFromAllBankMessages(messages):
     # Now assemble the performances with their voices
     for performance in performances:
         referenced_voices = _extractReferencedUserVoices(performance)
-        for voice in referenced_voices:
-            if voice in voices:
-                performance.extend(voices[voice])
-            else:
-                print(f"Warning: Voice no {voice} referenced by patch '{nameFromDump(performance)}' not found in bank, performance incomplete")
+        for ref_voice in referenced_voices:
+            if ref_voice.user:
+                if ref_voice.program in voices:
+                    performance.extend(voices[ref_voice.program])
+                else:
+                    print(f"Warning: Voice no {ref_voice.program} referenced by patch '{nameFromDump(performance)}' not found in bank, performance incomplete")
     return performances
 
 
@@ -393,8 +458,11 @@ def make_test_data():
         for msg in track:
             if msg.type == "sysex":
                 program_data.append(msg.bytes())
+                assert isPartOfBankDump(msg.bytes())
     #message = knobkraft.stringToSyx("f0 43 00 5e 03 10 11 00 01 43 50 2d 37 30 20 50 47 20 20 20 20 00 00 01 00 75 40 18 00 00 00 01 00 07 68 00 00 00 00 00 00 00 02 00 00 00 00 00 40 01 01 01 01 01 01 00 00 00 01 00 02 00 04 00 08 20 00 20 00 00 00 00 00 19 1a 13 14 13 14 27 28 38 38 50 50 3c 50 40 40 00 0f 00 0a 00 09 00 18 00 2a 00 00 00 00 00 00 00 00 22 04 45 0a 40 00 00 05 00 2e 00 5c 00 0a 00 4a 00 14 00 40 00 32 00 40 00 00 00 00 00 00 00 1a 00 40 00 01 00 40 00 40 00 22 00 40 00 32 00 40 00 13 00 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 40 40 01 40 40 40 15 40 00 00 7f 46 0c 07 00 42 22 07 46 36 07 00 00 04 01 01 00 10 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 0d 08 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 00 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 03 f7")
+    assert isBankDumpFinished(program_data)
     programs = extractPatchesFromAllBankMessages(program_data)
+    assert len(programs) == 128
 
     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         pass
