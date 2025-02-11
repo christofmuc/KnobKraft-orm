@@ -4,7 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 from copy import copy
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import knobkraft
 import testing
@@ -156,15 +156,15 @@ def isPartOfEditBufferDump(message):
 
 def isEditBufferDump(data):
     messages = knobkraft.findSysexDelimiters(data)
-    if len(messages) >= 5:
+    if len(messages) > 0:
         messages_found = set()
         for message in messages:
-            sub_message = data[message[0], message[1]]
+            sub_message = data[message[0]: message[1]]
             if isOwnSysex(sub_message) and len(sub_message) > 8:
                 address = addressFromMessage(sub_message)
                 if tuple(address) in EDIT_BUFFER_ADDRESSES:
                     messages_found.add(tuple(address))
-        return len(messages_found) == 5
+        return len(messages_found) > 0
     return False
 
 
@@ -172,12 +172,19 @@ def convertToEditBuffer(channel, data):
     if isEditBufferDump(data):
         return data
     elif isSingleProgramDump(data):
-        program = copy(data)
-        if isVoice(data):
-            setAddress(program, VOICE_EDIT_BUFFFER_PART1)
-        elif isPerformance(data):
-            setAddress(program, PERFORMANCE_EDIT_BUFFER_ADDRESS)
-        return recalculateChecksum(program)
+        num_voices = 0
+        voice_addresses = [VOICE_EDIT_BUFFFER_PART1, VOICE_EDIT_BUFFFER_PART2, VOICE_EDIT_BUFFFER_PART3, VOICE_EDIT_BUFFFER_PART4]
+        result = []
+        for sub in knobkraft.findSysexDelimiters(data):
+            sub_message = copy(data[sub[0]:sub[1]])
+            if isPerformance(sub_message):
+                setAddress(sub_message, PERFORMANCE_EDIT_BUFFER_ADDRESS)
+            elif isVoice(sub_message):
+                setAddress(sub_message, voice_addresses[num_voices])
+                num_voices += 1
+            result.extend(recalculateChecksum(sub_message))
+        assert isEditBufferDump(result)
+        return result
     raise Exception("Can't convert to edit buffer dump!")
 
 
@@ -191,8 +198,11 @@ def createProgramDumpRequest(channel, patch_no):
     raise Exception("Can only request 128 performances")
 
 
-def _extractReferencedUserVoices(performance_message):
-    result = set()
+def _extractReferencedUserVoices(performance_message, need_order = False) -> Union[set,list]:
+    if need_order:
+        result = []
+    else:
+        result = set()
     performance_data = dataBlockFromMessage(performance_message)
     if len(performance_data) == 400:
         # Got a single data block with all messages
@@ -202,7 +212,10 @@ def _extractReferencedUserVoices(performance_message):
             part_program = performance_data[part_index + 2]
             if part_bank == 1:
                 # Assume this is a user part, not a preset
-                result.add(part_program)
+                if need_order:
+                    result.append(part_program)
+                else:
+                    result.add(part_program)
         return result
     else:
         raise Exception(f"Got performance data of unknown size: {len(performance_data)}")
