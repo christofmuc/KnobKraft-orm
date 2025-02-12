@@ -443,7 +443,7 @@ def extractPatchesFromAllBankMessages(messages):
     return performances
 
 
-def make_test_data():
+def convert_mid_to_syx():
     from mido import MidiFile
     mid = MidiFile("testData/Yamaha_FS1R/Vdfs1r01.mid")
     program_data = []
@@ -452,46 +452,30 @@ def make_test_data():
         for msg in track:
             if msg.type == "sysex":
                 program_data.append(msg.bytes())
-                assert isPartOfBankDump(msg.bytes())
-                assert len(knobkraft.findSysexDelimiters(msg.bytes())) == 1
-    #message = knobkraft.stringToSyx("f0 43 00 5e 03 10 11 00 01 43 50 2d 37 30 20 50 47 20 20 20 20 00 00 01 00 75 40 18 00 00 00 01 00 07 68 00 00 00 00 00 00 00 02 00 00 00 00 00 40 01 01 01 01 01 01 00 00 00 01 00 02 00 04 00 08 20 00 20 00 00 00 00 00 19 1a 13 14 13 14 27 28 38 38 50 50 3c 50 40 40 00 0f 00 0a 00 09 00 18 00 2a 00 00 00 00 00 00 00 00 22 04 45 0a 40 00 00 05 00 2e 00 5c 00 0a 00 4a 00 14 00 40 00 32 00 40 00 00 00 00 00 00 00 1a 00 40 00 01 00 40 00 40 00 22 00 40 00 32 00 40 00 13 00 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 40 40 01 40 40 40 15 40 00 00 7f 46 0c 07 00 42 22 07 46 36 07 00 00 04 01 01 00 10 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 0d 08 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 00 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 03 f7")
-    assert isBankDumpFinished(program_data)
-    programs = extractPatchesFromAllBankMessages(program_data)
-    assert len(programs) == 128
+    with open("testData/Yamaha_FS1R/Vdfs1r01.syx", "wb") as writeout:
+        ex = bytearray()
+        for data in program_data:
+            ex.extend(data)
+        writeout.write(ex)
 
-    single_dump = []
-    for message in program_data:
-        if isPartOfSingleProgramDump(message):
-            single_dump.extend(message)
+
+def make_test_data():
+    #message = knobkraft.stringToSyx("f0 43 00 5e 03 10 11 00 01 43 50 2d 37 30 20 50 47 20 20 20 20 00 00 01 00 75 40 18 00 00 00 01 00 07 68 00 00 00 00 00 00 00 02 00 00 00 00 00 40 01 01 01 01 01 01 00 00 00 01 00 02 00 04 00 08 20 00 20 00 00 00 00 00 19 1a 13 14 13 14 27 28 38 38 50 50 3c 50 40 40 00 0f 00 0a 00 09 00 18 00 2a 00 00 00 00 00 00 00 00 22 04 45 0a 40 00 00 05 00 2e 00 5c 00 0a 00 4a 00 14 00 40 00 32 00 40 00 00 00 00 00 00 00 1a 00 40 00 01 00 40 00 40 00 22 00 40 00 32 00 40 00 13 00 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 40 40 01 40 40 40 15 40 00 00 7f 46 0c 07 00 42 22 07 46 36 07 00 00 04 01 01 00 10 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 0d 08 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 00 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 03 f7")
 
     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        pass
-        #edit_buffer = []
-        #for msg in program_data:
-        #    if isPartOfEditBufferDump(msg):
-        #        edit_buffer.append(msg)
-        #    if isEditBufferDump(edit_buffer):
-        #        yield testing.ProgramTestData(message=edit_buffer)
-        #        edit_buffer = []
-        #edit1 = convertToEditBuffer(0x01, message)
-        #edit1 = convertToEditBuffer(0x01, program_data[0])
-        #yield testing.ProgramTestData(message=edit1, name="CP-70 PG    ", rename_name="Piano 2   ")
-        #edit2 = convertToEditBuffer(0x01, program_data[255])
-        #yield testing.ProgramTestData(message=edit2, name="Sitar     ", target_no=244, rename_name="Piano 2   ")
+        programs = extractPatchesFromAllBankMessages(test_data.all_messages)
+        yield testing.ProgramTestData(message=convertToEditBuffer(12, programs[0]), name="HARDPNO PF  ", rename_name="Piano 2   ", number=0, friendly_number="Bank3-2")
 
     def program_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        #yield testing.ProgramTestData(programs[0], name="nknonwsfsdf")
-        #program_buffer = []
-        #for msg in programs:
-        #    if isPartOfSingleProgramDump(msg):
-        #        program_buffer.append(msg)
-        #    if isSingleProgramDump(program_buffer):
-        #        yield testing.ProgramTestData(message=program_buffer)
-        #        program_buffer = []
+        assert isBankDumpFinished(test_data.all_messages)
+        programs = extractPatchesFromAllBankMessages(test_data.all_messages)
+        assert len(programs) == 128
         yield testing.ProgramTestData(message=programs[0], name="HARDPNO PF  ", rename_name="Piano 2   ", number=0, friendly_number="Bank3-2")
         yield testing.ProgramTestData(message=programs[127], name="Sitar       ", rename_name="Piano 2   ", number=127, friendly_number="Bank3-2")
 
-    return testing.TestData(program_generator=program_buffers, edit_buffer_generator=edit_buffers,
+    return testing.TestData(sysex="testData/Yamaha_FS1R/Vdfs1r01.syx",
+                            program_generator=program_buffers,
+                            edit_buffer_generator=edit_buffers,
                             device_detect_call="F0 43 20 5E 00 00 00 F7",
                             device_detect_reply=("f0 43 00 5e 00 4c 00 00 00 40 00 00 00 00 00 40 02 01 00 00 00 00 00 00 00 01 00 01 01 01 01 10 11 12 13 14 15 16 0d 04 02 50 51 3c 7f 3c 7f 3c 7f 3c 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 06 f7", 0x00))
 
