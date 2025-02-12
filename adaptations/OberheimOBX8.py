@@ -36,11 +36,12 @@ def name_info(message: List[int]) -> Tuple[int, int]:
 
 sequential.GenericSequential(name="Oberheim OB-X8",
                              manufacturer=0x10,  # Oberheim, not Sequential
+                             id_list=[0x58, 0x59],  # 0x58 the synth, 0x59 the module
                              device_id=0x58,
                              program_data_ids=[SINGLE_PROGRAM, COMBI_PROGRAM],
                              banks=8,
                              patches_per_bank=128,
-                             name_len=13,
+                             name_len=20,
                              name_info_function=name_info,
                              friendlyBankName=bankName
                              ).install(this_module)
@@ -57,4 +58,8 @@ def make_test_data():
 
         yield testing.ProgramTestData(message=data.all_messages[0], name="Jersey Girl B", number=22)
 
-    return testing.TestData(sysex="testData/Oberheim_OBX8/OBx8-prest.syx", program_generator=programs, friendly_bank_name=(5, "User"))
+    return testing.TestData(sysex="testData/Oberheim_OBX8/OBx8-prest.syx",
+                            program_generator=programs,
+                            friendly_bank_name=(5, "User"),
+                            device_detect_call="f0 7e 00 06 01 f7",   # The test tests with channel 0x00, even if in real life we will use 0x7f
+                            device_detect_reply=("f0 7e 7f 06 02 10 59 01 00 00 02 00 00 f7", 1))

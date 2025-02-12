@@ -1,5 +1,5 @@
 #
-#   Copyright (c) 2021 Christof Ruch. All rights reserved.
+#   Copyright (c) 2021-2025 Christof Ruch. All rights reserved.
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
@@ -9,11 +9,14 @@ import hashlib
 #
 # Evolver    - 0b00100000 0x20 (same as Poly Evolver and all other Evolvers)
 # Prophet 08 - 0b00100011 0x23 or 0b00100100 0x24 for special edition
+# Prophet 08 module       0x24
 # Mopho      - 0x25 (used in f0f7)
 # Tetra      - 0b00100110 0x26
 # Mopho KB   - 0b00100111 0x27 (Mopho Keyboard and Mopho SE) or 0b00101001 0x29 (Mopho X4)
+# Mopho X4                0x29
 # Tempest    - 0x28 (according to Sequential forum)
 # Prophet 12 - 0b00101010 0x2a or 0b00101011 0x2b for module/special edition?
+# Prophet 12 module       0x2b
 # Pro 2      - 0b00101100 0x2c
 # Prophet 6  - 0b00101101 0x2d
 # OB 6       - 0b00101110 0x2e
@@ -21,9 +24,11 @@ import hashlib
 # Prophet X  - 0b00110000 0x30
 # Pro 3      - 0b00110001 0x31
 # Prophet 5  - 0b00110010 0x32 (this is the Rev 4 of course) or 0b00110011 0x33 (Desktop module?)
+# Prophet 5 module        0x33
 # Take 5     -            0x35 (they left 0x34 empty - maybe the desktop Prophet 5 and...?)
 # Trigon-6   - 0b00111001 0x39 (the manual is not updated but uses the Prophet 6 ID)
-# OB-X8      -            0x58 (the manual is not updated, see https://forum.sequential.com/index.php?topic=8073
+# OB-X8      -            0x58 (the manual is not updated, see https://forum.sequential.com/index.php?topic=8073)
+# OB-X8 module            0x59
 # Teo-5      - 0b01011010 0x5a (the manual is not updated but uses the Take 5 ID) - this also additionally uses the MIDI ID for Oberheim, 0x10
 from typing import List, Optional, Callable, Tuple
 

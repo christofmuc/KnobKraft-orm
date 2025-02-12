@@ -61,7 +61,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
-| Roland | D-50 | in progress | adaptation | |
+| Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
@@ -74,7 +74,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Prophet-6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
 | Sequential | Take 5 | beta | adaptation | |
-| Sequential | Trigon-6 | beta | adaptation | |
+| Sequential | Trigon-6 | works | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
 | Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |

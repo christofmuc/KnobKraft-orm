@@ -71,6 +71,7 @@ class TestData:
     device_detect_reply: Optional[Tuple[MidiMessageInitializer, int]] = None
     friendly_bank_name: Optional[Tuple[int, str]] = None
     convert_to_edit_buffer_produces_program_dump: bool = False
+    banks_are_edit_buffers: bool = False
     can_convert_program_to_edit_buffer: bool = True
     can_convert_edit_buffer_to_program: bool = True
     rename_name: Optional[str] = None
