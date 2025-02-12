@@ -45,34 +45,6 @@ class VoiceReference:
 CURRENT_PERFORMANCE_STRUCTURE: Optional[List[VoiceReference]] = None
 CURRENT_OPEN_VOICE_REQUESTS: Optional[Set[int]] = None
 
-# class DataBlock:
-#     def __init__(self, address, size, name):
-#         pass
-#
-# fs1r_performance_data = [DataBlock((0x10, 0x00, 0x00), 80, "Performance Common"), # The first 12 bytes are the name
-#                          DataBlock((0x10, 0x00, 0x50), 112, "Effect"),
-#                          DataBlock((0x30, 0x00, 0x00), 52, "Part 1"),
-#                          DataBlock((0x31, 0x00, 0x00), 52, "Part 2"),
-#                          DataBlock((0x32, 0x00, 0x00), 52, "Part 3"),
-#                          DataBlock((0x33, 0x00, 0x00), 52, "Part 4")]
-#
-# fs1_all_performance_data = [DataBlock((0x11, 0x00, 0x00), 400, "Performance")]
-#
-#
-# fs1r_voice_data = [DataBlock((0x40, 0x00, 0x00), 112, "Voice Common")] + \
-#                   [DataBlock((0x60, op, 0x00), 35, "Operator 1 Voiced") for op in range(8)] + \
-#                   [DataBlock((0x60, op, 0x23), 27, "Operator 1 Non-Voiced") for op in range(8)] + \
-#                   [DataBlock((0x61, op, 0x00), 35, "Operator 2 Voiced") for op in range(8)] + \
-#                   [DataBlock((0x61, op, 0x23), 27, "Operator 2 Non-Voiced") for op in range(8)] + \
-#                   [DataBlock((0x62, op, 0x00), 35, "Operator 3 Voiced") for op in range(8)] + \
-#                   [DataBlock((0x62, op, 0x23), 27, "Operator 3 Non-Voiced") for op in range(8)] + \
-#                   [DataBlock((0x63, op, 0x00), 35, "Operator 4 Voiced") for op in range(8)] + \
-#                   [DataBlock((0x64, op, 0x23), 27, "Operator 4 Non-Voiced") for op in range(8)]
-#
-# fs1r_fseq_data = [DataBlock((0x70, 0x00, 0x00), 0x00, "Fseq parameter")]  # 8 bytes of name at the start, byte count not used in here
-#
-# fs1r_system_data = [DataBlock((0x00, 0x00, 0x00), 0x4c, "System Parameter")]
-
 
 def name():
     return "Yamaha FS1R"
@@ -89,7 +61,7 @@ def needsChannelSpecificDetection():
 
 
 def deviceDetectWaitMilliseconds():
-    return 500
+    return 700
 
 
 def channelIfValidDeviceResponse(message):
@@ -150,7 +122,7 @@ def renamePatch(message, new_name):
 
 
 def createEditBufferRequest(channel):
-    # How do we request the Voices? Just send all requests at once?
+    # Just send all requests at once?
     return buildRequest(channel, 0x20, PERFORMANCE_EDIT_BUFFER_ADDRESS) + \
            buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART1) + \
            buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART2) + \
@@ -183,17 +155,28 @@ def convertToEditBuffer(channel, data):
     if isEditBufferDump(data):
         return data
     elif isSingleProgramDump(data):
-        num_voices = 0
         voice_addresses = [VOICE_EDIT_BUFFER_PART1, VOICE_EDIT_BUFFER_PART2, VOICE_EDIT_BUFFER_PART3, VOICE_EDIT_BUFFER_PART4]
         result = []
+        voice_structure = None
+        user_voices: Dict[int, List[int]] = {}
         for sub in knobkraft.findSysexDelimiters(data):
             sub_message = copy(data[sub[0]:sub[1]])
             if isPerformance(sub_message):
+                voice_structure = _extractReferencedUserVoices(sub_message)
                 setAddress(sub_message, PERFORMANCE_EDIT_BUFFER_ADDRESS)
+                result.extend(recalculateChecksum(sub_message))
             elif isVoice(sub_message):
-                setAddress(sub_message, voice_addresses[num_voices])
-                num_voices += 1
-            result.extend(recalculateChecksum(sub_message))
+                voice_address = addressFromMessage(sub_message)
+                assert voice_address[:2] == VOICE_ADDRESS
+                user_voices[voice_address[2]] = sub_message
+
+        for voice in voice_structure:
+            if voice.user:
+                if voice.program in user_voices:
+                    voice_message = copy(user_voices[voice.program])
+                    setAddress(voice_message, voice_addresses[voice.part])
+                    result.extend(recalculateChecksum(voice_message))
+
         assert isEditBufferDump(result)
         return result
     raise Exception("Can't convert to edit buffer dump!")
@@ -220,7 +203,7 @@ def _extractReferencedUserVoices(performance_message) -> List[VoiceReference]:
             part_bank = performance_data[part_index + 1]
             part_program = performance_data[part_index + 2]
             # Assume this part_bank == 1 is a user part, not a preset
-            result.append(VoiceReference(part=part, bank=part_bank, program=part_program, user=part_bank==1))
+            result.append(VoiceReference(part=part, bank=part_bank, program=part_program, user=True if part_bank==1 else False))
             part += 1
         return result
     else:
@@ -374,14 +357,16 @@ def isVoice(message):
 
 def dataBlockFromMessage(message):
     if isOwnSysex(message):
+        end_of_message = knobkraft.findSysexDelimiters(message, 1)[0]
+        sub_message = message[end_of_message[0]:end_of_message[1]]
         data_len = message[4] << 7 | message[5]
-        if len(message) == data_len + 11:
+        if len(sub_message) == data_len + 11:
             # The Check-sum is the value that results in a value of 0 for the
             # lower 7 bits when the Model ID, Start Address, Data and Check sum itself are added.
-            checksum_block = message[0x04:-1]
+            checksum_block = sub_message[0x04:-1]
             if (sum(checksum_block) & 0x7f) == 0:
                 # return "Data" block
-                data_block =  message[0x09:-2]
+                data_block =  sub_message[0x09:-2]
                 assert len(data_block) == data_len
                 return data_block
     raise Exception("Got corrupt data block")
@@ -424,7 +409,7 @@ def extractPatchesFromAllBankMessages(messages):
     voices:Dict[int, List[int]] = {}  # Map voice no to message representing that voice
     for message in messages:
         if isPerformance(message):
-            performances.append(message)
+            performances.append(copy(message))
         elif isVoice(message):
             address = addressFromMessage(message)
             if tuple(address[:2]) in EDIT_BUFFER_VOICE_ADDRESSES:
@@ -435,17 +420,26 @@ def extractPatchesFromAllBankMessages(messages):
                 if voice_no in voices:
                     print(f"Warning, found voice no {voice_no} more than once in bank dump, no way to import, ignoring second message")
                 else:
-                    voices[voice_no] = message
+                    voices[voice_no] = copy(message)
 
     # Now assemble the performances with their voices
+    used_voices = set()
+    all_voices = set(range(128))
     for performance in performances:
         referenced_voices = _extractReferencedUserVoices(performance)
+        voices_added = set()  # Use this to make sure we're not adding the same voice twice
         for ref_voice in referenced_voices:
             if ref_voice.user:
                 if ref_voice.program in voices:
-                    performance.extend(voices[ref_voice.program])
+                    if ref_voice.program not in voices_added:
+                        performance.extend(voices[ref_voice.program])
+                        voices_added.add(ref_voice.program)
                 else:
                     print(f"Warning: Voice no {ref_voice.program} referenced by patch '{nameFromDump(performance)}' not found in bank, performance incomplete")
+        used_voices = used_voices.union(voices_added)
+
+    if len(all_voices.symmetric_difference(used_voices)) > 0:
+        print(f"Unused voices in this bank ignored. Voices [{all_voices.symmetric_difference(used_voices)}]")
     return performances
 
 
@@ -459,10 +453,16 @@ def make_test_data():
             if msg.type == "sysex":
                 program_data.append(msg.bytes())
                 assert isPartOfBankDump(msg.bytes())
+                assert len(knobkraft.findSysexDelimiters(msg.bytes())) == 1
     #message = knobkraft.stringToSyx("f0 43 00 5e 03 10 11 00 01 43 50 2d 37 30 20 50 47 20 20 20 20 00 00 01 00 75 40 18 00 00 00 01 00 07 68 00 00 00 00 00 00 00 02 00 00 00 00 00 40 01 01 01 01 01 01 00 00 00 01 00 02 00 04 00 08 20 00 20 00 00 00 00 00 19 1a 13 14 13 14 27 28 38 38 50 50 3c 50 40 40 00 0f 00 0a 00 09 00 18 00 2a 00 00 00 00 00 00 00 00 22 04 45 0a 40 00 00 05 00 2e 00 5c 00 0a 00 4a 00 14 00 40 00 32 00 40 00 00 00 00 00 00 00 1a 00 40 00 01 00 40 00 40 00 22 00 40 00 32 00 40 00 13 00 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 40 40 01 40 40 40 15 40 00 00 7f 46 0c 07 00 42 22 07 46 36 07 00 00 04 01 01 00 10 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 0d 08 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 00 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 04 01 00 11 7f 01 00 00 18 40 40 7f 40 40 40 00 7f 7f 00 28 00 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 02 32 42 3e 32 00 01 7f 00 01 40 40 00 00 00 00 03 f7")
     assert isBankDumpFinished(program_data)
     programs = extractPatchesFromAllBankMessages(program_data)
     assert len(programs) == 128
+
+    single_dump = []
+    for message in program_data:
+        if isPartOfSingleProgramDump(message):
+            single_dump.extend(message)
 
     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         pass
