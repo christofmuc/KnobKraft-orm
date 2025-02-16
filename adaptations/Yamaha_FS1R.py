@@ -42,10 +42,6 @@ class VoiceReference:
     user: bool
 
 
-CURRENT_PERFORMANCE_STRUCTURE: Optional[List[VoiceReference]] = None
-CURRENT_OPEN_VOICE_REQUESTS: Optional[Set[int]] = None
-
-
 def name():
     return "Yamaha FS1R"
 
@@ -122,18 +118,24 @@ def renamePatch(message, new_name):
 
 
 def createEditBufferRequest(channel):
-    # Just send all requests at once?
-    return buildRequest(channel, 0x20, PERFORMANCE_EDIT_BUFFER_ADDRESS) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART1) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART2) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART3) + \
-           buildRequest(channel, 0x20, VOICE_EDIT_BUFFER_PART4)
+    # Just send a request for the performance, the voice parts will be requested on reception of the performance message
+    return buildRequest(channel, 0x20, PERFORMANCE_EDIT_BUFFER_ADDRESS)
 
 
 def isPartOfEditBufferDump(message):
     if isOwnSysex(message) and len(message) > 8:
         address = addressFromMessage(message)
-        return tuple(address) in EDIT_BUFFER_ADDRESSES
+        if address == PERFORMANCE_EDIT_BUFFER_ADDRESS:
+            user_voices = _listOfUserParts(_extractReferencedUserVoices(message))
+            device_id = message[2] & 0x0f
+            requests = [buildRequest(device_id, 0x20, [VOICE_EDIT_BUFFER_PART1[0] + part] + VOICE_EDIT_BUFFER_PART1[1:]) for part in user_voices]
+            if len(requests) > 0:
+                return True, [x for message in requests for x in message]
+            else:
+                return True
+        else:
+            # Must be a VOICE message to be included in the edit buffer
+            return tuple(address) in EDIT_BUFFER_ADDRESSES
     return False
 
 
@@ -141,13 +143,18 @@ def isEditBufferDump(data):
     messages = knobkraft.findSysexDelimiters(data)
     if len(messages) > 0:
         messages_found = set()
-        for message in messages:
-            sub_message = data[message[0]: message[1]]
+        user_voices = set()
+        for start, end in messages:
+            sub_message = data[start:end]
             if isOwnSysex(sub_message) and len(sub_message) > 8:
                 address = addressFromMessage(sub_message)
-                if tuple(address) in EDIT_BUFFER_ADDRESSES:
+                if address == PERFORMANCE_EDIT_BUFFER_ADDRESS:
                     messages_found.add(tuple(address))
-        return len(messages_found) > 0
+                    user_voices = set(_listOfUserParts(_extractReferencedUserVoices(sub_message)))
+                elif tuple(address) in EDIT_BUFFER_VOICE_ADDRESSES:
+                    part = address[0] - VOICE_EDIT_BUFFER_PART1[0]
+                    user_voices.remove(part)
+        return len(messages_found) > 0 and len(user_voices) == 0
     return False
 
 
@@ -210,39 +217,28 @@ def _extractReferencedUserVoices(performance_message) -> List[VoiceReference]:
         raise Exception(f"Got performance data of unknown size: {len(performance_data)}")
 
 
-def _setOfUserVoices(voices: List[VoiceReference]):
+def _setOfUserVoices(voices: List[VoiceReference]) -> Set[int]:
     return set([ref.program for ref in filter(lambda x: x.user, voices)])
 
 
+def _listOfUserParts(voices: List[VoiceReference]) -> Set[int]:
+    return set([ref.part for ref in filter(lambda x: x.user, voices)])
+
+
 def isPartOfSingleProgramDump(message):
-    global CURRENT_PERFORMANCE_STRUCTURE, CURRENT_OPEN_VOICE_REQUESTS
     if isOwnSysex(message) and len(message) > 8:
         address = addressFromMessage(message)
         if address[:2] == PERFORMANCE_ADDRESS:
-            if CURRENT_PERFORMANCE_STRUCTURE is not None:
-                # This is a second performance before we got the voices, this is more likely a bank dump
-                return False
-            CURRENT_PERFORMANCE_STRUCTURE = _extractReferencedUserVoices(message)
-            CURRENT_OPEN_VOICE_REQUESTS = _setOfUserVoices(CURRENT_PERFORMANCE_STRUCTURE)
-        elif address[:2] == VOICE_ADDRESS:
-            if CURRENT_PERFORMANCE_STRUCTURE is None:
-                return False
-            voice_no = address[2]
-            found = False
-            for ref in CURRENT_PERFORMANCE_STRUCTURE:
-                if ref.program == voice_no:
-                    found = True
-            if not found:
-                # This is a voice, but not one of those we requested
-                return False
-
-        # Now request the next voice
-        if CURRENT_OPEN_VOICE_REQUESTS and len(CURRENT_OPEN_VOICE_REQUESTS) > 0:
-            # Request the first of the user voices
-            return True, buildRequest(DEVICE_ID_DETECTED, 0x20, VOICE_ADDRESS + [CURRENT_OPEN_VOICE_REQUESTS.pop()])
+            user_voices = _setOfUserVoices(_extractReferencedUserVoices(message))
+            device_id = message[2] & 0x0f
+            requests = [buildRequest(device_id, 0x20, VOICE_ADDRESS + [program]) for program in user_voices]
+            if len(requests) > 0:
+                return True, [x for message in requests for x in message]
+            else:
+                return True
         else:
-            return True
-
+            # Must be a VOICE message
+            return address[:2] == VOICE_ADDRESS
     return False
 
 
@@ -457,6 +453,26 @@ def convert_mid_to_syx():
         for data in program_data:
             ex.extend(data)
         writeout.write(ex)
+
+
+def test_load_dump():
+    all_messages = knobkraft.load_sysex("testData/Yamaha_FS1R/fs1r.syx")
+    program = []
+    createProgramDumpRequest(1, 0)
+    count = 0
+    for m in all_messages:
+        valid = isPartOfSingleProgramDump(m)
+        if isinstance(valid, tuple):
+            print(f"Got request message generated!: {valid[1]}")
+            program.extend(m)
+        elif valid:
+            program.extend(m)
+        if isSingleProgramDump(program):
+            print(f"Got full program: {nameFromDump(program)}")
+            program = []
+            count += 1
+            createProgramDumpRequest(1, 0)
+    assert count == 128
 
 
 def make_test_data():
