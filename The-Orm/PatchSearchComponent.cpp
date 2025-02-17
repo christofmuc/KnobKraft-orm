@@ -30,6 +30,7 @@ namespace {
 		{ "Name", static_cast<int>(PatchButtonInfo::NameDisplay) & static_cast<int>(PatchButtonInfo::CenterMask)},
 		{ "Program #", static_cast<int>(PatchButtonInfo::ProgramDisplay)},
 		{ "Layers and #", static_cast<int>(PatchButtonInfo::LayerDisplay)},
+		{ "Name and author", static_cast<int>(PatchButtonInfo::NameAuthorDisplay)},
 	};
 
 	// A little helper
