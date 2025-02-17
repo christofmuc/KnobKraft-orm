@@ -34,6 +34,7 @@ public:
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
+	void saveToDatabase();
 	void refresh();
 	bool isUserBank();
 	void showInfoIfRequired();
@@ -47,11 +48,7 @@ private:
 	Label bankNameAndDate_;
 	Label modified_;
 	TextButton resyncButton_;
-	TextButton saveButton_;
 	TextButton sendButton_;
 	TextButton exportButton_;
 	std::unique_ptr<VerticalPatchButtonList> bankList_;
-
-	// Use this to store potentially modified banks should the user switch back and forth
-	std::map<std::string, std::shared_ptr<midikraft::SynthBank>> temporaryBanks_;
 };
