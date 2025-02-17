@@ -240,6 +240,8 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	metaDataValues_.back()->setEnabled(false);
 
 	// More editable data
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Author", "Meta data", patch->author(), 256, false));
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Info", "Meta data", patch->info(), 256, false));
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Comment", "Meta data", patch->comment(), 2048, true));
 	
 	// We need to learn about updates
@@ -290,6 +292,22 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 		else if (property->name() == "Comment" && value.refersToSameSourceAs(property->value())) {
 			if (currentPatch_) {
 				currentPatch_->setComment(value.getValue().toString().toStdString());
+				setCurrentPatch(currentPatch_);
+				favoriteHandler_(currentPatch_);
+				return;
+			}
+		}
+		else if (property->name() == "Author" && value.refersToSameSourceAs(property->value())) {
+			if (currentPatch_) {
+				currentPatch_->setAuthor(value.getValue().toString().toStdString());
+				setCurrentPatch(currentPatch_);
+				favoriteHandler_(currentPatch_);
+				return;
+			}
+		}
+		else if (property->name() == "Info" && value.refersToSameSourceAs(property->value())) {
+			if (currentPatch_) {
+				currentPatch_->setInfo(value.getValue().toString().toStdString());
 				setCurrentPatch(currentPatch_);
 				favoriteHandler_(currentPatch_);
 				return;
