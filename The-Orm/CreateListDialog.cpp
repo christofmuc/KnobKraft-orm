@@ -15,7 +15,7 @@
 std::map<int, std::string> bankLookup(std::shared_ptr<midikraft::Synth> synth)
 {
 	std::map<int, std::string> result;
-	auto desc = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(synth);
+	auto desc = synth->getCapability<midikraft::HasBankDescriptorsCapability>();
 	if (desc) {
 		int i = 0;
 		for (auto const& d : desc->bankDescriptors())
@@ -27,7 +27,7 @@ std::map<int, std::string> bankLookup(std::shared_ptr<midikraft::Synth> synth)
 		}
 	}
 	else {
-		auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
+		auto banks = synth->getCapability<midikraft::HasBanksCapability>();
 		if (banks) {
 			for (int i = 0; i < banks->numberOfBanks(); i++)
 			{

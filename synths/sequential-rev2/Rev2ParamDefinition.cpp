@@ -126,7 +126,7 @@ namespace midikraft {
 
 	std::vector<MidiMessage> Rev2ParamDefinition::setValueMessages(std::shared_ptr<DataFile> const patch, Synth const *synth) const
 	{
-		auto midiLocation = midikraft::Capability::hasCapability<MidiLocationCapability const>(synth);
+		auto midiLocation = synth->getCapability<MidiLocationCapability const>();
 		if (midiLocation) {
 			int nrpnNumberToUse = number_ + (targetLayer_ == 1 ? kNRPNStartLayerB : 0);
 			switch (type()) {

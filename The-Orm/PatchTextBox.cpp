@@ -65,7 +65,7 @@ void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
 	if (patch) {
 		// If there is detailed parameter information, also show the second option
 		if (showParams_) {
-			auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
+			auto parameterDetails = patch->patch()->getCapability<midikraft::DetailedParametersCapability>();
 			if (parameterDetails) {
 				textBased_.setVisible(true);
 			}
@@ -169,12 +169,12 @@ std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch
 	std::string result;
 
 	int numLayers = 1;
-	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch);
+	auto layers = patch->getCapability<midikraft::LayeredPatchCapability>();
 	if (layers) {
 		numLayers = layers->numberOfLayers();
 	}
 
-	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch);
+	auto parameterDetails = patch->getCapability<midikraft::DetailedParametersCapability>();
 
 	if (parameterDetails) {
 		for (int layer = 0; layer < numLayers; layer++) {
@@ -184,13 +184,13 @@ std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch
 			}
 			for (auto param : parameterDetails->allParameterDefinitions()) {
 				if (layers) {
-					auto multiLayerParam = midikraft::Capability::hasCapability<midikraft::SynthMultiLayerParameterCapability>(param);
+					auto multiLayerParam = param->getCapability<midikraft::SynthMultiLayerParameterCapability>();
 					jassert(multiLayerParam);
 					if (multiLayerParam) {
 						multiLayerParam->setSourceLayer(layer);
 					}
 				}
-				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
+				auto activeCheck = param->getCapability<midikraft::SynthParameterActiveDetectionCapability>();
 				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
 					result = result + fmt::format("{}: {}\n",param->description(), param->valueInPatchToText(*patch));
 				}

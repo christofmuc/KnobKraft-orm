@@ -85,7 +85,7 @@ namespace midikraft {
 	int Matrix1000Patch::value(SynthParameterDefinition const &param) const
 	{
 		int result;
-		auto intDefinition = midikraft::Capability::hasCapability<SynthIntParameterCapability const>(&param);
+		auto intDefinition = param.getCapability<SynthIntParameterCapability>();
 		if (intDefinition && intDefinition->valueInPatch(*this, result)) {
 			return result;
 		}
@@ -101,7 +101,7 @@ namespace midikraft {
 	SynthParameterDefinition const & Matrix1000Patch::paramBySysexIndex(int sysexIndex) const 
 	{
 		for (auto param : Matrix1000ParamDefinition::allDefinitions) {
-			auto intParam = midikraft::Capability::hasCapability<SynthIntParameterCapability>(param);
+			auto intParam = param->getCapability<SynthIntParameterCapability>();
 			if (intParam && intParam->sysexIndex() == sysexIndex) {
 				//! TODO- this is a bad way to address the parameters, as this is not uniquely defined
 				return *param;
@@ -113,7 +113,7 @@ namespace midikraft {
 	bool Matrix1000Patch::paramActive(Matrix1000Param id) const
 	{
 		auto &param = Matrix1000ParamDefinition::param(id);
-		auto activeDefinition = midikraft::Capability::hasCapability<SynthParameterActiveDetectionCapability const>(&param);
+		auto activeDefinition = param.getCapability<SynthParameterActiveDetectionCapability const>();
 		return !activeDefinition || activeDefinition->isActive(this);
 	}
 

@@ -6,6 +6,8 @@
 
 #include "GenericAdaptation.h"
 
+#include "Capability.h"
+
 #include "Patch.h"
 #include "Logger.h"
 #include "Sysex.h"
@@ -141,12 +143,6 @@ namespace knobkraft {
 	GenericAdaptation::GenericAdaptation(std::string const& pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
 		py::gil_scoped_acquire acquire;
-		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
-		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
-		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
-		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
-		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
-		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -160,6 +156,7 @@ namespace knobkraft {
 			}*/
 			adaptation_module = py::module::import(filepath_.c_str());
 			checkForPythonOutputAndLog();
+			registerCapabilities();
 		}
 		catch (py::error_already_set& ex) {
 			spdlog::error("Adaptation: Failure loading python module {}: {}", pythonModuleFilePath, ex.what());
@@ -175,11 +172,36 @@ namespace knobkraft {
 	GenericAdaptation::GenericAdaptation(pybind11::module adaptationModule)
 	{
 		py::gil_scoped_acquire acquire;
-		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
-		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
-		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
-		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
 		adaptation_module = adaptationModule;
+		registerCapabilities();
+	}
+
+	void GenericAdaptation::registerCapabilities()
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kIsEditBufferDump) && pythonModuleHasFunction(kCreateEditBufferRequest) && pythonModuleHasFunction(kConvertToEditBuffer)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::EditBufferCapability>(this, new GenericEditBufferCapability(this));
+		}
+
+		if (pythonModuleHasFunction(kIsSingleProgramDump) && pythonModuleHasFunction(kCreateProgramDumpRequest) && pythonModuleHasFunction(kConvertToProgramDump)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::ProgramDumpCabability>(this, new GenericProgramDumpCapability(this));
+		}
+
+		if ((pythonModuleHasFunction(kExtractPatchesFromBank) || pythonModuleHasFunction(kExtractPatchesFromAllBankMessages)) && pythonModuleHasFunction(kIsPartOfBankDump) && pythonModuleHasFunction(kIsBankDumpFinished)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::BankDumpCapability>(this, new GenericBankDumpCapability(this));
+		}
+	
+		if (pythonModuleHasFunction(kCreateBankDumpRequest)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::BankDumpRequestCapability>(this, new GenericBankDumpRequestCapability(this));
+		}
+
+		if (pythonModuleHasFunction(kNumberOfBanks) && pythonModuleHasFunction(kNumberOfPatchesPerBank)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::HasBanksCapability>(this, new GenericHasBanksCapability(this));
+		}
+
+		if (pythonModuleHasFunction(kBankDescriptors)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::HasBankDescriptorsCapability>(this, new GenericHasBankDescriptorsCapability(this));
+		}
 	}
 
 	GenericAdaptation::~GenericAdaptation()
@@ -823,135 +845,6 @@ namespace knobkraft {
 		//TODO this could be accelerated
 		auto byteData = intVectorToByteVector(data);
 		return Sysex::vectorToMessages(byteData);
-	}
-
-	bool GenericAdaptation::hasCapability(midikraft::EditBufferCapability** outCapability) const
-	{
-		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kIsEditBufferDump)
-			&& pythonModuleHasFunction(kCreateEditBufferRequest)
-			&& pythonModuleHasFunction(kConvertToEditBuffer)) {
-			*outCapability = dynamic_cast<midikraft::EditBufferCapability*>(editBufferCapabilityImpl_.get());
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::EditBufferCapability>& outCapability) const
-	{
-		midikraft::EditBufferCapability* cap;
-		if (hasCapability(&cap)) {
-			outCapability = editBufferCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(midikraft::ProgramDumpCabability** outCapability) const
-	{
-		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kIsSingleProgramDump)
-			&& pythonModuleHasFunction(kCreateProgramDumpRequest)
-			&& pythonModuleHasFunction(kConvertToProgramDump)) {
-			*outCapability = dynamic_cast<midikraft::ProgramDumpCabability*>(programDumpCapabilityImpl_.get());
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability>& outCapability) const
-	{
-		midikraft::ProgramDumpCabability* cap;
-		if (hasCapability(&cap)) {
-			outCapability = programDumpCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(midikraft::BankDumpCapability** outCapability) const
-	{
-		py::gil_scoped_acquire acquire;
-		if ((pythonModuleHasFunction(kExtractPatchesFromBank) || pythonModuleHasFunction(kExtractPatchesFromAllBankMessages))
-			&& pythonModuleHasFunction(kIsPartOfBankDump)
-			&& pythonModuleHasFunction(kIsBankDumpFinished)) {
-			*outCapability = dynamic_cast<midikraft::BankDumpCapability*>(bankDumpCapabilityImpl_.get());
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankDumpCapability>& outCapability) const
-	{
-		midikraft::BankDumpCapability* cap;
-		if (hasCapability(&cap)) {
-			outCapability = bankDumpCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(midikraft::BankDumpRequestCapability** outCapability) const
-	{
-		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kCreateBankDumpRequest)) {
-			*outCapability = dynamic_cast<midikraft::BankDumpRequestCapability*>(bankDumpRequestCapabilityImpl_.get());
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankDumpRequestCapability>& outCapability) const
-	{
-		midikraft::BankDumpRequestCapability* cap;
-		if (hasCapability(&cap)) {
-			outCapability = bankDumpRequestCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(midikraft::HasBanksCapability** outCapability) const
-	{
-		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kNumberOfBanks)
-			&& pythonModuleHasFunction(kNumberOfPatchesPerBank))
-		{
-			*outCapability = dynamic_cast<midikraft::HasBanksCapability*>(hasBanksCapabilityImpl_.get());
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::HasBanksCapability>& outCapability) const
-	{
-		midikraft::HasBanksCapability* cap;
-		if (hasCapability(&cap)) {
-			outCapability = hasBanksCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const
-	{
-		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kBankDescriptors))
-		{
-			*outCapability = dynamic_cast<midikraft::HasBankDescriptorsCapability*>(hasBankDescriptorsCapabilityImpl_.get());
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::HasBankDescriptorsCapability>& outCapability) const
-	{
-		midikraft::HasBankDescriptorsCapability* cap;
-		if (hasCapability(&cap)) {
-			outCapability = hasBankDescriptorsCapabilityImpl_;
-			return true;
-		}
-		return false;
 	}
 
 	void GenericAdaptation::logAdaptationError(const char* methodName, std::exception& ex) const

@@ -379,13 +379,13 @@ TreeViewNode* PatchListTree::newTreeViewItemForSynthBanks(std::shared_ptr<midikr
 
 			//TODO this should be moved into a helper static function
 			size_t numberOfBanks = 0;
-			auto bankDescriptor = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(synth);
+			auto bankDescriptor = synth->getCapability<midikraft::HasBankDescriptorsCapability>();
 			if (bankDescriptor)
 			{
 				numberOfBanks = bankDescriptor->bankDescriptors().size();
 			}
 			else {
-				auto hasBanks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(synth);
+				auto hasBanks = synth->getCapability<midikraft::HasBanksCapability>();
 				if (hasBanks)
 				{
 					numberOfBanks = hasBanks->numberOfBanks();

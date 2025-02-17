@@ -30,7 +30,7 @@ namespace midikraft {
 	};
 
 	class DSISynth : public Synth, public SimpleDiscoverableDevice, public HasBankDescriptorsCapability, public EditBufferCapability, public ProgramDumpCabability,
-		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability, public GlobalSettingsCapability {
+		public SoundExpanderCapability, public MasterkeyboardCapability, public KeyboardCapability, public GlobalSettingsCapability, protected std::enable_shared_from_this<DSISynth> {
 	public:
 		// Basic Synth
 		virtual bool isOwnSysex(MidiMessage const &message) const override;

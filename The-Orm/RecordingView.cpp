@@ -104,7 +104,8 @@ void RecordingView::sampleNote() {
 
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(UIModel::instance()->currentSynth_.smartSynth());
 	if (device->wasDetected()) {
-		auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(UIModel::instance()->currentSynth_.smartSynth());
+		auto synth = UIModel::instance()->currentSynth_.smartSynth();
+		auto location = synth->getCapability<midikraft::MidiLocationCapability>();
 		auto noteNumber = MidiNote(440.0).noteNumber();
 		if (location) {
 			auto noteOn = MidiMessage::noteOn(location->channel().toOneBasedInt(), noteNumber, (uint8)127);

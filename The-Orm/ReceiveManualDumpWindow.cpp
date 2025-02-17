@@ -24,7 +24,7 @@ ReceiveManualDumpWindow::ReceiveManualDumpWindow(std::shared_ptr<midikraft::Synt
 void ReceiveManualDumpWindow::run()
 {
 	// Determine which MIDI port to listen to
-	auto locationCap = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth_);
+	auto locationCap = synth_->getCapability<midikraft::MidiLocationCapability>();
 	
 	auto incomingHandler = midikraft::MidiController::makeOneHandle();
 	midikraft::MidiController::instance()->addMessageHandler(incomingHandler, [this, locationCap](MidiInput *source, MidiMessage const &received) {

@@ -38,6 +38,13 @@ namespace midikraft {
 
 	DSISynth::DSISynth(uint8 midiModelID) : midiModelID_(midiModelID), localControl_(true), midiControl_(true), updateSynthWithGlobalSettingsListener_(this)
 	{
+		globalCapabilityRegistry.registerCapability<HasBankDescriptorsCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<EditBufferCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<ProgramDumpCabability>(this, this);
+		globalCapabilityRegistry.registerCapability<SoundExpanderCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<MasterkeyboardCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<KeyboardCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<GlobalSettingsCapability>(this, this);
 	}
 
 	std::vector<juce::MidiMessage> DSISynth::deviceDetect(int channel)

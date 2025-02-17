@@ -341,7 +341,7 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler)
 {
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
-	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+	auto location = synth->getCapability<midikraft::MidiLocationCapability>();
 	if (location) {
 		if (location->channel().isValid() && device->wasDetected()) {
 			// We can offer to download the bank from the synth, or rather just do it!
@@ -391,7 +391,7 @@ void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend
 	if (!bankToSend) return;
 
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToSend->synth());
-	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToSend->synth());
+	auto location = bankToSend->synth()->getCapability<midikraft::MidiLocationCapability>();
 	if (location) {
 		if (location->channel().isValid() && device->wasDetected()) {
 			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Sending bank to Synth");
@@ -528,7 +528,7 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
-	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
+	auto midiLocation = activeSynth->getCapability<midikraft::MidiLocationCapability>();
 	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
 	if (activeSynth /*&& device->wasDetected()*/) {
 		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
@@ -576,7 +576,7 @@ std::vector<midikraft::PatchHolder> PatchView::autoCategorize(std::vector<midikr
 void PatchView::retrieveEditBuffer()
 {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
-	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
+	auto midiLocation = activeSynth->getCapability<midikraft::MidiLocationCapability>();
 	if (activeSynth && midiLocation) {
 		librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
 			activeSynth,
@@ -765,7 +765,8 @@ void PatchView::loadPatches() {
 		if (patches.size() > 0) {
 			// If the synth does not offer stored patch names, the names of these patches will be useless defaults only.
 			// Open the new bulk rename dialog to allow the user to fix it immediately.
-			if (midikraft::Capability::hasCapability<midikraft::StoredPatchNameCapability>(patches[0].patch())) {
+			auto firstPatch = patches[0].patch();
+			if (firstPatch ->getCapability<midikraft::StoredPatchNameCapability>()) {
 				auto enhanced = autoCategorize(patches);
 				mergeNewPatches(enhanced);
 			}
@@ -916,7 +917,7 @@ std::vector<MidiProgramNumber> PatchView::patchIsInSynth(midikraft::PatchHolder&
 }
 
 bool PatchView::isSynthConnected(std::shared_ptr<midikraft::Synth> synth) {
-	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
+	auto midiLocation = synth->getCapability<midikraft::MidiLocationCapability>();
 	return midiLocation && midiLocation->channel().isValid();
 }
 
@@ -928,16 +929,16 @@ std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgra
 	}
 
 	std::vector<juce::MidiMessage> selectPatch;
-	if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
+	if (auto bankDescriptors = patch.smartSynth()->getCapability<midikraft::HasBankDescriptorsCapability>()) {
 		auto bankSelect = bankDescriptors->bankSelectMessages(bankNumberToSelect);
 		std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
 	}
-	else if (auto banks = midikraft::Capability::hasCapability<midikraft::HasBanksCapability>(patch.smartSynth())) {
+	else if (auto banks = patch.smartSynth()->getCapability<midikraft::HasBanksCapability>()) {
 		auto bankSelect = banks->bankSelectMessages(bankNumberToSelect);
 		std::copy(bankSelect.cbegin(), bankSelect.cend(), std::back_inserter(selectPatch));
 	}
 
-	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+	auto midiLocation = patch.smartSynth()->getCapability<midikraft::MidiLocationCapability>();
 	if (midiLocation && midiLocation->channel().isValid()) {
 		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), program.toZeroBasedDiscardingBank()));
 		spdlog::info("Sending program change to {} for patch {}: program {} {}."
@@ -979,7 +980,7 @@ void PatchView::sendPatchAsSysex(midikraft::PatchHolder &patch) {
 
 void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 {
-	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch.patch());
+	auto layers = patch.patch()->getCapability<midikraft::LayeredPatchCapability>();
 	// Always refresh the compare target, you just expect it after you clicked it!
 	compareTarget_ = UIModel::currentPatch(); // Previous patch is the one we will compare with
 	// It could be that we clicked on the patch that is already loaded?
@@ -991,7 +992,7 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 		currentLayer_ = 0;
 
 		if (alsoSendToSynth) {
-			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+			auto midiLocation = patch.smartSynth()->getCapability<midikraft::MidiLocationCapability>();
 			if (isSynthConnected(patch.smartSynth())) {
 				UIModel::ensureSynthSpecificPropertyExists(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic");
 				auto synthSpecificSendMode = UIModel::instance()->getSynthSpecificPropertyAsValue(patch.smartSynth()->getName(), PROPERTY_COMBOBOX_SENDMODE, "automatic").getValue();

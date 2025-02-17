@@ -160,7 +160,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 
 String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
 {
-	auto dataFileCap = midikraft::Capability::hasCapability<midikraft::DataFileLoadCapability>(patch->smartSynth());
+	auto dataFileCap = patch->smartSynth()->getCapability<midikraft::DataFileLoadCapability>();
 	if (dataFileCap) {
 		int datatype = patch->patch()->dataTypeID();
 		if (datatype < static_cast<int>(dataFileCap->dataTypeNames().size())) {
@@ -194,7 +194,7 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	layerNameValues_.clear();
 
 	// Check if the patch is a layered patch
-	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch->patch());
+	auto layers = patch->patch()->getCapability<midikraft::LayeredPatchCapability>();
 	if (layers) {
 		auto titles = layers->layerTitles();
 		for (int i = 0; i < layers->numberOfLayers(); i++) {
@@ -266,9 +266,9 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 			}
 		}
 		else if (property->name().startsWith("Layer") && value.refersToSameSourceAs(property->value())) {
-			if (currentPatch_) {
+			if (currentPatch_ && currentPatch_->patch()) {
 				// A layer name was changed
-				auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(currentPatch_->patch());
+				auto layers = currentPatch_->patch()->getCapability<midikraft::LayeredPatchCapability>();
 				if (layers) {
 					for (size_t i = 0; i < layerNameValues_.size(); i++) {
 						if (layerNameValues_[i] == property) {

@@ -33,13 +33,13 @@ namespace knobkraft {
 
 	class GenericStoredPatchNameCapability : public midikraft::StoredPatchNameCapability {
 	public:
-		GenericStoredPatchNameCapability(std::shared_ptr<GenericPatch> me, GenericAdaptation const* adaptation) : me_(me), adaptation_(adaptation) {}
+		GenericStoredPatchNameCapability(GenericPatch *me, GenericAdaptation const* adaptation) : me_(me), adaptation_(adaptation) {}
         virtual ~GenericStoredPatchNameCapability() = default;
 		bool changeNameStoredInPatch(std::string const &name) override;
 		std::string name() const override;
 
 	private:
-		std::weak_ptr<GenericPatch> me_;
+		GenericPatch *me_;
 		GenericAdaptation const* adaptation_;
 	};
 
@@ -79,11 +79,7 @@ namespace knobkraft {
 		std::weak_ptr<GenericPatch> me_;
 	};
 
-	class GenericPatch : public midikraft::DataFile, public midikraft::RuntimeCapability<midikraft::StoredPatchNameCapability>
-		, public midikraft::RuntimeCapability<midikraft::DefaultNameCapability>
-		, public midikraft::RuntimeCapability<midikraft::LayeredPatchCapability>
-		, public midikraft::RuntimeCapability<midikraft::StoredTagCapability>
-		, public std::enable_shared_from_this<GenericPatch>
+	class GenericPatch : public midikraft::DataFile, public std::enable_shared_from_this<GenericPatch>
 	{
 	public:
 		enum DataType {
@@ -131,22 +127,7 @@ namespace knobkraft {
 		// For error handling
 		void logAdaptationError(const char *methodName, std::exception &e) const;
 
-		// Runtime Capabilities
-		bool hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const override;
-		bool hasCapability(midikraft::StoredPatchNameCapability **outCapability) const override;
-		bool hasCapability(std::shared_ptr<midikraft::DefaultNameCapability> &outCapability) const override;
-		bool hasCapability(midikraft::DefaultNameCapability **outCapability) const override;
-		bool hasCapability(std::shared_ptr<midikraft::LayeredPatchCapability>& outCapability) const override;
-		bool hasCapability(midikraft::LayeredPatchCapability** outCapability) const override;
-		bool hasCapability(std::shared_ptr<midikraft::StoredTagCapability>& outCapability) const override;
-		bool hasCapability(midikraft::StoredTagCapability** outCapability) const override;
-
 	private:
-		std::shared_ptr<GenericStoredPatchNameCapability> genericStoredPatchNameCapabilityImpl_;
-		std::shared_ptr<GenericDefaultNameCapability> genericDefaultNameCapabilityImp_;
-		std::shared_ptr<GenericLayeredPatchCapability> genericLayeredPatchCapabilityImpl_;
-		std::shared_ptr<GenericStoredTagCapability> genericStoredTagCapabilityImpl_;
-
 		GenericAdaptation const *me_;
 		pybind11::module &adaptation_;
 	};

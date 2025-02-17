@@ -53,12 +53,6 @@ namespace knobkraft {
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
 	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice,
-		public midikraft::RuntimeCapability<midikraft::HasBanksCapability>,
-		public midikraft::RuntimeCapability<midikraft::HasBankDescriptorsCapability>,
-		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
-		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
-		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
-		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
@@ -120,20 +114,6 @@ namespace knobkraft {
 		static MidiMessage vectorToMessage(std::vector<int> const &data);
 		static std::vector<MidiMessage> vectorToMessages(std::vector<int> const &data);
 
-		// Implement runtime capabilities		
-		virtual bool hasCapability(std::shared_ptr<midikraft::EditBufferCapability> &outCapability) const override;
-		virtual bool hasCapability(midikraft::EditBufferCapability **outCapability) const  override;
-		virtual bool hasCapability(std::shared_ptr<midikraft::ProgramDumpCabability> &outCapability) const override;
-		virtual bool hasCapability(midikraft::ProgramDumpCabability **outCapability) const  override;
-		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpCapability> &outCapability) const override;
-		virtual bool hasCapability(midikraft::BankDumpCapability **outCapability) const override;
-		virtual bool hasCapability(std::shared_ptr<midikraft::BankDumpRequestCapability>& outCapability) const override;
-		virtual bool hasCapability(midikraft::BankDumpRequestCapability** outCapability) const override;
-		virtual bool hasCapability(std::shared_ptr<midikraft::HasBanksCapability>& outCapability) const override;
-		virtual bool hasCapability(midikraft::HasBanksCapability** outCapability) const override;
-		virtual bool hasCapability(std::shared_ptr<midikraft::HasBankDescriptorsCapability>& outCapability) const override;
-		virtual bool hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const override;
-
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
 
@@ -146,23 +126,7 @@ namespace knobkraft {
 		void insertFingerprint(Synth::PatchData const& patchData, std::string const& inName) const;
 
 	private:
-		friend class GenericEditBufferCapability;
-		std::shared_ptr<GenericEditBufferCapability> editBufferCapabilityImpl_;
-
-		friend class GenericProgramDumpCapability;
-		std::shared_ptr<GenericProgramDumpCapability> programDumpCapabilityImpl_;
-
-		friend class GenericBankDumpCapability;
-		std::shared_ptr<GenericBankDumpCapability> bankDumpCapabilityImpl_;
-
-		friend class GenericBankDumpRequestCapability;
-		std::shared_ptr<GenericBankDumpRequestCapability> bankDumpRequestCapabilityImpl_;
-
-		friend class GenericHasBanksCapability;
-		std::shared_ptr<GenericHasBanksCapability> hasBanksCapabilityImpl_;
-
-		friend class GenericHasBankDescriptorsCapability;
-		std::shared_ptr<GenericHasBankDescriptorsCapability> hasBankDescriptorsCapabilityImpl_;
+		void registerCapabilities();
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

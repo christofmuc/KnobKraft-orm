@@ -6,6 +6,8 @@
 
 #include "Rev2.h"
 
+#include "Capability.h"
+
 #include "Patch.h"
 
 #include "Rev2Patch.h"
@@ -67,6 +69,10 @@ namespace midikraft {
 	Rev2::Rev2() : DSISynth(0x2f /* Rev2 ID */)
 	{
 		initGlobalSettings();
+
+		globalCapabilityRegistry.registerCapability<LayerCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<DataFileLoadCapability>(this, this);
+		globalCapabilityRegistry.registerCapability<DataFileSendCapability>(this, this);
 	}
 
 	Synth::PatchData Rev2::filterVoiceRelevantData(std::shared_ptr<DataFile> unfilteredData) const

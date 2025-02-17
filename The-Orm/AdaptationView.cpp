@@ -78,10 +78,10 @@ namespace knobkraft {
 		} 
 		infoText += "\n";
 
-		auto hasEditBuffer = midikraft::Capability::hasCapability<midikraft::EditBufferCapability>(adaptationSynth);
-		auto hasProgramDump = midikraft::Capability::hasCapability<midikraft::ProgramDumpCabability>(adaptationSynth);
-		auto hasBankDump = midikraft::Capability::hasCapability<midikraft::BankDumpCapability>(adaptationSynth);
-		auto hasBankDumpRequest = midikraft::Capability::hasCapability<midikraft::BankDumpRequestCapability>(adaptationSynth);
+		auto hasEditBuffer = adaptationSynth->getCapability<midikraft::EditBufferCapability>();
+		auto hasProgramDump = adaptationSynth->getCapability<midikraft::ProgramDumpCabability>();
+		auto hasBankDump = adaptationSynth->getCapability<midikraft::BankDumpCapability>();
+		auto hasBankDumpRequest = adaptationSynth->getCapability<midikraft::BankDumpRequestCapability>();
 
 		infoText += fmt::format("Edit Buffer Capability has {}been implemented\n", (hasEditBuffer ? "" : "not "));
 		infoText += fmt::format("Program Dump Capability has {}been implemented\n", (hasProgramDump? "" : "not "));

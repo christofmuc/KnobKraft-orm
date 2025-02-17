@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2020 Christof Ruch. All rights reserved.
+   Copyright (c) 2020-2025 Christof Ruch. All rights reserved.
 
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
@@ -24,8 +24,20 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	GenericPatch::GenericPatch(GenericAdaptation const *me, pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::DataFile(dataType, data), me_(me), adaptation_(adaptation_module)
+	GenericPatch::GenericPatch(GenericAdaptation const* me, pybind11::module& adaptation_module, midikraft::Synth::PatchData const& data, DataType dataType) : midikraft::DataFile(dataType, data), me_(me), adaptation_(adaptation_module)
 	{
+		if (pythonModuleHasFunction(kNameFromDump)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::StoredPatchNameCapability>(this, new GenericStoredPatchNameCapability(this, me));
+		}
+		if (pythonModuleHasFunction(kIsDefaultName)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::DefaultNameCapability>(this, new GenericDefaultNameCapability(this));
+		}
+		if (pythonModuleHasFunction(kLayerName) && pythonModuleHasFunction(kNumberOfLayers)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::LayeredPatchCapability>(this, new GenericLayeredPatchCapability(this));
+		}
+		if (pythonModuleHasFunction(kGetStoredTags)) {
+			midikraft::globalCapabilityRegistry.registerCapability<midikraft::StoredTagCapability>(this, new GenericStoredTagCapability(this));
+		}
 	}
 
 	bool GenericPatch::pythonModuleHasFunction(std::string const &functionName) const
@@ -304,122 +316,4 @@ namespace knobkraft {
 		return {};
 	}
 
-
-	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredPatchNameCapability> &outCapability) const
-	{
-		midikraft::StoredPatchNameCapability *impl;
-		if (hasCapability(&impl)) {
-			if (!genericStoredPatchNameCapabilityImpl_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch *non_const = const_cast<GenericPatch *>(this);
-				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this(), non_const->me_);
-			}
-			outCapability = genericStoredPatchNameCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(midikraft::StoredPatchNameCapability **outCapability) const
-	{
-		if (pythonModuleHasFunction(kNameFromDump)) {
-			if (!genericStoredPatchNameCapabilityImpl_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch *non_const = const_cast<GenericPatch *>(this);
-				non_const->genericStoredPatchNameCapabilityImpl_ = std::make_shared<GenericStoredPatchNameCapability>(non_const->shared_from_this(), non_const->me_);
-			}
-			*outCapability = genericStoredPatchNameCapabilityImpl_.get();
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::DefaultNameCapability> &outCapability) const
-	{
-		midikraft::DefaultNameCapability *impl;
-		if (hasCapability(&impl)) {
-			if (!genericDefaultNameCapabilityImp_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch *non_const = const_cast<GenericPatch *>(this);
-				non_const->genericDefaultNameCapabilityImp_ = std::make_shared<GenericDefaultNameCapability>(non_const->shared_from_this());
-			}
-			outCapability = genericDefaultNameCapabilityImp_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(midikraft::DefaultNameCapability **outCapability) const
-	{
-		if (pythonModuleHasFunction(kIsDefaultName)) {
-			if (!genericDefaultNameCapabilityImp_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch *non_const = const_cast<GenericPatch *>(this);
-				non_const->genericDefaultNameCapabilityImp_ = std::make_shared<GenericDefaultNameCapability>(non_const->shared_from_this());
-			}
-			*outCapability = genericDefaultNameCapabilityImp_.get();
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::LayeredPatchCapability>& outCapability) const
-	{
-		midikraft::LayeredPatchCapability* impl;
-		if (hasCapability(&impl)) {
-			if (!genericLayeredPatchCapabilityImpl_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch* non_const = const_cast<GenericPatch*>(this);
-				non_const->genericLayeredPatchCapabilityImpl_ = std::make_shared<GenericLayeredPatchCapability>(non_const->shared_from_this());
-			}
-			outCapability = genericLayeredPatchCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(midikraft::LayeredPatchCapability** outCapability) const
-	{
-		if (pythonModuleHasFunction(kLayerName) && pythonModuleHasFunction(kNumberOfLayers)) {
-			if (!genericLayeredPatchCapabilityImpl_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch* non_const = const_cast<GenericPatch*>(this);
-				non_const->genericLayeredPatchCapabilityImpl_ = std::make_shared<GenericLayeredPatchCapability>(non_const->shared_from_this());
-			}
-			*outCapability = genericLayeredPatchCapabilityImpl_.get();
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(std::shared_ptr<midikraft::StoredTagCapability >& outCapability) const
-	{
-		midikraft::StoredTagCapability* impl;
-		if (hasCapability(&impl)) {
-			if (!genericStoredTagCapabilityImpl_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch* non_const = const_cast<GenericPatch*>(this);
-				non_const->genericStoredTagCapabilityImpl_ = std::make_shared<GenericStoredTagCapability>(non_const->shared_from_this());
-			}
-			outCapability = genericStoredTagCapabilityImpl_;
-			return true;
-		}
-		return false;
-	}
-
-	bool GenericPatch::hasCapability(midikraft::StoredTagCapability** outCapability) const
-	{
-		if (pythonModuleHasFunction(kGetStoredTags)) {
-			if (!genericStoredTagCapabilityImpl_) {
-				// Lazy init allowed despite const-ness of method. Smell.
-				GenericPatch* non_const = const_cast<GenericPatch*>(this);
-				non_const->genericStoredTagCapabilityImpl_ = std::make_shared<GenericStoredTagCapability>(non_const->shared_from_this());
-			}
-			*outCapability = genericStoredTagCapabilityImpl_.get();
-			return true;
-		}
-		return false;
-	}
-
 }
-

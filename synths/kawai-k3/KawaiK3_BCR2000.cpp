@@ -237,7 +237,7 @@ namespace midikraft {
 		TypedNamedValueSet result;
 		// Iterate over our definition and set the labels on the view to show the layout
 		for (auto def : k3Setup) {
-			auto bcrdef = midikraft::Capability::hasCapability<BCRGetParameterCapability>(def);
+			auto bcrdef = def->getCapability<BCRGetParameterCapability>();
 			if (bcrdef) {
 				auto param = bcrdef->parameter();
 				if (param) {
@@ -250,7 +250,7 @@ namespace midikraft {
 				}
 			}
 			else {
-				auto simpleDef = midikraft::Capability::hasCapability<BCRNamedParameterCapability>(def);
+				auto simpleDef = def->getCapability<BCRNamedParameterCapability>();
 				if (simpleDef) {
 					int button = buttonNumber(def);
 					if (button != -1) {

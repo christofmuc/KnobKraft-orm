@@ -35,7 +35,8 @@ namespace midikraft {
 		// Poke this into the sysex bytes
 		auto patch = std::make_shared<KawaiK3Patch>(MidiProgramNumber::fromZeroBase(0), initPatchSyx); // The init patch always is patch #0
 		for (auto value : initValues) {
-			auto param = midikraft::Capability::hasCapability<SynthIntParameterCapability>(KawaiK3Parameter::findParameter(value.first));
+			auto paramDef = KawaiK3Parameter::findParameter(value.first);
+			auto param = paramDef->getCapability<SynthIntParameterCapability>();
 			if (param) {
 				param->setInPatch(*patch, value.second);
 			}

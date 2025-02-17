@@ -27,6 +27,12 @@ namespace midikraft {
 
 		static std::string ledMode(BCRledMode ledmode);
 
+		// Requests a capability from the global registry for the concrete synth class.
+		template <typename CapabilityType>
+		std::shared_ptr<CapabilityType> getCapability() {
+			return globalCapabilityRegistry.getCapability<CapabilityType>(this);
+		}
+
 	protected:
 		BCRtype type_;
 		int number_;
