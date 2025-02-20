@@ -409,10 +409,10 @@ void CurrentPatchDisplay::toggleHide()
 
 void CurrentPatchDisplay::refreshNameButtonColour() {
 	if (currentPatch_ && currentPatch_->patch()) {
-		name_.setColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
+		name_.setPatchColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
 	}
 	else {
-		name_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
+		name_.setPatchColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
 	}
 }
 
