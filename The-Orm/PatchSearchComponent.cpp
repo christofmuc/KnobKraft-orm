@@ -56,7 +56,8 @@ namespace {
 class AdvancedFilterPanel : public Component {
 public:
 	AdvancedFilterPanel(PatchView* patchView) :
-		synthFilters_({}, [patchView](CategoryButtons::Category) {
+		synthFilters_({}, [patchView](CategoryButtons::Category, TouchButtonFunction f) {
+		juce::ignoreUnused(f);
 		patchView->retrieveFirstPageFromDatabase();
 	}, false, true)
 	{
@@ -88,33 +89,39 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
         patchView_(patchView),
         patchButtons_(patchButtons),
         textSearch_([this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  }),
-        categoryFilters_({}, [this](CategoryButtons::Category) { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); }, true, true),
+        categoryFilters_({}, [this](CategoryButtons::Category cat, TouchButtonFunction f) { 
+	if (f == TouchButtonFunction::SECONDARY) {
+		categoryFilters_.setActive({ cat });
+	}
+			updateCurrentFilter(); 
+			patchView_->retrieveFirstPageFromDatabase(); 
+		}, true, true),
         database_(database)
 {
 	textSearch_.setFontSize(LAYOUT_LARGE_FONT_SIZE);
 
 	onlyFaves_.setButtonText("Faves");
-	onlyFaves_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
+	onlyFaves_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, onlyFaves_); };
 	addAndMakeVisible(onlyFaves_);
 
 	showHidden_.setButtonText("Hidden");
-	showHidden_.onClick = [this]() { updateCurrentFilter(); patchView_ ->retrieveFirstPageFromDatabase();  };
+	showHidden_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, showHidden_); };
 	addAndMakeVisible(showHidden_);
 
 	showUndecided_.setButtonText("Undecided");
-	showUndecided_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
+	showUndecided_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, showUndecided_); };
 	addAndMakeVisible(showUndecided_);
 
 	onlyUntagged_.setButtonText("Untagged");
-	onlyUntagged_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase();  };
+	onlyUntagged_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, onlyUntagged_); };
 	addAndMakeVisible(onlyUntagged_);
 
 	onlyDuplicates_.setButtonText("Duplicate Names");
-	onlyDuplicates_.onClick = [this]() { updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
+	onlyDuplicates_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, onlyDuplicates_); };
 	addAndMakeVisible(onlyDuplicates_);
 
 	andCategories_.setButtonText("All must match");
-	andCategories_.onClick = [this]() {updateCurrentFilter(); patchView_->retrieveFirstPageFromDatabase(); };
+	andCategories_.onClickMultifunction = [this](TouchButtonFunction f) {refreshWithFunction(f, andCategories_); };
 	addAndMakeVisible(andCategories_);
 
 	addAndMakeVisible(categoryFilters_);
@@ -155,16 +162,7 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	// Clear all filters button
 	clearFilters_.setButtonText("Clear filters");
 	clearFilters_.onClick = [this]() {
-		std::vector<std::shared_ptr<midikraft::Synth>> synthList;
-		for (auto& device: UIModel::instance()->synthList_.activeSynths()) {
-			if (auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device)) {
-				synthList.push_back(synth);
-			}
-		}
-		// Make sure to keep the sort order
-		auto defaultFilter = midikraft::PatchFilter(synthList);
-		defaultFilter.orderBy = static_cast<midikraft::PatchOrdering>(orderByType_.getSelectedId());
-		loadFilter(defaultFilter);
+		unclickAllButtons();
 		updateCurrentFilter();
 		patchView_->retrieveFirstPageFromDatabase();
 		clearFilters_.setEnabled(false);
@@ -187,6 +185,28 @@ PatchSearchComponent::~PatchSearchComponent()
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 	UIModel::instance()->multiMode_.removeChangeListener(this);
 	UIModel::instance()->synthList_.removeChangeListener(this);
+}
+
+void PatchSearchComponent::refreshWithFunction(TouchButtonFunction f, ToggleButton &buttonPressed) {
+	if (f == TouchButtonFunction::SECONDARY) {
+		unclickAllButtons();
+		buttonPressed.setToggleState(true, dontSendNotification);
+	}
+	updateCurrentFilter();
+	patchView_->retrieveFirstPageFromDatabase();
+}
+
+void PatchSearchComponent::unclickAllButtons() {
+	std::vector<std::shared_ptr<midikraft::Synth>> synthList;
+	for (auto& device : UIModel::instance()->synthList_.activeSynths()) {
+		if (auto synth = std::dynamic_pointer_cast<midikraft::Synth>(device)) {
+			synthList.push_back(synth);
+		}
+	}
+	// Make sure to keep the sort order
+	auto defaultFilter = midikraft::PatchFilter(synthList);
+	defaultFilter.orderBy = static_cast<midikraft::PatchOrdering>(orderByType_.getSelectedId());
+	loadFilter(defaultFilter);
 }
 
 std::string PatchSearchComponent::currentSynthNameWithMulti() {
