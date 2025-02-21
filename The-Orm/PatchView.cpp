@@ -715,7 +715,7 @@ public:
 		else {
 			auto numberNew = database_.mergePatchesIntoDatabase(patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
 			if (numberNew > 0) {
-				spdlog::info("Retrieved {} new or changed patches from the synth, uploaded to database", numberNew);
+				spdlog::info("Got {} new or changed patches, saved to database", numberNew);
 				finished_(outNewPatches);
 			}
 			else {
