@@ -6,7 +6,7 @@
 import dataclasses
 import hashlib
 from copy import copy
-from typing import List, Optional, Set, Dict
+from typing import List, Set, Dict
 
 import knobkraft
 import testing

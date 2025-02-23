@@ -83,6 +83,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
+| Yamaha | FS1R | alpha | adaptation | Thanks to @markusschlosser for testing! |
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
