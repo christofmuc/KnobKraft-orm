@@ -54,7 +54,7 @@ public:
 
 private:
 	void checkForUpdatesOnStartup();
-	void createNewDatabase();
+	bool createNewDatabase();
 	void openDatabase();
 	void openDatabase(File &databaseFile);
 	void saveDatabaseAs();
