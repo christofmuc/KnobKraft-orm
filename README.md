@@ -80,7 +80,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
-| Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
+| Waldorf | Pulse | works | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
 | Yamaha | FS1R | alpha | adaptation | Thanks to @markusschlosser for testing! |
