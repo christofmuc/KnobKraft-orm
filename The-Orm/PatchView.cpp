@@ -101,7 +101,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	};
 
 	synthBank_ = std::make_unique<SynthBankPanel>(database_, this);
-	patchHistory_ = std::make_unique<PatchHistoryPanel>(this);
+	patchHistory_ = std::make_unique<PatchHistoryPanel>(this, &database_);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -625,10 +625,31 @@ void PatchView::deletePatches()
 			"They will be gone forever, unless you use a backup!", totalAffected))) {
 		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
 			"Are you sure?", "Yes", "No")) {
-			int deleted = database_.deletePatches(currentFilter());
-			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", fmt::format("{} patches deleted from database", deleted));
+			auto deleted = database_.deletePatches(currentFilter());
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", fmt::format("{} patches deleted from database, {} hidden.", deleted.first, deleted.second));
 			UIModel::instance()->importListChanged_.sendChangeMessage();
-			retrieveFirstPageFromDatabase();
+			refreshAllAfterDelete();
+		}
+	}
+}
+
+void PatchView::refreshAllAfterDelete() {
+	// Reload grid
+	retrieveFirstPageFromDatabase();
+	// Reload bank
+	synthBank_->reloadFromDatabase();
+	// Refesh history to remove deleted patches
+	patchHistory_->refreshList();
+	// Check if the current patch still exists. Reload, because it might have become hidden
+	auto current = UIModel::instance()->currentPatch();
+	if (current.patch()) {
+		std::vector<midikraft::PatchHolder> loaded;
+		database_.getSinglePatch(current.smartSynth(), current.md5(), loaded);
+		if (loaded.size() > 0) {
+			currentPatchDisplay_->setCurrentPatch(std::make_shared<midikraft::PatchHolder>(loaded[0]));
+		}
+		else {
+			currentPatchDisplay_.reset();
 		}
 	}
 }
