@@ -81,6 +81,8 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, PatchButt
 		auto dragInfo = holder->createDragInfoString();
 		setButtonDragInfo(dragInfo);
 		md5_ = holder->md5();
+		setFavorite(holder->isFavorite());
+		setHidden(holder->isHidden());
 		switch (static_cast<PatchButtonInfo>(static_cast<int>(info) & static_cast<int>(PatchButtonInfo::CenterMask))) {
 		case PatchButtonInfo::CenterLayers: {
 			auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(holder->patch());
