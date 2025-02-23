@@ -114,6 +114,9 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, PatchButt
 		case PatchButtonInfo::NoneMasked:
 			setSubtitle("");
 			break;
+		case PatchButtonInfo::SubtitleAuthor:
+			setSubtitle(holder->author());
+			break;
 		case PatchButtonInfo::SubtitleNumber:
 			setSubtitle(number);
 			break;
