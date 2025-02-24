@@ -46,7 +46,7 @@ ExportDialog::ExportDialog(std::shared_ptr<midikraft::Synth> synth)
 	}
 	
 	// Properties to edit...
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Sysex format", "", midikraft::Librarian::PROGRAM_DUMPS, formats)));
+	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Sysex format", "", *defaultFormat, formats)));
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("File format", "", midikraft::Librarian::MANY_FILES, 
 		{ {midikraft::Librarian::MANY_FILES, "Each patch separately into a file"}, { midikraft::Librarian::ZIPPED_FILES, "Each patch separately into a file, but all zipped up" }, 
 		{ midikraft::Librarian::ONE_FILE, "One sysex file with all messages" }, { midikraft::Librarian::MID_FILE, "One MIDI file (SMF) to play from a player or DAW" } })));
