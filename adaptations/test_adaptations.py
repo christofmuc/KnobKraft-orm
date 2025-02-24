@@ -416,3 +416,39 @@ def test_extract_patches_from_all_bank_messages(adaptation, test_data: testing.T
                 assert adaptation.isSingleProgramDump(patch)
             else:
                 assert adaptation.isEditBufferDump(patch)
+
+
+@require_implemented("extractPatchesFromBank")
+@require_implemented("convertPatchesToBankDump")
+@require_testdata("banks")
+def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
+    for bank in knobkraft.splitSysex(test_data.banks):
+        patches = adaptation.extractPatchesFromBank(bank)
+        assert len(patches) > 0
+
+        # Now revert the individual patches back to a bank
+        new_bank = adaptation.convertPatchesToBankDump(patches)
+        flat_list_output = [item for sublist in new_bank for item in sublist]
+        knobkraft.list_compare(bank, flat_list_output)
+
+
+@require_implemented("extractPatchesFromAllBankMessages")
+@require_implemented("convertPatchesToBankDump")
+@require_testdata("banks")
+def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
+    for bank in knobkraft.splitSysex(test_data.banks):
+        bank_messages = []
+        for message in bank:
+            if adaptation.isPartOfBankDump(message):
+                bank_messages.append(message)
+            else:
+                print(f"Not a bank message: {knobkraft.syxToString(message)}")
+
+        patches = adaptation.extractPatchesFromAllBankMessages(bank_messages)
+        assert len(patches) > 0
+
+        # Now revert the individual patches back to a bank
+        new_bank = adaptation.convertPatchesToBankDump(patches)
+        flat_list_input = [item for sublist in bank_messages for item in sublist]
+        flat_list_output = [item for sublist in new_bank for item in sublist]
+        knobkraft.list_compare(flat_list_input, flat_list_output)
