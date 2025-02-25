@@ -170,11 +170,11 @@ namespace knobkraft {
 				bankMessages = Sysex::vectorToMessages(byteData);
 			}
 			catch (py::error_already_set& ex) {
-				me_->logAdaptationError(kExtractPatchesFromAllBankMessages, ex);
+				me_->logAdaptationError(kConvertPatchesToBankDump, ex);
 				ex.restore();
 			}
 			catch (std::exception& ex) {
-				me_->logAdaptationError(kExtractPatchesFromAllBankMessages, ex);
+				me_->logAdaptationError(kConvertPatchesToBankDump, ex);
 			}
 		}
 		return bankMessages;
