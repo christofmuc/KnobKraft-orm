@@ -25,7 +25,7 @@ def name():
 
 def createDeviceDetectMessage(channel):
     # This is a sysex generic device detect message
-    return [0xf0, 0x7e, channel & 0x0f, 0x06, 0x01, 0xf7]
+    return [0xf0, 0x7e, channel, 0x06, 0x01, 0xf7]
 
 
 def deviceDetectWaitMilliseconds():

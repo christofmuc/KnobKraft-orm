@@ -17,7 +17,7 @@ this_module = sys.modules[__name__]
 #
 synth = sequential.GenericSequential(name="Sequential Prophet X",
                                      device_id=0b00110000,  # See Page 153 of the prophet X manual
-                                     banks=8,
+                                     banks=12,
                                      patches_per_bank=128,
                                      name_len=20,
                                      name_position=418,
