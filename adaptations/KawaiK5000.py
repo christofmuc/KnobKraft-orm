@@ -7,6 +7,8 @@
 
 import struct
 from typing import List, Dict, Any
+
+import testing
 from knobkraft.sysex import findSysexDelimiters
 
 K5000_SPECIFIC_DEVICE = None
@@ -411,3 +413,11 @@ def toneMapToData(include: List[bool]) -> bytes:  # not used currently
         data.append(int(byte_str, 2))
 
     return bytes(data)
+
+
+def make_test_data():
+    def bankGenerator(test_data: testing.TestData) -> List[int]:
+        yield test_data.all_messages
+
+    return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
+                            bank_generator=bankGenerator)
