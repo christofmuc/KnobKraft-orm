@@ -5,11 +5,9 @@
 
 # https://github.com/coniferprod/KSynthLib/blob/master/KSynthLib/K5000/SystemExclusive.cs
 
-import struct
-from typing import List, Dict, Any
+from typing import List, Dict
 
 import testing
-from knobkraft.sysex import findSysexDelimiters
 
 K5000_SPECIFIC_DEVICE = None
 
@@ -270,6 +268,8 @@ def extractPatchesFromAllBankMessages(messages):
     if not messages:
         raise ValueError("No messages received for bank dump.")
 
+    bank_byte = messages[0][7] if len(messages[0]) > 7 else 0x00  # Ensure it's a valid integer
+
     # Flatten all messages into a single data array (excluding SysEx delimiters)
     all_data = []
     for message in messages:
@@ -281,7 +281,10 @@ def extractPatchesFromAllBankMessages(messages):
     tone_map_data = all_data[:19]
     tone_map = getToneMap(tone_map_data)
 
-    patch_count = sum(tone_map)  # Number of patches present in the dump
+    # Extract available patch numbers from the tone map
+    patch_numbers = [i for i, present in enumerate(tone_map) if present]
+
+    patch_count = len(patch_numbers)  # Number of patches present in the dump
     print(f"Contains {patch_count} patches.")
 
     # Remaining patch data (skip tone map and padding)
@@ -291,38 +294,60 @@ def extractPatchesFromAllBankMessages(messages):
     offset = 0
     patches = []
 
-    for _ in range(patch_count):
+    for i, patch_number in enumerate(patch_numbers):
         if offset >= len(patch_data):
+            print(f"Warning: Reached end of patch data unexpectedly at patch {i}.")
             break
 
         # Extract checksum (first byte of patch)
-        checksum = patch_data[offset]
-        offset += 1
-        print(f"Checksum = {checksum:02X}")
+        checksum = patch_data[offset]  # Extract checksum at current offset
+        print(f"Checksum for patch {i+1} (Patch Number {patch_number}) = {checksum:02X}")
 
-        # Try to determine patch size based on `SINGLE_INFO`
-        patch_size = None
-        for size, (pcm, add) in SINGLE_INFO.items():
-            if len(patch_data) - offset >= size:
-                patch_size = size
-                break
+        offset += 1  # Move past checksum
 
-        if patch_size is None:
-            print("Unknown patch size, skipping.")
+        # Determine patch size based on `SINGLE_INFO`
+        remaining_bytes = len(patch_data) - offset
+        valid_sizes = [size for size in SINGLE_INFO.keys() if size <= remaining_bytes]
+
+        if not valid_sizes:
+            print(f"Error: No valid patch sizes found for remaining {remaining_bytes} bytes at patch {i+1}. Skipping.")
+            break  # Prevent infinite errors
+
+        # Find the closest matching patch size
+        patch_size = min(valid_sizes, key=lambda s: abs(remaining_bytes - s))
+
+        # Extract patch data
+        current_patch = patch_data[offset:offset + patch_size]
+
+        # Ensure extracted data length is correct
+        if len(current_patch) != patch_size:
+            print(f"Error: Extracted {len(current_patch)} bytes, expected {patch_size}. Skipping patch {i+1}.")
             continue
 
-        # Extract patch bytes as a list of integers
-        current_patch = list(patch_data[offset:offset + patch_size])
+        # Restore SysEx header/footer and insert the patch number
+        formatted_patch = [
+            0xF0, KawaiSysexID, 0x00, OneBlockDump, 0x00, 0x0A, 0x00, bank_byte, patch_number, checksum
+        ] + list(current_patch) + [0xF7]
 
-        if len(current_patch) != patch_size:
-            print(f"Warning: Expected {patch_size} bytes, but got {len(current_patch)}.")
+        # Debug: Print first bytes of patch
+        print(f"Patch {i+1} first bytes: {' '.join(f'{byte:02X}' for byte in formatted_patch[:20])}")
 
-        # Append the patch as a list of integers (not bytes)
-        patches.append(current_patch)
+        # Validate patch
+        if not isSingleProgramDump(formatted_patch):
+            print(f"Error: Extracted patch {i+1} is NOT a valid program dump. Skipping.")
+            continue
 
-        offset += patch_size  # Move to the next patch
+        # Append the valid patch
+        patches.append(formatted_patch)
 
+        # Move offset **AFTER** extracting the patch
+        print(f"Moving offset from {offset} to {offset + patch_size}")
+        offset += patch_size
+
+    print(f"Extracted {len(patches)} valid patches.")
     return patches  # Return a list of lists (KnobKraft format)
+
+
 
 
 def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
