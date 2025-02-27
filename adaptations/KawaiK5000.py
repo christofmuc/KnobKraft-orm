@@ -143,7 +143,7 @@ def isSingleProgramDump(message):  # ✅
     # Verify Sysex header for a Kawai K5000 program dump
     return (message[0] == 0xF0  # Start of SysEx
             and message[1] == KawaiSysexID  # Kawai manufacturer ID
-            and 0x00 <= message[2] <= 0x0F  # MIDI channel (0-F for ch 1-16)
+
             and message[3] == OneBlockDump  # Function ID for single dump
             and message[4] == 0x00  # Reserved
             and message[5] == 0x0A
@@ -226,7 +226,7 @@ def isBankDumpFinished(messages):
     return any(isPartOfBankDump(message) for message in messages)
 
 
-# https://github.com/coniferprod/k5ktools/blob/main/bank.py
+
 # https://github.com/coniferprod/KSynthLib/blob/master/KSynthLib/K5000/ToneMap.cs#L27
 MAX_PATCH_COUNT = 128
 TONE_COMMON_DATA_SIZE = 82
@@ -266,114 +266,66 @@ SINGLE_INFO = {
 }
 
 
-def parsePatchSizesFromBank(message: bytes) -> Dict[int, Dict[str, Any]]:  # ❌❌❌❌❌❌❌❌
-    pointer_table = {}
+def extractPatchesFromAllBankMessages(messages):
+    if not messages:
+        raise ValueError("No messages received for bank dump.")
 
-    sysex_header_size = 8 + 19  # SysEx header (8 bytes) + Tone map (19 bytes)
-    pointer_table_offset = sysex_header_size
-
-    # Each pointer entry has 7 pointers, each 4 bytes (28 bytes per entry)
-    for patch_index in range(MAX_PATCH_COUNT):
-        entry_offset = pointer_table_offset + (patch_index * 28)
-        entry = struct.unpack_from('>7I', message, entry_offset)
-
-        tone_ptr = entry[0]
-        source_ptrs = entry[1:]
-
-        if tone_ptr != 0:
-            pointer_table[patch_index] = {'tone': tone_ptr, 'sources': source_ptrs}
-
-    # The high_ptr indicates the end of the patch data area
-    high_ptr_offset = pointer_table_offset + MAX_PATCH_COUNT * 28
-    high_ptr = struct.unpack_from('>I', message, high_ptr_offset)[0]
-
-    if not pointer_table:
-        raise ValueError("Pointer table is empty, invalid bank message")
-
-    # Base pointer is the smallest tone pointer, used as offset reference
-    base_ptr = min(entry['tone'] for entry in pointer_table.values())
-
-    print(f"base_ptr calculated: {base_ptr}")
-
-    for entry in pointer_table.values():
-        entry['tone'] -= base_ptr
-        entry['sources'] = tuple(src - base_ptr if src != 0 else 0 for src in entry['sources'])
-
-    high_ptr -= base_ptr
-
-    # Calculate the correct data region offset for actual patch data
-    data_region_offset = high_ptr_offset + 4
-    patch_data = message[data_region_offset:data_region_offset + POOL_SIZE]
-
-    patch_info = {}
-    sorted_pointers = sorted(pointer_table.items(), key=lambda item: item[1]['tone'])
-    print(f"Pointer table has {len(sorted_pointers)} pointers")
-    for idx, (index, entry) in enumerate(sorted_pointers):
-        tone_ptr = entry['tone']
-
-        print(f"Processing patch index {index}: tone_ptr={tone_ptr}")
-
-        if tone_ptr + SOURCE_COUNT_OFFSET >= len(patch_data):
-            print(f"Index out of range for patch {index}, tone_ptr={tone_ptr}, skipping")
+    # Flatten all messages into a single data array (excluding SysEx delimiters)
+    all_data = []
+    for message in messages:
+        if not isPartOfBankDump(message):
             continue
+        all_data.extend(message[8:-1])  # Remove SysEx header/footer
 
-        source_count = min(patch_data[tone_ptr + SOURCE_COUNT_OFFSET], MAX_SOURCE_COUNT)
-        add_kit_count = sum(1 for src in entry['sources'] if src != 0)
-        patch_size = TONE_COMMON_DATA_SIZE + (SOURCE_DATA_SIZE * source_count) + (ADD_KIT_SIZE * add_kit_count)
+    # Extract tone map from the first 19 bytes
+    tone_map_data = all_data[:19]
+    tone_map = getToneMap(tone_map_data)
 
-        # Confirm calculated patch size does not exceed data region bounds
-        if tone_ptr + patch_size > len(patch_data):
-            continue  # Skip invalid-sized patches
+    patch_count = sum(tone_map)  # Number of patches present in the dump
+    print(f"Contains {patch_count} patches.")
 
-        patch_info[index] = {
-            'offset': tone_ptr,
-            'size': patch_size,
-            'source_count': source_count,
-            'add_kit_count': add_kit_count
-        }
+    # Remaining patch data (skip tone map and padding)
+    patch_data_start = 19
+    patch_data = all_data[patch_data_start:]
 
-        print(f"Patch {index} info: offset={tone_ptr}, size={patch_size}, source_count={source_count}, add_kit_count={add_kit_count}")
-
-    return patch_info
-
-
-def extractPatchesFromAllBankMessages(messages, channel=None):  # ❌❌❌❌❌❌ does NOT work, problem either here or in parsePatchSizesFromBank, have tried at least 50 times
+    offset = 0
     patches = []
-    message = messages[0] if isinstance(messages[0], list) else messages
 
-    tone_map_data = message[8:27]
-    tone_map = getToneMap(bytes(tone_map_data))
+    for _ in range(patch_count):
+        if offset >= len(patch_data):
+            break
 
-    # Pass the correct slice including pointer table and data
-    bank_data = bytes(message[27:])  # Correct slice without re-adding header offset
-    bank_patch_info = parsePatchSizesFromBank(bank_data)
+        # Extract checksum (first byte of patch)
+        checksum = patch_data[offset]
+        offset += 1
+        print(f"Checksum = {checksum:02X}")
 
-    # Properly aligned data extraction without adding extra offset
-    data_region_offset = (MAX_PATCH_COUNT * 7 * 4) + 4
-    data = bank_data[data_region_offset:-1]
+        # Try to determine patch size based on `SINGLE_INFO`
+        patch_size = None
+        for size, (pcm, add) in SINGLE_INFO.items():
+            if len(patch_data) - offset >= size:
+                patch_size = size
+                break
 
-    for patch_index, included in enumerate(tone_map):
-        if not included or patch_index not in bank_patch_info:
+        if patch_size is None:
+            print("Unknown patch size, skipping.")
             continue
 
-        info = bank_patch_info[patch_index]
-        offset = info['offset']
-        patch_size = info['size']
+        # Extract patch bytes as a list of integers
+        current_patch = list(patch_data[offset:offset + patch_size])
 
-        if offset + patch_size > len(data):
-            continue
+        if len(current_patch) != patch_size:
+            print(f"Warning: Expected {patch_size} bytes, but got {len(current_patch)}.")
 
-        patch_data = data[offset: offset + patch_size]
-        patch_sysex = [0xF0, 0x40, channel, 0x20, 0x00, 0x0A, 0x00, patch_index] + list(patch_data) + [0xF7]
-        patches.append(patch_sysex)
+        # Append the patch as a list of integers (not bytes)
+        patches.append(current_patch)
 
-    return patches
+        offset += patch_size  # Move to the next patch
 
-
+    return patches  # Return a list of lists (KnobKraft format)
 
 
-
-def getToneMap(data: bytes) -> List[bool]:  # ✅
+def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
     TONE_COUNT = 128
     DATA_SIZE = 19
     if len(data) != DATA_SIZE:
@@ -381,6 +333,11 @@ def getToneMap(data: bytes) -> List[bool]:  # ✅
 
     bit_string = "".join(f"{byte:07b}"[::-1] for byte in data)
     return [bit == '1' for bit in bit_string[:TONE_COUNT]]
+
+
+
+
+
 
 
 
@@ -421,3 +378,8 @@ def make_test_data():
 
     return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
                             bank_generator=bankGenerator)
+
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(message=data.all_messages[0], number=1)
+
+        return testing.TestData(sysex=R"testData/Kawai_K5000/single sound bank A patch 1.syx", program_generator=programs)
