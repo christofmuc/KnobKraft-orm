@@ -300,29 +300,62 @@ def extractPatchesFromAllBankMessages(messages):
             break
 
         # Extract checksum (first byte of patch)
-        checksum = patch_data[offset]  # Extract checksum at current offset
+        checksum = patch_data[offset]
+        offset += 1
         print(f"Checksum for patch {i+1} (Patch Number {patch_number}) = {checksum:02X}")
 
-        offset += 1  # Move past checksum
+        # Remaining bytes to process
+        bytes_left = len(patch_data) - offset
 
-        # Determine patch size based on `SINGLE_INFO`
-        remaining_bytes = len(patch_data) - offset
-        valid_sizes = [size for size in SINGLE_INFO.keys() if size <= remaining_bytes]
+        # Extract patch data dynamically
+        patch_body = patch_data[offset:offset + bytes_left]
+        print(f"Patch data is from {offset} to {offset + bytes_left} ({len(patch_body)} bytes)")
 
-        if not valid_sizes:
-            print(f"Error: No valid patch sizes found for remaining {remaining_bytes} bytes at patch {i+1}. Skipping.")
-            break  # Prevent infinite errors
-
-        # Find the closest matching patch size
-        patch_size = min(valid_sizes, key=lambda s: abs(remaining_bytes - s))
-
-        # Extract patch data
-        current_patch = patch_data[offset:offset + patch_size]
-
-        # Ensure extracted data length is correct
-        if len(current_patch) != patch_size:
-            print(f"Error: Extracted {len(current_patch)} bytes, expected {patch_size}. Skipping patch {i+1}.")
+        if len(patch_body) < 60:  # Ensure it's large enough to contain source info
+            print(f"Error: Patch {i+1} is too small to be valid. Skipping.")
             continue
+
+        # **Print the first 20 bytes of patch data for debugging**
+        print(f"Patch {i+1} raw first 20 bytes: {' '.join(f'{b:02X}' for b in patch_body[:20])}")
+
+        # **Improved Source Count Extraction**
+        detected_source_offset = None
+        for possible_offset in range(40, 80):  # Expand the search range
+            if patch_body[possible_offset] <= 6:  # Valid source count should be 0-6
+                detected_source_offset = possible_offset
+                break
+
+        if detected_source_offset is None:
+            print(f"Error: Could not detect a valid source count offset for patch {i+1}. Skipping.")
+            continue
+
+        source_count = patch_body[detected_source_offset]  # Extract source count
+        source_count = min(source_count, 6)  # Max sources should be 6
+        print(f"Patch {i+1} detected {source_count} sources at offset {detected_source_offset}.")
+
+        # **Check if it's PCM or ADD sources**
+        is_additive = False  # Default to PCM synthesis
+
+        if source_count > 0:
+            # Ensure offset is valid before reading wave data
+            if detected_source_offset + source_count < len(patch_body):
+                wave_data = patch_body[detected_source_offset + 1: detected_source_offset + 1 + source_count]
+                is_additive = any(wave_data)  # If any wave data is non-zero, it's additive
+
+        # **Determine correct patch size**
+        if is_additive:
+            patch_size = TONE_COMMON_DATA_SIZE + (source_count * ADD_KIT_SIZE)
+            print(f"Patch {i+1} is ADDITIVE with {source_count} sources. Calculated size: {patch_size}")
+        else:
+            patch_size = TONE_COMMON_DATA_SIZE + (source_count * SOURCE_DATA_SIZE)
+            print(f"Patch {i+1} is PCM with {source_count} sources. Calculated size: {patch_size}")
+
+        if patch_size <= 0 or patch_size > bytes_left:
+            print(f"Error: Invalid patch size detected for patch {i+1}. Skipping.")
+            continue
+
+        # Extract only the correct patch size
+        current_patch = patch_body[:patch_size]
 
         # Restore SysEx header/footer and insert the patch number
         formatted_patch = [
@@ -340,12 +373,55 @@ def extractPatchesFromAllBankMessages(messages):
         # Append the valid patch
         patches.append(formatted_patch)
 
-        # Move offset **AFTER** extracting the patch
-        print(f"Moving offset from {offset} to {offset + patch_size}")
+        # Move offset forward correctly
         offset += patch_size
+        print(f"Moving offset to {offset}")
 
     print(f"Extracted {len(patches)} valid patches.")
     return patches  # Return a list of lists (KnobKraft format)
+
+
+
+
+def determinePatchSize(patch_data):
+    """
+    Determines the patch size dynamically by analyzing the structure.
+    - Extracts the number of PCM and ADD sources.
+    - Calculates the correct patch size.
+
+    Returns (pcm_count, add_count, patch_size)
+    """
+    if len(patch_data) < 10:
+        return 0, 0, 0  # Invalid patch
+
+    # Extract the number of sources
+    pcm_count = 0
+    add_count = 0
+    patch_size = 0
+
+    # Extract source count offset (based on C# logic)
+    source_count_offset = 51
+    if len(patch_data) > source_count_offset:
+        source_count = patch_data[source_count_offset]
+        print(f"Detected {source_count} sources in patch.")
+
+        # Determine PCM vs ADD sources
+        for i in range(source_count):
+            source_type_offset = source_count_offset + 1 + (i * 86)  # Each source is 86 bytes
+            if len(patch_data) > source_type_offset:
+                is_additive = patch_data[source_type_offset]  # Check if ADD type
+                if is_additive:
+                    add_count += 1
+                else:
+                    pcm_count += 1
+
+    # Compute patch size based on extracted data
+    if add_count > 0:
+        patch_size = TONE_COMMON_DATA_SIZE + (add_count * ADD_KIT_SIZE)
+    else:
+        patch_size = TONE_COMMON_DATA_SIZE + (pcm_count * SOURCE_DATA_SIZE)
+
+    return pcm_count, add_count, patch_size
 
 
 
