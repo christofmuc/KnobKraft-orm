@@ -67,6 +67,7 @@ namespace knobkraft {
 		* kIsBankDumpFinished = "isBankDumpFinished",
 		* kExtractPatchesFromBank = "extractPatchesFromBank",
 		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
+		* kConvertPatchesToBankDump = "convertPatchesToBankDump",
 		* kNumberOfLayers = "numberOfLayers",
 		* kLayerTitles = "friendlyLayerTitles",
 		* kLayerName = "layerName",
@@ -147,6 +148,7 @@ namespace knobkraft {
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
+		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -949,6 +951,25 @@ namespace knobkraft {
 		midikraft::HasBankDescriptorsCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = hasBankDescriptorsCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::BankSendCapability **outCapability) const {
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kConvertPatchesToBankDump))
+		{
+			*outCapability = dynamic_cast<midikraft::BankSendCapability*>(hasBankDumpSendCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::BankSendCapability>& outCapability) const {
+		midikraft::BankSendCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = hasBankDumpSendCapabilityImpl_;
 			return true;
 		}
 		return false;
