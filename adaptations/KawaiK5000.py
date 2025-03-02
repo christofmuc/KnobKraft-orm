@@ -448,20 +448,20 @@ def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
     return [bit == '1' for bit in bit_string[:TONE_COUNT]]
 
 
-
-
-
-
-
-
 def make_test_data():
+    global K5000_SPECIFIC_DEVICE
+
     def bankGenerator(test_data: testing.TestData) -> List[int]:
         yield test_data.all_messages
 
-    return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
-                            bank_generator=bankGenerator)
-
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        yield testing.ProgramTestData(message=data.all_messages[0], number=1)
+        program_buffers = extractPatchesFromAllBankMessages(data.all_messages)
+        yield testing.ProgramTestData(program_buffers[0], number=0, name="PowerK5K")
+        yield testing.ProgramTestData(program_buffers[1], number=1, name="PowerBas")
+        yield testing.ProgramTestData(program_buffers[-1], number=97, name="Boreal")
 
-        return testing.TestData(sysex=R"testData/Kawai_K5000/single sound bank A patch 1.syx", program_generator=programs)
+    K5000_SPECIFIC_DEVICE = 0x01
+    return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
+                            bank_generator=bankGenerator,
+                            program_generator=programs,
+                            device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7])
