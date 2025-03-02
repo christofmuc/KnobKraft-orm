@@ -71,7 +71,7 @@ int MetaDataArea::getDesiredHeight(int width)
 	return static_cast<int>(desiredBounds.getHeight() + patchAsText_.desiredHeight() + 2 * LAYOUT_INSET_NORMAL);
 }
 
-CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler) 
+CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std::vector<CategoryButtons::Category> categories, std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler, std::function<void(std::string)> listHandler)
 	: Component(), database_(database)
 	, name_(0, false, [this](int) {
 		if (onCurrentPatchClicked) {
@@ -87,6 +87,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 		refreshNameButtonColour();
 	})
     , favoriteHandler_(favoriteHandler)
+	, listHandler_(listHandler)
 	{
 	addAndMakeVisible(&name_);
 	addAndMakeVisible(&propertyEditor_);
@@ -233,6 +234,12 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 		knownPositions = "no place known";
 	}
 
+	std::vector<std::pair<std::string, std::string>> containedInLists;
+	auto partOfLists = database_.getListsForPatch(patch->synth()->getName(), patch->md5());
+	for (auto& item : partOfLists) {
+		containedInLists.push_back(item);
+	}
+
 	// More read only data
 	auto synth = patch->smartSynth();
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Synth", "Meta data", patch->synth()->getName(), 100));
@@ -245,6 +252,8 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	metaDataValues_.back()->setEnabled(false);
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("In synth at", "Meta data", knownPositions, 100));
 	metaDataValues_.back()->setEnabled(false);
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Lists with this", "Meta data", "", containedInLists));
+	metaDataValues_.back()->setEnabled(true);
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Size", "Meta data", fmt::format("{} Bytes", patch->patch()->data().size()), 100));
 	metaDataValues_.back()->setEnabled(false);
 
@@ -297,6 +306,9 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 			else {
 				jassertfalse;
 			}
+		}
+		else if (property->name() == "Lists with this" && value.refersToSameSourceAs(property->value())) {
+			listHandler_(value.getValue().toString().toStdString());
 		}
 		else if (property->name() == "Comment" && value.refersToSameSourceAs(property->value())) {
 			if (currentPatch_) {

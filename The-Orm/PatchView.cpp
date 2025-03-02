@@ -92,6 +92,9 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		patchButtons_->setTotalCount(total, false);
 		patchButtons_->refresh(true);
 		synthBank_->refreshPatch(favoritePatch);
+	},
+		[this](std::string listSelected) {
+		patchListTree_.selectItemByListId(listSelected);
 	}
 	);
 	currentPatchDisplay_->onCurrentPatchClicked = [this](std::shared_ptr<midikraft::PatchHolder> patch) {

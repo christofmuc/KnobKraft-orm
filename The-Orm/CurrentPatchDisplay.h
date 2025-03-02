@@ -45,7 +45,8 @@ class CurrentPatchDisplay : public Component,
 public:
 	CurrentPatchDisplay(midikraft::PatchDatabase &database,
 		std::vector<CategoryButtons::Category>  categories, 
-		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler);
+		std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler,
+		std::function<void(std::string)> listHandler);
 	virtual ~CurrentPatchDisplay() override;
 
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> onCurrentPatchClicked;
@@ -83,6 +84,7 @@ private:
 	MetaDataArea metaData_;
 	
 	std::function<void(std::shared_ptr<midikraft::PatchHolder>)> favoriteHandler_;
+	std::function<void(std::string)> listHandler_;
 	std::shared_ptr<midikraft::PatchHolder> currentPatch_;
 
 	TypedNamedValueSet metaDataValues_;

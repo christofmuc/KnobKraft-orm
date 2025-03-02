@@ -343,6 +343,14 @@ void PatchListTree::selectItemByPath(std::vector<std::string> const& path)
 	}
 }
 
+void PatchListTree::selectItemByListId(std::string const& listId) {
+	auto node = findNodeForListID(listId);
+	if (node) {
+		node->setSelected(true, true);
+		treeView_->scrollToKeepItemVisible(node);
+	}
+}
+
 TreeViewNode* PatchListTree::newTreeViewItemForPatch(midikraft::ListInfo list, midikraft::PatchHolder patchHolder, int index) {
 	auto node = new TreeViewNode(patchHolder.name(), patchHolder.md5());
 	//TODO - this doesn't work. The TreeView from JUCE has no handlers for selected or clicked that do not fire if a drag is started, so 

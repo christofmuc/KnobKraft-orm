@@ -44,6 +44,7 @@ public:
 
 	void selectAllIfNothingIsSelected();
 	void selectItemByPath(std::vector<std::string> const& path);
+	void selectItemByListId(std::string const& listId);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchListTree)
 	
