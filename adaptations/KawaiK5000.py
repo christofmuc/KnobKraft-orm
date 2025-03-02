@@ -2,8 +2,12 @@
 # S and R have Bank D
 # If expansion installed also Banks E and F
 # W additionally for the Rom parts Bank B
-
+# lots of inspiration from:
 # https://github.com/coniferprod/KSynthLib/blob/master/KSynthLib/K5000/SystemExclusive.cs
+# and https://github.com/coniferprod/KSynthLib/blob/master/Driver/Program.cs#L137
+
+# Adaptation written by Markus Schlösser
+
 
 from typing import List, Dict
 
@@ -71,27 +75,37 @@ def needsChannelSpecificDetection():  # ✅
 
 
 def bankDescriptors() -> List[Dict]:
+    """Returns a list of available banks based on the detected K5000 model."""
     global K5000_SPECIFIC_DEVICE
 
     if K5000_SPECIFIC_DEVICE is None:
         return []  # Prevent errors if called before detection
 
-    base_banks = [(0x00, "A", 100)]  # "100" needs to be changed back to 128 once kk can do skipping
+    # Base bank configurations
+    base_banks = [
+        {"id": 0x00, "name": "A", "size": 100}  # Adjust to 128 once skipping is implemented
+    ]
 
     if K5000_SPECIFIC_DEVICE == "K5000W":
-        base_banks.append((0x01, "B", 128))  # ROMpler Bank for W
+        base_banks.append({"id": 0x01, "name": "B", "size": 128})  # ROMpler Bank for W
 
     if K5000_SPECIFIC_DEVICE in ["K5000S", "K5000R"]:
-        base_banks.append((0x02, "D", 40))  # needs to be changed back to 128 once kk can do skipping
-        base_banks.extend([(0x03, "E", 51), (0x04, "F", 128)])  # Expansion banks # needs to be changed back to 128 once kk can do skipping
+        base_banks.append({"id": 0x02, "name": "D", "size": 40})  # Adjust to 128 once skipping is implemented
+        base_banks.extend([
+            {"id": 0x03, "name": "E", "size": 51},
+            {"id": 0x04, "name": "F", "size": 128}
+        ])  # Expansion banks
 
-    return [{
-        "bank": b[0],
-        "name": f"Bank {b[1]}",
-        "size": b[2],
-        "type": "Patch",
-        "isROM": (b[1] == "B")  # Only ROM for K5000W Bank B
-    } for b in base_banks]
+    return [
+        {
+            "bank": bank["id"],
+            "name": f"Bank {bank['name']}",
+            "size": bank["size"],
+            "type": "Patch",
+            "isROM": bank.get("isROM", False)
+        }
+        for bank in base_banks
+    ]
 
 
 def createEditBufferRequest(channel):
@@ -99,22 +113,22 @@ def createEditBufferRequest(channel):
     return []
 
 
-def createProgramDumpRequest(channel, patchNo):  # ✅
-    global K5000_SPECIFIC_DEVICE
+def createProgramDumpRequest(channel: int, patchNo: int) -> List[int]:
+    """
+    Creates a SysEx message to request a program dump for a given patch number.
 
+    Parameters:
+    - channel (int): MIDI channel (0-15)
+    - patchNo (int): Patch number (0-based index across all banks)
+
+    Returns:
+    - List[int]: SysEx message bytes
+    """
     banks = bankDescriptors()
-    total_patches = 0
-    selected_bank = None
     patch_number = patchNo
+    selected_bank = None
 
-    # Correct mapping of bank indexes to SysEx bank bytes
-    bank_byte_map = {
-        "A": 0x00,
-        "D": 0x02,
-        "E": 0x03,
-        "F": 0x04
-    }
-
+    # Identify the correct bank and adjust the patch number accordingly
     for bank in banks:
         if patch_number < bank["size"]:
             selected_bank = bank
@@ -124,13 +138,13 @@ def createProgramDumpRequest(channel, patchNo):  # ✅
     if selected_bank is None:
         raise ValueError(f"Invalid patch number {patchNo}. Exceeds total patch count.")
 
-    bank_name = selected_bank["name"].split()[-1]  # Extract the letter (A, D, E, F)
-    bank_byte = bank_byte_map.get(bank_name, 0x00)  # Default to A if something goes wrong
+    # Extract the correct SysEx bank byte
+    bank_byte = selected_bank["bank"]
 
-    sysex_message = [
+    # Construct SysEx message
+    return [
         0xF0, KawaiSysexID, channel, OneBlockDumpRequest, 0x00, 0x0A, 0x00, bank_byte, patch_number, 0xF7
     ]
-    return sysex_message
 
 
 def isSingleProgramDump(message):  # ✅
@@ -141,30 +155,55 @@ def isSingleProgramDump(message):  # ✅
     # Verify Sysex header for a Kawai K5000 program dump
     return (message[0] == 0xF0  # Start of SysEx
             and message[1] == KawaiSysexID  # Kawai manufacturer ID
-
             and message[3] == OneBlockDump  # Function ID for single dump
             and message[4] == 0x00  # Reserved
             and message[5] == 0x0A
             and message[-1] == 0xF7)  # End of SysEx
 
 
-def convertToProgramDump(channel, message, program_number):  # ❌❌ K5000 replies with [f0 40 00 41 00 0a f7] when sending from kk, which is "write error"
+def convertToProgramDump(channel: int, message: List[int], program_number: int) -> List[int]:
+    """
+    Converts a received program dump into a properly formatted SysEx message,
+    ensuring the correct bank and patch number assignment based on `bankDescriptors`.
+
+    Parameters:
+    - channel (int): MIDI channel (0-15)
+    - message (List[int]): Incoming SysEx message bytes.
+    - program_number (int): Global patch number across all banks.
+
+    Returns:
+    - List[int]: Modified SysEx message with updated bank and patch number.
+
+    Raises:
+    - Exception: If the message is not a valid single program dump.
+    - ValueError: If the calculated bank number is out of range.
+    """
     if not isSingleProgramDump(message):
         raise Exception("Invalid message format - can't be converted")
 
-    bank_number = program_number // 128  # Determine bank index
-    patch_number = program_number % 128  # Determine patch within the bank
+    # Get dynamic bank information from bankDescriptors()
+    banks = bankDescriptors()
 
-    # Determine correct bank byte based on the bank index
-    bank_byte_map = {0: 0x00, 1: 0x02, 2: 0x03, 3: 0x04}
+    # Determine correct bank and patch number
+    patch_number = program_number
+    selected_bank = None
 
-    if bank_number not in bank_byte_map:
-        raise ValueError(f"Invalid bank number {bank_number}. Must be 0-3.")
+    for bank in banks:
+        if patch_number < bank["size"]:
+            selected_bank = bank
+            break
+        patch_number -= bank["size"]
 
-    bank_byte = bank_byte_map[bank_number]
+    if selected_bank is None:
+        raise ValueError(f"Invalid program number {program_number}. Exceeds available patches.")
 
-    # Reconstruct SysEx message with updated bank and program number
-    return message[:7] + [bank_byte, patch_number] + message[8:]
+    # Extract bank byte dynamically
+    bank_byte = selected_bank["bank"]
+
+    # Construct the modified SysEx message
+    modified_message = message[:7] + [bank_byte, patch_number] + message[9:]
+
+    return modified_message
 
 
 def numberFromDump(message) -> int:  # where can I see if successful?
@@ -222,7 +261,6 @@ def isPartOfBankDump(message):
 
 def isBankDumpFinished(messages):
     return any(isPartOfBankDump(message) for message in messages)
-
 
 
 # https://github.com/coniferprod/KSynthLib/blob/master/KSynthLib/K5000/ToneMap.cs#L27
@@ -309,7 +347,7 @@ def extractPatchesFromAllBankMessages(messages):
 
         # Extract patch data dynamically
         patch_body = patch_data[offset:offset + bytes_left]
-        print(f"Patch data is from {offset} to {offset + bytes_left} ({len(patch_body)} bytes)")
+        # print(f"Patch data is from {offset} to {offset + bytes_left} ({len(patch_body)} bytes)")
 
         if len(patch_body) < 60:  # Ensure it's large enough to contain source info
             print(f"Error: Patch {i+1} is too small to be valid. Skipping.")
@@ -378,9 +416,9 @@ def extractPatchesFromAllBankMessages(messages):
         ] + list(current_patch) + [0xF7]
 
         # Debug: Print full SysEx for the first patch
-        if i == 0:  # Only for the first patch
-            full_sysex_hex = ' '.join(f'{byte:02X}' for byte in formatted_patch)
-            print(f"Full SysEx for Patch 1:\n{full_sysex_hex}")
+        # if i == 0:  # Only for the first patch
+        #     full_sysex_hex = ' '.join(f'{byte:02X}' for byte in formatted_patch)
+        #     print(f"Full SysEx for Patch 1:\n{full_sysex_hex}")
 
         print(f"Patch {i+1} first bytes: {' '.join(f'{byte:02X}' for byte in formatted_patch[:20])}")
 
@@ -394,17 +432,13 @@ def extractPatchesFromAllBankMessages(messages):
 
         # Move offset forward correctly
         offset += patch_size - 1  # ✅ Ensure correct alignment for next patch
-        print(f"Moving offset to {offset}")
+        # print(f"Moving offset to {offset}")
 
     print(f"Extracted {len(patches)} valid patches.")
     return patches  # Return a list of lists (KnobKraft format)
 
 
-
-
-
-
-def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
+def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map, don't yet, what to do with it
     TONE_COUNT = 128
     DATA_SIZE = 19
     if len(data) != DATA_SIZE:
@@ -418,37 +452,6 @@ def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
 
 
 
-
-
-
-def toneMapToString(include: List[bool]) -> str:  # not used currently
-    return ' '.join(str(i + 1) for i, included in enumerate(include) if included)
-
-
-def toneMapCount(include: List[bool]) -> int:
-    print(sum(include))
-    return sum(include)
-
-
-def toneMapEquals(map1: List[bool], map2: List[bool]) -> bool:  # not used currently
-    return map1 == map2
-
-
-def toneMapToData(include: List[bool]) -> bytes:  # not used currently
-    bit_string = ''
-    for i in range(len(include)):
-        bit_string += '1' if include[i] else '0'
-        if (i + 1) % 7 == 0:
-            bit_string += '0'
-
-    bit_string = bit_string[::-1]  # reverse string
-
-    data = []
-    for i in range(0, len(bit_string), 8):
-        byte_str = bit_string[i:i + 8]
-        data.append(int(byte_str, 2))
-
-    return bytes(data)
 
 
 def make_test_data():
