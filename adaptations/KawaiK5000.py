@@ -8,10 +8,10 @@
 
 # Adaptation written by Markus Schlösser
 
-
 from typing import List, Dict
-
+from copy import copy
 import testing
+import hashlib
 
 K5000_SPECIFIC_DEVICE = None
 
@@ -448,7 +448,15 @@ def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
     return [bit == '1' for bit in bit_string[:TONE_COUNT]]
 
 
+def calculateFingerprint(message: List[int]):
+    if isSingleProgramDump(message):
+        patch_name_start = 49  # Adjusted offset to skip the leading zero
+        patch_name_length = 8  # Names are exactly 8 characters long
 
+        patch_name = message[patch_name_start:patch_name_start + patch_name_length]
+        blanked_out = message[10:-1] + patch_name
+        return hashlib.md5(bytearray(blanked_out)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
+    raise Exception("Can only fingerprint Presets")
 
 
 
