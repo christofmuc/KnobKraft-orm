@@ -83,16 +83,16 @@ def bankDescriptors() -> List[Dict]:
 
     # Base bank configurations
     base_banks = [
-        {"id": 0x00, "name": "A", "size": 100}  # Adjust to 128 once skipping is implemented
+        {"id": 0x00, "name": "A", "size": 128}  # Adjust to 128 once skipping is implemented
     ]
 
     if K5000_SPECIFIC_DEVICE == "K5000W":
         base_banks.append({"id": 0x01, "name": "B", "size": 128})  # ROMpler Bank for W
 
     if K5000_SPECIFIC_DEVICE in ["K5000S", "K5000R"]:
-        base_banks.append({"id": 0x02, "name": "D", "size": 40})  # Adjust to 128 once skipping is implemented
+        base_banks.append({"id": 0x02, "name": "D", "size": 128})  # Adjust to 128 once skipping is implemented
         base_banks.extend([
-            {"id": 0x03, "name": "E", "size": 51},
+            {"id": 0x03, "name": "E", "size": 128},
             {"id": 0x04, "name": "F", "size": 128}
         ])  # Expansion banks
 
@@ -303,10 +303,29 @@ SINGLE_INFO = {
 
 
 def extractPatchesFromAllBankMessages(messages):
+    """
+    Extracts individual patches from a bank dump.
+
+    Parameters:
+    - messages (List[List[int]]): List of SysEx messages forming a bank dump.
+
+    Returns:
+    - List[List[int]]: Extracted patch SysEx messages.
+    """
     if not messages:
         raise ValueError("No messages received for bank dump.")
 
-    bank_byte = messages[0][7] if len(messages[0]) > 7 else 0x00  # Ensure it's a valid integer
+    # Get dynamic bank information
+    banks = bankDescriptors()
+
+    # Determine bank ID from the first message (ensuring it is valid)
+    received_bank_byte = messages[0][7] if len(messages[0]) > 7 else None
+    selected_bank = next((b for b in banks if b["bank"] == received_bank_byte), None)
+
+    if selected_bank is None:
+        raise ValueError(f"Invalid bank byte {received_bank_byte}. No matching bank found.")
+
+    bank_byte = selected_bank["bank"]
 
     # Flatten all messages into a single data array (excluding SysEx delimiters)
     all_data = []
@@ -322,8 +341,8 @@ def extractPatchesFromAllBankMessages(messages):
     # Extract available patch numbers from the tone map
     patch_numbers = [i for i, present in enumerate(tone_map) if present]
 
-    patch_count = len(patch_numbers)  # Number of patches present in the dump
-    print(f"Contains {patch_count} patches.")
+    patch_count = len(patch_numbers)
+    print(f"Contains {patch_count} patches in bank {selected_bank['name']}.")
 
     # Remaining patch data (skip tone map and padding)
     patch_data_start = 19
@@ -347,7 +366,6 @@ def extractPatchesFromAllBankMessages(messages):
 
         # Extract patch data dynamically
         patch_body = patch_data[offset:offset + bytes_left]
-        # print(f"Patch data is from {offset} to {offset + bytes_left} ({len(patch_body)} bytes)")
 
         if len(patch_body) < 60:  # Ensure it's large enough to contain source info
             print(f"Error: Patch {i+1} is too small to be valid. Skipping.")
@@ -356,7 +374,6 @@ def extractPatchesFromAllBankMessages(messages):
         # Extract source count (from Common Data byte 50)
         source_count_offset = 50
         source_count = min(patch_body[source_count_offset], 6)  # Max 6 sources
-        print(f"Patch {i + 1} detected {source_count} sources.")
 
         # ---- PCM/ADD Classification Per Source ----
         add_count = 0
@@ -367,7 +384,6 @@ def extractPatchesFromAllBankMessages(messages):
             source_offset = source_type_offset + (s * SOURCE_DATA_SIZE)
 
             if source_offset + 1 >= len(patch_body):  # Avoid out-of-bounds access
-                print(f"Patch {i+1} Source {s+1}: Warning - Not enough data for wave type, assuming PCM.")
                 pcm_count += 1
                 continue
 
@@ -400,8 +416,6 @@ def extractPatchesFromAllBankMessages(messages):
                 f"Error: Could not determine patch size for {pcm_count} PCM, {add_count} ADD sources in Patch {i + 1}. Skipping.")
             continue
 
-        print(f"Patch {i + 1} calculated size from SINGLE_INFO: {patch_size}")
-
         if patch_size <= 0 or patch_size > bytes_left + 1:
             print(
                 f"Error: Invalid patch size detected for patch {i + 1}. Skipping. Expected {patch_size}, but only {bytes_left} remain.")
@@ -415,27 +429,17 @@ def extractPatchesFromAllBankMessages(messages):
             0xF0, KawaiSysexID, 0x00, OneBlockDump, 0x00, 0x0A, 0x00, bank_byte, patch_number, int(checksum)
         ] + list(current_patch) + [0xF7]
 
-        # Debug: Print full SysEx for the first patch
-        # if i == 0:  # Only for the first patch
-        #     full_sysex_hex = ' '.join(f'{byte:02X}' for byte in formatted_patch)
-        #     print(f"Full SysEx for Patch 1:\n{full_sysex_hex}")
-
-        print(f"Patch {i+1} first bytes: {' '.join(f'{byte:02X}' for byte in formatted_patch[:20])}")
-
-        # Validate patch
         if not isSingleProgramDump(formatted_patch):
             print(f"Error: Extracted patch {i+1} is NOT a valid program dump. Skipping.")
             continue
 
-        # Append the valid patch
         patches.append(formatted_patch)
 
         # Move offset forward correctly
         offset += patch_size - 1  # ✅ Ensure correct alignment for next patch
-        # print(f"Moving offset to {offset}")
 
-    print(f"Extracted {len(patches)} valid patches.")
-    return patches  # Return a list of lists (KnobKraft format)
+    print(f"Extracted {len(patches)} valid patches from bank {selected_bank['name']}.")
+    return patches
 
 
 def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map, don't yet, what to do with it
