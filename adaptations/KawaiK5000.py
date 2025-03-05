@@ -9,7 +9,7 @@
 # Adaptation written by Markus Schlösser
 
 from typing import List, Dict
-from copy import copy
+
 import testing
 import hashlib
 
@@ -244,8 +244,34 @@ def renamePatch(message, new_name):  # ✅
     return new_message
 
 
-def createBankDumpRequest(channel, bank):  # ✅, BUT sends 4 requests due to time out
-    return [0xF0, KawaiSysexID, channel, AllBlockDumpRequest, 0x00, 0x0A, 0x00, bank, 0x00, 0xF7]
+def createBankDumpRequest(channel: int, bank_identifier) -> List[int]:
+    """
+    Creates a SysEx message to request a full bank dump.
+
+    Parameters:
+    - channel (int): MIDI channel (0-15)/Sysex ID.
+    - bank_identifier (Union[str, int]): Either the bank name (e.g., "A", "D") or the bank ID (e.g., 0, 2).
+
+    Returns:
+    - List[int]: SysEx message bytes.
+
+    Raises:
+    - ValueError: If the bank name or ID is not found in `bankDescriptors()`.
+    """
+    banks = bankDescriptors()
+
+    # Determine whether we received a name ("A", "D") or an ID (0x00, 0x02)
+    if isinstance(bank_identifier, int):  # If an integer is passed, it's an ID
+        selected_bank = next((bank for bank in banks if bank["bank"] == bank_identifier), None)
+    else:  # If a string is passed, it's a bank name
+        selected_bank = next((bank for bank in banks if bank["name"].split()[-1] == str(bank_identifier)), None)
+
+    if selected_bank is None:
+        raise ValueError(f"Invalid bank identifier '{bank_identifier}'. Available banks: {[bank['name'] for bank in banks]}")
+
+    bank_id = selected_bank["bank"]  # Get the correct bank ID
+
+    return [0xF0, KawaiSysexID, channel, AllBlockDumpRequest, 0x00, 0x0A, 0x00, bank_id, 0x00, 0xF7]
 
 
 def isPartOfBankDump(message):
