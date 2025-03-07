@@ -106,6 +106,16 @@ IF (WIN32)
     set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
     set(WINSPARKLE_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/x64/Release")
 
+	FetchContent_Declare(
+		blas
+		URL https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x64_64.zip
+	)
+	FetchContent_MakeAvailable(blas)
+	set(BLAS_LIBRARY "${blas_SOURCE_DIR}/lib/libopenblas.lib")
+
+	set(FAISS_INCLUDE_PATH "${CMAKE_CURRENT_LIST_DIR}/third_party/faiss/")
+	set(FAISS_LIBRARY "${CMAKE_CURRENT_LIST_DIR}/third_party/faiss/build/faiss/Debug/faiss.lib")
+
 	if(ASAN)
 	add_compile_options(/fsanitize=address)
 	endif()

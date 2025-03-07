@@ -48,3 +48,6 @@
 [submodule "third_party/spdlog"]
 	path = third_party/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "third_party/faiss"]
+	path = third_party/faiss
+	url = https://github.com/facebookresearch/faiss.git
