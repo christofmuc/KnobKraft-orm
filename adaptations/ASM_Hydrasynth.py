@@ -145,11 +145,15 @@ class ASMHydrasynth:
 
         return name
 
-    #@knobkraft_api
-    #def numberFromDump(self, message: List[int]) -> int:
-    #    if self.isSingleProgramDump(message):
-    #        return message[5] + (message[6] << 7)
-    #    return -1
+    @knobkraft_api
+    def numberFromDump(self, message: List[int]) -> int:
+        messages = knobkraft.findSysexDelimiters(message, 1)
+        command, data = self._from_hydrasynth(message[messages[0][0]:messages[0][1]])
+        if not command == "DATA":
+            raise Exception("Invalid program buffer handed to numberFromDump")
+        bank = data[5]
+        patch = data[6]
+        return bank * 128 + patch
 
     @knobkraft_api
     def convertToProgramDump(self, device_id, message, program_number) -> List[int]:
@@ -397,7 +401,7 @@ def make_test_data():
             if asm.isPartOfSingleProgramDump(message):
                 program.extend(message)
             if asm.isSingleProgramDump(program):
-                yield testing.ProgramTestData(message=program, name=names[i])
+                yield testing.ProgramTestData(message=program, name=names[i], number=127)
                 i = i + 1
 
     return testing.TestData(sysex="testData\ASM_Hydrasynth\programs2.syx",
