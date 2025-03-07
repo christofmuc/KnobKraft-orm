@@ -35,6 +35,7 @@ namespace knobkraft {
 	class GenericBankDumpCapability;
 	class GenericHasBanksCapability;
 	class GenericHasBankDescriptorsCapability;
+	class GenericBankDumpSendCapability;
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
