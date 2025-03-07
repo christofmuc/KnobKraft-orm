@@ -1,3 +1,24 @@
+#
+# Licensed under the MIT No Attribution License
+# Copyright 2022 Constantin Gonzalez, <constantin@glez.de>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# Additional work for KnobKraft 2.0 done by Christof Ruch
+
 import hashlib
 import sys
 from typing import List, Tuple, Optional, Union
@@ -16,7 +37,7 @@ MINIMUM_MESSAGE_SIZE = 4 + 4  # Excluding preamble and SYSEX_END. 4 bytes checks
 #MESSAGES_PER_PATCH = 22
 
 # Wait this amount of milliseconds between sending messages.
-GENERAL_MESSAGE_DELAY_MILLIS = 30  # Seems like a safe value.
+GENERAL_MESSAGE_DELAY_MILLIS = 200  # Seems like a safe value. See Edisyn for more numbers
 
 
 # Commands are one byte.
@@ -160,7 +181,7 @@ class ASMHydrasynth:
         return bank * 128 + patch
 
     @knobkraft_api
-    def convertToProgramDump(self, device_id, message, program_number) -> List[int]:
+    def convertToProgramDump(self, midi_channel, message, program_number) -> List[int]:
         bank, patch = ASMHydrasynth._programToBankAndPatch(program_number)
 
         # Double-check consistency.
@@ -173,6 +194,14 @@ class ASMHydrasynth:
 
         # Add the patch request complete message to make the hydrasynth responsive again
         result += self._to_hydrasynth("PATCH_REQUEST_COMPLETE", [0])
+
+        # Funky messages required to make the patch audible. Explanation:
+        # https://github.com/eclab/edisyn/blob/master/edisyn/synth/asmhydrasynth/info/SysexEncoding.txt
+        # This should probably go into the editbufferdump functions later
+        result += self._to_hydrasynth("BANK_SWITCH", [(bank+1) % len(self.bankDescriptors())])
+        result += [0xc0 | (midi_channel & 0x0f), (patch + 1) % 0x7f]
+        result += self._to_hydrasynth("BANK_SWITCH", [bank])
+        result += [0xc0 | (midi_channel & 0x0f), patch]
 
         # Add message to trigger flash updates.
         # result += to_hydrasynth('UPDATE_FLASH', [0])
@@ -350,23 +379,9 @@ class ASMHydrasynth:
             relevant_messages.extend(messages[i])
             if not expected:
                 expected = total
-                #if expected != MESSAGES_PER_PATCH:
-                 #   print(f'Expected {MESSAGES_PER_PATCH} total messages per patch, but total is {expected} instead.')
-                    # Not failing here, because this might be a different Hydrasynth or some result of an update.
-            #elif len(parsed_messages) > expected:
-            #    print(f'Expected {expected} messages, but got {len(parsed_messages)} instead.')
-            #    return False, current, expected
-            #elif expected != total:
-            #    print(f'Expected {expected} messages based on initial message, but message {i} indicates a total of {total} messages.')
-            #    return False, current, expected
-
-            # Number of messages vs. total are within expectations.
-            # Verify if message sequence is consistent.
-            #if not last:
-            #    last = current
-            #elif current - last != 1:
-            #    print(f'Unexpected message sequence: Found message {current} after {last}.')
-            #    return False, current, expected, []
+            elif expected != total:
+                print(f'Expected {expected} messages based on initial message, but message {i} indicates a total of {total} messages.')
+                return False, current, expected, []
             last = current
 
         # Everything looking good so far!
