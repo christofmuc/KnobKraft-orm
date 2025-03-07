@@ -46,6 +46,10 @@ DATA_TYPES_REVERSE = {
 }
 
 
+def to_hex_str(byte_list: List[int]) -> str:
+    return " ".join(f"{byte:02X}" for byte in byte_list)
+
+
 class ASMHydrasynth:
 
     def __init__(self, name: str,  model_id: int):
@@ -78,7 +82,7 @@ class ASMHydrasynth:
 
         # Hydrasynth Desktop returns: 0x00A:B:C:D:E0x00 listing available bank names.
         if payload[0] != 0 and payload[-1] != 0:
-            print(f'Invalid payload received during device detect: {knobkraft.to_hex_str(payload)}')
+            print(f'Invalid payload received during device detect: {to_hex_str(payload)}')
             return -1
 
         try:
@@ -95,7 +99,7 @@ class ASMHydrasynth:
         if len(bank_names) not in [5, 8]:
             print(f'Unusual number of banks detected: {len(bank_names)}. Expected 5 or 8.)')
 
-        print(f'Got valid Hydrasynth device response message with bank names: {bank_names}. Message: {knobkraft.to_hex_str(message)}.')
+        print(f'Got valid Hydrasynth device response message with bank names: {bank_names}. Message: {to_hex_str(message)}.')
         return 0  # We don't support channel detection, so return valid channel MIDI channel 1 (zero-based) if all ok.
 
     @knobkraft_api
@@ -117,7 +121,7 @@ class ASMHydrasynth:
         if not status:
             return False
         ack_message = self._createDataAckMessage(last, total)
-        print(f'isPartOfSingleProgramDump(): Returning True, {knobkraft.to_hex_str(ack_message)} (ACK {last}/{total}, message valid).')
+        print(f'isPartOfSingleProgramDump(): Returning True, {to_hex_str(ack_message)} (ACK {last}/{total}, message valid).')
         return True, ack_message
 
     @knobkraft_api
@@ -202,13 +206,28 @@ class ASMHydrasynth:
         # Merge messages again into one.
         return self._to_hydrasynth(command, data) + message[first[0][1]:]
 
-    #@knobkraft_api
-    #def calculateFingerprint(self, message: List[int]):
-    #    if self.isSingleProgramDump(message):
-    #        data = message[8:-1]
-    #        data[0:24] = [0] * 24
-    #        return hashlib.md5(bytearray(data)).hexdigest()
-    #    raise Exception("Can only fingerprint Presets")
+    @knobkraft_api
+    def calculateFingerprint(self, message: List[int]):
+        status, _, _, relevant_messages = self._verifyBufferMessages(message)
+        if not status:
+            raise Exception("Invalid program buffer handed to renamePatch")
+
+        first = knobkraft.findSysexDelimiters(relevant_messages, 1)
+        command, data = self._from_hydrasynth(relevant_messages[first[0][0]:first[0][1]])
+        if not command == "DATA":
+            raise Exception(f"Invalid program buffer handed to renamePatch, data type is {command}")
+
+        # The data type is irrelevant
+        data[3] = 0
+        # Fill bank and patch numbers with 0.
+        data[5] = 0
+        data[6] = 0
+        # Fill the name part with zeros.
+        data[12:28] = 16 * [0]
+
+        # Now calculate a checksum on a reassembled nameless patch
+        fingerprinted_message = self._to_hydrasynth(command, data) + relevant_messages[first[0][1]:]
+        return hashlib.md5(bytearray(fingerprinted_message)).hexdigest()
 
     # Create a DATA_ACK message with the given parameters.
     def _createDataAckMessage(self, page, total_pages):
@@ -265,13 +284,13 @@ class ASMHydrasynth:
             return None, message
 
         if message[:len(SYSEX_PREAMBLE)] != SYSEX_PREAMBLE:
-            print(f'Hydrasynth preamble missing. Returning raw message: {knobkraft.to_hex_str(message)}')
+            print(f'Hydrasynth preamble missing. Returning raw message: {to_hex_str(message)}')
             return None, message
 
         message_b64 = message_bytes[len(SYSEX_PREAMBLE):-1]
         if len(message_b64) < MINIMUM_MESSAGE_SIZE:
             print(f'Hydrasynth message length ({len(message_b64)}) is smaller than minimum ({MINIMUM_MESSAGE_SIZE}).')
-            print(f'Returning SysEx message content: {knobkraft.to_hex_str(list(message_b64))}')
+            print(f'Returning SysEx message content: {to_hex_str(list(message_b64))}')
             return None, list(message_b64)
 
         # We have a potential Hydrasynth message. Let’s verify its checksum.

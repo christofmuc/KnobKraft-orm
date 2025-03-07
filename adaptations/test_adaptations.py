@@ -326,6 +326,19 @@ def test_fingerprinting_of_programs(adaptation, test_data: testing.TestData):
 @require_implemented("calculateFingerprint")
 @require_implemented("convertToProgramDump")
 @require_implemented("isSingleProgramDump")
+@require_implemented("numberFromDump")
+@require_testdata("programs")
+def test_fingerprinting_of_programs_no_change(adaptation, test_data: testing.TestData):
+    for program in test_data.programs:
+        md5 = adaptation.calculateFingerprint(program.message.byte_list)
+        # Change program place and make sure the fingerprint didn't change
+        changed_position = adaptation.convertToProgramDump(0x09, program.message.byte_list, adaptation.numberFromDump(program.message.byte_list))
+        assert adaptation.calculateFingerprint(changed_position) == md5
+
+
+@require_implemented("calculateFingerprint")
+@require_implemented("convertToProgramDump")
+@require_implemented("isSingleProgramDump")
 @require_implemented("blankedOut")
 @require_testdata("programs")
 def test_blanked_out(adaptation, test_data: testing.TestData):
