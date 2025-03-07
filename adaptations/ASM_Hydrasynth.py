@@ -181,12 +181,26 @@ class ASMHydrasynth:
     def generalMessageDelay(self):
         return GENERAL_MESSAGE_DELAY_MILLIS
 
-    #@knobkraft_api
-    #def renamePatch(self, message: List[int], new_name: str) -> List[int]:
-    #    if self.isSingleProgramDump(message):
-    #        name_params = [(ord(c) & 0x7f, (ord(c) >> 7) & 0x7f) for c in new_name.ljust(12, " ")]
-    #        return message[:7] + [item for sublist in name_params for item in sublist] + message[31:]
-    #    raise Exception("Can only rename Presets!")
+    @knobkraft_api
+    def renamePatch(self, message: List[int], new_name: str) -> List[int]:
+        first = knobkraft.findSysexDelimiters(message, 1)
+        command, data = self._from_hydrasynth(message[first[0][0]:first[0][1]])
+        if not command == "DATA":
+            raise Exception("Invalid program buffer handed to renamePatch")
+
+        name_buffer = 16 * [32]  # Default is space
+        i = 0
+        for c in new_name[:16]:
+            name_buffer[i] = ord(c)
+            i += 1
+        if i < 16:
+            name_buffer[i] = 0x00
+
+        assert len(name_buffer) == len(data[12:28])
+        data[12:28] = name_buffer
+
+        # Merge messages again into one.
+        return self._to_hydrasynth(command, data) + message[first[0][1]:]
 
     #@knobkraft_api
     #def calculateFingerprint(self, message: List[int]):
