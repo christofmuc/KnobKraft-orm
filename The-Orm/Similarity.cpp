@@ -18,6 +18,9 @@ public:
 	ExactSimilaritySearch(midikraft::PatchDatabase& db) : db_(db) {
 	}
 
+
+	~ExactSimilaritySearch() = default;
+
 	void buildIndexForSynth(std::shared_ptr<midikraft::Synth> synth, PatchFeatureVector featureVector) {
 		auto index = indexes_.find(synth->getName());
 		if (index == indexes_.end()) {
@@ -57,7 +60,7 @@ public:
 			std::vector<float> features(searchIndex.dimensionality);
 			featureVector(examplePatch, features.data(), searchIndex.dimensionality);
 			std::vector<float> distances(k);
-			std::vector<faiss::idx_t> labels;
+			std::vector<faiss::idx_t> labels(k);
 			searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
 
 			// The result is a list of md5s 
@@ -81,9 +84,12 @@ private:
 	std::map<std::string, SearchIndex> indexes_;
 };
 
+// PIMPL https://stackoverflow.com/questions/9954518/stdunique-ptr-with-an-incomplete-type-wont-compile
+void PatchSimilarity::pimpl_deleter::operator()(ExactSimilaritySearch* ptr) const { delete ptr; }
+
 
 PatchSimilarity::PatchSimilarity(midikraft::PatchDatabase& db) : db_(db) {
-	impl_ = std::make_unique<ExactSimilaritySearch>(db);
+	impl_.reset(new ExactSimilaritySearch(db));
 }
 
 

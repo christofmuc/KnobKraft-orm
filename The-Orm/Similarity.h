@@ -12,5 +12,6 @@ public:
 
 private:
 	midikraft::PatchDatabase& db_;
-	std::unique_ptr<ExactSimilaritySearch> impl_;
+	struct pimpl_deleter { void operator()(ExactSimilaritySearch*) const; };
+	std::unique_ptr<ExactSimilaritySearch, pimpl_deleter> impl_;
 };

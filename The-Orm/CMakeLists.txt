@@ -90,6 +90,7 @@ set(SOURCES
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
 	Similarity.cpp Similarity.h
+	SimilarPatchesPanel.cpp SimilarPatchesPanel.h
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
@@ -223,6 +224,11 @@ IF(WIN32)
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
 					"${PYTHON_EMBEDDED_PATH}/python${PYTHON_VERSION_TO_COPY}.dll"
+					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+	add_custom_command(
+			TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+					"${BLAS_LIBRARY_DLL}"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 

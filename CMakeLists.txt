@@ -112,6 +112,7 @@ IF (WIN32)
 	)
 	FetchContent_MakeAvailable(blas)
 	set(BLAS_LIBRARY "${blas_SOURCE_DIR}/lib/libopenblas.lib")
+	set(BLAS_LIBRARY_DLL "${blas_SOURCE_DIR}/bin/libopenblas.dll")
 
 	set(FAISS_INCLUDE_PATH "${CMAKE_CURRENT_LIST_DIR}/third_party/faiss/")
 	set(FAISS_LIBRARY "${CMAKE_CURRENT_LIST_DIR}/third_party/faiss/build/faiss/Debug/faiss.lib")
