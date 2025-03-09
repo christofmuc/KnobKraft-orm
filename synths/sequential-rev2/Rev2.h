@@ -12,10 +12,11 @@
 #include "LayerCapability.h"
 #include "DataFileLoadCapability.h"
 #include "DataFileSendCapability.h"
+#include "DetailedParametersCapability.h"
 
 namespace midikraft {
 
-	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability
+	class Rev2 : public DSISynth, public LayerCapability, public DataFileLoadCapability, public DataFileSendCapability, public SynthParametersCapability
 	{
 	public:
 		// Data Item Types
@@ -74,6 +75,11 @@ namespace midikraft {
 
 		// DataFileSendCapability
 		std::vector<MidiMessage> dataFileToMessages(std::shared_ptr<DataFile> dataFile, std::shared_ptr<SendTarget> target) const override;
+
+		// SynthParametersCapability, the new version of the detailed parameters better suited for Python bindings
+		virtual std::vector<ParamDef> getParameterDefinitions() const override;
+		virtual std::vector<ParamVal> getParameterValues(std::shared_ptr<DataFile> const patch, bool onlyActive) const override;
+		virtual std::vector<float> createFeatureVector(std::shared_ptr<DataFile> const patch) const override;
 
 		//TODO These should go into the DSISynth class
 		virtual DataFileLoadCapability *loader() override;

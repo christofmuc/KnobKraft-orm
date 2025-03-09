@@ -157,42 +157,83 @@ String PatchTextBox::makeTextDocument(std::shared_ptr<midikraft::PatchHolder> pa
 
 	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
 	if (realPatch) {
-		return patchToTextRaw(realPatch, false);
+		return patchToTextRaw(patch->smartSynth(), realPatch, false);
 	}
 	else {
 		return "makeTextDocument not implemented yet";
 	}
 }
 
-std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
+std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
 {
 	std::string result;
 
-	int numLayers = 1;
-	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch);
-	if (layers) {
-		numLayers = layers->numberOfLayers();
-	}
+	auto modernParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
+	if (modernParameters) {
+		auto parameters = modernParameters->getParameterDefinitions();
+		auto values = modernParameters->getParameterValues(patch, true);
 
-	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch);
-
-	if (parameterDetails) {
-		for (int layer = 0; layer < numLayers; layer++) {
-			if (layers) {
-				if (layer > 0) result += "\n";
-				result = result + fmt::format("Layer: {}\n", layers->layerName(layer));
+		for (size_t i = 0; i < parameters.size(); i++) {
+			String valueLine = parameters[i].name + ": ";
+			if (values[i].value.isInt()) {
+				valueLine += values[i].value.toString();
 			}
-			for (auto param : parameterDetails->allParameterDefinitions()) {
-				if (layers) {
-					auto multiLayerParam = midikraft::Capability::hasCapability<midikraft::SynthMultiLayerParameterCapability>(param);
-					jassert(multiLayerParam);
-					if (multiLayerParam) {
-						multiLayerParam->setSourceLayer(layer);
+			else if (values[i].value.isString()) {
+				valueLine += values[i].value.toString();
+			}
+			else if (values[i].value.isArray()) {
+				valueLine += "[";
+				bool comma = false;
+				for (auto const& item : *values[i].value.getArray()) {
+					if (comma) {
+						valueLine += ", ";
+					}
+					comma = true;
+					if (item.isInt()) {
+						valueLine += item.toString();
+					}
+					else if (item.isString()) {
+						valueLine += item.toString();
+					}
+					else {
+						valueLine += "ERR";
 					}
 				}
-				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
-				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
-					result = result + fmt::format("{}: {}\n",param->description(), param->valueInPatchToText(*patch));
+			}
+			else {
+				valueLine += "UNKNOWN";
+			}
+			result += valueLine.toStdString() + "\n";
+		}
+	}
+	else {
+		// Old code, which has more complexity in the implementation, thus it is shorter here
+		int numLayers = 1;
+		auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch);
+		if (layers) {
+			numLayers = layers->numberOfLayers();
+		}
+
+		auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch);
+
+		if (parameterDetails) {
+			for (int layer = 0; layer < numLayers; layer++) {
+				if (layers) {
+					if (layer > 0) result += "\n";
+					result = result + fmt::format("Layer: {}\n", layers->layerName(layer));
+				}
+				for (auto param : parameterDetails->allParameterDefinitions()) {
+					if (layers) {
+						auto multiLayerParam = midikraft::Capability::hasCapability<midikraft::SynthMultiLayerParameterCapability>(param);
+						jassert(multiLayerParam);
+						if (multiLayerParam) {
+							multiLayerParam->setSourceLayer(layer);
+						}
+					}
+					auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
+					if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
+						result = result + fmt::format("{}: {}\n", param->description(), param->valueInPatchToText(*patch));
+					}
 				}
 			}
 		}

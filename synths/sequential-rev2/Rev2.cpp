@@ -632,4 +632,151 @@ namespace midikraft {
 		return fmt::format("{}{} P{}", (section == 0 ? "U" : "F"), ((bank % 4) + 1), (program+1));
 	}
 
+	std::vector<ParamDef> Rev2::getParameterDefinitions() const {
+		Rev2Patch dummy;
+		std::vector<ParamDef> result;
+		int i = 0;
+		std::string layerName = "Layer A ";
+		for (int layer = 0; layer < 2; layer++) {
+			if (layer == 1) {
+				layerName = "Layer B ";
+			}
+			for (auto const& param : dummy.allParameterDefinitions()) {
+				switch (param->type()) {
+				case SynthParameterDefinition::ParamType::INT: {
+					auto intParam = std::dynamic_pointer_cast<SynthIntValueParameterCapability>(param);
+					result.push_back(ParamDef{ i, layerName + param->name(), ParamType::VALUE, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+					break;
+				}
+				case SynthParameterDefinition::ParamType::INT_ARRAY: {
+					auto intParam = std::dynamic_pointer_cast<SynthIntValueParameterCapability>(param);
+					result.push_back(ParamDef{ i, layerName + param->name(), ParamType::LIST, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+					break;
+				}
+				case SynthParameterDefinition::ParamType::LOOKUP: {
+					auto rev2Param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
+					juce::StringArray allowedValues;
+					for (int j = rev2Param->minValue(); j < rev2Param->maxValue(); j++) {
+						allowedValues.add(rev2Param->lookup(j));
+					}
+					result.push_back(ParamDef{ i, layerName + param->name(), ParamType::CHOICE, allowedValues });
+					break;
+				}
+				case SynthParameterDefinition::ParamType::LOOKUP_ARRAY: 
+					spdlog::error("Lookup Arrays are not implemented for the Rev2, but param {} uses it", param->name());
+				}
+				i = i + 1;
+			}
+		}
+		return result;
+	}
+
+	std::vector<ParamVal> Rev2::getParameterValues(std::shared_ptr<DataFile> const patch, bool onlyActive) const {
+		ignoreUnused(onlyActive); // TBD
+		auto rev2patch = std::dynamic_pointer_cast<Rev2Patch>(patch);
+		if (!rev2patch) {
+			return {};
+		}
+		std::vector<ParamVal> result;
+		int i = 0;
+		for (int layer = 0; layer < 2; layer++) {
+			for (auto const& param : rev2patch->allParameterDefinitions()) {
+				auto rev2Param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
+				rev2Param->setSourceLayer(layer);
+				switch (param->type()) {
+				case SynthParameterDefinition::ParamType::INT: {
+					auto intParam = std::dynamic_pointer_cast<SynthIntParameterCapability>(param);
+					int value = 0;
+					if (!intParam->valueInPatch(*patch, value)) {
+						spdlog::error("Failed to get integer value for parameter {}", param->name());
+					}
+					result.push_back(ParamVal{ i, juce::var(value) });
+					break;
+				}
+				case SynthParameterDefinition::ParamType::INT_ARRAY: {
+					auto intParam = std::dynamic_pointer_cast<SynthVectorParameterCapability>(param);
+					std::vector<int> values;
+					if (!intParam->valueInPatch(*patch, values)) {
+						spdlog::error("Failed to get integer vector values for parameter {}", param->name());
+					}
+					juce::Array<juce::var> valueArray;
+					for (auto const& v : values) {
+						valueArray.add(juce::var(v));
+					}
+					result.push_back(ParamVal{ i, valueArray });
+					break;
+				}
+				case SynthParameterDefinition::ParamType::LOOKUP: {
+					std::string value = param->valueInPatchToText(*patch);
+					result.push_back(ParamVal{ i, juce::var(value)});
+					break;
+				}
+				case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
+					spdlog::error("Lookup Arrays are not implemented for the Rev2, but param {} uses it", param->name());
+				}
+				i = i + 1;
+			}
+		}
+		return result;
+	}
+
+	std::vector<float> Rev2::createFeatureVector(std::shared_ptr<DataFile> const patch) const {
+		auto rev2patch = std::dynamic_pointer_cast<Rev2Patch>(patch);
+		if (!rev2patch) {
+			return {};
+		}
+		auto definitions = getParameterDefinitions();
+		std::vector<float> result;
+		int i = 0;
+		for (int layer = 0; layer < 2; layer++) {
+			for (auto const& param : rev2patch->allParameterDefinitions()) {
+				auto rev2Param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
+				rev2Param->setSourceLayer(layer);
+				switch (param->type()) {
+				case SynthParameterDefinition::ParamType::INT: {
+					auto intParam = std::dynamic_pointer_cast<SynthIntParameterCapability>(param);
+					int value = 0;
+					if (!intParam->valueInPatch(*patch, value)) {
+						spdlog::error("Failed to get integer value for parameter {}", param->name());
+					}
+					juce::Array<var> minMax = *definitions[i].values.getArray();
+					float range = static_cast<float>(minMax[1].operator int() - minMax[0].operator int());
+					result.push_back(static_cast<float>(value + minMax[0].operator int())/static_cast<float>(range));
+					break;
+				}
+				case SynthParameterDefinition::ParamType::INT_ARRAY: {
+					auto intParam = std::dynamic_pointer_cast<SynthVectorParameterCapability>(param);
+					std::vector<int> values;
+					juce::Array<var> minMax = *definitions[i].values.getArray();
+					float range = static_cast<float>(minMax[1].operator int() - minMax[0].operator int());
+					if (!intParam->valueInPatch(*patch, values)) {
+						spdlog::error("Failed to get integer vector values for parameter {}", param->name());
+					}
+					for (auto const& v : values) {
+						result.push_back(static_cast<float>(v + minMax[0].operator int()) / static_cast<float>(range));
+					}
+					break;
+				}
+				case SynthParameterDefinition::ParamType::LOOKUP: {
+					std::string value = param->valueInPatchToText(*patch);
+					for (auto const& option : *definitions[i].values.getArray()) {
+						if (option == value) {
+							result.push_back(1.0f);
+						}
+						else {
+							result.push_back(0.0f);
+						}
+					}
+					break;
+				}
+				case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
+					spdlog::error("Lookup Arrays are not implemented for the Rev2, but param {} uses it", param->name());
+				}
+				i = i + 1;
+			}
+		}
+		return result;
+	}
+
+
 }

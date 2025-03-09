@@ -245,5 +245,9 @@ namespace midikraft {
 		return type_;
 	}
 
+	std::string Rev2ParamDefinition::lookup(int value) {
+		return lookupFunction_(value);
+	}
+
 }
 
