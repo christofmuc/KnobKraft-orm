@@ -47,6 +47,10 @@ namespace midikraft {
 		virtual int getTargetLayer() const override;
 		virtual void setSourceLayer(int layerNo) override;
 		virtual int getSourceLayer() const override;
+
+		// Internal use only, for legacy integration
+		std::string lookup(int value);
+
 	private:
 		ParamType type_;
 		int targetLayer_; // The Rev2 has no layers, A (=0) and B (=0). By default, we target 0 but can change this calling setTargetLayer()
