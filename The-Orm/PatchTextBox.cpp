@@ -174,6 +174,10 @@ std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Synth> synth
 		auto values = modernParameters->getParameterValues(patch, true);
 
 		for (size_t i = 0; i < parameters.size(); i++) {
+			if (i >= values.size()) {
+				// Abbreviated data
+				break;
+			}
 			String valueLine = parameters[i].name + ": ";
 			if (values[i].value.isInt()) {
 				valueLine += values[i].value.toString();

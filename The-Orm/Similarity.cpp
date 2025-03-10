@@ -1,5 +1,8 @@
 #include "Similarity.h"
 
+#include "Capability.h"
+#include "DetailedParametersCapability.h"
+
 #include "faiss/IndexFlat.h"
 
 #include <spdlog/spdlog.h>
@@ -13,7 +16,7 @@ struct SearchIndex {
 
 class ExactSimilaritySearch {
 public:
-	typedef std::function<void(midikraft::PatchHolder const& patch, float* position, size_t d)> PatchFeatureVector;
+	typedef std::function<void(midikraft::PatchHolder const& patch, float* position, size_t &d)> PatchFeatureVector;
 
 	ExactSimilaritySearch(midikraft::PatchDatabase& db) : db_(db) {
 	}
@@ -36,6 +39,10 @@ public:
 			size_t dimensionality = 0;
 			for (size_t i = 0; i < patches.size(); i++) {
 				id_map->emplace(i, patches[i].md5());
+				if (dimensionality == 0) {
+					// Need to calculate a feature vector to glean the dimensionality
+					featureVector(patches[i], nullptr, dimensionality);
+				}
 				dimensionality = std::max(dimensionality, patches[i].patch()->data().size());
 			}
 
@@ -93,25 +100,34 @@ PatchSimilarity::PatchSimilarity(midikraft::PatchDatabase& db) : db_(db) {
 }
 
 
-void patchDataAsFeatureVector(midikraft::PatchHolder const& patch, float* matrix, size_t d) {
+void patchDataAsFeatureVector(midikraft::PatchHolder const& patch, float* matrix, size_t &d) {
 	auto const& data = patch.patch()->data();
-	size_t j = 0;
-	size_t write_pos = 0;
-	for (; j < data.size(); j++) {
-		matrix[write_pos++] = data[j];
+	if (matrix != nullptr) {
+		for (size_t j = 0; j < data.size(); j++) {
+			matrix[j] = data[j];
+		}
 	}
-	for (; j < d; j++) {
-		matrix[write_pos++] = 0.0f;
+	d = data.size();
+}
+
+void featuresFromParameters(midikraft::PatchHolder const& patch, float* matrix, size_t &d) {
+	auto modernParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(patch.smartSynth());
+	if (modernParameters) {
+		auto featureVector = modernParameters->createFeatureVector(patch.patch());
+		d = featureVector.size();
+		if (matrix != nullptr) {
+			std::copy(featureVector.cbegin(), featureVector.cend(), matrix);
+		}
 	}
 }
 
 
 std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraft::PatchHolder const& examplePatch, int k) {
 	// Now, we need to build an index of all patches for this synth, should it not exist yet
-	impl_->buildIndexForSynth(examplePatch.smartSynth(), patchDataAsFeatureVector);
+	impl_->buildIndexForSynth(examplePatch.smartSynth(), featuresFromParameters);
 
 	// And then call search
-	auto neighbours = impl_->searchNeighbours(examplePatch, k, patchDataAsFeatureVector);
+	auto neighbours = impl_->searchNeighbours(examplePatch, k, featuresFromParameters);
 
 	std::vector<midikraft::PatchHolder> result;
 	for (auto const& neighbour : neighbours) {
