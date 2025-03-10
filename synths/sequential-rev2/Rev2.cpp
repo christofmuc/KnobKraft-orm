@@ -756,7 +756,7 @@ namespace midikraft {
 							jassertfalse;
 							range = 1.0f;
 						}
-						result.push_back(static_cast<float>(value + minMax[0].operator int()) / static_cast<float>(range));
+						result.push_back(rev2Param->featureWeight() * static_cast<float>(value + minMax[0].operator int()) / static_cast<float>(range));
 					}
 					else {
 						result.push_back(0.0f);
@@ -778,7 +778,7 @@ namespace midikraft {
 					}
 					for (auto const& v : values) {
 						if (activeParam)
-							result.push_back(static_cast<float>(v + minMax[0].operator int()) / static_cast<float>(range));
+							result.push_back(rev2Param->featureWeight() * static_cast<float>(v + minMax[0].operator int()) / static_cast<float>(range));
 						else
 							result.push_back(0.0f);
 					}
@@ -788,7 +788,7 @@ namespace midikraft {
 					std::string value = param->valueInPatchToText(*patch);
 					for (auto const& option : *definitions[i].values.getArray()) {
 						if (option == value && activeParam) {
-							result.push_back(1.0f);
+							result.push_back(rev2Param->featureWeight());
 						}
 						else {
 							result.push_back(0.0f);
