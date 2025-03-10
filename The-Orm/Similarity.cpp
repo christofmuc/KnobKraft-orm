@@ -15,7 +15,7 @@ struct SearchIndex {
 	std::shared_ptr<faiss::Index> index;
 };
 
-typedef std::function<void(midikraft::PatchHolder const& patch, float* position, size_t& d)> PatchFeatureVector;
+typedef std::function<void(midikraft::PatchHolder const& patch, float* position, size_t capacity, size_t& out_dimensionality)> PatchFeatureVector;
 
 class ExactSimilaritySearch {
 public:
@@ -39,7 +39,7 @@ public:
 
 		// Need to calculate a feature vector to glean the dimensionality
 		size_t dimensionality = 0;
-		featureVector(patches[0], nullptr, dimensionality);
+		featureVector(patches[0], nullptr, 0, dimensionality);
 
 		// Now, we build two indices: The first is just integer to md5,
 		// the second is the vector index of dimensionality equal to patch size
@@ -53,7 +53,8 @@ public:
 		size_t write_pos = 0;
 		for (size_t i = 0; i < patches.size(); i++) {
 			id_map->emplace(i, patches[i].md5());
-			featureVector(patches[i], &xb[write_pos], dimensionality);
+			size_t changed_dim = 0;
+			featureVector(patches[i], &xb[write_pos], dimensionality, changed_dim);
 			write_pos += dimensionality;			
 			progressHandler->setProgressPercentage(i / static_cast<double>(patches.size()));
 			if (progressHandler->shouldAbort()) {
@@ -75,7 +76,8 @@ public:
 			auto searchIndex = index->second;
 
 			std::vector<float> features(searchIndex.dimensionality);
-			featureVector(examplePatch, features.data(), searchIndex.dimensionality);
+			size_t dim = searchIndex.dimensionality;
+			featureVector(examplePatch, features.data(), searchIndex.dimensionality, dim);
 			std::vector<float> distances(k);
 			std::vector<faiss::idx_t> labels(k);
 			searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
@@ -110,23 +112,29 @@ PatchSimilarity::PatchSimilarity(midikraft::PatchDatabase& db) : db_(db) {
 }
 
 
-void patchDataAsFeatureVector(midikraft::PatchHolder const& patch, float* matrix, size_t &d) {
+void patchDataAsFeatureVector(midikraft::PatchHolder const& patch, float* matrix, size_t capacity, size_t& out_dimensionality) {
 	auto const& data = patch.patch()->data();
+	out_dimensionality = data.size();
 	if (matrix != nullptr) {
-		for (size_t j = 0; j < data.size(); j++) {
-			matrix[j] = data[j];
+		size_t j = 0;
+		for (uint8 const& value : data) {
+			if (j >= capacity) {
+				// Varying patch data size. TODO
+				return;
+			}
+			matrix[j++] = static_cast<float>(value);
 		}
 	}
-	d = data.size();
 }
 
-void featuresFromParameters(midikraft::PatchHolder const& patch, float* matrix, size_t &d) {
+void featuresFromParameters(midikraft::PatchHolder const& patch, float* matrix, size_t capacity, size_t& out_dimensionality) {
 	auto modernParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(patch.smartSynth());
 	if (modernParameters) {
 		auto featureVector = modernParameters->createFeatureVector(patch.patch());
-		d = featureVector.size();
+		out_dimensionality = featureVector.size();
 		if (matrix != nullptr) {
-			std::copy(featureVector.cbegin(), featureVector.cend(), matrix);
+			size_t last_element = std::min(featureVector.size(), capacity);
+			std::copy(featureVector.cbegin(), featureVector.cbegin() + last_element, matrix);
 		}
 	}
 }
@@ -153,9 +161,12 @@ private:
 };
 
 std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraft::PatchHolder const& examplePatch, int k) {
-	if (!impl_->hasIndex(examplePatch.smartSynth())) {
+	auto synth = examplePatch.smartSynth();
+	bool hasModernParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth) != nullptr;
+
+	if (!impl_->hasIndex(synth)) {
 		// Now, we need to build an index of all patches for this synth, should it not exist yet
-		BuildFeatureIndexWindow progressWindow(examplePatch.smartSynth(), *impl_, featuresFromParameters);
+		BuildFeatureIndexWindow progressWindow(synth, *impl_, hasModernParameters ? featuresFromParameters : patchDataAsFeatureVector);
 		if (!progressWindow.runThread()) {
 			// User abort
 			return {};
@@ -163,7 +174,7 @@ std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraf
 	}
 
 	// And then call search
-	auto neighbours = impl_->searchNeighbours(examplePatch, k, featuresFromParameters);
+	auto neighbours = impl_->searchNeighbours(examplePatch, k, hasModernParameters ? featuresFromParameters : patchDataAsFeatureVector);
 
 	std::vector<midikraft::PatchHolder> result;
 	for (auto const& neighbour : neighbours) {
