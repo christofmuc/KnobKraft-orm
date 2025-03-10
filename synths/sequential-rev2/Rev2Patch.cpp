@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2019 Christof Ruch. All rights reserved.
+   Copyright (c) 2019-2025 Christof Ruch. All rights reserved.
 
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
@@ -43,126 +43,158 @@ namespace midikraft {
 		, {20, "Noise" }, {21, "DC" }, {22, "Audio Out" }
 	};
 
-	std::function<std::string(int)> noteNumberToName = [](int value) { return MidiNote(value).name(); };
+	//std::function<std::string(int)> noteNumberToName = [](int value) { return MidiNote(value).name(); };
+
 
 	std::vector<Rev2ParamDefinition> nrpns = {
-		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0),
-		Rev2ParamDefinition(1, 0, 100, "Osc 1 Freq Fine", 2),
-		Rev2ParamDefinition(2, 0, 4, "Osc 1 Shape Mod", 4, { {0, "Off"}, { 1, "Saw" }, { 2, "Saw+Triangle"}, { 3, "Triangle" }, { 4, "Pulse" } }),
-		Rev2ParamDefinition(3, 0, 127, "Osc 1 Glide", 8),
-		Rev2ParamDefinition(4, 0, 1, "Osc 1 Key On/Off", 10),
-		Rev2ParamDefinition(5, 0, 120, "Osc 2 Freq", 1, noteNumberToName),
-		Rev2ParamDefinition(6, 0, 100, "Osc 2 Freq Fine", 3),
-		Rev2ParamDefinition(7, 0, 4, "Osc 2 Shape Mod", 5, { { 0, "Off" },{ 1, "Saw" },{ 2, "Saw+Triangle" },{ 3, "Triangle" },{ 4, "Pulse" } }),
-		Rev2ParamDefinition(8, 0, 127, "Osc 2 Glide", 9),
-		Rev2ParamDefinition(9, 0, 1, "Osc. 2 Key On/Off", 11),
-		Rev2ParamDefinition(10, 0, 1, "Sync On/Off", 17),
+		// Oscillator 1 Section - active when param 2 is not off
+		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0, {}, { 2 }, true, 5.0f),
+		Rev2ParamDefinition(1, 0, 100, "Osc 1 Freq Fine", 2, {}, { 2 }),
+		Rev2ParamDefinition(2, 0, 4, "Osc 1 Shape Mod", 4, { {0, "Off"}, { 1, "Saw" }, { 2, "Saw+Triangle"}, { 3, "Triangle" }, { 4, "Pulse" } }, {}, true, 5.0f),
+		Rev2ParamDefinition(3, 0, 127, "Osc 1 Glide", 8, {}, { 2 }),
+		Rev2ParamDefinition(4, 0, 1, "Osc 1 Key On/Off", 10, {}, { 2 }),
+
+		// Oscillator 2 Section - active when param 7 is not off
+		Rev2ParamDefinition(5, 0, 120, "Osc 2 Freq", 1, {}, { 7 }, true, 5.0f),
+		Rev2ParamDefinition(6, 0, 100, "Osc 2 Freq Fine", 3, {}, { 7 }),
+		Rev2ParamDefinition(7, 0, 4, "Osc 2 Shape Mod", 5, { { 0, "Off" },{ 1, "Saw" },{ 2, "Saw+Triangle" },{ 3, "Triangle" },{ 4, "Pulse" } }, {}, true, 5.0f),
+		Rev2ParamDefinition(8, 0, 127, "Osc 2 Glide", 9, {}, { 7 }),
+		Rev2ParamDefinition(9, 0, 1, "Osc. 2 Key On/Off", 11, {}, { 7 }),
+
+		// More Oscillator parameters
+		Rev2ParamDefinition(10, 0, 1, "Sync On/Off", 17, {}, {}, true, 10.0f),
 		Rev2ParamDefinition(11, 0, 3, "Glide Mode", 18, { { 0, "Fixed Rate" },{ 1, "Fixed Rate A" },{ 2, "Fixed Time" },{ 3, "Fixed Time A" } }),
 		Rev2ParamDefinition(12, 0, 127, "Osc Slop", 21),
 		Rev2ParamDefinition(13, 0, 127, "Osc 1/2 Mix", 14),
 		Rev2ParamDefinition(14, 0, 127, "Noise Level", 16),
-		Rev2ParamDefinition(15, 0, 164, "Cutoff", 22),
+
+		// LPF settings
+		Rev2ParamDefinition(15, 0, 164, "Cutoff", 22, {}, {}, true, 3.0f),
 		Rev2ParamDefinition(16, 0, 127, "Resonance", 23),
 		Rev2ParamDefinition(17, 0, 127, "LPF Key Amt", 24),
 		Rev2ParamDefinition(18, 0, 127, "LPF Audio Mod", 25),
-		Rev2ParamDefinition(19, 0, 1, "2 pole/4 pole mode", 26, { {0, "2 pole 12db" }, { 1, "4 pole 24db" } }),
+		Rev2ParamDefinition(19, 0, 1, "2 pole/4 pole mode", 26, { {0, "2 pole 12db" }, { 1, "4 pole 24db" } }, {}, true, 5.0f),
+
+		// Filter envelope - only active when Amt is not 0
 		Rev2ParamDefinition(20, 0, 254, "Env LPF Amt", 32),
 		Rev2ParamDefinition(21, 0, 127, "Env LPF Vel Amt", 35),
-		Rev2ParamDefinition(22, 0, 127, "Env LPF Delay", 38),
-		Rev2ParamDefinition(23, 0, 127, "Env LPF Attack", 41),
-		Rev2ParamDefinition(24, 0, 127, "Env LPF Decay", 44),
-		Rev2ParamDefinition(25, 0, 127, "Env LPF Sustain", 47),
-		Rev2ParamDefinition(26, 0, 127, "Env LPF Release", 50),
+		Rev2ParamDefinition(22, 0, 127, "Env LPF Delay", 38, {}, {20, 21}),
+		Rev2ParamDefinition(23, 0, 127, "Env LPF Attack", 41, {}, {20, 21}),
+		Rev2ParamDefinition(24, 0, 127, "Env LPF Decay", 44, {}, {20, 21}),
+		Rev2ParamDefinition(25, 0, 127, "Env LPF Sustain", 47, {}, {20, 21}),
+		Rev2ParamDefinition(26, 0, 127, "Env LPF Release", 50, {}, {20, 21}),
+
 		// 27 is really empty.If you try to set this, you get a change in index #33
+
 		Rev2ParamDefinition(28, 0, 127, "Pan Spread", 29),
 		Rev2ParamDefinition(29, 0, 127, "Program Volume", 28),
+
+		// VCA envelope, controled by 30 - Env VCA amount and Vel Amt
 		Rev2ParamDefinition(30, 0, 127, "Env VCA Amt", 33),
 		Rev2ParamDefinition(31, 0, 127, "Env VCA Vel Amt", 36),
-		Rev2ParamDefinition(32, 0, 127, "Env VCA Delay", 39),
-		Rev2ParamDefinition(33, 0, 127, "Env VCA Attack", 42),
-		Rev2ParamDefinition(34, 0, 127, "Env VCA Decay", 45),
-		Rev2ParamDefinition(35, 0, 127, "Env VCA Sustain", 48),
-		Rev2ParamDefinition(36, 0, 127, "Env VCA Release", 51),
-		Rev2ParamDefinition(37, 0, 127, "LFO 1 Freq", 53),
-		Rev2ParamDefinition(38, 0, 4, "LFO 1 Shape", 57, kLfoShape),
-		Rev2ParamDefinition(39, 0, 127, "LFO 1 Amt", 61),
+		Rev2ParamDefinition(32, 0, 127, "Env VCA Delay", 39, {}, {31, 32}),
+		Rev2ParamDefinition(33, 0, 127, "Env VCA Attack", 42, {}, {31, 32}),
+		Rev2ParamDefinition(34, 0, 127, "Env VCA Decay", 45, {}, {31, 32}),
+		Rev2ParamDefinition(35, 0, 127, "Env VCA Sustain", 48, {}, {31, 32}),
+		Rev2ParamDefinition(36, 0, 127, "Env VCA Release", 51, {}, {31, 32}),
+
+		// LFO Parameters (depend on LFO Dest being set)
+		Rev2ParamDefinition(37, 0, 127, "LFO 1 Freq", 53, {}, { 40 }),
+		Rev2ParamDefinition(38, 0, 4, "LFO 1 Shape", 57, kLfoShape, { 40 }),
+		Rev2ParamDefinition(39, 0, 127, "LFO 1 Amt", 61, {}, { 40 }),
 		Rev2ParamDefinition(40, 0, 52, "LFO 1 Dest", 65, kLfoDestinations),
-		Rev2ParamDefinition(41, 0, 1, "LFO 1 Clock Sync", 69),
-		Rev2ParamDefinition(42, 0, 150, "LFO 2 Freq", 54),
-		Rev2ParamDefinition(43, 0, 4, "LFO 2 Shape", 58, kLfoShape),
-		Rev2ParamDefinition(44, 0, 127, "LFO 2 Amt", 62),
+		Rev2ParamDefinition(41, 0, 1, "LFO 1 Clock Sync", 69, {}, { 40 }),
+
+		Rev2ParamDefinition(42, 0, 150, "LFO 2 Freq", 54, {}, { 45 }),
+		Rev2ParamDefinition(43, 0, 4, "LFO 2 Shape", 58, kLfoShape, { 45 }),
+		Rev2ParamDefinition(44, 0, 127, "LFO 2 Amt", 62, {}, { 45 }),
 		Rev2ParamDefinition(45, 0, 52, "LFO 2 Dest", 66, kLfoDestinations),
-		Rev2ParamDefinition(46, 0, 1, "LFO 2 Clock Sync", 70),
-		Rev2ParamDefinition(47, 0, 150, "LFO 3 Freq", 55),
-		Rev2ParamDefinition(48, 0, 4, "LFO 3 Shape", 59, kLfoShape),
-		Rev2ParamDefinition(49, 0, 127, "LFO 3 Amt", 63),
+		Rev2ParamDefinition(46, 0, 1, "LFO 2 Clock Sync", 70, {}, { 45 }),
+
+		Rev2ParamDefinition(47, 0, 150, "LFO 3 Freq", 55, {}, { 50 }),
+		Rev2ParamDefinition(48, 0, 4, "LFO 3 Shape", 59, kLfoShape, { 50}),
+		Rev2ParamDefinition(49, 0, 127, "LFO 3 Amt", 63, {}, { 50 }),
 		Rev2ParamDefinition(50, 0, 52, "LFO 3 Dest", 67, kLfoDestinations),
-		Rev2ParamDefinition(51, 0, 1, "LFO 3 Clock Sync", 71),
-		Rev2ParamDefinition(52, 0, 150, "LFO 4 Freq", 56),
-		Rev2ParamDefinition(53, 0, 4, "LFO 4 Shape", 60, kLfoShape),
-		Rev2ParamDefinition(54, 0, 127, "LFO 4 Amt", 64),
+		Rev2ParamDefinition(51, 0, 1, "LFO 3 Clock Sync", 71, {}, { 50 }),
+
+		Rev2ParamDefinition(52, 0, 150, "LFO 4 Freq", 56, {}, { 55 }),
+		Rev2ParamDefinition(53, 0, 4, "LFO 4 Shape", 60, kLfoShape, { 55 }),
+		Rev2ParamDefinition(54, 0, 127, "LFO 4 Amt", 64, {}, { 55 }),
 		Rev2ParamDefinition(55, 0, 52, "LFO 4 Dest", 68, kLfoDestinations),
-		Rev2ParamDefinition(56, 0, 1, "LFO 4 Clock Sync", 72),
+		Rev2ParamDefinition(56, 0, 1, "LFO 4 Clock Sync", 72, {}, { 55 }),
+
 		Rev2ParamDefinition(57, 0, 52, "Env 3 Dest", 30, kLfoDestinations),
-		Rev2ParamDefinition(58, 0, 254, "Env 3 Amount", 34),
-		Rev2ParamDefinition(59, 0, 127, "Env 3 Vel Amt", 37),
-		Rev2ParamDefinition(60, 0, 127, "Env 3 Delay", 40),
-		Rev2ParamDefinition(61, 0, 127, "Env 3 Attack", 43),
-		Rev2ParamDefinition(62, 0, 127, "Env 3 Decay", 46),
-		Rev2ParamDefinition(63, 0, 127, "Env 3 Sustain", 49),
-		Rev2ParamDefinition(64, 0, 127, "Env 3 Release", 52),
-		Rev2ParamDefinition(65, 0, 22, "Mod 1 Source", 77, kModSources),
-		Rev2ParamDefinition(66, 0, 254, "Mod 1 Amount", 85),
+		Rev2ParamDefinition(58, 0, 254, "Env 3 Amount", 34, {}, { 57 }),
+		Rev2ParamDefinition(59, 0, 127, "Env 3 Vel Amt", 37, {}, { 57 }),
+		Rev2ParamDefinition(60, 0, 127, "Env 3 Delay", 40, {}, { 57 }), // This would need an "and" formular - Dest and Amount
+		Rev2ParamDefinition(61, 0, 127, "Env 3 Attack", 43, {}, { 57 }), // This would need an "and" formular - Dest and Amount
+		Rev2ParamDefinition(62, 0, 127, "Env 3 Decay", 46, {}, { 57 }), // This would need an "and" formular - Dest and Amount
+		Rev2ParamDefinition(63, 0, 127, "Env 3 Sustain", 49, {}, { 57 }), // This would need an "and" formular - Dest and Amount
+		Rev2ParamDefinition(64, 0, 127, "Env 3 Release", 52, {}, { 57 }), // This would need an "and" formular - Dest and Amount
+
+		// Modulation Parameters (depend on Mod Dest being set)
+		Rev2ParamDefinition(65, 0, 22, "Mod 1 Source", 77, kModSources, { 67 }),
+		Rev2ParamDefinition(66, 0, 254, "Mod 1 Amount", 85, {}, {67}),
 		Rev2ParamDefinition(67, 0, 52, "Mod 1 Dest", 93, kLfoDestinations),
-		Rev2ParamDefinition(68, 0, 22, "Mod 2 Source", 78, kModSources),
-		Rev2ParamDefinition(69, 0, 254, "Mod 2 Amount", 86),
+
+		Rev2ParamDefinition(68, 0, 22, "Mod 2 Source", 78, kModSources, { 70 }),
+		Rev2ParamDefinition(69, 0, 254, "Mod 2 Amount", 86, {}, { 70 }),
 		Rev2ParamDefinition(70, 0, 52, "Mod 2 Dest", 94, kLfoDestinations),
-		Rev2ParamDefinition(71, 0, 22, "Mod 3 Source", 79, kModSources),
-		Rev2ParamDefinition(72, 0, 254, "Mode 3 Amount", 87),
+
+		Rev2ParamDefinition(71, 0, 22, "Mod 3 Source", 79, kModSources, {73}),
+		Rev2ParamDefinition(72, 0, 254, "Mode 3 Amount", 87, {}, { 73 }),
 		Rev2ParamDefinition(73, 0, 52, "Mode 3 Dest", 95, kLfoDestinations),
-		Rev2ParamDefinition(74, 0, 22, "Mod 4 Source", 80, kModSources),
-		Rev2ParamDefinition(75, 0, 254, "Mod 4 Amount", 88),
+
+		Rev2ParamDefinition(74, 0, 22, "Mod 4 Source", 80, kModSources, { 76 }),
+		Rev2ParamDefinition(75, 0, 254, "Mod 4 Amount", 88, {}, { 76 }),
 		Rev2ParamDefinition(76, 0, 52, "Mod 4 Dest", 96, kLfoDestinations),
-		Rev2ParamDefinition(77, 0, 22, "Mod 5 Source", 81, kModSources),
-		Rev2ParamDefinition(78, 0, 254, "Mod 5 Amount", 89),
+
+		Rev2ParamDefinition(77, 0, 22, "Mod 5 Source", 81, kModSources, { 79 }),
+		Rev2ParamDefinition(78, 0, 254, "Mod 5 Amount", 89, {}, { 79 }),
 		Rev2ParamDefinition(79, 0, 52, "Mod 5 Dest", 97, kLfoDestinations),
-		Rev2ParamDefinition(80, 0, 22, "Mod 6 Source", 82, kModSources),
-		Rev2ParamDefinition(81, 0, 254, "Mod 6 Amount", 90),
+
+		Rev2ParamDefinition(80, 0, 22, "Mod 6 Source", 82, kModSources, { 82 }),
+		Rev2ParamDefinition(81, 0, 254, "Mod 6 Amount", 90, {}, { 82 }),
 		Rev2ParamDefinition(82, 0, 52, "Mod 6 Dest", 98, kLfoDestinations),
-		Rev2ParamDefinition(83, 0, 22, "Mod 7 Source", 83, kModSources),
-		Rev2ParamDefinition(84, 0, 254, "Mod 7 Amount", 91),
+
+		Rev2ParamDefinition(83, 0, 22, "Mod 7 Source", 83, kModSources, {85}),
+		Rev2ParamDefinition(84, 0, 254, "Mod 7 Amount", 91, {}, { 85 }),
 		Rev2ParamDefinition(85, 0, 52, "Mod 7 Dest", 99, kLfoDestinations),
-		Rev2ParamDefinition(86, 0, 22, "Mod 8 Source", 84, kModSources),
-		Rev2ParamDefinition(87, 0, 254, "Mod 8 Amount", 92),
+
+		Rev2ParamDefinition(86, 0, 22, "Mod 8 Source", 84, kModSources, { 88 }),
+		Rev2ParamDefinition(87, 0, 254, "Mod 8 Amount", 92, {}, { 88 }),
 		Rev2ParamDefinition(88, 0, 52, "Mod 8 Dest", 100, kLfoDestinations),
+
 		// TODO - really no values ?
-		Rev2ParamDefinition(97, 0, 1, "Env 3 Repeat", 31),
+		Rev2ParamDefinition(97, 0, 1, "Env 3 Repeat", 31, {},  { 57 }),
 		Rev2ParamDefinition(98, 0, 127, "VCA Level", 27),
-		Rev2ParamDefinition(99, 0, 1, "Osc 1 Note Reset", 12),
+		Rev2ParamDefinition(99, 0, 1, "Osc 1 Note Reset", 12, {}, { 2 }),
 		// TODO - really no values ?
-		Rev2ParamDefinition(102, 0, 99, "Osc 1 Pulse Width", 6),
-		Rev2ParamDefinition(103, 0, 99, "Osc 2 Pulse Width", 7),
-		Rev2ParamDefinition(104, 0, 1, "Osc 2 Note Reset", 13),
-		Rev2ParamDefinition(105, 0, 1, "LFO 1 Key Sync", 73),
-		Rev2ParamDefinition(106, 0, 1, "LFO 2 Key Sync", 74),
-		Rev2ParamDefinition(107, 0, 1, "LFO 3 Key Sync", 75),
-		Rev2ParamDefinition(108, 0, 1, "LFO 4 Key Sync", 76),
+		Rev2ParamDefinition(102, 0, 99, "Osc 1 Pulse Width", 6, {}, { 2 }),
+		Rev2ParamDefinition(103, 0, 99, "Osc 2 Pulse Width", 7, {}, { 7 }),
+		Rev2ParamDefinition(104, 0, 1, "Osc 2 Note Reset", 13, {}, { 7 }),
+		Rev2ParamDefinition(105, 0, 1, "LFO 1 Key Sync", 73, {}, { 40 }),
+		Rev2ParamDefinition(106, 0, 1, "LFO 2 Key Sync", 74, {}, { 45 }),
+		Rev2ParamDefinition(107, 0, 1, "LFO 3 Key Sync", 75, {}, { 50 }),
+		Rev2ParamDefinition(108, 0, 1, "LFO 4 Key Sync", 76, {}, { 55 }),
+
 		// TODO - really no values ?
 		Rev2ParamDefinition(110, 0, 127, "Sub Level", 15),
-		Rev2ParamDefinition(111, 0, 1, "Glide On/Off", 19),
+		Rev2ParamDefinition(111, 0, 1, "Glide On/Off", 19, {}, {}, true, 3.0f),
+
 		// TODO - really no values ?
-		Rev2ParamDefinition(113, 0, 12, "Pitch Bend Range", 20),
+		Rev2ParamDefinition(113, 0, 12, "Pitch Bend Range", 20, {}, {}, false),
 		Rev2ParamDefinition(114, 0, 1, "Pan Mod Mode", 209, { { 0, "Alternate" }, { 1, "Fixed" } }),
 		// TODO - really no values ?
-		Rev2ParamDefinition(116, 0, 254, "Mod Wheel Amount", 101),
+		Rev2ParamDefinition(116, 0, 254, "Mod Wheel Amount", 101, {}, { 117 }),
 		Rev2ParamDefinition(117, 0, 52, "Mod Wheel Dest", 102, kLfoDestinations),
-		Rev2ParamDefinition(118, 0, 254, "Pressure Amount", 103),
+		Rev2ParamDefinition(118, 0, 254, "Pressure Amount", 103, {}, { 119 }),
 		Rev2ParamDefinition(119, 0, 52, "Pressure Dest", 104, kLfoDestinations),
-		Rev2ParamDefinition(120, 0, 254, "Breath Amount", 105),
+		Rev2ParamDefinition(120, 0, 254, "Breath Amount", 105, {}, { 121 }),
 		Rev2ParamDefinition(121, 0, 52, "Breath Dest", 106, kLfoDestinations),
-		Rev2ParamDefinition(122, 0, 254, "Velocity Amount", 107),
+		Rev2ParamDefinition(122, 0, 254, "Velocity Amount", 107, {}, { 123 }),
 		Rev2ParamDefinition(123, 0, 52, "Velocity Dest", 108, kLfoDestinations),
-		Rev2ParamDefinition(124, 0, 254, "Foot Ctrl Amount", 109),
+		Rev2ParamDefinition(124, 0, 254, "Foot Ctrl Amount", 109, {}, { 125 }),
 		Rev2ParamDefinition(125, 0, 52, "Foot Ctrl Dest", 110, kLfoDestinations),
 		// TODO - really no values ?
 		Rev2ParamDefinition(153, 0, 1, "FX On/Off", 116),
@@ -170,36 +202,39 @@ namespace midikraft {
 			{ 0, "Off"}, {1, "Delay Mono"}, { 2, "DDL Stereo" }, { 3, "BBD Delay" }, { 4, "Chorus" },
 			{ 5, "Phaser High" },{ 6, "Phaser Low" },{ 7, "Phase Mst" },{ 8, "Flanger 1" },{ 9, "Flanger 2" },
 			{ 10, "Reverb" },{ 11, "Ring Mod" },{ 12, "Distortion" },{ 13, "HP Filter" }
-		}),
-		Rev2ParamDefinition(155, 0, 127, "FX Mix", 117),
-		Rev2ParamDefinition(156, 0, 255, "FX Param 1", 118),
-		Rev2ParamDefinition(157, 0, 127, "FX Param 2", 119),
-		Rev2ParamDefinition(158, 0, 1, "FX Clock Sync", 120),
+			}, { 153 }),
+		Rev2ParamDefinition(155, 0, 127, "FX Mix", 117, {}, { 153 }),
+		Rev2ParamDefinition(156, 0, 255, "FX Param 1", 118, {}, { 153 }),
+		Rev2ParamDefinition(157, 0, 127, "FX Param 2", 119, {}, { 153 }),
+		Rev2ParamDefinition(158, 0, 1, "FX Clock Sync", 120, {}, { 153 }),
 		// TODO - really no values ?
-		Rev2ParamDefinition(163, 0, 2, "A/B Mode", 231, { { 0, "Single Layer" }, { 1, "Stacked" }, { 2, "Split" } }),
-		Rev2ParamDefinition(164, 0, 1, "Poly Seq Start/Stop", 137),
+		Rev2ParamDefinition(163, 0, 2, "A/B Mode", 231, { { 0, "Single Layer" }, { 1, "Stacked" }, { 2, "Split" } }, {}, true, 3.0f),
+		Rev2ParamDefinition(164, 0, 1, "Poly Seq Start/Stop", 137, {}, {}, false),
 		// TODO - really no values ?
-		Rev2ParamDefinition(167, 0, 16, "Unison Detune", 208),
-		Rev2ParamDefinition(168, 0, 1, "Unison On/Off", 123),
-		Rev2ParamDefinition(169, 0, 16, "Unison Mode", 124),
-		Rev2ParamDefinition(170, 0, 5, "Key Mode", 122, { { 0, "Low" }, { 1, "Hi" }, { 2, "Last" }, { 3, "LowR" }, { 4, "HiR"}, {5, "LastR"} }),
-		Rev2ParamDefinition(171, 0, 120, "Split Point", 232),
+		Rev2ParamDefinition(167, 0, 16, "Unison Detune", 208, {}, {168}),
+		Rev2ParamDefinition(168, 0, 1, "Unison On/Off", 123, {}, {}, true, 5.0f),
+		Rev2ParamDefinition(169, 0, 16, "Unison Mode", 124, {}, { 168 }),
+		Rev2ParamDefinition(170, 0, 5, "Key Mode", 122, { { 0, "Low" }, { 1, "Hi" }, { 2, "Last" }, { 3, "LowR" }, { 4, "HiR"}, {5, "LastR"} }, {}, false),
+		Rev2ParamDefinition(171, 0, 120, "Split Point", 232, {}, {}, false),
 		Rev2ParamDefinition(172, 0, 1, "Arp On/Off", 136),
-		Rev2ParamDefinition(173, 0, 4, "Arp Mode", 132, { { 0, "Up" }, { 1, "Down"}, { 2, "Up+Down" }, { 3, "Random" },  { 4, "Assign" } }),
-		Rev2ParamDefinition(174, 0, 2, "Arp Octave", 133),
+		Rev2ParamDefinition(173, 0, 4, "Arp Mode", 132, { { 0, "Up" }, { 1, "Down"}, { 2, "Up+Down" }, { 3, "Random" },  { 4, "Assign" } }, { 172 }),
+		Rev2ParamDefinition(174, 0, 2, "Arp Octave", 133, {}, { 172 }),
 		Rev2ParamDefinition(175, 0, 12, "Clock Divide", 131, { {0, "Half" }, { 1, "Quarter"}, { 2, "8th" }, { 3, "8 Half"}, { 4, "8 Swing" } , {5, "8 Trip"}
-			, { 6, "16th" }, { 7, "16 Half"}, { 8, "16 Swing" } , {9, "16 Trip"}, { 10, "32nd" }, { 11, "32nd Trip"}, { 12, "64 Trip" } }),
+			, { 6, "16th" }, { 7, "16 Half"}, { 8, "16 Swing" } , {9, "16 Trip"}, { 10, "32nd" }, { 11, "32nd Trip"}, { 12, "64 Trip" } }, { 172 }),
 		// TODO - really no values ?
-		Rev2ParamDefinition(177, 0, 3, "Arp Repeats", 134),
-		Rev2ParamDefinition(178, 0, 1, "Arp Relatch", 135),
-		Rev2ParamDefinition(179, 30, 250, "BPM Tempo", 130),
+		Rev2ParamDefinition(177, 0, 3, "Arp Repeats", 134, {},  { 172 }),
+		Rev2ParamDefinition(178, 0, 1, "Arp Relatch", 135, {}, { 172 }),
+		Rev2ParamDefinition(179, 30, 250, "BPM Tempo", 130, {}, {}, false),
 		// TODO - really no values ?
 		Rev2ParamDefinition(182, 0, 4, "Gated Seq Mode", 138, { {0, "Normal"}, { 1, "No Reset"}, { 2, "No Gate"}, { 3, "No G/R"}, {4, "Key Step"} }),
 		Rev2ParamDefinition(183, 0, 1, "Seq Mode", 137, { {0, "Gated"}, { 1, "Poly"} }),
-		Rev2ParamDefinition(184, 0, 52, "Seq 1 Dest", 111, kLfoDestinations),
-		Rev2ParamDefinition(185, 0, 53, "Seq 2 Dest", 112, kLfoDestinations),
-		Rev2ParamDefinition(186, 0, 52, "Seq 3 Dest", 113, kLfoDestinations),
-		Rev2ParamDefinition(187, 0, 53, "Seq 4 Dest", 114, kLfoDestinations),
+
+		// Sequencer Parameters (depend on Seq Mode being Gated or Poly)
+		Rev2ParamDefinition(184, 0, 52, "Seq 1 Dest", 111, kLfoDestinations), 
+		Rev2ParamDefinition(185, 0, 53, "Seq 2 Dest", 112, kLfoDestinations), 
+		Rev2ParamDefinition(186, 0, 52, "Seq 3 Dest", 113, kLfoDestinations), 
+		Rev2ParamDefinition(187, 0, 53, "Seq 4 Dest", 114, kLfoDestinations), 
+		
 		// TODO - really no values ?
 		Rev2ParamDefinition(192, 207, 0, 127, "Seq Track 1", 140), // 126 is Reset, 127 is the Rest (Rest only on Track 1)
 		Rev2ParamDefinition(208, 223, 0, 126, "Seq Track 2", 156), // 126 is Reset
@@ -219,6 +254,33 @@ namespace midikraft {
 		Rev2ParamDefinition(916, 979, 0, 127, "Poly Seq Note 6", 896),
 		Rev2ParamDefinition(980, 1043, 128, 255, "Poly Seq Vel 6", 960)
 	};
+
+	
+	static Rev2ParamDefinition const& getDefinitionForNumber(int param_number) {
+		static std::map<int, size_t> mapping;
+		if (mapping.size() == 0) {
+			// Lazy initialization of lookup map
+			for (size_t i = 0; i < nrpns.size(); i++) {
+				mapping[nrpns[i].number()] = i;
+			}
+		}
+		return nrpns[mapping[param_number]];
+	}
+
+
+	// Function to check if a parameter is active
+	bool Rev2ParamDefinition::isParameterActive(DataFile const& patch) {
+		return preconditions_.size() == 0 || std::none_of(preconditions_.cbegin(), preconditions_.cend(), [&](int index) {
+			int outValue;
+			if (getDefinitionForNumber(index).valueInPatch(patch, outValue)) {
+				return outValue == 0;
+			}
+			else {
+				jassertfalse;
+			}
+			return false;
+			});
+	}
 
 	Rev2Patch::Rev2Patch() : Patch(Rev2::PATCH), number_(MidiProgramNumber::invalidProgram())
 	{

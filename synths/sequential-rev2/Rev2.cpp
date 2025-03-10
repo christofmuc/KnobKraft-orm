@@ -731,7 +731,16 @@ namespace midikraft {
 		for (int layer = 0; layer < 2; layer++) {
 			for (auto const& param : rev2patch->allParameterDefinitions()) {
 				auto rev2Param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
+				if (!rev2Param->isFeature()) {
+					// Skip parameters that are not marked as being part of the feature vector
+					i = i + 1;
+					continue;
+				}
+				// Make sure to read the correct layer
 				rev2Param->setSourceLayer(layer);
+
+				// Check if this is an active value, else produce zeros
+				bool activeParam = rev2Param->isParameterActive(*patch);
 				switch (param->type()) {
 				case SynthParameterDefinition::ParamType::INT: {
 					auto intParam = std::dynamic_pointer_cast<SynthIntParameterCapability>(param);
@@ -739,28 +748,46 @@ namespace midikraft {
 					if (!intParam->valueInPatch(*patch, value)) {
 						spdlog::error("Failed to get integer value for parameter {}", param->name());
 					}
-					juce::Array<var> minMax = *definitions[i].values.getArray();
-					float range = static_cast<float>(minMax[1].operator int() - minMax[0].operator int());
-					result.push_back(static_cast<float>(value + minMax[0].operator int())/static_cast<float>(range));
+					if (activeParam) {
+						juce::Array<var> minMax = *definitions[i].values.getArray();
+						jassert(minMax.size() == 2);
+						float range = static_cast<float>(minMax[1].operator int() - minMax[0].operator int());
+						if (range == 0.0) {
+							jassertfalse;
+							range = 1.0f;
+						}
+						result.push_back(static_cast<float>(value + minMax[0].operator int()) / static_cast<float>(range));
+					}
+					else {
+						result.push_back(0.0f);
+					}
 					break;
 				}
 				case SynthParameterDefinition::ParamType::INT_ARRAY: {
 					auto intParam = std::dynamic_pointer_cast<SynthVectorParameterCapability>(param);
 					std::vector<int> values;
 					juce::Array<var> minMax = *definitions[i].values.getArray();
+					jassert(minMax.size() == 2);
 					float range = static_cast<float>(minMax[1].operator int() - minMax[0].operator int());
+					if (range == 0.0) {
+						jassertfalse;
+						range = 1.0f;
+					}
 					if (!intParam->valueInPatch(*patch, values)) {
 						spdlog::error("Failed to get integer vector values for parameter {}", param->name());
 					}
 					for (auto const& v : values) {
-						result.push_back(static_cast<float>(v + minMax[0].operator int()) / static_cast<float>(range));
+						if (activeParam)
+							result.push_back(static_cast<float>(v + minMax[0].operator int()) / static_cast<float>(range));
+						else
+							result.push_back(0.0f);
 					}
 					break;
 				}
 				case SynthParameterDefinition::ParamType::LOOKUP: {
 					std::string value = param->valueInPatchToText(*patch);
 					for (auto const& option : *definitions[i].values.getArray()) {
-						if (option == value) {
+						if (option == value && activeParam) {
 							result.push_back(1.0f);
 						}
 						else {
