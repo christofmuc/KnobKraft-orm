@@ -38,8 +38,7 @@ struct SearchIndex {
 	size_t dimensionality;
 	size_t numVectors;
 	std::shared_ptr<std::map<size_t, std::string>> idToMd5;
-	std::shared_ptr<faiss::Index> index_l2;
-	std::shared_ptr<faiss::Index> index_ip;
+	std::shared_ptr<faiss::Index> index;
 };
 
 typedef std::function<void(midikraft::PatchHolder const& patch, float* position, size_t capacity, size_t& out_dimensionality)> PatchFeatureVector;
@@ -118,10 +117,10 @@ public:
 
 			switch (metric) {
 			case SimilarityMetric::L2:
-				searchIndex.index_l2->search(1, features.data(), k, distances.data(), labels.data());
+				searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
 				break;
 			case SimilarityMetric::IP:
-				searchIndex.index_ip->search(1, features.data(), k, distances.data(), labels.data());
+				searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
 				break;
 			}
 
@@ -129,8 +128,20 @@ public:
 			std::vector<std::pair<float, std::string>> result;
 			int i = 0;
 			for (auto r : labels) {
-				if (r != -1 && distances[i] < distance_cutoff) {
-					result.emplace_back(distances[i], searchIndex.idToMd5->at(r));
+				if (r != -1) {
+					// Apply cutoff based on metric
+					bool passes_cutoff = false;
+					switch (metric) {
+					case SimilarityMetric::L2:
+						passes_cutoff = distances[i] < distance_cutoff;
+						break;
+					case SimilarityMetric::IP:
+						passes_cutoff = distances[i] > distance_cutoff; // Higher is better
+						break;
+					}
+					if (passes_cutoff) {
+						result.emplace_back(distances[i], searchIndex.idToMd5->at(r));
+					}
 				}
 				i++;
 			}

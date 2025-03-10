@@ -14,21 +14,51 @@ SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchD
 		[this](std::string const&, std::string const&) { return (int) similarList_->patches().size(); });
 	addAndMakeVisible(*similarity_);
 	UIModel::instance()->currentPatch_.addChangeListener(this);
+	UIModel::instance()->databaseChanged.addChangeListener(this);
 	similarList_ = std::make_shared<midikraft::PatchList>("SimilarPatches");
 	similarity_->onPatchClicked = [this](midikraft::PatchHolder& patch) {
 		patchView_->selectPatch(patch, true);
 	};
 	activeIndex_ = std::make_unique<PatchSimilarity>(db);
+
+	helpText_.setText("Experimental feature - click on a patch in the grid, and after creating an in-memory index this list will show patches which are similar.");
+	helpText_.setEnabled(false);
+	helpText_.setMultiLine(true);
+	addAndMakeVisible(helpText_);
+
+	l2_.setButtonText("L2");
+	l2_.setRadioGroupId(80981, dontSendNotification);
+	l2_.setClickingTogglesState(true);
+	l2_.setToggleState(true, dontSendNotification);
+	l2_.onClick = [this]() {
+		runSearch();
+	};
+	addAndMakeVisible(l2_);
+	ip_.setButtonText("IP");
+	ip_.setRadioGroupId(80981, dontSendNotification);
+	ip_.setClickingTogglesState(true);
+	ip_.onClick = [this]() {
+		runSearch();
+	};
+	addAndMakeVisible(ip_);
+
+	similarityValue_.setTitle("Cutoff");
+	addAndMakeVisible(similarityValue_);
 }
 
 SimilarPatchesPanel::~SimilarPatchesPanel()
 {
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
+	UIModel::instance()->databaseChanged.removeChangeListener(this);
 }
 
 void SimilarPatchesPanel::resized()
 {
 	auto area = getLocalBounds();
+	helpText_.setBounds(area.removeFromTop(3 * LAYOUT_LINE_HEIGHT));
+	auto buttonRow = area.removeFromTop(LAYOUT_BUTTON_HEIGHT + 2 * LAYOUT_INSET_NORMAL);
+	l2_.setBounds(buttonRow.removeFromLeft(buttonRow.getWidth() / 2).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
+	ip_.setBounds(buttonRow.withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 	similarity_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 }
 
@@ -36,11 +66,26 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 {
 	if (source == &UIModel::instance()->currentPatch_)
 	{
-		if (UIModel::currentPatch().patch()) {
-			// Search
-			auto hits = activeIndex_->findSimilarPatches(UIModel::currentPatch(), 16, SimilarityMetric::L2, 0.95f);
-			similarList_->setPatches(hits);
-			similarity_->setPatchList(similarList_, buttonMode_);
+		runSearch();
+	} 
+	else if (source == &UIModel::instance()->databaseChanged) {
+		similarity_->clearList();
+	}
+}
+
+void SimilarPatchesPanel::runSearch() {
+	if (UIModel::currentPatch().patch()) {
+		auto metric = SimilarityMetric::IP;
+		if (l2_.getToggleState()) {
+			metric = SimilarityMetric::L2;
 		}
+		// Search
+		auto hits = activeIndex_->findSimilarPatches(UIModel::currentPatch(), 16, metric, 0.95f);
+		similarList_->setPatches(hits);
+		similarity_->setPatchList(similarList_, buttonMode_);
+	}
+	else {
+		similarity_->clearList();
+		activeIndex_ = std::make_unique<PatchSimilarity>(db_);
 	}
 }

@@ -28,10 +28,15 @@ public:
 
 private:
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
+	void runSearch();
 
 	PatchView* patchView_;
 	midikraft::PatchDatabase& db_;
 	PatchButtonInfo buttonMode_;
+	TextEditor helpText_;
+	TextButton l2_;
+	TextButton ip_;
+	Slider similarityValue_;
 	std::unique_ptr<VerticalPatchButtonList> similarity_;
 	std::shared_ptr<midikraft::PatchList> similarList_;
 	std::unique_ptr<PatchSimilarity> activeIndex_;
