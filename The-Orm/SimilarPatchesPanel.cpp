@@ -6,22 +6,6 @@
 
 #include <spdlog/spdlog.h>
 
-/*Merkmal* SimilarityIndex::patchToFeatureVector(int key, size_t dimension, midikraft::PatchHolder const& patch)
-{
-	size_t num_dimensions = patch.patch()->data().size();
-	auto merkmal = new Merkmal(key, (int)dimension);
-	size_t i;
-	for (i = 0; i < num_dimensions; i++) {
-		merkmal->werte[i] = patch.patch()->data()[i] / 255.0f;
-	}
-	while (i < dimension) {
-		merkmal->werte[i] = 0.0f;
-		i++;
-	}
-	return merkmal;
-}*/
-
-
 SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchDatabase& db) : patchView_(patchView), db_(db)
 	, buttonMode_(static_cast<PatchButtonInfo>(static_cast<int>(PatchButtonInfo::SubtitleSynth) | static_cast<int>(PatchButtonInfo::CenterName)))	
 {
@@ -54,7 +38,7 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 	{
 		if (UIModel::currentPatch().patch()) {
 			// Search
-			auto hits = activeIndex_->findSimilarPatches(UIModel::currentPatch(), 16);
+			auto hits = activeIndex_->findSimilarPatches(UIModel::currentPatch(), 16, SimilarityMetric::L2, 0.95f);
 			similarList_->setPatches(hits);
 			similarity_->setPatchList(similarList_, buttonMode_);
 		}

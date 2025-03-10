@@ -8,11 +8,38 @@
 
 #include <spdlog/spdlog.h>
 
+extern "C" {
+#include <cblas.h> // For BLAS functions
+}
+
+#include <vector>
+#include <cmath>
+#include <cblas.h> // For BLAS functions
+
+void normalizeVectors(float* data, size_t numVectors, size_t dimensionality) {
+	// Step 1: Compute the norm of each vector
+	std::vector<float> norms(numVectors);
+	for (size_t i = 0; i < numVectors; i++) {
+		// Compute the L2 norm of the i-th vector
+		norms[i] = cblas_snrm2(dimensionality, &data[i * dimensionality], 1);
+	}
+
+	// Step 2: Normalize each vector
+	for (size_t i = 0; i < numVectors; i++) {
+		if (norms[i] > 0) {
+			// Scale the i-th vector by 1 / norm
+			cblas_sscal(dimensionality, 1.0f / norms[i], &data[i * dimensionality], 1);
+		}
+	}
+}
+
+
 struct SearchIndex {
 	size_t dimensionality;
 	size_t numVectors;
 	std::shared_ptr<std::map<size_t, std::string>> idToMd5;
-	std::shared_ptr<faiss::Index> index;
+	std::shared_ptr<faiss::Index> index_l2;
+	std::shared_ptr<faiss::Index> index_ip;
 };
 
 typedef std::function<void(midikraft::PatchHolder const& patch, float* position, size_t capacity, size_t& out_dimensionality)> PatchFeatureVector;
@@ -47,7 +74,7 @@ public:
 		// so a different name will already make a big difference.
 		auto id_map = std::make_shared<std::map<size_t, std::string>>();
 		progressHandler->setMessage("Calculating feature vectors for patches...");
-		auto newIndex = std::make_shared<faiss::IndexFlatL2>(dimensionality);
+		//auto newIndex = std::make_shared<faiss::IndexFlatL2>(dimensionality);
 		// This matrix needs a lot of memory
 		float* xb = new float[dimensionality * patches.size()];
 		size_t write_pos = 0;
@@ -62,32 +89,50 @@ public:
 				return;
 			}
 		}
-		newIndex->add(patches.size(), xb);
-		indexes_.emplace(synth->getName(), SearchIndex{ dimensionality, patches.size(), id_map, newIndex});
+
+		normalizeVectors(xb, patches.size(), dimensionality);
+		auto ipIndex = std::make_shared<faiss::IndexFlatIP>(dimensionality);
+		ipIndex->add(patches.size(), xb);
+		indexes_.emplace(std::make_pair(synth->getName(), SimilarityMetric::IP), SearchIndex{dimensionality, patches.size(), id_map, ipIndex});
+
+		auto l2Index = std::make_shared<faiss::IndexFlatL2>(dimensionality);
+		l2Index->add(patches.size(), xb);
+		indexes_.emplace(std::make_pair(synth->getName(), SimilarityMetric::L2), SearchIndex{dimensionality, patches.size(), id_map, l2Index});
 	}
 
-	bool hasIndex(std::shared_ptr<midikraft::Synth> synth) {
-		return indexes_.find(synth->getName()) != indexes_.end();
+	bool hasIndex(std::shared_ptr<midikraft::Synth> synth, SimilarityMetric metric) {
+		return indexes_.find(std::make_pair(synth->getName(), metric)) != indexes_.end();
 	}
 
-	std::vector<std::string> searchNeighbours(midikraft::PatchHolder const& examplePatch, int k, PatchFeatureVector featureVector) {
-		auto index = indexes_.find(examplePatch.smartSynth()->getName());
+	std::vector<std::pair<float, std::string>> searchNeighbours(midikraft::PatchHolder const& examplePatch, int k, PatchFeatureVector featureVector, SimilarityMetric metric, float distance_cutoff) {
+		auto index = indexes_.find(std::make_pair(examplePatch.smartSynth()->getName(), metric));
 		if (index != indexes_.end()) {
 			auto searchIndex = index->second;
 
 			std::vector<float> features(searchIndex.dimensionality);
 			size_t dim = searchIndex.dimensionality;
 			featureVector(examplePatch, features.data(), searchIndex.dimensionality, dim);
+			normalizeVectors(features.data(), 1, searchIndex.dimensionality);
 			std::vector<float> distances(k);
 			std::vector<faiss::idx_t> labels(k);
-			searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
+
+			switch (metric) {
+			case SimilarityMetric::L2:
+				searchIndex.index_l2->search(1, features.data(), k, distances.data(), labels.data());
+				break;
+			case SimilarityMetric::IP:
+				searchIndex.index_ip->search(1, features.data(), k, distances.data(), labels.data());
+				break;
+			}
 
 			// The result is a list of md5s 
-			std::vector<std::string> result;
+			std::vector<std::pair<float, std::string>> result;
+			int i = 0;
 			for (auto r : labels) {
-				if (r != -1) {
-					result.emplace_back(searchIndex.idToMd5->at(r));
+				if (r != -1 && distances[i] < distance_cutoff) {
+					result.emplace_back(distances[i], searchIndex.idToMd5->at(r));
 				}
+				i++;
 			}
 			return result;
 		}
@@ -100,7 +145,7 @@ public:
 
 private:
 	midikraft::PatchDatabase& db_;
-	std::map<std::string, SearchIndex> indexes_;
+	std::map<std::pair<std::string, SimilarityMetric>, SearchIndex> indexes_;
 };
 
 // PIMPL https://stackoverflow.com/questions/9954518/stdunique-ptr-with-an-incomplete-type-wont-compile
@@ -160,11 +205,11 @@ private:
 	PatchFeatureVector featureVector_;
 };
 
-std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraft::PatchHolder const& examplePatch, int k) {
+std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraft::PatchHolder const& examplePatch, int k, SimilarityMetric metric, float distance_cutoff) {
 	auto synth = examplePatch.smartSynth();
 	bool hasModernParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth) != nullptr;
 
-	if (!impl_->hasIndex(synth)) {
+	if (!impl_->hasIndex(synth, metric)) {
 		// Now, we need to build an index of all patches for this synth, should it not exist yet
 		BuildFeatureIndexWindow progressWindow(synth, *impl_, hasModernParameters ? featuresFromParameters : patchDataAsFeatureVector);
 		if (!progressWindow.runThread()) {
@@ -174,15 +219,15 @@ std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraf
 	}
 
 	// And then call search
-	auto neighbours = impl_->searchNeighbours(examplePatch, k, hasModernParameters ? featuresFromParameters : patchDataAsFeatureVector);
+	auto neighbours = impl_->searchNeighbours(examplePatch, k, hasModernParameters ? featuresFromParameters : patchDataAsFeatureVector, metric, distance_cutoff);
 
 	std::vector<midikraft::PatchHolder> result;
 	for (auto const& neighbour : neighbours) {
-		if (!db_.getSinglePatch(examplePatch.smartSynth(), neighbour, result)) {
-			spdlog::error("Failed to load patch with md5 {} from database, outdated index?", neighbour);
+		if (!db_.getSinglePatch(examplePatch.smartSynth(), neighbour.second, result)) {
+			spdlog::error("Failed to load patch with md5 {} from database, outdated index?", neighbour.second);
 		}
 		else {
-			spdlog::info("Next neighbour: {}", result.back().name());
+			spdlog::info("Next neighbour: {} at {:.4f}", result.back().name(), neighbour.first);
 		}
 	}
 	return result;

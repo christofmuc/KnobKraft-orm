@@ -111,6 +111,7 @@ IF (WIN32)
 		URL https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x64_64.zip
 	)
 	FetchContent_MakeAvailable(blas)
+	set(BLAS_LIBRARY_INCLUDE "${blas_SOURCE_DIR}/include")
 	set(BLAS_LIBRARY "${blas_SOURCE_DIR}/lib/libopenblas.lib")
 	set(BLAS_LIBRARY_DLL "${blas_SOURCE_DIR}/bin/libopenblas.dll")
 

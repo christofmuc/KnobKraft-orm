@@ -131,7 +131,7 @@ add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
 	INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 target_include_directories(KnobKraftOrm SYSTEM
-	PRIVATE "${FAISS_INCLUDE_PATH}" "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+	PRIVATE "${FAISS_INCLUDE_PATH}" "${BLAS_LIBRARY_INCLUDE}" "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
 target_compile_definitions(KnobKraftOrm PRIVATE JUCE_MODULE_AVAILABLE_gin_gui JUCE_MODULE_AVAILABLE_gin)
 get_target_property(gin_include_dirs gin INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(KnobKraftOrm SYSTEM PRIVATE ${gin_include_dirs})
