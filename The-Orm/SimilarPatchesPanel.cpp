@@ -52,7 +52,7 @@ SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchD
 
 	similarityValue_.setTitle("Cutoff"); 
 	similarityValue_.setValue(0.95);
-	similarityValue_.setRange(juce::Range(0.8, 1.0), 0.01);
+	similarityValue_.setRange(juce::Range(0.75, 1.0), 0.01);
 	similarityValue_.onValueChange = [this]() {
 		runSearch();
 	};

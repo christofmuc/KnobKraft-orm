@@ -217,11 +217,11 @@ public:
 
 			switch (metric) {
 			case SimilarityMetric::L2:
-				spdlog::info("Searching using L2 metric");
+				spdlog::debug("Searching using L2 metric");
 				searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
 				break;
 			case SimilarityMetric::IP:
-				spdlog::info("Searching using IP metric");
+				spdlog::debug("Searching using IP metric");
 				normalizeVectors(features.data(), 1, searchIndex.dimensionality);
 				searchIndex.index->search(1, features.data(), k, distances.data(), labels.data());
 				break;
@@ -347,7 +347,7 @@ std::vector<midikraft::PatchHolder> PatchSimilarity::findSimilarPatches(midikraf
 			spdlog::error("Failed to load patch with md5 {} from database, outdated index?", neighbour.second);
 		}
 		else {
-			spdlog::info("Next neighbour: {} at {:.4f}", result.back().name(), neighbour.first);
+			spdlog::debug("Next neighbour: {} at {:.4f}", result.back().name(), neighbour.first);
 		}
 	}
 	return result;
