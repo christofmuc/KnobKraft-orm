@@ -46,7 +46,7 @@ jobs:
       - name: Build FAISS third party library
         working-directory: third_party/faiss
         run: |
-          cmake -B build
+          cmake -B build -DFAISS_ENABLE_GPU=OFF 
           cmake --build build --parallel --config RelWithDebInfo
 
       - name: CMake configure
