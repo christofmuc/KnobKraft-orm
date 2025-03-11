@@ -35,7 +35,7 @@ jobs:
         working-directory: third_party/faiss
         run: |
           nuget install OpenBLAS
-          cmake -B build -DFAISS_ENABLE_GPU=OFF -DBUILD_SHARED_LIBS=ON -DFAISS_OPT_LEVEL=avx2 -DBLA_VENDOR=OpenBLAS -DBLAS_LIBRARIES=openblas -DBLA_STATIC=ON -DLAPACK_LIBRARIES=openblas -DFAISS_ENABLE_PYTHON=OFF
+          cmake -B build -DFAISS_ENABLE_GPU=OFF -DBUILD_SHARED_LIBS=ON -DFAISS_OPT_LEVEL=avx2 -DBLA_VENDOR=OpenBLAS -DBLAS_LIBRARIES=openblas -DBLA_STATIC=ON -DLAPACK_LIBRARIES=openblas -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=OFF
           cmake --build build --parallel --config RelWithDebInfo
 
       - name: Build and install Sentry
