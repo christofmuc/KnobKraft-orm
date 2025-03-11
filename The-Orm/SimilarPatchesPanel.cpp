@@ -7,7 +7,8 @@
 #include <spdlog/spdlog.h>
 
 SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchDatabase& db) : patchView_(patchView), db_(db)
-	, buttonMode_(static_cast<PatchButtonInfo>(static_cast<int>(PatchButtonInfo::SubtitleSynth) | static_cast<int>(PatchButtonInfo::CenterName)))	
+	, buttonMode_(static_cast<PatchButtonInfo>(static_cast<int>(PatchButtonInfo::SubtitleSynth) | static_cast<int>(PatchButtonInfo::CenterName))),
+	similarityValue_(Slider::LinearHorizontal, Slider::NoTextBox)
 {
 	similarity_ = std::make_unique<VerticalPatchButtonList>([](MidiProgramNumber, std::string) {},
 		[](MidiProgramNumber, std::string const&, std::string const&) {},
@@ -42,7 +43,12 @@ SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchD
 	};
 	addAndMakeVisible(ip_);
 
-	similarityValue_.setTitle("Cutoff");
+	similarityValue_.setTitle("Cutoff"); 
+	similarityValue_.setValue(0.95);
+	similarityValue_.setRange(juce::Range(0.0, 1.0), 0.05);
+	similarityValue_.onValueChange = [this]() {
+		runSearch();
+	};
 	addAndMakeVisible(similarityValue_);
 }
 
@@ -59,6 +65,7 @@ void SimilarPatchesPanel::resized()
 	auto buttonRow = area.removeFromTop(LAYOUT_BUTTON_HEIGHT + 2 * LAYOUT_INSET_NORMAL);
 	l2_.setBounds(buttonRow.removeFromLeft(buttonRow.getWidth() / 2).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
 	ip_.setBounds(buttonRow.withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
+	similarityValue_.setBounds(area.removeFromTop(LAYOUT_BUTTON_HEIGHT).reduced(LAYOUT_INSET_SMALL));
 	similarity_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 }
 
@@ -76,11 +83,12 @@ void SimilarPatchesPanel::changeListenerCallback(ChangeBroadcaster* source)
 void SimilarPatchesPanel::runSearch() {
 	if (UIModel::currentPatch().patch()) {
 		auto metric = SimilarityMetric::IP;
+		float similarityCutoff = static_cast<float>(similarityValue_.getValue());
 		if (l2_.getToggleState()) {
 			metric = SimilarityMetric::L2;
 		}
 		// Search
-		auto hits = activeIndex_->findSimilarPatches(UIModel::currentPatch(), 16, metric, 0.95f);
+		auto hits = activeIndex_->findSimilarPatches(UIModel::currentPatch(), 16, metric, similarityCutoff);
 		similarList_->setPatches(hits);
 		similarity_->setPatchList(similarList_, buttonMode_);
 	}
