@@ -43,6 +43,12 @@ jobs:
           git status
           git describe --tags --long --dirty
 
+      - name: Build FAISS third party library
+        working-directory: third_party/faiss
+        run: |
+          cmake -B build
+          cmake --build build --parallel --config RelWithDebInfo
+
       - name: CMake configure
         env: # We get the SENTRY DSN from the repository's secret store
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
