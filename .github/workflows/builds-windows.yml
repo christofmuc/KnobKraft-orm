@@ -36,7 +36,8 @@ jobs:
         run: |
           Invoke-WebRequest -Uri https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x64_64.zip -OutFile OpenBLAS.zip
           Expand-Archive -Path OpenBLAS.zip -DestinationPath openblas
-          cmake -B build -DFAISS_ENABLE_GPU=OFF -DBUILD_SHARED_LIBS=ON -DBLA_VENDOR=OpenBLAS -DBLAS_LIBRARIES=%cd%/openblas/lib/libopenblas.lib -DLAPACK_LIBRARIES=%cd%/openblas/lib/libopenblas.lib -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=OFF
+          $curDir = Get-Location
+          cmake -B build -DFAISS_ENABLE_GPU=OFF -DBUILD_SHARED_LIBS=ON -DBLA_VENDOR=OpenBLAS -DBLAS_LIBRARIES=$curDir/openblas/lib/libopenblas.lib -DLAPACK_LIBRARIES=$curDir/openblas/lib/libopenblas.lib -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=OFF
           cmake --build build --parallel --config RelWithDebInfo
 
       - name: Build and install Sentry
