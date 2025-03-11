@@ -168,19 +168,19 @@ public:
 		float* xb_raw = new float[dimensionality * patches.size()];
 		std::memcpy(xb_raw, xb, dimensionality * patches.size() * sizeof(float));
 
-		float max_distance = computeTrueMaxDistance(xb_raw, patches.size(), dimensionality);
-		spdlog::info("Computed true max distance as {:.4f}", max_distance);
+		//float max_distance = computeTrueMaxDistance(xb_raw, patches.size(), dimensionality);
+		//spdlog::info("Computed true max distance as {:.4f}", max_distance);
 
 		// Compute centroid
-		auto centroid = computeCentroid(xb_raw, patches.size(), dimensionality);
+		//auto centroid = computeCentroid(xb_raw, patches.size(), dimensionality);
 
 		// Compute approximate max L2 distance
-		auto max_distance_centroid = computeMaxDistance(xb_raw, patches.size(), dimensionality, centroid);
-		spdlog::info("Computed centroid max distance as {:.4f}", max_distance_centroid);
+		//auto max_distance_centroid = computeMaxDistance(xb_raw, patches.size(), dimensionality, centroid);
+		//spdlog::info("Computed centroid max distance as {:.4f}", max_distance_centroid);
 
 		// Compute conservative max L2 distance
 		auto max_distance_conservative = computeConservativeMaxDistance(xb_raw, patches.size(), dimensionality);
-		spdlog::info("Computed conservative max distance as {:.4f}", max_distance_conservative);
+		spdlog::debug("Computed conservative max distance as {:.4f}", max_distance_conservative);
 
 		// Normalize the data for IP
 		normalizeVectors(xb, patches.size(), dimensionality);
@@ -193,7 +193,7 @@ public:
 		// Create L2 index with raw data
 		auto l2Index = std::make_shared<faiss::IndexFlatL2>(dimensionality);
 		l2Index->add(patches.size(), xb_raw);
-		indexes_.emplace(std::make_pair(synth->getName(), SimilarityMetric::L2), SearchIndex{ dimensionality, patches.size(), id_map, l2Index, max_distance_centroid });
+		indexes_.emplace(std::make_pair(synth->getName(), SimilarityMetric::L2), SearchIndex{ dimensionality, patches.size(), id_map, l2Index, max_distance_conservative });
 
 		// Cleanup
 		delete[] xb;
@@ -240,15 +240,16 @@ public:
 						similarity = std::max(0.0f, std::min(1.0f, similarity)); // Clamp to [0, 1]
 						break;
 					case SimilarityMetric::IP:
-						similarity = (std::sqrt(distances[i]) + 1.0f) / 2.0f; // Map [-1, 1] → [0, 1]
+						//similarity = (std::sqrt(distances[i]) + 1.0f) / 2.0f; // Map [-1, 1] → [0, 1] Better, but does not align as well as the one for the L2 metric
+						similarity = std::sqrt(distances[i]);
 						break;
 					}
 					if (similarity >= distance_cutoff) {
-						spdlog::info("distance {} with similarity {} is good for cutoff {}", std::sqrt(distances[i]), similarity, distance_cutoff);
+						spdlog::debug("distance {} with similarity {} is good for cutoff {}", std::sqrt(distances[i]), similarity, distance_cutoff);
 						result.emplace_back(similarity, searchIndex.idToMd5->at(r));
 					}
 					else {
-						spdlog::info("distance {} with similarity {} did not meet cutoff criteria of {}", std::sqrt(distances[i]), similarity, distance_cutoff);
+						spdlog::debug("distance {} with similarity {} did not meet cutoff criteria of {}", std::sqrt(distances[i]), similarity, distance_cutoff);
 					}
 				}
 				i++;

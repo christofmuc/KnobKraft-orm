@@ -22,10 +22,14 @@ SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchD
 	};
 	activeIndex_ = std::make_unique<PatchSimilarity>(db);
 
-	helpText_.setText("Experimental feature - click on a patch in the grid, and after creating an in-memory index this list will show patches which are similar.");
+	helpText_.setText("Experimental feature - click on a patch in the grid, and after creating an in-memory index this list will show patches which are similar.\n" 
+		"Cutoff selects how similar hits must be to be shown. Two different metrics for testing.");
 	helpText_.setEnabled(false);
 	helpText_.setMultiLine(true);
 	addAndMakeVisible(helpText_);
+
+	metricsLabel_.setText("Metric", dontSendNotification);
+	addAndMakeVisible(metricsLabel_);
 
 	l2_.setButtonText("L2");
 	l2_.setRadioGroupId(80981, dontSendNotification);
@@ -43,9 +47,12 @@ SimilarPatchesPanel::SimilarPatchesPanel(PatchView* patchView, midikraft::PatchD
 	};
 	addAndMakeVisible(ip_);
 
+	similarityLabel_.setText("Cutoff", dontSendNotification);
+	addAndMakeVisible(similarityLabel_);
+
 	similarityValue_.setTitle("Cutoff"); 
 	similarityValue_.setValue(0.95);
-	similarityValue_.setRange(juce::Range(0.0, 1.0), 0.05);
+	similarityValue_.setRange(juce::Range(0.8, 1.0), 0.01);
 	similarityValue_.onValueChange = [this]() {
 		runSearch();
 	};
@@ -63,9 +70,12 @@ void SimilarPatchesPanel::resized()
 	auto area = getLocalBounds();
 	helpText_.setBounds(area.removeFromTop(3 * LAYOUT_LINE_HEIGHT));
 	auto buttonRow = area.removeFromTop(LAYOUT_BUTTON_HEIGHT + 2 * LAYOUT_INSET_NORMAL);
-	l2_.setBounds(buttonRow.removeFromLeft(buttonRow.getWidth() / 2).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
-	ip_.setBounds(buttonRow.withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH, LAYOUT_BUTTON_HEIGHT));
-	similarityValue_.setBounds(area.removeFromTop(LAYOUT_BUTTON_HEIGHT).reduced(LAYOUT_INSET_SMALL));
+	auto left = buttonRow.removeFromLeft(buttonRow.getWidth() / 2);
+	metricsLabel_.setBounds(left.removeFromLeft(LAYOUT_BUTTON_WIDTH_MIN));
+	l2_.setBounds(left.removeFromLeft(left.getWidth()/2).withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH_MIN, LAYOUT_BUTTON_HEIGHT));
+	ip_.setBounds(left.withSizeKeepingCentre(LAYOUT_BUTTON_WIDTH_MIN, LAYOUT_BUTTON_HEIGHT));
+	similarityLabel_.setBounds(buttonRow.removeFromLeft(LAYOUT_BUTTON_WIDTH_MIN));
+	similarityValue_.setBounds(buttonRow.reduced(LAYOUT_INSET_SMALL));
 	similarity_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 }
 

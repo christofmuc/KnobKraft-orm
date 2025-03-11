@@ -34,8 +34,10 @@ private:
 	midikraft::PatchDatabase& db_;
 	PatchButtonInfo buttonMode_;
 	TextEditor helpText_;
+	Label metricsLabel_;
 	TextButton l2_;
 	TextButton ip_;
+	Label similarityLabel_;
 	Slider similarityValue_;
 	std::unique_ptr<VerticalPatchButtonList> similarity_;
 	std::shared_ptr<midikraft::PatchList> similarList_;
