@@ -34,7 +34,9 @@ jobs:
       - name: Build FAISS third party library
         working-directory: third_party/faiss
         run: |
-          nuget install OpenBLAS
+          Invoke-WebRequest -Uri https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x64_64.zip -OutFile OpenBLAS.zip
+          Expand-Archive -Path OpenBLAS.zip -DestinationPath openblas
+          dir openblas
           cmake -B build -DFAISS_ENABLE_GPU=OFF -DBUILD_SHARED_LIBS=ON -DBLA_VENDOR=OpenBLAS -DBLAS_LIBRARIES=openblas -DLAPACK_LIBRARIES=openblas -DFAISS_ENABLE_PYTHON=OFF -DBUILD_TESTING=OFF
           cmake --build build --parallel --config RelWithDebInfo
 
