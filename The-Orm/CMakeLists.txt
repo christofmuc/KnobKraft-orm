@@ -89,6 +89,8 @@ set(SOURCES
 	SecondaryWindow.cpp SecondaryWindow.h
 	SettingsView.cpp SettingsView.h
 	SetupView.cpp SetupView.h
+	Similarity.cpp Similarity.h
+	SimilarPatchesPanel.cpp SimilarPatchesPanel.h
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
@@ -127,9 +129,9 @@ set(MIDIKRAFT_LIBRARIES
 
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
 target_include_directories(KnobKraftOrm 
-	INTERFACE ${CMAKE_CURRENT_LIST_DIR}})
+	INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 target_include_directories(KnobKraftOrm SYSTEM
-	PRIVATE "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+	PRIVATE "${FAISS_INCLUDE_PATH}" "${BLAS_LIBRARY_INCLUDE}" "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
 target_compile_definitions(KnobKraftOrm PRIVATE JUCE_MODULE_AVAILABLE_gin_gui JUCE_MODULE_AVAILABLE_gin)
 get_target_property(gin_include_dirs gin INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(KnobKraftOrm SYSTEM PRIVATE ${gin_include_dirs})
@@ -158,6 +160,8 @@ IF(WIN32)
 		spdlog::spdlog
 		${SENTRY_LIB}
 		${SPARKLE_DEPENDENCY}
+		${BLAS_LIBRARY}
+		${FAISS_LIBRARY}
 		)
 ELSEIF(APPLE)
 	target_link_libraries(KnobKraftOrm PRIVATE
@@ -220,6 +224,11 @@ IF(WIN32)
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
 					"${PYTHON_EMBEDDED_PATH}/python${PYTHON_VERSION_TO_COPY}.dll"
+					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+	add_custom_command(
+			TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+					"${BLAS_LIBRARY_DLL}"
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 ENDIF()
 

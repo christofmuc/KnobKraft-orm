@@ -4,15 +4,20 @@
 
 namespace midikraft {
 
-	class Rev2ParamDefinition : public SynthParameterDefinition, 
+	class Rev2ParamDefinition : public SynthParameterDefinition,
 		public SynthIntParameterCapability, public SynthVectorParameterCapability, public SynthParameterLiveEditCapability, public SynthMultiLayerParameterCapability {
 	public:
-		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex);
-		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup);
-		Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction);
-		Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex);
-		Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup);
-		Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction);
+		Rev2ParamDefinition(int number
+			, int min
+			, int max
+			, std::string const& name
+			, int sysExIndex
+			, std::map<int, std::string> const& valueLookup = {}
+			, std::vector<int> preconditions = {}
+			, bool isFeatue = true
+			, float weight = 1.0f);
+
+		Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const& name, int sysExIndex, std::map<int, std::string> const& valueLookup = {});
 
         virtual ~Rev2ParamDefinition() = default;
 
@@ -47,9 +52,20 @@ namespace midikraft {
 		virtual int getTargetLayer() const override;
 		virtual void setSourceLayer(int layerNo) override;
 		virtual int getSourceLayer() const override;
+
+		// New for feature vectors
+		int number() const;
+		bool isFeature() const;
+		float featureWeight() const;
+		bool isParameterActive(DataFile const& patch);
+
+		// Internal use only, for legacy integration
+		std::string lookup(int value);
+		std::vector<int> preconditions_;
+
 	private:
 		ParamType type_;
-		int targetLayer_; // The Rev2 has no layers, A (=0) and B (=0). By default, we target 0 but can change this calling setTargetLayer()
+		int targetLayer_; // The Rev2 has 2 layers, A (=0) and B (=1). By default, we target 0 but can change this calling setTargetLayer()
 		int sourceLayer_;
 		int number_;
 		int endNumber_;
@@ -58,6 +74,9 @@ namespace midikraft {
 		int sysex_;
 		std::string name_;
 		std::function<std::string(int)> lookupFunction_;
+		
+		bool feature_;
+		float weight_;
 	};
 
 }

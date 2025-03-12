@@ -10,49 +10,50 @@ namespace midikraft {
 	const int kSysexStartLayerB = 1024; // Layer B starts at sysex index 1024
 	const int kNRPNStartLayerB = 2048; // The NRPN numbers for layer B start 2048 higher than those for layer A
 
-	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex) :
-		type_(ParamType::INT), targetLayer_(0), sourceLayer_(0), number_(number), endNumber_(number), min_(min), max_(max), sysex_(sysExIndex), name_(name)
+	Rev2ParamDefinition::Rev2ParamDefinition(int number
+		, int min
+		, int max
+		, std::string const& name
+		, int sysExIndex
+		, std::map<int, std::string> const& valueLookup 
+		, std::vector<int> preconditions 
+		, bool isFeature 
+		, float weight) :
+		  type_(ParamType::INT)
+		, targetLayer_(0)
+		, sourceLayer_(0)
+		, number_(number)
+		, endNumber_(number)
+		, min_(min)
+		, max_(max)
+		, sysex_(sysExIndex)
+		, name_(name)
+		, feature_(isFeature)
+		, weight_(weight)
 	{
-	}
-
-	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex) :
-		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex)
-	{
-		type_ = SynthParameterDefinition::ParamType::INT_ARRAY;
-		endNumber_ = endNumber;
-	}
-
-	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup) :
-		Rev2ParamDefinition(number, min, max, name, sysExIndex)
-	{
-		type_ = SynthParameterDefinition::ParamType::LOOKUP;
-		// Special case
-		lookupFunction_ = [valueLookup](int value) { 	
-			if (valueLookup.find(value) != valueLookup.end()) {
-				return valueLookup.at(value);
-			}
-			return std::string("unknown"); 
-		};
-	}
-
-	Rev2ParamDefinition::Rev2ParamDefinition(int number, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction) :
-		Rev2ParamDefinition(number, min, max, name, sysExIndex)
-	{
-		type_ = SynthParameterDefinition::ParamType::LOOKUP;
-		lookupFunction_ = lookupFunction;
+		if (valueLookup.size() > 0) {
+			type_ = SynthParameterDefinition::ParamType::LOOKUP;
+			// Special case
+			lookupFunction_ = [valueLookup](int value) {
+				if (valueLookup.find(value) != valueLookup.end()) {
+					return valueLookup.at(value);
+				}
+				return std::string("unknown");
+			};
+		}
 	}
 
 	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex, std::map<int, std::string> const &valueLookup) :
 		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex, valueLookup)
 	{
-		type_ = SynthParameterDefinition::ParamType::LOOKUP_ARRAY;
-		endNumber_ = endNumber;
-	}
-
-	Rev2ParamDefinition::Rev2ParamDefinition(int startNumber, int endNumber, int min, int max, std::string const &name, int sysExIndex, std::function<std::string(int)> &lookupFunction) :
-		Rev2ParamDefinition(startNumber, min, max, name, sysExIndex, lookupFunction)
-	{
-		type_ = SynthParameterDefinition::ParamType::LOOKUP_ARRAY;
+		// Turn off the sequencer data for the feature vector generation
+		feature_ = false;
+		if (valueLookup.size() > 0) {
+			type_ = SynthParameterDefinition::ParamType::LOOKUP_ARRAY;
+		}
+		else {
+			type_ = SynthParameterDefinition::ParamType::INT_ARRAY;
+		}
 		endNumber_ = endNumber;
 	}
 
@@ -243,6 +244,22 @@ namespace midikraft {
 	midikraft::SynthParameterDefinition::ParamType Rev2ParamDefinition::type() const
 	{
 		return type_;
+	}
+
+	std::string Rev2ParamDefinition::lookup(int value) {
+		return lookupFunction_(value);
+	}
+
+	int Rev2ParamDefinition::number() const {
+		return number_;
+	}
+
+	bool Rev2ParamDefinition::isFeature() const {
+		return feature_;
+	}
+
+	float Rev2ParamDefinition::featureWeight() const {
+		return weight_;
 	}
 
 }
