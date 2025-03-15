@@ -37,4 +37,6 @@ def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[0], name="Cascades", number=1)
 
-    return testing.TestData(sysex="testData/Pro_2_Programs_v1.0a.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Pro_2_Programs_v1.0a.syx",
+                            program_generator=programs,
+                            expected_patch_count=395) # Shouldn't this be 396?

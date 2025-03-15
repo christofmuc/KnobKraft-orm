@@ -196,4 +196,4 @@ def make_test_data():
         assert len(patches) == 32
         yield testing.ProgramTestData(patches[0], name="SYN-LEAD 2")
 
-    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches)
+    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, expected_patch_count=32)

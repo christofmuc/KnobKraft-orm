@@ -111,4 +111,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=data.all_messages[0], name="Mph:Z-Synth ", number=0)
         yield testing.ProgramTestData(message=data.all_messages[127], name="-defPreset- ", number=127)
 
-    return testing.TestData(sysex="testData/E-mu_Morpheus/morph.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/E-mu_Morpheus/morph.syx", program_generator=programs, expected_patch_count=128)

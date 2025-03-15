@@ -602,4 +602,5 @@ def make_test_data():
                             bank_generator=bankGenerator,
                             banks_are_edit_buffers=True,
                             device_detect_call="f0 41 00 14 11 00 00 00 00 00 40 40 f7",
-                            device_detect_reply=(patches[0], 0))
+                            device_detect_reply=(patches[0], 0),
+                            expected_patch_count=64)

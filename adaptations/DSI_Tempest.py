@@ -172,4 +172,5 @@ def make_test_data():
                             edit_buffer_generator=edit_buffers,
                             program_generator=programs,
                             can_convert_program_to_edit_buffer=False,
-                            can_convert_edit_buffer_to_program=False)
+                            can_convert_edit_buffer_to_program=False,
+                            expected_patch_count=452)

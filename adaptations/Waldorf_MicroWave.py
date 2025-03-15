@@ -200,4 +200,5 @@ def make_test_data():
     return testing.TestData(sysex="testData/Waldorf MW1_C BRUSE DRUM CARD SINGLE.syx",
                             edit_buffer_generator=programs,
                             device_detect_call="f0 3e 00 7f 01 00 f7",
-                            device_detect_reply=([0xf0, 0x3e, 0x00, 0x00, 0x41, 0x00, 0x00, 0x03], 0x03))
+                            device_detect_reply=([0xf0, 0x3e, 0x00, 0x00, 0x41, 0x00, 0x00, 0x03], 0x03),
+                            expected_patch_count=65)

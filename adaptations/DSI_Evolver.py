@@ -33,4 +33,4 @@ def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[5], number=261)  # It is bank 3, so it starts at 256 + 5 = 261
 
-    return testing.TestData(sysex="testData/Evolver_bank3_1-0.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Evolver_bank3_1-0.syx", program_generator=programs, expected_patch_count=128)
