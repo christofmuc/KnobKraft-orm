@@ -1,5 +1,6 @@
+from collections import deque
 from functools import partial
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Dict, Deque, Any
 from enum import Enum
 import logging
 
@@ -13,7 +14,7 @@ def adaptation_has_all_implemented(adaptation, methods: List[str]):
 
 
 def adaptation_has_bank_dump_capability(adaptation):
-    return adaptation_has_all_implemented(adaptation, ["createBankDumpRequest", "isBankDumpFinished"])
+    return adaptation_has_all_implemented(adaptation, ["isBankDumpFinished"])
 
 
 def adaptation_has_program_dump_capability(adaptation):
@@ -22,6 +23,10 @@ def adaptation_has_program_dump_capability(adaptation):
 
 def adaptation_has_edit_buffer_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["createEditBufferRequest", "isEditBufferDump"])
+
+
+def flatten(xss: List[List[Any]]) -> List[Any]:
+    return [x for xs in xss for x in xs]
 
 
 MidiMessageHandler = Callable[[List[int]], None]
@@ -42,6 +47,28 @@ class MidiController:
             handler(message)
 
 
+class SynthBank:
+
+    @staticmethod
+    def start_index_in_bank(adaptation, bank_no):
+        if adaptation_has_implemented(adaptation, "bankDescriptors"):
+            banks = adaptation.bankDescriptors()
+            index = 0
+            for b in range(bank_no):
+                index += banks[b]["size"]
+            return index
+        else:
+            return bank_no * adaptation.numberOfPatchesPerBank()
+
+    @staticmethod
+    def number_of_patches_in_bank(adaptation, bank_no):
+        if adaptation_has_implemented(adaptation, "bankDescriptors"):
+            banks = adaptation.bankDescriptors()
+            return banks[bank_no]["size"]
+        else:
+            return adaptation.numberOfPatchesPerBank()
+
+
 class BankDownloadMethod(Enum):
     BANKS = 1
     PROGRAM_BUFFERS = 2
@@ -58,6 +85,8 @@ class Librarian:
         self.current_edit_buffer: List[int] = []  # Messages collected for the current incoming edit buffer
         self.current_download_program_dump: List[int] = []  # Messages collected for the current incoming program buffer
         self.on_finished: Optional[Callable[[List[List[int]]], None]] = None  # This function is called with the result of load operation
+        self.max_number_messages_per_patch = 14  # This is to limit memory and computation time when loading large files
+        self.max_number_messages_per_bank = 256  # Again, we need to limit miscalculations. But banks might have many more messages
 
     def determine_bank_download_method(self, adaptation) -> BankDownloadMethod:
         if adaptation_has_implemented(adaptation, "bankDownloadMethodOverride"):
@@ -188,7 +217,6 @@ class Librarian:
         if send_program_change:
             messages.extend([0xc0 | (channel & 0x0f), self.download_number & 0x7f])
         messages.extend(adaptation.createEditBufferRequest(channel))
-        self.download_number = self.end_download_number
         midi_controller.send(messages)
 
     def _handle_next_edit_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int) -> None:
@@ -227,5 +255,71 @@ class Librarian:
                     # Continue with the next edit buffer
                     self._start_download_next_edit_buffer(midi_controller, adaptation, channel, True)
 
-    def load_sysex(self, messages) -> List[List[int]]:
-        return []
+    def load_sysex(self, adaptation, sysex_messages: List[List[int]]) -> List[List[int]]:
+        results: List[List[int]] = []
+        program_dumps_by_id: Dict[str, List[int]] = {}
+
+        if adaptation_has_program_dump_capability(adaptation):
+            current_program_dumps: Deque[List[int]] = deque()
+            for message in sysex_messages:
+                # Try to parse and load these messages as program dumps
+                if adaptation_has_implemented(adaptation, "isPartOfSingleProgramDump") and adaptation.isPartOfSingleProgramDump(message) or adaptation.isSingleProgramDump(message):
+                    current_program_dumps.append(message)
+                    while len(current_program_dumps) > self.max_number_messages_per_patch:
+                        logging.debug(f"Dropping message during parsing as potential number of MIDI messages per patch is larger than {self.max_number_messages_per_patch}")
+                        current_program_dumps.popleft()
+                    sliding_window: List[int] = flatten(list(current_program_dumps))
+                    if adaptation.isSingleProgramDump(sliding_window):
+                        patch = sliding_window
+                        results.append(patch)
+                        if adaptation_has_implemented(adaptation, "calculateFingerprint"):
+                            program_dumps_by_id[adaptation.calculateFingerprint(patch)] = patch
+                        current_program_dumps.clear()
+
+        if adaptation_has_edit_buffer_capability(adaptation):
+            current_edit_buffers: Deque[List[int]] = deque()
+            patch_no = 0
+            for message in sysex_messages:
+                # Try to parse and load these messages as edit buffers
+                if adaptation_has_implemented(adaptation, "isPartOfEditBufferDump") and adaptation.isPartOfEditBufferDump(message) or adaptation.isEditBufferDump(message):
+                    current_edit_buffers.append(message)
+                    if len(current_edit_buffers) > self.max_number_messages_per_patch:
+                        logging.debug(f"Dropping message during parsing as potential number of MIDI messages per patch is larger than {self.max_number_messages_per_patch}")
+                        current_edit_buffers.popleft()
+                    sliding_window = flatten(list(current_edit_buffers))
+                    if adaptation.isEditBufferDump(sliding_window):
+                        patch = sliding_window
+                        if adaptation_has_implemented(adaptation, "calculateFingerprint"):
+                            patch_id = adaptation.calculateFingerprint(patch)
+                            if patch_id not in program_dumps_by_id:
+                                results.append(patch)
+                            else:
+                                # Ignore edit buffer, as we already loaded a program dump with the same ID
+                                pass
+                        else:
+                            results.append(patch)
+                        current_edit_buffers.clear()
+
+        if adaptation_has_bank_dump_capability(adaptation):
+            current_bank: Deque[List[int]] = deque()
+            for message in sysex_messages:
+                # Try to parse and load these messages as a bank dump
+                if adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message) or adaptation.isBankDumpFinished(message):
+                    current_bank.append(message)
+                    if len(current_bank) > self.max_number_messages_per_bank:
+                        logging.debug(f"Dropping message during parsing as potential number of MIDI messages per bank is larger than {self.max_number_messages_per_bank}")
+                        current_bank.popleft()
+                    sliding_window: List[List[int]] = list(current_bank)
+                    if adaptation.isBankDumpFinished(sliding_window):
+                        if adaptation_has_implemented(adaptation, "extractPatchesFromAllBankMessages"):
+                            more_patches = adaptation.extractPatchesFromAllBankMessages(sliding_window)
+                            logging.info(f"Loaded bank dump with {len(more_patches)} patches")
+                            results.extend(more_patches)
+                            current_bank.clear()
+                        else:
+                            more_patches = adaptation.extractPatchesFromBank(sliding_window[0])
+                            logging.info(f"Loaded bank dump from single message with {len(more_patches)} patches")
+                            results.extend(more_patches)
+                            current_bank.clear()
+
+        return results
