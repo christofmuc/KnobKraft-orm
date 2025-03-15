@@ -400,7 +400,7 @@ def isBankDumpFinished(messages: List[List[int]]):
     return performances == 128 and voices == 128
 
 
-def extractPatchesFromAllBankMessages(messages):
+def extractPatchesFromAllBankMessages(messages: List[List[int]]):
     performances = []
     voices:Dict[int, List[int]] = {}  # Map voice no to message representing that voice
     for message in messages:
@@ -492,6 +492,7 @@ def make_test_data():
     return testing.TestData(sysex="testData/Yamaha_FS1R/Vdfs1r01.syx",
                             program_generator=program_buffers,
                             edit_buffer_generator=edit_buffers,
+                            expected_patch_count=128,
                             device_detect_call="F0 43 20 5E 00 00 00 F7",
                             device_detect_reply=("f0 43 00 5e 00 4c 00 00 00 40 00 00 00 00 00 40 02 01 00 00 00 00 00 00 00 01 00 01 01 01 01 10 11 12 13 14 15 16 0d 04 02 50 51 3c 7f 3c 7f 3c 7f 3c 7f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 06 f7", 0x00))
 
