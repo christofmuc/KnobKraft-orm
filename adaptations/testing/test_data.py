@@ -76,6 +76,7 @@ class TestData:
     can_convert_edit_buffer_to_program: bool = True
     rename_name: Optional[str] = None
     not_idempotent: bool = False
+    expected_patch_count: int = 1
 
     def __post_init__(self):
         self.all_messages = []

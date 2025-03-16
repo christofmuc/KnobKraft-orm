@@ -137,4 +137,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=patch)
 
     assert friendlyProgramName(0) == "11"
-    return testing.TestData(sysex="testData/KorgDW8000_bank_a.syx", edit_buffer_generator=programs, friendly_bank_name=(63, "88"))
+    return testing.TestData(sysex="testData/KorgDW8000_bank_a.syx", edit_buffer_generator=programs, friendly_bank_name=(63, "88"), expected_patch_count=64)

@@ -30,4 +30,4 @@ def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[2], name="T8 Strings", number=2)
 
-    return testing.TestData(sysex="testData/Prophet_08_Programs_v1.0.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Prophet_08_Programs_v1.0.syx", program_generator=programs, expected_patch_count=256)
