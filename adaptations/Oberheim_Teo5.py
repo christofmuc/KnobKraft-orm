@@ -44,4 +44,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=data.all_messages[17], name='Waterfall Cavern', number=17, friendly_number="101")
         yield testing.ProgramTestData(message=data.all_messages[80], name='FlyLike a TEO', number=80, friendly_number="500")
 
-    return testing.TestData(sysex="testData/Oberheim_Teo5/TEO5_Factory_Programs_v1.00.syx", program_generator=programs, friendly_bank_name=(11, "B"))
+    return testing.TestData(sysex="testData/Oberheim_Teo5/TEO5_Factory_Programs_v1.00.syx", program_generator=programs, friendly_bank_name=(11, "B"), expected_patch_count=256)

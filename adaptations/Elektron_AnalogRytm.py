@@ -243,4 +243,4 @@ def make_test_data():
         x_message[6] = AR_SYSEX_DUMPX_ID_BASE + AR_TYPE_SOUND
         yield testing.ProgramTestData(message=x_message, name="CLASSIC 909 KIC", number=384, target_no=280, friendly_number="Sound 000")
 
-    return testing.TestData(sysex="testData/Elektron_AnalogRytm/909kicks.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Elektron_AnalogRytm/909kicks.syx", program_generator=programs, expected_patch_count=7)

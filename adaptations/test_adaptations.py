@@ -10,6 +10,8 @@ import knobkraft
 import testing
 import functools
 
+from testing.librarian import Librarian
+
 
 def require_testdata(test_data_field):
     def decorator(func):
@@ -416,3 +418,12 @@ def test_extract_patches_from_all_bank_messages(adaptation, test_data: testing.T
                 assert adaptation.isSingleProgramDump(patch)
             else:
                 assert adaptation.isEditBufferDump(patch)
+
+
+@require_testdata("sysex")
+def test_load_sysex_file_via_librarian(adaptation, test_data: testing.TestData):
+    # The simulated Librarian should also be able to load the provided sysex data
+    # This simulates the behavior of the C++ code much more closely
+    librarian = Librarian()
+    patches = librarian.load_sysex(adaptation, test_data.all_messages)
+    assert len(patches) == test_data.expected_patch_count
