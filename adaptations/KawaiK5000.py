@@ -507,4 +507,5 @@ def make_test_data():
     return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
                             bank_generator=bankGenerator,
                             program_generator=programs,
-                            device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7])
+                            device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7],
+                            expected_patch_count=98)
