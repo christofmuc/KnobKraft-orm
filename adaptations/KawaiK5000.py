@@ -7,7 +7,7 @@
 # and https://github.com/coniferprod/KSynthLib/blob/master/Driver/Program.cs#L137
 
 # Adaptation written by Markus Schlösser
-
+from copy import copy
 from typing import List, Dict
 
 import testing
@@ -482,10 +482,9 @@ def calculateFingerprint(message: List[int]):
     if isSingleProgramDump(message):
         patch_name_start = 49  # Adjusted offset to skip the leading zero
         patch_name_length = 8  # Names are exactly 8 characters long
-
-        patch_name = message[patch_name_start:patch_name_start + patch_name_length]
-        blanked_out = message[10:-1] + patch_name
-        return hashlib.md5(bytearray(blanked_out)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
+        blanked_out = copy(message)
+        blanked_out[patch_name_start:patch_name_start + patch_name_length] = [ord(" ")] * patch_name_length
+        return hashlib.md5(bytearray(blanked_out[10:-1])).hexdigest()  # Calculate the fingerprint from the cleaned payload data
     raise Exception("Can only fingerprint Presets")
 
 
