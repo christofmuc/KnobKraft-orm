@@ -10,8 +10,11 @@
 from copy import copy
 from typing import List, Dict
 
+import knobkraft
 import testing
 import hashlib
+
+from testing.test_data import MidiController
 
 K5000_SPECIFIC_DEVICE = None
 
@@ -488,14 +491,39 @@ def calculateFingerprint(message: List[int]):
     raise Exception("Can only fingerprint Presets")
 
 
+class K5000Simulator(MidiController):
 
+    def __init__(self, test_data: testing.TestData):
+        super().__init__(test_data)
+        self.channel = 0
+        self.bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
+
+    def send(self, message: List[int]):
+        # Check which message is sent to us, and produce replies
+        if message[:7] == [0xF0, KawaiSysexID, self.channel, OneBlockDumpRequest, 0x00, 0x0a, 0x00]:
+            # This is a program dump request, let's see which bank and patch
+            bank_byte = message[7]
+            patch_number = message[8]
+            if patch_number in self.test_data.all_messages:
+                self.receive(self.test_data.all_messages[patch_number])
+            else:
+                self.receive([])
+        elif message[:7] == [0xF0, KawaiSysexID, self.channel, AllBlockDumpRequest, 0x00, 0x0a, 0x00]:
+            bank_byte = message[7]  # 0x00 would be A, 0x02 is D, 0x03 is E, 0x04 is F
+            global K5000_SPECIFIC_DEVICE
+            K5000_SPECIFIC_DEVICE = "K5000R"
+            self.receive(self.bank_messages[0])
+        else:
+            raise Exception(f"Received unexpected message: {message}")
 
 
 def make_test_data():
     global K5000_SPECIFIC_DEVICE
+    K5000_SPECIFIC_DEVICE = "K5000R"
 
     def bankGenerator(test_data: testing.TestData) -> List[int]:
-        yield test_data.all_messages
+        bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
+        yield bank_messages
 
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         program_buffers = extractPatchesFromAllBankMessages(data.all_messages)
@@ -503,9 +531,10 @@ def make_test_data():
         yield testing.ProgramTestData(program_buffers[1], number=1, name="PowerBas")
         yield testing.ProgramTestData(program_buffers[-1], number=97, name="Boreal")
 
-    K5000_SPECIFIC_DEVICE = 0x01
     return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
                             bank_generator=bankGenerator,
                             program_generator=programs,
                             device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7],
-                            expected_patch_count=98)
+                            expected_patch_count=98,
+                            simulator=K5000Simulator,
+                            expected_patch_count_from_simulator=40)
