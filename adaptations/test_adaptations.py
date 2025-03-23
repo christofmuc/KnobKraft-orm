@@ -11,6 +11,7 @@ import testing
 import functools
 
 from testing.librarian import Librarian
+from testing.test_data import MidiController
 
 
 def require_testdata(test_data_field):
@@ -442,6 +443,10 @@ def test_synth_communication(adaptation, test_data: testing.TestData):
             assert adaptation.isSingleProgramDump(patch)
 
     simulator = test_data.simulator(test_data)
+    midi_controller = MidiController(simulator)
     librarian = Librarian()
-    librarian.start_downloading_all_patches(simulator, 0, adaptation, 0, final_check)
+    librarian.start_downloading_all_patches(midi_controller, 0, adaptation, 0, final_check)
+    # Run the simulation until no more messages have been produced
+    midi_controller.pump()
+
     assert finished
