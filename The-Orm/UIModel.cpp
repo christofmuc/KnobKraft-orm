@@ -118,7 +118,7 @@ std::unique_ptr<UIModel> UIModel::instance_;
 void CurrentSynthList::setSynthList(std::vector<midikraft::SynthHolder> const &synths)
 {
 	synths_.clear();
-	for (auto synth : synths) {
+	for (auto &synth : synths) {
 		synths_.emplace_back(synth, true);
 	}
 	sendChangeMessage();

@@ -446,7 +446,7 @@ void PatchButtonPanel::selectPrevious()
 	int active = indexOfActive();
 	if (active != -1) {
 		if (active - 1 >= 0) {
-			patchButtons_->buttonWithIndex(active - 1)->buttonClicked(nullptr);
+			patchButtons_->buttonWithIndex(active - 1)->trigger();
 		}
 		else {
 			pageDown(true);
@@ -460,7 +460,7 @@ void PatchButtonPanel::selectNext()
 	if (active != -1) {
 		if (active + 1 < static_cast<int>(patchButtons_->size())) {
 			if (active + 1 < static_cast<int>(patches_.size())) {
-				patchButtons_->buttonWithIndex(active + 1)->buttonClicked(nullptr);
+				patchButtons_->buttonWithIndex(active + 1)->trigger();
 			}
 		}
 		else {

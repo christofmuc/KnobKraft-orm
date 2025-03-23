@@ -44,7 +44,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |
-| Korg | M1 | alpha | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
+| Korg | M1 | works | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
@@ -80,9 +80,10 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
-| Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
+| Waldorf | Pulse | works | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
+| Yamaha | FS1R | alpha | adaptation | Thanks to @markusschlosser for testing! |
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|

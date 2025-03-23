@@ -23,7 +23,7 @@
 
 #include <spdlog/spdlog.h>
 
-MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler) :
+MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category, TouchButtonFunction f)> categoryUpdateHandler) :
 	categories_(categories, categoryUpdateHandler, false, false)
 	, patchAsText_([this]() { if (forceResize) forceResize();  }, false)
 {
@@ -81,8 +81,10 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	, propertyEditor_(true)
 	, favorite_("Fav!")
 	, hide_("Hide")
-	, metaData_(categories, [this](CategoryButtons::Category categoryClicked) {
-		categoryUpdated(categoryClicked);
+	, metaData_(categories, [this](CategoryButtons::Category categoryClicked, TouchButtonFunction f) {
+		categoryUpdated(categoryClicked, f);
+		refreshCategories();
+		refreshNameButtonColour();
 	})
     , favoriteHandler_(favoriteHandler)
 	{
@@ -137,11 +139,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		favorite_.setToggleState(patch->isFavorite(), dontSendNotification);
 		hide_.setToggleState(patch->isHidden(), dontSendNotification);
 		
-		std::set<CategoryButtons::Category> buttonCategories;
-		for (const auto& cat : patch->categories()) {
-			buttonCategories.insert({ cat.category(), cat.color() });
-		}
-		metaData_.setActive(buttonCategories);
+		refreshCategories();
 
 		metaData_.setPatchText(patch);
 	}
@@ -156,6 +154,17 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		lastOpenState_.clear();
 	}
 	resized();
+}
+
+void CurrentPatchDisplay::refreshCategories()
+{
+	std::set<CategoryButtons::Category> buttonCategories;
+	if (currentPatch_ && currentPatch_->patch()) {
+		for (const auto& cat : currentPatch_->categories()) {
+			buttonCategories.insert({ cat.category(), cat.color() });
+		}
+	}
+	metaData_.setActive(buttonCategories);
 }
 
 String getTypeName(std::shared_ptr<midikraft::PatchHolder> patch)
@@ -240,6 +249,8 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 	metaDataValues_.back()->setEnabled(false);
 
 	// More editable data
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Author", "Meta data", patch->author(), 256, false));
+	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Info", "Meta data", patch->info(), 256, false));
 	metaDataValues_.push_back(std::make_shared<TypedNamedValue>("Comment", "Meta data", patch->comment(), 2048, true));
 	
 	// We need to learn about updates
@@ -290,6 +301,22 @@ void CurrentPatchDisplay::valueChanged(Value& value)
 		else if (property->name() == "Comment" && value.refersToSameSourceAs(property->value())) {
 			if (currentPatch_) {
 				currentPatch_->setComment(value.getValue().toString().toStdString());
+				setCurrentPatch(currentPatch_);
+				favoriteHandler_(currentPatch_);
+				return;
+			}
+		}
+		else if (property->name() == "Author" && value.refersToSameSourceAs(property->value())) {
+			if (currentPatch_) {
+				currentPatch_->setAuthor(value.getValue().toString().toStdString());
+				setCurrentPatch(currentPatch_);
+				favoriteHandler_(currentPatch_);
+				return;
+			}
+		}
+		else if (property->name() == "Info" && value.refersToSameSourceAs(property->value())) {
+			if (currentPatch_) {
+				currentPatch_->setInfo(value.getValue().toString().toStdString());
 				setCurrentPatch(currentPatch_);
 				favoriteHandler_(currentPatch_);
 				return;
@@ -409,10 +436,10 @@ void CurrentPatchDisplay::toggleHide()
 
 void CurrentPatchDisplay::refreshNameButtonColour() {
 	if (currentPatch_ && currentPatch_->patch()) {
-		name_.setColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
+		name_.setPatchColour(TextButton::ColourIds::buttonColourId, PatchHolderButton::buttonColourForPatch(*currentPatch_, this));
 	}
 	else {
-		name_.setColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
+		name_.setPatchColour(TextButton::ColourIds::buttonColourId, ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground));
 	}
 }
 
@@ -441,18 +468,29 @@ void CurrentPatchDisplay::changeListenerCallback(ChangeBroadcaster* source)
 	}
 }
 
-void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked) {
+void CurrentPatchDisplay::categoryUpdated(CategoryButtons::Category clicked, TouchButtonFunction f) {
 	if (currentPatch_ && currentPatch_->patch()) {
+		auto databaseCategories = database_.getCategories();
 		// Search for the real category
-		for (auto realCat: database_.getCategories()) {
+		for (auto realCat: databaseCategories) {
 			if (realCat.category() == clicked.category) {
 				currentPatch_->setUserDecision(realCat);
-				auto categories = metaData_.selectedCategories();
+
+				std::vector<CategoryButtons::Category> categoriesToSet;
+				if (f == TouchButtonFunction::PRIMARY) {
+					categoriesToSet = metaData_.selectedCategories();
+				}
+				else if (f == TouchButtonFunction::SECONDARY) {
+					// Single category
+					categoriesToSet.push_back(clicked);
+				}
+
+				// Recalculate the set of categories
 				currentPatch_->clearCategories();
-				for (const auto& cat : categories) {
+				for (const auto& cat : categoriesToSet) {
 					// Have to convert into juce-widget version of Category here
 					bool found = false;
-					for (auto c : database_.getCategories()) {
+					for (auto c : databaseCategories) {
 						if (c.category() == cat.category) {
 							currentPatch_->setCategory(c, true);
 							found = true;

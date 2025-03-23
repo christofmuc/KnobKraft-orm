@@ -24,6 +24,8 @@ public:
 	virtual void resized() override;
 
 private:
+	class RecordProgress;
+
 	void setupPropertyEditor();
 	void setupKeyboardControl();
 	void loadFromSettings();
@@ -52,5 +54,6 @@ private:
 	midikraft::MidiController::HandlerHandle handle_ = midikraft::MidiController::makeNoneHandle();
 
 	TypedNamedValueSet customMasterkeyboardSetup_;
+	std::shared_ptr<RecordProgress> activeRecorder_; // Should have maximum one active macro recorders open
 };
 
