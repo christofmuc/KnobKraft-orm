@@ -23,7 +23,7 @@ public:
 
 	String makeHexDocument(std::shared_ptr<midikraft::PatchHolder> patch);
 	static String makeTextDocument(std::shared_ptr<midikraft::PatchHolder> patch);
-	static std::string patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive);
+	static std::string patchToTextRaw(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::Patch> patch, bool onlyActive);
 
 	float desiredHeight() const;
 

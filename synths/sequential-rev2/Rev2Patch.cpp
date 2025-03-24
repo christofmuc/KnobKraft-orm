@@ -46,7 +46,7 @@ namespace midikraft {
 	std::function<std::string(int)> noteNumberToName = [](int value) { return MidiNote(value).name(); };
 
 	std::vector<Rev2ParamDefinition> nrpns = {
-		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0, noteNumberToName),
+		Rev2ParamDefinition(0, 0, 120, "Osc 1 Freq", 0),
 		Rev2ParamDefinition(1, 0, 100, "Osc 1 Freq Fine", 2),
 		Rev2ParamDefinition(2, 0, 4, "Osc 1 Shape Mod", 4, { {0, "Off"}, { 1, "Saw" }, { 2, "Saw+Triangle"}, { 3, "Triangle" }, { 4, "Pulse" } }),
 		Rev2ParamDefinition(3, 0, 127, "Osc 1 Glide", 8),
@@ -183,7 +183,7 @@ namespace midikraft {
 		Rev2ParamDefinition(168, 0, 1, "Unison On/Off", 123),
 		Rev2ParamDefinition(169, 0, 16, "Unison Mode", 124),
 		Rev2ParamDefinition(170, 0, 5, "Key Mode", 122, { { 0, "Low" }, { 1, "Hi" }, { 2, "Last" }, { 3, "LowR" }, { 4, "HiR"}, {5, "LastR"} }),
-		Rev2ParamDefinition(171, 0, 120, "Split Point", 232, noteNumberToName),
+		Rev2ParamDefinition(171, 0, 120, "Split Point", 232),
 		Rev2ParamDefinition(172, 0, 1, "Arp On/Off", 136),
 		Rev2ParamDefinition(173, 0, 4, "Arp Mode", 132, { { 0, "Up" }, { 1, "Down"}, { 2, "Up+Down" }, { 3, "Random" },  { 4, "Assign" } }),
 		Rev2ParamDefinition(174, 0, 2, "Arp Octave", 133),
@@ -206,17 +206,17 @@ namespace midikraft {
 		Rev2ParamDefinition(224, 239, 0, 126, "Seq Track 3", 172), // 126 is Reset
 		Rev2ParamDefinition(240, 255, 0, 126, "Seq Track 4", 188), // 126 is Reset
 		// TODO - really no values ?
-		Rev2ParamDefinition(276, 339, 0, 127, "Poly Seq Note 1", 256, noteNumberToName),
+		Rev2ParamDefinition(276, 339, 0, 127, "Poly Seq Note 1", 256),
 		Rev2ParamDefinition(340, 403, 128, 255, "Poly Seq Vel 1", 320),
-		Rev2ParamDefinition(404, 467, 0, 127, "Poly Seq Note 2", 384, noteNumberToName),
+		Rev2ParamDefinition(404, 467, 0, 127, "Poly Seq Note 2", 384),
 		Rev2ParamDefinition(468, 531, 128, 255, "Poly Seq Vel 2", 448),
-		Rev2ParamDefinition(532, 595, 0, 127, "Poly Seq Note 3", 512, noteNumberToName),
+		Rev2ParamDefinition(532, 595, 0, 127, "Poly Seq Note 3", 512),
 		Rev2ParamDefinition(596, 659, 128, 255, "Poly Seq Vel 3", 576),
-		Rev2ParamDefinition(660, 723, 0, 127, "Poly Seq Note 4", 640, noteNumberToName),
+		Rev2ParamDefinition(660, 723, 0, 127, "Poly Seq Note 4", 640),
 		Rev2ParamDefinition(724, 787, 128, 255, "Poly Seq Vel 4", 704),
-		Rev2ParamDefinition(788, 851, 0, 127, "Poly Seq Note 5", 768, noteNumberToName),
+		Rev2ParamDefinition(788, 851, 0, 127, "Poly Seq Note 5", 768),
 		Rev2ParamDefinition(852, 915, 128, 255, "Poly Seq Vel 5", 832),
-		Rev2ParamDefinition(916, 979, 0, 127, "Poly Seq Note 6", 896, noteNumberToName),
+		Rev2ParamDefinition(916, 979, 0, 127, "Poly Seq Note 6", 896),
 		Rev2ParamDefinition(980, 1043, 128, 255, "Poly Seq Vel 6", 960)
 	};
 
