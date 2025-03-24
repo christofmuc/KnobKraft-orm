@@ -490,17 +490,17 @@ def unused_bankSelect(channel,bank):
 
 # ##   HAVE NOT MODIFIED THIS FOR TX81Z YET
 # Test data picked up by test_adaptation.py
-def make_test_data():
-    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        first_message = data.all_messages[0]
-        assert isPartOfBankDump(first_message)
-        patches_list = extractPatchesFromBank(first_message)
-        patches = knobkraft.sysex.splitSysex(patches_list)
-        assert isEditBufferDump(patches[0])
-        yield testing.ProgramTestData(message=patches[0], name="BRASS   1 ")
-        yield testing.ProgramTestData(message=patches[3], name="STRINGS 1 ")
-
-    return testing.TestData(sysex="testData/Yamaha_TX7_rom1a.syx",
-                            edit_buffer_generator=programs,
-                            device_detect_call="f0 43 20 00 f7",
-                            device_detect_reply=([0xf0, 0x43, 0x00, 0x00, 0x01, 0x1B], 0))
+#def make_test_data():
+#    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+#        first_message = data.all_messages[0]
+#        assert isPartOfBankDump(first_message)
+#        patches_list = extractPatchesFromBank(first_message)
+#        patches = knobkraft.sysex.splitSysex(patches_list)
+#        assert isEditBufferDump(patches[0])
+#        yield testing.ProgramTestData(message=patches[0], name="BRASS   1 ")
+#        yield testing.ProgramTestData(message=patches[3], name="STRINGS 1 ")
+#
+#    return testing.TestData(sysex="testData/Yamaha_TX7_rom1a.syx",
+#                            edit_buffer_generator=programs,
+#                            device_detect_call="f0 43 20 00 f7",
+#                            device_detect_reply=([0xf0, 0x43, 0x00, 0x00, 0x01, 0x1B], 0))
