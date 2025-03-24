@@ -82,11 +82,13 @@ namespace knobkraft {
 		auto hasProgramDump = midikraft::Capability::hasCapability<midikraft::ProgramDumpCabability>(adaptationSynth);
 		auto hasBankDump = midikraft::Capability::hasCapability<midikraft::BankDumpCapability>(adaptationSynth);
 		auto hasBankDumpRequest = midikraft::Capability::hasCapability<midikraft::BankDumpRequestCapability>(adaptationSynth);
+		auto hasBankSend = midikraft::Capability::hasCapability<midikraft::BankSendCapability>(adaptationSynth);
 
 		infoText += fmt::format("Edit Buffer Capability has {}been implemented\n", (hasEditBuffer ? "" : "not "));
 		infoText += fmt::format("Program Dump Capability has {}been implemented\n", (hasProgramDump? "" : "not "));
 		infoText += fmt::format("Bank Dump Capability has {}been implemented\n", (hasBankDump ? "" : "not "));
 		infoText += fmt::format("Bank Dump Request Capability has {}been implemented\n", (hasBankDumpRequest ? "" : "not "));
+		infoText += fmt::format("Bank Send Capability has {}been implemented\n", (hasBankSend ? "" : "not "));
 
 		infoText += "\n\nImplemented functions:\n\n";
 		for (auto functionName : kAdaptationPythonFunctionNames) {

@@ -850,7 +850,8 @@ void PatchView::bulkImportPIP(File directory) {
 void PatchView::exportPatches()
 {
 	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
-		ExportDialog::showExportDialog(this, "Export patches", [this, patches](midikraft::Librarian::ExportParameters params) {
+		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
+		ExportDialog::showExportDialog(this, "Export patches", currentSynth, [this, patches](midikraft::Librarian::ExportParameters params) {
 			librarian_.saveSysexPatchesToDisk(params, patches);
 		});
 	});
@@ -861,7 +862,7 @@ void PatchView::exportBank()
 	auto currentBank = synthBank_->getCurrentSynthBank();
 	if (currentBank) {
 		auto patches = currentBank->patches();
-		ExportDialog::showExportDialog(this, "Export bank", [this, patches](midikraft::Librarian::ExportParameters params) {
+		ExportDialog::showExportDialog(this, "Export bank", currentBank->synth(), [this, patches](midikraft::Librarian::ExportParameters params) {
 			librarian_.saveSysexPatchesToDisk(params, patches);
 			});
 	}

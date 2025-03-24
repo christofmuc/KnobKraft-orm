@@ -36,4 +36,15 @@ namespace knobkraft {
 		GenericAdaptation* me_;
 	};
 
+	class GenericBankDumpSendCapability : public midikraft::BankSendCapability {
+	public:
+		GenericBankDumpSendCapability(GenericAdaptation* me) : me_(me) {}
+		virtual ~GenericBankDumpSendCapability() = default;
+
+		virtual std::vector<MidiMessage> createBankMessages(std::vector<std::vector<MidiMessage>> patches) override;
+
+	private:
+		GenericAdaptation* me_;
+	};
+
 }
