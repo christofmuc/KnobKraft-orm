@@ -83,5 +83,7 @@ def make_test_data():
         yield testing.ProgramTestData(message=data.all_messages[0], number=0)
         yield testing.ProgramTestData(message=data.all_messages[42], number=42)
 
-    return testing.TestData(sysex="testData/Akai_AX80/AX8RevKandLRAMPresets(unverified).syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Akai_AX80/AX8RevKandLRAMPresets(unverified).syx",
+                            program_generator=programs,
+                            expected_patch_count=64)
     #return testing.TestData(sysex="testData/Akai_AX80/AX80RevIRAMpresets.syx", program_generator=programs)

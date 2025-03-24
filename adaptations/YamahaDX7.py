@@ -264,4 +264,7 @@ def make_test_data():
         assert isBankDumpFinished(test_data.all_messages)
         return test_data.all_messages
 
+    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, bank_generator=banks, expected_patch_count=32)
+
+
     return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, bank_generator=banks)

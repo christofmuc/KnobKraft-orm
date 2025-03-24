@@ -10,6 +10,8 @@ import knobkraft
 import testing
 import functools
 
+from testing.librarian import Librarian
+
 
 def require_testdata(test_data_field):
     def decorator(func):
@@ -452,3 +454,13 @@ def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
         flat_list_input = [item for sublist in bank_messages for item in sublist]
         flat_list_output = [item for sublist in new_bank for item in sublist]
         knobkraft.list_compare(flat_list_input, flat_list_output)
+
+
+@require_testdata("sysex")
+def test_load_sysex_file_via_librarian(adaptation, test_data: testing.TestData):
+    # The simulated Librarian should also be able to load the provided sysex data
+    # This simulates the behavior of the C++ code much more closely
+    librarian = Librarian()
+    patches = librarian.load_sysex(adaptation, test_data.all_messages)
+    assert len(patches) == test_data.expected_patch_count
+
