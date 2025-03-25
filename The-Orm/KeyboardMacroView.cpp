@@ -171,16 +171,13 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 				ignoreUnused(source);
 				state_.processNextMidiEvent(message);
 
-				// Macros only fire on key down
-				if (message.isNoteOn()) {
-					// Check if this is a message we will transform into a macro
-					for (const auto& macro : macros_) {
-						if (isMacroState(macro.second)) {
-							auto code = macro.first;
-							MessageManager::callAsync([this, code]() {
-								executeMacro_(code);
-								});
-						}
+				// Check if this is a message we will transform into a macro
+				for (const auto& macro : macros_) {
+					if (isMacroState(macro.second)) {
+						auto code = macro.first;
+						MessageManager::callAsync([this, code]() {
+							executeMacro_(code);
+							});
 					}
 				}
 			}

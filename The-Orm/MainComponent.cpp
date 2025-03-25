@@ -102,6 +102,8 @@ public:
 	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(std::move(synth), color) {
 	}
 
+	virtual ~ActiveSynthHolder() = default;
+
 	std::string getName() override
 	{
 		return synth() ? synth()->getName() : "Unnamed";

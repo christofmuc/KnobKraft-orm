@@ -87,6 +87,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
+| Yamaha | TX81Z | works | adaptation | Contributed by @summersetter!|
 | Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | Thanks to @milnak!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
