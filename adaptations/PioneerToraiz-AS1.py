@@ -254,7 +254,7 @@ def make_test_data():
     # This test file can be downloaded from https://www.pioneerdj.com/de-de/landing/toraiz/toraiz-as-1/
     # The license does not allow redistribution, so you need to download it yourself and put it into the testData folder if you want to run the tests
     if os.path.exists(R"testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank"):
-        return testing.TestData(sysex=R"testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank", program_generator=make_patches)
+        return testing.TestData(sysex=R"testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank", program_generator=make_patches, expected_patch_count=99)
     else:
         return testing.TestData()
 

@@ -25,7 +25,7 @@ def name():
 
 def createDeviceDetectMessage(channel):
     # This is a sysex generic device detect message
-    return [0xf0, 0x7e, channel & 0x0f, 0x06, 0x01, 0xf7]
+    return [0xf0, 0x7e, channel, 0x06, 0x01, 0xf7]
 
 
 def deviceDetectWaitMilliseconds():
@@ -79,7 +79,7 @@ def nameFromDump(message):
 
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isEditBufferDump(message):
-        new_name_list = [ord(c) for c in new_name.ljust(10, " ")]
+        new_name_list = [ord(c) for c in new_name.ljust(10, " ")][:10]
         data = unescapeSysex(message[5:-1])
         return message[:5] + escapeSysex(new_name_list + data[10:]) + [0xf7]
     raise Exception("Can only rename program data dumps!")
@@ -172,4 +172,4 @@ def make_test_data():
     def banks(test_data: testing.TestData) -> List:
         yield test_data.all_messages[0]
 
-    return testing.TestData(sysex="testData/Korg_M1/bank21.syx", edit_buffer_generator=programs, bank_generator=banks, device_detect_reply=("F0 7E 00 06 02 42 19 00 08 00 07 01 01 00 F7", 0))
+    return testing.TestData(sysex="testData/Korg_M1/bank21.syx", edit_buffer_generator=programs, bank_generator=banks, device_detect_reply=("F0 7E 00 06 02 42 19 00 08 00 07 01 01 00 F7", 0), expected_patch_count=99)

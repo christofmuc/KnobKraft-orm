@@ -11,7 +11,13 @@ from copy import copy
 from typing import List, Optional, Tuple, Dict, Union
 
 import knobkraft
-from knobkraft import knobkraft_api
+
+
+def knobkraft_api(func):
+    func._is_knobkraft = True
+    return func
+
+
 import testing
 from roland import DataBlock
 
@@ -88,6 +94,8 @@ class NonGenericRolandData:
     def address_and_size_for_sub_request(self, sub_request, sub_address) -> Tuple[List[int], List[int]]:
         if self.uses_consecutive_addresses:
             base_number = DataBlock.size_to_number(tuple(self.base_address))
+            if not (0 <= sub_request < len(self.data_blocks)):
+                raise Exception("Invalid subrequest index given")
             address = DataBlock.size_to_number(tuple(self.data_blocks[sub_request].address))
             multiplier = sub_address * self.size
             target_address = base_number + address + multiplier
@@ -230,6 +238,8 @@ class NonGenericRoland:
         return 4 + self._model_id_len
 
     def buildRolandMessage(self, device, command_id, address, data) -> List[int]:
+        if not all([0 <= d < 128 for d in data]):
+            raise Exception("Invalid data, uninitalized memory!")
         message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
         message[-2] = self.roland_checksum(message[self._checksum_start():-2])
         return message
@@ -288,6 +298,8 @@ class NonGenericRoland:
 
     @knobkraft_api
     def isEditBufferDump(self, messages):
+        if len(messages) != 518:
+            return False
         addresses = set()
         for message in knobkraft.sysex.findSysexDelimiters(messages):
             if self.isOwnSysex(messages[message[0]:message[1]]):
@@ -338,6 +350,8 @@ class NonGenericRoland:
 
     @knobkraft_api
     def isSingleProgramDump(self, messages):
+        if len(messages) != 518:
+            return False
         addresses = set()
         programs = set()
         for message in knobkraft.sysex.findSysexDelimiters(messages):
@@ -419,7 +433,7 @@ class NonGenericRoland:
     def _asciiToRoland(self, name: str):
         if self.use_roland_character_set:
             result = []
-            for c in name.ljust(self.patch_name_length, " "):
+            for c in name[:self.patch_name_length].ljust(self.patch_name_length, " "):
                 found = False
                 for i in range(len(character_set)):
                     if character_set[i] == c:
@@ -430,7 +444,7 @@ class NonGenericRoland:
                     result.append(len(character_set)-1)
             return result
         else:
-            return [ord(c) for c in name.ljust(self.patch_name_length, " ")]
+            return [ord(c) for c in name.ljust(self.patch_name_length, " ")][:self.patch_name_length]
 
     @knobkraft_api
     def renamePatch(self, message, new_name) -> List[int]:
@@ -487,7 +501,27 @@ def old_channelIfValidDeviceResponse(message):
     return -1
 
 
-def loadD50BankDump(messages):
+def isBankDumpFinished(messages):
+    addresses = set()
+    for message in messages:
+        if isPartOfBankDump(message):
+            command, address = d_50.getCommandAndAddressFromRolandMessage(message)
+            addresses.add(tuple(address))
+    return len(addresses) == 136
+
+
+def isPartOfBankDump(message):
+    if d_50.isOwnSysex(message):
+        command, address = d_50.getCommandAndAddressFromRolandMessage(message)
+        return command == command_dt1
+    return False
+
+
+def bankDownloadMethodOverride():
+    return "EDITBUFFERS"
+
+
+def extractPatchesFromAllBankMessages(messages: List[List[int]]) -> List[List[int]]:
     # The Bank dumps of the D-50 basically are just a lists of messages with the whole memory content of the synth
     # We need to put them together, and then can read the individual data items from the RAM
     synth_ram = [0xff] * (address_to_index([0x04, 0x0c, 0x08]) + 376)
@@ -526,27 +560,47 @@ def index_to_address(index):
 
 def make_test_data():
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        # Quick test of device detect
-        detectMessage = old_createDeviceDetectMessage(0x7)
-        g_command, g_address, g_data = d_50.parseRolandMessage(detectMessage)
-        assert (g_command == command_rq1)
-        assert (g_address == [0x00, 0x01, 0x00])
-        assert (g_data == [0x00, 0x00, 0x40])
-
-        patches = loadD50BankDump(test_data.all_messages)
+        patches = extractPatchesFromAllBankMessages(test_data.all_messages)
         yield testing.ProgramTestData(message=patches[0], name="SOUNDTRACK II     ")
         yield testing.ProgramTestData(message=patches[17], name="DIMENSIONAL PAD   ")
 
+        onemore = knobkraft.load_sysex("testData/Roland_D50/vibraphone edit buffer.syx", as_single_list=True)
+        yield testing.ProgramTestData(message=onemore, name="Vibraphone        ")
+
+        testbank = knobkraft.load_sysex("testData/Roland_D50/testbank_d50.syx")
+        edit_buffer = []
+        for message in testbank:
+            if d_50.isPartOfEditBufferDump(message):
+                edit_buffer.extend(message)
+            else:
+                assert False, "Expected only edit buffer dumps here"
+            if d_50.isEditBufferDump(edit_buffer):
+                yield testing.ProgramTestData(message=edit_buffer)
+                edit_buffer.clear()
+
     def make_programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
-        patches = loadD50BankDump(test_data.all_messages)
+        patches = extractPatchesFromAllBankMessages(test_data.all_messages)
         prog0 = d_50.convertToProgramDump(11, patches[0], 12)
         yield testing.ProgramTestData(message=prog0, name="SOUNDTRACK II     ", number=12)
-        #yield testing.ProgramTestData(message=patches[17], name="DIMENSIONAL PAD   ")
+        prog1 = d_50.convertToProgramDump(11, patches[63], 2)
+        yield testing.ProgramTestData(message=prog1, name="EQUILIBRIUM       ", number=2)
 
+    def bankGenerator(test_data: testing.TestData) -> List[int]:
+        yield test_data.all_messages
 
-    messages = knobkraft.load_sysex(R"testData/Roland_D50_DIGITAL DREAMS.syx", as_single_list=False)
-    patches = loadD50BankDump(messages)
-    return testing.TestData(sysex=R"testData/Roland_D50_DIGITAL DREAMS.syx", edit_buffer_generator=make_patches,
+    messages = knobkraft.load_sysex(R"testData/Roland_D50/Roland_D50_DIGITAL DREAMS.syx", as_single_list=False)
+    dump = []
+    for message in messages:
+        if isPartOfBankDump(message):
+            dump.append(message)
+        else:
+            print(f"Message not part of bank dump: {message}")
+    assert isBankDumpFinished(dump)
+    patches = extractPatchesFromAllBankMessages(dump)
+    return testing.TestData(sysex=R"testData/Roland_D50/Roland_D50_DIGITAL DREAMS.syx", edit_buffer_generator=make_patches,
                             program_generator=make_programs,
+                            bank_generator=bankGenerator,
+                            banks_are_edit_buffers=True,
                             device_detect_call="f0 41 00 14 11 00 00 00 00 00 40 40 f7",
-                            device_detect_reply=(patches[0], 0))
+                            device_detect_reply=(patches[0], 0),
+                            expected_patch_count=64)

@@ -19,7 +19,7 @@
 
 class MetaDataArea: public Component {
 public:
-	MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category)> categoryUpdateHandler);
+	MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category, TouchButtonFunction f)> categoryUpdateHandler);
 
 	// Expose this functionality of the categories member
 	void setActive(std::set<CategoryButtons::Category> const& activeCategories);
@@ -68,8 +68,9 @@ public:
 private:
 	void setupPatchProperties(std::shared_ptr<midikraft::PatchHolder> patch);
 	void changeListenerCallback(ChangeBroadcaster* source) override;
+	void refreshCategories();
 	void refreshNameButtonColour();
-	void categoryUpdated(CategoryButtons::Category clicked);
+	void categoryUpdated(CategoryButtons::Category clicked, TouchButtonFunction f);
 	virtual void valueChanged(Value& value) override; // This gets called when the property editor is used
 
 	midikraft::PatchDatabase &database_;

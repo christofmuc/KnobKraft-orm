@@ -50,4 +50,4 @@ def make_test_data():
                     if i >= len(names):
                         break
 
-    return testing.TestData(sysex="testData/JV1080_AGSOUND1.SYX", program_generator=programs)
+    return testing.TestData(sysex="testData/JV1080_AGSOUND1.SYX", program_generator=programs, expected_patch_count=46)

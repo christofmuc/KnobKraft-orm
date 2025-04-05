@@ -44,7 +44,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |
-| Korg | M1 | alpha | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
+| Korg | M1 | works | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
@@ -61,7 +61,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
-| Roland | D-50 | in progress | adaptation | |
+| Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
@@ -74,18 +74,20 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Sequential | Prophet-6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
 | Sequential | Take 5 | beta | adaptation | |
-| Sequential | Trigon-6 | beta | adaptation | |
+| Sequential | Trigon-6 | works | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
 | Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
-| Waldorf | Pulse | alpha | adaptation | Thanks to @markusschlosser and chatGPT! |
+| Waldorf | Pulse | works | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
+| Yamaha | FS1R | alpha | adaptation | Thanks to @markusschlosser for testing! |
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
+| Yamaha | TX81Z | works | adaptation | Contributed by @summersetter!|
 | Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | Thanks to @milnak!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 

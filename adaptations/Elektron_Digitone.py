@@ -115,7 +115,7 @@ def nameFromDump(message):
 def renamePatch(message: List[int], new_name: str) -> List[int]:
     if isSingleProgramDump(message):
         data, checksum = unescapeSysexElektron(message[10:-5])
-        data[12:12 + 16] = [ord(c) for c in new_name.ljust(16, chr(0x00))]
+        data[12:12 + 16] = [ord(c) for c in new_name.ljust(16, chr(0x00))[:16]]
         escaped_data, new_checksum = escapeSysexElektron(data)
         checksum_hi = (new_checksum >> 7) & 0x7f
         checksum_lo = new_checksum & 0x7f
@@ -189,4 +189,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=data.all_messages[5], name="POWER BASS", number=5)
         yield testing.ProgramTestData(message=data.all_messages[123], name="OB  CHORDS", number=123)
 
-    return testing.TestData(sysex="testData/Elektron_Digitone/URRRS x Digitone.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Elektron_Digitone/URRRS x Digitone.syx", program_generator=programs, expected_patch_count=124)

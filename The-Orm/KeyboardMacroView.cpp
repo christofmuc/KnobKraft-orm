@@ -28,21 +28,34 @@ const char *kLowestNote = "Lowest MIDI Note";
 const char *kHighestNote = "Highest MIDI Note";
 
 
-class RecordProgress : public ThreadWithProgressWindow, private MidiKeyboardStateListener {
+class KeyboardMacroView::RecordProgress : private MidiKeyboardStateListener {
 public:
-	RecordProgress(MidiKeyboardState &state) : ThreadWithProgressWindow("Press key(s) on your MIDI keyboard", false, true), state_(state), atLeastOneKey_(false), done_(false)
+	RecordProgress(Component* parent, MidiKeyboardState& state) : parent_(parent), state_(state), atLeastOneKey_(false)
 	{
+	}
+
+	void show(std::function<void(std::set<int> const&, bool)> done) {
+		done_ = std::move(done);
+		auto options = juce::MessageBoxOptions().withButton("Clear").withButton("Cancel").withTitle("Press key(s) on your MIDI keyboard").withParentComponent(parent_);
+		state_.addListener(this);
+		messageBox_ = AlertWindow::showScopedAsync(options, [this](int button) {
+			switch (button) {
+			case 1:
+				// Clear
+				done_({}, false);
+				break;
+			case 0:
+				// Cancel, nothing to do
+				done_({}, true);
+				break;
+			default:
+				spdlog::error("Unknown button number pressed, program error in RecordProgress of KeyboardMacroView");
+			}
+			});
 	}
 
 	virtual ~RecordProgress() override {
 		state_.removeListener(this);
-	}
-
-	virtual void run() override {
-		state_.addListener(this);
-		while (!threadShouldExit() && !done_) {
-			Thread::sleep(10);
-		}
 	}
 
 	virtual void handleNoteOn(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity) override {
@@ -60,17 +73,18 @@ public:
 			}
 		}
 		if (keyPressed == 0) {
-			done_ = true;
+			messageBox_.close();
+			done_(notes_, false);
 		}
 	}
 
-	std::set<int> notesSelected() { return notes_; }
-
 private:
+	Component* parent_;
+	std::function<void(std::set<int> const&, bool)> done_;
+	ScopedMessageBox messageBox_;
 	std::set<int> notes_;
 	MidiKeyboardState &state_;
 	bool atLeastOneKey_;
-	bool done_;
 
 };
 
@@ -84,13 +98,17 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	for (auto config : kAllKeyboardMacroEvents) {
 		auto configComponent = new MacroConfig(config,
 			[this](KeyboardMacroEvent event) {
-			RecordProgress recorder(state_);
-			if (recorder.runThread()) {
-				KeyboardMacro newMacro = { event, recorder.notesSelected() };
-				macros_[event] = newMacro;
-				saveSettings();
-				refreshUI();
-			}
+				activeRecorder_ = std::make_shared<RecordProgress>(this, state_);
+				activeRecorder_->show([this, event](std::set<int> const& notes, bool cancelled) {
+					if (!cancelled) {
+						KeyboardMacro newMacro = { event, notes };
+						macros_[event] = newMacro;
+						saveSettings();
+						refreshUI();
+					}
+					activeRecorder_ = nullptr;
+					}
+				);
 		},
 			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
@@ -159,7 +177,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 						auto code = macro.first;
 						MessageManager::callAsync([this, code]() {
 							executeMacro_(code);
-						});
+							});
 					}
 				}
 			}

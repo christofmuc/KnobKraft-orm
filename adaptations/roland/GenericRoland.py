@@ -51,7 +51,7 @@ categories = {
     28: ("BPD", "BRIGHT PAD", "Bright Pad Synth"),
     29: ("SPD", "SOFT PAD", "Soft Pad Synth"),
     30: ("VOX", "VOX", "Vox, Choir"),
-    31: ("PLK" "PLUCKED", "Plucked (Harp etc.)"),
+    31: ("PLK", "PLUCKED", "Plucked (Harp etc.)"),
     32: ("ETH", "ETHNIC", "Other Ethnic"),
     33: ("FRT", "FRETTED", "Fretted Inst (Mandolin etc.)"),
     34: ("PRC", "PERCUSSION", "Percussion"),
