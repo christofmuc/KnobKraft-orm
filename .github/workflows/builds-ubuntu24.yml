@@ -28,6 +28,12 @@ jobs:
         python-version: '3.12'
         architecture: 'x64'
 
+    - name: Upgrade gcc to 14
+      run: |
+        sudo add-apt-repository universe
+        sudo apt-get update
+        sudo apt-get install gcc-14
+
     - name: CMake configure
       env: # We get the SENTRY DSN from the repository's secret store
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
