@@ -102,3 +102,7 @@ def nibble(message):
         result.append(b & 0x0f)
         result.append((b & 0xf0) >> 4)
     return result
+
+
+def to_hex_str(data: List[int]):
+    return ' '.join([f'{i:02X}' for i in data])
