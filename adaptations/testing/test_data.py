@@ -1,8 +1,13 @@
+import abc
+import queue
+from abc import ABC
 from dataclasses import dataclass
-from typing import Optional, Union, List, Callable, Tuple, Any
+from typing import Optional, Union, List, Callable, Tuple, Any, Type
 import knobkraft
 
 # Define some type aliases for us
+import testing
+
 ByteList = List[int]
 
 
@@ -25,6 +30,43 @@ class MidiMessage:
 
     def __repr__(self):
         return "[" + ', '.join([f"{x}" for x in self.byte_list]) + "]"
+
+
+MidiMessageHandler = Callable[[List[int]], None]
+
+
+class Simulator(ABC):
+
+    def __init__(self, test_data: "TestData"):
+        self.test_data = test_data
+
+    @abc.abstractmethod
+    def send(self, message: List[int]) -> List[int]:
+        pass
+
+
+class MidiController(ABC):
+    def __init__(self, simulator: Simulator):
+        self.to_receive = queue.Queue()
+        self.handlers: List[MidiMessageHandler] = []
+        self.simulator = simulator
+
+    def add_message_handler(self, handler: MidiMessageHandler) -> None:
+        self.handlers.append(handler)
+
+    def send(self, message: List[int]):
+        replies = self.simulator.send(message)
+        for reply_message in knobkraft.splitSysex(replies):
+            self.to_receive.put(reply_message)
+
+    def receive(self, message: List[int]):
+        for handler in self.handlers:
+            handler(message)
+
+    def pump(self):
+        while not self.to_receive.empty():
+            message = self.to_receive.get()
+            self.receive(message)
 
 
 def make_midi_message(message: Optional[Union[MidiMessage, List[int], str]]) -> Optional[MidiMessage]:
@@ -77,6 +119,8 @@ class TestData:
     rename_name: Optional[str] = None
     not_idempotent: bool = False
     expected_patch_count: int = 1
+    simulator: Type[Simulator] = None
+    expected_patch_count_from_simulator: int = 1
 
     def __post_init__(self):
         self.all_messages = []

@@ -5,6 +5,7 @@ from enum import Enum
 import logging
 
 import knobkraft
+from testing.test_data import MidiController
 
 
 def adaptation_has_implemented(adaptation, function_implemented: str):
@@ -29,24 +30,6 @@ def adaptation_has_edit_buffer_capability(adaptation):
 
 def flatten(xss: List[List[Any]]) -> List[Any]:
     return [x for xs in xss for x in xs]
-
-
-MidiMessageHandler = Callable[[List[int]], None]
-
-
-class MidiController:
-    def __init__(self):
-        self.handlers: List[MidiMessageHandler] = []
-
-    def add_message_handler(self, handler: MidiMessageHandler) -> None:
-        self.handlers.append(handler)
-
-    def send(self, message: List[int]):
-        pass
-
-    def receive(self, message: List[int]):
-        for handler in self.handlers:
-            handler(message)
 
 
 class SynthBank:
@@ -128,11 +111,11 @@ class Librarian:
 
         if method == BankDownloadMethod.BANKS:
             buffer = adaptation.createBankDumpRequest(channel, bank_no)
-            midi_controller.send(buffer)
             midi_controller.add_message_handler(partial(self._handle_next_bank_dump, midi_controller=midi_controller, adaptation=adaptation))
+            midi_controller.send(buffer)
 
         elif method == BankDownloadMethod.PROGRAM_BUFFERS:
-            midi_controller.add_message_handler(partial(self._handle_next_program_buffer, midi_controller=midi_controller, adaptation=adaptation, bank_no=bank_no))
+            midi_controller.add_message_handler(partial(self._handle_next_program_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel))
             self.download_number = SynthBank.start_index_in_bank(adaptation, bank_no)
             self.start_download_number = self.download_number
             self.end_download_number = self.download_number + SynthBank.number_of_patches_in_bank(adaptation, bank_no)
@@ -152,15 +135,15 @@ class Librarian:
         """
         Handle the next message incoming during a bank dump download
         """
-        if adaptation.adaptation_has_implemented("isPartOfBankDump") and adaptation.isPartOfBankDump(message):
+        if adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message):
             # This is part of the bank dump. Store in self.current_download_message and check if we're done
             self.current_download_messages.append(message)
             if adaptation.isBankDumpFinished(self.current_download_messages):
-                patches = self.load_sysex(self.current_download_messages)
+                patches = self.load_sysex(adaptation, self.current_download_messages)
                 self.on_finished(patches)
-        elif adaptation.isBankDumpFinished(message):
+        elif adaptation.isBankDumpFinished([message]):
             # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
-            patches = self.load_sysex(self.current_download_messages)
+            patches = self.load_sysex(adaptation, self.current_download_messages)
             self.on_finished(patches)
 
     def _start_download_next_program_buffer(self, midi_controller: MidiController, adaptation, channel: int) -> None:
@@ -201,7 +184,7 @@ class Librarian:
                 self.current_download_messages.append(self.current_download_program_dump)
                 # Finished?
                 if self.download_number >= self.end_download_number - 1:
-                    patches = self.load_sysex(self.current_download_messages)
+                    patches = self.load_sysex(adaptation, self.current_download_messages)
                     self.on_finished(patches)
                 else:
                     self.download_number += 1
