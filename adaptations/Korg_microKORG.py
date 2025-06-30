@@ -3,7 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
-#
+#   KORG microKORG S Adaptation for KnobKraft by Ilan Lanz @ilantz
 #   Make sure microKORG is ready for sysex:
 #   1) Turn off write protect
 #      SHIFT + Program 8 -> Turn knob 1/Cutoff to confirm write protect is off.
@@ -22,7 +22,7 @@ import logging
 
 import knobkraft
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Global variable to track the last patch index for recall
 _last_patch_index = 0
@@ -108,21 +108,57 @@ def getPatchDisplayName(index, patch_message):
 
 
 def nameFromDump(message):
-    # The patch name is stored as plain ASCII at the start of the data payload.
-    # It does not need to be unescaped.
-    # The payload starts at index 7.
-    if isEditBufferDump(message) or isPartOfBankDump(message):
-        try:
-            # The name is the first 12 bytes of the payload
-            name_bytes = message[7:19]
-            # Convert to string, keeping all 12 characters (pad with spaces if needed)
-            name = ''.join(chr(b) if 32 <= b <= 126 else ' ' for b in name_bytes)
-            name = name.ljust(12)[:12]
-            logging.debug(f"nameFromDump: extracted name '{name}' from bytes {name_bytes}")
-            return name
-        except (IndexError, UnicodeDecodeError):
-            return "Invalid Name"
-    return "Invalid"
+    # Debug: print the first 24 bytes to diagnose offset issues
+    logging.debug(f"nameFromDump: message length={len(message)}, first 24 bytes={message[:24]}")
+    
+    # If this is a sysex message (starts with 0xf0)
+    if len(message) >= 22 and message[0] == 0xf0:
+        # Check if this is a bank dump (0x50) or edit buffer (0x40) message at message[6]
+        if len(message) >= 9 and message[6] == 0x50:
+            # Bank dump: name is at offset 9-23 (14 bytes to capture full 12-char name, accounting for extra 00 byte)
+            name_bytes = message[9:23]
+            logging.debug(f"Bank dump sysex - name bytes at offset 9-23: {name_bytes}")
+        elif len(message) >= 9 and message[6] == 0x40:
+            # Check if this has the extra 00 byte at offset 8 (indicating it's from a bank dump)
+            if len(message) >= 9 and message[8] == 0x00:
+                # This is a patch extracted from a bank dump: name is at offset 9-23 (14 bytes)
+                name_bytes = message[9:23]
+                logging.debug(f"Bank dump extracted patch - name bytes at offset 9-23: {name_bytes}")
+            else:
+                # This is a real edit buffer: name is at offset 8-21 (13 bytes)
+                name_bytes = message[8:21]
+                logging.debug(f"Edit buffer sysex - name bytes at offset 8-21: {name_bytes}")
+        else:
+            # Default to offset 8-21 for other sysex messages
+            name_bytes = message[8:21]
+            logging.debug(f"Other sysex - name bytes at offset 8-21: {name_bytes}")
+    # If this is a raw patch data segment, name is at offset 0
+    elif len(message) >= 12:
+        name_bytes = message[0:12]
+        logging.debug(f"Raw patch data - name bytes at offset 0-12: {name_bytes}")
+    else:
+        logging.debug(f"Message too short: length={len(message)}")
+        return "Invalid"
+    
+    # Log each byte conversion
+    name_chars = []
+    for i, b in enumerate(name_bytes):
+        if 32 <= b <= 126:
+            char = chr(b)
+            name_chars.append(char)
+        elif b == 0x00:
+            # Skip null bytes - they're used as separators in the synth's name storage
+            logging.debug(f"  Byte {i}: {b:02x} -> <skipped null>")
+            continue
+        else:
+            char = ' '
+            name_chars.append(char)
+        logging.debug(f"  Byte {i}: {b:02x} -> '{char}'")
+    
+    name = ''.join(name_chars)
+    result = name.ljust(12)[:12].rstrip()  # Trim trailing spaces
+    logging.debug(f"Final result: '{result}' (length: {len(result)})")
+    return result
 
 
 def convertToEditBuffer(channel, message):
@@ -153,7 +189,6 @@ def isPartOfBankDump(message):
             and message[3] == 0x00
             and message[4] == 0x01
             and message[5] == 0x40
-            and message[6] == 0x50  # This is the "Program Data Dump" command from the synth
             and message[-1] == 0xF7)
 
 
@@ -173,7 +208,7 @@ def extractPatchesFromBank(messages):
     data_payload = bank_dump_message[7:-1]
     unescaped_data = unescapeSysex(data_payload)
 
-    PATCH_DATA_SIZE = 256  # microKORG S patch size
+    PATCH_DATA_SIZE = 254
     PATCH_COUNT = 256
 
     patches = []
@@ -184,7 +219,7 @@ def extractPatchesFromBank(messages):
         end = start + PATCH_DATA_SIZE
         if end <= len(unescaped_data):
             patch_data_segment = unescaped_data[start:end]
-            header = [0xf0, 0x42, 0x30 | channel, 0x00, 0x01, 0x40, 0x40]
+            header = [0xf0, 0x42, 0x30 | channel, 0x00, 0x01, 0x40, 0x40, 0x00]
             escaped_patch_data = escapeSysex(patch_data_segment)
             full_patch_message = header + escaped_patch_data + [0xf7]
             patches.append(full_patch_message)
@@ -258,8 +293,12 @@ def supportsBankSelect():
 def bankSelect(channel, bank):
     global _last_patch_index
     midi_bank = 0 if _last_patch_index < 128 else 1
-    print(f"bankSelect: channel={channel}, requested bank={bank}, patch_index={_last_patch_index}, midi_bank={midi_bank}")
-    return [0xb0 | (channel & 0x0f), 32, midi_bank]
+    # Always send MSB=0, LSB=midi_bank
+    logging.debug(f"bankSelect: channel={channel}, requested bank={bank}, patch_index={_last_patch_index}, midi_bank={midi_bank}")
+    return [
+        0xb0 | (channel & 0x0f), 0, 0,      # CC 0 (Bank Select MSB) = 0
+        0xb0 | (channel & 0x0f), 32, midi_bank  # CC 32 (Bank Select LSB) = midi_bank
+    ]
 
 
 def patch_name_from_index(index):
