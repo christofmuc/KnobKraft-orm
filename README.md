@@ -153,9 +153,14 @@ The recursive clone with  submodules is required to retrieve the following addit
 
 ## Building on Windows
 
-Using CMake and building is a simple step if the prerequisites are fulfilled. Simply open a command line in the downloaded root directory `<KnobKraft-orm>` and run
+Using CMake and building can be simple if the prerequisites are fulfilled: 
+   * Install https://visualstudio.microsoft.com/vs/community/
+   * Confirm Desktop development with C++ and the MSVC C++ (latest) components are also installed
+   * Install latest python https://www.python.org/downloads/windows/
+        
+Simply open a command line in the downloaded root directory `<KnobKraft-orm>` and run the build using cmake:
 
-    cmake -S . -B builds -G "Visual Studio 15 2017 Win64"
+    cmake --fresh -S . -B builds -G "Visual Studio 17 2022" -A x64
 
 This will generate a solution file for Visual Studio in the builds subdirectory. You can build the software to run it immediately with the command
 
