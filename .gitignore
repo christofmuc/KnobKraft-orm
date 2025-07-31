@@ -9,3 +9,5 @@ codesigning/dsa_priv.pem
 adaptations/testData/TORAIZ Artist Sound Pack Agreement.pdf
 adaptations/testData/Toraiz AS-1 Synth Sunset Bank.tas1_bank
 .builds
+build/
+builds/
