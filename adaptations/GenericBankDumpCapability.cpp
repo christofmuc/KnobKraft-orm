@@ -27,7 +27,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericBankDumpRequestCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
-		spdlog::info("requestBankDump called for bank {}", bankNo.toZeroBased());
+		spdlog::debug("requestBankDump called for bank {}", bankNo.toZeroBased());
 		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
@@ -61,7 +61,7 @@ namespace knobkraft {
 				auto midiMessages = Sysex::vectorToMessages(byteData);
 				allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
 			}
-			spdlog::info("requestBankDump returning {} messages", allMessages.size());
+			spdlog::debug("requestBankDump returning {} messages", allMessages.size());
 			return allMessages;
 		}
 		catch (py::error_already_set &ex) {
@@ -115,7 +115,7 @@ namespace knobkraft {
 
 	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
 	{
-		spdlog::info("patchesFromSysexBank called with {} messages", messages.size());
+		spdlog::debug("patchesFromSysexBank called with {} messages", messages.size());
 		midikraft::TPatchVector patchesFound;
 		py::gil_scoped_acquire acquire;
 		if (me_->pythonModuleHasFunction(kExtractPatchesFromAllBankMessages)) {
