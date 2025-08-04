@@ -19,6 +19,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Deepmind 12 | works | adaptation | |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
+| Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
@@ -45,11 +46,13 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |
 | Korg | M1 | works | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
+| Korg | microKORG S | works | adaptation | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
 | Moog | Voyager | works | adaptation | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
+| Novation | Bass Station II | works | adaptation | Thanks to @cockroach! |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
