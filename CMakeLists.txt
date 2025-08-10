@@ -65,8 +65,9 @@ endif()
 
 # On Windows, we need to download external dependencies
 IF (WIN32)
-	# Include useful scripts for CMake    
-	include(FetchContent REQUIRED)
+    # Include useful scripts for CMake, and opt in for the new fetch content timestamp behavior
+    cmake_policy(SET CMP0135 NEW)
+    include(FetchContent REQUIRED)
 
     FetchContent_Declare(
 	  icu URL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-Win64-MSVC2019.zip
