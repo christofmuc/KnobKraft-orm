@@ -19,6 +19,7 @@
 #include <memory>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
+#include "EditFocusKeeper.h"
 
 #include "version.cpp"
 
@@ -286,12 +287,21 @@ public:
            you really have to override any DocumentWindow methods, make sure your
            subclass also calls the superclass's method.
         */
+		void activeWindowStatusChanged() override
+		{
+			juce::DocumentWindow::activeWindowStatusChanged();
+			if (isActiveWindow())
+				editKeeper_.restoreOnActivation();
+			else
+				editKeeper_.snapshotOnDeactivation();
+		}
 
     private:
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainWindow)
 
 		OrmLookAndFeel ormLookAndFeel_;
 		std::unique_ptr<TooltipWindow> tooltipGlobalWindow_; //NOLINT
+		EditSessionKeeper editKeeper_;
     };
 
 
