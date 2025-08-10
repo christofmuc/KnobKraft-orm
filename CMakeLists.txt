@@ -155,12 +155,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 # RapidJson is an include-only library, so instead of bothering with their CMake files, just add the include path
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
-# Require Python 3.12 or newer and use modern CMake Python detection
-find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter Development)
-
-# Tell pybind11 to use the new FindPython mode
-set(PYBIND11_FINDPYTHON ON)
-
 # Setup pybind11
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
 IF(WIN32)
