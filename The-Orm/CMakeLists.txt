@@ -265,7 +265,16 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		)
 
 IF(WIN32)
-	# Windows only: Build InnoSetup installer
+    # We need to copy the runtime of the embedded Python used, else we get weird errors starting from Python 3.12, probably because it finds
+    # other versions on the drive.
+    add_custom_command(TARGET KnobKraftOrm POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${pythonembedded_SOURCE_DIR}"
+                "$<TARGET_FILE_DIR:KnobKraftOrm>"
+        COMMENT "Copying embedded Python runtime"
+    )
+
+    # Windows only: Build InnoSetup installer
 	find_program(INNOSETUP NAMES iscc ISCC HINTS "${CMAKE_CURRENT_LIST_DIR}/../third_party/Tools.InnoSetup.6.0.5/tools" "c:/program files (x86)/Inno Setup 6")
 	if (INNOSETUP)
 	else()
