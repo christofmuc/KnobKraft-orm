@@ -281,7 +281,6 @@ IF(WIN32)
 	add_custom_command(
 		TARGET KnobKraftOrm POST_BUILD
 		COMMAND  "${CMAKE_COMMAND}" -E $<${no_copy}:echo> $<${no_copy}:"Not building Installer with "> chdir . ${INNOSETUP} "${CMAKE_CURRENT_BINARY_DIR}/setup.iss"
-		DEPENDS setup.iss 
 	)
 ENDIF()
 
