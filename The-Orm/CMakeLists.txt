@@ -8,13 +8,14 @@ cmake_minimum_required(VERSION 3.14)
 
 # Get the version from our sub cmakefile
 execute_process(
-		COMMAND sh -c "cmake -P '${CMAKE_CURRENT_LIST_DIR}/gitversion.cmake' >/dev/null"
-		ERROR_VARIABLE PROJECT_VERSION
+    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/gitversion.cmake"
+    ERROR_VARIABLE PROJECT_VERSION
+    ERROR_STRIP_TRAILING_WHITESPACE
 )
 # Cleanup output
 string(REGEX REPLACE "^[[:space:]]+|[[:space:]]+$" "" PROJECT_VERSION "${PROJECT_VERSION}")
 string(REGEX REPLACE "\n$" "" PROJECT_VERSION "${PROJECT_VERSION}")
-message(STATUS "Project version is ${PROJECT_VERSION}")
+message(STATUS "Project version is '${PROJECT_VERSION}'")
 
 # Start project
 project(KnobKraftOrm VERSION ${PROJECT_VERSION})
