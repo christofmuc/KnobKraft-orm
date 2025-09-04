@@ -19,6 +19,7 @@ public:
 		addAndMakeVisible(active);
 		active.setEnabled(true);
 		addAndMakeVisible(name);
+		addAndMakeVisible(order_num);
 		addAndMakeVisible(color);
 		setRow(catItem);
 	}
@@ -28,12 +29,14 @@ public:
 		auto width = area.getWidth();
 		active.setBounds(area.removeFromLeft(30));
 		color.setBounds(area.removeFromRight(width * 30 / 100));
+		order_num.setBounds(area.removeFromRight(30));
 		name.setBounds(area.withTrimmedLeft(8).withTrimmedRight(8));
 	}
 
 	void setRow(ValueTree catItem) {
 		// This changes the row to be displayed with this component (reusing components within a list box)
 		name.getTextValue().referTo(catItem.getPropertyAsValue("name", nullptr));
+		order_num.getTextValue().referTo(catItem.getPropertyAsValue("order_num", nullptr));
 		active.getToggleStateValue().referTo(catItem.getPropertyAsValue("active", nullptr));
 		color.getValueObject().referTo(catItem.getPropertyAsValue("color", nullptr));
 	}
@@ -41,6 +44,7 @@ public:
 private:
 	ToggleButton active;
 	TextEditor name;
+	TextEditor order_num;
 	gin::ColourPropertyComponent color;
 };
 
@@ -189,7 +193,8 @@ void EditCategoryDialog::provideResult(TCallback callback)
 		bool active = child.getProperty("active");
 		String name = child.getProperty("name");
 		Colour color = Colour::fromString(child.getProperty("color").toString());
-		result.push_back({ id, active, name.toStdString(), color});
+		String order_num = child.getProperty("order_num");
+		result.push_back({ id, active, name.toStdString(), color, order_num.getIntValue() });
 	}
 	callback(result);
 }
@@ -232,6 +237,7 @@ void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const& def)
 			child.setProperty("name", String(def.name), nullptr);
 			child.setProperty("active", def.isActive, nullptr);
 			child.setProperty("color", def.color.toString(), nullptr);
+			child.setProperty("order_num", def.sort_order, nullptr);
 			return;
 		}
 	}
@@ -241,6 +247,7 @@ void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const& def)
 	newCategory.setProperty("name", String(def.name), nullptr);
 	newCategory.setProperty("active", def.isActive, nullptr);
 	newCategory.setProperty("color", def.color.toString(), nullptr);
+	newCategory.setProperty("order_num", 0, nullptr);
 	propsTree_.addChild(newCategory, -1, nullptr);
 }
 
