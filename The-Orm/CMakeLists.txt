@@ -102,10 +102,6 @@ set(SOURCES
 	redist/agpl-3.0.txt
 )
 
-# Use the correct version.cpp
-list(REMOVE_ITEM SOURCES version.cpp.in)
-list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
-
 # Mac Icon Magic
 if(APPLE)
 set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
