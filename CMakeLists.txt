@@ -11,14 +11,23 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
 
 IF(APPLE)
-	option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
-	if(UNIVERSAL_BINARY)
-		message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
-		set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
-	endif()
+  option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
+  if(UNIVERSAL_BINARY)
+    message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+  endif()
 
-	# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
-	add_compile_definitions(JSON_HAS_CPP_14)
+  # If building for arm64 in any form, enforce macOS 11.0+
+  string(FIND "${CMAKE_OSX_ARCHITECTURES}" "arm64" _has_arm64)
+  if(_has_arm64 GREATER -1)
+    # Bump to at least 11.0 if currently lower or unset
+    if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS "11.0")
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version (arm64 requires 11.0+)" FORCE)
+    endif()
+  endif()
+
+  # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
+  add_compile_definitions(JSON_HAS_CPP_14)
 ENDIF()
 
 project(KnobKraft_Orm)
@@ -217,8 +226,9 @@ target_link_libraries(juce-static
 target_compile_definitions(juce-static
 	PUBLIC
 		JUCE_STANDALONE_APPLICATION=1
-        JUCE_MODAL_LOOPS_PERMITTED=1
-		JUCE_PLUGINHOST_VST=0
+                JUCE_MODAL_LOOPS_PERMITTED=1
+                JUCE_USE_NATIVE_FILECHOOSERS=1
+                JUCE_PLUGINHOST_VST=0
 		JUCE_PLUGINHOST_AU=0
 		DONT_SET_USING_JUCE_NAMESPACE=1
 		JUCE_REPORT_APP_USAGE=0
@@ -230,6 +240,7 @@ target_compile_definitions(juce-static
 		JUCE_COREGRAPHICS_DRAW_ASYNC=1
 		JUCE_WIN_PER_MONITOR_DPI_AWARE=1
 		JUCE_USE_FLAC=1
+                JUCE_WEB_BROWSER=0
 		# JUCE_USE_WINRT_MIDI=1 # So much doesn't work when activating this that this is really scary
 	INTERFACE
 		$<TARGET_PROPERTY:juce-static,COMPILE_DEFINITIONS>)

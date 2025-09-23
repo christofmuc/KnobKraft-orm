@@ -102,10 +102,15 @@ set(SOURCES
 	redist/agpl-3.0.txt
 )
 
+# Use the correct version.cpp
+list(REMOVE_ITEM SOURCES version.cpp.in)
+list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/version.cpp")
+
 # Mac Icon Magic
 if(APPLE)
 set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
-set_source_files_properties(resources/icon_orm.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+set_source_files_properties(${KnobKraftOrm_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
 ENDIF()
 
 set(MIDIKRAFT_LIBRARIES
@@ -127,10 +132,19 @@ set(MIDIKRAFT_LIBRARIES
 )
 
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
-target_include_directories(KnobKraftOrm 
-	INTERFACE ${CMAKE_CURRENT_LIST_DIR}})
+target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR})
+if (CRASH_REPORTING)
+  target_include_directories(KnobKraftOrm SYSTEM PRIVATE "${SENTRY_INSTALL_PATH}/include")
+  if (WIN32)
+    target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib")
+  endif()
+endif()
+if (SPARKLE_UPDATES AND WIN32)
+  target_include_directories(KnobKraftOrm SYSTEM PRIVATE "${WINSPARKLE_INCLUDE}")
+  target_link_directories(KnobKraftOrm PRIVATE "${WINSPARKLE_LIBDIR}")
+endif()
 target_include_directories(KnobKraftOrm SYSTEM
-	PRIVATE "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+	PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(KnobKraftOrm PRIVATE JUCE_MODULE_AVAILABLE_gin_gui JUCE_MODULE_AVAILABLE_gin)
 get_target_property(gin_include_dirs gin INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(KnobKraftOrm SYSTEM PRIVATE ${gin_include_dirs})
@@ -187,7 +201,27 @@ ELSEIF(UNIX)
 		gin
 		spdlog::spdlog
 		)
-	target_compile_options(KnobKraftOrm PRIVATE -pthread -I/usr/include/webkitgtk-4.0 -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/webkitgtk-4.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include)
+        target_include_directories(KnobKraftOrm
+            /usr/include/webkitgtk-4.0
+            /usr/include/at-spi2-atk/2.0
+            /usr/include/at-spi-2.0
+            /usr/include/dbus-1.0
+            /usr/lib/x86_64-linux-gnu/dbus-1.0/include
+            /usr/include/gtk-3.0
+            /usr/include/gio-unix-2.0/
+            /usr/include/cairo
+            /usr/include/pango-1.0
+            /usr/include/harfbuzz
+            /usr/include/atk-1.0
+            /usr/include/pixman-1
+            /usr/include/freetype2
+            /usr/include/libpng16
+            /usr/include/gdk-pixbuf-2.0
+            /usr/include/libsoup-2.4
+            /usr/include/libxml2
+            /usr/include/glib-2.0
+            /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+	target_compile_options(KnobKraftOrm PRIVATE -pthread)
 ENDIF()
 
 # Use all cores
@@ -309,7 +343,7 @@ IF(APPLE)
 					-DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
 					-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
 					-DCODESIGN_CERTIFICATE_NAME="${CODESIGN_CERTIFICATE_NAME}"
-					-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
+					-P "${CMAKE_SOURCE_DIR}/cmake/codesign.cmake"
 		)
 	ENDIF()
 
