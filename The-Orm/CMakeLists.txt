@@ -201,7 +201,7 @@ ELSEIF(UNIX)
 		gin
 		spdlog::spdlog
 		)
-        target_include_directories(KnobKraftOrm
+        target_include_directories(KnobKraftOrm PRIVATE
             /usr/include/webkitgtk-4.0
             /usr/include/at-spi2-atk/2.0
             /usr/include/at-spi-2.0
