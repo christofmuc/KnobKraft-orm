@@ -41,6 +41,7 @@ private:
 
 	int nextId_;
 
+	std::unique_ptr<Component> tableHeader_;
 	std::unique_ptr<ListBox> parameters_;
 	ValueTree propsTree_;
 	TextButton add_;

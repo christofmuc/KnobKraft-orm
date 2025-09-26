@@ -9,31 +9,35 @@
 #include "PropertyEditor.h"
 #include "gin_gui/gin_gui.h"
 
+#include "LayoutConstants.h"
+
 static EditCategoryDialog::TCallback sCallback_;
 
 class CategoryRow : public Component {
 public:
 	typedef std::shared_ptr<TypedNamedValue> TProp;
-	CategoryRow(ValueTree catItem) : color(catItem.getPropertyAsValue("color", nullptr), "Color") {
+	CategoryRow(ValueTree catItem) : color(catItem.getPropertyAsValue("color", nullptr), "") {
 		active.setClickingTogglesState(true);
 		addAndMakeVisible(active);
 		active.setEnabled(true);
 		addAndMakeVisible(name);
+		addAndMakeVisible(order_num);
 		addAndMakeVisible(color);
 		setRow(catItem);
 	}
 
 	virtual void resized() override {
 		auto area = getLocalBounds();
-		auto width = area.getWidth();
-		active.setBounds(area.removeFromLeft(30));
-		color.setBounds(area.removeFromRight(width * 30 / 100));
-		name.setBounds(area.withTrimmedLeft(8).withTrimmedRight(8));
+		active.setBounds(area.removeFromLeft(LAYOUT_BUTTON_WIDTH_MIN));
+		color.setBounds(area.removeFromRight(LAYOUT_BUTTON_WIDTH));
+		order_num.setBounds(area.removeFromRight(LAYOUT_BUTTON_WIDTH_MIN));
+		name.setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
 	}
 
 	void setRow(ValueTree catItem) {
 		// This changes the row to be displayed with this component (reusing components within a list box)
 		name.getTextValue().referTo(catItem.getPropertyAsValue("name", nullptr));
+		order_num.getTextValue().referTo(catItem.getPropertyAsValue("order_num", nullptr));
 		active.getToggleStateValue().referTo(catItem.getPropertyAsValue("active", nullptr));
 		color.getValueObject().referTo(catItem.getPropertyAsValue("color", nullptr));
 	}
@@ -41,7 +45,38 @@ public:
 private:
 	ToggleButton active;
 	TextEditor name;
+	TextEditor order_num;
 	gin::ColourPropertyComponent color;
+};
+
+class TitleRow: public Component {
+public:
+	typedef std::shared_ptr<TypedNamedValue> TProp;
+	TitleRow() {
+		active.setText("Active", dontSendNotification);
+		name.setText("Header", dontSendNotification);
+		order_num.setText("Order", dontSendNotification);
+		color.setText("Color", dontSendNotification);
+		color.setJustificationType(juce::Justification(Justification::centred));
+		addAndMakeVisible(active);
+		addAndMakeVisible(name);
+		addAndMakeVisible(order_num);
+		addAndMakeVisible(color);
+	}
+
+	virtual void resized() override {
+		auto area = getLocalBounds();
+		active.setBounds(area.removeFromLeft(LAYOUT_BUTTON_WIDTH_MIN));
+		color.setBounds(area.removeFromRight(LAYOUT_BUTTON_WIDTH));
+		order_num.setBounds(area.removeFromRight(LAYOUT_BUTTON_WIDTH_MIN));
+		name.setBounds(area.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL));
+	}
+
+private:
+	Label active;
+	Label name;
+	Label order_num;
+	Label color;
 };
 
 class CategoryListModel: public ListBoxModel {
@@ -94,6 +129,8 @@ private:
 
 EditCategoryDialog::EditCategoryDialog() : propsTree_("categoryTree")
 {	
+	tableHeader_ = std::make_unique<TitleRow>();
+	addAndMakeVisible(tableHeader_.get());
 	//parameters_.setRowHeight(60);
 	parameters_ = std::make_unique<ListBox>();
 	addAndMakeVisible(*parameters_);
@@ -128,6 +165,7 @@ EditCategoryDialog::~EditCategoryDialog()
 void EditCategoryDialog::refreshCategories(midikraft::PatchDatabase& db) {
 	// Make a list of the categories we have...
 	auto cats = db.getCategories();
+	std::sort(cats.begin(), cats.end(), [](const midikraft::Category& a, const midikraft::Category& b) { return a.def()->id< b.def()->id;  });
 	for (auto cat : cats) {
 		addCategory(*cat.def());
 	}
@@ -141,12 +179,13 @@ void EditCategoryDialog::refreshData() {
 void EditCategoryDialog::resized()
 {
 	auto area = getLocalBounds();
-	auto buttonRow = area.removeFromBottom(40).withSizeKeepingCentre(208, 40);
-	ok_.setBounds(buttonRow.removeFromLeft(100).reduced(4));
-	cancel_.setBounds(buttonRow.removeFromRight(100).reduced(4));
-	auto addRow = area.removeFromBottom(80).withSizeKeepingCentre(208, 40);
+	auto buttonRow = area.removeFromBottom(LAYOUT_LARGE_LINE_SPACING).withSizeKeepingCentre((LAYOUT_BUTTON_WIDTH+ LAYOUT_INSET_SMALL)*2, LAYOUT_LARGE_LINE_SPACING);
+	ok_.setBounds(buttonRow.removeFromLeft(LAYOUT_BUTTON_WIDTH).reduced(LAYOUT_INSET_SMALL));
+	cancel_.setBounds(buttonRow.removeFromRight(LAYOUT_BUTTON_WIDTH).reduced(LAYOUT_INSET_SMALL));
+	auto addRow = area.removeFromBottom(LAYOUT_LARGE_LINE_SPACING * 2).withSizeKeepingCentre((LAYOUT_BUTTON_WIDTH + LAYOUT_INSET_SMALL) * 2, LAYOUT_LARGE_LINE_SPACING);
 	add_.setBounds(addRow);
-	parameters_->setBounds(area.reduced(8));
+	tableHeader_->setBounds(area.removeFromTop(LAYOUT_LARGE_LINE_SPACING));
+	parameters_->setBounds(area.reduced(LAYOUT_INSET_NORMAL));
 }
 
 static void dialogClosed(int modalResult, EditCategoryDialog* dialog)
@@ -189,7 +228,8 @@ void EditCategoryDialog::provideResult(TCallback callback)
 		bool active = child.getProperty("active");
 		String name = child.getProperty("name");
 		Colour color = Colour::fromString(child.getProperty("color").toString());
-		result.push_back({ id, active, name.toStdString(), color});
+		String order_num = child.getProperty("order_num");
+		result.push_back({ id, active, name.toStdString(), color, order_num.getIntValue() });
 	}
 	callback(result);
 }
@@ -232,6 +272,7 @@ void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const& def)
 			child.setProperty("name", String(def.name), nullptr);
 			child.setProperty("active", def.isActive, nullptr);
 			child.setProperty("color", def.color.toString(), nullptr);
+			child.setProperty("order_num", def.sort_order, nullptr);
 			return;
 		}
 	}
@@ -241,6 +282,7 @@ void EditCategoryDialog::addCategory(midikraft::CategoryDefinition const& def)
 	newCategory.setProperty("name", String(def.name), nullptr);
 	newCategory.setProperty("active", def.isActive, nullptr);
 	newCategory.setProperty("color", def.color.toString(), nullptr);
+	newCategory.setProperty("order_num", def.sort_order, nullptr);
 	propsTree_.addChild(newCategory, -1, nullptr);
 }
 
