@@ -182,9 +182,10 @@ ELSEIF(APPLE)
 		pybind11::embed
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
-		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
-		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
-                MACOSX_BUNDLE_IDENTIFIER "com.knobkraft.orm"
+			MACOSX_BUNDLE_ICON_FILE icon_orm.icns
+			MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+			MACOSX_BUNDLE_GUI_IDENTIFIER "com.knobkraft.orm"
+			MACOSX_BUNDLE_IDENTIFIER "com.knobkraft.orm"
                 )
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
