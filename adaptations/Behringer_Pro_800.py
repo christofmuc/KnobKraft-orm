@@ -6,6 +6,7 @@
 
 from typing import List
 
+from knobkraft import unescapeSysex_deepmind as unescape_sysex
 import testing
 
 behringer_id = [0x00, 0x20, 0x32]
@@ -80,7 +81,7 @@ def nameFromDump(message: List[int]) -> str:
         return "invalid"
 
     payload = message[len(sysex_prefix) + 3:-1]
-    decoded = _decode_payload(payload)
+    decoded = unescape_sysex(payload)
     if len(decoded) <= 150:
         return "invalid"
 
@@ -97,21 +98,6 @@ def nameFromDump(message: List[int]) -> str:
         return ''.join(chr(b) for b in name_bytes)
     except ValueError:
         return "Unnamed"
-
-
-def _decode_payload(encoded: List[int]) -> List[int]:
-    decoded: List[int] = []
-    index = 0
-    while index < len(encoded):
-        msb_byte = encoded[index]
-        index += 1
-        for bit in range(7):
-            if index >= len(encoded):
-                break
-            value = encoded[index] | (((msb_byte >> bit) & 0x01) << 7)
-            decoded.append(value)
-            index += 1
-    return decoded
 
 
 # Test data picked up by test_adaptation.py
