@@ -78,18 +78,34 @@ def renamePatch(message: List[int], new_name: str) -> List[int]:
 
     sanitized = _sanitize_name(new_name)
 
-    max_chars = min(_MAX_NAME_CHARS, len(decoded) - name_start - 1)
-    write_length = min(len(sanitized), max_chars)
+    version = decoded[4] if len(decoded) > 4 else 0
 
-    for offset in range(max_chars):
-        if offset < write_length:
-            decoded[name_start + offset] = sanitized[offset]
-        else:
-            decoded[name_start + offset] = 0x00
+    if version >= 0x6F:
+        # Fixed 16-byte name field at offsets 150..165, unused bytes are 0.
+        fixed_len = min(16, len(decoded) - name_start)
+        for i in range(fixed_len):
+            decoded[name_start + i] = sanitized[i] if i < len(sanitized) else 0x00
+        # Do NOT write a terminator beyond the fixed 16 bytes; offset 166 is used by other params.
+    else:
+        # Variable-length name terminated by 0x00. Keep current span to avoid shifting data.
+        # Find existing terminator (if any)
+        idx = name_start
+        while idx < len(decoded) and decoded[idx] != 0x00:
+            idx += 1
+        span_end = idx  # points at terminator or end
+        if span_end <= name_start:
+            # No characters currently; define a minimal span within bounds
+            span_end = min(name_start + _MAX_NAME_CHARS, len(decoded))
 
-    terminator_index = name_start + max_chars
-    if terminator_index < len(decoded):
-        decoded[terminator_index] = 0x00
+        span_len = max(0, span_end - name_start)
+        write_len = min(len(sanitized), span_len)
+        # Write within existing span and pad remaining span with 0
+        for i in range(span_len):
+            if i < write_len:
+                decoded[name_start + i] = sanitized[i]
+            else:
+                decoded[name_start + i] = 0x00
+        # Keep the existing terminator intact if present
 
     new_payload = _escape_sysex(decoded)
     if len(new_payload) != len(payload):
@@ -284,18 +300,27 @@ def nameFromDump(message: List[int]) -> str:
     if len(decoded) <= 150:
         return "invalid"
 
-    name_bytes = []
-    for value in decoded[150:]:
-        if value == 0x00:
-            break
-        name_bytes.append(value)
-
-    if not name_bytes:
-        return "Unnamed"
+    version = decoded[4] if len(decoded) > 4 else 0
 
     try:
-        return ''.join(chr(b) for b in name_bytes)
-    except ValueError:
+        if version >= 0x6F:
+            # Read up to the first 0x00 within the fixed 16-byte window
+            window_end = min(150 + 16, len(decoded))
+            name_bytes: List[int] = []
+            for value in decoded[150:window_end]:
+                if value == 0x00:
+                    break
+                name_bytes.append(value)
+            return ''.join(chr(b) for b in name_bytes) if name_bytes else "Unnamed"
+        else:
+            # Read until first 0x00 (variable-length name)
+            name_bytes: List[int] = []
+            for value in decoded[150:]:
+                if value == 0x00:
+                    break
+                name_bytes.append(value)
+            return ''.join(chr(b) for b in name_bytes) if name_bytes else "Unnamed"
+    except Exception:
         return "Unnamed"
 
 def _sanitize_name(name: str) -> List[int]:
