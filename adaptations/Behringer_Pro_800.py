@@ -124,7 +124,7 @@ def numberFromDump(message: List[int]) -> int:
     return -1
 
 
-def convertToProgramDump_old(channel: int, message: List[int], program_number: int) -> List[int]:
+def convertToProgramDump(channel: int, message: List[int], program_number: int) -> List[int]:
     if isSingleProgramDump(message):
         program_lsb = program_number & 0x7f
         program_msb = (program_number >> 7) & 0x7f
@@ -135,7 +135,7 @@ def convertToProgramDump_old(channel: int, message: List[int], program_number: i
     raise Exception("Can only convert Pro-800 single program dumps")
 
 
-def convertToProgramDump(channel: int, message: List[int], program_number: int) -> List[int]:
+def convertToProgramDump_cc(channel: int, message: List[int], program_number: int) -> List[int]:
     # New behavior: instead of re-encoding the sysex with a different program number,
     # produce a stream of MIDI CC messages that set all supported parameters to the
     # values contained in the given program dump.
