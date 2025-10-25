@@ -646,7 +646,7 @@ namespace midikraft {
 				case SynthParameterDefinition::ParamType::INT: {
 					auto intParam = std::dynamic_pointer_cast<SynthIntValueParameterCapability>(param);
 					if (intParam) {
-						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::VALUE, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::VALUE, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })), {}, {} });
 					}
 					else {
 						spdlog::error("Expected param {} to be of type SynthIntValueParameterCapability", param->name());
@@ -656,7 +656,7 @@ namespace midikraft {
 				case SynthParameterDefinition::ParamType::INT_ARRAY: {
 					auto intParam = std::dynamic_pointer_cast<SynthVectorParameterCapability>(param);
 					if (intParam) {
-						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::LIST, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::LIST, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })), {}, {} });
 					}
 					else {
 						spdlog::error("Expected param {} to be of type SynthVectorParameterCapability", param->name());
@@ -670,7 +670,7 @@ namespace midikraft {
 						for (int j = rev2Param->minValue(); j < rev2Param->maxValue(); j++) {
 							allowedValues.add(rev2Param->lookup(j));
 						}
-						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::CHOICE, allowedValues });
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::CHOICE, allowedValues, {}, {} });
 					} 
 					else {
 						spdlog::error("Expected param {} to be of type Rev2ParamDefinition", param->name());
@@ -684,7 +684,7 @@ namespace midikraft {
 						for (int j = rev2Param->minValue(); j < rev2Param->maxValue(); j++) {
 							allowedValues.add(rev2Param->lookup(j));
 						}
-						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::CHOICE_LIST, allowedValues });
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::CHOICE_LIST, allowedValues, {}, {} });
 					}
 					else {
 						spdlog::error("Expected param {} to be of type Rev2ParamDefinition", param->name());
