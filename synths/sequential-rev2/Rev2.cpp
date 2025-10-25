@@ -633,7 +633,7 @@ namespace midikraft {
 	}
 
 	std::vector<ParamDef> Rev2::getParameterDefinitions() const {
-		Rev2Patch dummy;
+		Rev2Patch dummy; // Using the legacy code here
 		std::vector<ParamDef> result;
 		int i = 0;
 		std::string layerName = "Layer A ";
@@ -645,25 +645,50 @@ namespace midikraft {
 				switch (param->type()) {
 				case SynthParameterDefinition::ParamType::INT: {
 					auto intParam = std::dynamic_pointer_cast<SynthIntValueParameterCapability>(param);
-					result.push_back(ParamDef{ i, layerName + param->name(), ParamType::VALUE, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+					if (intParam) {
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::VALUE, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+					}
+					else {
+						spdlog::error("Expected param {} to be of type SynthIntValueParameterCapability", param->name());
+					}
 					break;
 				}
 				case SynthParameterDefinition::ParamType::INT_ARRAY: {
-					auto intParam = std::dynamic_pointer_cast<SynthIntValueParameterCapability>(param);
-					result.push_back(ParamDef{ i, layerName + param->name(), ParamType::LIST, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+					auto intParam = std::dynamic_pointer_cast<SynthVectorParameterCapability>(param);
+					if (intParam) {
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::LIST, juce::var(juce::Array<juce::var>({ intParam->minValue(), intParam->maxValue() })) });
+					}
+					else {
+						spdlog::error("Expected param {} to be of type SynthVectorParameterCapability", param->name());
+					}
 					break;
 				}
 				case SynthParameterDefinition::ParamType::LOOKUP: {
 					auto rev2Param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
-					juce::StringArray allowedValues;
-					for (int j = rev2Param->minValue(); j < rev2Param->maxValue(); j++) {
-						allowedValues.add(rev2Param->lookup(j));
+					if (rev2Param) {
+						juce::StringArray allowedValues;
+						for (int j = rev2Param->minValue(); j < rev2Param->maxValue(); j++) {
+							allowedValues.add(rev2Param->lookup(j));
+						}
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::CHOICE, allowedValues });
+					} 
+					else {
+						spdlog::error("Expected param {} to be of type Rev2ParamDefinition", param->name());
 					}
-					result.push_back(ParamDef{ i, layerName + param->name(), ParamType::CHOICE, allowedValues });
 					break;
 				}
 				case SynthParameterDefinition::ParamType::LOOKUP_ARRAY: 
-					spdlog::error("Lookup Arrays are not implemented for the Rev2, but param {} uses it", param->name());
+					auto rev2Param = std::dynamic_pointer_cast<Rev2ParamDefinition>(param);
+					if (rev2Param) {
+						juce::StringArray allowedValues;
+						for (int j = rev2Param->minValue(); j < rev2Param->maxValue(); j++) {
+							allowedValues.add(rev2Param->lookup(j));
+						}
+						result.push_back(ParamDef{ i, layerName + param->name(), param->description(), ParamType::CHOICE_LIST, allowedValues });
+					}
+					else {
+						spdlog::error("Expected param {} to be of type Rev2ParamDefinition", param->name());
+					}
 				}
 				i = i + 1;
 			}
@@ -712,7 +737,16 @@ namespace midikraft {
 					break;
 				}
 				case SynthParameterDefinition::ParamType::LOOKUP_ARRAY:
-					spdlog::error("Lookup Arrays are not implemented for the Rev2, but param {} uses it", param->name());
+					juce::Array<juce::var> valueArray;
+					std::vector<int> int_values;
+					auto vectorParam = std::dynamic_pointer_cast<SynthVectorParameterCapability>(param);
+					if (!vectorParam->valueInPatch(*patch, int_values)) {
+						spdlog::error("Failed to get integer vector values for parameter {}", param->name());
+					}
+					for (auto const& v : int_values) {
+						valueArray.add(juce::var(rev2Param->lookup(v)));
+					}
+					result.push_back(ParamVal{ i, valueArray });
 				}
 				i = i + 1;
 			}
@@ -720,7 +754,14 @@ namespace midikraft {
 		return result;
 	}
 
+	bool Rev2::setParameterValues(std::vector<ParamVal> const& new_values)
+	{
+		ignoreUnused(new_values);
+		return false;
+	}
+
 	std::vector<float> Rev2::createFeatureVector(std::shared_ptr<DataFile> const patch) const {
+		// TODO: This is experimental code, preparing for the similarity search.
 		auto rev2patch = std::dynamic_pointer_cast<Rev2Patch>(patch);
 		if (!rev2patch) {
 			return {};

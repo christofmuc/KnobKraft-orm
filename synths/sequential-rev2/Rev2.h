@@ -78,6 +78,7 @@ namespace midikraft {
 
 		// SynthParametersCapability, the new version of the detailed parameters better suited for Python bindings
 		virtual std::vector<ParamDef> getParameterDefinitions() const override;
+		virtual bool setParameterValues(std::vector<ParamVal> const& new_values) override;
 		virtual std::vector<ParamVal> getParameterValues(std::shared_ptr<DataFile> const patch, bool onlyActive) const override;
 		virtual std::vector<float> createFeatureVector(std::shared_ptr<DataFile> const patch) const override;
 
