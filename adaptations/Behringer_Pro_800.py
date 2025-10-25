@@ -84,7 +84,13 @@ def renamePatch(message: List[int], new_name: str) -> List[int]:
         # Fixed 16-byte name field at offsets 150..165, unused bytes are 0.
         fixed_len = min(16, len(decoded) - name_start)
         for i in range(fixed_len):
-            decoded[name_start + i] = sanitized[i] if i < len(sanitized) else 0x00
+            if i < len(sanitized):
+                decoded[name_start + i] = sanitized[i]
+            elif i == len(sanitized):
+                decoded[name_start + i] = 0x00  # Zero-terminated string
+            else:
+                # Keep value after 0 terminator for easier rename tests
+                pass
         # Do NOT write a terminator beyond the fixed 16 bytes; offset 166 is used by other params.
     else:
         # Variable-length name terminated by 0x00. Keep current span to avoid shifting data.
