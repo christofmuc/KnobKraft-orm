@@ -4,6 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
+import os
 import re
 from typing import List
 from functools import cache
@@ -78,6 +79,7 @@ DW8000_PARAMETER_SPECS = [
     {"index": 49, "name": "Aftertouch VCF Modulation", "max": 3},
     {"index": 50, "name": "Aftertouch VCA Modulation", "max": 3},
 ]
+DW8000_SPEC_BY_ID = {spec["index"]: spec for spec in DW8000_PARAMETER_SPECS}
 
 def name():
     return "Korg DW 8000"
@@ -201,24 +203,64 @@ def isDefaultName(patchName):
 
 
 def _parameter_payload(data):
-    if not data:
+    window = _parameter_window(data)
+    if window is None:
         return []
-    payload = list(data)
-    if isLegacyFormat(payload):
-        return payload[:]
-    if len(payload) >= 7 and payload[0] == 0xf0:
-        if payload[1] == 0x42 and payload[4] == 0x40:
-            return payload[5:-1]
-    # If the caller passed a larger message that contains the edit buffer somewhere in the middle (e.g., after a program‑dump prefix),
-    # this scans for a F0 42 xx 03 40 sequence, finds the matching F7, and extracts the data between them.
-    for start in range(len(payload) - 6):
+    container, start, end = window
+    return list(container[start:end])
+
+
+def _coerce_patch_bytes(message):
+    if hasattr(message, "byte_list"):
+        return message.byte_list
+    return message
+
+
+def _parameter_window(message):
+    if message is None:
+        return None
+    payload = _coerce_patch_bytes(message)
+    if payload is None or not isinstance(payload, list):
+        return None
+    length = len(payload)
+    if length == len(DW8000_PARAMETER_SPECS):
+        return payload, 0, length
+    # Common case: the whole message is a DW8000 dump starting at byte 0
+    if length >= 7 and payload[0] == 0xf0 and payload[1] == 0x42 and payload[4] == 0x40 and payload[-1] == 0xf7:
+        return payload, 5, length - 1
+    # Fallback: search for the payload inside a larger message
+    for start in range(length - 6):
         if (payload[start] == 0xf0 and payload[start + 1] == 0x42
                 and payload[start + 4] == 0x40):
-            for end in range(start + 6, len(payload)):
-                if payload[end] == 0xf7:
-                    return payload[start + 5:end]
-            break
-    return []
+            end = None
+            for cursor in range(start + 6, length):
+                if payload[cursor] == 0xf7:
+                    end = cursor
+                    break
+            if end is None:
+                return None
+            return payload, start + 5, end
+    return None
+
+
+def _coerce_choice_value(spec, value):
+    choices = spec["choices"]
+    if isinstance(value, str):
+        if value not in choices:
+            raise ValueError(f"Unsupported value '{value}' for {spec['name']}")
+        return choices.index(value)
+    index = int(value)
+    if index < 0 or index >= len(choices):
+        raise ValueError(f"Choice index {index} out of bounds for {spec['name']}")
+    return index
+
+
+def _raw_value_for_spec(value, spec):
+    if spec.get("type") == "choice":
+        return _coerce_choice_value(spec, value)
+    minimum = spec.get("min", 0)
+    maximum = spec["max"]
+    return max(minimum, min(maximum, int(value)))
 
 
 def _map_parameter_value(raw_value, spec):
@@ -266,10 +308,44 @@ def parameterValues(patch, onlyActive):
     return values
 
 
+def setParameterValues(patch, new_values=None):
+    if new_values is None:
+        # Runtime call without explicit patch context (e.g. live edit) is not supported for this adaptation yet.
+        return False
+    if not new_values:
+        return True
+    window = _parameter_window(patch)
+    if window is None:
+        return False
+    container, start, end = window
+    changed = False
+    for entry in new_values:
+        param_id = entry.get("param_id")
+        if param_id is None:
+            continue
+        spec = DW8000_SPEC_BY_ID.get(param_id)
+        if spec is None:
+            continue
+        raw_value = _raw_value_for_spec(entry.get("value"), spec)
+        offset = start + spec["index"]
+        if offset >= end:
+            return False
+        container[offset] = raw_value & 0x7f
+        changed = True
+    return changed
+
+
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         patch = [x for sublist in data.all_messages[0:2] for x in sublist]
-        yield testing.ProgramTestData(message=patch)
+        return [testing.ProgramTestData(message=patch, friendly_number="11")]
+
+    sysex_path = os.path.join(os.path.dirname(__file__), "testData", "KorgDW8000_bank_a.syx")
 
     assert friendlyProgramName(0) == "11"
-    return testing.TestData(sysex="testData/KorgDW8000_bank_a.syx", edit_buffer_generator=programs, friendly_bank_name=(63, "88"), expected_patch_count=64)
+    return testing.TestData(
+        sysex=sysex_path,
+        edit_buffer_generator=programs,
+        friendly_bank_name=(63, "88"),
+        expected_patch_count=64,
+    )
