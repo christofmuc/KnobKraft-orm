@@ -66,7 +66,8 @@ void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
 		// If there is detailed parameter information, also show the second option
 		if (showParams_) {
 			auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
-			if (parameterDetails) {
+			auto synthParameter = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(patch->smartSynth());
+			if (parameterDetails || synthParameter) {
 				textBased_.setVisible(true);
 			}
 			else {
@@ -155,16 +156,10 @@ String PatchTextBox::makeTextDocument(std::shared_ptr<midikraft::PatchHolder> pa
 	if (!patch || !patch->patch())
 		return "No patch active";
 
-	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
-	if (realPatch) {
-		return patchToTextRaw(patch->smartSynth(), realPatch, false);
-	}
-	else {
-		return "makeTextDocument not implemented yet";
-	}
+	return patchToTextRaw(patch->smartSynth(), patch->patch(), false);
 }
 
-std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
+std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> patch, bool onlyActive)
 {
 	std::string result;
 
@@ -215,7 +210,6 @@ std::string PatchTextBox::patchToTextRaw(std::shared_ptr<midikraft::Synth> synth
 		}
 
 		auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch);
-
 		if (parameterDetails) {
 			for (int layer = 0; layer < numLayers; layer++) {
 				if (layers) {
