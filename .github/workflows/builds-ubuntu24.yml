@@ -28,12 +28,18 @@ jobs:
         python-version: '3.12'
         architecture: 'x64'
 
+    - name: Upgrade gcc to 14
+      run: |
+        sudo add-apt-repository universe
+        sudo apt-get update
+        sudo apt-get install gcc-14 g++-14
+
     - name: CMake configure
       env: # We get the SENTRY DSN from the repository's secret store
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       shell: bash
       run: |
-        cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_VERSION_TO_EMBED=3.12 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
+        CC=gcc-14 CXX=g++-14 cmake -S . -B builds -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off -DPYTHON_VERSION_TO_EMBED=3.12 -DSENTRY_CRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN
 
     - name: CMake build
       run: |

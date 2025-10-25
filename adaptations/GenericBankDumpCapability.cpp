@@ -27,13 +27,42 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericBankDumpRequestCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
+		spdlog::debug("requestBankDump called for bank {}", bankNo.toZeroBased());
 		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
 			int bank = bankNo.toZeroBased();
 			py::object result = me_->callMethod(kCreateBankDumpRequest, c, bank);
-			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
-			return Sysex::vectorToMessages(byteData);
+
+			std::vector<juce::MidiMessage> allMessages;
+
+			if (py::isinstance<py::list>(result)) {
+				py::list resultList = result;
+				// Check if it's a list of lists or a list of ints
+				if (py::len(resultList) > 0 && py::isinstance<py::list>(resultList[0])) {
+					// List of lists (multi-message)
+					for (auto item : resultList) {
+						auto msgVec = py::cast<std::vector<int>>(item);
+						auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
+						auto midiMessages = Sysex::vectorToMessages(byteData);
+						allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
+					}
+				} else {
+					// Single message (list of ints)
+					auto msgVec = py::cast<std::vector<int>>(resultList);
+					auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
+					auto midiMessages = Sysex::vectorToMessages(byteData);
+					allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
+				}
+			} else {
+				// Not a list, try to cast directly
+				auto msgVec = py::cast<std::vector<int>>(result);
+				auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
+				auto midiMessages = Sysex::vectorToMessages(byteData);
+				allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
+			}
+			spdlog::debug("requestBankDump returning {} messages", allMessages.size());
+			return allMessages;
 		}
 		catch (py::error_already_set &ex) {
 			me_->logAdaptationError(kCreateBankDumpRequest, ex);
@@ -86,6 +115,7 @@ namespace knobkraft {
 
 	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
 	{
+		spdlog::debug("patchesFromSysexBank called with {} messages", messages.size());
 		midikraft::TPatchVector patchesFound;
 		py::gil_scoped_acquire acquire;
 		if (me_->pythonModuleHasFunction(kExtractPatchesFromAllBankMessages)) {
@@ -153,7 +183,32 @@ namespace knobkraft {
 				me_->logAdaptationError(kExtractPatchesFromBank, ex);
 			}
 		}
+		spdlog::info("patchesFromSysexBank returning {} patches", patchesFound.size());
 		return patchesFound;
+	}
+
+	std::vector<MidiMessage> GenericBankDumpSendCapability::createBankMessages(std::vector<std::vector<MidiMessage>> patches) {
+		std::vector<MidiMessage> bankMessages;
+		py::gil_scoped_acquire acquire;
+		if (me_->pythonModuleHasFunction(kConvertPatchesToBankDump)) {
+			try {
+				std::vector<std::vector<int>> vector;
+				for (auto messages : patches) {
+					vector.push_back(GenericAdaptation::midiMessagesToVector(messages));
+				}
+				py::object result = me_->callMethod(kConvertPatchesToBankDump, vector);
+				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+				bankMessages = Sysex::vectorToMessages(byteData);
+			}
+			catch (py::error_already_set& ex) {
+				me_->logAdaptationError(kConvertPatchesToBankDump, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				me_->logAdaptationError(kConvertPatchesToBankDump, ex);
+			}
+		}
+		return bankMessages;
 	}
 
 }

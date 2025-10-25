@@ -567,6 +567,18 @@ Rewriting the function above for the new interface we get this:
 
 For a way more complex example, have a look at the implementation in the Roland MKS-70 V4 adaptation.
 
+### Bank Dump Capability ###
+
+The opposite direction, assembling bank dump messages from a list of program dumps, can be implemented as well as a 
+separate capability. For this, just one function is required:
+
+    def convertPatchesToBankDump(patches: List[List[int]]) -> List[int]:
+
+This will get a full bank of patches as a list of lists as input, and has to return one or more MIDI messages as a single
+list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
+there is no other way via Edit Buffer capability or Program Dump capability. 
+
+
 ### Getting the patch's name
 
 The database stores patches either as edit buffer dumps or as program dumps, whatever it got when the patch was downloaded. So all other functions we will write will have to deal with these two possibilities. 

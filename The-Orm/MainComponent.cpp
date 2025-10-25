@@ -102,6 +102,8 @@ public:
 	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(std::move(synth), color) {
 	}
 
+	virtual ~ActiveSynthHolder() = default;
+
 	std::string getName() override
 	{
 		return synth() ? synth()->getName() : "Unnamed";
@@ -633,7 +635,12 @@ bool MainComponent::createNewDatabase()
 			}
 			databaseFile.deleteFile();
 		}
-		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
+		if (database_) {
+			recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
+		}
+		else {
+			database_ = std::make_unique<midikraft::PatchDatabase>(false);
+		}
 		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			persistRecentFileList();
 			// That worked, new database file is in use!
