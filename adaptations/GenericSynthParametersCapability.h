@@ -23,7 +23,7 @@ namespace knobkraft {
 		std::vector<midikraft::ParamDef> getParameterDefinitions() const override;
 		std::vector<midikraft::ParamVal> getParameterValues(std::shared_ptr<midikraft::DataFile> const patch, bool onlyActive) const override;
 		bool setParameterValues(std::shared_ptr<midikraft::DataFile> patch, std::vector<midikraft::ParamVal> const& new_values) const override;
-		std::vector<MidiMessage> createSetValueMessages(std::shared_ptr<midikraft::DataFile> const patch, std::vector<int> param_ids) const override;
+		std::vector<MidiMessage> createSetValueMessages(MidiChannel const channel, std::shared_ptr<midikraft::DataFile> const patch, std::vector<int> param_ids) const override;
 		std::vector<float> createFeatureVector(std::shared_ptr<midikraft::DataFile> const patch) const override;
 
 	private:

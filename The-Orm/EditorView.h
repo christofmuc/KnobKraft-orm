@@ -67,7 +67,7 @@ private:
 
 	private:
 		midikraft::MidiController::HandlerHandle midiHandler_ = midikraft::MidiController::makeOneHandle();
-		std::shared_ptr<midikraft::DataFile> patch_;
+		std::shared_ptr<midikraft::DataFile> editBuffer_; // This is the real edit buffer, where the current intermediate patch is stored
 		EditorView* papa_;
 	};
 

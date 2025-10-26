@@ -30,6 +30,22 @@ namespace py = pybind11;
 namespace knobkraft {
 	namespace {
 
+		void assignPatchBytesToDataFile(py::handle object, std::shared_ptr<midikraft::DataFile> const& patch)
+		{
+			if (!patch || object.is_none()) {
+				return;
+			}
+			if (py::isinstance<py::sequence>(object) && !py::isinstance<py::str>(object)) {
+				auto bytes = object.cast<std::vector<int>>();
+				midikraft::Synth::PatchData newData;
+				newData.reserve(bytes.size());
+				for (auto byte : bytes) {
+					newData.push_back(static_cast<uint8>(std::clamp(byte, 0, 255)));
+				}
+				patch->setData(newData);
+			}
+		}
+
 		juce::var pyObjectToVar(py::handle object)
 		{
 			if (object.is_none()) {
@@ -294,6 +310,21 @@ namespace knobkraft {
 			}
 			auto patch_bytes = patchToIntVector(patch);
 			py::object pythonResult = me_->callMethod(kSetParameterValues, patch_bytes, parameter_values);
+			bool changed = false;
+			if (py::isinstance<py::tuple>(pythonResult)) {
+				py::tuple tupleResult = pythonResult;
+				if (tupleResult.size() > 0) {
+					changed = tupleResult[0].cast<bool>();
+				}
+				if (tupleResult.size() > 1) {
+					assignPatchBytesToDataFile(tupleResult[1], patch);
+				}
+				return changed;
+			}
+			if (py::isinstance<py::sequence>(pythonResult) && !py::isinstance<py::str>(pythonResult)) {
+				assignPatchBytesToDataFile(pythonResult, patch);
+				return true;
+			}
 			return pythonResult.cast<bool>();
 		}
 		catch (py::error_already_set& ex) {
@@ -306,7 +337,7 @@ namespace knobkraft {
 		return false;
 	}
 
-	std::vector<MidiMessage> GenericSynthParametersCapability::createSetValueMessages(std::shared_ptr<midikraft::DataFile> const patch, std::vector<int> param_ids) const
+	std::vector<MidiMessage> GenericSynthParametersCapability::createSetValueMessages(MidiChannel const channel, std::shared_ptr<midikraft::DataFile> const patch, std::vector<int> param_ids) const
 	{
 		py::gil_scoped_acquire acquire;
 		std::vector<MidiMessage> result;
@@ -314,17 +345,33 @@ namespace knobkraft {
 			return result;
 		}
 		try {
+			int python_channel = channel.isValid() ? channel.toZeroBasedInt() : 0;
 			auto patch_bytes = patchToIntVector(patch);
 			py::list parameter_ids;
 			for (auto param_id : param_ids) {
 				parameter_ids.append(param_id);
 			}
-			py::object pythonResult = me_->callMethod(kCreateSetValueMessages, patch_bytes, parameter_ids);
-			if (pythonResult.is_none()) {
-				return result;
+			py::object pythonResult = me_->callMethod(kCreateSetValueMessages, python_channel, patch_bytes, parameter_ids);
+			if (!pythonResult.is_none()) {
+				if (py::isinstance<py::tuple>(pythonResult)) {
+					py::tuple tupleResult = pythonResult;
+					if (tupleResult.size() >= 1) {
+						auto midiData = tupleResult[0].cast<std::vector<int>>();
+						result = GenericAdaptation::vectorToMessages(midiData);
+					}
+					if (tupleResult.size() >= 2) {
+						assignPatchBytesToDataFile(tupleResult[1], patch);
+					}
+				}
+				else if (py::isinstance<py::sequence>(pythonResult) && !py::isinstance<py::str>(pythonResult)) {
+					auto midiData = pythonResult.cast<std::vector<int>>();
+					result = GenericAdaptation::vectorToMessages(midiData);
+				}
+				else {
+					auto midiData = pythonResult.cast<std::vector<int>>();
+					result = GenericAdaptation::vectorToMessages(midiData);
+				}
 			}
-			auto midiData = pythonResult.cast<std::vector<int>>();
-			result = GenericAdaptation::vectorToMessages(midiData);
 		}
 		catch (py::error_already_set& ex) {
 			me_->logAdaptationError(kCreateSetValueMessages, ex);

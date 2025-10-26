@@ -332,7 +332,16 @@ def setParameterValues(patch, new_values=None):
             return False
         container[offset] = raw_value & 0x7f
         changed = True
-    return changed
+    return changed, container
+
+
+def createSetValueMessages(channel, patch, param_ids):
+    result = []
+    payload = _parameter_payload(patch)
+    for param in param_ids:
+        # 0x41 is the program code for the parameter change message
+        result.extend([0xf0, 0x42, 0x30 | (channel & 0x0f), 0x03, 0x41, param, payload[param],  0xf7])
+    return result
 
 
 def make_test_data():

@@ -760,9 +760,9 @@ namespace midikraft {
 		return false;
 	}
 
-	std::vector<MidiMessage> Rev2::createSetValueMessages(std::shared_ptr<DataFile> const patch, std::vector<int> param_ids) const
+	std::vector<MidiMessage> Rev2::createSetValueMessages(MidiChannel const channel, std::shared_ptr<DataFile> const patch, std::vector<int> param_ids) const
 	{
-		ignoreUnused(patch, param_ids);
+		ignoreUnused(channel, patch, param_ids);
 		return {};
 	}
 

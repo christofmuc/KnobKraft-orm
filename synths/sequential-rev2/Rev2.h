@@ -80,7 +80,7 @@ namespace midikraft {
 		virtual std::vector<ParamDef> getParameterDefinitions() const override;
 		virtual std::vector<ParamVal> getParameterValues(std::shared_ptr<DataFile> const patch, bool onlyActive) const override;
 		virtual bool setParameterValues(std::shared_ptr<DataFile> patch, std::vector<ParamVal> const& new_values) const override;
-		virtual std::vector<MidiMessage> createSetValueMessages(std::shared_ptr<DataFile> const patch, std::vector<int> param_ids) const override;
+		virtual std::vector<MidiMessage> createSetValueMessages(MidiChannel const channel, std::shared_ptr<DataFile> const patch, std::vector<int> param_ids) const override;
 		virtual std::vector<float> createFeatureVector(std::shared_ptr<DataFile> const patch) const override;
 
 		//TODO These should go into the DSISynth class

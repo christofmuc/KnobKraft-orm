@@ -331,6 +331,9 @@ void EditorView::dragOperationEnded(const juce::DragAndDropTarget::SourceDetails
 
 EditorView::UpdateSynthListener::UpdateSynthListener(EditorView* papa) : papa_(papa)
 {
+	// We need a real edit buffer now
+	editBuffer_ = std::make_shared<midikraft::DataFile>(0);
+
 	midikraft::MidiController::instance()->addMessageHandler(midiHandler_, [this](MidiInput* source, MidiMessage const& message) {
 		listenForMidiMessages(source, message);
 	});
@@ -343,55 +346,41 @@ EditorView::UpdateSynthListener::~UpdateSynthListener()
 
 void EditorView::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
 {
-	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(UIModel::currentSynthOfPatchSmart());
-	patch_ = UIModel::instance()->currentPatch_.patch().patch();
+	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(UIModel::currentSynthOfPatchSmart());
 	if (detailedParameters) {
 		std::string paramName = property.toString().toStdString();
-		for (auto param : detailedParameters->allParameterDefinitions()) {
-			if (param->name() == paramName) {
-				// First thing - update our internal patch model with the new value. This only works for int capabilities
-				auto intValueCap = midikraft::Capability::hasCapability<midikraft::SynthIntParameterCapability>(param);
-				if (intValueCap) {
-					if (patch_) {
-						intValueCap->setInPatch(*patch_, treeWhosePropertyHasChanged.getProperty(property));
-					}
-					else {
-						// I need some kind of init patch per synth, else it is unclear what the editor should send
-					}
-				}
-				else {
-					jassertfalse;
-				}
+		bool found = false;
+		for (auto param : detailedParameters->getParameterDefinitions()) {
+			if (param.name == paramName) {
+				// First thing - update our internal patch model with the new value. 
+				midikraft::ParamVal newValue{ param.param_id, treeWhosePropertyHasChanged.getProperty(property) };
+				detailedParameters->setParameterValues(editBuffer_, { newValue });
 
-				auto liveUpdater = midikraft::Capability::hasCapability<midikraft::SynthParameterLiveEditCapability>(param);
-				if (liveUpdater) {
-					if (patch_) {
-						auto messages = liveUpdater->setValueMessages(patch_, UIModel::currentSynthOfPatch());
-						auto location = dynamic_cast<midikraft::MidiLocationCapability*>(UIModel::currentSynthOfPatch());
-						if (location) {
-							spdlog::debug("Sending message to {} to update {} to new value {}",
-								UIModel::currentSynthOfPatch()->getName(), param->name(), param->valueInPatchToText(*patch_));
-							UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
-						}
-						else {
-							spdlog::error("Synth does not provide location information, can't send data to it");
-						}
+				// Second thing - create MIDI messages that will update the real synth with the new value
+				auto location = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(UIModel::currentSynthOfPatchSmart());
+				MidiChannel channel = location ? location->channel() : MidiChannel::invalidChannel();
+				auto messages = detailedParameters->createSetValueMessages(channel, editBuffer_, { param.param_id });
+				if (messages.size() > 0) {
+					if (location->wasDetected()) {
+						// Send messages, should be visible in MIDI log
+						UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
 					}
 					else {
-						//SimpleLogger::instance()->postMessage("Error: No patch loaded, can't calculate update messages");
+						String valueAsText = newValue.value.toString();
+						spdlog::info("Synth {} not detected, can't send message to update {} to new value {}: {}",
+							UIModel::currentSynthOfPatch()->getName(), param.name, valueAsText.toStdString(), Sysex::dumpSysexToString(messages));
 					}
-					return;
 				}
 				else {
-					//SimpleLogger::instance()->postMessage("Error: Parameter does not implement SynthParameterLiveEditCapability, can't update synth");
-					return;
+					spdlog::info("Adaptation did not generate MIDI messages to update synth, check implementation of createSetValueMessages()");
 				}
+				found = true;
+				break;
 			}
 		}
-		spdlog::error("Failed to find parameter definition for property {}", property.toString());
-	}
-	else {
-		//SimpleLogger::instance()->postMessage("Can't update, Synth does not support DetailedParamtersCapability");
+		if (!found) {
+			spdlog::error("Failed to find parameter definition for property {}", property.toString());
+		}
 	}
 }
 
@@ -428,25 +417,28 @@ void EditorView::UpdateSynthListener::listenForMidiMessages(MidiInput* source, M
 
 void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch)
 {
-	patch_ = newPatch;
-	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
-	if (detailedParameters) {
-		auto values = detailedParameters->getParameterValues(newPatch, false);
-		for (auto param : detailedParameters->getParameterDefinitions()) {
-			switch (param.param_type) {
-			case midikraft::ParamType::VALUE:
-			{
-				for (auto const &val : values) {
-					if (val.param_id == param.param_id) {
-						if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
-							papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int) val.value, nullptr);
+	if (newPatch) {
+		// Copy the new patch into the edit buffer of the editor
+		editBuffer_->setData(newPatch->data());
+		auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
+		if (detailedParameters) {
+			auto values = detailedParameters->getParameterValues(newPatch, false);
+			for (auto param : detailedParameters->getParameterDefinitions()) {
+				switch (param.param_type) {
+				case midikraft::ParamType::VALUE:
+				{
+					for (auto const& val : values) {
+						if (val.param_id == param.param_id) {
+							if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
+								papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)val.value, nullptr);
+							}
+							break;
 						}
-						break;
 					}
 				}
-			}
-			default:
-				spdlog::warn("parameter type not yet implemented");
+				default:
+					spdlog::warn("parameter type not yet implemented");
+				}
 			}
 		}
 	}
