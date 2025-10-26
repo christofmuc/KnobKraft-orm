@@ -9,6 +9,7 @@
 #include "RotaryWithLabel.h"
 
 #include "MidiController.h"
+#include "LambdaValueListener.h"
 #include "Logger.h"
 #include "Synth.h"
 #include "UIModel.h"
@@ -54,10 +55,12 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr) : updateSynthLis
 	for (int i = 0; i < 64; i++) {
 		auto press = new ToggleButton();
 		press->setClickingTogglesState(true);
+		press->onClick = [this, buttonIndex = i]() { handlePressButtonClick(buttonIndex); };
 		if (defaultLabels.find(i + 1) != defaultLabels.end()) press->setButtonText(defaultLabels[i + 1]);
 		pressKnobs.add(press);
 		addAndMakeVisible(press);
 	}
+	pressBindings_.resize(pressKnobs.size());
 
 	// Extra function buttons
 	/*LambdaButtonStrip::TButtonMap buttons = {
@@ -477,15 +480,147 @@ void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNam
 		return;
 	}
 
-	if (param->valueType() != ValueType::Bool) {
-		spdlog::warn("Parameter {} is not boolean, can't assign to button {}", param->name().toStdString(), pressIndex + 1);
+	if (!canAssignToPress(*param)) {
+		spdlog::warn("Parameter {} is not two-valued, can't assign to button {}", param->name().toStdString(), pressIndex + 1);
 		return;
 	}
 
 	auto* button = pressKnobs[pressIndex];
-	button->setButtonText(param->name());
-	button->getToggleStateValue().referTo(param->value());
+	auto& binding = pressBindings_[pressIndex];
+	binding.listener.reset();
+	binding.param = param;
+	binding.usesBool = param->valueType() == ValueType::Bool;
+
+	if (!binding.usesBool) {
+		int offValue = 0;
+		int onValue = 1;
+		if (!extractBinaryValues(*param, offValue, onValue)) {
+			return;
+		}
+		binding.offValue = offValue;
+		binding.onValue = onValue;
+	}
+	else {
+		binding.offValue = 0;
+		binding.onValue = 1;
+	}
+
+	binding.listener = std::make_unique<LambdaValueListener>(param->value(), [this, pressIndex](juce::Value&) {
+		refreshPressButton(pressIndex);
+	});
+
+	refreshPressButton(pressIndex);
 	button->setTooltip("Controls " + param->name());
+}
+
+bool EditorView::canAssignToPress(const TypedNamedValue& param) const
+{
+	if (param.valueType() == ValueType::Bool) {
+		return true;
+	}
+	int offValue = 0;
+	int onValue = 0;
+	return extractBinaryValues(param, offValue, onValue);
+}
+
+bool EditorView::extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const
+{
+	switch (param.valueType()) {
+	case ValueType::Integer:
+		if (param.maxValue() - param.minValue() == 1) {
+			offValue = param.minValue();
+			onValue = param.maxValue();
+			return true;
+		}
+		break;
+	case ValueType::Lookup: {
+		auto lookup = param.lookup();
+		if (lookup.size() == 2) {
+			auto it = lookup.begin();
+			offValue = it->first;
+			++it;
+			onValue = it->first;
+			return true;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	return false;
+}
+
+void EditorView::refreshPressButton(int pressIndex)
+{
+	if (pressIndex < 0 || pressIndex >= pressKnobs.size()) {
+		return;
+	}
+	auto& binding = pressBindings_[pressIndex];
+	if (!binding.param) {
+		return;
+	}
+
+	auto* button = pressKnobs[pressIndex];
+	auto valueVar = binding.param->value().getValue();
+
+	bool isOn = false;
+	if (binding.param->valueType() == ValueType::Bool) {
+		isOn = static_cast<bool>(valueVar);
+	}
+	else {
+		int currentValue = static_cast<int>(valueVar);
+		isOn = (currentValue == binding.onValue);
+	}
+
+	button->setToggleState(isOn, juce::dontSendNotification);
+	button->setButtonText(binding.param->name() + ": " + buttonValueText(*binding.param, valueVar));
+}
+
+void EditorView::handlePressButtonClick(int pressIndex)
+{
+	if (pressIndex < 0 || pressIndex >= pressKnobs.size()) {
+		return;
+	}
+	auto& binding = pressBindings_[pressIndex];
+	auto* button = pressKnobs[pressIndex];
+	if (!binding.param) {
+		button->setToggleState(false, juce::dontSendNotification);
+		return;
+	}
+
+	bool shouldBeOn = button->getToggleState();
+	if (binding.param->valueType() == ValueType::Bool) {
+		binding.param->value().setValue(shouldBeOn);
+	}
+	else {
+		binding.param->value().setValue(shouldBeOn ? binding.onValue : binding.offValue);
+	}
+}
+
+juce::String EditorView::buttonValueText(const TypedNamedValue& param, const juce::var& value) const
+{
+	switch (param.valueType()) {
+	case ValueType::Bool:
+		return (bool)value ? "On" : "Off";
+	case ValueType::Lookup: {
+		auto lookup = param.lookup();
+		int intValue = static_cast<int>(value);
+		auto found = lookup.find(intValue);
+		if (found != lookup.end()) {
+			return found->second;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	if (value.isString()) {
+		return value.toString();
+	}
+	if (value.isDouble() || value.isInt()) {
+		return juce::String((int)value);
+	}
+	return value.toString();
 }
 
 int EditorView::rotaryIndexAt(juce::Point<int> localPos) const
@@ -532,7 +667,7 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
 			canDrop = true;
 		}
 		else if (auto idx2 = pressIndexAt(localPos); idx2 != -1) {
-			if (param->valueType() == ValueType::Bool) {
+			if (canAssignToPress(*param)) {
 				newPress = idx2;
 				canDrop = true;
 			}

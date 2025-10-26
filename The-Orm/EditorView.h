@@ -7,6 +7,7 @@
 #pragma once
 
 #include "JuceHeader.h"
+#include <vector>
 
 #include "BCR2000Proxy.h"
 
@@ -14,6 +15,7 @@
 #include "LambdaButtonStrip.h"
 #include "Librarian.h"
 #include "ValueTreeViewer.h"
+#include "LambdaValueListener.h"
 
 class RotaryWithLabel;
 class SynthParameterDefinition;
@@ -46,6 +48,14 @@ public:
 	void dragOperationEnded(const juce::DragAndDropTarget::SourceDetails& details) override;
 
 private:
+	struct PressBinding {
+		std::shared_ptr<TypedNamedValue> param;
+		bool usesBool = false;
+		int offValue = 0;
+		int onValue = 1;
+		std::unique_ptr<LambdaValueListener> listener;
+	};
+
 	class UpdateSynthListener : public ValueTree::Listener {
 	public:
 		UpdateSynthListener(EditorView* papa);
@@ -70,6 +80,11 @@ private:
 	juce::Point<int> mousePositionInLocalSpace() const;
 	void updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details);
 	void clearDropHoverState();
+	bool canAssignToPress(const TypedNamedValue& param) const;
+	bool extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const;
+	void refreshPressButton(int pressIndex);
+	void handlePressButtonClick(int pressIndex);
+	juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
 
 	TypedNamedValueSet synthModel_;
 	TypedNamedValueSet uiModel_;
@@ -88,4 +103,5 @@ private:
 
 	int hoveredRotaryIndex_ = -1;
 	int hoveredPressIndex_ = -1;
+	std::vector<PressBinding> pressBindings_;
 };
