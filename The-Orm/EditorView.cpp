@@ -53,6 +53,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr) : updateSynthLis
 	// Create 64 "press knobs", that includes those buttons that are on the encoders and those on the right side of the BCR2000
 	for (int i = 0; i < 64; i++) {
 		auto press = new ToggleButton();
+		press->setClickingTogglesState(true);
 		if (defaultLabels.find(i + 1) != defaultLabels.end()) press->setButtonText(defaultLabels[i + 1]);
 		pressKnobs.add(press);
 		addAndMakeVisible(press);
@@ -229,6 +230,27 @@ void EditorView::resized()
 	grid.performLayout(area);
 }
 
+void EditorView::paintOverChildren(juce::Graphics& g)
+{
+	auto drawHighlight = [&g](juce::Component* component) {
+		if (component == nullptr) {
+			return;
+		}
+		auto bounds = component->getBounds().toFloat().reduced(2.0f);
+		g.setColour(juce::Colours::orange.withAlpha(0.2f));
+		g.fillRoundedRectangle(bounds, 6.0f);
+		g.setColour(juce::Colours::orange.withAlpha(0.8f));
+		g.drawRoundedRectangle(bounds, 6.0f, 2.0f);
+	};
+
+	if (hoveredRotaryIndex_ >= 0 && hoveredRotaryIndex_ < rotaryKnobs.size()) {
+		drawHighlight(rotaryKnobs[hoveredRotaryIndex_]);
+	}
+	if (hoveredPressIndex_ >= 0 && hoveredPressIndex_ < pressKnobs.size()) {
+		drawHighlight(pressKnobs[hoveredPressIndex_]);
+	}
+}
+
 void EditorView::setRotaryParam(int knobNumber, TypedNamedValue* param)
 {
 	jassert(knobNumber > 0 && knobNumber <= rotaryKnobs.size());
@@ -254,6 +276,54 @@ void EditorView::setButtonParam(int knobNumber, std::string const& name)
 		// Standalone button
 		pressKnobs[knobNumber - 1 - 32]->setButtonText(name);
 	}
+}
+
+bool EditorView::isInterestedInDragSource(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	auto param = findParameterByName(details.description.toString());
+	return param != nullptr;
+}
+
+void EditorView::itemDragEnter(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	updateDropHoverState(details);
+}
+
+void EditorView::itemDragMove(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	updateDropHoverState(details);
+}
+
+void EditorView::itemDragExit(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	juce::ignoreUnused(details);
+	clearDropHoverState();
+}
+
+void EditorView::itemDropped(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	auto param = findParameterByName(details.description.toString());
+	if (!param) {
+		return;
+	}
+
+	auto localPos = mousePositionInLocalSpace();
+
+	if (auto rotaryIndex = rotaryIndexAt(localPos); rotaryIndex != -1) {
+		assignParameterToRotary(rotaryIndex, param);
+		return;
+	}
+
+	if (auto pressIndex = pressIndexAt(localPos); pressIndex != -1) {
+		assignParameterToPress(pressIndex, param);
+	}
+	clearDropHoverState();
+}
+
+void EditorView::dragOperationEnded(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	DragAndDropContainer::dragOperationEnded(details);
+	clearDropHoverState();
 }
 
 EditorView::UpdateSynthListener::UpdateSynthListener(EditorView* papa) : papa_(papa)
@@ -376,5 +446,115 @@ void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<mi
 				spdlog::warn("parameter type not yet implemented");
 			}
 		}
+	}
+}
+
+std::shared_ptr<TypedNamedValue> EditorView::findParameterByName(const juce::String& propertyName)
+{
+	auto trimmed = propertyName.trim();
+	if (trimmed.isEmpty()) {
+		return {};
+	}
+	auto name = trimmed.toStdString();
+	if (!uiModel_.hasValue(name)) {
+		return {};
+	}
+	return uiModel_.typedNamedValueByName(name);
+}
+
+void EditorView::assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param)
+{
+	if (!param || rotaryIndex < 0 || rotaryIndex >= rotaryKnobs.size()) {
+		return;
+	}
+
+	setRotaryParam(rotaryIndex + 1, param.get());
+}
+
+void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param)
+{
+	if (!param || pressIndex < 0 || pressIndex >= pressKnobs.size()) {
+		return;
+	}
+
+	if (param->valueType() != ValueType::Bool) {
+		spdlog::warn("Parameter {} is not boolean, can't assign to button {}", param->name().toStdString(), pressIndex + 1);
+		return;
+	}
+
+	auto* button = pressKnobs[pressIndex];
+	button->setButtonText(param->name());
+	button->getToggleStateValue().referTo(param->value());
+	button->setTooltip("Controls " + param->name());
+}
+
+int EditorView::rotaryIndexAt(juce::Point<int> localPos) const
+{
+	for (int i = 0; i < rotaryKnobs.size(); ++i) {
+		if (auto* knob = rotaryKnobs[i]) {
+			if (knob->isShowing() && knob->getBounds().contains(localPos)) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+int EditorView::pressIndexAt(juce::Point<int> localPos) const
+{
+	for (int i = 0; i < pressKnobs.size(); ++i) {
+		if (auto* button = pressKnobs[i]) {
+			if (button->isShowing() && button->getBounds().contains(localPos)) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+juce::Point<int> EditorView::mousePositionInLocalSpace() const
+{
+	auto screenPos = juce::Desktop::getInstance().getMainMouseSource().getScreenPosition();
+	return getLocalPoint(nullptr, screenPos.roundToInt());
+}
+
+void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details)
+{
+	auto localPos = mousePositionInLocalSpace();
+	int newRotary = -1;
+	int newPress = -1;
+	bool canDrop = false;
+
+	auto param = findParameterByName(details.description.toString());
+	if (param) {
+		if (auto idx = rotaryIndexAt(localPos); idx != -1) {
+			newRotary = idx;
+			canDrop = true;
+		}
+		else if (auto idx2 = pressIndexAt(localPos); idx2 != -1) {
+			if (param->valueType() == ValueType::Bool) {
+				newPress = idx2;
+				canDrop = true;
+			}
+		}
+	}
+
+	if (newRotary != hoveredRotaryIndex_ || newPress != hoveredPressIndex_) {
+		hoveredRotaryIndex_ = newRotary;
+		hoveredPressIndex_ = newPress;
+		repaint();
+	}
+
+	setMouseCursor(canDrop ? juce::MouseCursor::CopyingCursor : juce::MouseCursor::NormalCursor);
+}
+
+void EditorView::clearDropHoverState()
+{
+	bool hadHover = hoveredRotaryIndex_ != -1 || hoveredPressIndex_ != -1;
+	hoveredRotaryIndex_ = -1;
+	hoveredPressIndex_ = -1;
+	setMouseCursor(juce::MouseCursor::NormalCursor);
+	if (hadHover) {
+		repaint();
 	}
 }
