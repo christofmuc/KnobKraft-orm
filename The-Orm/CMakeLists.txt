@@ -64,6 +64,7 @@ set(SOURCES
 	CreateListDialog.cpp CreateListDialog.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	EditCategoryDialog.cpp EditCategoryDialog.h
+	EditorView.cpp EditorView.h
 	ElectraOneRouter.cpp ElectraOneRouter.h
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h

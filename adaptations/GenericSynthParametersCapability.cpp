@@ -278,7 +278,7 @@ namespace knobkraft {
 		return result;
 	}
 
-	bool GenericSynthParametersCapability::setParameterValues(std::shared_ptr<midikraft::DataFile> patch, std::vector<midikraft::ParamVal> const& new_values)
+	bool GenericSynthParametersCapability::setParameterValues(std::shared_ptr<midikraft::DataFile> patch, std::vector<midikraft::ParamVal> const& new_values) const
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_->pythonModuleHasFunction(kSetParameterValues)) {
@@ -304,6 +304,36 @@ namespace knobkraft {
 			me_->logAdaptationError(kSetParameterValues, ex);
 		}
 		return false;
+	}
+
+	std::vector<MidiMessage> GenericSynthParametersCapability::createSetValueMessages(std::shared_ptr<midikraft::DataFile> const patch, std::vector<int> param_ids) const
+	{
+		py::gil_scoped_acquire acquire;
+		std::vector<MidiMessage> result;
+		if (!patch || !me_->pythonModuleHasFunction(kCreateSetValueMessages)) {
+			return result;
+		}
+		try {
+			auto patch_bytes = patchToIntVector(patch);
+			py::list parameter_ids;
+			for (auto param_id : param_ids) {
+				parameter_ids.append(param_id);
+			}
+			py::object pythonResult = me_->callMethod(kCreateSetValueMessages, patch_bytes, parameter_ids);
+			if (pythonResult.is_none()) {
+				return result;
+			}
+			auto midiData = pythonResult.cast<std::vector<int>>();
+			result = GenericAdaptation::vectorToMessages(midiData);
+		}
+		catch (py::error_already_set& ex) {
+			me_->logAdaptationError(kCreateSetValueMessages, ex);
+			ex.restore();
+		}
+		catch (std::exception& ex) {
+			me_->logAdaptationError(kCreateSetValueMessages, ex);
+		}
+		return result;
 	}
 
 	std::vector<float> GenericSynthParametersCapability::createFeatureVector(std::shared_ptr<midikraft::DataFile> const patch) const
