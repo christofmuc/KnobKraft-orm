@@ -55,6 +55,7 @@ namespace knobkraft {
 		*kGetParameterDefinitions,
 		*kGetParameterValues,
 		*kSetParameterValues,
+		*kCreateSetValueMessages,
 		*kCreateFeatureVector
 		;
 

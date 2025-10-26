@@ -754,11 +754,18 @@ namespace midikraft {
 		return result;
 	}
 
-	bool Rev2::setParameterValues(std::shared_ptr<DataFile> patch, std::vector<ParamVal> const& new_values)
+	bool Rev2::setParameterValues(std::shared_ptr<DataFile> patch, std::vector<ParamVal> const& new_values) const
 	{
-		ignoreUnused(new_values);
+		ignoreUnused(patch, new_values);
 		return false;
 	}
+
+	std::vector<MidiMessage> Rev2::createSetValueMessages(std::shared_ptr<DataFile> const patch, std::vector<int> param_ids) const
+	{
+		ignoreUnused(patch, param_ids);
+		return {};
+	}
+
 
 	std::vector<float> Rev2::createFeatureVector(std::shared_ptr<DataFile> const patch) const {
 		// TODO: This is experimental code, preparing for the similarity search.

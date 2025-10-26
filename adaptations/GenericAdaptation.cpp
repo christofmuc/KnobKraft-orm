@@ -83,6 +83,7 @@ namespace knobkraft {
 		* kGetParameterDefinitions = "parameterDefinitions",
 		* kGetParameterValues = "parameterValues",
 		* kSetParameterValues = "setParameterValues",
+		* kCreateSetValueMessages = "createSetValueMessages",
 		* kCreateFeatureVector = "createFeatureVector";
 
 	std::vector<const char*> kAdaptationPythonFunctionNames = {
@@ -125,6 +126,7 @@ namespace knobkraft {
 		kGetParameterDefinitions,
 		kGetParameterValues,
 		kSetParameterValues,
+		kCreateSetValueMessages,
 		kCreateFeatureVector
 	};
 
