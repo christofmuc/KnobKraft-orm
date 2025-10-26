@@ -754,7 +754,7 @@ namespace midikraft {
 		return result;
 	}
 
-	bool Rev2::setParameterValues(std::vector<ParamVal> const& new_values)
+	bool Rev2::setParameterValues(std::shared_ptr<DataFile> patch, std::vector<ParamVal> const& new_values)
 	{
 		ignoreUnused(new_values);
 		return false;

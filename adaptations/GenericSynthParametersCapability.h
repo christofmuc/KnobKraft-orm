@@ -22,7 +22,7 @@ namespace knobkraft {
 
 		std::vector<midikraft::ParamDef> getParameterDefinitions() const override;
 		std::vector<midikraft::ParamVal> getParameterValues(std::shared_ptr<midikraft::DataFile> const patch, bool onlyActive) const override;
-		bool setParameterValues(std::vector<midikraft::ParamVal> const& new_values) override;
+		bool setParameterValues(std::shared_ptr<midikraft::DataFile> patch, std::vector<midikraft::ParamVal> const& new_values) override;
 		std::vector<float> createFeatureVector(std::shared_ptr<midikraft::DataFile> const patch) const override;
 
 	private:

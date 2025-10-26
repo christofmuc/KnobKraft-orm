@@ -278,21 +278,22 @@ namespace knobkraft {
 		return result;
 	}
 
-	bool GenericSynthParametersCapability::setParameterValues(std::vector<midikraft::ParamVal> const& new_values)
+	bool GenericSynthParametersCapability::setParameterValues(std::shared_ptr<midikraft::DataFile> patch, std::vector<midikraft::ParamVal> const& new_values)
 	{
 		py::gil_scoped_acquire acquire;
 		if (!me_->pythonModuleHasFunction(kSetParameterValues)) {
 			return false;
 		}
 		try {
-			py::list payload;
+			py::list parameter_values;
 			for (auto const& value : new_values) {
 				py::dict entry;
 				entry["param_id"] = value.param_id;
 				entry["value"] = varToPyObject(value.value);
-				payload.append(entry);
+				parameter_values.append(entry);
 			}
-			py::object pythonResult = me_->callMethod(kSetParameterValues, payload);
+			auto patch_bytes = patchToIntVector(patch);
+			py::object pythonResult = me_->callMethod(kSetParameterValues, patch_bytes, parameter_values);
 			return pythonResult.cast<bool>();
 		}
 		catch (py::error_already_set& ex) {
