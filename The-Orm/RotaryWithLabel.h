@@ -22,10 +22,13 @@ public:
 
 private:
 	void valueChanged(Value& value) override;
+	double valueToSliderPosition(const juce::var& value) const;
 
 	Slider slider;
 	Label label;
 	std::function<std::string(double)> valueToText_;
+	juce::Value unboundValue_;
+	TypedNamedValue* boundParam_ = nullptr;
 };
 
 class RotaryWithLabelAndButtonFunction : public RotaryWithLabel {

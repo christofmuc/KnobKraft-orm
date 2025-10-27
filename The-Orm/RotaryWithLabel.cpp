@@ -7,6 +7,7 @@
 #include "RotaryWithLabel.h"
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
 RotaryWithLabel::RotaryWithLabel()
@@ -34,11 +35,23 @@ void RotaryWithLabel::setUnused() {
 
 void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 {
-	// Connect the slider to the value
-	slider.getValueObject().referTo(param->value());
-	slider.getValueObject().addListener(this);
+	boundParam_ = param;
+	auto currentValue = param->value().getValue();
+	double numericValue = valueToSliderPosition(currentValue);
+	double minRange = static_cast<double>(param->minValue());
+	double maxRange = static_cast<double>(param->maxValue());
+	if (numericValue < minRange || numericValue > maxRange) {
+		spdlog::warn("Value {} for {} out of range [{}, {}], clamping", numericValue, param->name().toStdString(), minRange, maxRange);
+		numericValue = juce::jlimit(minRange, maxRange, numericValue);
+	}
+	spdlog::info("Assigning {} to rotary, resolved numeric value {}", param->name().toStdString(), numericValue);
 
-	slider.setRange(param->minValue(), param->maxValue(), 1.0);
+	// Connect the slider to the value
+	auto& valueObject = slider.getValueObject();
+	valueObject.removeListener(this);
+	valueObject.referTo(unboundValue_);
+
+	slider.setRange(minRange, maxRange, 1.0);
 	switch (param->valueType()) {
 	case ValueType::List:
 		// fall through
@@ -50,7 +63,7 @@ void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 				return fmt::format("{}:\n{}", param->name(), lookup[v]);
 			}
 			else {
-				return "invalid";
+				return fmt::format("{}:\n{}", param->name(), v);
 			}
 		};
 		break;
@@ -63,12 +76,16 @@ void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 	case ValueType::String:
     case ValueType::Filename:
     case ValueType::Pathname:
-    case ValueType::Color:
+	case ValueType::Color:
 		jassertfalse; // A rotary dial for a string property doesn't make sense?
 		break;
 
 	}
 	label.setText(param->name(), dontSendNotification);
+	slider.setValue(numericValue, dontSendNotification);
+	valueObject.referTo(param->value());
+	valueObject.addListener(this);
+	label.setText(valueToText_(numericValue), dontSendNotification);
 }
 
 void RotaryWithLabel::setValue(int value) {
@@ -78,7 +95,30 @@ void RotaryWithLabel::setValue(int value) {
 
 void RotaryWithLabel::valueChanged(Value& value)
 {
-	label.setText(valueToText_(value.getValue()), dontSendNotification);
+	auto numeric = valueToSliderPosition(value.getValue());
+	spdlog::debug("Value change for {} -> {} ({})", boundParam_ ? boundParam_->name().toStdString() : "unbound", value.getValue().toString().toStdString(), numeric);
+	label.setText(valueToText_(numeric), dontSendNotification);
+}
+
+double RotaryWithLabel::valueToSliderPosition(const juce::var& value) const
+{
+	if (value.isDouble()) {
+		return static_cast<double>(value);
+	}
+	if (value.isInt() || value.isInt64()) {
+		return static_cast<double>((int)value);
+	}
+	if (value.isBool()) {
+		return static_cast<bool>(value) ? 1.0 : 0.0;
+	}
+	if (value.isString() && boundParam_) {
+		int index = boundParam_->indexOfValue(value.toString().toStdString());
+		if (index < boundParam_->minValue()) {
+			return static_cast<double>(boundParam_->minValue());
+		}
+		return static_cast<double>(index);
+	}
+	return boundParam_ ? static_cast<double>(boundParam_->minValue()) : 0.0;
 }
 
 RotaryWithLabelAndButtonFunction::RotaryWithLabelAndButtonFunction()

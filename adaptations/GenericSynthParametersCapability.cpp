@@ -363,10 +363,6 @@ namespace knobkraft {
 						assignPatchBytesToDataFile(tupleResult[1], patch);
 					}
 				}
-				else if (py::isinstance<py::sequence>(pythonResult) && !py::isinstance<py::str>(pythonResult)) {
-					auto midiData = pythonResult.cast<std::vector<int>>();
-					result = GenericAdaptation::vectorToMessages(midiData);
-				}
 				else {
 					auto midiData = pythonResult.cast<std::vector<int>>();
 					result = GenericAdaptation::vectorToMessages(midiData);

@@ -314,6 +314,13 @@ void EditorView::itemDropped(const juce::DragAndDropTarget::SourceDetails& detai
 
 	if (auto rotaryIndex = rotaryIndexAt(localPos); rotaryIndex != -1) {
 		assignParameterToRotary(rotaryIndex, param);
+		// Sync the knob display to the current ValueTree value without generating an extra change
+		if (auto* knob = rotaryKnobs[rotaryIndex]) {
+			auto currentValue = param->value().getValue();
+			if (currentValue.isInt() || currentValue.isInt64()) {
+				knob->setValue(static_cast<int>(currentValue));
+			}
+		}
 		return;
 	}
 
@@ -415,6 +422,15 @@ void EditorView::UpdateSynthListener::listenForMidiMessages(MidiInput* source, M
 	}
 }
 
+std::optional<midikraft::ParamVal> valueForParameter(midikraft::ParamDef const& param, std::vector<midikraft::ParamVal> const& values) {
+	for (auto const& val : values) {
+		if (val.param_id == param.param_id) {
+			return val;
+		}
+	}
+	return {};
+}
+
 void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch)
 {
 	if (newPatch) {
@@ -422,22 +438,41 @@ void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<mi
 		editBuffer_->setData(newPatch->data());
 		auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
 		if (detailedParameters) {
-			auto values = detailedParameters->getParameterValues(newPatch, false);
+			auto values = detailedParameters->getParameterValues(editBuffer_, false);
 			for (auto param : detailedParameters->getParameterDefinitions()) {
-				switch (param.param_type) {
-				case midikraft::ParamType::VALUE:
-				{
-					for (auto const& val : values) {
-						if (val.param_id == param.param_id) {
-							if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
-								papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)val.value, nullptr);
+				auto value_determined = valueForParameter(param, values);
+				if (value_determined.has_value()) {
+					switch (param.param_type) {
+					case midikraft::ParamType::VALUE:
+						// Nothing to do, we can use the value verbatim
+						break;
+					case midikraft::ParamType::CHOICE:
+					{
+						// Choice value retrieved - this might be a string, and we have to find the index of the string in the list of possible values
+						auto valueArray = param.values.getArray();
+						juce::var clearTextValue = value_determined.value().value;
+						value_determined.reset();
+						if (valueArray) {
+							int index = 0;
+							for (auto elementPtr = valueArray->begin(); elementPtr != valueArray->end(); elementPtr++) {
+								if (*elementPtr == clearTextValue) {
+									value_determined = midikraft::ParamVal({ param.param_id, juce::var(index) });
+									break;
+								}
+								index++;
 							}
-							break;
 						}
+						break;
+					}
+					default:
+						spdlog::warn("parameter type not yet implemented for parameter {}", param.name);
 					}
 				}
-				default:
-					spdlog::warn("parameter type not yet implemented");
+
+				if (value_determined.has_value()) {
+					if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
+						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)value_determined.value().value, nullptr);
+					}
 				}
 			}
 		}
