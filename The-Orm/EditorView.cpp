@@ -95,6 +95,7 @@ void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
 			uiModel_ = createParameterModel();
 
 			// Add all Values of the uiModel_ into a ValueTree
+			uiValueTree_.removeListener(&updateSynthListener_);
 			uiValueTree_ = ValueTree("UIMODEL");
 			uiModel_.addToValueTree(uiValueTree_);
 		
@@ -102,9 +103,6 @@ void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
 			valueTreeViewer_.setValueTree(uiValueTree_);
 
 			//Old: supported->setupBCR2000View(this, uiModel_, uiValueTree_);
-
-			// Now attach a sysex generating listener to the values of the ValueTree
-			uiValueTree_.addListener(&updateSynthListener_);
 
 			// This is a new synth - if a patch is loaded, we need to reset it
 			auto initPatch = std::dynamic_pointer_cast<midikraft::CreateInitPatchDataCapability>(current->smartSynth());
@@ -117,6 +115,9 @@ void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
 				// No init patch defined for this synth, reset the previous patch in the listener should there be one
 				updateSynthListener_.updateAllKnobsFromPatch(current->smartSynth(), nullptr);
 			}
+
+			// Now attach a sysex generating listener to the values of the ValueTree
+			uiValueTree_.addListener(&updateSynthListener_);
 		}
 	}
 	else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_) {
@@ -433,11 +434,11 @@ std::optional<midikraft::ParamVal> valueForParameter(midikraft::ParamDef const& 
 
 void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch)
 {
-	if (newPatch) {
-		// Copy the new patch into the edit buffer of the editor
-		editBuffer_->setData(newPatch->data());
-		auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
-		if (detailedParameters) {
+	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
+	if (detailedParameters) {
+		if (newPatch) {
+			// Copy the new patch into the edit buffer of the editor
+			editBuffer_->setData(newPatch->data());
 			auto values = detailedParameters->getParameterValues(editBuffer_, false);
 			for (auto param : detailedParameters->getParameterDefinitions()) {
 				auto value_determined = valueForParameter(param, values);
@@ -472,6 +473,25 @@ void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<mi
 				if (value_determined.has_value()) {
 					if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
 						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)value_determined.value().value, nullptr);
+					}
+				}
+			}
+		}
+		else {
+			// This synth has not defined a patch, no init patch is available. Reset the editor values to their minimum value
+			for (auto param : detailedParameters->getParameterDefinitions()) {
+				if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
+					switch (param.param_type) {
+					case midikraft::ParamType::VALUE:
+						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)(param.values[0]), nullptr);
+						break;
+					case midikraft::ParamType::CHOICE:
+						// Simply set it to index 0, the first entry
+						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), 0, nullptr);
+						break;
+					default:
+						// Not supported
+						break;
 					}
 				}
 			}
