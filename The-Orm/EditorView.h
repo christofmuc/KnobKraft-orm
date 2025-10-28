@@ -18,6 +18,8 @@
 #include "LambdaValueListener.h"
 #include "PatchTextBox.h"
 
+#include <unordered_map>
+
 class RotaryWithLabel;
 class SynthParameterDefinition;
 class Synth;
@@ -109,6 +111,10 @@ private:
 	void markAssignmentsDirty();
 	void flushAssignmentsIfDirty();
 	void clearPressBindings();
+	void updateAssignmentHighlight();
+	void incrementAssignment(const std::string& name);
+	void decrementAssignment(const std::string& name);
+	void replaceAssignmentName(std::string& slot, const std::string& newName);
 
 	TypedNamedValueSet synthModel_;
 	TypedNamedValueSet uiModel_;
@@ -139,4 +145,7 @@ private:
 	juce::String currentLayoutId_ { "default" };
 	bool assignmentsLoaded_ = false;
 	bool assignmentsDirty_ = false;
+	std::unordered_map<std::string, int> assignmentUsage_;
+	std::vector<std::string> rotaryAssignmentNames_;
+	std::vector<std::string> pressAssignmentNames_;
 };

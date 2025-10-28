@@ -25,6 +25,7 @@
 #include "MidiHelpers.h"
 
 #include <spdlog/spdlog.h>
+#include <optional>
 #include "SpdLogJuce.h"
 
 // See https://www.sequencer.de/synth/index.php/B-Control-Tokenreferenz for the button layout info
@@ -58,6 +59,16 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 	addAndMakeVisible(&patchTextBox_);
 	patchTextBox_.fillTextBox(nullptr);
 	assignmentsRoot_ = ValueTree(kAssignmentsRootId);
+	valueTreeViewer_.setPropertyColourFunction([this](const juce::ValueTree&, juce::Identifier propertyId, bool) -> std::optional<juce::Colour> {
+		auto propertyName = propertyId.toString().toStdString();
+		if (!uiModel_.hasValue(propertyName)) {
+			return std::nullopt;
+		}
+		if (assignmentUsage_.find(propertyName) == assignmentUsage_.end()) {
+			return juce::Colours::orange;
+		}
+		return std::nullopt;
+	});
 
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -71,6 +82,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 		rotaryKnobs.add(knob);
 		addAndMakeVisible(*knob);
 	}
+	rotaryAssignmentNames_.resize(rotaryKnobs.size());
 	// Create 64 "press knobs", that includes those buttons that are on the encoders and those on the right side of the BCR2000
 	for (int i = 0; i < 64; i++) {
 		auto press = new ToggleButton();
@@ -82,6 +94,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 		defaultPressTexts_.push_back(press->getButtonText());
 	}
 	pressBindings_.resize(pressKnobs.size());
+	pressAssignmentNames_.resize(pressKnobs.size());
 	clearPressBindings();
 
 	// Extra function buttons
@@ -117,8 +130,13 @@ void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
 		currentLayoutNode_ = {};
 
 		// Current synth was changed, reset UI and rebuild editor
-		for (auto knob : rotaryKnobs) {
-			knob->setUnused();
+		for (int i = 0; i < rotaryKnobs.size(); ++i) {
+			if (auto* knob = rotaryKnobs[i]) {
+				knob->setUnused();
+			}
+			if (i < static_cast<int>(rotaryAssignmentNames_.size())) {
+				replaceAssignmentName(rotaryAssignmentNames_[i], "");
+			}
 		}
 		clearPressBindings();
 
@@ -581,6 +599,11 @@ void EditorView::assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedN
 
 	setRotaryParam(rotaryIndex + 1, param.get());
 
+	if (rotaryAssignmentNames_.size() != static_cast<size_t>(rotaryKnobs.size())) {
+		rotaryAssignmentNames_.resize(rotaryKnobs.size());
+	}
+	replaceAssignmentName(rotaryAssignmentNames_[rotaryIndex], param->name().toStdString());
+
 	if (auto* knob = rotaryKnobs[rotaryIndex]) {
 		auto valueVar = param->value().getValue();
 		double sliderValue = 0.0;
@@ -603,6 +626,7 @@ void EditorView::assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedN
 	if (updateStorage) {
 		storeRotaryAssignment(rotaryIndex, param);
 		markAssignmentsDirty();
+		updateAssignmentHighlight();
 	}
 }
 
@@ -620,22 +644,20 @@ void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNam
 	auto* button = pressKnobs[pressIndex];
 	auto& binding = pressBindings_[pressIndex];
 	binding.listener.reset();
-	binding.param = param;
-	binding.usesBool = param->valueType() == ValueType::Bool;
 
-	if (!binding.usesBool) {
-		int offValue = 0;
-		int onValue = 1;
+	bool usesBool = param->valueType() == ValueType::Bool;
+	int offValue = 0;
+	int onValue = 1;
+	if (!usesBool) {
 		if (!extractBinaryValues(*param, offValue, onValue)) {
 			return;
 		}
-		binding.offValue = offValue;
-		binding.onValue = onValue;
 	}
-	else {
-		binding.offValue = 0;
-		binding.onValue = 1;
-	}
+
+	binding.param = param;
+	binding.usesBool = usesBool;
+	binding.offValue = usesBool ? 0 : offValue;
+	binding.onValue = usesBool ? 1 : onValue;
 
 	binding.listener = std::make_unique<LambdaValueListener>(param->value(), [this, pressIndex](juce::Value&) {
 		refreshPressButton(pressIndex);
@@ -644,9 +666,15 @@ void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNam
 	refreshPressButton(pressIndex);
 	button->setTooltip("Controls " + param->name());
 
+	if (pressAssignmentNames_.size() != static_cast<size_t>(pressKnobs.size())) {
+		pressAssignmentNames_.resize(pressKnobs.size());
+	}
+	replaceAssignmentName(pressAssignmentNames_[pressIndex], param->name().toStdString());
+
 	if (updateStorage) {
 		storePressAssignment(pressIndex, param);
 		markAssignmentsDirty();
+		updateAssignmentHighlight();
 	}
 }
 
@@ -856,15 +884,24 @@ void EditorView::loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth
 void EditorView::applyAssignmentsToCurrentSynth()
 {
 	// Ensure UI starts from a clean state before applying stored assignments
-	for (auto knob : rotaryKnobs) {
-		if (knob) {
+	if (rotaryAssignmentNames_.size() != static_cast<size_t>(rotaryKnobs.size())) {
+		rotaryAssignmentNames_.resize(rotaryKnobs.size());
+	}
+	for (int i = 0; i < rotaryKnobs.size(); ++i) {
+		if (auto* knob = rotaryKnobs[i]) {
 			knob->setUnused();
+		}
+		if (i < static_cast<int>(rotaryAssignmentNames_.size())) {
+			replaceAssignmentName(rotaryAssignmentNames_[i], "");
 		}
 	}
 	clearPressBindings();
 
 	if (currentLayoutNode_.isValid()) {
 		applyAssignmentsFromTree(currentLayoutNode_);
+	}
+	else {
+		updateAssignmentHighlight();
 	}
 }
 
@@ -883,6 +920,8 @@ void EditorView::applyAssignmentsFromTree(juce::ValueTree const& layoutTree)
 			applyAssignmentToPressFromTree(presses.getChild(i));
 		}
 	}
+
+	updateAssignmentHighlight();
 }
 
 void EditorView::applyAssignmentToRotaryFromTree(juce::ValueTree const& assignmentNode)
@@ -1142,6 +1181,9 @@ void EditorView::flushAssignmentsIfDirty()
 
 void EditorView::clearPressBindings()
 {
+	if (pressAssignmentNames_.size() != pressBindings_.size()) {
+		pressAssignmentNames_.resize(pressBindings_.size());
+	}
 	for (int i = 0; i < static_cast<int>(pressBindings_.size()); ++i) {
 		auto& binding = pressBindings_[i];
 		if (binding.listener) {
@@ -1151,6 +1193,9 @@ void EditorView::clearPressBindings()
 		binding.usesBool = false;
 		binding.offValue = 0;
 		binding.onValue = 1;
+		if (i < static_cast<int>(pressAssignmentNames_.size())) {
+			replaceAssignmentName(pressAssignmentNames_[i], "");
+		}
 
 		if (i < pressKnobs.size()) {
 			auto* button = pressKnobs[i];
@@ -1163,5 +1208,48 @@ void EditorView::clearPressBindings()
 				button->setButtonText({});
 			}
 		}
+	}
+	updateAssignmentHighlight();
+}
+
+void EditorView::updateAssignmentHighlight()
+{
+	if (valueTreeViewer_.getValueTree().isValid()) {
+		valueTreeViewer_.refresh();
+	}
+}
+
+void EditorView::incrementAssignment(const std::string& name)
+{
+	if (name.empty()) {
+		return;
+	}
+	assignmentUsage_[name] += 1;
+}
+
+void EditorView::decrementAssignment(const std::string& name)
+{
+	if (name.empty()) {
+		return;
+	}
+	auto it = assignmentUsage_.find(name);
+	if (it != assignmentUsage_.end()) {
+		if (--it->second <= 0) {
+			assignmentUsage_.erase(it);
+		}
+	}
+}
+
+void EditorView::replaceAssignmentName(std::string& slot, const std::string& newName)
+{
+	if (slot == newName) {
+		return;
+	}
+	if (!slot.empty()) {
+		decrementAssignment(slot);
+	}
+	slot = newName;
+	if (!slot.empty()) {
+		incrementAssignment(slot);
 	}
 }
