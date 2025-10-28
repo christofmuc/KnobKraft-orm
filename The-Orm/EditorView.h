@@ -16,6 +16,7 @@
 #include "Librarian.h"
 #include "ValueTreeViewer.h"
 #include "LambdaValueListener.h"
+#include "PatchTextBox.h"
 
 class RotaryWithLabel;
 class SynthParameterDefinition;
@@ -85,11 +86,16 @@ private:
 	void refreshPressButton(int pressIndex);
 	void handlePressButtonClick(int pressIndex);
 	juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
+	void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
+	void refreshEditorPatch();
 
 	TypedNamedValueSet synthModel_;
 	TypedNamedValueSet uiModel_;
 	ValueTree uiValueTree_;
 	TypedNamedValueSet controllerModel_;
+
+	PatchTextBox patchTextBox_;
+	std::shared_ptr<midikraft::PatchHolder> editorPatchHolder_;
 
 	UpdateSynthListener updateSynthListener_;
 

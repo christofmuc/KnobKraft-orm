@@ -34,10 +34,16 @@ static std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
-EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr) : updateSynthListener_(this), bcr2000_(bcr), librarian_({})
+EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
+	: patchTextBox_([this]() { resized(); }, true)
+	, updateSynthListener_(this)
+	, bcr2000_(bcr)
+	, librarian_({})
 {
 	// Create the value tree viewer that shows the internals of the parameters defined
 	addAndMakeVisible(valueTreeViewer_);
+	addAndMakeVisible(&patchTextBox_);
+	patchTextBox_.fillTextBox(nullptr);
 
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -180,8 +186,10 @@ void EditorView::resized()
 		buttons_->setBounds(area.removeFromBottom(60).reduced(10));
 	}
 
-	// Left side for tree control
-	valueTreeViewer_.setBounds(area.removeFromLeft(area.getWidth()/4));
+	// Left side for tree control, right side for patch text display
+	auto sidebarWidth = area.getWidth() / 4;
+	valueTreeViewer_.setBounds(area.removeFromLeft(sidebarWidth));
+	patchTextBox_.setBounds(area.removeFromRight(sidebarWidth));
 
 	// 9*8 layout
 	Grid grid;
@@ -337,6 +345,24 @@ void EditorView::dragOperationEnded(const juce::DragAndDropTarget::SourceDetails
 	clearDropHoverState();
 }
 
+void EditorView::setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data)
+{
+	if (synth && data) {
+		editorPatchHolder_ = std::make_shared<midikraft::PatchHolder>(synth, nullptr, data);
+	}
+	else {
+		editorPatchHolder_.reset();
+	}
+	patchTextBox_.fillTextBox(editorPatchHolder_);
+}
+
+void EditorView::refreshEditorPatch()
+{
+	if (editorPatchHolder_) {
+		patchTextBox_.fillTextBox(editorPatchHolder_);
+	}
+}
+
 EditorView::UpdateSynthListener::UpdateSynthListener(EditorView* papa) : papa_(papa)
 {
 	// We need a real edit buffer now
@@ -382,6 +408,7 @@ void EditorView::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWh
 				else {
 					spdlog::info("Adaptation did not generate MIDI messages to update synth, check implementation of createSetValueMessages()");
 				}
+				papa_->refreshEditorPatch();
 				found = true;
 				break;
 			}
@@ -495,7 +522,10 @@ void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<mi
 					}
 				}
 			}
+			papa_->setEditorPatch(nullptr, nullptr);
+			return;
 		}
+		papa_->setEditorPatch(synth, editBuffer_);
 	}
 }
 
