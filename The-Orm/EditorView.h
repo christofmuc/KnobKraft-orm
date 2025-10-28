@@ -74,8 +74,8 @@ private:
 
 	TypedNamedValueSet createParameterModel();
 	std::shared_ptr<TypedNamedValue> findParameterByName(const juce::String& propertyName);
-	void assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param);
-	void assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param);
+	void assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage = true);
+	void assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage = true);
 	int rotaryIndexAt(juce::Point<int> localPos) const;
 	int pressIndexAt(juce::Point<int> localPos) const;
 	juce::Point<int> mousePositionInLocalSpace() const;
@@ -88,6 +88,27 @@ private:
 	juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
 	void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
 	void refreshEditorPatch();
+
+	void loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth);
+	void applyAssignmentsToCurrentSynth();
+	void applyAssignmentsFromTree(juce::ValueTree const& layoutTree);
+	void applyAssignmentToRotaryFromTree(juce::ValueTree const& assignmentNode);
+	void applyAssignmentToPressFromTree(juce::ValueTree const& assignmentNode);
+	void storeRotaryAssignment(int rotaryIndex, std::shared_ptr<TypedNamedValue> param);
+	void storePressAssignment(int pressIndex, std::shared_ptr<TypedNamedValue> param);
+	juce::ValueTree ensureLayoutNode(const juce::String& synthName);
+	juce::ValueTree findLayoutNode(const juce::String& synthName) const;
+	juce::ValueTree ensureSection(juce::ValueTree parent, const juce::Identifier& sectionId);
+	juce::ValueTree findAssignmentNode(juce::ValueTree parent, int index) const;
+	juce::ValueTree ensureAssignmentNode(juce::ValueTree parent, int index);
+	void loadAssignmentsFromDisk();
+	void saveAssignmentsToDisk();
+	void handleLoadAssignmentsRequested();
+	void handleSaveAssignmentsRequested();
+	juce::File assignmentsFile() const;
+	void markAssignmentsDirty();
+	void flushAssignmentsIfDirty();
+	void clearPressBindings();
 
 	TypedNamedValueSet synthModel_;
 	TypedNamedValueSet uiModel_;
@@ -110,4 +131,12 @@ private:
 	int hoveredRotaryIndex_ = -1;
 	int hoveredPressIndex_ = -1;
 	std::vector<PressBinding> pressBindings_;
+	std::vector<juce::String> defaultPressTexts_;
+
+	juce::ValueTree assignmentsRoot_;
+	juce::ValueTree currentLayoutNode_;
+	juce::String currentSynthName_;
+	juce::String currentLayoutId_ { "default" };
+	bool assignmentsLoaded_ = false;
+	bool assignmentsDirty_ = false;
 };

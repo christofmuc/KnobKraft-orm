@@ -34,6 +34,19 @@ static std::map<int, std::string> defaultLabels = {
 	{ 63, "Preset <"}, { 64, "Preset >"},
 };
 
+namespace {
+const juce::Identifier kAssignmentsRootId("SynthAssignments");
+const juce::Identifier kSynthNodeId("Synth");
+const juce::Identifier kLayoutNodeId("Layout");
+const juce::Identifier kRotariesNodeId("Rotaries");
+const juce::Identifier kPressesNodeId("Presses");
+const juce::Identifier kAssignmentNodeId("Assignment");
+const juce::Identifier kSynthNameProperty("synthName");
+const juce::Identifier kLayoutIdProperty("layoutId");
+const juce::Identifier kIndexProperty("index");
+const juce::Identifier kParameterProperty("parameter");
+}
+
 EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 	: patchTextBox_([this]() { resized(); }, true)
 	, updateSynthListener_(this)
@@ -44,6 +57,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 	addAndMakeVisible(valueTreeViewer_);
 	addAndMakeVisible(&patchTextBox_);
 	patchTextBox_.fillTextBox(nullptr);
+	assignmentsRoot_ = ValueTree(kAssignmentsRootId);
 
 	// Create 7*8 rotary knobs for the BCR2000 display
 	for (int i = 0; i < 7 * 8; i++) {
@@ -65,15 +79,21 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 		if (defaultLabels.find(i + 1) != defaultLabels.end()) press->setButtonText(defaultLabels[i + 1]);
 		pressKnobs.add(press);
 		addAndMakeVisible(press);
+		defaultPressTexts_.push_back(press->getButtonText());
 	}
 	pressBindings_.resize(pressKnobs.size());
+	clearPressBindings();
 
 	// Extra function buttons
-	/*LambdaButtonStrip::TButtonMap buttons = {
+	LambdaButtonStrip::TButtonMap buttons = {
+		{ "loadAssignments", { "Load layout", [this]() { handleLoadAssignmentsRequested(); } } },
+		{ "saveAssignments", { "Save layout", [this]() { handleSaveAssignmentsRequested(); } } }
 	};
 	buttons_ = std::make_unique<LambdaButtonStrip>(505, LambdaButtonStrip::Direction::Horizontal);
 	buttons_->setButtonDefinitions(buttons);
-	addAndMakeVisible(*buttons_);*/
+	addAndMakeVisible(*buttons_);
+
+	loadAssignmentsFromDisk();
 
 	// Finally make sure we get notified if the current synth changes
 	UIModel::instance()->currentSynth_.addChangeListener(this);
@@ -83,6 +103,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 
 EditorView::~EditorView()
 {
+	flushAssignmentsIfDirty();
 	UIModel::instance()->currentPatchValues_.removeChangeListener(this);
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
@@ -91,10 +112,21 @@ EditorView::~EditorView()
 void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
 	CurrentSynth* current = dynamic_cast<CurrentSynth*>(source);
 	if (current) {
+		flushAssignmentsIfDirty();
+		currentSynthName_.clear();
+		currentLayoutNode_ = {};
+
 		// Current synth was changed, reset UI and rebuild editor
 		for (auto knob : rotaryKnobs) {
 			knob->setUnused();
 		}
+		clearPressBindings();
+
+		auto synthPtr = current->smartSynth();
+		if (synthPtr) {
+			currentSynthName_ = synthPtr->getName();
+		}
+
 		auto supported = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(current->smartSynth());
 		if (supported) {
 			// Create the TypedNamedValuesSet that describes the paramters of the currently selected synth
@@ -124,6 +156,8 @@ void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
 
 			// Now attach a sysex generating listener to the values of the ValueTree
 			uiValueTree_.addListener(&updateSynthListener_);
+
+			loadAssignmentsForSynth(current->smartSynth());
 		}
 	}
 	else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_) {
@@ -286,7 +320,11 @@ void EditorView::setButtonParam(int knobNumber, std::string const& name)
 	}
 	else {
 		// Standalone button
-		pressKnobs[knobNumber - 1 - 32]->setButtonText(name);
+		auto index = knobNumber - 1 - 32;
+		pressKnobs[index]->setButtonText(name);
+		if (index >= 0 && index < static_cast<int>(defaultPressTexts_.size())) {
+			defaultPressTexts_[index] = pressKnobs[index]->getButtonText();
+		}
 	}
 }
 
@@ -323,13 +361,6 @@ void EditorView::itemDropped(const juce::DragAndDropTarget::SourceDetails& detai
 
 	if (auto rotaryIndex = rotaryIndexAt(localPos); rotaryIndex != -1) {
 		assignParameterToRotary(rotaryIndex, param);
-		// Sync the knob display to the current ValueTree value without generating an extra change
-		if (auto* knob = rotaryKnobs[rotaryIndex]) {
-			auto currentValue = param->value().getValue();
-			if (currentValue.isInt() || currentValue.isInt64()) {
-				knob->setValue(static_cast<int>(currentValue));
-			}
-		}
 		return;
 	}
 
@@ -542,16 +573,40 @@ std::shared_ptr<TypedNamedValue> EditorView::findParameterByName(const juce::Str
 	return uiModel_.typedNamedValueByName(name);
 }
 
-void EditorView::assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param)
+void EditorView::assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
 {
 	if (!param || rotaryIndex < 0 || rotaryIndex >= rotaryKnobs.size()) {
 		return;
 	}
 
 	setRotaryParam(rotaryIndex + 1, param.get());
+
+	if (auto* knob = rotaryKnobs[rotaryIndex]) {
+		auto valueVar = param->value().getValue();
+		double sliderValue = 0.0;
+		if (valueVar.isDouble()) {
+			sliderValue = static_cast<double>(valueVar);
+		}
+		else if (valueVar.isInt() || valueVar.isInt64()) {
+			sliderValue = static_cast<double>(static_cast<int>(valueVar));
+		}
+		else if (valueVar.isBool()) {
+			sliderValue = static_cast<bool>(valueVar) ? 1.0 : 0.0;
+		}
+		else {
+			sliderValue = static_cast<double>(param->minValue());
+		}
+		auto sliderInt = juce::roundToInt(sliderValue);
+		knob->setValue(sliderInt);
+	}
+
+	if (updateStorage) {
+		storeRotaryAssignment(rotaryIndex, param);
+		markAssignmentsDirty();
+	}
 }
 
-void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param)
+void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
 {
 	if (!param || pressIndex < 0 || pressIndex >= pressKnobs.size()) {
 		return;
@@ -588,6 +643,11 @@ void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNam
 
 	refreshPressButton(pressIndex);
 	button->setTooltip("Controls " + param->name());
+
+	if (updateStorage) {
+		storePressAssignment(pressIndex, param);
+		markAssignmentsDirty();
+	}
 }
 
 bool EditorView::canAssignToPress(const TypedNamedValue& param) const
@@ -768,5 +828,340 @@ void EditorView::clearDropHoverState()
 	setMouseCursor(juce::MouseCursor::NormalCursor);
 	if (hadHover) {
 		repaint();
+	}
+}
+
+void EditorView::loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth)
+{
+	currentLayoutNode_ = {};
+
+	if (!synth) {
+		return;
+	}
+
+	if (!assignmentsLoaded_) {
+		loadAssignmentsFromDisk();
+	}
+
+	auto synthName = juce::String(synth->getName());
+	currentLayoutNode_ = findLayoutNode(synthName);
+	if (!currentLayoutNode_.isValid()) {
+		currentLayoutNode_ = ensureLayoutNode(synthName);
+		return;
+	}
+
+	applyAssignmentsToCurrentSynth();
+}
+
+void EditorView::applyAssignmentsToCurrentSynth()
+{
+	// Ensure UI starts from a clean state before applying stored assignments
+	for (auto knob : rotaryKnobs) {
+		if (knob) {
+			knob->setUnused();
+		}
+	}
+	clearPressBindings();
+
+	if (currentLayoutNode_.isValid()) {
+		applyAssignmentsFromTree(currentLayoutNode_);
+	}
+}
+
+void EditorView::applyAssignmentsFromTree(juce::ValueTree const& layoutTree)
+{
+	auto rotaries = layoutTree.getChildWithName(kRotariesNodeId);
+	if (rotaries.isValid()) {
+		for (int i = 0; i < rotaries.getNumChildren(); ++i) {
+			applyAssignmentToRotaryFromTree(rotaries.getChild(i));
+		}
+	}
+
+	auto presses = layoutTree.getChildWithName(kPressesNodeId);
+	if (presses.isValid()) {
+		for (int i = 0; i < presses.getNumChildren(); ++i) {
+			applyAssignmentToPressFromTree(presses.getChild(i));
+		}
+	}
+}
+
+void EditorView::applyAssignmentToRotaryFromTree(juce::ValueTree const& assignmentNode)
+{
+	if (!assignmentNode.hasProperty(kIndexProperty) || !assignmentNode.hasProperty(kParameterProperty)) {
+		return;
+	}
+
+	int index = static_cast<int>(assignmentNode.getProperty(kIndexProperty));
+	if (index < 0 || index >= rotaryKnobs.size()) {
+		return;
+	}
+
+	auto paramName = assignmentNode.getProperty(kParameterProperty).toString().toStdString();
+	if (!uiModel_.hasValue(paramName)) {
+		spdlog::warn("Stored rotary assignment references unknown parameter {}", paramName);
+		return;
+	}
+
+	assignParameterToRotary(index, uiModel_.typedNamedValueByName(paramName), false);
+}
+
+void EditorView::applyAssignmentToPressFromTree(juce::ValueTree const& assignmentNode)
+{
+	if (!assignmentNode.hasProperty(kIndexProperty) || !assignmentNode.hasProperty(kParameterProperty)) {
+		return;
+	}
+
+	int index = static_cast<int>(assignmentNode.getProperty(kIndexProperty));
+	if (index < 0 || index >= pressKnobs.size()) {
+		return;
+	}
+
+	auto paramName = assignmentNode.getProperty(kParameterProperty).toString().toStdString();
+	if (!uiModel_.hasValue(paramName)) {
+		spdlog::warn("Stored button assignment references unknown parameter {}", paramName);
+		return;
+	}
+
+	assignParameterToPress(index, uiModel_.typedNamedValueByName(paramName), false);
+}
+
+void EditorView::storeRotaryAssignment(int rotaryIndex, std::shared_ptr<TypedNamedValue> param)
+{
+	if (!param || currentSynthName_.isEmpty()) {
+		return;
+	}
+
+	auto layout = ensureLayoutNode(currentSynthName_);
+	currentLayoutNode_ = layout;
+	auto rotaries = ensureSection(layout, kRotariesNodeId);
+	auto assignment = ensureAssignmentNode(rotaries, rotaryIndex);
+	assignment.setProperty(kParameterProperty, param->name(), nullptr);
+}
+
+void EditorView::storePressAssignment(int pressIndex, std::shared_ptr<TypedNamedValue> param)
+{
+	if (!param || currentSynthName_.isEmpty()) {
+		return;
+	}
+
+	auto layout = ensureLayoutNode(currentSynthName_);
+	currentLayoutNode_ = layout;
+	auto presses = ensureSection(layout, kPressesNodeId);
+	auto assignment = ensureAssignmentNode(presses, pressIndex);
+	assignment.setProperty(kParameterProperty, param->name(), nullptr);
+}
+
+juce::ValueTree EditorView::ensureLayoutNode(const juce::String& synthName)
+{
+	if (!assignmentsRoot_.isValid()) {
+		assignmentsRoot_ = ValueTree(kAssignmentsRootId);
+	}
+
+	auto synthNode = assignmentsRoot_.getChildWithProperty(kSynthNameProperty, synthName);
+	if (!synthNode.isValid()) {
+		synthNode = ValueTree(kSynthNodeId);
+		synthNode.setProperty(kSynthNameProperty, synthName, nullptr);
+		assignmentsRoot_.addChild(synthNode, -1, nullptr);
+	}
+
+	auto layoutNode = synthNode.getChildWithProperty(kLayoutIdProperty, currentLayoutId_);
+	if (!layoutNode.isValid()) {
+		layoutNode = ValueTree(kLayoutNodeId);
+		layoutNode.setProperty(kLayoutIdProperty, currentLayoutId_, nullptr);
+		synthNode.addChild(layoutNode, -1, nullptr);
+	}
+
+	return layoutNode;
+}
+
+juce::ValueTree EditorView::findLayoutNode(const juce::String& synthName) const
+{
+	if (!assignmentsRoot_.isValid()) {
+		return {};
+	}
+
+	auto synthNode = assignmentsRoot_.getChildWithProperty(kSynthNameProperty, synthName);
+	if (!synthNode.isValid()) {
+		return {};
+	}
+
+	return synthNode.getChildWithProperty(kLayoutIdProperty, currentLayoutId_);
+}
+
+juce::ValueTree EditorView::ensureSection(juce::ValueTree parent, const juce::Identifier& sectionId)
+{
+	if (!parent.isValid()) {
+		return {};
+	}
+
+	auto section = parent.getChildWithName(sectionId);
+	if (!section.isValid()) {
+		section = ValueTree(sectionId);
+		parent.addChild(section, -1, nullptr);
+	}
+	return section;
+}
+
+juce::ValueTree EditorView::findAssignmentNode(juce::ValueTree parent, int index) const
+{
+	if (!parent.isValid()) {
+		return {};
+	}
+
+	for (int i = 0; i < parent.getNumChildren(); ++i) {
+		auto child = parent.getChild(i);
+		if (child.hasProperty(kIndexProperty) && static_cast<int>(child.getProperty(kIndexProperty)) == index) {
+			return child;
+		}
+	}
+	return {};
+}
+
+juce::ValueTree EditorView::ensureAssignmentNode(juce::ValueTree parent, int index)
+{
+	auto node = findAssignmentNode(parent, index);
+	if (!node.isValid()) {
+		node = ValueTree(kAssignmentNodeId);
+		node.setProperty(kIndexProperty, index, nullptr);
+		parent.addChild(node, -1, nullptr);
+	}
+	return node;
+}
+
+void EditorView::loadAssignmentsFromDisk()
+{
+	auto file = assignmentsFile();
+	if (file.existsAsFile()) {
+		FileInputStream stream(file);
+		if (stream.openedOk()) {
+			auto loaded = ValueTree::readFromStream(stream);
+			if (loaded.isValid() && loaded.getType() == kAssignmentsRootId) {
+				assignmentsRoot_ = loaded;
+			}
+			else {
+				assignmentsRoot_ = ValueTree(kAssignmentsRootId);
+				spdlog::warn("Assignments file {} could not be read, starting with empty assignments", file.getFullPathName().toStdString());
+			}
+		}
+		else {
+			spdlog::warn("Failed to open assignments file {}", file.getFullPathName().toStdString());
+			assignmentsRoot_ = ValueTree(kAssignmentsRootId);
+		}
+	}
+	else {
+		assignmentsRoot_ = ValueTree(kAssignmentsRootId);
+	}
+	assignmentsLoaded_ = true;
+	assignmentsDirty_ = false;
+}
+
+void EditorView::saveAssignmentsToDisk()
+{
+	if (!assignmentsRoot_.isValid()) {
+		return;
+	}
+
+	auto file = assignmentsFile();
+	auto directory = file.getParentDirectory();
+	if (!directory.exists()) {
+		directory.createDirectory();
+	}
+
+	TemporaryFile temp(file);
+	{
+		FileOutputStream out(temp.getFile());
+		if (!out.openedOk()) {
+			spdlog::error("Failed to open temporary file for writing assignments {}", temp.getFile().getFullPathName().toStdString());
+			return;
+		}
+		assignmentsRoot_.writeToStream(out);
+		out.flush();
+		if (out.getStatus().failed()) {
+			spdlog::error("Failed while writing assignments file {}: {}", temp.getFile().getFullPathName().toStdString(), out.getStatus().getErrorMessage().toStdString());
+			return;
+		}
+	}
+
+	if (!temp.overwriteTargetFileWithTemporary()) {
+		spdlog::error("Failed to move temporary assignments file into place {}", file.getFullPathName().toStdString());
+		return;
+	}
+
+	assignmentsDirty_ = false;
+	spdlog::info("Controller assignments saved to {}", file.getFullPathName().toStdString());
+}
+
+void EditorView::handleLoadAssignmentsRequested()
+{
+	if (assignmentsDirty_) {
+		spdlog::info("Discarding unsaved controller assignments before loading from disk");
+	}
+
+	loadAssignmentsFromDisk();
+
+	if (currentSynthName_.isEmpty()) {
+		return;
+	}
+
+	currentLayoutNode_ = findLayoutNode(currentSynthName_);
+	applyAssignmentsToCurrentSynth();
+}
+
+void EditorView::handleSaveAssignmentsRequested()
+{
+	if (!assignmentsLoaded_) {
+		loadAssignmentsFromDisk();
+	}
+
+	if (assignmentsDirty_) {
+		saveAssignmentsToDisk();
+	}
+	else {
+		spdlog::info("Controller assignments unchanged, nothing to save");
+	}
+}
+
+juce::File EditorView::assignmentsFile() const
+{
+	auto& settingsFile = Settings::instance().getPropertiesFile();
+	auto directory = settingsFile.getParentDirectory();
+	return directory.getChildFile("KnobAssignments.xml");
+}
+
+void EditorView::markAssignmentsDirty()
+{
+	assignmentsDirty_ = true;
+}
+
+void EditorView::flushAssignmentsIfDirty()
+{
+	if (assignmentsDirty_) {
+		saveAssignmentsToDisk();
+	}
+}
+
+void EditorView::clearPressBindings()
+{
+	for (int i = 0; i < static_cast<int>(pressBindings_.size()); ++i) {
+		auto& binding = pressBindings_[i];
+		if (binding.listener) {
+			binding.listener.reset();
+		}
+		binding.param.reset();
+		binding.usesBool = false;
+		binding.offValue = 0;
+		binding.onValue = 1;
+
+		if (i < pressKnobs.size()) {
+			auto* button = pressKnobs[i];
+			button->setToggleState(false, juce::dontSendNotification);
+			button->setTooltip({});
+			if (i < static_cast<int>(defaultPressTexts_.size())) {
+				button->setButtonText(defaultPressTexts_[i]);
+			}
+			else {
+				button->setButtonText({});
+			}
+		}
 	}
 }
