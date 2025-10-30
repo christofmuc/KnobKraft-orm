@@ -171,6 +171,60 @@ public:
         g.setColour(juce::Colours::white.withAlpha(slider.isEnabled() ? 0.95f : 0.5f));
         g.fillEllipse(indicatorBounds);
     }
+
+    void drawLabel(juce::Graphics& g, juce::Label& label) override
+    {
+        if (label.isBeingEdited())
+        {
+            juce::LookAndFeel_V4::drawLabel(g, label);
+            return;
+        }
+
+        auto area = label.getLocalBounds();
+        auto background = label.findColour(juce::Label::backgroundColourId);
+        if (!background.isTransparent())
+        {
+            g.setColour(background);
+            g.fillRoundedRectangle(area.toFloat(), 4.0f);
+        }
+
+        auto text = label.getText();
+        if (text.isEmpty())
+            return;
+
+        auto font = getLabelFont(label);
+        g.setFont(font);
+
+        auto textArea = area.reduced(2);
+        int lineLimit = 1;
+        int searchPosition = 0;
+        while ((searchPosition = text.indexOfChar('\n', searchPosition)) >= 0)
+        {
+            ++lineLimit;
+            ++searchPosition;
+        }
+
+        lineLimit = juce::jmax(1, lineLimit);
+
+        auto shadowAlpha = label.isEnabled() ? 0.7f : 0.4f;
+        g.setColour(juce::Colours::black.withAlpha(shadowAlpha));
+        constexpr juce::Point<int> offsets[] = {
+            { 0, 1 },  { 1, 0 },   { -1, 0 },  { 0, -1 },
+            { 1, 1 },  { -1, 1 },  { 1, -1 },  { -1, -1 },
+        };
+        for (auto offset : offsets)
+            g.drawFittedText(text, textArea.translated(offset.x, offset.y), label.getJustificationType(), lineLimit, 0.9f);
+        constexpr juce::Point<int> softOffsets[] = {
+            { 0, 2 }, { 2, 0 }, { -2, 0 }, { 0, -2 }
+        };
+        g.setColour(juce::Colours::black.withAlpha(shadowAlpha * 0.7f));
+        for (auto offset : softOffsets)
+            g.drawFittedText(text, textArea.translated(offset.x, offset.y), label.getJustificationType(), lineLimit, 0.9f);
+
+        auto textColour = label.findColour(juce::Label::textColourId).withMultipliedAlpha(label.isEnabled() ? 1.0f : 0.6f);
+        g.setColour(textColour);
+        g.drawFittedText(text, textArea, label.getJustificationType(), lineLimit, 0.9f);
+    }
 };
 
 ModernRotaryLookAndFeel gModernRotaryLookAndFeel;
