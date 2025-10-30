@@ -6,6 +6,8 @@
 
 #include "RotaryWithLabel.h"
 
+#include "LayoutConstants.h"
+
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
@@ -140,3 +142,147 @@ void RotaryWithLabelAndButtonFunction::setButtonSynthParameter(std::string const
 {
 	buttonLabel_.setText(text, dontSendNotification);
 }
+
+
+ModernRotaryLookAndFeel::ModernRotaryLookAndFeel()
+{
+    setColour(juce::Slider::trackColourId, kAccentColour);
+    setColour(juce::Slider::thumbColourId, juce::Colours::white);
+    setColour(juce::Label::textColourId, juce::Colours::white.withAlpha(0.92f));
+    setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+}
+
+void ModernRotaryLookAndFeel::drawRotarySlider(juce::Graphics& g,
+    int x,
+    int y,
+    int width,
+    int height,
+    float sliderPosProportional,
+    float rotaryStartAngle,
+    float rotaryEndAngle,
+    juce::Slider& slider) 
+{
+    auto sliderBounds = juce::Rectangle<float>((float)x, (float)y, (float)width, (float)height);
+    auto innerBounds = sliderBounds.reduced((float)LAYOUT_INSET_NORMAL);
+    auto size = juce::jmin(innerBounds.getWidth(), innerBounds.getHeight());
+    innerBounds = innerBounds.withSizeKeepingCentre(size, size);
+
+    const auto centre = innerBounds.getCentre();
+    const float radius = innerBounds.getWidth() * 0.5f;
+    const float minTrackWidth = 4.0f;
+    const float maxTrackWidth = juce::jmax(minTrackWidth, radius * 0.32f);
+    const float desiredTrackWidth = radius * 0.22f;
+    const float trackWidth = juce::jlimit(minTrackWidth, maxTrackWidth, desiredTrackWidth);
+    const float arcRadius = radius - trackWidth * 0.5f;
+    const float reducedRadius = juce::jmax(arcRadius - trackWidth * 0.65f, arcRadius * 0.35f);
+
+    auto dialBounds = innerBounds.reduced(trackWidth * 0.5f);
+    juce::ColourGradient dialGradient(kKnobFaceHighlight,
+        centre.x,
+        dialBounds.getY(),
+        kKnobFaceShadow,
+        centre.x,
+        dialBounds.getBottom(),
+        false);
+    g.setGradientFill(dialGradient);
+    g.fillEllipse(dialBounds);
+
+    juce::Path baseArc;
+    baseArc.addCentredArc(centre.x,
+        centre.y,
+        arcRadius,
+        arcRadius,
+        0.0f,
+        rotaryStartAngle,
+        rotaryEndAngle,
+        true);
+    g.setColour(kKnobTrackColour.withAlpha(slider.isEnabled() ? 0.9f : 0.3f));
+    g.strokePath(baseArc, juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    const float angle = rotaryStartAngle + sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
+    juce::Path valueArc;
+    valueArc.addCentredArc(centre.x,
+        centre.y,
+        arcRadius,
+        arcRadius,
+        0.0f,
+        rotaryStartAngle,
+        angle,
+        true);
+    auto accent = slider.isEnabled() ? kAccentColour : kAccentColourInactive;
+    g.setColour(accent);
+    g.strokePath(valueArc, juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    const float indicatorGap = juce::jmax(trackWidth * 0.5f, 5.0f);
+    const float indicatorRadius = juce::jmax(trackWidth * 0.35f, 3.0f);
+    const float indicatorDistance = reducedRadius - indicatorGap;
+    const float indicatorAngle = angle - juce::MathConstants<float>::halfPi;
+    auto indicatorDirection = juce::Point<float>(std::cos(indicatorAngle), std::sin(indicatorAngle));
+    juce::Point<float> indicatorPosition(centre.x + indicatorDirection.x * indicatorDistance,
+        centre.y + indicatorDirection.y * indicatorDistance);
+
+    juce::Rectangle<float> indicatorBounds(indicatorRadius * 2.0f, indicatorRadius * 2.0f);
+    indicatorBounds = indicatorBounds.withCentre(indicatorPosition);
+
+    g.setColour(juce::Colours::black.withAlpha(slider.isEnabled() ? 0.3f : 0.2f));
+    g.fillEllipse(indicatorBounds.translated(0.0f, indicatorRadius * 0.25f));
+
+    g.setColour(juce::Colours::white.withAlpha(slider.isEnabled() ? 0.95f : 0.5f));
+    g.fillEllipse(indicatorBounds);
+}
+
+void ModernRotaryLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label) 
+{
+    if (label.isBeingEdited())
+    {
+        juce::LookAndFeel_V4::drawLabel(g, label);
+        return;
+    }
+
+    auto area = label.getLocalBounds();
+    auto background = label.findColour(juce::Label::backgroundColourId);
+    if (!background.isTransparent())
+    {
+        g.setColour(background);
+        g.fillRoundedRectangle(area.toFloat(), 4.0f);
+    }
+
+    auto text = label.getText();
+    if (text.isEmpty())
+        return;
+
+    auto font = getLabelFont(label);
+    g.setFont(font);
+
+    auto textArea = area.reduced(2);
+    int lineLimit = 1;
+    int searchPosition = 0;
+    while ((searchPosition = text.indexOfChar('\n', searchPosition)) >= 0)
+    {
+        ++lineLimit;
+        ++searchPosition;
+    }
+
+    lineLimit = juce::jmax(1, lineLimit);
+
+    auto shadowAlpha = label.isEnabled() ? 0.7f : 0.4f;
+    g.setColour(juce::Colours::black.withAlpha(shadowAlpha));
+    constexpr juce::Point<int> offsets[] = {
+        { 0, 1 },  { 1, 0 },   { -1, 0 },  { 0, -1 },
+        { 1, 1 },  { -1, 1 },  { 1, -1 },  { -1, -1 },
+    };
+    for (auto offset : offsets)
+        g.drawFittedText(text, textArea.translated(offset.x, offset.y), label.getJustificationType(), lineLimit, 0.9f);
+    constexpr juce::Point<int> softOffsets[] = {
+        { 0, 2 }, { 2, 0 }, { -2, 0 }, { 0, -2 }
+    };
+    g.setColour(juce::Colours::black.withAlpha(shadowAlpha * 0.7f));
+    for (auto offset : softOffsets)
+        g.drawFittedText(text, textArea.translated(offset.x, offset.y), label.getJustificationType(), lineLimit, 0.9f);
+
+    auto textColour = label.findColour(juce::Label::textColourId).withMultipliedAlpha(label.isEnabled() ? 1.0f : 0.6f);
+    g.setColour(textColour);
+    g.drawFittedText(text, textArea, label.getJustificationType(), lineLimit, 0.9f);
+}
+
+ModernRotaryLookAndFeel gModernRotaryLookAndFeel;
