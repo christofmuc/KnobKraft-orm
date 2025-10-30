@@ -7,6 +7,7 @@
 #include "EditorView.h"
 
 #include "RotaryWithLabel.h"
+#include "LayoutConstants.h"
 
 #include "BidirectionalSyncCapability.h"
 #include "CreateInitPatchDataCapability.h"
@@ -25,6 +26,7 @@
 #include <spdlog/spdlog.h>
 #include <map>
 #include <optional>
+#include <cmath>
 
 namespace
 {
@@ -38,6 +40,140 @@ const juce::Identifier kLayoutIdProperty("layoutId");
 const juce::Identifier kIndexProperty("index");
 const juce::Identifier kControllerProperty("controller");
 const juce::Identifier kParameterProperty("parameter");
+
+const juce::Colour kPaletteFill = juce::Colour::fromRGB(0x2a, 0x2d, 0x35);
+const juce::Colour kPaletteFillHover = kPaletteFill.brighter(0.08f);
+const juce::Colour kPaletteOutline = juce::Colour::fromRGB(0x3a, 0x3f, 0x4a);
+const juce::Colour kAccentColour = juce::Colour::fromRGB(0x54, 0xc6, 0xff);
+const juce::Colour kAccentColourInactive = kAccentColour.withAlpha(0.45f);
+const juce::Colour kKnobFaceColour = juce::Colour::fromRGB(0x36, 0x3a, 0x43);
+const juce::Colour kKnobFaceHighlight = kKnobFaceColour.brighter(0.18f);
+const juce::Colour kKnobFaceShadow = kKnobFaceColour.darker(0.22f);
+const juce::Colour kKnobTrackColour = juce::Colour::fromRGB(0x22, 0x24, 0x2a);
+const float kCornerRadius = 10.0f;
+const float kPaletteShadowOffset = 4.0f;
+const float kPaletteShadowRadius = 14.0f;
+
+class EditorPaletteBackground : public juce::Component
+{
+public:
+    void paint(juce::Graphics& g) override
+    {
+        auto bounds = getLocalBounds().toFloat();
+        juce::DropShadow shadow(kPaletteOutline.withAlpha(0.35f),
+                                (int)kPaletteShadowRadius,
+                                { 0, (int)kPaletteShadowOffset });
+        juce::Path backgroundPath;
+        backgroundPath.addRoundedRectangle(bounds.reduced(1.0f), kCornerRadius);
+        shadow.drawForPath(g, backgroundPath);
+
+        juce::ColourGradient gradient(kPaletteFillHover,
+                                      bounds.getCentreX(),
+                                      bounds.getY(),
+                                      kPaletteFill,
+                                      bounds.getCentreX(),
+                                      bounds.getBottom(),
+                                      false);
+        g.setGradientFill(gradient);
+        g.fillPath(backgroundPath);
+
+        g.setColour(kPaletteOutline.withAlpha(0.7f));
+        g.strokePath(backgroundPath, juce::PathStrokeType(1.0f));
+    }
+};
+
+class ModernRotaryLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    ModernRotaryLookAndFeel()
+    {
+        setColour(juce::Slider::trackColourId, kAccentColour);
+        setColour(juce::Slider::thumbColourId, juce::Colours::white);
+        setColour(juce::Label::textColourId, juce::Colours::white.withAlpha(0.92f));
+        setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+    }
+
+    void drawRotarySlider(juce::Graphics& g,
+                          int x,
+                          int y,
+                          int width,
+                          int height,
+                          float sliderPosProportional,
+                          float rotaryStartAngle,
+                          float rotaryEndAngle,
+                          juce::Slider& slider) override
+    {
+        auto sliderBounds = juce::Rectangle<float>((float)x, (float)y, (float)width, (float)height);
+        auto innerBounds = sliderBounds.reduced((float)LAYOUT_INSET_NORMAL);
+        auto size = juce::jmin(innerBounds.getWidth(), innerBounds.getHeight());
+        innerBounds = innerBounds.withSizeKeepingCentre(size, size);
+
+        const auto centre = innerBounds.getCentre();
+        const float radius = innerBounds.getWidth() * 0.5f;
+        const float minTrackWidth = 4.0f;
+        const float maxTrackWidth = juce::jmax(minTrackWidth, radius * 0.32f);
+        const float desiredTrackWidth = radius * 0.22f;
+        const float trackWidth = juce::jlimit(minTrackWidth, maxTrackWidth, desiredTrackWidth);
+        const float arcRadius = radius - trackWidth * 0.5f;
+        const float reducedRadius = juce::jmax(arcRadius - trackWidth * 0.65f, arcRadius * 0.35f);
+
+        auto dialBounds = innerBounds.reduced(trackWidth * 0.5f);
+        juce::ColourGradient dialGradient(kKnobFaceHighlight,
+                                          centre.x,
+                                          dialBounds.getY(),
+                                          kKnobFaceShadow,
+                                          centre.x,
+                                          dialBounds.getBottom(),
+                                          false);
+        g.setGradientFill(dialGradient);
+        g.fillEllipse(dialBounds);
+
+        juce::Path baseArc;
+        baseArc.addCentredArc(centre.x,
+                              centre.y,
+                              arcRadius,
+                              arcRadius,
+                              0.0f,
+                              rotaryStartAngle,
+                              rotaryEndAngle,
+                              true);
+        g.setColour(kKnobTrackColour.withAlpha(slider.isEnabled() ? 0.9f : 0.3f));
+        g.strokePath(baseArc, juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+        const float angle = rotaryStartAngle + sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
+        juce::Path valueArc;
+        valueArc.addCentredArc(centre.x,
+                               centre.y,
+                               arcRadius,
+                               arcRadius,
+                               0.0f,
+                               rotaryStartAngle,
+                               angle,
+                               true);
+        auto accent = slider.isEnabled() ? kAccentColour : kAccentColourInactive;
+        g.setColour(accent);
+        g.strokePath(valueArc, juce::PathStrokeType(trackWidth, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+        const float indicatorGap = juce::jmax(trackWidth * 0.5f, 5.0f);
+        const float indicatorRadius = juce::jmax(trackWidth * 0.35f, 3.0f);
+        const float indicatorDistance = reducedRadius - indicatorGap;
+        const float indicatorAngle = angle - juce::MathConstants<float>::halfPi;
+        auto indicatorDirection = juce::Point<float>(std::cos(indicatorAngle), std::sin(indicatorAngle));
+        juce::Point<float> indicatorPosition(centre.x + indicatorDirection.x * indicatorDistance,
+                                             centre.y + indicatorDirection.y * indicatorDistance);
+
+        juce::Rectangle<float> indicatorBounds(indicatorRadius * 2.0f, indicatorRadius * 2.0f);
+        indicatorBounds = indicatorBounds.withCentre(indicatorPosition);
+
+        g.setColour(juce::Colours::black.withAlpha(slider.isEnabled() ? 0.3f : 0.2f));
+        g.fillEllipse(indicatorBounds.translated(0.0f, indicatorRadius * 0.25f));
+
+        g.setColour(juce::Colours::white.withAlpha(slider.isEnabled() ? 0.95f : 0.5f));
+        g.fillEllipse(indicatorBounds);
+    }
+};
+
+ModernRotaryLookAndFeel gModernRotaryLookAndFeel;
 
 juce::String controllerTypeToString(EditorView::ControllerType type)
 {
@@ -97,17 +233,25 @@ EditorView::ControllerPaletteItem::ControllerPaletteItem(EditorView& owner, Cont
 void EditorView::ControllerPaletteItem::paint(juce::Graphics& g)
 {
     auto bounds = getLocalBounds().toFloat();
-    auto baseColour = juce::Colours::lightgrey;
-    auto fill = baseColour.withAlpha(isMouseOver() ? 0.9f : 0.65f);
-    g.setColour(fill);
-    g.fillRoundedRectangle(bounds, 6.0f);
+    auto hover = isMouseOver() || isMouseButtonDown();
 
-    g.setColour(juce::Colours::darkgrey);
-    g.drawRoundedRectangle(bounds, 6.0f, 1.2f);
+    juce::ColourGradient gradient(hover ? kPaletteFillHover : kPaletteFill,
+                                  bounds.getCentreX(),
+                                  bounds.getY(),
+                                  (hover ? kPaletteFill : kPaletteFill.darker(0.05f)),
+                                  bounds.getCentreX(),
+                                  bounds.getBottom(),
+                                  false);
+    g.setGradientFill(gradient);
+    g.fillRoundedRectangle(bounds, kCornerRadius);
 
-    g.setColour(juce::Colours::black);
-    g.setFont(juce::Font(14.0f, juce::Font::bold));
-    g.drawFittedText(label_, bounds.toNearestInt().reduced(4), juce::Justification::centred, 1);
+    auto outlineColour = hover ? kAccentColour : kPaletteOutline.withAlpha(0.8f);
+    g.setColour(outlineColour);
+    g.drawRoundedRectangle(bounds, kCornerRadius, hover ? 2.0f : 1.2f);
+
+    g.setColour(juce::Colours::white.withAlpha(0.92f));
+    g.setFont(juce::Font(15.0f, juce::Font::bold));
+    g.drawFittedText(label_, bounds.toNearestInt().reduced(LAYOUT_INSET_SMALL), juce::Justification::centred, 1);
 }
 
 void EditorView::ControllerPaletteItem::mouseDown(const juce::MouseEvent& event)
@@ -155,7 +299,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         return std::nullopt;
     });
 
-    paletteContainer_ = std::make_unique<juce::Component>();
+    paletteContainer_ = std::make_unique<EditorPaletteBackground>();
     addAndMakeVisible(*paletteContainer_);
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Rotary, "Rotary"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Button, "Button"));
@@ -170,6 +314,8 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
     for (int slotIndex = 0; slotIndex < totalSlots_; ++slotIndex)
     {
         auto rotary = new RotaryWithLabel();
+        rotary->setLookAndFeel(&gModernRotaryLookAndFeel);
+        rotary->setColour(juce::Label::textColourId, juce::Colours::white.withAlpha(0.92f));
         rotaryKnobs_.add(rotary);
         addAndMakeVisible(rotary);
 
@@ -208,6 +354,9 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 
 EditorView::~EditorView()
 {
+    for (auto* rotary : rotaryKnobs_)
+        if (rotary != nullptr)
+            rotary->setLookAndFeel(nullptr);
     flushAssignmentsIfDirty();
     UIModel::instance()->currentPatchValues_.removeChangeListener(this);
     UIModel::instance()->currentPatch_.removeChangeListener(this);
@@ -222,30 +371,31 @@ void EditorView::resized()
 {
     auto bounds = getLocalBounds();
 
-    auto paletteArea = bounds.removeFromTop(70);
+    const int paletteHeight = LAYOUT_LARGE_LINE_SPACING * 2;
+    auto paletteArea = bounds.removeFromTop(paletteHeight);
     if (paletteContainer_ != nullptr)
     {
-        paletteContainer_->setBounds(paletteArea.reduced(10));
+        paletteContainer_->setBounds(paletteArea.reduced(LAYOUT_INSET_NORMAL));
         auto paletteBounds = paletteContainer_->getLocalBounds();
         int itemWidth = juce::jmax(110, paletteBounds.getWidth() / juce::jmax<int>(1, (int)controllerPaletteItems_.size()));
         for (auto& item : controllerPaletteItems_)
         {
-            item->setBounds(paletteBounds.removeFromLeft(itemWidth).reduced(5));
+            item->setBounds(paletteBounds.removeFromLeft(itemWidth).reduced(LAYOUT_INSET_SMALL));
         }
     }
 
-    auto buttonsArea = bounds.removeFromBottom(60);
+    auto buttonsArea = bounds.removeFromBottom(LAYOUT_LARGE_LINE_SPACING * 2);
     if (buttons_)
-        buttons_->setBounds(buttonsArea.reduced(10));
+        buttons_->setBounds(buttonsArea.reduced(LAYOUT_INSET_NORMAL));
 
     const int sideWidth = juce::roundToInt(bounds.getWidth() * 0.18f);
     auto leftPanel = bounds.removeFromLeft(sideWidth);
     auto rightPanel = bounds.removeFromRight(sideWidth);
 
-    valueTreeViewer_.setBounds(leftPanel.reduced(10));
-    patchTextBox_.setBounds(rightPanel.reduced(10));
+    valueTreeViewer_.setBounds(leftPanel.reduced(LAYOUT_INSET_NORMAL));
+    patchTextBox_.setBounds(rightPanel.reduced(LAYOUT_INSET_NORMAL));
 
-    auto gridArea = bounds.reduced(10);
+    auto gridArea = bounds.reduced(LAYOUT_INSET_NORMAL);
     const float cellWidth = gridArea.getWidth() / (float)gridCols_;
     const float cellHeight = gridArea.getHeight() / (float)gridRows_;
 
@@ -261,7 +411,7 @@ void EditorView::resized()
                                         gridArea.getY() + row * cellHeight,
                                         cellWidth,
                                         cellHeight);
-            auto cellBounds = cell.toNearestInt().reduced(6);
+            auto cellBounds = cell.toNearestInt().reduced(LAYOUT_INSET_SMALL);
             auto& slot = slots_[slotIndex];
             if (slot.rotary != nullptr)
                 slot.rotary->setBounds(cellBounds);
@@ -283,10 +433,10 @@ void EditorView::paintOverChildren(juce::Graphics& g)
         return;
 
     auto bounds = component->getBounds().toFloat().reduced(2.0f);
-    g.setColour(juce::Colours::orange.withAlpha(0.2f));
-    g.fillRoundedRectangle(bounds, 6.0f);
-    g.setColour(juce::Colours::orange.withAlpha(0.8f));
-    g.drawRoundedRectangle(bounds, 6.0f, 2.0f);
+    g.setColour(kAccentColour.withAlpha(0.18f));
+    g.fillRoundedRectangle(bounds, kCornerRadius);
+    g.setColour(kAccentColour.withAlpha(0.75f));
+    g.drawRoundedRectangle(bounds, kCornerRadius, 1.8f);
 }
 
 //==================================================================================================
