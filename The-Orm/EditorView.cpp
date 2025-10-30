@@ -8,1248 +8,1364 @@
 
 #include "RotaryWithLabel.h"
 
-#include "MidiController.h"
-#include "LambdaValueListener.h"
-#include "Logger.h"
-#include "Synth.h"
-#include "UIModel.h"
-#include "SupportedByBCR2000.h"
-#include "SynthParameterDefinition.h"
-#include "Settings.h"
-#include "Sysex.h"
-#include "DetailedParametersCapability.h"
 #include "BidirectionalSyncCapability.h"
-#include "SendsProgramChangeCapability.h"
 #include "CreateInitPatchDataCapability.h"
-
+#include "DetailedParametersCapability.h"
+#include "Logger.h"
+#include "MidiController.h"
 #include "MidiHelpers.h"
+#include "MidiProgramNumber.h"
+#include "Settings.h"
+#include "Synth.h"
+#include "SynthParameterDefinition.h"
+#include "Sysex.h"
+#include "UIModel.h"
+#include "SendsProgramChangeCapability.h"
 
 #include <spdlog/spdlog.h>
+#include <map>
 #include <optional>
-#include "SpdLogJuce.h"
 
-// See https://www.sequencer.de/synth/index.php/B-Control-Tokenreferenz for the button layout info
-static std::map<int, std::string> defaultLabels = {
-	{ 57, "Group 1"}, { 58, "Group 2"}, { 59, "Group 3"}, { 60, "Group 4"},
-	{ 53, "STORE"}, { 54, "LEARN"}, { 55, "EDIT"}, { 56, "EXIT"},
-	{ 63, "Preset <"}, { 64, "Preset >"},
-};
-
-namespace {
+namespace
+{
 const juce::Identifier kAssignmentsRootId("SynthAssignments");
 const juce::Identifier kSynthNodeId("Synth");
 const juce::Identifier kLayoutNodeId("Layout");
-const juce::Identifier kRotariesNodeId("Rotaries");
-const juce::Identifier kPressesNodeId("Presses");
-const juce::Identifier kAssignmentNodeId("Assignment");
+const juce::Identifier kSlotsNodeId("Slots");
+const juce::Identifier kSlotNodeId("Slot");
 const juce::Identifier kSynthNameProperty("synthName");
 const juce::Identifier kLayoutIdProperty("layoutId");
 const juce::Identifier kIndexProperty("index");
+const juce::Identifier kControllerProperty("controller");
 const juce::Identifier kParameterProperty("parameter");
+
+juce::String controllerTypeToString(EditorView::ControllerType type)
+{
+    return type == EditorView::ControllerType::Rotary ? "rotary" : "button";
 }
 
-EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
-	: patchTextBox_([this]() { resized(); }, true)
-	, updateSynthListener_(this)
-	, bcr2000_(bcr)
-	, librarian_({})
+EditorView::ControllerType stringToControllerType(const juce::String& str)
 {
-	// Create the value tree viewer that shows the internals of the parameters defined
-	addAndMakeVisible(valueTreeViewer_);
-	addAndMakeVisible(&patchTextBox_);
-	patchTextBox_.fillTextBox(nullptr);
-	assignmentsRoot_ = ValueTree(kAssignmentsRootId);
-	valueTreeViewer_.setPropertyColourFunction([this](const juce::ValueTree&, juce::Identifier propertyId, bool) -> std::optional<juce::Colour> {
-		auto propertyName = propertyId.toString().toStdString();
-		if (!uiModel_.hasValue(propertyName)) {
-			return std::nullopt;
-		}
-		if (assignmentUsage_.find(propertyName) == assignmentUsage_.end()) {
-			return juce::Colours::orange;
-		}
-		return std::nullopt;
-	});
+    if (str.compareIgnoreCase("button") == 0)
+        return EditorView::ControllerType::Button;
+    return EditorView::ControllerType::Rotary;
+}
 
-	// Create 7*8 rotary knobs for the BCR2000 display
-	for (int i = 0; i < 7 * 8; i++) {
-		RotaryWithLabel* knob;
-		if (i < 32) {
-			knob = new RotaryWithLabelAndButtonFunction();
-		}
-		else {
-			knob = new RotaryWithLabel();
-		}
-		rotaryKnobs.add(knob);
-		addAndMakeVisible(*knob);
-	}
-	rotaryAssignmentNames_.resize(rotaryKnobs.size());
-	// Create 64 "press knobs", that includes those buttons that are on the encoders and those on the right side of the BCR2000
-	for (int i = 0; i < 64; i++) {
-		auto press = new ToggleButton();
-		press->setClickingTogglesState(true);
-		press->onClick = [this, buttonIndex = i]() { handlePressButtonClick(buttonIndex); };
-		if (defaultLabels.find(i + 1) != defaultLabels.end()) press->setButtonText(defaultLabels[i + 1]);
-		pressKnobs.add(press);
-		addAndMakeVisible(press);
-		defaultPressTexts_.push_back(press->getButtonText());
-	}
-	pressBindings_.resize(pressKnobs.size());
-	pressAssignmentNames_.resize(pressKnobs.size());
-	clearPressBindings();
+std::shared_ptr<TypedNamedValue> makeTypedNamedValue(midikraft::ParamDef const& param)
+{
+    switch (param.param_type)
+    {
+    case midikraft::ParamType::VALUE:
+        if (param.values[0].isInt())
+            return std::make_shared<TypedNamedValue>(param.name, "Editor", (int)param.values[0], (int)param.values[0], (int)param.values[1]);
+        if (param.values[0].isBool())
+            return std::make_shared<TypedNamedValue>(param.name, "Editor", (bool)param.values[0]);
+        break;
+    case midikraft::ParamType::CHOICE:
+    {
+        std::map<int, std::string> lookup;
+        if (param.values.isArray())
+        {
+            auto allowedValues = param.values.getArray();
+            for (int i = 0; i < allowedValues->size(); ++i)
+            {
+                juce::String value = allowedValues->getReference(i);
+                lookup.emplace(i, value.toStdString());
+            }
+        }
+        return std::make_shared<TypedNamedValue>(param.name, "Editor", 0, lookup);
+    }
+    default:
+        spdlog::error("Unknown parameter type in automatic editor creation");
+        break;
+    }
+    return {};
+}
 
-	// Extra function buttons
-	LambdaButtonStrip::TButtonMap buttons = {
-		{ "loadAssignments", { "Load layout", [this]() { handleLoadAssignmentsRequested(); } } },
-		{ "saveAssignments", { "Save layout", [this]() { handleSaveAssignmentsRequested(); } } }
-	};
-	buttons_ = std::make_unique<LambdaButtonStrip>(505, LambdaButtonStrip::Direction::Horizontal);
-	buttons_->setButtonDefinitions(buttons);
-	addAndMakeVisible(*buttons_);
+} // namespace
 
-	loadAssignmentsFromDisk();
+//==================================================================================================
+// ControllerPaletteItem
+//==================================================================================================
 
-	// Finally make sure we get notified if the current synth changes
-	UIModel::instance()->currentSynth_.addChangeListener(this);
-	UIModel::instance()->currentPatch_.addChangeListener(this);
-	UIModel::instance()->currentPatchValues_.addChangeListener(this);
+EditorView::ControllerPaletteItem::ControllerPaletteItem(EditorView& owner, ControllerType type, juce::String const& labelText)
+    : owner_(owner), type_(type), label_(labelText)
+{
+    setInterceptsMouseClicks(true, true);
+}
+
+void EditorView::ControllerPaletteItem::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    auto baseColour = juce::Colours::lightgrey;
+    auto fill = baseColour.withAlpha(isMouseOver() ? 0.9f : 0.65f);
+    g.setColour(fill);
+    g.fillRoundedRectangle(bounds, 6.0f);
+
+    g.setColour(juce::Colours::darkgrey);
+    g.drawRoundedRectangle(bounds, 6.0f, 1.2f);
+
+    g.setColour(juce::Colours::black);
+    g.setFont(juce::Font(14.0f, juce::Font::bold));
+    g.drawFittedText(label_, bounds.toNearestInt().reduced(4), juce::Justification::centred, 1);
+}
+
+void EditorView::ControllerPaletteItem::mouseDown(const juce::MouseEvent& event)
+{
+    juce::ignoreUnused(event);
+    if (auto* dragContainer = juce::DragAndDropContainer::findParentDragContainerFor(this))
+    {
+        const juce::var description = type_ == ControllerType::Rotary ? juce::var("controller:rotary") : juce::var("controller:button");
+        dragContainer->startDragging(description, this);
+    }
+}
+
+void EditorView::ControllerPaletteItem::mouseEnter(const juce::MouseEvent&)
+{
+    repaint();
+}
+
+void EditorView::ControllerPaletteItem::mouseExit(const juce::MouseEvent&)
+{
+    repaint();
+}
+
+//==================================================================================================
+// EditorView
+//==================================================================================================
+
+EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
+    : patchTextBox_([this]() { resized(); }, true),
+      updateSynthListener_(this),
+      bcr2000_(std::move(bcr)),
+      librarian_({})
+{
+    assignmentsRoot_ = juce::ValueTree(kAssignmentsRootId);
+
+    addAndMakeVisible(valueTreeViewer_);
+    addAndMakeVisible(patchTextBox_);
+    patchTextBox_.fillTextBox(nullptr);
+
+    valueTreeViewer_.setPropertyColourFunction([this](const juce::ValueTree&, juce::Identifier propertyId, bool) -> std::optional<juce::Colour> {
+        auto propertyName = propertyId.toString().toStdString();
+        if (!uiModel_.hasValue(propertyName))
+            return std::nullopt;
+        if (assignmentUsage_.find(propertyName) == assignmentUsage_.end())
+            return juce::Colours::orange;
+        return std::nullopt;
+    });
+
+    paletteContainer_ = std::make_unique<juce::Component>();
+    addAndMakeVisible(*paletteContainer_);
+    controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Rotary, "Rotary"));
+    controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Button, "Button"));
+    for (auto& item : controllerPaletteItems_)
+        paletteContainer_->addAndMakeVisible(item.get());
+
+    totalSlots_ = gridRows_ * gridCols_;
+    slots_.resize(totalSlots_);
+    rotaryKnobs_.ensureStorageAllocated(totalSlots_);
+    buttonControls_.ensureStorageAllocated(totalSlots_);
+
+    for (int slotIndex = 0; slotIndex < totalSlots_; ++slotIndex)
+    {
+        auto rotary = new RotaryWithLabel();
+        rotaryKnobs_.add(rotary);
+        addAndMakeVisible(rotary);
+
+        auto button = new ToggleButton();
+        button->setClickingTogglesState(true);
+        button->setButtonText("Button " + juce::String(slotIndex + 1));
+        button->onClick = [this, slotIndex]() { handlePressSlotClick(slotIndex); };
+        buttonControls_.add(button);
+        addAndMakeVisible(button);
+
+        auto& slot = slots_[slotIndex];
+        slot.type = ControllerType::Rotary;
+        slot.rotary = rotary;
+        slot.button = button;
+        slot.buttonDefaultText = button->getButtonText();
+        resetButtonSlotState(slotIndex);
+    }
+
+    initialiseControllerSlots();
+    updateAssignmentHighlight();
+
+    LambdaButtonStrip::TButtonMap buttons = {
+        { "loadAssignments", { "Load layout", [this]() { handleLoadAssignmentsRequested(); } } },
+        { "saveAssignments", { "Save layout", [this]() { handleSaveAssignmentsRequested(); } } },
+    };
+    buttons_ = std::make_unique<LambdaButtonStrip>(505, LambdaButtonStrip::Direction::Horizontal);
+    buttons_->setButtonDefinitions(buttons);
+    addAndMakeVisible(*buttons_);
+
+    loadAssignmentsFromDisk();
+
+    UIModel::instance()->currentSynth_.addChangeListener(this);
+    UIModel::instance()->currentPatch_.addChangeListener(this);
+    UIModel::instance()->currentPatchValues_.addChangeListener(this);
 }
 
 EditorView::~EditorView()
 {
-	flushAssignmentsIfDirty();
-	UIModel::instance()->currentPatchValues_.removeChangeListener(this);
-	UIModel::instance()->currentPatch_.removeChangeListener(this);
-	UIModel::instance()->currentSynth_.removeChangeListener(this);
+    flushAssignmentsIfDirty();
+    UIModel::instance()->currentPatchValues_.removeChangeListener(this);
+    UIModel::instance()->currentPatch_.removeChangeListener(this);
+    UIModel::instance()->currentSynth_.removeChangeListener(this);
 }
 
-void EditorView::changeListenerCallback(ChangeBroadcaster* source) {
-	CurrentSynth* current = dynamic_cast<CurrentSynth*>(source);
-	if (current) {
-		flushAssignmentsIfDirty();
-		currentSynthName_.clear();
-		currentLayoutNode_ = {};
-
-		// Current synth was changed, reset UI and rebuild editor
-		for (int i = 0; i < rotaryKnobs.size(); ++i) {
-			if (auto* knob = rotaryKnobs[i]) {
-				knob->setUnused();
-			}
-			if (i < static_cast<int>(rotaryAssignmentNames_.size())) {
-				replaceAssignmentName(rotaryAssignmentNames_[i], "");
-			}
-		}
-		clearPressBindings();
-
-		auto synthPtr = current->smartSynth();
-		if (synthPtr) {
-			currentSynthName_ = synthPtr->getName();
-		}
-
-		auto supported = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(current->smartSynth());
-		if (supported) {
-			// Create the TypedNamedValuesSet that describes the paramters of the currently selected synth
-			uiModel_ = createParameterModel();
-
-			// Add all Values of the uiModel_ into a ValueTree
-			uiValueTree_.removeListener(&updateSynthListener_);
-			uiValueTree_ = ValueTree("UIMODEL");
-			uiModel_.addToValueTree(uiValueTree_);
-		
-			// Setup the left side tree view to see the raw ValueTree
-			valueTreeViewer_.setValueTree(uiValueTree_);
-
-			//Old: supported->setupBCR2000View(this, uiModel_, uiValueTree_);
-
-			// This is a new synth - if a patch is loaded, we need to reset it
-			auto initPatch = std::dynamic_pointer_cast<midikraft::CreateInitPatchDataCapability>(current->smartSynth());
-			if (initPatch) {
-				// This synth comes equipped with an init patch, how useful. let's use that.
-				auto newPatch = current->smartSynth()->patchFromPatchData(initPatch->createInitPatch(), MidiProgramNumber::fromZeroBase(0));
-				updateSynthListener_.updateAllKnobsFromPatch(current->smartSynth(), newPatch);
-			}
-			else {
-				// No init patch defined for this synth, reset the previous patch in the listener should there be one
-				updateSynthListener_.updateAllKnobsFromPatch(current->smartSynth(), nullptr);
-			}
-
-			// Now attach a sysex generating listener to the values of the ValueTree
-			uiValueTree_.addListener(&updateSynthListener_);
-
-			loadAssignmentsForSynth(current->smartSynth());
-		}
-	}
-	else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_) {
-		updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch().smartSynth(), UIModel::currentPatch().patch());
-	}
-}
-
-
-std::shared_ptr<TypedNamedValue> makeTypedNamedValue(midikraft::ParamDef const& param)
-{
-	switch (param.param_type) {
-	case midikraft::ParamType::VALUE:
-		if (param.values[0].isInt()) {
-			return std::make_shared<TypedNamedValue>(param.name, "Editor", (int) param.values[0], (int)param.values[0], (int)param.values[1]);
-		}
-		else if (param.values[0].isBool()) {
-			return std::make_shared<TypedNamedValue>(param.name, "Editor", (bool) param.values[0]);
-		} 
-	case midikraft::ParamType::CHOICE:
-	{
-		std::map<int, std::string> lookup;
-		if (param.values.isArray()) {
-			auto allowed_values = param.values.getArray();
-			for (int i = 0; i < allowed_values->size(); i++) {
-				String value = allowed_values->getReference(i);
-				lookup.emplace(i, value.toStdString());
-			}
-		}
-		return std::make_shared<TypedNamedValue>(param.name, "Editor", 0, lookup);
-	}
-	default:
-		spdlog::error("Encountered unknown parameter type in automatic editor creation");
-	}
-	return {};
-}
-
-
-TypedNamedValueSet EditorView::createParameterModel() {
-	TypedNamedValueSet result;
-	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(UIModel::currentSynthOfPatchSmart());
-	if (detailedParameters) {
-		for (auto param : detailedParameters->getParameterDefinitions()) {
-			auto tnv = makeTypedNamedValue(param);
-			if (tnv) {
-				tnv->value().setValue(tnv->maxValue() + 1); // Deliberately set an invalid value here to force the subsequent update to really refresh all listeners
-				// else, the caching of the ValueTree will not update null-valued properties leaving the UI in an inconsistent state.
-				result.push_back(tnv);
-			}
-		}
-	}
-	return result;
-}
+//==================================================================================================
+// Layout & painting
+//==================================================================================================
 
 void EditorView::resized()
 {
-	Rectangle<int> area(getLocalBounds());
+    auto bounds = getLocalBounds();
 
-	// Button strip
-	if (buttons_) {
-		buttons_->setBounds(area.removeFromBottom(60).reduced(10));
-	}
+    auto paletteArea = bounds.removeFromTop(70);
+    if (paletteContainer_ != nullptr)
+    {
+        paletteContainer_->setBounds(paletteArea.reduced(10));
+        auto paletteBounds = paletteContainer_->getLocalBounds();
+        int itemWidth = juce::jmax(110, paletteBounds.getWidth() / juce::jmax<int>(1, (int)controllerPaletteItems_.size()));
+        for (auto& item : controllerPaletteItems_)
+        {
+            item->setBounds(paletteBounds.removeFromLeft(itemWidth).reduced(5));
+        }
+    }
 
-	// Left side for tree control, right side for patch text display
-	auto sidebarWidth = area.getWidth() / 4;
-	valueTreeViewer_.setBounds(area.removeFromLeft(sidebarWidth));
-	patchTextBox_.setBounds(area.removeFromRight(sidebarWidth));
+    auto buttonsArea = bounds.removeFromBottom(60);
+    if (buttons_)
+        buttons_->setBounds(buttonsArea.reduced(10));
 
-	// 9*8 layout
-	Grid grid;
-	using Track = Grid::TrackInfo;
-	for (int i = 0; i < 9; i++) grid.templateRows.add(Track(1_fr));
-	for (int i = 0; i < 10; i++) grid.templateColumns.add(Track(1_fr));
-	// Funny mixed layout matching the hardware BCR2000
-	int knob = 0;
-	int press = 0;
-	int groupButtons = 56;
-	int storeButtons = 52;
-	int presetButtons = 62;
-	int lowerButtons = 48;
-	for (int row = 0; row < 9; row++) {
-		for (int col = 0; col < 10; col++) {
-			if (col < 8) {
-				if (row < 4 || row > 5)
-					grid.items.add(GridItem(rotaryKnobs[knob++]));
-				else
-					grid.items.add(GridItem(pressKnobs[press++]));
-			}
-			else {
-				switch (row) {
-				case 0:
-				case 1:
-					grid.items.add(GridItem(pressKnobs[groupButtons++]));
-					break;
-				case 2:
-				case 3: {
-					Label label; //TODO Is this safe=
-					grid.items.add(GridItem(label));
-					break;
-				}
-				case 4:
-				case 5:
-					grid.items.add(GridItem(pressKnobs[storeButtons++]));
-					break;
-				case 6:
-					grid.items.add(GridItem(pressKnobs[presetButtons++]));
-					break;
-				case 7:
-				case 8:
-					grid.items.add(GridItem(pressKnobs[lowerButtons++]));
-					break;
+    const int sideWidth = juce::roundToInt(bounds.getWidth() * 0.18f);
+    auto leftPanel = bounds.removeFromLeft(sideWidth);
+    auto rightPanel = bounds.removeFromRight(sideWidth);
 
-				}
-			}
-		}
-	}
-	grid.performLayout(area);
+    valueTreeViewer_.setBounds(leftPanel.reduced(10));
+    patchTextBox_.setBounds(rightPanel.reduced(10));
+
+    auto gridArea = bounds.reduced(10);
+    const float cellWidth = gridArea.getWidth() / (float)gridCols_;
+    const float cellHeight = gridArea.getHeight() / (float)gridRows_;
+
+    for (int row = 0; row < gridRows_; ++row)
+    {
+        for (int col = 0; col < gridCols_; ++col)
+        {
+            int slotIndex = row * gridCols_ + col;
+            if (slotIndex >= totalSlots_)
+                continue;
+
+            juce::Rectangle<float> cell(gridArea.getX() + col * cellWidth,
+                                        gridArea.getY() + row * cellHeight,
+                                        cellWidth,
+                                        cellHeight);
+            auto cellBounds = cell.toNearestInt().reduced(6);
+            auto& slot = slots_[slotIndex];
+            if (slot.rotary != nullptr)
+                slot.rotary->setBounds(cellBounds);
+            if (slot.button != nullptr)
+                slot.button->setBounds(cellBounds);
+        }
+    }
 }
 
 void EditorView::paintOverChildren(juce::Graphics& g)
 {
-	auto drawHighlight = [&g](juce::Component* component) {
-		if (component == nullptr) {
-			return;
-		}
-		auto bounds = component->getBounds().toFloat().reduced(2.0f);
-		g.setColour(juce::Colours::orange.withAlpha(0.2f));
-		g.fillRoundedRectangle(bounds, 6.0f);
-		g.setColour(juce::Colours::orange.withAlpha(0.8f));
-		g.drawRoundedRectangle(bounds, 6.0f, 2.0f);
-	};
+    if (hoveredSlotIndex_ < 0 || hoveredSlotIndex_ >= totalSlots_)
+        return;
 
-	if (hoveredRotaryIndex_ >= 0 && hoveredRotaryIndex_ < rotaryKnobs.size()) {
-		drawHighlight(rotaryKnobs[hoveredRotaryIndex_]);
-	}
-	if (hoveredPressIndex_ >= 0 && hoveredPressIndex_ < pressKnobs.size()) {
-		drawHighlight(pressKnobs[hoveredPressIndex_]);
-	}
+    auto& slot = slots_[hoveredSlotIndex_];
+    juce::Component* component = slot.type == ControllerType::Rotary ? static_cast<juce::Component*>(slot.rotary)
+                                                                     : static_cast<juce::Component*>(slot.button);
+    if (component == nullptr)
+        return;
+
+    auto bounds = component->getBounds().toFloat().reduced(2.0f);
+    g.setColour(juce::Colours::orange.withAlpha(0.2f));
+    g.fillRoundedRectangle(bounds, 6.0f);
+    g.setColour(juce::Colours::orange.withAlpha(0.8f));
+    g.drawRoundedRectangle(bounds, 6.0f, 2.0f);
 }
 
-void EditorView::setRotaryParam(int knobNumber, TypedNamedValue* param)
-{
-	jassert(knobNumber > 0 && knobNumber <= rotaryKnobs.size());
-	jassert(param != nullptr);
-
-	if (param) {
-		rotaryKnobs[knobNumber - 1]->setSynthParameter(param);
-	}
-}
-
-void EditorView::setButtonParam(int knobNumber, std::string const& name)
-{
-	jassert(knobNumber > 0 && knobNumber <= 48 + 14);
-	if (knobNumber < 32) {
-		// Button as part of Encoder
-		auto withButton = dynamic_cast<RotaryWithLabelAndButtonFunction*>(rotaryKnobs[knobNumber - 1]);
-		jassert(withButton);
-		if (withButton) {
-			withButton->setButtonSynthParameter(name);
-		}
-	}
-	else {
-		// Standalone button
-		auto index = knobNumber - 1 - 32;
-		pressKnobs[index]->setButtonText(name);
-		if (index >= 0 && index < static_cast<int>(defaultPressTexts_.size())) {
-			defaultPressTexts_[index] = pressKnobs[index]->getButtonText();
-		}
-	}
-}
+//==================================================================================================
+// Drag & drop
+//==================================================================================================
 
 bool EditorView::isInterestedInDragSource(const juce::DragAndDropTarget::SourceDetails& details)
 {
-	auto param = findParameterByName(details.description.toString());
-	return param != nullptr;
+    bool isController = false;
+    controllerTypeFromDescription(details.description, isController);
+    if (isController)
+        return true;
+
+    return findParameterByName(details.description.toString()) != nullptr;
 }
 
 void EditorView::itemDragEnter(const juce::DragAndDropTarget::SourceDetails& details)
 {
-	updateDropHoverState(details);
+    updateDropHoverState(details);
 }
 
 void EditorView::itemDragMove(const juce::DragAndDropTarget::SourceDetails& details)
 {
-	updateDropHoverState(details);
+    updateDropHoverState(details);
 }
 
 void EditorView::itemDragExit(const juce::DragAndDropTarget::SourceDetails& details)
 {
-	juce::ignoreUnused(details);
-	clearDropHoverState();
+    juce::ignoreUnused(details);
+    clearDropHoverState();
 }
 
 void EditorView::itemDropped(const juce::DragAndDropTarget::SourceDetails& details)
 {
-	auto param = findParameterByName(details.description.toString());
-	if (!param) {
-		return;
-	}
+    auto localPos = mousePositionInLocalSpace();
+    auto slotIndex = slotIndexAt(localPos);
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
 
-	auto localPos = mousePositionInLocalSpace();
+    bool isController = false;
+    auto controllerType = controllerTypeFromDescription(details.description, isController);
+    if (isController)
+    {
+        handleControllerDrop(slotIndex, controllerType);
+        clearDropHoverState();
+        return;
+    }
 
-	if (auto rotaryIndex = rotaryIndexAt(localPos); rotaryIndex != -1) {
-		assignParameterToRotary(rotaryIndex, param);
-		return;
-	}
+    auto parameter = findParameterByName(details.description.toString());
+    if (!parameter)
+        return;
 
-	if (auto pressIndex = pressIndexAt(localPos); pressIndex != -1) {
-		assignParameterToPress(pressIndex, param);
-	}
-	clearDropHoverState();
+    assignParameterToSlot(slotIndex, parameter, true);
+    clearDropHoverState();
 }
 
 void EditorView::dragOperationEnded(const juce::DragAndDropTarget::SourceDetails& details)
 {
-	DragAndDropContainer::dragOperationEnded(details);
-	clearDropHoverState();
+    juce::DragAndDropContainer::dragOperationEnded(details);
+    clearDropHoverState();
 }
 
-void EditorView::setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data)
+//==================================================================================================
+// Synth change handling
+//==================================================================================================
+
+void EditorView::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
-	if (synth && data) {
-		editorPatchHolder_ = std::make_shared<midikraft::PatchHolder>(synth, nullptr, data);
-	}
-	else {
-		editorPatchHolder_.reset();
-	}
-	patchTextBox_.fillTextBox(editorPatchHolder_);
+    if (auto* current = dynamic_cast<CurrentSynth*>(source))
+    {
+        flushAssignmentsIfDirty();
+        currentSynthName_.clear();
+        currentLayoutNode_ = {};
+
+        initialiseControllerSlots();
+
+        if (auto synthPtr = current->smartSynth())
+            currentSynthName_ = synthPtr->getName();
+
+        auto supported = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(current->smartSynth());
+        if (supported)
+        {
+            uiModel_ = createParameterModel();
+
+            uiValueTree_.removeListener(&updateSynthListener_);
+            uiValueTree_ = juce::ValueTree("UIMODEL");
+            uiModel_.addToValueTree(uiValueTree_);
+            valueTreeViewer_.setValueTree(uiValueTree_);
+
+            auto initPatch = std::dynamic_pointer_cast<midikraft::CreateInitPatchDataCapability>(current->smartSynth());
+            if (initPatch)
+            {
+                auto newPatch = current->smartSynth()->patchFromPatchData(initPatch->createInitPatch(), MidiProgramNumber::fromZeroBase(0));
+                updateSynthListener_.updateAllKnobsFromPatch(current->smartSynth(), newPatch);
+            }
+            else
+            {
+                updateSynthListener_.updateAllKnobsFromPatch(current->smartSynth(), nullptr);
+            }
+
+            uiValueTree_.addListener(&updateSynthListener_);
+            loadAssignmentsForSynth(current->smartSynth());
+        }
+    }
+    else if (dynamic_cast<CurrentPatch*>(source) || source == &UIModel::instance()->currentPatchValues_)
+    {
+        updateSynthListener_.updateAllKnobsFromPatch(UIModel::currentPatch().smartSynth(), UIModel::currentPatch().patch());
+    }
 }
 
-void EditorView::refreshEditorPatch()
+//==================================================================================================
+// Assignment helpers
+//==================================================================================================
+
+TypedNamedValueSet EditorView::createParameterModel()
 {
-	if (editorPatchHolder_) {
-		patchTextBox_.fillTextBox(editorPatchHolder_);
-	}
-}
-
-EditorView::UpdateSynthListener::UpdateSynthListener(EditorView* papa) : papa_(papa)
-{
-	// We need a real edit buffer now
-	editBuffer_ = std::make_shared<midikraft::DataFile>(0);
-
-	midikraft::MidiController::instance()->addMessageHandler(midiHandler_, [this](MidiInput* source, MidiMessage const& message) {
-		listenForMidiMessages(source, message);
-	});
-}
-
-EditorView::UpdateSynthListener::~UpdateSynthListener()
-{
-	midikraft::MidiController::instance()->removeMessageHandler(midiHandler_);
-}
-
-void EditorView::UpdateSynthListener::valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property)
-{
-	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(UIModel::currentSynthOfPatchSmart());
-	if (detailedParameters) {
-		std::string paramName = property.toString().toStdString();
-		bool found = false;
-		for (auto param : detailedParameters->getParameterDefinitions()) {
-			if (param.name == paramName) {
-				// First thing - update our internal patch model with the new value. 
-				midikraft::ParamVal newValue{ param.param_id, treeWhosePropertyHasChanged.getProperty(property) };
-				detailedParameters->setParameterValues(editBuffer_, { newValue });
-
-				// Second thing - create MIDI messages that will update the real synth with the new value
-				auto location = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(UIModel::currentSynthOfPatchSmart());
-				MidiChannel channel = location ? location->channel() : MidiChannel::invalidChannel();
-				auto messages = detailedParameters->createSetValueMessages(channel, editBuffer_, { param.param_id });
-				if (messages.size() > 0) {
-					if (location->wasDetected()) {
-						// Send messages, should be visible in MIDI log
-						UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
-					}
-					else {
-						String valueAsText = newValue.value.toString();
-						spdlog::info("Synth {} not detected, can't send message to update {} to new value {}: {}",
-							UIModel::currentSynthOfPatch()->getName(), param.name, valueAsText.toStdString(), Sysex::dumpSysexToString(messages));
-					}
-				}
-				else {
-					spdlog::info("Adaptation did not generate MIDI messages to update synth, check implementation of createSetValueMessages()");
-				}
-				papa_->refreshEditorPatch();
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			spdlog::error("Failed to find parameter definition for property {}", property.toString());
-		}
-	}
-}
-
-void EditorView::UpdateSynthListener::listenForMidiMessages(MidiInput* source, MidiMessage message)
-{
-	auto synth = UIModel::currentSynthOfPatch();
-	auto location = dynamic_cast<midikraft::MidiLocationCapability*>(synth);
-	if (!location || location->midiInput().name == source->getName()) {
-		auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
-		if (syncCap) {
-			int outValue;
-			std::shared_ptr<midikraft::SynthParameterDefinition> param;
-			if (syncCap->determineParameterChangeFromSysex({ message }, &param, outValue)) {
-				papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param->name()), outValue, nullptr);
-			}
-		}
-		if (message.isProgramChange() && (!location || location->channel().toOneBasedInt() == message.getChannel())) {
-			auto programChangeCap = dynamic_cast<midikraft::SendsProgramChangeCapability*>(synth);
-			if (programChangeCap) {
-				programChangeCap->gotProgramChange(MidiProgramNumber::fromZeroBase(message.getProgramChangeNumber()));
-				if (location) {
-					papa_->librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()), 
-						UIModel::currentSynthOfPatchSmart(), nullptr, [this](std::vector<midikraft::PatchHolder> patch) {
-						if (patch.size() > 0 && patch[0].patch()) {
-							updateAllKnobsFromPatch(patch[0].smartSynth(), patch[0].patch());
-						}
-					});
-
-				}
-			}
-		}
-	}
-}
-
-std::optional<midikraft::ParamVal> valueForParameter(midikraft::ParamDef const& param, std::vector<midikraft::ParamVal> const& values) {
-	for (auto const& val : values) {
-		if (val.param_id == param.param_id) {
-			return val;
-		}
-	}
-	return {};
-}
-
-void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch)
-{
-	auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
-	if (detailedParameters) {
-		if (newPatch) {
-			// Copy the new patch into the edit buffer of the editor
-			editBuffer_->setData(newPatch->data());
-			auto values = detailedParameters->getParameterValues(editBuffer_, false);
-			for (auto param : detailedParameters->getParameterDefinitions()) {
-				auto value_determined = valueForParameter(param, values);
-				if (value_determined.has_value()) {
-					switch (param.param_type) {
-					case midikraft::ParamType::VALUE:
-						// Nothing to do, we can use the value verbatim
-						break;
-					case midikraft::ParamType::CHOICE:
-					{
-						// Choice value retrieved - this might be a string, and we have to find the index of the string in the list of possible values
-						auto valueArray = param.values.getArray();
-						juce::var clearTextValue = value_determined.value().value;
-						value_determined.reset();
-						if (valueArray) {
-							int index = 0;
-							for (auto elementPtr = valueArray->begin(); elementPtr != valueArray->end(); elementPtr++) {
-								if (*elementPtr == clearTextValue) {
-									value_determined = midikraft::ParamVal({ param.param_id, juce::var(index) });
-									break;
-								}
-								index++;
-							}
-						}
-						break;
-					}
-					default:
-						spdlog::warn("parameter type not yet implemented for parameter {}", param.name);
-					}
-				}
-
-				if (value_determined.has_value()) {
-					if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
-						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)value_determined.value().value, nullptr);
-					}
-				}
-			}
-		}
-		else {
-			// This synth has not defined a patch, no init patch is available. Reset the editor values to their minimum value
-			for (auto param : detailedParameters->getParameterDefinitions()) {
-				if (papa_->uiValueTree_.hasProperty(Identifier(param.name))) {
-					switch (param.param_type) {
-					case midikraft::ParamType::VALUE:
-						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), (int)(param.values[0]), nullptr);
-						break;
-					case midikraft::ParamType::CHOICE:
-						// Simply set it to index 0, the first entry
-						papa_->uiValueTree_.setPropertyExcludingListener(this, Identifier(param.name), 0, nullptr);
-						break;
-					default:
-						// Not supported
-						break;
-					}
-				}
-			}
-			papa_->setEditorPatch(nullptr, nullptr);
-			return;
-		}
-		papa_->setEditorPatch(synth, editBuffer_);
-	}
+    TypedNamedValueSet result;
+    auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(UIModel::currentSynthOfPatchSmart());
+    if (detailedParameters)
+    {
+        for (auto param : detailedParameters->getParameterDefinitions())
+        {
+            auto tnv = makeTypedNamedValue(param);
+            if (tnv)
+            {
+                tnv->value().setValue(tnv->maxValue() + 1); // force refresh
+                result.push_back(tnv);
+            }
+        }
+    }
+    return result;
 }
 
 std::shared_ptr<TypedNamedValue> EditorView::findParameterByName(const juce::String& propertyName)
 {
-	auto trimmed = propertyName.trim();
-	if (trimmed.isEmpty()) {
-		return {};
-	}
-	auto name = trimmed.toStdString();
-	if (!uiModel_.hasValue(name)) {
-		return {};
-	}
-	return uiModel_.typedNamedValueByName(name);
+    auto trimmed = propertyName.trim();
+    if (trimmed.isEmpty())
+        return {};
+    auto name = trimmed.toStdString();
+    if (!uiModel_.hasValue(name))
+        return {};
+    return uiModel_.typedNamedValueByName(name);
 }
 
-void EditorView::assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
+void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
 {
-	if (!param || rotaryIndex < 0 || rotaryIndex >= rotaryKnobs.size()) {
-		return;
-	}
+    if (!param || slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
 
-	setRotaryParam(rotaryIndex + 1, param.get());
+    auto& slot = slots_[slotIndex];
+    auto newName = param->name().toStdString();
 
-	if (rotaryAssignmentNames_.size() != static_cast<size_t>(rotaryKnobs.size())) {
-		rotaryAssignmentNames_.resize(rotaryKnobs.size());
-	}
-	replaceAssignmentName(rotaryAssignmentNames_[rotaryIndex], param->name().toStdString());
+    if (slot.type == ControllerType::Button && !canAssignToPress(*param))
+    {
+        spdlog::warn("Parameter {} is not suitable for a button controller", newName);
+        return;
+    }
 
-	if (auto* knob = rotaryKnobs[rotaryIndex]) {
-		auto valueVar = param->value().getValue();
-		double sliderValue = 0.0;
-		if (valueVar.isDouble()) {
-			sliderValue = static_cast<double>(valueVar);
-		}
-		else if (valueVar.isInt() || valueVar.isInt64()) {
-			sliderValue = static_cast<double>(static_cast<int>(valueVar));
-		}
-		else if (valueVar.isBool()) {
-			sliderValue = static_cast<bool>(valueVar) ? 1.0 : 0.0;
-		}
-		else {
-			sliderValue = static_cast<double>(param->minValue());
-		}
-		auto sliderInt = juce::roundToInt(sliderValue);
-		knob->setValue(sliderInt);
-	}
+    replaceAssignmentName(slot.assignedParameter, newName);
 
-	if (updateStorage) {
-		storeRotaryAssignment(rotaryIndex, param);
-		markAssignmentsDirty();
-		updateAssignmentHighlight();
-	}
-}
+    if (slot.type == ControllerType::Rotary)
+    {
+        slot.rotary->setSynthParameter(param.get());
+        auto valueVar = param->value().getValue();
+        double numericValue = 0.0;
+        if (valueVar.isDouble())
+            numericValue = static_cast<double>(valueVar);
+        else if (valueVar.isInt() || valueVar.isInt64())
+            numericValue = static_cast<double>(static_cast<int>(valueVar));
+        else if (valueVar.isBool())
+            numericValue = static_cast<bool>(valueVar) ? 1.0 : 0.0;
+        else
+            numericValue = static_cast<double>(param->minValue());
+        slot.rotary->setValue(juce::roundToInt(numericValue));
+    }
+    else
+    {
+        auto& binding = slot.pressBinding;
+        binding.listener.reset();
+        binding.param = param;
+        binding.usesBool = param->valueType() == ValueType::Bool;
 
-void EditorView::assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
-{
-	if (!param || pressIndex < 0 || pressIndex >= pressKnobs.size()) {
-		return;
-	}
+        if (!binding.usesBool)
+        {
+            int offValue = 0;
+            int onValue = 1;
+            if (!extractBinaryValues(*param, offValue, onValue))
+                return;
+            binding.offValue = offValue;
+            binding.onValue = onValue;
+        }
+        else
+        {
+            binding.offValue = 0;
+            binding.onValue = 1;
+        }
 
-	if (!canAssignToPress(*param)) {
-		spdlog::warn("Parameter {} is not two-valued, can't assign to button {}", param->name().toStdString(), pressIndex + 1);
-		return;
-	}
+        binding.listener = std::make_unique<LambdaValueListener>(param->value(), [this, slotIndex](juce::Value&) {
+            refreshPressButtonSlot(slotIndex);
+        });
 
-	auto* button = pressKnobs[pressIndex];
-	auto& binding = pressBindings_[pressIndex];
-	binding.listener.reset();
+        refreshPressButtonSlot(slotIndex);
+        slot.button->setTooltip("Controls " + param->name());
+    }
 
-	bool usesBool = param->valueType() == ValueType::Bool;
-	int offValue = 0;
-	int onValue = 1;
-	if (!usesBool) {
-		if (!extractBinaryValues(*param, offValue, onValue)) {
-			return;
-		}
-	}
-
-	binding.param = param;
-	binding.usesBool = usesBool;
-	binding.offValue = usesBool ? 0 : offValue;
-	binding.onValue = usesBool ? 1 : onValue;
-
-	binding.listener = std::make_unique<LambdaValueListener>(param->value(), [this, pressIndex](juce::Value&) {
-		refreshPressButton(pressIndex);
-	});
-
-	refreshPressButton(pressIndex);
-	button->setTooltip("Controls " + param->name());
-
-	if (pressAssignmentNames_.size() != static_cast<size_t>(pressKnobs.size())) {
-		pressAssignmentNames_.resize(pressKnobs.size());
-	}
-	replaceAssignmentName(pressAssignmentNames_[pressIndex], param->name().toStdString());
-
-	if (updateStorage) {
-		storePressAssignment(pressIndex, param);
-		markAssignmentsDirty();
-		updateAssignmentHighlight();
-	}
+    if (updateStorage && !loadingAssignments_)
+    {
+        storeSlotAssignment(slotIndex);
+        markAssignmentsDirty();
+    }
+    updateAssignmentHighlight();
 }
 
 bool EditorView::canAssignToPress(const TypedNamedValue& param) const
 {
-	if (param.valueType() == ValueType::Bool) {
-		return true;
-	}
-	int offValue = 0;
-	int onValue = 0;
-	return extractBinaryValues(param, offValue, onValue);
+    if (param.valueType() == ValueType::Bool)
+        return true;
+    int offValue = 0;
+    int onValue = 0;
+    return extractBinaryValues(param, offValue, onValue);
 }
 
 bool EditorView::extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const
 {
-	switch (param.valueType()) {
-	case ValueType::Integer:
-		if (param.maxValue() - param.minValue() == 1) {
-			offValue = param.minValue();
-			onValue = param.maxValue();
-			return true;
-		}
-		break;
-	case ValueType::Lookup: {
-		auto lookup = param.lookup();
-		if (lookup.size() == 2) {
-			auto it = lookup.begin();
-			offValue = it->first;
-			++it;
-			onValue = it->first;
-			return true;
-		}
-		break;
-	}
-	default:
-		break;
-	}
-	return false;
+    switch (param.valueType())
+    {
+    case ValueType::Integer:
+        if (param.maxValue() - param.minValue() == 1)
+        {
+            offValue = param.minValue();
+            onValue = param.maxValue();
+            return true;
+        }
+        break;
+    case ValueType::Lookup:
+    {
+        auto lookup = param.lookup();
+        if (lookup.size() == 2)
+        {
+            auto it = lookup.begin();
+            offValue = it->first;
+            ++it;
+            onValue = it->first;
+            return true;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return false;
 }
 
-void EditorView::refreshPressButton(int pressIndex)
+void EditorView::refreshPressButtonSlot(int slotIndex)
 {
-	if (pressIndex < 0 || pressIndex >= pressKnobs.size()) {
-		return;
-	}
-	auto& binding = pressBindings_[pressIndex];
-	if (!binding.param) {
-		return;
-	}
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
 
-	auto* button = pressKnobs[pressIndex];
-	auto valueVar = binding.param->value().getValue();
+    auto& slot = slots_[slotIndex];
+    if (!slot.button || !slot.pressBinding.param)
+        return;
 
-	bool isOn = false;
-	if (binding.param->valueType() == ValueType::Bool) {
-		isOn = static_cast<bool>(valueVar);
-	}
-	else {
-		int currentValue = static_cast<int>(valueVar);
-		isOn = (currentValue == binding.onValue);
-	}
-
-	button->setToggleState(isOn, juce::dontSendNotification);
-	button->setButtonText(binding.param->name() + ": " + buttonValueText(*binding.param, valueVar));
+    auto valueVar = slot.pressBinding.param->value().getValue();
+    bool isOn = slot.pressBinding.usesBool ? static_cast<bool>(valueVar)
+                                           : (static_cast<int>(valueVar) == slot.pressBinding.onValue);
+    slot.button->setToggleState(isOn, juce::dontSendNotification);
+    slot.button->setButtonText(slot.pressBinding.param->name() + ": " + buttonValueText(*slot.pressBinding.param, valueVar));
 }
 
-void EditorView::handlePressButtonClick(int pressIndex)
+void EditorView::handlePressSlotClick(int slotIndex)
 {
-	if (pressIndex < 0 || pressIndex >= pressKnobs.size()) {
-		return;
-	}
-	auto& binding = pressBindings_[pressIndex];
-	auto* button = pressKnobs[pressIndex];
-	if (!binding.param) {
-		button->setToggleState(false, juce::dontSendNotification);
-		return;
-	}
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
 
-	bool shouldBeOn = button->getToggleState();
-	if (binding.param->valueType() == ValueType::Bool) {
-		binding.param->value().setValue(shouldBeOn);
-	}
-	else {
-		binding.param->value().setValue(shouldBeOn ? binding.onValue : binding.offValue);
-	}
+    auto& slot = slots_[slotIndex];
+    auto& binding = slot.pressBinding;
+    if (!binding.param)
+    {
+        slot.button->setToggleState(false, juce::dontSendNotification);
+        return;
+    }
+
+    bool shouldBeOn = slot.button->getToggleState();
+    if (binding.usesBool)
+        binding.param->value().setValue(shouldBeOn);
+    else
+        binding.param->value().setValue(shouldBeOn ? binding.onValue : binding.offValue);
 }
 
 juce::String EditorView::buttonValueText(const TypedNamedValue& param, const juce::var& value) const
 {
-	switch (param.valueType()) {
-	case ValueType::Bool:
-		return (bool)value ? "On" : "Off";
-	case ValueType::Lookup: {
-		auto lookup = param.lookup();
-		int intValue = static_cast<int>(value);
-		auto found = lookup.find(intValue);
-		if (found != lookup.end()) {
-			return found->second;
-		}
-		break;
-	}
-	default:
-		break;
-	}
-	if (value.isString()) {
-		return value.toString();
-	}
-	if (value.isDouble() || value.isInt()) {
-		return juce::String((int)value);
-	}
-	return value.toString();
+    switch (param.valueType())
+    {
+    case ValueType::Bool:
+        return (bool)value ? "On" : "Off";
+    case ValueType::Lookup:
+    {
+        auto lookup = param.lookup();
+        auto intValue = static_cast<int>(value);
+        auto found = lookup.find(intValue);
+        if (found != lookup.end())
+            return found->second;
+        break;
+    }
+    default:
+        break;
+    }
+
+    if (value.isString())
+        return value.toString();
+    if (value.isInt() || value.isDouble())
+        return juce::String(static_cast<int>(value));
+    return value.toString();
 }
 
-int EditorView::rotaryIndexAt(juce::Point<int> localPos) const
+void EditorView::setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data)
 {
-	for (int i = 0; i < rotaryKnobs.size(); ++i) {
-		if (auto* knob = rotaryKnobs[i]) {
-			if (knob->isShowing() && knob->getBounds().contains(localPos)) {
-				return i;
-			}
-		}
-	}
-	return -1;
+    if (synth && data)
+        editorPatchHolder_ = std::make_shared<midikraft::PatchHolder>(synth, nullptr, data);
+    else
+        editorPatchHolder_.reset();
+    patchTextBox_.fillTextBox(editorPatchHolder_);
 }
 
-int EditorView::pressIndexAt(juce::Point<int> localPos) const
+void EditorView::refreshEditorPatch()
 {
-	for (int i = 0; i < pressKnobs.size(); ++i) {
-		if (auto* button = pressKnobs[i]) {
-			if (button->isShowing() && button->getBounds().contains(localPos)) {
-				return i;
-			}
-		}
-	}
-	return -1;
+    if (editorPatchHolder_)
+        patchTextBox_.fillTextBox(editorPatchHolder_);
 }
 
-juce::Point<int> EditorView::mousePositionInLocalSpace() const
-{
-	auto screenPos = juce::Desktop::getInstance().getMainMouseSource().getScreenPosition();
-	return getLocalPoint(nullptr, screenPos.roundToInt());
-}
-
-void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details)
-{
-	auto localPos = mousePositionInLocalSpace();
-	int newRotary = -1;
-	int newPress = -1;
-	bool canDrop = false;
-
-	auto param = findParameterByName(details.description.toString());
-	if (param) {
-		if (auto idx = rotaryIndexAt(localPos); idx != -1) {
-			newRotary = idx;
-			canDrop = true;
-		}
-		else if (auto idx2 = pressIndexAt(localPos); idx2 != -1) {
-			if (canAssignToPress(*param)) {
-				newPress = idx2;
-				canDrop = true;
-			}
-		}
-	}
-
-	if (newRotary != hoveredRotaryIndex_ || newPress != hoveredPressIndex_) {
-		hoveredRotaryIndex_ = newRotary;
-		hoveredPressIndex_ = newPress;
-		repaint();
-	}
-
-	setMouseCursor(canDrop ? juce::MouseCursor::CopyingCursor : juce::MouseCursor::NormalCursor);
-}
-
-void EditorView::clearDropHoverState()
-{
-	bool hadHover = hoveredRotaryIndex_ != -1 || hoveredPressIndex_ != -1;
-	hoveredRotaryIndex_ = -1;
-	hoveredPressIndex_ = -1;
-	setMouseCursor(juce::MouseCursor::NormalCursor);
-	if (hadHover) {
-		repaint();
-	}
-}
+//==================================================================================================
+// Assignment persistence
+//==================================================================================================
 
 void EditorView::loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth)
 {
-	currentLayoutNode_ = {};
+    currentLayoutNode_ = {};
+    if (!synth)
+        return;
 
-	if (!synth) {
-		return;
-	}
+    if (!assignmentsLoaded_)
+        loadAssignmentsFromDisk();
 
-	if (!assignmentsLoaded_) {
-		loadAssignmentsFromDisk();
-	}
+    initialiseControllerSlots();
 
-	auto synthName = juce::String(synth->getName());
-	currentLayoutNode_ = findLayoutNode(synthName);
-	if (!currentLayoutNode_.isValid()) {
-		currentLayoutNode_ = ensureLayoutNode(synthName);
-		return;
-	}
+    auto synthName = juce::String(synth->getName());
+    currentLayoutNode_ = findLayoutNode(synthName);
+    if (!currentLayoutNode_.isValid())
+    {
+        currentLayoutNode_ = ensureLayoutNode(synthName);
+        updateAssignmentHighlight();
+        return;
+    }
 
-	applyAssignmentsToCurrentSynth();
+    loadingAssignments_ = true;
+
+    auto slotsNode = currentLayoutNode_.getChildWithName(kSlotsNodeId);
+    if (slotsNode.isValid())
+    {
+        for (int i = 0; i < slotsNode.getNumChildren(); ++i)
+        {
+            applyAssignmentToSlotFromTree(slotsNode.getChild(i));
+        }
+    }
+
+    loadingAssignments_ = false;
+    updateAssignmentHighlight();
 }
 
 void EditorView::applyAssignmentsToCurrentSynth()
 {
-	// Ensure UI starts from a clean state before applying stored assignments
-	if (rotaryAssignmentNames_.size() != static_cast<size_t>(rotaryKnobs.size())) {
-		rotaryAssignmentNames_.resize(rotaryKnobs.size());
-	}
-	for (int i = 0; i < rotaryKnobs.size(); ++i) {
-		if (auto* knob = rotaryKnobs[i]) {
-			knob->setUnused();
-		}
-		if (i < static_cast<int>(rotaryAssignmentNames_.size())) {
-			replaceAssignmentName(rotaryAssignmentNames_[i], "");
-		}
-	}
-	clearPressBindings();
+    initialiseControllerSlots();
 
-	if (currentLayoutNode_.isValid()) {
-		applyAssignmentsFromTree(currentLayoutNode_);
-	}
-	else {
-		updateAssignmentHighlight();
-	}
+    if (!currentLayoutNode_.isValid())
+    {
+        updateAssignmentHighlight();
+        return;
+    }
+
+    loadingAssignments_ = true;
+
+    auto slotsNode = currentLayoutNode_.getChildWithName(kSlotsNodeId);
+    if (slotsNode.isValid())
+    {
+        for (int i = 0; i < slotsNode.getNumChildren(); ++i)
+            applyAssignmentToSlotFromTree(slotsNode.getChild(i));
+    }
+
+    loadingAssignments_ = false;
+    updateAssignmentHighlight();
 }
 
-void EditorView::applyAssignmentsFromTree(juce::ValueTree const& layoutTree)
+void EditorView::applyAssignmentsFromTree(const juce::ValueTree& layoutTree)
 {
-	auto rotaries = layoutTree.getChildWithName(kRotariesNodeId);
-	if (rotaries.isValid()) {
-		for (int i = 0; i < rotaries.getNumChildren(); ++i) {
-			applyAssignmentToRotaryFromTree(rotaries.getChild(i));
-		}
-	}
+    initialiseControllerSlots();
+    auto slotsNode = layoutTree.getChildWithName(kSlotsNodeId);
+    if (!slotsNode.isValid())
+        return;
 
-	auto presses = layoutTree.getChildWithName(kPressesNodeId);
-	if (presses.isValid()) {
-		for (int i = 0; i < presses.getNumChildren(); ++i) {
-			applyAssignmentToPressFromTree(presses.getChild(i));
-		}
-	}
-
-	updateAssignmentHighlight();
+    loadingAssignments_ = true;
+    for (int i = 0; i < slotsNode.getNumChildren(); ++i)
+        applyAssignmentToSlotFromTree(slotsNode.getChild(i));
+    loadingAssignments_ = false;
+    updateAssignmentHighlight();
 }
 
-void EditorView::applyAssignmentToRotaryFromTree(juce::ValueTree const& assignmentNode)
+void EditorView::applyAssignmentToSlotFromTree(const juce::ValueTree& assignmentNode)
 {
-	if (!assignmentNode.hasProperty(kIndexProperty) || !assignmentNode.hasProperty(kParameterProperty)) {
-		return;
-	}
+    if (!assignmentNode.hasType(kSlotNodeId))
+        return;
 
-	int index = static_cast<int>(assignmentNode.getProperty(kIndexProperty));
-	if (index < 0 || index >= rotaryKnobs.size()) {
-		return;
-	}
+    if (!assignmentNode.hasProperty(kIndexProperty))
+        return;
 
-	auto paramName = assignmentNode.getProperty(kParameterProperty).toString().toStdString();
-	if (!uiModel_.hasValue(paramName)) {
-		spdlog::warn("Stored rotary assignment references unknown parameter {}", paramName);
-		return;
-	}
+    int slotIndex = (int)assignmentNode.getProperty(kIndexProperty);
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
 
-	assignParameterToRotary(index, uiModel_.typedNamedValueByName(paramName), false);
+    auto controllerType = ControllerType::Rotary;
+    if (assignmentNode.hasProperty(kControllerProperty))
+        controllerType = stringToControllerType(assignmentNode.getProperty(kControllerProperty).toString());
+
+    setSlotType(slotIndex, controllerType, false);
+
+    if (assignmentNode.hasProperty(kParameterProperty))
+    {
+        auto parameterName = assignmentNode.getProperty(kParameterProperty).toString().toStdString();
+        if (!parameterName.empty() && uiModel_.hasValue(parameterName))
+        {
+            assignParameterToSlot(slotIndex, uiModel_.typedNamedValueByName(parameterName), false);
+        }
+    }
 }
 
-void EditorView::applyAssignmentToPressFromTree(juce::ValueTree const& assignmentNode)
+void EditorView::storeSlotAssignment(int slotIndex)
 {
-	if (!assignmentNode.hasProperty(kIndexProperty) || !assignmentNode.hasProperty(kParameterProperty)) {
-		return;
-	}
+    if (currentSynthName_.isEmpty() || slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
 
-	int index = static_cast<int>(assignmentNode.getProperty(kIndexProperty));
-	if (index < 0 || index >= pressKnobs.size()) {
-		return;
-	}
+    auto layoutNode = ensureLayoutNode(currentSynthName_);
+    auto slotsNode = ensureSection(layoutNode, kSlotsNodeId);
+    auto assignment = ensureAssignmentNode(slotsNode, slotIndex);
 
-	auto paramName = assignmentNode.getProperty(kParameterProperty).toString().toStdString();
-	if (!uiModel_.hasValue(paramName)) {
-		spdlog::warn("Stored button assignment references unknown parameter {}", paramName);
-		return;
-	}
-
-	assignParameterToPress(index, uiModel_.typedNamedValueByName(paramName), false);
-}
-
-void EditorView::storeRotaryAssignment(int rotaryIndex, std::shared_ptr<TypedNamedValue> param)
-{
-	if (!param || currentSynthName_.isEmpty()) {
-		return;
-	}
-
-	auto layout = ensureLayoutNode(currentSynthName_);
-	currentLayoutNode_ = layout;
-	auto rotaries = ensureSection(layout, kRotariesNodeId);
-	auto assignment = ensureAssignmentNode(rotaries, rotaryIndex);
-	assignment.setProperty(kParameterProperty, param->name(), nullptr);
-}
-
-void EditorView::storePressAssignment(int pressIndex, std::shared_ptr<TypedNamedValue> param)
-{
-	if (!param || currentSynthName_.isEmpty()) {
-		return;
-	}
-
-	auto layout = ensureLayoutNode(currentSynthName_);
-	currentLayoutNode_ = layout;
-	auto presses = ensureSection(layout, kPressesNodeId);
-	auto assignment = ensureAssignmentNode(presses, pressIndex);
-	assignment.setProperty(kParameterProperty, param->name(), nullptr);
+    assignment.setProperty(kControllerProperty, controllerTypeToString(slots_[slotIndex].type), nullptr);
+    if (slots_[slotIndex].assignedParameter.empty())
+        assignment.removeProperty(kParameterProperty, nullptr);
+    else
+        assignment.setProperty(kParameterProperty, String(slots_[slotIndex].assignedParameter), nullptr);
 }
 
 juce::ValueTree EditorView::ensureLayoutNode(const juce::String& synthName)
 {
-	if (!assignmentsRoot_.isValid()) {
-		assignmentsRoot_ = ValueTree(kAssignmentsRootId);
-	}
+    if (!assignmentsRoot_.isValid())
+        assignmentsRoot_ = juce::ValueTree(kAssignmentsRootId);
 
-	auto synthNode = assignmentsRoot_.getChildWithProperty(kSynthNameProperty, synthName);
-	if (!synthNode.isValid()) {
-		synthNode = ValueTree(kSynthNodeId);
-		synthNode.setProperty(kSynthNameProperty, synthName, nullptr);
-		assignmentsRoot_.addChild(synthNode, -1, nullptr);
-	}
+    auto synthNode = assignmentsRoot_.getChildWithProperty(kSynthNameProperty, synthName);
+    if (!synthNode.isValid())
+    {
+        synthNode = juce::ValueTree(kSynthNodeId);
+        synthNode.setProperty(kSynthNameProperty, synthName, nullptr);
+        assignmentsRoot_.addChild(synthNode, -1, nullptr);
+    }
 
-	auto layoutNode = synthNode.getChildWithProperty(kLayoutIdProperty, currentLayoutId_);
-	if (!layoutNode.isValid()) {
-		layoutNode = ValueTree(kLayoutNodeId);
-		layoutNode.setProperty(kLayoutIdProperty, currentLayoutId_, nullptr);
-		synthNode.addChild(layoutNode, -1, nullptr);
-	}
+    auto layoutNode = synthNode.getChildWithProperty(kLayoutIdProperty, currentLayoutId_);
+    if (!layoutNode.isValid())
+    {
+        layoutNode = juce::ValueTree(kLayoutNodeId);
+        layoutNode.setProperty(kLayoutIdProperty, currentLayoutId_, nullptr);
+        synthNode.addChild(layoutNode, -1, nullptr);
+    }
 
-	return layoutNode;
+    return layoutNode;
 }
 
 juce::ValueTree EditorView::findLayoutNode(const juce::String& synthName) const
 {
-	if (!assignmentsRoot_.isValid()) {
-		return {};
-	}
+    if (!assignmentsRoot_.isValid())
+        return {};
 
-	auto synthNode = assignmentsRoot_.getChildWithProperty(kSynthNameProperty, synthName);
-	if (!synthNode.isValid()) {
-		return {};
-	}
-
-	return synthNode.getChildWithProperty(kLayoutIdProperty, currentLayoutId_);
+    auto synthNode = assignmentsRoot_.getChildWithProperty(kSynthNameProperty, synthName);
+    if (!synthNode.isValid())
+        return {};
+    return synthNode.getChildWithProperty(kLayoutIdProperty, currentLayoutId_);
 }
 
 juce::ValueTree EditorView::ensureSection(juce::ValueTree parent, const juce::Identifier& sectionId)
 {
-	if (!parent.isValid()) {
-		return {};
-	}
+    if (!parent.isValid())
+        return {};
 
-	auto section = parent.getChildWithName(sectionId);
-	if (!section.isValid()) {
-		section = ValueTree(sectionId);
-		parent.addChild(section, -1, nullptr);
-	}
-	return section;
+    auto section = parent.getChildWithName(sectionId);
+    if (!section.isValid())
+    {
+        section = juce::ValueTree(sectionId);
+        parent.addChild(section, -1, nullptr);
+    }
+    return section;
 }
 
 juce::ValueTree EditorView::findAssignmentNode(juce::ValueTree parent, int index) const
 {
-	if (!parent.isValid()) {
-		return {};
-	}
+    if (!parent.isValid())
+        return {};
 
-	for (int i = 0; i < parent.getNumChildren(); ++i) {
-		auto child = parent.getChild(i);
-		if (child.hasProperty(kIndexProperty) && static_cast<int>(child.getProperty(kIndexProperty)) == index) {
-			return child;
-		}
-	}
-	return {};
+    for (int i = 0; i < parent.getNumChildren(); ++i)
+    {
+        auto child = parent.getChild(i);
+        if (child.hasProperty(kIndexProperty) && (int)child.getProperty(kIndexProperty) == index)
+            return child;
+    }
+    return {};
 }
 
 juce::ValueTree EditorView::ensureAssignmentNode(juce::ValueTree parent, int index)
 {
-	auto node = findAssignmentNode(parent, index);
-	if (!node.isValid()) {
-		node = ValueTree(kAssignmentNodeId);
-		node.setProperty(kIndexProperty, index, nullptr);
-		parent.addChild(node, -1, nullptr);
-	}
-	return node;
+    auto node = findAssignmentNode(parent, index);
+    if (!node.isValid())
+    {
+        node = juce::ValueTree(kSlotNodeId);
+        node.setProperty(kIndexProperty, index, nullptr);
+        parent.addChild(node, -1, nullptr);
+    }
+    return node;
 }
 
 void EditorView::loadAssignmentsFromDisk()
 {
-	auto file = assignmentsFile();
-	if (file.existsAsFile()) {
-		FileInputStream stream(file);
-		if (stream.openedOk()) {
-			auto loaded = ValueTree::readFromStream(stream);
-			if (loaded.isValid() && loaded.getType() == kAssignmentsRootId) {
-				assignmentsRoot_ = loaded;
-			}
-			else {
-				assignmentsRoot_ = ValueTree(kAssignmentsRootId);
-				spdlog::warn("Assignments file {} could not be read, starting with empty assignments", file.getFullPathName().toStdString());
-			}
-		}
-		else {
-			spdlog::warn("Failed to open assignments file {}", file.getFullPathName().toStdString());
-			assignmentsRoot_ = ValueTree(kAssignmentsRootId);
-		}
-	}
-	else {
-		assignmentsRoot_ = ValueTree(kAssignmentsRootId);
-	}
-	assignmentsLoaded_ = true;
-	assignmentsDirty_ = false;
+    auto file = assignmentsFile();
+    assignmentsRoot_ = juce::ValueTree(kAssignmentsRootId);
+
+    if (file.existsAsFile())
+    {
+        juce::FileInputStream stream(file);
+        if (stream.openedOk())
+        {
+            auto tree = juce::ValueTree::readFromStream(stream);
+            if (tree.isValid() && tree.getType() == kAssignmentsRootId)
+                assignmentsRoot_ = tree;
+        }
+    }
+
+    assignmentsLoaded_ = true;
+    assignmentsDirty_ = false;
 }
 
 void EditorView::saveAssignmentsToDisk()
 {
-	if (!assignmentsRoot_.isValid()) {
-		return;
-	}
+    if (!assignmentsRoot_.isValid())
+        return;
 
-	auto file = assignmentsFile();
-	auto directory = file.getParentDirectory();
-	if (!directory.exists()) {
-		directory.createDirectory();
-	}
+    auto file = assignmentsFile();
+    auto directory = file.getParentDirectory();
+    if (!directory.exists())
+        directory.createDirectory();
 
-	TemporaryFile temp(file);
-	{
-		FileOutputStream out(temp.getFile());
-		if (!out.openedOk()) {
-			spdlog::error("Failed to open temporary file for writing assignments {}", temp.getFile().getFullPathName().toStdString());
-			return;
-		}
-		assignmentsRoot_.writeToStream(out);
-		out.flush();
-		if (out.getStatus().failed()) {
-			spdlog::error("Failed while writing assignments file {}: {}", temp.getFile().getFullPathName().toStdString(), out.getStatus().getErrorMessage().toStdString());
-			return;
-		}
-	}
+    juce::TemporaryFile temp(file);
+    {
+        juce::FileOutputStream out(temp.getFile());
+        if (!out.openedOk())
+        {
+            spdlog::error("Failed to open temporary file for writing assignments {}", temp.getFile().getFullPathName().toStdString());
+            return;
+        }
+        assignmentsRoot_.writeToStream(out);
+        out.flush();
+        if (out.getStatus().failed())
+        {
+            spdlog::error("Failed while writing assignments file {}: {}", temp.getFile().getFullPathName().toStdString(), out.getStatus().getErrorMessage().toStdString());
+            return;
+        }
+    }
 
-	if (!temp.overwriteTargetFileWithTemporary()) {
-		spdlog::error("Failed to move temporary assignments file into place {}", file.getFullPathName().toStdString());
-		return;
-	}
+    if (!temp.overwriteTargetFileWithTemporary())
+    {
+        spdlog::error("Failed to overwrite assignments file {}", file.getFullPathName().toStdString());
+        return;
+    }
 
-	assignmentsDirty_ = false;
-	spdlog::info("Controller assignments saved to {}", file.getFullPathName().toStdString());
+    assignmentsDirty_ = false;
+    spdlog::info("Controller assignments saved to {}", file.getFullPathName().toStdString());
 }
 
 void EditorView::handleLoadAssignmentsRequested()
 {
-	if (assignmentsDirty_) {
-		spdlog::info("Discarding unsaved controller assignments before loading from disk");
-	}
+    if (assignmentsDirty_)
+        spdlog::info("Discarding unsaved controller assignments before loading from disk");
 
-	loadAssignmentsFromDisk();
+    loadAssignmentsFromDisk();
 
-	if (currentSynthName_.isEmpty()) {
-		return;
-	}
+    if (currentSynthName_.isEmpty())
+        return;
 
-	currentLayoutNode_ = findLayoutNode(currentSynthName_);
-	applyAssignmentsToCurrentSynth();
+    currentLayoutNode_ = findLayoutNode(currentSynthName_);
+    applyAssignmentsToCurrentSynth();
 }
 
 void EditorView::handleSaveAssignmentsRequested()
 {
-	if (!assignmentsLoaded_) {
-		loadAssignmentsFromDisk();
-	}
+    if (!assignmentsLoaded_)
+        loadAssignmentsFromDisk();
 
-	if (assignmentsDirty_) {
-		saveAssignmentsToDisk();
-	}
-	else {
-		spdlog::info("Controller assignments unchanged, nothing to save");
-	}
+    if (assignmentsDirty_)
+        saveAssignmentsToDisk();
+    else
+        spdlog::info("Controller assignments unchanged, nothing to save");
 }
 
 juce::File EditorView::assignmentsFile() const
 {
-	auto& settingsFile = Settings::instance().getPropertiesFile();
-	auto directory = settingsFile.getParentDirectory();
-	return directory.getChildFile("KnobAssignments.xml");
+    auto& settingsFile = Settings::instance().getPropertiesFile();
+    auto directory = settingsFile.getParentDirectory();
+    return directory.getChildFile("KnobAssignments.xml");
 }
 
 void EditorView::markAssignmentsDirty()
 {
-	assignmentsDirty_ = true;
+    if (!loadingAssignments_)
+        assignmentsDirty_ = true;
 }
 
 void EditorView::flushAssignmentsIfDirty()
 {
-	if (assignmentsDirty_) {
-		saveAssignmentsToDisk();
-	}
+    if (assignmentsDirty_)
+        saveAssignmentsToDisk();
 }
 
-void EditorView::clearPressBindings()
-{
-	if (pressAssignmentNames_.size() != pressBindings_.size()) {
-		pressAssignmentNames_.resize(pressBindings_.size());
-	}
-	for (int i = 0; i < static_cast<int>(pressBindings_.size()); ++i) {
-		auto& binding = pressBindings_[i];
-		if (binding.listener) {
-			binding.listener.reset();
-		}
-		binding.param.reset();
-		binding.usesBool = false;
-		binding.offValue = 0;
-		binding.onValue = 1;
-		if (i < static_cast<int>(pressAssignmentNames_.size())) {
-			replaceAssignmentName(pressAssignmentNames_[i], "");
-		}
+//==================================================================================================
+// Slot helpers
+//==================================================================================================
 
-		if (i < pressKnobs.size()) {
-			auto* button = pressKnobs[i];
-			button->setToggleState(false, juce::dontSendNotification);
-			button->setTooltip({});
-			if (i < static_cast<int>(defaultPressTexts_.size())) {
-				button->setButtonText(defaultPressTexts_[i]);
-			}
-			else {
-				button->setButtonText({});
-			}
-		}
-	}
-	updateAssignmentHighlight();
+void EditorView::resetButtonSlotState(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.pressBinding.listener)
+        slot.pressBinding.listener.reset();
+    slot.pressBinding.param.reset();
+    slot.pressBinding.usesBool = false;
+    slot.pressBinding.offValue = 0;
+    slot.pressBinding.onValue = 1;
+
+    if (slot.button != nullptr)
+    {
+        slot.button->setToggleState(false, juce::dontSendNotification);
+        slot.button->setButtonText(slot.buttonDefaultText);
+        slot.button->setTooltip({});
+    }
 }
 
 void EditorView::updateAssignmentHighlight()
 {
-	if (valueTreeViewer_.getValueTree().isValid()) {
-		valueTreeViewer_.refresh();
-	}
+    if (valueTreeViewer_.getValueTree().isValid())
+        valueTreeViewer_.refresh();
 }
 
 void EditorView::incrementAssignment(const std::string& name)
 {
-	if (name.empty()) {
-		return;
-	}
-	assignmentUsage_[name] += 1;
+    if (name.empty())
+        return;
+    assignmentUsage_[name] += 1;
 }
 
 void EditorView::decrementAssignment(const std::string& name)
 {
-	if (name.empty()) {
-		return;
-	}
-	auto it = assignmentUsage_.find(name);
-	if (it != assignmentUsage_.end()) {
-		if (--it->second <= 0) {
-			assignmentUsage_.erase(it);
-		}
-	}
+    if (name.empty())
+        return;
+    auto it = assignmentUsage_.find(name);
+    if (it != assignmentUsage_.end())
+    {
+        if (--it->second <= 0)
+            assignmentUsage_.erase(it);
+    }
 }
 
-void EditorView::replaceAssignmentName(std::string& slot, const std::string& newName)
+void EditorView::replaceAssignmentName(std::string& slotName, const std::string& newName)
 {
-	if (slot == newName) {
-		return;
-	}
-	if (!slot.empty()) {
-		decrementAssignment(slot);
-	}
-	slot = newName;
-	if (!slot.empty()) {
-		incrementAssignment(slot);
-	}
+    if (slotName == newName)
+        return;
+    if (!slotName.empty())
+        decrementAssignment(slotName);
+    slotName = newName;
+    if (!slotName.empty())
+        incrementAssignment(slotName);
 }
+
+void EditorView::initialiseControllerSlots()
+{
+    assignmentUsage_.clear();
+    for (int i = 0; i < totalSlots_; ++i)
+    {
+        slots_[i].type = ControllerType::Rotary;
+        replaceAssignmentName(slots_[i].assignedParameter, "");
+        resetButtonSlotState(i);
+        updateSlotVisibility(i);
+    }
+}
+
+void EditorView::updateSlotVisibility(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.rotary != nullptr)
+    {
+        slot.rotary->setVisible(slot.type == ControllerType::Rotary);
+        if (slot.type == ControllerType::Button)
+            slot.rotary->setUnused();
+    }
+    if (slot.button != nullptr)
+        slot.button->setVisible(slot.type == ControllerType::Button);
+}
+
+void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChange)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.type == type)
+        return;
+
+    if (!slot.assignedParameter.empty())
+        replaceAssignmentName(slot.assignedParameter, "");
+
+    if (slot.type == ControllerType::Button)
+        resetButtonSlotState(slotIndex);
+
+    slot.type = type;
+    if (slot.type == ControllerType::Button && slot.assignedParameter.empty())
+        resetButtonSlotState(slotIndex);
+    updateSlotVisibility(slotIndex);
+
+    if (recordChange && !loadingAssignments_)
+    {
+        storeSlotAssignment(slotIndex);
+        markAssignmentsDirty();
+        updateAssignmentHighlight();
+    }
+}
+
+int EditorView::slotIndexForComponent(juce::Component* component) const
+{
+    for (int i = 0; i < totalSlots_; ++i)
+    {
+        if (slots_[i].rotary == component || slots_[i].button == component)
+            return i;
+    }
+    return -1;
+}
+
+int EditorView::slotIndexFromRotaryIndex(int rotaryIndex) const
+{
+    if (rotaryIndex < 0 || rotaryIndex >= rotaryKnobs_.size())
+        return -1;
+    auto* rotary = rotaryKnobs_[rotaryIndex];
+    return slotIndexForComponent(rotary);
+}
+
+int EditorView::slotIndexFromButtonIndex(int buttonIndex) const
+{
+    if (buttonIndex < 0 || buttonIndex >= buttonControls_.size())
+        return -1;
+    auto* button = buttonControls_[buttonIndex];
+    return slotIndexForComponent(button);
+}
+
+int EditorView::slotIndexAt(juce::Point<int> localPos) const
+{
+    for (int i = 0; i < totalSlots_; ++i)
+    {
+        auto const& slot = slots_[i];
+        juce::Component* component = slot.type == ControllerType::Rotary ? static_cast<juce::Component*>(slot.rotary)
+                                                                        : static_cast<juce::Component*>(slot.button);
+        if (component != nullptr && component->isShowing() && component->getBounds().contains(localPos))
+            return i;
+    }
+    return -1;
+}
+
+void EditorView::handleControllerDrop(int slotIndex, ControllerType type)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    setSlotType(slotIndex, type, true);
+    replaceAssignmentName(slots_[slotIndex].assignedParameter, "");
+    resetButtonSlotState(slotIndex);
+    markAssignmentsDirty();
+    updateAssignmentHighlight();
+}
+
+EditorView::ControllerType EditorView::controllerTypeFromDescription(const juce::var& description, bool& isController) const
+{
+    isController = false;
+    if (!description.isString())
+        return ControllerType::Rotary;
+    auto text = description.toString();
+    if (text.compareIgnoreCase("controller:rotary") == 0)
+    {
+        isController = true;
+        return ControllerType::Rotary;
+    }
+    if (text.compareIgnoreCase("controller:button") == 0)
+    {
+        isController = true;
+        return ControllerType::Button;
+    }
+    return ControllerType::Rotary;
+}
+
+juce::Point<int> EditorView::mousePositionInLocalSpace() const
+{
+    auto screenPos = juce::Desktop::getInstance().getMainMouseSource().getScreenPosition();
+    return getLocalPoint(nullptr, screenPos.roundToInt());
+}
+
+void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details)
+{
+    bool isController = false;
+    auto localPos = mousePositionInLocalSpace();
+    auto slotIndex = slotIndexAt(localPos);
+
+    bool canDrop = false;
+
+    if (slotIndex >= 0)
+    {
+        if (isController)
+        {
+            canDrop = true;
+        }
+        else
+        {
+            auto parameter = findParameterByName(details.description.toString());
+            if (parameter)
+            {
+                auto targetType = slots_[slotIndex].type;
+                if (targetType == ControllerType::Button)
+                    canDrop = canAssignToPress(*parameter);
+                else
+                    canDrop = true;
+            }
+        }
+    }
+
+    if (!canDrop)
+        slotIndex = -1;
+
+    if (slotIndex != hoveredSlotIndex_)
+    {
+        hoveredSlotIndex_ = slotIndex;
+        repaint();
+    }
+
+    setMouseCursor(canDrop ? juce::MouseCursor::CopyingCursor : juce::MouseCursor::NormalCursor);
+}
+
+void EditorView::clearDropHoverState()
+{
+    bool hadHover = hoveredSlotIndex_ != -1;
+    hoveredSlotIndex_ = -1;
+    setMouseCursor(juce::MouseCursor::NormalCursor);
+    if (hadHover)
+        repaint();
+}
+
+//==================================================================================================
+// BCR2000Proxy implementation (legacy API)
+//==================================================================================================
+
+void EditorView::setRotaryParam(int knobNumber, TypedNamedValue* param)
+{
+    if (!param)
+        return;
+    int rotaryIndex = knobNumber - 1;
+    auto slotIndex = slotIndexFromRotaryIndex(rotaryIndex);
+    if (slotIndex < 0)
+        return;
+    setSlotType(slotIndex, ControllerType::Rotary, false);
+    auto paramName = param->name().toStdString();
+    auto shared = uiModel_.typedNamedValueByName(paramName);
+    if (!shared)
+        shared = std::shared_ptr<TypedNamedValue>(param, [](TypedNamedValue*) {});
+    assignParameterToSlot(slotIndex, shared, true);
+}
+
+void EditorView::setButtonParam(int knobNumber, std::string const& name)
+{
+    int buttonIndex = knobNumber - 1;
+    auto slotIndex = slotIndexFromButtonIndex(buttonIndex);
+    if (slotIndex < 0)
+        return;
+    setSlotType(slotIndex, ControllerType::Button, true);
+    if (slots_[slotIndex].button != nullptr)
+    {
+        slots_[slotIndex].buttonDefaultText = juce::String(name);
+        slots_[slotIndex].button->setButtonText(slots_[slotIndex].buttonDefaultText);
+    }
+}
+
+//==================================================================================================
+// Button handlers
+//==================================================================================================
+
+//==================================================================================================
+// UpdateSynthListener implementation
+//==================================================================================================
+
+EditorView::UpdateSynthListener::UpdateSynthListener(EditorView* parent)
+    : owner_(parent)
+{
+    editBuffer_ = std::make_shared<midikraft::DataFile>(0);
+    midikraft::MidiController::instance()->addMessageHandler(midiHandler_, [this](juce::MidiInput* source, juce::MidiMessage const& message) {
+        listenForMidiMessages(source, message);
+    });
+}
+
+EditorView::UpdateSynthListener::~UpdateSynthListener()
+{
+    midikraft::MidiController::instance()->removeMessageHandler(midiHandler_);
+}
+
+void EditorView::UpdateSynthListener::valueTreePropertyChanged(juce::ValueTree& treeWhosePropertyHasChanged, const juce::Identifier& property)
+{
+    auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(UIModel::currentSynthOfPatchSmart());
+    if (!detailedParameters)
+        return;
+
+    std::string paramName = property.toString().toStdString();
+    bool found = false;
+    for (auto param : detailedParameters->getParameterDefinitions())
+    {
+        if (param.name == paramName)
+        {
+            midikraft::ParamVal newValue{ param.param_id, treeWhosePropertyHasChanged.getProperty(property) };
+            detailedParameters->setParameterValues(editBuffer_, { newValue });
+
+            auto location = std::dynamic_pointer_cast<midikraft::SimpleDiscoverableDevice>(UIModel::currentSynthOfPatchSmart());
+            auto messages = detailedParameters->createSetValueMessages(location ? location->channel() : MidiChannel::invalidChannel(), editBuffer_, { param.param_id });
+            if (!messages.empty())
+            {
+                if (location && location->wasDetected())
+                    UIModel::currentSynthOfPatch()->sendBlockOfMessagesToSynth(location->midiOutput(), messages);
+                else
+                    spdlog::info("Synth not detected, can't send message to update {}", param.name);
+            }
+            owner_->refreshEditorPatch();
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+        spdlog::error("Failed to find parameter definition for property {}", property.toString().toStdString());
+}
+
+void EditorView::UpdateSynthListener::listenForMidiMessages(juce::MidiInput* source, juce::MidiMessage message)
+{
+    auto synth = UIModel::currentSynthOfPatch();
+    auto location = dynamic_cast<midikraft::MidiLocationCapability*>(synth);
+    if (!location || location->midiInput().name == source->getName())
+    {
+        auto syncCap = dynamic_cast<midikraft::BidirectionalSyncCapability*>(synth);
+        if (syncCap)
+        {
+            int outValue;
+            std::shared_ptr<midikraft::SynthParameterDefinition> param;
+            if (syncCap->determineParameterChangeFromSysex({ message }, &param, outValue))
+            {
+                owner_->uiValueTree_.setPropertyExcludingListener(this, juce::Identifier(param->name()), outValue, nullptr);
+            }
+        }
+
+        if (message.isProgramChange() && (!location || location->channel().toOneBasedInt() == message.getChannel()))
+        {
+            auto programChangeCap = dynamic_cast<midikraft::SendsProgramChangeCapability*>(synth);
+            if (programChangeCap)
+            {
+                programChangeCap->gotProgramChange(MidiProgramNumber::fromZeroBase(message.getProgramChangeNumber()));
+                if (location)
+                {
+                    owner_->librarian_.downloadEditBuffer(midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
+                                                          UIModel::currentSynthOfPatchSmart(), nullptr,
+                                                          [this](std::vector<midikraft::PatchHolder> patch) {
+                                                              if (!patch.empty() && patch[0].patch())
+                                                                  updateAllKnobsFromPatch(patch[0].smartSynth(), patch[0].patch());
+                                                          });
+                }
+            }
+        }
+    }
+}
+
+std::optional<midikraft::ParamVal> valueForParameter(midikraft::ParamDef const& param, std::vector<midikraft::ParamVal> const& values) {
+    for (auto const& val : values) {
+        if (val.param_id == param.param_id) {
+            return val;
+        }
+    }
+    return {};
+}
+
+
+void EditorView::UpdateSynthListener::updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch)
+{
+    auto detailedParameters = midikraft::Capability::hasCapability<midikraft::SynthParametersCapability>(synth);
+    if (!detailedParameters)
+        return;
+
+    if (newPatch)
+    {
+        editBuffer_->setData(newPatch->data());
+        auto values = detailedParameters->getParameterValues(editBuffer_, false);
+        for (auto param : detailedParameters->getParameterDefinitions())
+        {
+            auto value = valueForParameter(param, values);
+            if (value.has_value())
+            {
+                switch (param.param_type)
+                {
+                case midikraft::ParamType::VALUE:
+                    break;
+                case midikraft::ParamType::CHOICE:
+                {
+                    auto valueArray = param.values.getArray();
+                    juce::var clearTextValue = value->value;
+                    value.reset();
+                    if (valueArray)
+                    {
+                        int index = 0;
+                        for (auto elementPtr = valueArray->begin(); elementPtr != valueArray->end(); ++elementPtr, ++index)
+                        {
+                            if (*elementPtr == clearTextValue)
+                            {
+                                value = midikraft::ParamVal({ param.param_id, juce::var(index) });
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+                default:
+                    spdlog::warn("parameter type not yet implemented for parameter {}", param.name);
+                    break;
+                }
+            }
+
+            if (value.has_value() && owner_->uiValueTree_.hasProperty(juce::Identifier(param.name)))
+            {
+                owner_->uiValueTree_.setPropertyExcludingListener(this, juce::Identifier(param.name), (int)value->value, nullptr);
+            }
+        }
+    }
+    else
+    {
+        for (auto param : detailedParameters->getParameterDefinitions())
+        {
+            if (owner_->uiValueTree_.hasProperty(juce::Identifier(param.name)))
+            {
+                switch (param.param_type)
+                {
+                case midikraft::ParamType::VALUE:
+                    owner_->uiValueTree_.setPropertyExcludingListener(this, juce::Identifier(param.name), (int)(param.values[0]), nullptr);
+                    break;
+                case midikraft::ParamType::CHOICE:
+                    owner_->uiValueTree_.setPropertyExcludingListener(this, juce::Identifier(param.name), 0, nullptr);
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+        owner_->setEditorPatch(nullptr, nullptr);
+        return;
+    }
+    owner_->setEditorPatch(synth, editBuffer_);
+}
+
+//==================================================================================================
+// Legacy helpers from original implementation
+//==================================================================================================

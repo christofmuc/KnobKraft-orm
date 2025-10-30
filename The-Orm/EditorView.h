@@ -7,145 +7,179 @@
 #pragma once
 
 #include "JuceHeader.h"
-#include <vector>
 
 #include "BCR2000Proxy.h"
 
 #include "BCR2000.h"
 #include "LambdaButtonStrip.h"
-#include "Librarian.h"
-#include "ValueTreeViewer.h"
 #include "LambdaValueListener.h"
+#include "Librarian.h"
 #include "PatchTextBox.h"
+#include "ValueTreeViewer.h"
 
+#include <optional>
 #include <unordered_map>
 
 class RotaryWithLabel;
 class SynthParameterDefinition;
 class Synth;
 
-class EditorView: public juce::DragAndDropContainer,
-                  public juce::DragAndDropTarget,
-                  public midikraft::BCR2000Proxy,
-				  public juce::Component,
-                  private ChangeListener {
+class EditorView : public juce::DragAndDropContainer,
+                   public juce::DragAndDropTarget,
+                   public midikraft::BCR2000Proxy,
+                   public juce::Component,
+                   private juce::ChangeListener {
 public:
-	EditorView(std::shared_ptr<midikraft::BCR2000> bcr);
-	virtual ~EditorView() override;
+    EditorView(std::shared_ptr<midikraft::BCR2000> bcr);
+    ~EditorView() override;
 
-	virtual void resized() override;
-	void paintOverChildren(juce::Graphics& g) override;
+    void resized() override;
+    void paintOverChildren(juce::Graphics& g) override;
 
-	virtual void setRotaryParam(int knobNumber, TypedNamedValue *param) override;
-	virtual void setButtonParam(int knobNumber, std::string const &name) override;
+    void setRotaryParam(int knobNumber, TypedNamedValue* param) override;
+    void setButtonParam(int knobNumber, std::string const& name) override;
 
-	// Get notified if the current synth changes
-	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
-	// DragAndDropTarget implementation
-	bool isInterestedInDragSource(const juce::DragAndDropTarget::SourceDetails& details) override;
-	void itemDragEnter(const juce::DragAndDropTarget::SourceDetails& details) override;
-	void itemDragMove(const juce::DragAndDropTarget::SourceDetails& details) override;
-	void itemDragExit(const juce::DragAndDropTarget::SourceDetails& details) override;
-	void itemDropped(const juce::DragAndDropTarget::SourceDetails& details) override;
-	void dragOperationEnded(const juce::DragAndDropTarget::SourceDetails& details) override;
+    bool isInterestedInDragSource(const juce::DragAndDropTarget::SourceDetails& details) override;
+    void itemDragEnter(const juce::DragAndDropTarget::SourceDetails& details) override;
+    void itemDragMove(const juce::DragAndDropTarget::SourceDetails& details) override;
+    void itemDragExit(const juce::DragAndDropTarget::SourceDetails& details) override;
+    void itemDropped(const juce::DragAndDropTarget::SourceDetails& details) override;
+    void dragOperationEnded(const juce::DragAndDropTarget::SourceDetails& details) override;
+
+    enum class ControllerType {
+        Rotary,
+        Button,
+    };
 
 private:
-	struct PressBinding {
-		std::shared_ptr<TypedNamedValue> param;
-		bool usesBool = false;
-		int offValue = 0;
-		int onValue = 1;
-		std::unique_ptr<LambdaValueListener> listener;
-	};
+    struct PressBinding {
+        std::shared_ptr<TypedNamedValue> param;
+        bool usesBool = false;
+        int offValue = 0;
+        int onValue = 1;
+        std::unique_ptr<LambdaValueListener> listener;
+    };
 
-	class UpdateSynthListener : public ValueTree::Listener {
+    struct ControllerSlot {
+        ControllerType type = ControllerType::Rotary;
+        RotaryWithLabel* rotary = nullptr;
+        ToggleButton* button = nullptr;
+        PressBinding pressBinding;
+        std::string assignedParameter;
+        juce::String buttonDefaultText;
+    };
+
+	class ControllerPaletteItem : public juce::Component {
 	public:
-		UpdateSynthListener(EditorView* papa);
-		virtual ~UpdateSynthListener() override;
-
-		void valueTreePropertyChanged(ValueTree& treeWhosePropertyHasChanged, const Identifier& property) override;
-		void listenForMidiMessages(MidiInput* source, MidiMessage message);
-		void updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch);
+		ControllerPaletteItem(EditorView& owner, ControllerType type, juce::String const& labelText);
+		void paint(juce::Graphics& g) override;
+		void mouseDown(const juce::MouseEvent& event) override;
+		void mouseEnter(const juce::MouseEvent&) override;
+		void mouseExit(const juce::MouseEvent&) override;
 
 	private:
-		midikraft::MidiController::HandlerHandle midiHandler_ = midikraft::MidiController::makeOneHandle();
-		std::shared_ptr<midikraft::DataFile> editBuffer_; // This is the real edit buffer, where the current intermediate patch is stored
-		EditorView* papa_;
-	};
+		EditorView& owner_;
+		ControllerType type_;
+		juce::String label_;
+    };
 
-	TypedNamedValueSet createParameterModel();
-	std::shared_ptr<TypedNamedValue> findParameterByName(const juce::String& propertyName);
-	void assignParameterToRotary(int rotaryIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage = true);
-	void assignParameterToPress(int pressIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage = true);
-	int rotaryIndexAt(juce::Point<int> localPos) const;
-	int pressIndexAt(juce::Point<int> localPos) const;
-	juce::Point<int> mousePositionInLocalSpace() const;
-	void updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details);
-	void clearDropHoverState();
-	bool canAssignToPress(const TypedNamedValue& param) const;
-	bool extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const;
-	void refreshPressButton(int pressIndex);
-	void handlePressButtonClick(int pressIndex);
-	juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
-	void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
-	void refreshEditorPatch();
+    class UpdateSynthListener : public juce::ValueTree::Listener {
+    public:
+        explicit UpdateSynthListener(EditorView* parent);
+        ~UpdateSynthListener() override;
 
-	void loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth);
-	void applyAssignmentsToCurrentSynth();
-	void applyAssignmentsFromTree(juce::ValueTree const& layoutTree);
-	void applyAssignmentToRotaryFromTree(juce::ValueTree const& assignmentNode);
-	void applyAssignmentToPressFromTree(juce::ValueTree const& assignmentNode);
-	void storeRotaryAssignment(int rotaryIndex, std::shared_ptr<TypedNamedValue> param);
-	void storePressAssignment(int pressIndex, std::shared_ptr<TypedNamedValue> param);
-	juce::ValueTree ensureLayoutNode(const juce::String& synthName);
-	juce::ValueTree findLayoutNode(const juce::String& synthName) const;
-	juce::ValueTree ensureSection(juce::ValueTree parent, const juce::Identifier& sectionId);
-	juce::ValueTree findAssignmentNode(juce::ValueTree parent, int index) const;
-	juce::ValueTree ensureAssignmentNode(juce::ValueTree parent, int index);
-	void loadAssignmentsFromDisk();
-	void saveAssignmentsToDisk();
-	void handleLoadAssignmentsRequested();
-	void handleSaveAssignmentsRequested();
-	juce::File assignmentsFile() const;
+        void valueTreePropertyChanged(juce::ValueTree& treeWhosePropertyHasChanged, const juce::Identifier& property) override;
+        void listenForMidiMessages(juce::MidiInput* source, juce::MidiMessage message);
+        void updateAllKnobsFromPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> newPatch);
+
+    private:
+        midikraft::MidiController::HandlerHandle midiHandler_ = midikraft::MidiController::makeOneHandle();
+        std::shared_ptr<midikraft::DataFile> editBuffer_;
+        EditorView* owner_;
+    };
+
+    // Helpers
+    TypedNamedValueSet createParameterModel();
+    std::shared_ptr<TypedNamedValue> findParameterByName(const juce::String& propertyName);
+    void assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage);
+    bool canAssignToPress(const TypedNamedValue& param) const;
+    bool extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const;
+    void refreshPressButtonSlot(int slotIndex);
+    void handlePressSlotClick(int slotIndex);
+    juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
+    void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
+    void refreshEditorPatch();
+
+    void loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth);
+    void applyAssignmentsToCurrentSynth();
+    void applyAssignmentsFromTree(const juce::ValueTree& layoutTree);
+    void applyAssignmentToSlotFromTree(const juce::ValueTree& assignmentNode);
+    void storeSlotAssignment(int slotIndex);
+    juce::ValueTree ensureLayoutNode(const juce::String& synthName);
+    juce::ValueTree findLayoutNode(const juce::String& synthName) const;
+    juce::ValueTree ensureSection(juce::ValueTree parent, const juce::Identifier& sectionId);
+    juce::ValueTree findAssignmentNode(juce::ValueTree parent, int index) const;
+    juce::ValueTree ensureAssignmentNode(juce::ValueTree parent, int index);
+    void loadAssignmentsFromDisk();
+    void saveAssignmentsToDisk();
+    void handleLoadAssignmentsRequested();
+    void handleSaveAssignmentsRequested();
+    juce::File assignmentsFile() const;
 	void markAssignmentsDirty();
 	void flushAssignmentsIfDirty();
-	void clearPressBindings();
+	void resetButtonSlotState(int slotIndex);
 	void updateAssignmentHighlight();
-	void incrementAssignment(const std::string& name);
-	void decrementAssignment(const std::string& name);
-	void replaceAssignmentName(std::string& slot, const std::string& newName);
+    void incrementAssignment(const std::string& name);
+    void decrementAssignment(const std::string& name);
+    void replaceAssignmentName(std::string& slotName, const std::string& newName);
+    void initialiseControllerSlots();
+    void updateSlotVisibility(int slotIndex);
+    void setSlotType(int slotIndex, ControllerType type, bool recordChange);
+    int slotIndexForComponent(juce::Component* component) const;
+    int slotIndexFromRotaryIndex(int rotaryIndex) const;
+    int slotIndexFromButtonIndex(int buttonIndex) const;
+    int slotIndexAt(juce::Point<int> localPos) const;
+    void handleControllerDrop(int slotIndex, ControllerType type);
+    ControllerType controllerTypeFromDescription(const juce::var& description, bool& isController) const;
+    juce::Point<int> mousePositionInLocalSpace() const;
+    void updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details);
+    void clearDropHoverState();
 
-	TypedNamedValueSet synthModel_;
-	TypedNamedValueSet uiModel_;
-	ValueTree uiValueTree_;
-	TypedNamedValueSet controllerModel_;
+    TypedNamedValueSet synthModel_;
+    TypedNamedValueSet uiModel_;
+    juce::ValueTree uiValueTree_;
+    TypedNamedValueSet controllerModel_;
 
-	PatchTextBox patchTextBox_;
-	std::shared_ptr<midikraft::PatchHolder> editorPatchHolder_;
+    PatchTextBox patchTextBox_;
+    std::shared_ptr<midikraft::PatchHolder> editorPatchHolder_;
 
-	UpdateSynthListener updateSynthListener_;
+    UpdateSynthListener updateSynthListener_;
 
-	ValueTreeViewer valueTreeViewer_;
-	OwnedArray<RotaryWithLabel> rotaryKnobs;
-	OwnedArray<ToggleButton> pressKnobs;
-	std::unique_ptr<LambdaButtonStrip> buttons_;
-	std::shared_ptr<midikraft::BCR2000> bcr2000_;
+    ValueTreeViewer valueTreeViewer_;
+    juce::OwnedArray<RotaryWithLabel> rotaryKnobs_;
+    juce::OwnedArray<ToggleButton> buttonControls_;
+    std::vector<ControllerSlot> slots_;
+    std::unique_ptr<juce::Component> paletteContainer_;
+    std::vector<std::unique_ptr<ControllerPaletteItem>> controllerPaletteItems_;
+    std::unique_ptr<LambdaButtonStrip> buttons_;
+    std::shared_ptr<midikraft::BCR2000> bcr2000_;
 
-	midikraft::Librarian librarian_;
+    midikraft::Librarian librarian_;
 
-	int hoveredRotaryIndex_ = -1;
-	int hoveredPressIndex_ = -1;
-	std::vector<PressBinding> pressBindings_;
-	std::vector<juce::String> defaultPressTexts_;
+    int hoveredSlotIndex_ = -1;
 
-	juce::ValueTree assignmentsRoot_;
-	juce::ValueTree currentLayoutNode_;
-	juce::String currentSynthName_;
-	juce::String currentLayoutId_ { "default" };
-	bool assignmentsLoaded_ = false;
-	bool assignmentsDirty_ = false;
-	std::unordered_map<std::string, int> assignmentUsage_;
-	std::vector<std::string> rotaryAssignmentNames_;
-	std::vector<std::string> pressAssignmentNames_;
+    juce::ValueTree assignmentsRoot_;
+    juce::ValueTree currentLayoutNode_;
+    juce::String currentSynthName_;
+    juce::String currentLayoutId_{ "default" };
+    bool assignmentsLoaded_ = false;
+    bool assignmentsDirty_ = false;
+    bool loadingAssignments_ = false;
+    std::unordered_map<std::string, int> assignmentUsage_;
+
+    int gridRows_ = 8;
+    int gridCols_ = 8;
+    int totalSlots_ = gridRows_ * gridCols_;
 };
