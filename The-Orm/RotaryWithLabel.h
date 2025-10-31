@@ -52,6 +52,37 @@ public:
 	Label label_;
 };
 
+class DropdownWithLabel : public juce::Component
+{
+public:
+    DropdownWithLabel();
+
+    void resized() override;
+
+    void setUnused();
+    void configureForLookup(const juce::String& labelText,
+                            const std::map<int, std::string>& lookup,
+                            std::function<void(int)> onChange);
+    void setSelectedLookupValue(int value);
+    void setTooltip(const juce::String& tooltip);
+
+private:
+    enum class Mode
+    {
+        None,
+        Lookup,
+    };
+
+    void handleSelectionChanged();
+
+    juce::Label label_;
+    juce::ComboBox combo_;
+    Mode mode_ { Mode::None };
+    juce::Array<int> lookupKeys_;
+    std::function<void(int)> lookupCallback_;
+    bool ignoreCallbacks_ { false };
+};
+
 class ModernRotaryLookAndFeel : public juce::LookAndFeel_V4
 {
 public:

@@ -155,6 +155,99 @@ void ButtonWithLabel::resized() {
     label_.setBounds(area);
 }
 
+DropdownWithLabel::DropdownWithLabel()
+{
+    addAndMakeVisible(label_);
+    addAndMakeVisible(combo_);
+
+    label_.setJustificationType(juce::Justification::centred);
+    label_.setInterceptsMouseClicks(false, false);
+
+    combo_.setJustificationType(juce::Justification::centredLeft);
+    combo_.setTextWhenNothingSelected("Select");
+    combo_.onChange = [this]() { handleSelectionChanged(); };
+}
+
+void DropdownWithLabel::resized()
+{
+    auto area = getLocalBounds();
+    combo_.setBounds(area.removeFromTop(area.getHeight() / 2));
+    label_.setBounds(area);
+}
+
+void DropdownWithLabel::setUnused()
+{
+    ignoreCallbacks_ = true;
+    mode_ = Mode::None;
+    lookupKeys_.clear();
+    lookupCallback_ = nullptr;
+    combo_.clear(juce::dontSendNotification);
+    combo_.setText("", juce::dontSendNotification);
+    combo_.setSelectedItemIndex(-1, juce::dontSendNotification);
+    combo_.setEnabled(false);
+    combo_.setTooltip({});
+    label_.setText("", juce::dontSendNotification);
+    label_.setTooltip({});
+    ignoreCallbacks_ = false;
+}
+
+void DropdownWithLabel::configureForLookup(const juce::String& labelText,
+                                           const std::map<int, std::string>& lookup,
+                                           std::function<void(int)> onChange)
+{
+    mode_ = Mode::Lookup;
+    lookupCallback_ = std::move(onChange);
+    lookupKeys_.clear();
+    ignoreCallbacks_ = true;
+    combo_.clear(juce::dontSendNotification);
+
+    int index = 0;
+    for (auto const& entry : lookup)
+    {
+        lookupKeys_.add(entry.first);
+        combo_.addItem(entry.second, ++index);
+    }
+
+    label_.setText(labelText, juce::dontSendNotification);
+    combo_.setEnabled(!lookupKeys_.isEmpty());
+    combo_.setTextWhenNothingSelected("Select");
+    combo_.setSelectedItemIndex(-1, juce::dontSendNotification);
+    ignoreCallbacks_ = false;
+}
+
+void DropdownWithLabel::setSelectedLookupValue(int value)
+{
+    if (mode_ != Mode::Lookup)
+        return;
+
+    auto index = lookupKeys_.indexOf(value);
+    ignoreCallbacks_ = true;
+    if (index >= 0)
+        combo_.setSelectedItemIndex(index, juce::dontSendNotification);
+    else
+        combo_.setSelectedItemIndex(-1, juce::dontSendNotification);
+    ignoreCallbacks_ = false;
+}
+
+void DropdownWithLabel::setTooltip(const juce::String& tooltip)
+{
+    combo_.setTooltip(tooltip);
+    label_.setTooltip(tooltip);
+}
+
+void DropdownWithLabel::handleSelectionChanged()
+{
+    if (ignoreCallbacks_)
+        return;
+
+    if (mode_ == Mode::Lookup && lookupCallback_)
+    {
+        auto index = combo_.getSelectedItemIndex();
+        if (juce::isPositiveAndBelow(index, lookupKeys_.size()))
+            lookupCallback_(lookupKeys_[index]);
+    }
+}
+
 
 ModernRotaryLookAndFeel::ModernRotaryLookAndFeel()
 {

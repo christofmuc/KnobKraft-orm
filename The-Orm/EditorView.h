@@ -24,6 +24,7 @@ class RotaryWithLabel;
 class ButtonWithLabel;
 class SynthParameterDefinition;
 class Synth;
+class DropdownWithLabel;
 
 class EditorView : public juce::DragAndDropContainer,
                    public juce::DragAndDropTarget,
@@ -53,6 +54,7 @@ public:
         Empty,
         Rotary,
         Button,
+        Dropdown,
     };
 
 private:
@@ -64,11 +66,18 @@ private:
         std::unique_ptr<LambdaValueListener> listener;
     };
 
+    struct DropdownBinding {
+        std::shared_ptr<TypedNamedValue> param;
+        std::unique_ptr<LambdaValueListener> listener;
+    };
+
     struct ControllerSlot {
         ControllerType type = ControllerType::Empty;
         RotaryWithLabel* rotary = nullptr;
         ButtonWithLabel* button = nullptr;
+        DropdownWithLabel* dropdown = nullptr;
         PressBinding pressBinding;
+        DropdownBinding dropdownBinding;
         std::string assignedParameter;
         juce::String buttonDefaultText;
         juce::Label* dropZoneLabel = nullptr;
@@ -108,8 +117,10 @@ private:
     std::shared_ptr<TypedNamedValue> findParameterByName(const juce::String& propertyName);
     void assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage);
     bool canAssignToPress(const TypedNamedValue& param) const;
+    bool canAssignToDropdown(const TypedNamedValue& param) const;
     bool extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const;
     void refreshPressButtonSlot(int slotIndex);
+    void refreshDropdownSlot(int slotIndex);
     void handlePressSlotClick(int slotIndex);
     juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
     void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
@@ -134,6 +145,7 @@ private:
 	void markAssignmentsDirty();
 	void flushAssignmentsIfDirty();
 	void resetButtonSlotState(int slotIndex);
+    void resetDropdownSlotState(int slotIndex);
 	void updateAssignmentHighlight();
     void incrementAssignment(const std::string& name);
     void decrementAssignment(const std::string& name);
@@ -152,6 +164,7 @@ private:
     juce::Point<int> mousePositionInLocalSpace() const;
     void updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details);
     void clearDropHoverState();
+    bool shouldPreserveAssignment(ControllerType fromType, ControllerType toType, const TypedNamedValue& param) const;
 
     TypedNamedValueSet synthModel_;
     TypedNamedValueSet uiModel_;
@@ -166,6 +179,7 @@ private:
     ValueTreeViewer valueTreeViewer_;
     juce::OwnedArray<RotaryWithLabel> rotaryKnobs_;
     juce::OwnedArray<ButtonWithLabel> buttonControls_;
+    juce::OwnedArray<DropdownWithLabel> dropdownControls_;
     juce::OwnedArray<juce::Label> dropZoneLabels_;
     std::vector<ControllerSlot> slots_;
     std::unique_ptr<juce::Component> paletteContainer_;

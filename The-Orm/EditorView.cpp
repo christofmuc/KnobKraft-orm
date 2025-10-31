@@ -27,6 +27,7 @@
 #include <map>
 #include <optional>
 #include <cmath>
+#include <memory>
 
 namespace
 {
@@ -81,6 +82,8 @@ juce::String controllerTypeToString(EditorView::ControllerType type)
         return "rotary";
     case EditorView::ControllerType::Button:
         return "button";
+    case EditorView::ControllerType::Dropdown:
+        return "dropdown";
     }
     jassertfalse;
     return "empty";
@@ -92,6 +95,8 @@ EditorView::ControllerType stringToControllerType(const juce::String& str)
         return EditorView::ControllerType::Button;
     if (str.compareIgnoreCase("empty") == 0)
         return EditorView::ControllerType::Empty;
+    if (str.compareIgnoreCase("dropdown") == 0)
+        return EditorView::ControllerType::Dropdown;
     return EditorView::ControllerType::Rotary;
 }
 
@@ -179,6 +184,9 @@ void EditorView::ControllerPaletteItem::mouseDown(const juce::MouseEvent& event)
         case ControllerType::Button:
             descriptionText = "controller:button";
             break;
+        case ControllerType::Dropdown:
+            descriptionText = "controller:dropdown";
+            break;
         }
         const juce::var description(descriptionText);
         dragContainer->startDragging(description, this);
@@ -225,6 +233,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Empty, "Empty"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Rotary, "Rotary"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Button, "Button"));
+    controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Dropdown, "Dropdown"));
     for (auto& item : controllerPaletteItems_)
         paletteContainer_->addAndMakeVisible(item.get());
 
@@ -232,6 +241,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
     slots_.resize(totalSlots_);
     rotaryKnobs_.ensureStorageAllocated(totalSlots_);
     buttonControls_.ensureStorageAllocated(totalSlots_);
+    dropdownControls_.ensureStorageAllocated(totalSlots_);
 
     for (int slotIndex = 0; slotIndex < totalSlots_; ++slotIndex)
     {
@@ -253,6 +263,12 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         buttonControls_.add(button);
         addAndMakeVisible(button);
 
+        auto dropdown = new DropdownWithLabel();
+        dropdownControls_.add(dropdown);
+        addAndMakeVisible(dropdown);
+        dropdown->setVisible(false);
+        dropdown->setUnused();
+
         auto dropZone = new juce::Label();
         dropZone->setText("drop zone", juce::dontSendNotification);
         dropZone->setFont(juce::Font(13.0f, juce::Font::italic));
@@ -269,9 +285,11 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         slot.type = ControllerType::Empty;
         slot.rotary = rotary;
         slot.button = button;
+        slot.dropdown = dropdown;
         slot.buttonDefaultText = button->button_.getButtonText();
         slot.dropZoneLabel = dropZone;
         resetButtonSlotState(slotIndex);
+        resetDropdownSlotState(slotIndex);
     }
 
     initialiseControllerSlots();
@@ -358,6 +376,8 @@ void EditorView::resized()
                 slot.rotary->setBounds(cellBounds);
             if (slot.button != nullptr)
                 slot.button->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.8f), LAYOUT_BUTTON_HEIGHT*2));
+            if (slot.dropdown != nullptr)
+                slot.dropdown->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.85f), LAYOUT_BUTTON_HEIGHT + LAYOUT_LINE_SPACING));
             if (slot.dropZoneLabel != nullptr)
                 slot.dropZoneLabel->setBounds(cellBounds);
         }
@@ -381,6 +401,9 @@ void EditorView::paintOverChildren(juce::Graphics& g)
         break;
     case ControllerType::Button:
         component = slot.button;
+        break;
+    case ControllerType::Dropdown:
+        component = slot.dropdown;
         break;
     }
     if (component == nullptr)
@@ -551,6 +574,11 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
         spdlog::warn("Parameter {} is not suitable for a button controller", newName);
         return;
     }
+    if (slot.type == ControllerType::Dropdown && !canAssignToDropdown(*param))
+    {
+        spdlog::warn("Parameter {} is not suitable for a dropdown controller", newName);
+        return;
+    }
 
     replaceAssignmentName(slot.assignedParameter, newName);
 
@@ -569,7 +597,7 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
             numericValue = static_cast<double>(param->minValue());
         slot.rotary->setValue(juce::roundToInt(numericValue));
     }
-    else
+    else if (slot.type == ControllerType::Button)
     {
         auto& binding = slot.pressBinding;
         binding.listener.reset();
@@ -598,6 +626,29 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
         refreshPressButtonSlot(slotIndex);
         slot.button->button_.setTooltip("Controls " + param->name());
     }
+    else if (slot.type == ControllerType::Dropdown)
+    {
+        slot.dropdownBinding.listener.reset();
+        slot.dropdownBinding.param = param;
+
+        auto weakParam = std::weak_ptr<TypedNamedValue>(param);
+        slot.dropdown->configureForLookup(param->name(),
+                                          param->lookup(),
+                                          [weakParam](int newValue) {
+                                              if (auto locked = weakParam.lock())
+                                              {
+                                                  if (locked->value().getValue().operator int() != newValue)
+                                                      locked->value().setValue(newValue);
+                                              }
+                                          });
+
+        slot.dropdownBinding.listener = std::make_unique<LambdaValueListener>(param->value(), [this, slotIndex](juce::Value&) {
+            refreshDropdownSlot(slotIndex);
+        });
+
+        slot.dropdown->setTooltip("Controls " + param->name());
+        refreshDropdownSlot(slotIndex);
+    }
 
     if (updateStorage && !loadingAssignments_)
     {
@@ -614,6 +665,11 @@ bool EditorView::canAssignToPress(const TypedNamedValue& param) const
     int offValue = 0;
     int onValue = 0;
     return extractBinaryValues(param, offValue, onValue);
+}
+
+bool EditorView::canAssignToDropdown(const TypedNamedValue& param) const
+{
+    return param.valueType() == ValueType::Lookup;
 }
 
 bool EditorView::extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const
@@ -662,6 +718,28 @@ void EditorView::refreshPressButtonSlot(int slotIndex)
     slot.button->button_.setToggleState(isOn, juce::dontSendNotification);
     slot.button->button_.setButtonText(buttonValueText(*slot.pressBinding.param, valueVar));
     slot.button->label_.setText(slot.pressBinding.param->name(), dontSendNotification);
+}
+
+void EditorView::refreshDropdownSlot(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (!slot.dropdown || !slot.dropdownBinding.param)
+        return;
+
+    auto valueVar = slot.dropdownBinding.param->value().getValue();
+    int selectedValue = slot.dropdownBinding.param->minValue();
+
+    if (valueVar.isInt() || valueVar.isInt64())
+        selectedValue = static_cast<int>(valueVar);
+    else if (valueVar.isDouble())
+        selectedValue = static_cast<int>(valueVar);
+    else if (valueVar.isString())
+        selectedValue = slot.dropdownBinding.param->indexOfValue(valueVar.toString().toStdString());
+
+    slot.dropdown->setSelectedLookupValue(selectedValue);
 }
 
 void EditorView::handlePressSlotClick(int slotIndex)
@@ -1061,6 +1139,23 @@ void EditorView::resetButtonSlotState(int slotIndex)
     }
 }
 
+void EditorView::resetDropdownSlotState(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.dropdownBinding.listener)
+        slot.dropdownBinding.listener.reset();
+    slot.dropdownBinding.param.reset();
+
+    if (slot.dropdown != nullptr)
+    {
+        slot.dropdown->setUnused();
+        slot.dropdown->setTooltip({});
+    }
+}
+
 void EditorView::updateAssignmentHighlight()
 {
     if (valueTreeViewer_.getValueTree().isValid())
@@ -1114,6 +1209,7 @@ void EditorView::initialiseControllerSlots()
         replaceAssignmentName(slot.assignedParameter, "");
         slot.type = ControllerType::Empty;
         resetButtonSlotState(i);
+        resetDropdownSlotState(i);
         if (slot.rotary != nullptr)
             slot.rotary->setUnused();
         updateSlotVisibility(i);
@@ -1150,6 +1246,12 @@ void EditorView::updateSlotVisibility(int slotIndex)
     }
     if (slot.button != nullptr)
         slot.button->setVisible(slot.type == ControllerType::Button);
+    if (slot.dropdown != nullptr)
+    {
+        slot.dropdown->setVisible(slot.type == ControllerType::Dropdown);
+        if (slot.type != ControllerType::Dropdown)
+            slot.dropdown->setUnused();
+    }
     if (slot.dropZoneLabel != nullptr)
         slot.dropZoneLabel->setVisible(slot.type == ControllerType::Empty);
 }
@@ -1168,10 +1270,16 @@ void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChan
 
     if (slot.type == ControllerType::Button)
         resetButtonSlotState(slotIndex);
+    if (slot.type == ControllerType::Dropdown)
+        resetDropdownSlotState(slotIndex);
 
     slot.type = type;
     if (slot.type == ControllerType::Button && slot.assignedParameter.empty())
         resetButtonSlotState(slotIndex);
+    if (slot.type == ControllerType::Dropdown && slot.assignedParameter.empty())
+        resetDropdownSlotState(slotIndex);
+    if (slot.type == ControllerType::Rotary && slot.assignedParameter.empty() && slot.rotary != nullptr)
+        slot.rotary->setUnused();
     updateSlotVisibility(slotIndex);
 
     if (recordChange && !loadingAssignments_)
@@ -1186,7 +1294,7 @@ int EditorView::slotIndexForComponent(juce::Component* component) const
 {
     for (int i = 0; i < totalSlots_; ++i)
     {
-        if (slots_[i].rotary == component || slots_[i].button == component || slots_[i].dropZoneLabel == component)
+        if (slots_[i].rotary == component || slots_[i].button == component || slots_[i].dropdown == component || slots_[i].dropZoneLabel == component)
             return i;
     }
     return -1;
@@ -1225,6 +1333,9 @@ int EditorView::slotIndexAt(juce::Point<int> localPos) const
         case ControllerType::Button:
             component = slot.button;
             break;
+        case ControllerType::Dropdown:
+            component = slot.dropdown;
+            break;
         }
         if (component != nullptr && component->isShowing() && component->getBounds().contains(localPos))
             return i;
@@ -1237,12 +1348,34 @@ void EditorView::handleControllerDrop(int slotIndex, ControllerType type)
     if (slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
+    auto existingName = slots_[slotIndex].assignedParameter;
+    std::shared_ptr<TypedNamedValue> preservedParam;
+    if (!existingName.empty())
+        preservedParam = findParameterByName(existingName);
+
+    bool preserveAssignment = preservedParam && shouldPreserveAssignment(slots_[slotIndex].type, type, *preservedParam);
     bool typeChanged = slots_[slotIndex].type != type;
+
     setSlotType(slotIndex, type, true);
-    replaceAssignmentName(slots_[slotIndex].assignedParameter, "");
-    resetButtonSlotState(slotIndex);
-    if (!loadingAssignments_ && !typeChanged)
-        storeSlotAssignment(slotIndex);
+
+    if (preserveAssignment && preservedParam)
+    {
+        assignParameterToSlot(slotIndex, preservedParam, true);
+    }
+    else
+    {
+        replaceAssignmentName(slots_[slotIndex].assignedParameter, "");
+        if (slots_[slotIndex].type == ControllerType::Button)
+            resetButtonSlotState(slotIndex);
+        else if (slots_[slotIndex].type == ControllerType::Dropdown)
+            resetDropdownSlotState(slotIndex);
+        else if (slots_[slotIndex].type == ControllerType::Rotary && slots_[slotIndex].rotary != nullptr)
+            slots_[slotIndex].rotary->setUnused();
+
+        if (!loadingAssignments_ && !typeChanged)
+            storeSlotAssignment(slotIndex);
+    }
+
     markAssignmentsDirty();
     updateAssignmentHighlight();
 }
@@ -1267,6 +1400,11 @@ EditorView::ControllerType EditorView::controllerTypeFromDescription(const juce:
     {
         isController = true;
         return ControllerType::Button;
+    }
+    if (text.compareIgnoreCase("controller:dropdown") == 0)
+    {
+        isController = true;
+        return ControllerType::Dropdown;
     }
     return ControllerType::Rotary;
 }
@@ -1300,6 +1438,8 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
                 auto targetType = slots_[slotIndex].type;
                 if (targetType == ControllerType::Button)
                     canDrop = canAssignToPress(*parameter);
+                else if (targetType == ControllerType::Dropdown)
+                    canDrop = canAssignToDropdown(*parameter);
                 else
                     canDrop = true;
             }
@@ -1325,6 +1465,20 @@ void EditorView::clearDropHoverState()
     setMouseCursor(juce::MouseCursor::NormalCursor);
     if (hadHover)
         repaint();
+}
+
+bool EditorView::shouldPreserveAssignment(ControllerType fromType, ControllerType toType, const TypedNamedValue& param) const
+{
+    if (fromType == toType)
+        return false;
+
+    if (fromType == ControllerType::Rotary && toType == ControllerType::Dropdown)
+        return canAssignToDropdown(param);
+
+    if (fromType == ControllerType::Dropdown && toType == ControllerType::Rotary)
+        return true;
+
+    return false;
 }
 
 //==================================================================================================
