@@ -18,6 +18,7 @@
 #include "ValueTreeViewer.h"
 
 #include <optional>
+#include <array>
 #include <unordered_map>
 
 class RotaryWithLabel;
@@ -25,6 +26,7 @@ class ButtonWithLabel;
 class SynthParameterDefinition;
 class Synth;
 class DropdownWithLabel;
+class ADSRControl;
 
 class EditorView : public juce::DragAndDropContainer,
                    public juce::DragAndDropTarget,
@@ -55,9 +57,12 @@ public:
         Rotary,
         Button,
         Dropdown,
+        ADSR,
     };
 
 private:
+    static constexpr int kAdsrStageCount = 4;
+
     struct PressBinding {
         std::shared_ptr<TypedNamedValue> param;
         bool usesBool = false;
@@ -71,13 +76,25 @@ private:
         std::unique_ptr<LambdaValueListener> listener;
     };
 
+    struct AdsrStageBinding {
+        std::shared_ptr<TypedNamedValue> param;
+        std::unique_ptr<LambdaValueListener> listener;
+        std::string assignmentName;
+    };
+
+    struct AdsrBinding {
+        std::array<AdsrStageBinding, kAdsrStageCount> stages;
+    };
+
     struct ControllerSlot {
         ControllerType type = ControllerType::Empty;
         RotaryWithLabel* rotary = nullptr;
         ButtonWithLabel* button = nullptr;
         DropdownWithLabel* dropdown = nullptr;
+        ADSRControl* adsr = nullptr;
         PressBinding pressBinding;
         DropdownBinding dropdownBinding;
+        AdsrBinding adsrBinding;
         std::string assignedParameter;
         juce::String buttonDefaultText;
         juce::Label* dropZoneLabel = nullptr;
@@ -115,7 +132,8 @@ private:
     // Helpers
     TypedNamedValueSet createParameterModel();
     std::shared_ptr<TypedNamedValue> findParameterByName(const juce::String& propertyName);
-    void assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage);
+    void assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage, int adsrStageIndex = -1);
+    void assignParameterToAdsrStage(int slotIndex, int stageIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage);
     bool canAssignToPress(const TypedNamedValue& param) const;
     bool canAssignToDropdown(const TypedNamedValue& param) const;
     bool extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const;
@@ -125,6 +143,10 @@ private:
     juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
     void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
     void refreshEditorPatch();
+    void resetAdsrSlotState(int slotIndex);
+    void refreshAdsrStage(int slotIndex, int stageIndex);
+    double normaliseParameterValue(TypedNamedValue& param) const;
+    void updateAdsrTooltip(int slotIndex);
 
     void loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth);
     void applyAssignmentsToCurrentSynth();
@@ -180,6 +202,7 @@ private:
     juce::OwnedArray<RotaryWithLabel> rotaryKnobs_;
     juce::OwnedArray<ButtonWithLabel> buttonControls_;
     juce::OwnedArray<DropdownWithLabel> dropdownControls_;
+    juce::OwnedArray<ADSRControl> adsrControls_;
     juce::OwnedArray<juce::Label> dropZoneLabels_;
     std::vector<ControllerSlot> slots_;
     std::unique_ptr<juce::Component> paletteContainer_;
@@ -190,6 +213,8 @@ private:
     midikraft::Librarian librarian_;
 
     int hoveredSlotIndex_ = -1;
+    int hoveredAdsrStageIndex_ = -1;
+    mutable int lastHitAdsrStageIndex_ = -1;
 
     juce::ValueTree assignmentsRoot_;
     juce::ValueTree currentLayoutNode_;

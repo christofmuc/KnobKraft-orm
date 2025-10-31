@@ -6,6 +6,7 @@
 
 #include "EditorView.h"
 
+#include "ADSRControl.h"
 #include "RotaryWithLabel.h"
 #include "LayoutConstants.h"
 
@@ -28,6 +29,8 @@
 #include <optional>
 #include <cmath>
 #include <memory>
+#include <limits>
+#include <array>
 
 namespace
 {
@@ -41,6 +44,29 @@ const juce::Identifier kLayoutIdProperty("layoutId");
 const juce::Identifier kIndexProperty("index");
 const juce::Identifier kControllerProperty("controller");
 const juce::Identifier kParameterProperty("parameter");
+const juce::Identifier kAttackParameterProperty("attackParameter");
+const juce::Identifier kDecayParameterProperty("decayParameter");
+const juce::Identifier kSustainParameterProperty("sustainParameter");
+const juce::Identifier kReleaseParameterProperty("releaseParameter");
+
+constexpr int kAdsrStageCount = 4;
+const std::array<juce::Identifier, kAdsrStageCount> kAdsrStageProperties = {
+    kAttackParameterProperty,
+    kDecayParameterProperty,
+    kSustainParameterProperty,
+    kReleaseParameterProperty,
+};
+
+const std::array<const char*, kAdsrStageCount> kAdsrStageNames = {
+    "Attack",
+    "Decay",
+    "Sustain",
+    "Release",
+};
+
+const std::array<const char*, kAdsrStageCount> kAdsrStageShortNames = { "A", "D", "S", "R" };
+
+static_assert(ADSRControl::kStageCount == kAdsrStageCount, "ADSR stage count mismatch");
 
 
 class EditorPaletteBackground : public juce::Component
@@ -84,6 +110,8 @@ juce::String controllerTypeToString(EditorView::ControllerType type)
         return "button";
     case EditorView::ControllerType::Dropdown:
         return "dropdown";
+    case EditorView::ControllerType::ADSR:
+        return "adsr";
     }
     jassertfalse;
     return "empty";
@@ -97,6 +125,8 @@ EditorView::ControllerType stringToControllerType(const juce::String& str)
         return EditorView::ControllerType::Empty;
     if (str.compareIgnoreCase("dropdown") == 0)
         return EditorView::ControllerType::Dropdown;
+    if (str.compareIgnoreCase("adsr") == 0)
+        return EditorView::ControllerType::ADSR;
     return EditorView::ControllerType::Rotary;
 }
 
@@ -187,6 +217,9 @@ void EditorView::ControllerPaletteItem::mouseDown(const juce::MouseEvent& event)
         case ControllerType::Dropdown:
             descriptionText = "controller:dropdown";
             break;
+        case ControllerType::ADSR:
+            descriptionText = "controller:adsr";
+            break;
         }
         const juce::var description(descriptionText);
         dragContainer->startDragging(description, this);
@@ -234,6 +267,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Rotary, "Rotary"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Button, "Button"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Dropdown, "Dropdown"));
+    controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::ADSR, "ADSR"));
     for (auto& item : controllerPaletteItems_)
         paletteContainer_->addAndMakeVisible(item.get());
 
@@ -269,6 +303,11 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         dropdown->setVisible(false);
         dropdown->setUnused();
 
+        auto adsr = new ADSRControl();
+        adsrControls_.add(adsr);
+        addAndMakeVisible(adsr);
+        adsr->setVisible(false);
+
         auto dropZone = new juce::Label();
         dropZone->setText("drop zone", juce::dontSendNotification);
         dropZone->setFont(juce::Font(13.0f, juce::Font::italic));
@@ -286,10 +325,12 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         slot.rotary = rotary;
         slot.button = button;
         slot.dropdown = dropdown;
+        slot.adsr = adsr;
         slot.buttonDefaultText = button->button_.getButtonText();
         slot.dropZoneLabel = dropZone;
         resetButtonSlotState(slotIndex);
         resetDropdownSlotState(slotIndex);
+        resetAdsrSlotState(slotIndex);
     }
 
     initialiseControllerSlots();
@@ -378,6 +419,8 @@ void EditorView::resized()
                 slot.button->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.8f), LAYOUT_BUTTON_HEIGHT*2));
             if (slot.dropdown != nullptr)
                 slot.dropdown->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.85f), LAYOUT_BUTTON_HEIGHT + LAYOUT_LINE_SPACING));
+            if (slot.adsr != nullptr)
+                slot.adsr->setBounds(cellBounds);
             if (slot.dropZoneLabel != nullptr)
                 slot.dropZoneLabel->setBounds(cellBounds);
         }
@@ -404,6 +447,9 @@ void EditorView::paintOverChildren(juce::Graphics& g)
         break;
     case ControllerType::Dropdown:
         component = slot.dropdown;
+        break;
+    case ControllerType::ADSR:
+        component = slot.adsr;
         break;
     }
     if (component == nullptr)
@@ -466,7 +512,19 @@ void EditorView::itemDropped(const juce::DragAndDropTarget::SourceDetails& detai
     if (!parameter)
         return;
 
-    assignParameterToSlot(slotIndex, parameter, true);
+    if (slots_[slotIndex].type == ControllerType::ADSR)
+    {
+        if (lastHitAdsrStageIndex_ < 0)
+        {
+            clearDropHoverState();
+            return;
+        }
+        assignParameterToSlot(slotIndex, parameter, true, lastHitAdsrStageIndex_);
+    }
+    else
+    {
+        assignParameterToSlot(slotIndex, parameter, true);
+    }
     clearDropHoverState();
 }
 
@@ -558,13 +616,21 @@ std::shared_ptr<TypedNamedValue> EditorView::findParameterByName(const juce::Str
     return uiModel_.typedNamedValueByName(name);
 }
 
-void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
+void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage, int adsrStageIndex)
 {
     if (!param || slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
+    if (slots_[slotIndex].type == ControllerType::ADSR)
+    {
+        assignParameterToAdsrStage(slotIndex, adsrStageIndex, param, updateStorage);
+        return;
+    }
+
     if (slots_[slotIndex].type == ControllerType::Empty)
+    {
         setSlotType(slotIndex, ControllerType::Rotary, updateStorage);
+    }
 
     auto& slot = slots_[slotIndex];
     auto newName = param->name().toStdString();
@@ -658,6 +724,74 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
     updateAssignmentHighlight();
 }
 
+void EditorView::assignParameterToAdsrStage(int slotIndex, int stageIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
+{
+    if (!param || slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+    if (stageIndex < 0 || stageIndex >= kAdsrStageCount)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.type != ControllerType::ADSR || slot.adsr == nullptr)
+        return;
+
+    auto& stageBinding = slot.adsrBinding.stages[(size_t)stageIndex];
+    replaceAssignmentName(stageBinding.assignmentName, param->name().toStdString());
+
+    stageBinding.listener.reset();
+    stageBinding.param = param;
+
+    double normalisedValue = normaliseParameterValue(*param);
+        slot.adsr->setStageAssignment(stageIndex, param->name(), normalisedValue, true);
+
+    stageBinding.listener = std::make_unique<LambdaValueListener>(param->value(), [this, slotIndex, stageIndex](juce::Value&) {
+        refreshAdsrStage(slotIndex, stageIndex);
+    });
+
+    refreshAdsrStage(slotIndex, stageIndex);
+    updateAdsrTooltip(slotIndex);
+
+    if (updateStorage && !loadingAssignments_)
+    {
+        storeSlotAssignment(slotIndex);
+        markAssignmentsDirty();
+    }
+    updateAssignmentHighlight();
+}
+
+double EditorView::normaliseParameterValue(TypedNamedValue& param) const
+{
+    auto valueVar = param.value().getValue();
+    double value = 0.0;
+    if (valueVar.isDouble())
+        value = static_cast<double>(valueVar);
+    else if (valueVar.isInt() || valueVar.isInt64())
+        value = static_cast<double>(static_cast<int>(valueVar));
+    else if (valueVar.isBool())
+        value = static_cast<bool>(valueVar) ? 1.0 : 0.0;
+    else if (valueVar.isString())
+    {
+        auto stringValue = valueVar.toString().toStdString();
+        int index = param.indexOfValue(stringValue);
+        if (index >= 0)
+            value = static_cast<double>(index);
+        else
+            value = static_cast<double>(param.minValue());
+    }
+    else
+    {
+        value = static_cast<double>(param.minValue());
+    }
+
+    double minValue = static_cast<double>(param.minValue());
+    double maxValue = static_cast<double>(param.maxValue());
+    double range = maxValue - minValue;
+    if (std::abs(range) < std::numeric_limits<double>::epsilon())
+        return 0.0;
+
+    return juce::jlimit(0.0, 1.0, (value - minValue) / range);
+}
+
 bool EditorView::canAssignToPress(const TypedNamedValue& param) const
 {
     if (param.valueType() == ValueType::Bool)
@@ -740,6 +874,26 @@ void EditorView::refreshDropdownSlot(int slotIndex)
         selectedValue = slot.dropdownBinding.param->indexOfValue(valueVar.toString().toStdString());
 
     slot.dropdown->setSelectedLookupValue(selectedValue);
+}
+
+void EditorView::refreshAdsrStage(int slotIndex, int stageIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+    if (stageIndex < 0 || stageIndex >= kAdsrStageCount)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.type != ControllerType::ADSR || slot.adsr == nullptr)
+        return;
+
+    auto& stageBinding = slot.adsrBinding.stages[(size_t)stageIndex];
+    if (!stageBinding.param)
+        return;
+
+    double normalisedValue = normaliseParameterValue(*stageBinding.param);
+    slot.adsr->setStageValue(stageIndex, normalisedValue);
+    updateAdsrTooltip(slotIndex);
 }
 
 void EditorView::handlePressSlotClick(int slotIndex)
@@ -897,7 +1051,22 @@ void EditorView::applyAssignmentToSlotFromTree(const juce::ValueTree& assignment
 
     setSlotType(slotIndex, controllerType, false);
 
-    if (assignmentNode.hasProperty(kParameterProperty))
+    if (controllerType == ControllerType::ADSR)
+    {
+        for (int stage = 0; stage < kAdsrStageCount; ++stage)
+        {
+            auto propertyId = kAdsrStageProperties[(size_t)stage];
+            if (!assignmentNode.hasProperty(propertyId))
+                continue;
+
+            auto parameterName = assignmentNode.getProperty(propertyId).toString().toStdString();
+            if (parameterName.empty() || !uiModel_.hasValue(parameterName))
+                continue;
+
+            assignParameterToSlot(slotIndex, uiModel_.typedNamedValueByName(parameterName), false, stage);
+        }
+    }
+    else if (assignmentNode.hasProperty(kParameterProperty))
     {
         auto parameterName = assignmentNode.getProperty(kParameterProperty).toString().toStdString();
         if (!parameterName.empty() && uiModel_.hasValue(parameterName))
@@ -916,11 +1085,31 @@ void EditorView::storeSlotAssignment(int slotIndex)
     auto slotsNode = ensureSection(layoutNode, kSlotsNodeId);
     auto assignment = ensureAssignmentNode(slotsNode, slotIndex);
 
-    assignment.setProperty(kControllerProperty, controllerTypeToString(slots_[slotIndex].type), nullptr);
-    if (slots_[slotIndex].assignedParameter.empty())
+    auto controllerType = slots_[slotIndex].type;
+    assignment.setProperty(kControllerProperty, controllerTypeToString(controllerType), nullptr);
+
+    if (controllerType == ControllerType::ADSR)
+    {
         assignment.removeProperty(kParameterProperty, nullptr);
+        for (int stage = 0; stage < kAdsrStageCount; ++stage)
+        {
+            auto const& name = slots_[slotIndex].adsrBinding.stages[(size_t)stage].assignmentName;
+            if (name.empty())
+                assignment.removeProperty(kAdsrStageProperties[(size_t)stage], nullptr);
+            else
+                assignment.setProperty(kAdsrStageProperties[(size_t)stage], juce::String(name), nullptr);
+        }
+    }
     else
-        assignment.setProperty(kParameterProperty, String(slots_[slotIndex].assignedParameter), nullptr);
+    {
+        if (slots_[slotIndex].assignedParameter.empty())
+            assignment.removeProperty(kParameterProperty, nullptr);
+        else
+            assignment.setProperty(kParameterProperty, juce::String(slots_[slotIndex].assignedParameter), nullptr);
+
+        for (auto const& id : kAdsrStageProperties)
+            assignment.removeProperty(id, nullptr);
+    }
 }
 
 juce::ValueTree EditorView::ensureLayoutNode(const juce::String& synthName)
@@ -1117,6 +1306,52 @@ void EditorView::flushAssignmentsIfDirty()
 // Slot helpers
 //==================================================================================================
 
+void EditorView::resetAdsrSlotState(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.adsr == nullptr)
+        return;
+
+    for (int stage = 0; stage < kAdsrStageCount; ++stage)
+    {
+        auto& stageBinding = slot.adsrBinding.stages[(size_t)stage];
+        if (!stageBinding.assignmentName.empty())
+            replaceAssignmentName(stageBinding.assignmentName, "");
+        stageBinding.listener.reset();
+        stageBinding.param.reset();
+        stageBinding.assignmentName.clear();
+        slot.adsr->clearStage(stage);
+    }
+    slot.adsr->setHoveredStage(-1);
+    updateAdsrTooltip(slotIndex);
+}
+
+void EditorView::updateAdsrTooltip(int slotIndex)
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    auto& slot = slots_[slotIndex];
+    if (slot.adsr == nullptr)
+        return;
+
+    juce::StringArray lines;
+    for (int stage = 0; stage < kAdsrStageCount; ++stage)
+    {
+        const auto& stageBinding = slot.adsrBinding.stages[(size_t)stage];
+        juce::String line = juce::String(kAdsrStageNames[(size_t)stage]) + ": ";
+        if (!stageBinding.assignmentName.empty())
+            line += juce::String(stageBinding.assignmentName);
+        else
+            line += "unassigned";
+        lines.add(line);
+    }
+    slot.adsr->setTooltip(lines.joinIntoString("\n"));
+}
+
 void EditorView::resetButtonSlotState(int slotIndex)
 {
     if (slotIndex < 0 || slotIndex >= totalSlots_)
@@ -1210,6 +1445,7 @@ void EditorView::initialiseControllerSlots()
         slot.type = ControllerType::Empty;
         resetButtonSlotState(i);
         resetDropdownSlotState(i);
+        resetAdsrSlotState(i);
         if (slot.rotary != nullptr)
             slot.rotary->setUnused();
         updateSlotVisibility(i);
@@ -1252,6 +1488,8 @@ void EditorView::updateSlotVisibility(int slotIndex)
         if (slot.type != ControllerType::Dropdown)
             slot.dropdown->setUnused();
     }
+    if (slot.adsr != nullptr)
+        slot.adsr->setVisible(slot.type == ControllerType::ADSR);
     if (slot.dropZoneLabel != nullptr)
         slot.dropZoneLabel->setVisible(slot.type == ControllerType::Empty);
 }
@@ -1265,21 +1503,27 @@ void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChan
     if (slot.type == type)
         return;
 
-    if (!slot.assignedParameter.empty())
+    if (slot.type == ControllerType::ADSR)
+        resetAdsrSlotState(slotIndex);
+    else if (!slot.assignedParameter.empty())
         replaceAssignmentName(slot.assignedParameter, "");
 
     if (slot.type == ControllerType::Button)
         resetButtonSlotState(slotIndex);
     if (slot.type == ControllerType::Dropdown)
         resetDropdownSlotState(slotIndex);
+    if (slot.type == ControllerType::Rotary && slot.rotary != nullptr)
+        slot.rotary->setUnused();
 
     slot.type = type;
-    if (slot.type == ControllerType::Button && slot.assignedParameter.empty())
+    if (slot.type == ControllerType::Button)
         resetButtonSlotState(slotIndex);
-    if (slot.type == ControllerType::Dropdown && slot.assignedParameter.empty())
+    if (slot.type == ControllerType::Dropdown)
         resetDropdownSlotState(slotIndex);
-    if (slot.type == ControllerType::Rotary && slot.assignedParameter.empty() && slot.rotary != nullptr)
+    if (slot.type == ControllerType::Rotary && slot.rotary != nullptr)
         slot.rotary->setUnused();
+    if (slot.type == ControllerType::ADSR)
+        resetAdsrSlotState(slotIndex);
     updateSlotVisibility(slotIndex);
 
     if (recordChange && !loadingAssignments_)
@@ -1294,7 +1538,7 @@ int EditorView::slotIndexForComponent(juce::Component* component) const
 {
     for (int i = 0; i < totalSlots_; ++i)
     {
-        if (slots_[i].rotary == component || slots_[i].button == component || slots_[i].dropdown == component || slots_[i].dropZoneLabel == component)
+        if (slots_[i].rotary == component || slots_[i].button == component || slots_[i].dropdown == component || slots_[i].adsr == component || slots_[i].dropZoneLabel == component)
             return i;
     }
     return -1;
@@ -1318,6 +1562,7 @@ int EditorView::slotIndexFromButtonIndex(int buttonIndex) const
 
 int EditorView::slotIndexAt(juce::Point<int> localPos) const
 {
+    lastHitAdsrStageIndex_ = -1;
     for (int i = 0; i < totalSlots_; ++i)
     {
         auto const& slot = slots_[i];
@@ -1336,9 +1581,19 @@ int EditorView::slotIndexAt(juce::Point<int> localPos) const
         case ControllerType::Dropdown:
             component = slot.dropdown;
             break;
+        case ControllerType::ADSR:
+            component = slot.adsr;
+            break;
         }
         if (component != nullptr && component->isShowing() && component->getBounds().contains(localPos))
+        {
+            if (slot.type == ControllerType::ADSR && slot.adsr != nullptr)
+            {
+                auto localPoint = slot.adsr->getLocalPoint(this, localPos).toFloat();
+                lastHitAdsrStageIndex_ = slot.adsr->stageAtLocalPoint(localPoint);
+            }
             return i;
+        }
     }
     return -1;
 }
@@ -1348,13 +1603,17 @@ void EditorView::handleControllerDrop(int slotIndex, ControllerType type)
     if (slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
-    auto existingName = slots_[slotIndex].assignedParameter;
+    auto previousType = slots_[slotIndex].type;
     std::shared_ptr<TypedNamedValue> preservedParam;
-    if (!existingName.empty())
-        preservedParam = findParameterByName(existingName);
+    if (previousType != ControllerType::ADSR)
+    {
+        auto existingName = slots_[slotIndex].assignedParameter;
+        if (!existingName.empty())
+            preservedParam = findParameterByName(existingName);
+    }
 
-    bool preserveAssignment = preservedParam && shouldPreserveAssignment(slots_[slotIndex].type, type, *preservedParam);
-    bool typeChanged = slots_[slotIndex].type != type;
+    bool preserveAssignment = preservedParam && shouldPreserveAssignment(previousType, type, *preservedParam);
+    bool typeChanged = previousType != type;
 
     setSlotType(slotIndex, type, true);
 
@@ -1364,13 +1623,20 @@ void EditorView::handleControllerDrop(int slotIndex, ControllerType type)
     }
     else
     {
-        replaceAssignmentName(slots_[slotIndex].assignedParameter, "");
-        if (slots_[slotIndex].type == ControllerType::Button)
-            resetButtonSlotState(slotIndex);
-        else if (slots_[slotIndex].type == ControllerType::Dropdown)
-            resetDropdownSlotState(slotIndex);
-        else if (slots_[slotIndex].type == ControllerType::Rotary && slots_[slotIndex].rotary != nullptr)
-            slots_[slotIndex].rotary->setUnused();
+        if (slots_[slotIndex].type == ControllerType::ADSR)
+        {
+            resetAdsrSlotState(slotIndex);
+        }
+        else
+        {
+            replaceAssignmentName(slots_[slotIndex].assignedParameter, "");
+            if (slots_[slotIndex].type == ControllerType::Button)
+                resetButtonSlotState(slotIndex);
+            else if (slots_[slotIndex].type == ControllerType::Dropdown)
+                resetDropdownSlotState(slotIndex);
+            else if (slots_[slotIndex].type == ControllerType::Rotary && slots_[slotIndex].rotary != nullptr)
+                slots_[slotIndex].rotary->setUnused();
+        }
 
         if (!loadingAssignments_ && !typeChanged)
             storeSlotAssignment(slotIndex);
@@ -1406,6 +1672,11 @@ EditorView::ControllerType EditorView::controllerTypeFromDescription(const juce:
         isController = true;
         return ControllerType::Dropdown;
     }
+    if (text.compareIgnoreCase("controller:adsr") == 0)
+    {
+        isController = true;
+        return ControllerType::ADSR;
+    }
     return ControllerType::Rotary;
 }
 
@@ -1421,6 +1692,7 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
     controllerTypeFromDescription(details.description, isController);
     auto localPos = mousePositionInLocalSpace();
     auto slotIndex = slotIndexAt(localPos);
+    int stageIndex = (slotIndex >= 0 && slotIndex < totalSlots_ && slots_[slotIndex].type == ControllerType::ADSR) ? lastHitAdsrStageIndex_ : -1;
 
     bool canDrop = false;
 
@@ -1440,6 +1712,8 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
                     canDrop = canAssignToPress(*parameter);
                 else if (targetType == ControllerType::Dropdown)
                     canDrop = canAssignToDropdown(*parameter);
+                else if (targetType == ControllerType::ADSR)
+                    canDrop = stageIndex >= 0;
                 else
                     canDrop = true;
             }
@@ -1447,11 +1721,30 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
     }
 
     if (!canDrop)
-        slotIndex = -1;
-
-    if (slotIndex != hoveredSlotIndex_)
     {
+        slotIndex = -1;
+        stageIndex = -1;
+    }
+
+    if (slotIndex != hoveredSlotIndex_ || stageIndex != hoveredAdsrStageIndex_)
+    {
+        if (hoveredSlotIndex_ >= 0 && hoveredSlotIndex_ < totalSlots_)
+        {
+            auto& previousSlot = slots_[hoveredSlotIndex_];
+            if (previousSlot.type == ControllerType::ADSR && previousSlot.adsr != nullptr)
+                previousSlot.adsr->setHoveredStage(-1);
+        }
+
         hoveredSlotIndex_ = slotIndex;
+        hoveredAdsrStageIndex_ = stageIndex;
+
+        if (hoveredSlotIndex_ >= 0 && hoveredSlotIndex_ < totalSlots_)
+        {
+            auto& hoveredSlot = slots_[hoveredSlotIndex_];
+            if (hoveredSlot.type == ControllerType::ADSR && hoveredSlot.adsr != nullptr)
+                hoveredSlot.adsr->setHoveredStage(stageIndex);
+        }
+
         repaint();
     }
 
@@ -1460,8 +1753,16 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
 
 void EditorView::clearDropHoverState()
 {
-    bool hadHover = hoveredSlotIndex_ != -1;
+    int previousSlotIndex = hoveredSlotIndex_;
+    bool hadHover = previousSlotIndex != -1 || hoveredAdsrStageIndex_ != -1;
+    if (previousSlotIndex >= 0 && previousSlotIndex < totalSlots_)
+    {
+        auto& previousSlot = slots_[previousSlotIndex];
+        if (previousSlot.type == ControllerType::ADSR && previousSlot.adsr != nullptr)
+            previousSlot.adsr->setHoveredStage(-1);
+    }
     hoveredSlotIndex_ = -1;
+    hoveredAdsrStageIndex_ = -1;
     setMouseCursor(juce::MouseCursor::NormalCursor);
     if (hadHover)
         repaint();

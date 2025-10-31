@@ -55,6 +55,7 @@ IF(SPARKLE_UPDATES)
 ENDIF()
 
 set(SOURCES
+	ADSRControl.cpp ADSRControl.h
 	AdaptationView.cpp AdaptationView.h
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
