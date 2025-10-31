@@ -73,13 +73,25 @@ public:
 
 juce::String controllerTypeToString(EditorView::ControllerType type)
 {
-    return type == EditorView::ControllerType::Rotary ? "rotary" : "button";
+    switch (type)
+    {
+    case EditorView::ControllerType::Empty:
+        return "empty";
+    case EditorView::ControllerType::Rotary:
+        return "rotary";
+    case EditorView::ControllerType::Button:
+        return "button";
+    }
+    jassertfalse;
+    return "empty";
 }
 
 EditorView::ControllerType stringToControllerType(const juce::String& str)
 {
     if (str.compareIgnoreCase("button") == 0)
         return EditorView::ControllerType::Button;
+    if (str.compareIgnoreCase("empty") == 0)
+        return EditorView::ControllerType::Empty;
     return EditorView::ControllerType::Rotary;
 }
 
@@ -155,7 +167,20 @@ void EditorView::ControllerPaletteItem::mouseDown(const juce::MouseEvent& event)
     juce::ignoreUnused(event);
     if (auto* dragContainer = juce::DragAndDropContainer::findParentDragContainerFor(this))
     {
-        const juce::var description = type_ == ControllerType::Rotary ? juce::var("controller:rotary") : juce::var("controller:button");
+        juce::String descriptionText;
+        switch (type_)
+        {
+        case ControllerType::Empty:
+            descriptionText = "controller:empty";
+            break;
+        case ControllerType::Rotary:
+            descriptionText = "controller:rotary";
+            break;
+        case ControllerType::Button:
+            descriptionText = "controller:button";
+            break;
+        }
+        const juce::var description(descriptionText);
         dragContainer->startDragging(description, this);
     }
 }
@@ -197,6 +222,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
 
     paletteContainer_ = std::make_unique<EditorPaletteBackground>();
     addAndMakeVisible(*paletteContainer_);
+    controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Empty, "Empty"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Rotary, "Rotary"));
     controllerPaletteItems_.push_back(std::make_unique<ControllerPaletteItem>(*this, ControllerType::Button, "Button"));
     for (auto& item : controllerPaletteItems_)
@@ -222,11 +248,24 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         buttonControls_.add(button);
         addAndMakeVisible(button);
 
+        auto dropZone = new juce::Label();
+        dropZone->setText("drop zone", juce::dontSendNotification);
+        dropZone->setFont(juce::Font(13.0f, juce::Font::italic));
+        dropZone->setJustificationType(juce::Justification::centred);
+        dropZone->setInterceptsMouseClicks(false, false);
+        dropZone->setColour(juce::Label::textColourId, juce::Colours::white.withAlpha(0.65f));
+        dropZone->setColour(juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+        //dropZone->setColour(juce::Label::outlineColourId, juce::Colours::white.withAlpha(0.2f));
+        //dropZone->setBorderSize(juce::BorderSize<int>(1));
+        dropZoneLabels_.add(dropZone);
+        addAndMakeVisible(dropZone);
+
         auto& slot = slots_[slotIndex];
-        slot.type = ControllerType::Rotary;
+        slot.type = ControllerType::Empty;
         slot.rotary = rotary;
         slot.button = button;
         slot.buttonDefaultText = button->getButtonText();
+        slot.dropZoneLabel = dropZone;
         resetButtonSlotState(slotIndex);
     }
 
@@ -234,6 +273,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
     updateAssignmentHighlight();
 
     LambdaButtonStrip::TButtonMap buttons = {
+        { "newLayout", { "New layout", [this]() { handleNewLayoutRequested(); } } },
         { "loadAssignments", { "Load layout", [this]() { handleLoadAssignmentsRequested(); } } },
         { "saveAssignments", { "Save layout", [this]() { handleSaveAssignmentsRequested(); } } },
     };
@@ -313,6 +353,8 @@ void EditorView::resized()
                 slot.rotary->setBounds(cellBounds);
             if (slot.button != nullptr)
                 slot.button->setBounds(cellBounds);
+            if (slot.dropZoneLabel != nullptr)
+                slot.dropZoneLabel->setBounds(cellBounds);
         }
     }
 }
@@ -323,8 +365,19 @@ void EditorView::paintOverChildren(juce::Graphics& g)
         return;
 
     auto& slot = slots_[hoveredSlotIndex_];
-    juce::Component* component = slot.type == ControllerType::Rotary ? static_cast<juce::Component*>(slot.rotary)
-                                                                     : static_cast<juce::Component*>(slot.button);
+    juce::Component* component = nullptr;
+    switch (slot.type)
+    {
+    case ControllerType::Empty:
+        component = slot.dropZoneLabel;
+        break;
+    case ControllerType::Rotary:
+        component = slot.rotary;
+        break;
+    case ControllerType::Button:
+        component = slot.button;
+        break;
+    }
     if (component == nullptr)
         return;
 
@@ -481,6 +534,9 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
 {
     if (!param || slotIndex < 0 || slotIndex >= totalSlots_)
         return;
+
+    if (slots_[slotIndex].type == ControllerType::Empty)
+        setSlotType(slotIndex, ControllerType::Rotary, updateStorage);
 
     auto& slot = slots_[slotIndex];
     auto newName = param->name().toStdString();
@@ -940,6 +996,20 @@ void EditorView::handleSaveAssignmentsRequested()
         spdlog::info("Controller assignments unchanged, nothing to save");
 }
 
+void EditorView::handleNewLayoutRequested()
+{
+    if (!assignmentsLoaded_)
+        loadAssignmentsFromDisk();
+
+    auto shouldClear = juce::AlertWindow::showOkCancelBox(juce::AlertWindow::QuestionIcon,
+                                                          "Clear layout",
+                                                          "Do you really want to remove all controllers from the grid?");
+    if (!shouldClear)
+        return;
+
+    clearAllSlots();
+}
+
 juce::File EditorView::assignmentsFile() const
 {
     auto& settingsFile = Settings::instance().getPropertiesFile();
@@ -1025,11 +1095,30 @@ void EditorView::initialiseControllerSlots()
     assignmentUsage_.clear();
     for (int i = 0; i < totalSlots_; ++i)
     {
-        slots_[i].type = ControllerType::Rotary;
-        replaceAssignmentName(slots_[i].assignedParameter, "");
+        auto& slot = slots_[i];
+        replaceAssignmentName(slot.assignedParameter, "");
+        slot.type = ControllerType::Empty;
         resetButtonSlotState(i);
+        if (slot.rotary != nullptr)
+            slot.rotary->setUnused();
         updateSlotVisibility(i);
     }
+}
+
+void EditorView::clearAllSlots()
+{
+    clearDropHoverState();
+    initialiseControllerSlots();
+
+    if (currentLayoutNode_.isValid())
+    {
+        if (auto slotsNode = currentLayoutNode_.getChildWithName(kSlotsNodeId); slotsNode.isValid())
+            currentLayoutNode_.removeChild(slotsNode, nullptr);
+    }
+
+    markAssignmentsDirty();
+    updateAssignmentHighlight();
+    repaint();
 }
 
 void EditorView::updateSlotVisibility(int slotIndex)
@@ -1041,11 +1130,13 @@ void EditorView::updateSlotVisibility(int slotIndex)
     if (slot.rotary != nullptr)
     {
         slot.rotary->setVisible(slot.type == ControllerType::Rotary);
-        if (slot.type == ControllerType::Button)
+        if (slot.type != ControllerType::Rotary)
             slot.rotary->setUnused();
     }
     if (slot.button != nullptr)
         slot.button->setVisible(slot.type == ControllerType::Button);
+    if (slot.dropZoneLabel != nullptr)
+        slot.dropZoneLabel->setVisible(slot.type == ControllerType::Empty);
 }
 
 void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChange)
@@ -1080,7 +1171,7 @@ int EditorView::slotIndexForComponent(juce::Component* component) const
 {
     for (int i = 0; i < totalSlots_; ++i)
     {
-        if (slots_[i].rotary == component || slots_[i].button == component)
+        if (slots_[i].rotary == component || slots_[i].button == component || slots_[i].dropZoneLabel == component)
             return i;
     }
     return -1;
@@ -1107,8 +1198,19 @@ int EditorView::slotIndexAt(juce::Point<int> localPos) const
     for (int i = 0; i < totalSlots_; ++i)
     {
         auto const& slot = slots_[i];
-        juce::Component* component = slot.type == ControllerType::Rotary ? static_cast<juce::Component*>(slot.rotary)
-                                                                        : static_cast<juce::Component*>(slot.button);
+        juce::Component* component = nullptr;
+        switch (slot.type)
+        {
+        case ControllerType::Empty:
+            component = slot.dropZoneLabel;
+            break;
+        case ControllerType::Rotary:
+            component = slot.rotary;
+            break;
+        case ControllerType::Button:
+            component = slot.button;
+            break;
+        }
         if (component != nullptr && component->isShowing() && component->getBounds().contains(localPos))
             return i;
     }
@@ -1120,9 +1222,12 @@ void EditorView::handleControllerDrop(int slotIndex, ControllerType type)
     if (slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
+    bool typeChanged = slots_[slotIndex].type != type;
     setSlotType(slotIndex, type, true);
     replaceAssignmentName(slots_[slotIndex].assignedParameter, "");
     resetButtonSlotState(slotIndex);
+    if (!loadingAssignments_ && !typeChanged)
+        storeSlotAssignment(slotIndex);
     markAssignmentsDirty();
     updateAssignmentHighlight();
 }
@@ -1133,6 +1238,11 @@ EditorView::ControllerType EditorView::controllerTypeFromDescription(const juce:
     if (!description.isString())
         return ControllerType::Rotary;
     auto text = description.toString();
+    if (text.compareIgnoreCase("controller:empty") == 0)
+    {
+        isController = true;
+        return ControllerType::Empty;
+    }
     if (text.compareIgnoreCase("controller:rotary") == 0)
     {
         isController = true;
@@ -1155,6 +1265,7 @@ juce::Point<int> EditorView::mousePositionInLocalSpace() const
 void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details)
 {
     bool isController = false;
+    controllerTypeFromDescription(details.description, isController);
     auto localPos = mousePositionInLocalSpace();
     auto slotIndex = slotIndexAt(localPos);
 

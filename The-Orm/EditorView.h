@@ -49,6 +49,7 @@ public:
     void dragOperationEnded(const juce::DragAndDropTarget::SourceDetails& details) override;
 
     enum class ControllerType {
+        Empty,
         Rotary,
         Button,
     };
@@ -63,12 +64,13 @@ private:
     };
 
     struct ControllerSlot {
-        ControllerType type = ControllerType::Rotary;
+        ControllerType type = ControllerType::Empty;
         RotaryWithLabel* rotary = nullptr;
         ToggleButton* button = nullptr;
         PressBinding pressBinding;
         std::string assignedParameter;
         juce::String buttonDefaultText;
+        juce::Label* dropZoneLabel = nullptr;
     };
 
 	class ControllerPaletteItem : public juce::Component {
@@ -126,6 +128,7 @@ private:
     void saveAssignmentsToDisk();
     void handleLoadAssignmentsRequested();
     void handleSaveAssignmentsRequested();
+    void handleNewLayoutRequested();
     juce::File assignmentsFile() const;
 	void markAssignmentsDirty();
 	void flushAssignmentsIfDirty();
@@ -135,6 +138,7 @@ private:
     void decrementAssignment(const std::string& name);
     void replaceAssignmentName(std::string& slotName, const std::string& newName);
     void initialiseControllerSlots();
+    void clearAllSlots();
     void updateSlotVisibility(int slotIndex);
     void setSlotType(int slotIndex, ControllerType type, bool recordChange);
     int slotIndexForComponent(juce::Component* component) const;
@@ -160,6 +164,7 @@ private:
     ValueTreeViewer valueTreeViewer_;
     juce::OwnedArray<RotaryWithLabel> rotaryKnobs_;
     juce::OwnedArray<ToggleButton> buttonControls_;
+    juce::OwnedArray<juce::Label> dropZoneLabels_;
     std::vector<ControllerSlot> slots_;
     std::unique_ptr<juce::Component> paletteContainer_;
     std::vector<std::unique_ptr<ControllerPaletteItem>> controllerPaletteItems_;
