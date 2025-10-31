@@ -143,6 +143,18 @@ void RotaryWithLabelAndButtonFunction::setButtonSynthParameter(std::string const
 	buttonLabel_.setText(text, dontSendNotification);
 }
 
+ButtonWithLabel::ButtonWithLabel() {
+    addAndMakeVisible(button_);
+    addAndMakeVisible(label_);
+}
+
+void ButtonWithLabel::resized() {
+    auto area = getLocalBounds();
+
+    button_.setBounds(area.removeFromTop(area.getHeight() / 2));
+    label_.setBounds(area);
+}
+
 
 ModernRotaryLookAndFeel::ModernRotaryLookAndFeel()
 {

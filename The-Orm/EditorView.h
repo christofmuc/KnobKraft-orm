@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 class RotaryWithLabel;
+class ButtonWithLabel;
 class SynthParameterDefinition;
 class Synth;
 
@@ -66,7 +67,7 @@ private:
     struct ControllerSlot {
         ControllerType type = ControllerType::Empty;
         RotaryWithLabel* rotary = nullptr;
-        ToggleButton* button = nullptr;
+        ButtonWithLabel* button = nullptr;
         PressBinding pressBinding;
         std::string assignedParameter;
         juce::String buttonDefaultText;
@@ -137,6 +138,7 @@ private:
     void incrementAssignment(const std::string& name);
     void decrementAssignment(const std::string& name);
     void replaceAssignmentName(std::string& slotName, const std::string& newName);
+    juce::String defaultButtonStateText(const ControllerSlot& slot, bool isOn) const;
     void initialiseControllerSlots();
     void clearAllSlots();
     void updateSlotVisibility(int slotIndex);
@@ -163,7 +165,7 @@ private:
 
     ValueTreeViewer valueTreeViewer_;
     juce::OwnedArray<RotaryWithLabel> rotaryKnobs_;
-    juce::OwnedArray<ToggleButton> buttonControls_;
+    juce::OwnedArray<ButtonWithLabel> buttonControls_;
     juce::OwnedArray<juce::Label> dropZoneLabels_;
     std::vector<ControllerSlot> slots_;
     std::unique_ptr<juce::Component> paletteContainer_;

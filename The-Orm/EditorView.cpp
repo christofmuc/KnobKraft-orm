@@ -241,10 +241,15 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         rotaryKnobs_.add(rotary);
         addAndMakeVisible(rotary);
 
-        auto button = new ToggleButton();
-        button->setClickingTogglesState(true);
-        button->setButtonText("Button " + juce::String(slotIndex + 1));
-        button->onClick = [this, slotIndex]() { handlePressSlotClick(slotIndex); };
+        auto button = new ButtonWithLabel();
+        button->button_.setClickingTogglesState(true);
+        button->button_.setColour(juce::TextButton::textColourOffId, juce::Colours::white.withAlpha(0.92f));
+        button->button_.setColour(juce::TextButton::textColourOnId, juce::Colours::white.withAlpha(0.92f));
+        button->setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+        button->button_.setColour(juce::TextButton::buttonOnColourId, kAccentColour.withAlpha(0.85f));
+        //button->button_.setColour(juce::TextButton::buttonColourId, kAccentColour);
+        button->button_.setButtonText("Button " + juce::String(slotIndex + 1));
+        button->button_.onClick = [this, slotIndex]() { handlePressSlotClick(slotIndex); };
         buttonControls_.add(button);
         addAndMakeVisible(button);
 
@@ -264,7 +269,7 @@ EditorView::EditorView(std::shared_ptr<midikraft::BCR2000> bcr)
         slot.type = ControllerType::Empty;
         slot.rotary = rotary;
         slot.button = button;
-        slot.buttonDefaultText = button->getButtonText();
+        slot.buttonDefaultText = button->button_.getButtonText();
         slot.dropZoneLabel = dropZone;
         resetButtonSlotState(slotIndex);
     }
@@ -352,7 +357,7 @@ void EditorView::resized()
             if (slot.rotary != nullptr)
                 slot.rotary->setBounds(cellBounds);
             if (slot.button != nullptr)
-                slot.button->setBounds(cellBounds);
+                slot.button->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.8f), LAYOUT_BUTTON_HEIGHT*2));
             if (slot.dropZoneLabel != nullptr)
                 slot.dropZoneLabel->setBounds(cellBounds);
         }
@@ -591,7 +596,7 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
         });
 
         refreshPressButtonSlot(slotIndex);
-        slot.button->setTooltip("Controls " + param->name());
+        slot.button->button_.setTooltip("Controls " + param->name());
     }
 
     if (updateStorage && !loadingAssignments_)
@@ -654,8 +659,9 @@ void EditorView::refreshPressButtonSlot(int slotIndex)
     auto valueVar = slot.pressBinding.param->value().getValue();
     bool isOn = slot.pressBinding.usesBool ? static_cast<bool>(valueVar)
                                            : (static_cast<int>(valueVar) == slot.pressBinding.onValue);
-    slot.button->setToggleState(isOn, juce::dontSendNotification);
-    slot.button->setButtonText(slot.pressBinding.param->name() + ": " + buttonValueText(*slot.pressBinding.param, valueVar));
+    slot.button->button_.setToggleState(isOn, juce::dontSendNotification);
+    slot.button->button_.setButtonText(buttonValueText(*slot.pressBinding.param, valueVar));
+    slot.button->label_.setText(slot.pressBinding.param->name(), dontSendNotification);
 }
 
 void EditorView::handlePressSlotClick(int slotIndex)
@@ -667,11 +673,11 @@ void EditorView::handlePressSlotClick(int slotIndex)
     auto& binding = slot.pressBinding;
     if (!binding.param)
     {
-        slot.button->setToggleState(false, juce::dontSendNotification);
+        slot.button->button_.setToggleState(false, juce::dontSendNotification);
         return;
     }
 
-    bool shouldBeOn = slot.button->getToggleState();
+    bool shouldBeOn = slot.button->button_.getToggleState();
     if (binding.usesBool)
         binding.param->value().setValue(shouldBeOn);
     else
@@ -1048,9 +1054,10 @@ void EditorView::resetButtonSlotState(int slotIndex)
 
     if (slot.button != nullptr)
     {
-        slot.button->setToggleState(false, juce::dontSendNotification);
-        slot.button->setButtonText(slot.buttonDefaultText);
-        slot.button->setTooltip({});
+        slot.button->button_.setToggleState(false, juce::dontSendNotification);
+        slot.button->button_.setButtonText(defaultButtonStateText(slot, false));
+        slot.button->label_.setText("", dontSendNotification);
+        slot.button->button_.setTooltip({});
     }
 }
 
@@ -1088,6 +1095,14 @@ void EditorView::replaceAssignmentName(std::string& slotName, const std::string&
     slotName = newName;
     if (!slotName.empty())
         incrementAssignment(slotName);
+}
+
+juce::String EditorView::defaultButtonStateText(const ControllerSlot& slot, bool isOn) const
+{
+    juce::String stateText = isOn ? "On" : "Off";
+    if (slot.buttonDefaultText.isEmpty())
+        return stateText;
+    return slot.buttonDefaultText + " (" + stateText + ")";
 }
 
 void EditorView::initialiseControllerSlots()
@@ -1341,8 +1356,15 @@ void EditorView::setButtonParam(int knobNumber, std::string const& name)
     setSlotType(slotIndex, ControllerType::Button, true);
     if (slots_[slotIndex].button != nullptr)
     {
-        slots_[slotIndex].buttonDefaultText = juce::String(name);
-        slots_[slotIndex].button->setButtonText(slots_[slotIndex].buttonDefaultText);
+        auto& slot = slots_[slotIndex];
+        slot.buttonDefaultText = juce::String(name);
+        if (!slot.pressBinding.param)
+        {
+            slot.button->button_.setToggleState(false, juce::dontSendNotification);
+            slot.button->button_.setButtonText(defaultButtonStateText(slot, false));
+            slot.button->label_.setText("", dontSendNotification);
+            slot.button->button_.setTooltip({});
+        }
     }
 }
 

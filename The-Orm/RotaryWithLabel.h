@@ -42,6 +42,16 @@ private:
 	Label buttonLabel_;
 };
 
+class ButtonWithLabel : public Component {
+public:
+	ButtonWithLabel();
+
+	void resized() override;
+
+	TextButton button_;
+	Label label_;
+};
+
 class ModernRotaryLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
