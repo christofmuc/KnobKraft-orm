@@ -1500,8 +1500,10 @@ void EditorView::configureEnvelopeSlot(int slotIndex, const juce::String& varian
 
     const auto& variant = envelopeVariantById(variantId.isEmpty() ? slot.envelopeBinding.variantId : variantId);
     bool variantChanged = !slot.envelopeBinding.variantId.equalsIgnoreCase(variant.id);
+    bool stageCountChanged = slot.envelope->stageCount() != static_cast<int>(variant.stages.size());
     slot.envelopeBinding.variantId = variant.id;
-    slot.envelope->setSpecification(makeSpecificationFromVariant(variant));
+    if (variantChanged || stageCountChanged)
+        slot.envelope->setSpecification(makeSpecificationFromVariant(variant));
 
     auto targetSize = variant.stages.size();
     auto currentSize = slot.envelopeBinding.stages.size();
