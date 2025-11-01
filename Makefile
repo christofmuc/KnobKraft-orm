@@ -34,9 +34,9 @@ all: configure build sign-dmg verify-signed
 apple: notarize staple verify-notarization
 
 configure:
-    export KNOBKRAFT_EXTERNAL_VERSION="$(cmake -P cmake/calc_version.cmake)"
-    @echo "Configuring build for type $(BUILD_TYPE) in directory $(BUILD_DIR), using Python from $(PYTHON_TO_USE). Version is $KNOBKRAFT_EXTERNAL_VERSION"
-    cmake -S . -B $(BUILD_DIR) -DKNOBKRAFT_EXTERNAL_VERSION=$KNOBKRAFT_EXTERNAL_VERSION -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME="$(APPLE_DEVELOPER_IDENTITY)"
+	export KNOBKRAFT_EXTERNAL_VERSION="$(cmake -P cmake/calc_version.cmake)"
+	@echo "Configuring build for type $(BUILD_TYPE) in directory $(BUILD_DIR), using Python from $(PYTHON_TO_USE). Version is $KNOBKRAFT_EXTERNAL_VERSION"
+	cmake -S . -B $(BUILD_DIR) -DKNOBKRAFT_EXTERNAL_VERSION=$KNOBKRAFT_EXTERNAL_VERSION -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DPYTHON_EXECUTABLE=$(PYTHON_TO_USE) -DCODESIGN_CERTIFICATE_NAME="$(APPLE_DEVELOPER_IDENTITY)"
 
 .PHONY: build
 build $(KNOBKRAFT_DMG):
