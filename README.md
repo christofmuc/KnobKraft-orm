@@ -17,6 +17,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | works | adaptation | |
+| Behringer | Pro-800 | alpha | adaptation | Thanks to @Andy2No |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
 | Behringer | Wave | works | adaptation | Thanks to @willxy! |

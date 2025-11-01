@@ -12,7 +12,7 @@ set(adaptation_files
         "Akai_AX80.py"
 	"AlesisAndromedaA6.py"
 	"BC_Kijimi.py"
-	"Behringer Deepmind 12.py" "Behringer_Wave.py"
+	"Behringer Deepmind 12.py" "Behringer_Wave.py" "Behringer_Pro_800.py"
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py"
         "Elektron_AnalogRytm.py" "Elektron_Digitone.py"
