@@ -56,6 +56,7 @@ ENDIF()
 
 set(SOURCES
 	ADSRControl.cpp ADSRControl.h
+    EnvelopeControl.cpp EnvelopeControl.h
 	AdaptationView.cpp AdaptationView.h
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
