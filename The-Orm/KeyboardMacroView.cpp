@@ -22,8 +22,10 @@ const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
 const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kFixedSynthSelected = "Fixed synth played";
+const char *kFixedSynthSelectedSettingKey = "Fixed synth played name";
 const char *kUseElectraOne = "Forward Electra One";
-const char *kInputDevice = "MIDI Input Device Name";
+const char *kInputDevice = "MIDI Input Device";
+const char *kInputDeviceSettingKey = "MIDI Input Device Name";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
 const char *kHighestNote = "Highest MIDI Note";
@@ -276,22 +278,35 @@ void KeyboardMacroView::loadFromSettings() {
 			}
 
 			for (auto& prop : customMasterkeyboardSetup_) {
-				const auto settingKey = prop->name().toStdString();
+				auto propertyName = prop->name();
+				std::string settingKey = propertyName.toStdString();
+				if (propertyName == kInputDevice) {
+					settingKey = kInputDeviceSettingKey;
+				}
+				else if (propertyName == kFixedSynthSelected) {
+					settingKey = kFixedSynthSelectedSettingKey;
+				}
+
 				const std::string storedValue = Settings::instance().get(settingKey);
 				if (storedValue.empty()) {
 					continue;
 				}
 
-				if (prop->name() == kInputDevice) {
+				if (propertyName == kInputDevice) {
 					auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
 					if (midiDeviceProp) {
 						int index = midiDeviceProp->indexOfValue(storedValue);
-						if (index == 0) {
-							index = midiDeviceProp->findOrAppendLookup(storedValue);
-						}
 						if (index != 0) {
 							midiDeviceProp->value().setValue(index);
 						}
+					}
+					continue;
+				}
+
+				if (propertyName == kFixedSynthSelected) {
+					int index = prop->indexOfValue(storedValue);
+					if (index != 0) {
+						prop->value().setValue(index);
 					}
 					continue;
 				}
@@ -322,10 +337,15 @@ void KeyboardMacroView::saveSettings() {
 	Settings::instance().set("MacroDefinitions", json.toStdString());
 
 	for (auto &prop : customMasterkeyboardSetup_) {
-		const auto settingKey = prop->name().toStdString();
-		if (settingKey == kInputDevice) {
-			std::string const storedName = prop->lookupValue();
-			Settings::instance().set(settingKey, storedName);
+		auto propertyName = prop->name();
+		std::string settingKey = propertyName.toStdString();
+		if (propertyName == kInputDevice) {
+			settingKey = kInputDeviceSettingKey;
+			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else if (propertyName == kFixedSynthSelected) {
+			settingKey = kFixedSynthSelectedSettingKey;
+			Settings::instance().set(settingKey, prop->lookupValue());
 		}
 		else {
 			Settings::instance().set(settingKey, prop->value().toString().toStdString());
