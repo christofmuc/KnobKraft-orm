@@ -17,7 +17,9 @@ if(NOT PROJECT_VERSION_RESULT EQUAL 0)
 endif()
 
 # Strip CMake's status prefix and surrounding whitespace
-string(REGEX REPLACE "^--[ \t]*" "" PROJECT_VERSION "${PROJECT_VERSION}")
+# Drop any CMake status lines like "-- Found Git: ..."
+string(REGEX REPLACE "(^|\n)--[^\n]*" "" PROJECT_VERSION "${PROJECT_VERSION}")
+# Trim whitespace
 string(REGEX REPLACE "^[[:space:]]+|[[:space:]]+$" "" PROJECT_VERSION "${PROJECT_VERSION}")
 
 if(PROJECT_VERSION STREQUAL "")
