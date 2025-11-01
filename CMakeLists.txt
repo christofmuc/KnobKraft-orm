@@ -43,7 +43,7 @@ if(UNIX AND NOT APPLE)
 	# Linux settings allowing NixOs to be built
 	set(CMAKE_AR  "gcc-ar")
 	set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcs <TARGET> <LINK_FLAGS> <OBJECTS>")
-	set(CMAKE_CXX_ARCHIVE_FINISH   true
+	set(CMAKE_CXX_ARCHIVE_FINISH   true)
 ENDIF()
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
