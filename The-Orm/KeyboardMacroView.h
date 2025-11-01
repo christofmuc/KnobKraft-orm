@@ -15,6 +15,7 @@
 #include "MidiChannelPropertyEditor.h"
 #include "ElectraOneRouter.h"
 
+#include <mutex>
 
 class KeyboardMacroView : public Component, private ChangeListener, private Value::Listener {
 public:
@@ -22,6 +23,7 @@ public:
 	virtual ~KeyboardMacroView() override;
 
 	virtual void resized() override;
+	void handleMidiMessage(const MidiMessage& message, const String& source, bool isOut);
 
 private:
 	class RecordProgress;
@@ -30,6 +32,8 @@ private:
 	void setupKeyboardControl();
 	void loadFromSettings();
 	void saveSettings();
+	void refreshSecondaryMidiOutList();
+	void updateSecondaryMidiOutSelection();
 	bool isMacroState(KeyboardMacro const &macro);
 	void refreshSynthList();
 	void refreshUI();
@@ -43,6 +47,7 @@ private:
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
 	std::shared_ptr<MidiDevicePropertyEditor> midiDeviceList_; // Listen to this to get notified of newly available devices!
+	std::shared_ptr<MidiDevicePropertyEditor> secondaryMidiOutList_;
 	ElectraOneRouter controllerRouter_;
 	std::shared_ptr<TypedNamedValue> synthListEditor_;
 
@@ -55,5 +60,7 @@ private:
 
 	TypedNamedValueSet customMasterkeyboardSetup_;
 	std::shared_ptr<RecordProgress> activeRecorder_; // Should have maximum one active macro recorders open
-};
 
+	std::mutex secondaryMidiOutMutex_;
+	juce::String secondaryMidiOutName_;
+};
