@@ -39,6 +39,12 @@ option(ASAN "Use Address Sanitization for Debug version (Windows only for now)" 
 # Gin requests C++ 20.
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(UNIX AND NOT APPLE)
+	# Linux settings allowing NixOs to be built
+	set(CMAKE_AR  "gcc-ar")
+	set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcs <TARGET> <LINK_FLAGS> <OBJECTS>")
+	set(CMAKE_CXX_ARCHIVE_FINISH   true
+ENDIF()
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
