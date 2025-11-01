@@ -49,6 +49,7 @@ private:
 	CategoryButtons categoryFilters_;
 	TouchToggleButton onlyFaves_;
 	TouchToggleButton showHidden_;
+	TouchToggleButton showRegular_;
 	TouchToggleButton showUndecided_;
 	TouchToggleButton onlyUntagged_;
 	TouchToggleButton onlyDuplicates_;
