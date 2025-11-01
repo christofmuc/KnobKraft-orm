@@ -1134,6 +1134,47 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 				finishedCallback();
 				});
 		}
+		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::FromActive) {
+			auto activePatch = UIModel::currentPatch();
+			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback, activePatch](std::vector<midikraft::PatchHolder> patches) {
+				if (patches.empty()) {
+					list->setPatches({});
+					finishedCallback();
+					return;
+				}
+
+				auto matchActive = [&activePatch](midikraft::PatchHolder const& candidate) {
+					if (!activePatch.patch() || !candidate.patch()) {
+						return false;
+					}
+					auto activeSynth = activePatch.synth();
+					auto candidateSynth = candidate.synth();
+					if (activeSynth && candidateSynth && activeSynth->getName() != candidateSynth->getName()) {
+						return false;
+					}
+					return candidate.md5() == activePatch.md5();
+				};
+
+				auto activeIt = std::find_if(patches.begin(), patches.end(), matchActive);
+				if (activeIt != patches.end()) {
+					std::rotate(patches.begin(), activeIt, patches.end());
+				}
+				else {
+					spdlog::warn("Fill from active patch requested, but the active patch was not found in the current grid results. Falling back to top of list.");
+				}
+
+				if (patchesDesired > 0 && patches.size() > patchesDesired) {
+					patches.resize(patchesDesired);
+				}
+
+				while (patches.size() < minimumPatches && !patches.empty()) {
+					patches.push_back(patches.back());
+				}
+
+				list->setPatches(patches);
+				finishedCallback();
+				});
+		}
 		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
 			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
 				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
