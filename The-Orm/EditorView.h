@@ -98,6 +98,10 @@ private:
         std::string assignedParameter;
         juce::String buttonDefaultText;
         juce::Label* dropZoneLabel = nullptr;
+        int rowSpan = 1;
+        int colSpan = 1;
+        int anchorIndex = -1;
+        bool placeholder = false;
     };
 
     class ControllerPaletteItem : public juce::Component,
@@ -188,6 +192,12 @@ private:
     int slotIndexFromRotaryIndex(int rotaryIndex) const;
     int slotIndexFromButtonIndex(int buttonIndex) const;
     int slotIndexAt(juce::Point<int> localPos) const;
+    bool isPlaceholderSlot(int slotIndex) const;
+    int anchorIndexForSlot(int slotIndex) const;
+    int clampAnchorIndexForSpan(int slotIndex, int rowSpan, int colSpan) const;
+    void clearAnchorsWithinSpan(int anchorIndex, int rowSpan, int colSpan);
+    void releaseSpanForAnchor(int anchorIndex);
+    void applySpanForAnchor(int anchorIndex, int rowSpan, int colSpan);
     void handleControllerDrop(int slotIndex, ControllerType type, const juce::String& variantId);
     ControllerType controllerTypeFromDescription(const juce::var& description, bool& isController, juce::String& variantId) const;
     juce::Point<int> mousePositionInLocalSpace() const;

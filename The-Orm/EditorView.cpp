@@ -32,6 +32,7 @@
 #include <limits>
 #include <vector>
 #include <array>
+#include <algorithm>
 
 namespace
 {
@@ -167,6 +168,9 @@ const std::array<juce::Identifier, 4> kLegacyEnvelopeStageProperties = {
     juce::Identifier("sustainParameter"),
     juce::Identifier("releaseParameter")
 };
+
+constexpr int kEnvelopeRowSpan = 2;
+constexpr int kEnvelopeColSpan = 3;
 
 EnvelopeControl::Specification makeSpecificationFromVariant(const EnvelopeVariantSpec& variant)
 {
@@ -535,16 +539,22 @@ void EditorView::resized()
             if (slotIndex >= totalSlots_)
                 continue;
 
+            if (isPlaceholderSlot(slotIndex))
+                continue;
+
+            auto& slot = slots_[slotIndex];
+            int spanCols = juce::jlimit(1, gridCols_ - col, slot.colSpan);
+            int spanRows = juce::jlimit(1, gridRows_ - row, slot.rowSpan);
+
             juce::Rectangle<float> cell(gridArea.getX() + col * cellWidth,
                                         gridArea.getY() + row * cellHeight,
-                                        cellWidth,
-                                        cellHeight);
+                                        cellWidth * (float)spanCols,
+                                        cellHeight * (float)spanRows);
             auto cellBounds = cell.toNearestInt().reduced(LAYOUT_INSET_SMALL);
-            auto& slot = slots_[slotIndex];
             if (slot.rotary != nullptr)
                 slot.rotary->setBounds(cellBounds);
             if (slot.button != nullptr)
-                slot.button->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.8f), LAYOUT_BUTTON_HEIGHT*2));
+                slot.button->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.8f), LAYOUT_BUTTON_HEIGHT * 2));
             if (slot.dropdown != nullptr)
                 slot.dropdown->setBounds(cellBounds.withSizeKeepingCentre(int(cellBounds.getWidth() * 0.85f), LAYOUT_BUTTON_HEIGHT + LAYOUT_LINE_SPACING));
             if (slot.envelope != nullptr)
@@ -751,6 +761,10 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
     if (!param || slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
+    slotIndex = anchorIndexForSlot(slotIndex);
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
     if (slots_[slotIndex].type == ControllerType::Envelope)
     {
         assignParameterToEnvelopeStage(slotIndex, envelopeStageIndex, param, updateStorage);
@@ -857,6 +871,10 @@ void EditorView::assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamed
 void EditorView::assignParameterToEnvelopeStage(int slotIndex, int stageIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage)
 {
     if (!param || slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    slotIndex = anchorIndexForSlot(slotIndex);
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
     auto& slot = slots_[slotIndex];
@@ -1116,6 +1134,7 @@ void EditorView::loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth
     {
         currentLayoutNode_ = ensureLayoutNode(synthName);
         updateAssignmentHighlight();
+        resized();
         return;
     }
 
@@ -1132,6 +1151,7 @@ void EditorView::loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth
 
     loadingAssignments_ = false;
     updateAssignmentHighlight();
+    resized();
 }
 
 void EditorView::applyAssignmentsToCurrentSynth()
@@ -1141,6 +1161,7 @@ void EditorView::applyAssignmentsToCurrentSynth()
     if (!currentLayoutNode_.isValid())
     {
         updateAssignmentHighlight();
+        resized();
         return;
     }
 
@@ -1155,6 +1176,7 @@ void EditorView::applyAssignmentsToCurrentSynth()
 
     loadingAssignments_ = false;
     updateAssignmentHighlight();
+    resized();
 }
 
 void EditorView::applyAssignmentsFromTree(const juce::ValueTree& layoutTree)
@@ -1169,6 +1191,7 @@ void EditorView::applyAssignmentsFromTree(const juce::ValueTree& layoutTree)
         applyAssignmentToSlotFromTree(slotsNode.getChild(i));
     loadingAssignments_ = false;
     updateAssignmentHighlight();
+    resized();
 }
 
 void EditorView::applyAssignmentToSlotFromTree(const juce::ValueTree& assignmentNode)
@@ -1656,6 +1679,10 @@ void EditorView::initialiseControllerSlots()
         resetEnvelopeSlotState(i);
         if (slot.rotary != nullptr)
             slot.rotary->setUnused();
+        slot.rowSpan = 1;
+        slot.colSpan = 1;
+        slot.anchorIndex = i;
+        slot.placeholder = false;
         updateSlotVisibility(i);
     }
 }
@@ -1664,6 +1691,7 @@ void EditorView::clearAllSlots()
 {
     clearDropHoverState();
     initialiseControllerSlots();
+    resized();
 
     if (currentLayoutNode_.isValid())
     {
@@ -1682,6 +1710,26 @@ void EditorView::updateSlotVisibility(int slotIndex)
         return;
 
     auto& slot = slots_[slotIndex];
+    if (slot.placeholder)
+    {
+        if (slot.rotary != nullptr)
+        {
+            slot.rotary->setVisible(false);
+            slot.rotary->setUnused();
+        }
+        if (slot.button != nullptr)
+            slot.button->setVisible(false);
+        if (slot.dropdown != nullptr)
+        {
+            slot.dropdown->setVisible(false);
+            slot.dropdown->setUnused();
+        }
+        if (slot.envelope != nullptr)
+            slot.envelope->setVisible(false);
+        if (slot.dropZoneLabel != nullptr)
+            slot.dropZoneLabel->setVisible(false);
+        return;
+    }
     if (slot.rotary != nullptr)
     {
         slot.rotary->setVisible(slot.type == ControllerType::Rotary);
@@ -1704,6 +1752,7 @@ void EditorView::updateSlotVisibility(int slotIndex)
 
 void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChange, const juce::String& variantId)
 {
+    slotIndex = anchorIndexForSlot(slotIndex);
     if (slotIndex < 0 || slotIndex >= totalSlots_)
         return;
 
@@ -1718,6 +1767,10 @@ void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChan
     if (typeUnchanged && variantUnchanged)
         return;
 
+    bool hadSpan = slot.rowSpan > 1 || slot.colSpan > 1;
+    if (hadSpan)
+        releaseSpanForAnchor(slotIndex);
+
     if (slot.type == ControllerType::Envelope)
         resetEnvelopeSlotState(slotIndex);
     else if (!slot.assignedParameter.empty())
@@ -1731,6 +1784,10 @@ void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChan
         slot.rotary->setUnused();
 
     slot.type = type;
+    slot.placeholder = false;
+    slot.anchorIndex = slotIndex;
+    slot.rowSpan = 1;
+    slot.colSpan = 1;
     if (slot.type == ControllerType::Button)
         resetButtonSlotState(slotIndex);
     if (slot.type == ControllerType::Dropdown)
@@ -1742,6 +1799,7 @@ void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChan
         configureEnvelopeSlot(slotIndex, desiredVariant);
         resetEnvelopeSlotState(slotIndex);
         slot.assignedParameter.clear();
+        applySpanForAnchor(slotIndex, kEnvelopeRowSpan, kEnvelopeColSpan);
     }
     updateSlotVisibility(slotIndex);
 
@@ -1758,7 +1816,11 @@ int EditorView::slotIndexForComponent(juce::Component* component) const
     for (int i = 0; i < totalSlots_; ++i)
     {
         if (slots_[i].rotary == component || slots_[i].button == component || slots_[i].dropdown == component || slots_[i].envelope == component || slots_[i].dropZoneLabel == component)
+        {
+            if (isPlaceholderSlot(i))
+                return anchorIndexForSlot(i);
             return i;
+        }
     }
     return -1;
 }
@@ -1779,11 +1841,173 @@ int EditorView::slotIndexFromButtonIndex(int buttonIndex) const
     return slotIndexForComponent(button);
 }
 
+bool EditorView::isPlaceholderSlot(int slotIndex) const
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return false;
+    return slots_[slotIndex].placeholder;
+}
+
+int EditorView::anchorIndexForSlot(int slotIndex) const
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return -1;
+
+    auto const& slot = slots_[slotIndex];
+    if (slot.placeholder)
+    {
+        if (slot.anchorIndex >= 0 && slot.anchorIndex < totalSlots_)
+            return slot.anchorIndex;
+        return -1;
+    }
+    return slotIndex;
+}
+
+int EditorView::clampAnchorIndexForSpan(int slotIndex, int rowSpan, int colSpan) const
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return slotIndex;
+
+    rowSpan = juce::jlimit(1, gridRows_, rowSpan);
+    colSpan = juce::jlimit(1, gridCols_, colSpan);
+
+    int row = slotIndex / gridCols_;
+    int col = slotIndex % gridCols_;
+
+    int maxRowAnchor = juce::jmax(0, gridRows_ - rowSpan);
+    int maxColAnchor = juce::jmax(0, gridCols_ - colSpan);
+
+    int anchorRow = juce::jlimit(0, maxRowAnchor, row);
+    int anchorCol = juce::jlimit(0, maxColAnchor, col);
+
+    return anchorRow * gridCols_ + anchorCol;
+}
+
+void EditorView::clearAnchorsWithinSpan(int anchorIndex, int rowSpan, int colSpan)
+{
+    if (anchorIndex < 0 || anchorIndex >= totalSlots_)
+        return;
+
+    rowSpan = juce::jlimit(1, gridRows_, rowSpan);
+    colSpan = juce::jlimit(1, gridCols_, colSpan);
+
+    int anchorRow = anchorIndex / gridCols_;
+    int anchorCol = anchorIndex % gridCols_;
+
+    rowSpan = juce::jlimit(1, gridRows_ - anchorRow, rowSpan);
+    colSpan = juce::jlimit(1, gridCols_ - anchorCol, colSpan);
+
+    std::vector<int> anchorsToClear;
+    for (int r = 0; r < rowSpan; ++r)
+    {
+        for (int c = 0; c < colSpan; ++c)
+        {
+            int idx = (anchorRow + r) * gridCols_ + (anchorCol + c);
+            if (idx < 0 || idx >= totalSlots_)
+                continue;
+
+            int otherAnchor = anchorIndexForSlot(idx);
+            if (otherAnchor == anchorIndex || otherAnchor < 0)
+                continue;
+
+            if (std::find(anchorsToClear.begin(), anchorsToClear.end(), otherAnchor) == anchorsToClear.end())
+                anchorsToClear.push_back(otherAnchor);
+        }
+    }
+
+    for (int otherAnchor : anchorsToClear)
+        setSlotType(otherAnchor, ControllerType::Empty, true);
+}
+
+void EditorView::releaseSpanForAnchor(int anchorIndex)
+{
+    if (anchorIndex < 0 || anchorIndex >= totalSlots_)
+        return;
+
+    auto& anchor = slots_[anchorIndex];
+    int rowSpan = juce::jmax(1, anchor.rowSpan);
+    int colSpan = juce::jmax(1, anchor.colSpan);
+    int anchorRow = anchorIndex / gridCols_;
+    int anchorCol = anchorIndex % gridCols_;
+
+    for (int r = 0; r < rowSpan; ++r)
+    {
+        for (int c = 0; c < colSpan; ++c)
+        {
+            int idx = (anchorRow + r) * gridCols_ + (anchorCol + c);
+            if (idx < 0 || idx >= totalSlots_ || idx == anchorIndex)
+                continue;
+
+            auto& slot = slots_[idx];
+            if (slot.anchorIndex == anchorIndex && slot.placeholder)
+            {
+                slot.placeholder = false;
+                slot.anchorIndex = idx;
+                slot.rowSpan = 1;
+                slot.colSpan = 1;
+                updateSlotVisibility(idx);
+            }
+        }
+    }
+
+    anchor.rowSpan = 1;
+    anchor.colSpan = 1;
+    anchor.anchorIndex = anchorIndex;
+    anchor.placeholder = false;
+    updateSlotVisibility(anchorIndex);
+}
+
+void EditorView::applySpanForAnchor(int anchorIndex, int rowSpan, int colSpan)
+{
+    if (anchorIndex < 0 || anchorIndex >= totalSlots_)
+        return;
+
+    auto& anchor = slots_[anchorIndex];
+    int anchorRow = anchorIndex / gridCols_;
+    int anchorCol = anchorIndex % gridCols_;
+
+    rowSpan = juce::jlimit(1, gridRows_, rowSpan);
+    colSpan = juce::jlimit(1, gridCols_, colSpan);
+    rowSpan = juce::jlimit(1, gridRows_ - anchorRow, rowSpan);
+    colSpan = juce::jlimit(1, gridCols_ - anchorCol, colSpan);
+
+    anchor.rowSpan = rowSpan;
+    anchor.colSpan = colSpan;
+    anchor.anchorIndex = anchorIndex;
+    anchor.placeholder = false;
+
+    for (int r = 0; r < rowSpan; ++r)
+    {
+        for (int c = 0; c < colSpan; ++c)
+        {
+            int idx = (anchorRow + r) * gridCols_ + (anchorCol + c);
+            if (idx < 0 || idx >= totalSlots_ || idx == anchorIndex)
+                continue;
+
+            auto& slot = slots_[idx];
+            slot.placeholder = true;
+            slot.anchorIndex = anchorIndex;
+            slot.rowSpan = 1;
+            slot.colSpan = 1;
+            if (!slot.assignedParameter.empty())
+                replaceAssignmentName(slot.assignedParameter, "");
+            slot.type = ControllerType::Empty;
+            if (slot.dropZoneLabel != nullptr)
+                slot.dropZoneLabel->setBounds({});
+            updateSlotVisibility(idx);
+        }
+    }
+
+    updateSlotVisibility(anchorIndex);
+}
+
 int EditorView::slotIndexAt(juce::Point<int> localPos) const
 {
     lastHitEnvelopeStageIndex_ = -1;
     for (int i = 0; i < totalSlots_; ++i)
     {
+        if (isPlaceholderSlot(i))
+            continue;
         auto const& slot = slots_[i];
         juce::Component* component = nullptr;
         switch (slot.type)
@@ -1821,6 +2045,16 @@ void EditorView::handleControllerDrop(int slotIndex, ControllerType type, const 
 {
     if (slotIndex < 0 || slotIndex >= totalSlots_)
         return;
+
+    slotIndex = anchorIndexForSlot(slotIndex);
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return;
+
+    if (type == ControllerType::Envelope)
+    {
+        slotIndex = clampAnchorIndexForSpan(slotIndex, kEnvelopeRowSpan, kEnvelopeColSpan);
+        clearAnchorsWithinSpan(slotIndex, kEnvelopeRowSpan, kEnvelopeColSpan);
+    }
 
     auto previousType = slots_[slotIndex].type;
     std::shared_ptr<TypedNamedValue> preservedParam;
@@ -1863,6 +2097,9 @@ void EditorView::handleControllerDrop(int slotIndex, ControllerType type, const 
 
     markAssignmentsDirty();
     updateAssignmentHighlight();
+
+    if (previousType == ControllerType::Envelope || type == ControllerType::Envelope)
+        resized();
 }
 
 EditorView::ControllerType EditorView::controllerTypeFromDescription(const juce::var& description,
