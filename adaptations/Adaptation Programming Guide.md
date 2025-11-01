@@ -220,15 +220,17 @@ With these four functions implemented, go ahead and test if the device detection
 
 When programming your Adaptation, the type of messages your device provides will also prescribe which classes of Capability or 'Device Profile' you can and should implement. Not all capability classes are to be implemented by all devices, some capabilities are a replacement for another capability in case the messages of the device function differently.
 
-In C++, there are many more capabilities exposed, but for the Adaptations currently three different capabilities can be implemented in addition to the required functions described above and the pure optional functions described in the last section of this document.
+In C++, there are many more capabilities exposed, but for the Adaptations currently six different capabilities can be implemented in addition to the required functions described above and the pure optional functions described in the last section of this document.
 
-The three capabilities are:
+The capabilities are:
 
   1. The **Edit Buffer Capability** - this is probably the most common and intuitive capability, and most MIDI devices have the concept of an edit buffer. A transient storage of the patch that is currentl being edited by the player. Normally, a request method to retrieve the edit buffer as well as a send to edit buffer message exist. Sometimes, the request for an edit buffer is replied to with a program dump, sometimes there is a specific edit buffer dump message.
   2. The **Program Dump Capability** - this can be implemented in addition to or instead of the Edit Buffer Capability. The Program Dump capability allows to address to memory places of the synth directly via bank number/program number. Normally, there is a message to request a specific program from a specific memory position, and a message to send a patch into a specific program position. Of course, all variations and asymmetries possible exist in the MIDI world as well. In case your device has only Program Dump Capability and not Edit Buffer Capability, it is common practice to implement the Edit Buffer Capability with the help of the Program Dump Capability, but to use a fixed memory position as "edit buffer". Note that this might or might not reflect the last changes the player made to the patch. E.g. at the Kawai K3 there is no way to retrieve the transient buffer the user is currently modifying.
   3. The **Bank Dump Capability** - some synths allow to request a full bank of patches with just a single request command. The reply could then be either a single bank dump message (Kawai K3), or a stream of individual program messages (Access Virus), or a stream of program messages and other stuff that you might want to ignore (Matrix 1000). In any case, implementing the bank dump capability is more involved than the capabilities above, but usually provides much better performance. If the bank dump capability is missing, the Librarian will try to iterate over the individual patches and use either program change commands and the edit buffer requests, or the individual program dump requests. For very few devices, the bank dump capability is the only way to retrieve the content of the device.
-  Some devices are able to send bank dumps but don't provide a way to request them, so implementation of the request command is optional and is deemed the **Bank Dump Request Capability**, but should only be implemented if the Bank Dump Capability is also implemented.
-
+  4. The **Bank Dump Request Capability** - if implemented, this allows to request a whole bank in one go instead of individual programs
+  5. The **Bank Send Capability** - to send patches not one by one but rather to construct one or messages containing a whole bank of patches, potentially in a format different from the program dumps
+  6. The **Parameters Capability** - exposes the individual parameters inside the patch to the librarian. This is used for details patch info displays and for the patch comparison window. 
+  
 The capabilities are explained in the sections in more detail.
 
 ## Edit Buffer Capability
@@ -765,6 +767,64 @@ To make it work, just return a list of strings like this:
     def friendlyLayerTitles():
         return ["Patch", "Upper tone", "Lower tone"]
 
+
+## Parameters Capability
+
+The Orm can display detailed decoded parameter dumps for every patch. For adaptations this is exposed via the `ParametersCapability`. 
+
+To enable this capability you need to implement at least two functions, `parameterDefinitions` and `parameterValues`:
+
+```
+def parameterDefinitions():
+    return [
+        {
+            "param_id": 0,
+            "name": "Osc 1 Shape",
+            "description": "Waveform for oscillator 1",
+            "param_type": "choice",           
+            "values": ["Saw", "Triangle", "Square"],
+        },
+        {
+            "param_id": 1,
+            "name": "Filter Cutoff",
+            "description": "LPF cutoff in raw units",
+            "param_type": "value",
+            "values": [0, 164]
+        }
+    ]
+```
+
+* `param_id` is used to identify the parameter in a list of values. Could be a 0-based index or a sysex index, for example.
+* `param_type` accepts either the enum index (0‑3) or the readable strings `value`, `choice`, `list`, `choice_list`.
+* The `values` field is interpreted based on the type: provide `[min, max]` for numeric and list types or string lists for choices and choice_lists.
+
+```
+def parameterValues(patch, onlyActive):
+    # patch is the patch as a flat list of integers (the same data you get from edit buffer dumps)
+    # Build a list that mirrors getParameterDefinitions()
+    return [
+        {"param_id": 0, "value": "Saw" if patch[0] == 0 else "Square"},
+        {"param_id": 1, "value": 127},
+    ]
+```
+
+`onlyActive` is a hint that allows you to skip returning parameters that are disabled (for example envelope B when only layer A is active).
+
+There are two optional functions which will be used in future versions of The Orm:
+
+```
+def setParameterValues(new_values):
+    # new_values has the same structure as what you return from getParameterValues()
+    # Return True on success so the caller can push the updated bytes back to the synth
+    return False  # return False if you do not support editing yet
+
+def createFeatureVector(patch_bytes):
+    # Return a list of floats (all vectors must have identical length).
+    # This is used for clustering/similarity search, so make sure to normalise to 0..1.
+    return []
+```
+
+If you implement `parameterDefinitions` and `parameterValues` the C++ layer will automatically expose the capability to the rest of the librarian.
 
 ## Importing categories stored in the patch in the synth
 

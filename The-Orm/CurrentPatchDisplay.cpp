@@ -25,7 +25,7 @@
 
 MetaDataArea::MetaDataArea(std::vector<CategoryButtons::Category> categories, std::function<void(CategoryButtons::Category, TouchButtonFunction f)> categoryUpdateHandler) :
 	categories_(categories, categoryUpdateHandler, false, false)
-	, patchAsText_([this]() { if (forceResize) forceResize();  }, false)
+	, patchAsText_([this]() { if (forceResize) forceResize();  }, true)
 {
 	addAndMakeVisible(categories_);
 	categories_.setButtonSize(LAYOUT_BUTTON_WIDTH, LAYOUT_TOUCHBUTTON_HEIGHT);

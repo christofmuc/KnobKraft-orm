@@ -10,6 +10,7 @@
 
 #include "Synth.h"
 #include "Capability.h"
+#include "DetailedParametersCapability.h"
 #include "HasBanksCapability.h"
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
@@ -36,6 +37,7 @@ namespace knobkraft {
 	class GenericHasBanksCapability;
 	class GenericHasBankDescriptorsCapability;
 	class GenericBankDumpSendCapability;
+	class GenericSynthParametersCapability;
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
@@ -48,7 +50,13 @@ namespace knobkraft {
 		*kLayerTitles,
 		*kLayerName,
 		*kSetLayerName,
-		*kGetStoredTags
+		*kGetStoredTags,
+		*kIndicateBankDownloadMethod,
+		*kGetParameterDefinitions,
+		*kGetParameterValues,
+		*kSetParameterValues,
+		*kCreateSetValueMessages,
+		*kCreateFeatureVector
 		;
 
 	extern std::vector<const char *> kAdaptationPythonFunctionNames;
@@ -62,6 +70,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankSendCapability>,
+		public midikraft::RuntimeCapability<midikraft::SynthParametersCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
@@ -138,6 +147,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::BankSendCapability>& outCapability) const override;
 		virtual bool hasCapability(midikraft::BankSendCapability** outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::SynthParametersCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::SynthParametersCapability** outCapability) const override;
 
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
@@ -171,6 +182,9 @@ namespace knobkraft {
 
 		friend class GenericBankDumpSendCapability;
 		std::shared_ptr<GenericBankDumpSendCapability> hasBankDumpSendCapabilityImpl_;
+
+		friend class GenericSynthParametersCapability;
+		std::shared_ptr<GenericSynthParametersCapability> synthParametersCapabilityImpl_;
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

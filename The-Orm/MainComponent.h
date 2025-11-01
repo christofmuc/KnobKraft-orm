@@ -34,6 +34,7 @@
 #include "SetupView.h"
 #include "RecordingView.h"
 #include "BCR2000_Component.h"
+#include "EditorView.h"
 #include "AdaptationView.h"
 
 #include <spdlog/logger.h>
@@ -115,7 +116,7 @@ private:
 	std::unique_ptr<SetupView> setupView_;
 	std::unique_ptr<LogViewLogger> logger_;
 	std::unique_ptr<RecordingView> recordingView_;
-	std::unique_ptr<BCR2000_Component> bcr2000View_;
+	std::unique_ptr<EditorView> bcr2000View_;
 
 	InsetBox logArea_;
 

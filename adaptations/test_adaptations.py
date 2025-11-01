@@ -45,6 +45,20 @@ def require_implemented(function_implemented):
     return decorator
 
 
+def _parameter_allowed_values(definition):
+    if definition.get("param_type") == "choice":
+        return list(definition.get("values", []))
+    value_range = definition.get("values", [0, 0])
+    start = int(value_range[0])
+    end = int(value_range[1])
+    return list(range(start, end + 1))
+
+
+def _parameter_value_map(adaptation, patch):
+    values = adaptation.parameterValues(patch, False)
+    return {entry["param_id"]: entry["value"] for entry in values}
+
+
 @pytest.fixture
 def test_data(request) -> Optional[testing.TestData]:
     adaptation = request.getfixturevalue("adaptation")
@@ -92,8 +106,6 @@ def test_extract_name_from_edit_buffer(adaptation, test_data: testing.TestData):
     if count == 0:
         # Nothing was generated that has a name attached, but nameFromDump was implemented. Fail test!
         pytest.fail(f"{adaptation.name()} did not generate a single edit buffer with name to test nameFromDump")
-
-
 def get_rename_target_name(program, test_data):
     if hasattr(program, "rename_name") and program.rename_name is not None:
         return program.rename_name
@@ -464,3 +476,47 @@ def test_load_sysex_file_via_librarian(adaptation, test_data: testing.TestData):
     patches = librarian.load_sysex(adaptation, test_data.all_messages)
     assert len(patches) == test_data.expected_patch_count
 
+
+@require_implemented("parameterDefinitions")
+@require_implemented("parameterValues")
+@require_implemented("setParameterValues")
+@require_testdata("edit_buffers")
+def test_parameter_roundtrip_edit_buffers(adaptation, test_data: testing.TestData):
+    _test_parameter_roundtrip_internal(adaptation, test_data.edit_buffers)
+
+
+@require_implemented("parameterDefinitions")
+@require_implemented("parameterValues")
+@require_implemented("setParameterValues")
+@require_testdata("programs")
+def test_parameter_roundtrip_program_dumps(adaptation, test_data: testing.TestData):
+    _test_parameter_roundtrip_internal(adaptation, test_data.programs)
+
+
+def _test_parameter_roundtrip_internal(adaptation, test_data):
+    definitions = adaptation.parameterDefinitions()
+    if not definitions:
+        pytest.skip("parameterDefinitions returned no entries")
+
+    base_patch = list(test_data[0].message.byte_list)
+    base_values = _parameter_value_map(adaptation, base_patch)
+    if not base_values:
+        pytest.skip("parameterValues returned no data")
+
+    for definition in definitions:
+        allowed_values = _parameter_allowed_values(definition)
+        if not allowed_values:
+            continue
+        for candidate in allowed_values:
+            patch_copy = list(base_patch)
+            assert adaptation.setParameterValues(
+                patch_copy, [{"param_id": definition["param_id"], "value": candidate}]
+            ), f"setParameterValues failed for {definition['name']} ({candidate})"
+            observed = _parameter_value_map(adaptation, patch_copy)
+            assert definition["param_id"] in observed
+            assert observed[definition["param_id"]] == candidate
+            for other_id, original_value in base_values.items():
+                if other_id == definition["param_id"]:
+                    continue
+                assert observed[other_id] == original_value, \
+                    f"Parameter {other_id} changed while editing {definition['param_id']}"

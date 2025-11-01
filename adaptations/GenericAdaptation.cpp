@@ -19,6 +19,7 @@
 #include "GenericBankDumpCapability.h"
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
+#include "GenericSynthParametersCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -78,7 +79,12 @@ namespace knobkraft {
 		* kFriendlyProgramName = "friendlyProgramName",
 		* kSetupHelp = "setupHelp",
 		* kGetStoredTags = "storedTags",
-		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride";
+		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride",
+		* kGetParameterDefinitions = "parameterDefinitions",
+		* kGetParameterValues = "parameterValues",
+		* kSetParameterValues = "setParameterValues",
+		* kCreateSetValueMessages = "createSetValueMessages",
+		* kCreateFeatureVector = "createFeatureVector";
 
 	std::vector<const char*> kAdaptationPythonFunctionNames = {
 		kName,
@@ -115,7 +121,13 @@ namespace knobkraft {
 		kFriendlyBankName,
 		kFriendlyProgramName,
 		kSetupHelp,
-		kGetStoredTags
+		kIndicateBankDownloadMethod,
+		kGetStoredTags,
+		kGetParameterDefinitions,
+		kGetParameterValues,
+		kSetParameterValues,
+		kCreateSetValueMessages,
+		kCreateFeatureVector
 	};
 
 	std::vector<const char*> kMinimalRequiredFunctionNames = {
@@ -149,6 +161,7 @@ namespace knobkraft {
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
+		synthParametersCapabilityImpl_ = std::make_shared<GenericSynthParametersCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -181,6 +194,7 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
+		synthParametersCapabilityImpl_ = std::make_shared<GenericSynthParametersCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
@@ -970,6 +984,28 @@ namespace knobkraft {
 		midikraft::BankSendCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = hasBankDumpSendCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::SynthParametersCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kGetParameterDefinitions)
+			&& pythonModuleHasFunction(kGetParameterValues))
+		{
+			*outCapability = dynamic_cast<midikraft::SynthParametersCapability*>(synthParametersCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::SynthParametersCapability>& outCapability) const
+	{
+		midikraft::SynthParametersCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = synthParametersCapabilityImpl_;
 			return true;
 		}
 		return false;

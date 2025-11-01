@@ -55,6 +55,8 @@ IF(SPARKLE_UPDATES)
 ENDIF()
 
 set(SOURCES
+	ADSRControl.cpp ADSRControl.h
+    EnvelopeControl.cpp EnvelopeControl.h
 	AdaptationView.cpp AdaptationView.h
 	AutoCategorizeWindow.cpp AutoCategorizeWindow.h
 	AutoDetectProgressWindow.cpp AutoDetectProgressWindow.h
@@ -64,6 +66,7 @@ set(SOURCES
 	CreateListDialog.cpp CreateListDialog.h
 	CurrentPatchDisplay.cpp CurrentPatchDisplay.h
 	EditCategoryDialog.cpp EditCategoryDialog.h
+	EditorView.cpp EditorView.h
 	ElectraOneRouter.cpp ElectraOneRouter.h
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h

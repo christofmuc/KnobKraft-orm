@@ -470,13 +470,13 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		});
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
-	//bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
+	bcr2000View_ = std::make_unique<EditorView>(bcr2000);
 
 	addAndMakeVisible(synthList_);
 	addAndMakeVisible(patchList_);
 	Colour tabColour = getUIColour(LookAndFeel_V4::ColourScheme::UIColour::widgetBackground);
 	mainTabs_.addTab("Library", tabColour, patchView_.get(), false);
-	//mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
+	mainTabs_.addTab("Editor", tabColour, bcr2000View_.get(), false);
 	//mainTabs_.addTab("Audio In", tabColour, recordingView_.get(), false);
 	mainTabs_.addTab("Settings", tabColour, settingsView_.get(), false);
 	mainTabs_.addTab("Macros", tabColour, keyboardView_.get(), false);
