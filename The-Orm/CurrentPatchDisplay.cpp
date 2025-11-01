@@ -211,13 +211,13 @@ void CurrentPatchDisplay::setupPatchProperties(std::shared_ptr<midikraft::PatchH
 			if (i < (int) titles.size()) {
 				title = titles[i];
 			}
-			TypedNamedValue v(title, "Patch name", String(layers->layerName(i)), 20);
+			TypedNamedValue v(title, "Patch name", String(layers->layerName(i)), 50);
 			metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 			layerNameValues_.push_back(metaDataValues_.back());
 		}
 	}
 	else if (patch->patch()) {
-		TypedNamedValue v("Patch name", "Patch name", String(patch->name()), 20);
+		TypedNamedValue v("Patch name", "Patch name", String(patch->name()), 50);
 		metaDataValues_.push_back(std::make_shared<TypedNamedValue>(v));
 	}
 
