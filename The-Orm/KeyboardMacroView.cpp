@@ -15,6 +15,7 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
+#include <string>
 
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
@@ -22,7 +23,7 @@ const char *kAutomaticSetup = "Use current synth as master";
 const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kFixedSynthSelected = "Fixed synth played";
 const char *kUseElectraOne = "Forward Electra One";
-const char *kInputDevice = "MIDI Input Device";
+const char *kInputDevice = "MIDI Input Device Name";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
 const char *kHighestNote = "Highest MIDI Note";
@@ -275,7 +276,26 @@ void KeyboardMacroView::loadFromSettings() {
 			}
 
 			for (auto& prop : customMasterkeyboardSetup_) {
-				std::string storedValue = Settings::instance().get(prop->name().toStdString());
+				const auto settingKey = prop->name().toStdString();
+				const std::string storedValue = Settings::instance().get(settingKey);
+				if (storedValue.empty()) {
+					continue;
+				}
+
+				if (prop->name() == kInputDevice) {
+					auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
+					if (midiDeviceProp) {
+						int index = midiDeviceProp->indexOfValue(storedValue);
+						if (index == 0) {
+							index = midiDeviceProp->findOrAppendLookup(storedValue);
+						}
+						if (index != 0) {
+							midiDeviceProp->value().setValue(index);
+						}
+					}
+					continue;
+				}
+
 				int intValue = std::atoi(storedValue.c_str());
 				prop->value().setValue(intValue);
 			}
@@ -285,7 +305,6 @@ void KeyboardMacroView::loadFromSettings() {
 		}
 	}
 }
-
 void KeyboardMacroView::saveSettings() {
 	var result;
 
@@ -303,7 +322,14 @@ void KeyboardMacroView::saveSettings() {
 	Settings::instance().set("MacroDefinitions", json.toStdString());
 
 	for (auto &prop : customMasterkeyboardSetup_) {
-		Settings::instance().set(prop->name().toStdString(), prop->value().toString().toStdString());
+		const auto settingKey = prop->name().toStdString();
+		if (settingKey == kInputDevice) {
+			std::string const storedName = prop->lookupValue();
+			Settings::instance().set(settingKey, storedName);
+		}
+		else {
+			Settings::instance().set(settingKey, prop->value().toString().toStdString());
+		}
 	}
 
 	Settings::instance().flush();
