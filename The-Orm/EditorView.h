@@ -18,7 +18,7 @@
 #include "ValueTreeViewer.h"
 
 #include <optional>
-#include <array>
+#include <vector>
 #include <unordered_map>
 
 class RotaryWithLabel;
@@ -26,7 +26,7 @@ class ButtonWithLabel;
 class SynthParameterDefinition;
 class Synth;
 class DropdownWithLabel;
-class ADSRControl;
+class EnvelopeControl;
 
 class EditorView : public juce::DragAndDropContainer,
                    public juce::DragAndDropTarget,
@@ -57,11 +57,10 @@ public:
         Rotary,
         Button,
         Dropdown,
-        ADSR,
+        Envelope,
     };
 
 private:
-    static constexpr int kAdsrStageCount = 4;
 
     struct PressBinding {
         std::shared_ptr<TypedNamedValue> param;
@@ -76,14 +75,15 @@ private:
         std::unique_ptr<LambdaValueListener> listener;
     };
 
-    struct AdsrStageBinding {
+    struct EnvelopeStageBinding {
         std::shared_ptr<TypedNamedValue> param;
         std::unique_ptr<LambdaValueListener> listener;
         std::string assignmentName;
     };
 
-    struct AdsrBinding {
-        std::array<AdsrStageBinding, kAdsrStageCount> stages;
+    struct EnvelopeBinding {
+        std::vector<EnvelopeStageBinding> stages;
+        juce::String variantId;
     };
 
     struct ControllerSlot {
@@ -91,27 +91,34 @@ private:
         RotaryWithLabel* rotary = nullptr;
         ButtonWithLabel* button = nullptr;
         DropdownWithLabel* dropdown = nullptr;
-        ADSRControl* adsr = nullptr;
+        EnvelopeControl* envelope = nullptr;
         PressBinding pressBinding;
         DropdownBinding dropdownBinding;
-        AdsrBinding adsrBinding;
+        EnvelopeBinding envelopeBinding;
         std::string assignedParameter;
         juce::String buttonDefaultText;
         juce::Label* dropZoneLabel = nullptr;
     };
 
-	class ControllerPaletteItem : public juce::Component {
-	public:
-		ControllerPaletteItem(EditorView& owner, ControllerType type, juce::String const& labelText);
-		void paint(juce::Graphics& g) override;
-		void mouseDown(const juce::MouseEvent& event) override;
-		void mouseEnter(const juce::MouseEvent&) override;
-		void mouseExit(const juce::MouseEvent&) override;
+    class ControllerPaletteItem : public juce::Component,
+                                  public juce::SettableTooltipClient {
+    public:
+        ControllerPaletteItem(EditorView& owner,
+                              ControllerType type,
+                              juce::String const& labelText,
+                              juce::String const& variantId = {});
+        void paint(juce::Graphics& g) override;
+        void mouseDown(const juce::MouseEvent& event) override;
+        void mouseEnter(const juce::MouseEvent&) override;
+        void mouseExit(const juce::MouseEvent&) override;
+        void setTooltipText(const juce::String& text);
 
-	private:
-		EditorView& owner_;
-		ControllerType type_;
-		juce::String label_;
+    private:
+        EditorView& owner_;
+        ControllerType type_;
+        juce::String label_;
+        juce::String variantId_;
+        juce::String tooltip_;
     };
 
     class UpdateSynthListener : public juce::ValueTree::Listener {
@@ -132,8 +139,8 @@ private:
     // Helpers
     TypedNamedValueSet createParameterModel();
     std::shared_ptr<TypedNamedValue> findParameterByName(const juce::String& propertyName);
-    void assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage, int adsrStageIndex = -1);
-    void assignParameterToAdsrStage(int slotIndex, int stageIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage);
+    void assignParameterToSlot(int slotIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage, int envelopeStageIndex = -1);
+    void assignParameterToEnvelopeStage(int slotIndex, int stageIndex, std::shared_ptr<TypedNamedValue> param, bool updateStorage);
     bool canAssignToPress(const TypedNamedValue& param) const;
     bool canAssignToDropdown(const TypedNamedValue& param) const;
     bool extractBinaryValues(const TypedNamedValue& param, int& offValue, int& onValue) const;
@@ -143,10 +150,10 @@ private:
     juce::String buttonValueText(const TypedNamedValue& param, const juce::var& value) const;
     void setEditorPatch(std::shared_ptr<midikraft::Synth> synth, std::shared_ptr<midikraft::DataFile> data);
     void refreshEditorPatch();
-    void resetAdsrSlotState(int slotIndex);
-    void refreshAdsrStage(int slotIndex, int stageIndex);
+    void configureEnvelopeSlot(int slotIndex, const juce::String& variantId);
+    void resetEnvelopeSlotState(int slotIndex);
+    void refreshEnvelopeStage(int slotIndex, int stageIndex);
     double normaliseParameterValue(TypedNamedValue& param) const;
-    void updateAdsrTooltip(int slotIndex);
 
     void loadAssignmentsForSynth(std::shared_ptr<midikraft::Synth> synth);
     void applyAssignmentsToCurrentSynth();
@@ -176,13 +183,13 @@ private:
     void initialiseControllerSlots();
     void clearAllSlots();
     void updateSlotVisibility(int slotIndex);
-    void setSlotType(int slotIndex, ControllerType type, bool recordChange);
+    void setSlotType(int slotIndex, ControllerType type, bool recordChange, const juce::String& variantId = {});
     int slotIndexForComponent(juce::Component* component) const;
     int slotIndexFromRotaryIndex(int rotaryIndex) const;
     int slotIndexFromButtonIndex(int buttonIndex) const;
     int slotIndexAt(juce::Point<int> localPos) const;
-    void handleControllerDrop(int slotIndex, ControllerType type);
-    ControllerType controllerTypeFromDescription(const juce::var& description, bool& isController) const;
+    void handleControllerDrop(int slotIndex, ControllerType type, const juce::String& variantId);
+    ControllerType controllerTypeFromDescription(const juce::var& description, bool& isController, juce::String& variantId) const;
     juce::Point<int> mousePositionInLocalSpace() const;
     void updateDropHoverState(const juce::DragAndDropTarget::SourceDetails& details);
     void clearDropHoverState();
@@ -202,7 +209,7 @@ private:
     juce::OwnedArray<RotaryWithLabel> rotaryKnobs_;
     juce::OwnedArray<ButtonWithLabel> buttonControls_;
     juce::OwnedArray<DropdownWithLabel> dropdownControls_;
-    juce::OwnedArray<ADSRControl> adsrControls_;
+    juce::OwnedArray<EnvelopeControl> envelopeControls_;
     juce::OwnedArray<juce::Label> dropZoneLabels_;
     std::vector<ControllerSlot> slots_;
     std::unique_ptr<juce::Component> paletteContainer_;
@@ -213,8 +220,8 @@ private:
     midikraft::Librarian librarian_;
 
     int hoveredSlotIndex_ = -1;
-    int hoveredAdsrStageIndex_ = -1;
-    mutable int lastHitAdsrStageIndex_ = -1;
+    int hoveredEnvelopeStageIndex_ = -1;
+    mutable int lastHitEnvelopeStageIndex_ = -1;
 
     juce::ValueTree assignmentsRoot_;
     juce::ValueTree currentLayoutNode_;
