@@ -108,6 +108,10 @@ PatchSearchComponent::PatchSearchComponent(PatchView* patchView, PatchButtonPane
 	showHidden_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, showHidden_); };
 	addAndMakeVisible(showHidden_);
 
+	showRegular_.setButtonText("Regular");
+	showRegular_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, showRegular_); };
+	addAndMakeVisible(showRegular_);
+
 	showUndecided_.setButtonText("Undecided");
 	showUndecided_.onClickMultifunction = [this](TouchButtonFunction f) { refreshWithFunction(f, showUndecided_); };
 	addAndMakeVisible(showUndecided_);
@@ -242,6 +246,7 @@ void PatchSearchComponent::resized()
 	fb.alignContent = FlexBox::AlignContent::flexStart; // This is cross axis, up
 	fb.items.add(createFlexButton(&onlyFaves_));
 	fb.items.add(createFlexButton(&showHidden_));
+	fb.items.add(createFlexButton(&showRegular_));
 	fb.items.add(createFlexButton(&showUndecided_));
 	fb.items.add(createFlexButton(&onlyUntagged_));
 	fb.items.add(createFlexButton(&onlyDuplicates_));
@@ -282,6 +287,7 @@ void PatchSearchComponent::loadFilter(midikraft::PatchFilter filter) {
 	onlyFaves_.setToggleState(filter.onlyFaves, dontSendNotification);
 	onlyUntagged_.setToggleState(filter.onlyUntagged, dontSendNotification);
 	showHidden_.setToggleState(filter.showHidden, dontSendNotification);
+	showRegular_.setToggleState(filter.showRegular, dontSendNotification);
 	showUndecided_.setToggleState(filter.showUndecided, dontSendNotification);
 	onlyDuplicates_.setToggleState(filter.onlyDuplicateNames, dontSendNotification);
 	andCategories_.setToggleState(filter.andCategories, dontSendNotification);
@@ -372,6 +378,7 @@ midikraft::PatchFilter PatchSearchComponent::buildFilter() const
 	filter.onlySpecifcType = typeSelected;
 	filter.typeID = filterType;
 	filter.showHidden = showHidden_.getToggleState();
+	filter.showRegular = showRegular_.getToggleState();
 	filter.showUndecided = showUndecided_.getToggleState();
 	filter.onlyUntagged = onlyUntagged_.getToggleState();
 	filter.categories = catSelected;
