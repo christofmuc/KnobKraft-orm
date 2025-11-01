@@ -530,6 +530,9 @@ void EditorView::resized()
     auto gridArea = bounds.reduced(LAYOUT_INSET_NORMAL);
     const float cellWidth = gridArea.getWidth() / (float)gridCols_;
     const float cellHeight = gridArea.getHeight() / (float)gridRows_;
+    gridBounds_ = gridArea.toNearestInt();
+    cellWidth_ = cellWidth;
+    cellHeight_ = cellHeight;
 
     for (int row = 0; row < gridRows_; ++row)
     {
@@ -567,33 +570,10 @@ void EditorView::resized()
 
 void EditorView::paintOverChildren(juce::Graphics& g)
 {
-    if (hoveredSlotIndex_ < 0 || hoveredSlotIndex_ >= totalSlots_)
+    if (hoverHighlightBounds_.isEmpty())
         return;
 
-    auto& slot = slots_[hoveredSlotIndex_];
-    juce::Component* component = nullptr;
-    switch (slot.type)
-    {
-    case ControllerType::Empty:
-        component = slot.dropZoneLabel;
-        break;
-    case ControllerType::Rotary:
-        component = slot.rotary;
-        break;
-    case ControllerType::Button:
-        component = slot.button;
-        break;
-    case ControllerType::Dropdown:
-        component = slot.dropdown;
-        break;
-    case ControllerType::Envelope:
-        component = slot.envelope;
-        break;
-    }
-    if (component == nullptr)
-        return;
-
-    auto bounds = component->getBounds().toFloat().reduced(2.0f);
+    auto bounds = hoverHighlightBounds_.toFloat().reduced(2.0f);
     g.setColour(kAccentColour.withAlpha(0.18f));
     g.fillRoundedRectangle(bounds, kCornerRadius);
     g.setColour(kAccentColour.withAlpha(0.75f));
@@ -1811,6 +1791,51 @@ void EditorView::setSlotType(int slotIndex, ControllerType type, bool recordChan
     }
 }
 
+juce::Component* EditorView::primaryComponentForSlot(int slotIndex) const
+{
+    if (slotIndex < 0 || slotIndex >= totalSlots_)
+        return nullptr;
+
+    int anchorIndex = anchorIndexForSlot(slotIndex);
+    if (anchorIndex < 0 || anchorIndex >= totalSlots_)
+        return nullptr;
+
+    auto const& slot = slots_[anchorIndex];
+    switch (slot.type)
+    {
+    case ControllerType::Empty:
+        return slot.dropZoneLabel;
+    case ControllerType::Rotary:
+        return slot.rotary;
+    case ControllerType::Button:
+        return slot.button;
+    case ControllerType::Dropdown:
+        return slot.dropdown;
+    case ControllerType::Envelope:
+        return slot.envelope;
+    default:
+        break;
+    }
+    return nullptr;
+}
+
+juce::Rectangle<int> EditorView::boundsForSpan(int anchorIndex, int rowSpan, int colSpan) const
+{
+    if (anchorIndex < 0 || anchorIndex >= totalSlots_)
+        return {};
+    if (cellWidth_ <= 0.0f || cellHeight_ <= 0.0f)
+        return {};
+
+    int anchorRow = anchorIndex / gridCols_;
+    int anchorCol = anchorIndex % gridCols_;
+
+    auto bounds = juce::Rectangle<float>(static_cast<float>(gridBounds_.getX()) + anchorCol * cellWidth_,
+                                         static_cast<float>(gridBounds_.getY()) + anchorRow * cellHeight_,
+                                         cellWidth_ * static_cast<float>(colSpan),
+                                         cellHeight_ * static_cast<float>(rowSpan));
+    return bounds.toNearestInt().reduced(LAYOUT_INSET_SMALL);
+}
+
 int EditorView::slotIndexForComponent(juce::Component* component) const
 {
     for (int i = 0; i < totalSlots_; ++i)
@@ -2152,7 +2177,8 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
 {
     bool isController = false;
     juce::String variantId;
-    controllerTypeFromDescription(details.description, isController, variantId);
+    auto describedType = controllerTypeFromDescription(details.description, isController, variantId);
+
     auto localPos = mousePositionInLocalSpace();
     auto slotIndex = slotIndexAt(localPos);
     int stageIndex = (slotIndex >= 0 && slotIndex < totalSlots_ && slots_[slotIndex].type == ControllerType::Envelope) ? lastHitEnvelopeStageIndex_ : -1;
@@ -2189,6 +2215,26 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
         stageIndex = -1;
     }
 
+    auto highlightBounds = juce::Rectangle<int>();
+    if (slotIndex >= 0)
+    {
+        if (isController && describedType == ControllerType::Envelope)
+        {
+            int anchorIndex = anchorIndexForSlot(slotIndex);
+            if (anchorIndex < 0)
+                anchorIndex = slotIndex;
+            anchorIndex = clampAnchorIndexForSpan(anchorIndex, kEnvelopeRowSpan, kEnvelopeColSpan);
+            highlightBounds = boundsForSpan(anchorIndex, kEnvelopeRowSpan, kEnvelopeColSpan);
+        }
+        else if (auto* component = primaryComponentForSlot(slotIndex))
+        {
+            highlightBounds = component->getBounds();
+        }
+    }
+
+    bool highlightChanged = highlightBounds != hoverHighlightBounds_;
+    hoverHighlightBounds_ = highlightBounds;
+
     if (slotIndex != hoveredSlotIndex_ || stageIndex != hoveredEnvelopeStageIndex_)
     {
         if (hoveredSlotIndex_ >= 0 && hoveredSlotIndex_ < totalSlots_)
@@ -2210,6 +2256,10 @@ void EditorView::updateDropHoverState(const juce::DragAndDropTarget::SourceDetai
 
         repaint();
     }
+    else if (highlightChanged)
+    {
+        repaint();
+    }
 
     setMouseCursor(canDrop ? juce::MouseCursor::CopyingCursor : juce::MouseCursor::NormalCursor);
 }
@@ -2218,6 +2268,7 @@ void EditorView::clearDropHoverState()
 {
     int previousSlotIndex = hoveredSlotIndex_;
     bool hadHover = previousSlotIndex != -1 || hoveredEnvelopeStageIndex_ != -1;
+    bool hadHighlight = !hoverHighlightBounds_.isEmpty();
     if (previousSlotIndex >= 0 && previousSlotIndex < totalSlots_)
     {
         auto& previousSlot = slots_[previousSlotIndex];
@@ -2226,8 +2277,9 @@ void EditorView::clearDropHoverState()
     }
     hoveredSlotIndex_ = -1;
     hoveredEnvelopeStageIndex_ = -1;
+    hoverHighlightBounds_ = {};
     setMouseCursor(juce::MouseCursor::NormalCursor);
-    if (hadHover)
+    if (hadHover || hadHighlight)
         repaint();
 }
 

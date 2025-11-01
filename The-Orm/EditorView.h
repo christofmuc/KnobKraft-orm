@@ -104,6 +104,9 @@ private:
         bool placeholder = false;
     };
 
+    juce::Component* primaryComponentForSlot(int slotIndex) const;
+    juce::Rectangle<int> boundsForSpan(int anchorIndex, int rowSpan, int colSpan) const;
+
     class ControllerPaletteItem : public juce::Component,
                                   public juce::SettableTooltipClient {
     public:
@@ -209,6 +212,12 @@ private:
     TypedNamedValueSet uiModel_;
     juce::ValueTree uiValueTree_;
     TypedNamedValueSet controllerModel_;
+
+    juce::Rectangle<int> gridBounds_;
+    float cellWidth_ = 0.0f;
+    float cellHeight_ = 0.0f;
+
+    juce::Rectangle<int> hoverHighlightBounds_;
 
     PatchTextBox patchTextBox_;
     std::shared_ptr<midikraft::PatchHolder> editorPatchHolder_;
