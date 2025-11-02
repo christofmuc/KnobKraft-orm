@@ -43,6 +43,7 @@
 
 #include <random>
 #include <algorithm>
+#include <iterator>
 #include <utility>
 
 const char *kAllPatchesFilter = "All patches";
@@ -565,13 +566,36 @@ void PatchView::retrievePatches() {
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
 			[this, activeSynth](std::vector<MidiBankNumber> bankNo) {
 				if (!bankNo.empty()) {
+					auto banksForStorage = bankNo;
 					downloadBanksFromSynth(
 						activeSynth,
 						bankNo,
 						"Import patches from Synth",
-						[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
+						[this, activeSynth, banksForStorage](std::vector<midikraft::PatchHolder> patchesLoaded) {
+							auto originalPatches = patchesLoaded;
 							auto enhanced = autoCategorize(patchesLoaded);
 							mergeNewPatches(std::move(enhanced));
+							auto now = juce::Time::getCurrentTime();
+							for (auto const& bank : banksForStorage) {
+								if (!bank.isValid()) {
+									continue;
+								}
+								std::vector<midikraft::PatchHolder> patchesForBank;
+								std::copy_if(
+									originalPatches.begin(),
+									originalPatches.end(),
+									std::back_inserter(patchesForBank),
+									[bank](midikraft::PatchHolder const& patch) {
+										return !(patch.bankNumber() != bank);
+									});
+								if (patchesForBank.empty()) {
+									continue;
+								}
+								auto retrievedBank = std::make_shared<midikraft::ActiveSynthBank>(activeSynth, bank, now);
+								retrievedBank->setPatches(std::move(patchesForBank));
+								database_.putPatchList(retrievedBank);
+							}
+							patchListTree_.refreshAllUserLists([]() {});
 						},
 						false);
 				}
@@ -1214,4 +1238,3 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 		}
 	}
 }
-
