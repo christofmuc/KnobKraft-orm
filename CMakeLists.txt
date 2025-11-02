@@ -1,10 +1,10 @@
 #
-#  Copyright (c) 2020 Christof Ruch. All rights reserved.
+#  Copyright (c) 2020-2025 Christof Ruch. All rights reserved.
 #
 #  Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.20)
 
 # Target a specific MacOS version.
 # JUCE 8 refuses to build for anything older than 10.11, so let's try that.
