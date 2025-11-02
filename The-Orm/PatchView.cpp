@@ -43,6 +43,7 @@
 
 #include <random>
 #include <algorithm>
+#include <utility>
 
 const char *kAllPatchesFilter = "All patches";
 
@@ -340,50 +341,83 @@ void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synt
 
 void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler)
 {
-	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
+	downloadBanksFromSynth(
+		synth,
+		std::vector<MidiBankNumber>{ bank },
+		"Import patches from Synth",
+		[this, synth, bank, finishedHandler = std::move(finishedHandler)](std::vector<midikraft::PatchHolder> patchesLoaded) mutable {
+			spdlog::info("Retrieved {} patches from synth", patchesLoaded.size());
+			
+			// First make sure all patches are stored in the database
+			auto patchesForBank = patchesLoaded;
+			auto enhanced = autoCategorize(patchesLoaded);
+			mergeNewPatches(std::move(enhanced));
+
+			// Then store the list of them in the database
+			auto retrievedBank = std::make_shared<midikraft::ActiveSynthBank>(synth, bank, juce::Time::getCurrentTime());
+			retrievedBank->setPatches(std::move(patchesForBank));
+			database_.putPatchList(retrievedBank);
+
+			// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
+			// instead of sending the sysex
+			patchListTree_.refreshAllUserLists([this, synth, bank, finishedHandler = std::move(finishedHandler)]() mutable {
+				loadSynthBankFromDatabase(synth, bank, midikraft::ActiveSynthBank::makeId(synth, bank));
+				if (finishedHandler) {
+					finishedHandler();
+				}
+			});
+		});
+}
+
+void PatchView::downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
+	const std::vector<MidiBankNumber>& banks,
+	const juce::String& progressTitle,
+	std::function<void(std::vector<midikraft::PatchHolder>)> onLoaded,
+	bool requireDetectedDevice)
+{
+	if (!synth || banks.empty()) {
+		spdlog::error("Invalid operation - nothing selected for downloadBanksFromSynth");
+		return;
+	}
+
 	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(synth);
-	if (location) {
-		if (location->channel().isValid() && device->wasDetected()) {
-			// We can offer to download the bank from the synth, or rather just do it!
-			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
-			if (synth /*&& device->wasDetected()*/) {
-				midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
-				progressWindow->launchThread();
-				progressWindow->setMessage(fmt::format("Importing {} from {}...", midikraft::SynthBank::friendlyBankName(synth, bank), synth->getName()));
-				librarian_.startDownloadingAllPatches(
-					midikraft::MidiController::instance()->getMidiOutput(location->midiOutput()),
-					synth,
-					bank,
-					progressWindow.get(), [this, progressWindow, finishedHandler, synth, bank](std::vector<midikraft::PatchHolder> patchesLoaded) {
-						progressWindow->signalThreadShouldExit();
-						MessageManager::callAsync([this, patchesLoaded, finishedHandler, synth, bank]() {
-							spdlog::info("Retrieved {} patches from synth", patchesLoaded.size());
-							// First make sure all patches are stored in the database
-							auto enhanced = autoCategorize(patchesLoaded);
-							mergeNewPatches(enhanced); //This is actually async!, should be reflected in the name. Maybe I should open a progress dialog here?
-							// Then store the list of them in the database
-							auto retrievedBank = std::make_shared<midikraft::ActiveSynthBank>(synth, bank, juce::Time::getCurrentTime());
-							retrievedBank->setPatches(patchesLoaded);
-							database_.putPatchList(retrievedBank);
-							// We need to mark something as "active in synth" together with position in the patch_in_list table, so we now when we can program change to the patch
-							// instead of sending the sysex
-							patchListTree_.refreshAllUserLists([this, synth, bank, finishedHandler]() {
-								loadSynthBankFromDatabase(synth, bank, midikraft::ActiveSynthBank::makeId(synth, bank));
-								if (finishedHandler) {
-									finishedHandler();
-								}
-								});
-							});
-					});
-			}
-		}
-		else {
-			AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
-		}
+	if (!location) {
+		spdlog::error("Invalid operation - cannot retrieve patches from synth that has no MIDI connectivity implemented");
+		return;
+	}
+
+	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(synth);
+	bool deviceDetected = !device || device->wasDetected();
+	if (!location->channel().isValid() || (requireDetectedDevice && !deviceDetected)) {
+		AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::InfoIcon, "Synth not connected", "For bank management of banks stored in the synth, make sure the synth is connected and detected correctly. Use the MIDI setup to make sure you have connectivity and a green bar!");
+		return;
+	}
+
+	auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, progressTitle.toStdString());
+	midikraft::MidiController::instance()->enableMidiInput(location->midiInput());
+	progressWindow->launchThread();
+
+	if (banks.size() == 1) {
+		progressWindow->setMessage(fmt::format("Importing {} from {}...", midikraft::SynthBank::friendlyBankName(synth, banks.front()), synth->getName()));
 	}
 	else {
-		spdlog::error("Invalid operation - cannot retrieve bank from synth that has no MIDI connectivity implemented");
+		progressWindow->setMessage(fmt::format("Importing patches from {}...", synth->getName()));
 	}
+
+	auto midiOutput = midikraft::MidiController::instance()->getMidiOutput(location->midiOutput());
+	librarian_.startDownloadingAllPatches(
+		midiOutput,
+		synth,
+		banks,
+		progressWindow.get(),
+		[progressWindow, onLoaded = std::move(onLoaded)](std::vector<midikraft::PatchHolder> patchesLoaded) mutable {
+			progressWindow->signalThreadShouldExit();
+			MessageManager::callAsync([onLoaded = std::move(onLoaded), patches = std::move(patchesLoaded)]() mutable {
+				if (onLoaded) {
+					onLoaded(std::move(patches));
+				}
+			});
+		});
 }
 
 void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
@@ -527,29 +561,21 @@ void PatchView::deleteSomething(nlohmann::json const& infos)
 
 void PatchView::retrievePatches() {
 	auto activeSynth = UIModel::instance()->currentSynth_.smartSynth();
-	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(activeSynth);
-	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(activeSynth);
-	std::shared_ptr<ProgressHandlerWindow> progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Import patches from Synth");
-	if (activeSynth /*&& device->wasDetected()*/) {
-		midikraft::MidiController::instance()->enableMidiInput(midiLocation->midiInput());
+	if (activeSynth) {
 		importDialog_ = std::make_unique<ImportFromSynthDialog>(activeSynth,
-			[this, progressWindow, activeSynth, midiLocation](std::vector<MidiBankNumber> bankNo) {
-			if (!bankNo.empty()) {
-				progressWindow->launchThread();
-				librarian_.startDownloadingAllPatches(
-					midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput()),
-					activeSynth,
-					bankNo,
-					progressWindow.get(), [this, progressWindow](std::vector<midikraft::PatchHolder> patchesLoaded) {
-					progressWindow->signalThreadShouldExit();
-					MessageManager::callAsync([this, patchesLoaded]() {
-						auto enhanced = autoCategorize(patchesLoaded);
-						mergeNewPatches(enhanced);
-					});
-				});
-			}
-		}
-		);
+			[this, activeSynth](std::vector<MidiBankNumber> bankNo) {
+				if (!bankNo.empty()) {
+					downloadBanksFromSynth(
+						activeSynth,
+						bankNo,
+						"Import patches from Synth",
+						[this](std::vector<midikraft::PatchHolder> patchesLoaded) {
+							auto enhanced = autoCategorize(patchesLoaded);
+							mergeNewPatches(std::move(enhanced));
+						},
+						false);
+				}
+			});
 		DialogWindow::LaunchOptions launcher;
 		launcher.content.set(importDialog_.get(), false);
 		launcher.componentToCentreAround = patchButtons_.get();
