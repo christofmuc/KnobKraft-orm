@@ -16,9 +16,10 @@
 class CreateListDialog : public Component, private TextButton::Listener {
 public:
 	enum TListFillMode {
-		None, 
-		Top,
-		Random
+		None = 0, 
+		Top = 1,
+		FromActive = 2,
+		Random = 3
 	};
 	struct TFillParameters {
 		TListFillMode fillMode;

@@ -86,6 +86,11 @@ public:
 
 class CurrentSynthList : public ChangeBroadcaster {
 public:
+	CurrentSynthList() : synths_() {
+	};
+
+	virtual ~CurrentSynthList() = default;
+
 	void setSynthList(std::vector<midikraft::SynthHolder> const &synths);
 	void setSynthActive(midikraft::SimpleDiscoverableDevice *synth, bool isActive);
 

@@ -9,26 +9,31 @@ cmake_minimum_required(VERSION 3.14)
 project(KnobKraft-Generic-Adaptation)
 
 set(adaptation_files
+        "Akai_AX80.py"
 	"AlesisAndromedaA6.py"
 	"BC_Kijimi.py"
-	"Behringer Deepmind 12.py" 
+	"Behringer Deepmind 12.py" "Behringer_Wave.py" "Behringer_Pro_800.py"
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
-	"ElectraOne.py" 
-	"Ensoniqesq1.py" 
+	"ElectraOne.py"
+        "Elektron_AnalogRytm.py" "Elektron_Digitone.py"
+	"Emu_Morpheus.py"
+	"Ensoniqesq1.py" "Ensoniq_VFX.py"
 	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
 	"KawaiK1.py" "Kawai K4.py" 
-	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" 
-	"Matrix 6.py" 
-	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py"
-	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py"
+	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" "Korg_M1.py"
+        "Line_6_POD_Series.py" "Korg_microKORG.py"
+	"Matrix 6.py"
+        "Moog_Voyager.py"
+	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py" "Novation_Bass_Station_II.py"
+	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py" "Oberheim_Teo5.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
-	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py"
+	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py"
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
-	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha-YC-Series.py"
+	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py" "Waldorf_M.py" "Waldorf_Pulse.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "Yamaha_FS1R.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha_TX81Z.py" "Yamaha-YC-Series.py"
 	"Zoom_MS.py"
 )
 
@@ -107,9 +112,9 @@ endif()
 
 if(UNIX AND NOT APPLE)
 	# Define additional install files - in our case, all adaptation files and the python modules
-	install(DIRECTORY sequential/ DESTINATION bin/sequential FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(DIRECTORY roland/ DESTINATION bin/roland FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(DIRECTORY testing/ DESTINATION bin/testing FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(FILES ${adaptation_files} DESTINATION bin FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY sequential/ DESTINATION bin/sequential PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY roland/ DESTINATION bin/roland PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY testing/ DESTINATION bin/testing PATTERN "__pycache__" EXCLUDE)
+	install(FILES ${adaptation_files} DESTINATION bin)
 ENDIF()

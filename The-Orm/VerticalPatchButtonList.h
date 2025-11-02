@@ -22,7 +22,6 @@ public:
 	virtual void resized() override;
 
 	void setPatchList(std::shared_ptr<midikraft::PatchList> list, PatchButtonInfo info);
-	void setSynthBank(std::shared_ptr<midikraft::SynthBank> bank, PatchButtonInfo info);
 	void refreshContent();
 	void clearList();
 

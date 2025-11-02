@@ -1013,4 +1013,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=edit_buffer, name='  V O I C E S     ', second_layer_name="VOICE HISS")
 
     return testing.TestData(sysex="testData/Roland_MKS70/MKS70_internalBank_manual_dump_MIDIOX.syx", program_generator=programs, friendly_bank_name=(11, "B"),
-                            edit_buffer_generator=edit_buffers)
+                            edit_buffer_generator=edit_buffers, expected_patch_count=64)

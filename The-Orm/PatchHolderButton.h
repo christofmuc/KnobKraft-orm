@@ -15,13 +15,15 @@ enum class PatchButtonInfo {
 	CenterLayers = 0b011,
 	CenterNumber = 0b111,
 	CenterMask = 0b111,
-	SubtitleNumber = 0b11000,
-	SubtitleSynth = 0b111000,
-	SubtitleMask = 0b111000,
+	SubtitleAuthor = 0b001000,
+	SubtitleNumber = 0b011000,
+	SubtitleSynth =  0b111000,
+	SubtitleMask =   0b111000,
 	DefaultDisplay = CenterLayers | SubtitleNumber,
 	ProgramDisplay = CenterNumber, 
 	NameDisplay = CenterName | SubtitleNumber,
-	LayerDisplay = DefaultDisplay
+	NameAuthorDisplay = CenterName | SubtitleAuthor,
+	LayerDisplay = DefaultDisplay,
 };
 
 class PatchHolderButton : public PatchButtonWithDropTarget, private juce::ChangeListener {

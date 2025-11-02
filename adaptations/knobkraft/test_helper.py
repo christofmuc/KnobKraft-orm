@@ -1,5 +1,4 @@
 from typing import List
-import functools
 
 def list_compare(list1: List, list2: List) -> bool:
     if len(list1) != len(list2):

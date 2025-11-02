@@ -10,19 +10,29 @@ cmake_minimum_required(VERSION 3.19)
 # JUCE 8 refuses to build for anything older than 10.11, so let's try that.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11" CACHE STRING "Minimum OS X version to target for deployment")
 
-option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
-if(UNIVERSAL_BINARY)
-	message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
-	set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
-endif()
-
-# Required for Sparkle
 IF(APPLE)
-	set(BUILD_WITH_INSTALL_RPATH YES)
+  option(UNIVERSAL_BINARY "Compile Intel and Apple Silicon universal binaries for macOS" ON)
+  if(UNIVERSAL_BINARY)
+    message("Universal binaries for Apple are selected, building for Apple M1 and Intel")
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+  endif()
+
+  # If building for arm64 in any form, enforce macOS 11.0+
+  string(FIND "${CMAKE_OSX_ARCHITECTURES}" "arm64" _has_arm64)
+  if(_has_arm64 GREATER -1)
+    # Bump to at least 11.0 if currently lower or unset
+    if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS "11.0")
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version (arm64 requires 11.0+)" FORCE)
+    endif()
+  endif()
+
+  # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
+  add_compile_definitions(JSON_HAS_CPP_14)
+
+  # Required for Sparkle
+  set(BUILD_WITH_INSTALL_RPATH YES)	
 ENDIF()
 
-# For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
-add_compile_definitions(JSON_HAS_CPP_14)
 
 project(KnobKraft_Orm)
 
@@ -60,7 +70,7 @@ endfunction()
 # For other platforms, we are using Python 3.10
 if(WIN32)
     # For Windows, specify the exact version to download, as the FetchContent will calculate the download URLs from it
-	set(PYTHON_VERSION_TO_DOWNLOAD "3.12.2" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
+	set(PYTHON_VERSION_TO_DOWNLOAD "3.12.10" CACHE STRING "Specify which version of Python should be used for embedding, including patch level to download")
 	parse_semver(${PYTHON_VERSION_TO_DOWNLOAD} PYTHON_EMBEDDED_MAJOR PYTHON_EMBEDDED_MINOR PYTHON_EMBEDDED_PATCH)
 	set(PYTHON_VERSION_TO_EMBED "${PYTHON_EMBEDDED_MAJOR}.${PYTHON_EMBEDDED_MINOR}")
 	set(PYTHON_VERSION_TO_COPY "${PYTHON_EMBEDDED_MAJOR}${PYTHON_EMBEDDED_MINOR}")  # Note the missing dot
@@ -69,6 +79,7 @@ else()
 endif()
 
 # Include useful scripts for CMake
+cmake_policy(SET CMP0135 NEW)
 include(FetchContent REQUIRED)
 
 # On Windows, we need to download external dependencies
@@ -216,6 +227,7 @@ target_link_libraries(juce-static
 	PRIVATE
 	    juce::juce_audio_basics juce::juce_audio_devices juce::juce_audio_formats
 	    juce::juce_audio_processors juce::juce_audio_utils juce::juce_core
+            juce::juce_javascript
 	    juce::juce_cryptography juce::juce_data_structures juce::juce_dsp
 	    juce::juce_events juce::juce_graphics juce::juce_gui_basics
 	    juce::juce_gui_extra juce::juce_opengl juce::juce_video
@@ -228,8 +240,9 @@ target_link_libraries(juce-static
 target_compile_definitions(juce-static
 	PUBLIC
 		JUCE_STANDALONE_APPLICATION=1
-        JUCE_MODAL_LOOPS_PERMITTED=1
-		JUCE_PLUGINHOST_VST=0
+                JUCE_MODAL_LOOPS_PERMITTED=1
+                JUCE_USE_NATIVE_FILECHOOSERS=1
+                JUCE_PLUGINHOST_VST=0
 		JUCE_PLUGINHOST_AU=0
 		DONT_SET_USING_JUCE_NAMESPACE=1
 		JUCE_REPORT_APP_USAGE=0
@@ -241,6 +254,7 @@ target_compile_definitions(juce-static
 		JUCE_COREGRAPHICS_DRAW_ASYNC=1
 		JUCE_WIN_PER_MONITOR_DPI_AWARE=1
 		JUCE_USE_FLAC=1
+                JUCE_WEB_BROWSER=0
 		# JUCE_USE_WINRT_MIDI=1 # So much doesn't work when activating this that this is really scary
 	INTERFACE
 		$<TARGET_PROPERTY:juce-static,COMPILE_DEFINITIONS>)

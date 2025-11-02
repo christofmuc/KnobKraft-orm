@@ -13,13 +13,13 @@
 
 class ExportDialog : public Component {
 public:
-	ExportDialog();
+	ExportDialog(std::shared_ptr<midikraft::Synth> synth);
 
 	virtual void resized() override;
 
 	midikraft::Librarian::ExportParameters getResult();
 
-	static void showExportDialog(Component *centeredAround, std::string const& title, std::function<void(midikraft::Librarian::ExportParameters)> callback);
+	static void showExportDialog(Component *centeredAround, std::string const& title, std::shared_ptr<midikraft::Synth> synth, std::function<void(midikraft::Librarian::ExportParameters)> callback);
 
 	static void shutdown();
 

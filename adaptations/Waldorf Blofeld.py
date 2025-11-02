@@ -128,7 +128,7 @@ def make_test_data():
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=test_data.all_messages[0], name="With Love    WMF")
 
-    return testing.TestData(sysex=R"testData/Waldorf_Blofeld_Blo Factory_2008.syx", program_generator=make_patches)
+    return testing.TestData(sysex=R"testData/Waldorf_Blofeld_Blo Factory_2008.syx", program_generator=make_patches, expected_patch_count=1024)
 
 
 

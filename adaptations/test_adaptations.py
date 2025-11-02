@@ -10,6 +10,8 @@ import knobkraft
 import testing
 import functools
 
+from testing.librarian import Librarian
+
 
 def require_testdata(test_data_field):
     def decorator(func):
@@ -69,6 +71,7 @@ def test_extract_name_from_program(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
         #assert adaptation.isSingleProgramDump(program.message.byte_list)
         if hasattr(program, "name") and program.name is not None:
+            knobkraft.list_compare(adaptation.nameFromDump(program.message.byte_list), program.name)
             assert adaptation.nameFromDump(program.message.byte_list) == program.name
             count += 1
     if count == 0:
@@ -88,7 +91,7 @@ def test_extract_name_from_edit_buffer(adaptation, test_data: testing.TestData):
             count += 1
     if count == 0:
         # Nothing was generated that has a name attached, but nameFromDump was implemented. Fail test!
-        pytest.fail(f"{adaptation.name()} did not generate a single program with name to test nameFromDump")
+        pytest.fail(f"{adaptation.name()} did not generate a single edit buffer with name to test nameFromDump")
 
 
 def get_rename_target_name(program, test_data):
@@ -301,10 +304,10 @@ def test_set_layer_name(adaptation, test_data: testing.TestData):
         old_layer_name = adaptation.layerName(program.message.byte_list, 0)
         new_program = adaptation.setLayerName(program.message.byte_list, 0, old_layer_name)
         assert knobkraft.list_compare(program.message.byte_list, new_program)
-        new_messages = adaptation.setLayerName(program.message.byte_list, 1, 'changed layer')
-        assert adaptation.layerName(new_messages, 1) == 'changed layer'
-        new_messages = adaptation.setLayerName(program.message.byte_list, 0, 'changed layer')
-        assert adaptation.layerName(new_messages, 0) == 'changed layer'
+        new_messages = adaptation.setLayerName(program.message.byte_list, 1, 'changedlayer')
+        assert adaptation.layerName(new_messages, 1) == 'changedlayer'
+        new_messages = adaptation.setLayerName(program.message.byte_list, 0, 'changedlayer')
+        assert adaptation.layerName(new_messages, 0) == 'changedlayer'
         count += 1
     if count == 0:
         pytest.fail(f"{adaptation.name} has not created a single program to test set_layer_name")
@@ -318,7 +321,7 @@ def test_fingerprinting_of_programs(adaptation, test_data: testing.TestData):
     for program in test_data.programs:
         md5 = adaptation.calculateFingerprint(program.message.byte_list)
         # Change program place and make sure the fingerprint didn't change
-        changed_position = adaptation.convertToProgramDump(0x09, program.message.byte_list, 0x31)
+        changed_position = adaptation.convertToProgramDump(0x09, program.message.byte_list, get_target_program_no(program))
         assert adaptation.calculateFingerprint(changed_position) == md5
 
 
@@ -328,7 +331,7 @@ def test_fingerprinting_of_programs(adaptation, test_data: testing.TestData):
 @require_implemented("blankedOut")
 @require_testdata("programs")
 def test_blanked_out(adaptation, test_data: testing.TestData):
-    # The blank out is a generic mechanism to implement fingerprinting so names/program places and the like don't change thr fingerprint
+    # The blank out is a generic mechanism to implement fingerprinting so names/program places and the like don't change the fingerprint
     # But it is not required, just a helpful notion when implementing this. The advantage here is that the test is more
     # meaningful in showing where the blank out fails than if you get just two different md5...
     for program in test_data.programs:
@@ -387,9 +390,77 @@ def test_extract_patches_from_bank(adaptation, test_data: testing.TestData):
             for patch in patches:
                 # TODO: This seems like a peculiar assumption, that extracted patches are always Single Program Dumps
                 # unless the synth only supports edit buffer dumps
-                if hasattr(adaptation, "isSingleProgramDump"):
+                if hasattr(adaptation, "isSingleProgramDump") and not test_data.banks_are_edit_buffers:
                     assert adaptation.isSingleProgramDump(patch)
                 else:
                     assert adaptation.isEditBufferDump(patch)
         else:
             print(f"This is not a bank dump: {bank}")
+
+
+@require_implemented("extractPatchesFromAllBankMessages")
+@require_testdata("banks")
+def test_extract_patches_from_all_bank_messages(adaptation, test_data: testing.TestData):
+    for bank in test_data.banks:
+        bank_messages = []
+        for message in bank:
+            if adaptation.isPartOfBankDump(message):
+                bank_messages.append(message)
+            else:
+                print(f"Not a bank message: {knobkraft.syxToString(message)}")
+
+        patches = adaptation.extractPatchesFromAllBankMessages(bank_messages)
+        assert len(patches) > 0
+        for patch in patches:
+            # TODO: This seems like a peculiar assumption, that extracted patches are always Single Program Dumps
+            # unless the synth only supports edit buffer dumps
+            if hasattr(adaptation, "isSingleProgramDump") and not test_data.banks_are_edit_buffers:
+                assert adaptation.isSingleProgramDump(patch)
+            else:
+                assert adaptation.isEditBufferDump(patch)
+
+
+@require_implemented("extractPatchesFromBank")
+@require_implemented("convertPatchesToBankDump")
+@require_testdata("banks")
+def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
+    for bank in knobkraft.splitSysex(test_data.banks):
+        patches = adaptation.extractPatchesFromBank(bank)
+        assert len(patches) > 0
+
+        # Now revert the individual patches back to a bank
+        new_bank = adaptation.convertPatchesToBankDump(patches)
+        flat_list_output = [item for sublist in new_bank for item in sublist]
+        knobkraft.list_compare(bank, flat_list_output)
+
+
+@require_implemented("extractPatchesFromAllBankMessages")
+@require_implemented("convertPatchesToBankDump")
+@require_testdata("banks")
+def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
+    for bank in knobkraft.splitSysex(test_data.banks):
+        bank_messages = []
+        for message in bank:
+            if adaptation.isPartOfBankDump(message):
+                bank_messages.append(message)
+            else:
+                print(f"Not a bank message: {knobkraft.syxToString(message)}")
+
+        patches = adaptation.extractPatchesFromAllBankMessages(bank_messages)
+        assert len(patches) > 0
+
+        # Now revert the individual patches back to a bank
+        new_bank = adaptation.convertPatchesToBankDump(patches)
+        flat_list_input = [item for sublist in bank_messages for item in sublist]
+        flat_list_output = [item for sublist in new_bank for item in sublist]
+        knobkraft.list_compare(flat_list_input, flat_list_output)
+
+
+@require_testdata("sysex")
+def test_load_sysex_file_via_librarian(adaptation, test_data: testing.TestData):
+    # The simulated Librarian should also be able to load the provided sysex data
+    # This simulates the behavior of the C++ code much more closely
+    librarian = Librarian()
+    patches = librarian.load_sysex(adaptation, test_data.all_messages)
+    assert len(patches) == test_data.expected_patch_count
+

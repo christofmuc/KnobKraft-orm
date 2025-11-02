@@ -1,0 +1,16 @@
+"Cyber" 128 voice & 128 performance for FS1R
+
+Cyber系の音色128performanceのデータ集です。
+128performance用の128voiceも同封されています。
+ヤマハ（株）はこのボイスデータのご使用に基づく直接間接の損害に対する
+責任を負いません。従いまして、使用中の音色データのバックアップ等は、
+お客様ご自身の責任でお願いいたします。
+
+CYBER.MID
+128voice&128performanceのバルクダンプデータです。
+適切なシーケンサーからFS1Rに送信しますと、最初に128voiceがFS1Rの
+voiceのInitBunkの1から128にロードされ、その後128performanceが
+FS1RのPerformanceのInitBunkの1から128にロードされます。
+その際、FS1R本体のvoiceおよびperformanceのInitBunkのデータは上書き
+されますので、あらかじめバルクダンプによってバックアップを取るなどし、
+ご注意ください。

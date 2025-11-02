@@ -6,7 +6,7 @@ on: push
 
 jobs:
   build-windows:
-      runs-on: windows-2019
+      runs-on: windows-2022
       steps:
       - name: Checkout repository with tags
         uses: actions/checkout@v2        
@@ -48,7 +48,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         shell: bash
         run: |
-          cmake -S . -B Builds -G "Visual Studio 16 2019" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+          cmake -S . -B Builds -G "Visual Studio 17 2022" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
 
       - name: Run Python tests first
         run: |

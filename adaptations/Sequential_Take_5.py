@@ -42,4 +42,4 @@ def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[2], name='Prophetic Sync', number=2, friendly_number="002")
 
-    return testing.TestData(sysex="testData/Take5_Factory_Set1_v1.0.syx", program_generator=programs, friendly_bank_name=(11, "B"))
+    return testing.TestData(sysex="testData/Take5_Factory_Set1_v1.0.syx", program_generator=programs, friendly_bank_name=(11, "B"), expected_patch_count=128)
