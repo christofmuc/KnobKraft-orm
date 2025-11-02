@@ -11,13 +11,11 @@
 #include "Logger.h"
 #include "Settings.h"
 #include "UIModel.h"
+#include "LayoutConstants.h"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
-#include <string>
-#include <algorithm>
-#include <cctype>
 
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
@@ -252,6 +250,20 @@ void KeyboardMacroView::refreshUI() {
 	}
 }
 
+void setMidiDeviceFromString(std::shared_ptr<TypedNamedValue> prop, std::string const& storedValue) {
+	if (prop) {
+		auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
+		if (midiDeviceProp) {
+			auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
+			midiDeviceProp->value().setValue(appended);
+		}
+		else {
+			spdlog::error("Program error - expected MidiDevicePropertyEditor for the property {}", prop->name());
+		}
+	}
+}
+
+
 void KeyboardMacroView::loadFromSettings() {
 	auto json = Settings::instance().get("MacroDefinitions");
 	if (!json.empty()) {
@@ -283,6 +295,8 @@ void KeyboardMacroView::loadFromSettings() {
 			}
 
 			for (auto& prop : customMasterkeyboardSetup_) {
+				if (!prop) continue;
+
 				auto propertyName = prop->name();
 				std::string settingKey = propertyName.toStdString();
 				if (propertyName == kInputDevice) {
@@ -294,58 +308,21 @@ void KeyboardMacroView::loadFromSettings() {
 
 				const std::string storedValue = Settings::instance().get(settingKey);
 				if (storedValue.empty()) {
-					continue;
+					// Nothing to be done
 				}
-
-				if (propertyName == kInputDevice) {
-					auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
-					if (midiDeviceProp) {
-						int index = midiDeviceProp->indexOfValue(storedValue);
-						if (index != 0) {
-							midiDeviceProp->value().setValue(index);
-						}
-						else if (!storedValue.empty()) {
-							auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
-							if (appended != 0) {
-								midiDeviceProp->value().setValue(appended);
-							}
-						}
-					}
-					continue;
-				}
-
-				if (propertyName == kSecondaryMIDIOut) {
-					auto allDigits = std::all_of(storedValue.begin(), storedValue.end(), [](unsigned char ch) { return std::isdigit(ch) != 0; });
-					if (allDigits) {
-						prop->value().setValue(0);
-						continue;
-					}
-					auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
-					if (midiDeviceProp) {
-						int index = midiDeviceProp->indexOfValue(storedValue);
-						if (index != 0) {
-							midiDeviceProp->value().setValue(index);
-						}
-						else if (!storedValue.empty()) {
-							auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
-							if (appended != 0) {
-								midiDeviceProp->value().setValue(appended);
-							}
-						}
-					}
-					continue;
-				}
-
-				if (propertyName == kFixedSynthSelected) {
+				else if (propertyName == kInputDevice || propertyName == kSecondaryMIDIOut) {
+					// These are supposed to be MidiDevicePropertyEditors
+					setMidiDeviceFromString(prop, storedValue);
+				} else if (propertyName == kFixedSynthSelected) {
 					int index = prop->indexOfValue(storedValue);
 					if (index != 0) {
 						prop->value().setValue(index);
 					}
-					continue;
 				}
-
-				int intValue = std::atoi(storedValue.c_str());
-				prop->value().setValue(intValue);
+				else {
+					int intValue = std::atoi(storedValue.c_str());
+					prop->value().setValue(intValue);
+				}
 			}
 		}
 		catch (nlohmann::json::parse_error& e) {
@@ -409,19 +386,20 @@ void KeyboardMacroView::resized()
 	auto area = getLocalBounds();
 
 	// Needed width
-	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + 16;
+	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + LAYOUT_INSET_NORMAL*2;
 	int contentWidth = std::min(area.getWidth(), 600);
+	int availableHeight = area.getHeight();
 
 	// On Top, the setup
-	customSetup_.setBounds(area.removeFromTop(260).withSizeKeepingCentre(contentWidth, 260).reduced(8));
+	customSetup_.setBounds(area.removeFromTop(availableHeight/2).withSizeKeepingCentre(contentWidth, availableHeight / 2-2* LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
 	// Then the keyboard	
-	auto keyboardArea = area.removeFromTop(166);
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
+	auto keyboardArea = area.removeFromTop(availableHeight /4);
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(LAYOUT_INSET_NORMAL));
 
 	// Set up table
 	for (auto c : configs_) {
-		auto row = area.removeFromTop(40);
-		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), contentWidth), 30));
+		auto row = area.removeFromTop(LAYOUT_LINE_SPACING);
+		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), contentWidth), LAYOUT_LINE_HEIGHT));
 	}
 }
 
@@ -538,36 +516,26 @@ bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 void KeyboardMacroView::handleMidiMessage(const MidiMessage& message, const String& source, bool isOut)
 {
 	if (!isOut) {
+		// Don't relay incoming messages
 		return;
 	}
 
-	juce::String secondaryName;
+	juce::MidiDeviceInfo secondaryInfo;
 	{
 		std::scoped_lock lock(secondaryMidiOutMutex_);
-		secondaryName = secondaryMidiOutName_;
+		secondaryInfo = secondaryMidiOut_;
 	}
 
-	if (secondaryName.isEmpty() || source == secondaryName) {
+	if (secondaryInfo.name.isEmpty() || source == secondaryInfo.name) {
+		// No secondary selected or coming from secondary device - avoid loops!
 		return;
 	}
 
-	auto controller = midikraft::MidiController::instance();
-	if (!controller) {
-		return;
+	auto secondaryOutput = midikraft::MidiController::instance()->getMidiOutput(secondaryInfo);
+	if (secondaryOutput->isValid()) {
+		// Forward a copy to the secondary output
+		secondaryOutput->sendMessageNow(message);
 	}
-
-	auto secondaryInfo = controller->getMidiOutputByName(secondaryName);
-	if (secondaryInfo.identifier.isEmpty()) {
-		return;
-	}
-
-	auto secondaryOutput = controller->getMidiOutput(secondaryInfo);
-	if (!secondaryOutput || !secondaryOutput->isValid()) {
-		return;
-	}
-
-	// Forward a copy to the secondary output
-	secondaryOutput->sendMessageNow(message);
 }
 
 void KeyboardMacroView::refreshSecondaryMidiOutList()
@@ -583,20 +551,8 @@ void KeyboardMacroView::updateSecondaryMidiOutSelection()
 		return;
 	}
 
-	const int selectedRow = int(secondaryMidiOutList_->value().getValue());
-	juce::String selectedName;
-	if (selectedRow > 0) {
-		auto lookup = secondaryMidiOutList_->lookup();
-		auto entry = lookup.find(selectedRow);
-		if (entry == lookup.end()) {
-			secondaryMidiOutList_->value().setValue(0);
-			return;
-		}
-		selectedName = juce::String(entry->second);
-	}
-
 	{
 		std::scoped_lock lock(secondaryMidiOutMutex_);
-		secondaryMidiOutName_ = juce::String(selectedName);
+		secondaryMidiOut_ = secondaryMidiOutList_->selectedDevice();
 	}
 }

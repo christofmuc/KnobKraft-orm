@@ -62,5 +62,5 @@ private:
 	std::shared_ptr<RecordProgress> activeRecorder_; // Should have maximum one active macro recorders open
 
 	std::mutex secondaryMidiOutMutex_;
-	juce::String secondaryMidiOutName_;
+	juce::MidiDeviceInfo secondaryMidiOut_;
 };
