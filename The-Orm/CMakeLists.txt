@@ -52,10 +52,12 @@ IF(SPARKLE_UPDATES)
 if(WIN32)
 	juce_add_binary_data(CodeSigning SOURCES "${CMAKE_CURRENT_LIST_DIR}/../codesigning/dsa_pub.pem")
 	SET(WINSPARKLE_DISTRIBUTION_FILES "${WINSPARKLE_LIBDIR}/WinSparkle.dll")
-else()
+elseif(APPLE)
 	set(SPARKLE_FRAMEWORK_PATH ${sparkleframework_SOURCE_DIR})
 	message("Using Sparkle Framework from ${SPARKLE_FRAMEWORK_PATH}")
 	set(SPARKLE_LINK "-F${SPARKLE_FRAMEWORK_PATH}" "-framework Sparkle")
+else()
+	message(FATAL_ERROR "SPARKLE_UPDATES is only supported on Windows and macOS")
 endif()
 	message("Sparkle and WinSparkle updates are turned on")
 ENDIF()
@@ -113,15 +115,13 @@ if(APPLE)
 		# Sparkle framework
 		message("Adding Mac Objective-C files for Sparkle")
 		set(SPARKLE_SOURCES MacSparkle.mm MacSparkle.h)
+	else()
+		set(SPARKLE_SOURCES "")
 	endif()
 	# Limit skip-build-rpath to macOS to match top-level install RPATH handling
 	set(CMAKE_SKIP_BUILD_RPATH TRUE)
 	set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
 	set_source_files_properties(${KnobKraftOrm_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-
-	# Mac Icon Magic
-	set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
-	set_source_files_properties(resources/icon_orm.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 ENDIF()
 
 set(MIDIKRAFT_LIBRARIES
@@ -197,7 +197,7 @@ ELSEIF(APPLE)
 		gin
 		spdlog::spdlog
 		pybind11::embed
-	 	${SPARKLE_LINK}
+	 	$<$<BOOL:${SPARKLE_UPDATES}>:${SPARKLE_LINK}>
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES
 			MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
@@ -364,8 +364,13 @@ IF(APPLE)
 	# --target package
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 	IF(SPARKLE_UPDATES)
-		# Make sure the private frameworks are in out binary directory
-		file(COPY ${SPARKLE_FRAMEWORK_PATH}/Sparkle.framework DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/KnobKraftOrm.app/Contents/Frameworks)
+		# Copy Sparkle framework as a post-build step
+		add_custom_command(TARGET KnobKraftOrm POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_directory
+				"${SPARKLE_FRAMEWORK_PATH}/Sparkle.framework"
+				"${CMAKE_CURRENT_BINARY_DIR}/KnobKraftOrm.app/Contents/Frameworks/Sparkle.framework"
+			COMMENT "Copying Sparkle framework to app bundle"
+		)
 	ENDIF()
 
 	IF(CODESIGN_CERTIFICATE_NAME)

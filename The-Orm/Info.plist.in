@@ -25,7 +25,7 @@
     <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
     <!-- Minimum System Version (macOS version) -->
     <key>LSMinimumSystemVersion</key>
-    <string>10.12</string>
+    <string>10.11</string>
     <key>CFBundleSupportedPlatforms</key>
     <array>
       <string>MacOSX</string>
