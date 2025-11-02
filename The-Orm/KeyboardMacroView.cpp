@@ -250,12 +250,20 @@ void KeyboardMacroView::refreshUI() {
 	}
 }
 
-void setMidiDeviceFromString(std::shared_ptr<TypedNamedValue> prop, std::string const& storedValue) {
+void setMidiDeviceFromString(std::shared_ptr<TypedNamedValue> prop, std::string const& storedValue, bool allowAppend = false) {
 	if (prop) {
 		auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
 		if (midiDeviceProp) {
-			auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
-			midiDeviceProp->value().setValue(appended);
+			if (allowAppend) {
+				auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
+				midiDeviceProp->value().setValue(appended);
+			} 
+			else {
+				int index = midiDeviceProp->indexOfValue(storedValue);
+				if (index != 0) {
+					midiDeviceProp->value().setValue(index);
+				}
+			}
 		}
 		else {
 			spdlog::error("Program error - expected MidiDevicePropertyEditor for the property {}", prop->name());
@@ -359,19 +367,7 @@ void KeyboardMacroView::saveSettings() {
 			Settings::instance().set(settingKey, prop->lookupValue());
 		}
 		else if (propertyName == kSecondaryMIDIOut) {
-			auto secondaryProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
-			if (secondaryProp) {
-				int selectedRow = int(secondaryProp->value().getValue());
-				if (selectedRow <= 0) {
-					Settings::instance().set(settingKey, "");
-				}
-				else {
-					Settings::instance().set(settingKey, secondaryProp->lookupValue());
-				}
-			}
-			else {
-				Settings::instance().set(settingKey, prop->value().toString().toStdString());
-			}
+			Settings::instance().set(settingKey, prop->lookupValue());
 		}
 		else {
 			Settings::instance().set(settingKey, prop->value().toString().toStdString());
