@@ -48,7 +48,8 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         shell: bash
         run: |
-          cmake -S . -B Builds -G "Visual Studio 17 2022" -A x64 -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
+          export KNOBKRAFT_EXTERNAL_VERSION="$(cmake -P cmake/calc_version.cmake)"
+          cmake -S . -B Builds -G "Visual Studio 17 2022" -A x64 -DKNOBKRAFT_EXTERNAL_VERSION=$KNOBKRAFT_EXTERNAL_VERSION -DCRASH_REPORTING=ON -DSENTRY_DSN=$SENTRY_DSN -DSPARKLE_UPDATES=ON
 
       - name: Run Python tests first
         run: |

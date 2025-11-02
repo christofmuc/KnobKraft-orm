@@ -6,19 +6,8 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-# Get the version from our sub cmakefile
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/gitversion.cmake"
-    ERROR_VARIABLE PROJECT_VERSION
-    ERROR_STRIP_TRAILING_WHITESPACE
-)
-# Cleanup output
-string(REGEX REPLACE "^[[:space:]]+|[[:space:]]+$" "" PROJECT_VERSION "${PROJECT_VERSION}")
-string(REGEX REPLACE "\n$" "" PROJECT_VERSION "${PROJECT_VERSION}")
-message(STATUS "Project version is '${PROJECT_VERSION}'")
-
 # Start project
-project(KnobKraftOrm VERSION ${PROJECT_VERSION})
+project(KnobKraftOrm VERSION ${KNOBKRAFT_EXTERNAL_VERSION})
 
 # Now you can use PROJECT_DEV_TAG in your CMake scripts or in your code to handle the "-dev" part.
 # For example, you could add a preprocessor definition that your code could use:
