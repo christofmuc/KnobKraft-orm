@@ -114,6 +114,8 @@ if(APPLE)
 		message("Adding Mac Objective-C files for Sparkle")
 		set(SPARKLE_SOURCES MacSparkle.mm MacSparkle.h)
 	endif()
+	# Limit skip-build-rpath to macOS to match top-level install RPATH handling
+	set(CMAKE_SKIP_BUILD_RPATH TRUE)
 	set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
 	set_source_files_properties(${KnobKraftOrm_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
@@ -139,8 +141,6 @@ set(MIDIKRAFT_LIBRARIES
 		knobkraft-generic-adaptation
 		pytschirp_embedded
 )
-
-set(CMAKE_SKIP_BUILD_RPATH TRUE)
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES} ${SPARKLE_SOURCES})
 target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 if (CRASH_REPORTING)
