@@ -250,7 +250,7 @@ void KeyboardMacroView::refreshUI() {
 	}
 }
 
-void setMidiDeviceFromString(std::shared_ptr<TypedNamedValue> prop, std::string const& storedValue, bool allowAppend = false) {
+void setMidiDeviceFromString(const std::shared_ptr<TypedNamedValue>& prop, const std::string& storedValue, bool allowAppend = false) {
 	if (prop) {
 		auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
 		if (midiDeviceProp) {
@@ -381,15 +381,19 @@ void KeyboardMacroView::resized()
 {
 	auto area = getLocalBounds();
 
+	constexpr int SETUP_HEIGHT_DIVISOR = 2;     // Setup gets 1/2 of height
+	constexpr int KEYBOARD_HEIGHT_DIVISOR = 4;   // Keyboard gets 1/4 of height
+
 	// Needed width
 	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + LAYOUT_INSET_NORMAL*2;
 	int contentWidth = std::min(area.getWidth(), 600);
 	int availableHeight = area.getHeight();
 
 	// On Top, the setup
-	customSetup_.setBounds(area.removeFromTop(availableHeight/2).withSizeKeepingCentre(contentWidth, availableHeight / 2-2* LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
+	int setupHeight = availableHeight / SETUP_HEIGHT_DIVISOR;
+	customSetup_.setBounds(area.removeFromTop(setupHeight).withSizeKeepingCentre(contentWidth, setupHeight -2* LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
 	// Then the keyboard	
-	auto keyboardArea = area.removeFromTop(availableHeight /4);
+	auto keyboardArea = area.removeFromTop(availableHeight / KEYBOARD_HEIGHT_DIVISOR);
 	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(LAYOUT_INSET_NORMAL));
 
 	// Set up table
