@@ -16,6 +16,8 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 #include <string>
+#include <algorithm>
+#include <cctype>
 
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
@@ -24,6 +26,7 @@ const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kFixedSynthSelected = "Fixed synth played";
 const char *kFixedSynthSelectedSettingKey = "Fixed synth played name";
 const char *kUseElectraOne = "Forward Electra One";
+const char* kSecondaryMIDIOut = "Secondary MIDI OUT";
 const char *kInputDevice = "MIDI Input Device";
 const char *kInputDeviceSettingKey = "MIDI Input Device Name";
 const char *kMidiChannel = "MIDI channel";
@@ -203,6 +206,7 @@ KeyboardMacroView::~KeyboardMacroView()
 void KeyboardMacroView::setupPropertyEditor() {
 	// Midi Device Selector can broadcast a change message when a new device is detected or removed
 	midiDeviceList_ = std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true);
+	secondaryMidiOutList_ = std::make_shared<MidiDevicePropertyEditor>(kSecondaryMIDIOut, "Secondary MIDI OUT", false, true, "Disabled");
 	midikraft::MidiController::instance()->addChangeListener(this);
 
 	customMasterkeyboardSetup_.clear();
@@ -214,6 +218,7 @@ void KeyboardMacroView::setupPropertyEditor() {
 	synthListEditor_ = std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, std::map<int, std::string>());
 	refreshSynthList();
 	customMasterkeyboardSetup_.push_back(synthListEditor_);
+	customMasterkeyboardSetup_.push_back(secondaryMidiOutList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kUseElectraOne, "MIDI Routing", false));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
@@ -299,6 +304,34 @@ void KeyboardMacroView::loadFromSettings() {
 						if (index != 0) {
 							midiDeviceProp->value().setValue(index);
 						}
+						else if (!storedValue.empty()) {
+							auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
+							if (appended != 0) {
+								midiDeviceProp->value().setValue(appended);
+							}
+						}
+					}
+					continue;
+				}
+
+				if (propertyName == kSecondaryMIDIOut) {
+					auto allDigits = std::all_of(storedValue.begin(), storedValue.end(), [](unsigned char ch) { return std::isdigit(ch) != 0; });
+					if (allDigits) {
+						prop->value().setValue(0);
+						continue;
+					}
+					auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
+					if (midiDeviceProp) {
+						int index = midiDeviceProp->indexOfValue(storedValue);
+						if (index != 0) {
+							midiDeviceProp->value().setValue(index);
+						}
+						else if (!storedValue.empty()) {
+							auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
+							if (appended != 0) {
+								midiDeviceProp->value().setValue(appended);
+							}
+						}
 					}
 					continue;
 				}
@@ -319,6 +352,7 @@ void KeyboardMacroView::loadFromSettings() {
 			spdlog::error("Keyboard macro definition corrupt in settings file, not loading. Error is {}", e.what());
 		}
 	}
+	updateSecondaryMidiOutSelection();
 }
 void KeyboardMacroView::saveSettings() {
 	var result;
@@ -346,6 +380,21 @@ void KeyboardMacroView::saveSettings() {
 		else if (propertyName == kFixedSynthSelected) {
 			settingKey = kFixedSynthSelectedSettingKey;
 			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else if (propertyName == kSecondaryMIDIOut) {
+			auto secondaryProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
+			if (secondaryProp) {
+				int selectedRow = int(secondaryProp->value().getValue());
+				if (selectedRow <= 0) {
+					Settings::instance().set(settingKey, "");
+				}
+				else {
+					Settings::instance().set(settingKey, secondaryProp->lookupValue());
+				}
+			}
+			else {
+				Settings::instance().set(settingKey, prop->value().toString().toStdString());
+			}
 		}
 		else {
 			Settings::instance().set(settingKey, prop->value().toString().toStdString());
@@ -396,6 +445,10 @@ void KeyboardMacroView::valueChanged(Value& value)
 	else if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kUseElectraOne))) {
 		controllerRouter_.enable(value.getValue());
 	}
+	else if (customMasterkeyboardSetup_.hasValue(kSecondaryMIDIOut) &&
+		value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kSecondaryMIDIOut))) {
+		updateSecondaryMidiOutSelection();
+	}
 }
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
@@ -412,7 +465,9 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 	if (source == midikraft::MidiController::instance()) {
 		// The list of MIDI devices changed, need to refresh the property editor
 		midiDeviceList_->refreshDeviceList();
+		refreshSecondaryMidiOutList();
 		customSetup_.setProperties(customMasterkeyboardSetup_);
+		updateSecondaryMidiOutSelection();
 	}
 	else if (source == &UIModel::instance()->synthList_) {
 		refreshSynthList();
@@ -478,4 +533,70 @@ bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 		}
 	}
 	return allDetected && !extraKeyDetected;
+}
+
+void KeyboardMacroView::handleMidiMessage(const MidiMessage& message, const String& source, bool isOut)
+{
+	if (!isOut) {
+		return;
+	}
+
+	juce::String secondaryName;
+	{
+		std::scoped_lock lock(secondaryMidiOutMutex_);
+		secondaryName = secondaryMidiOutName_;
+	}
+
+	if (secondaryName.isEmpty() || source == secondaryName) {
+		return;
+	}
+
+	auto controller = midikraft::MidiController::instance();
+	if (!controller) {
+		return;
+	}
+
+	auto secondaryInfo = controller->getMidiOutputByName(secondaryName);
+	if (secondaryInfo.identifier.isEmpty()) {
+		return;
+	}
+
+	auto secondaryOutput = controller->getMidiOutput(secondaryInfo);
+	if (!secondaryOutput || !secondaryOutput->isValid()) {
+		return;
+	}
+
+	// Forward a copy to the secondary output
+	secondaryOutput->sendMessageNow(message);
+}
+
+void KeyboardMacroView::refreshSecondaryMidiOutList()
+{
+	if (secondaryMidiOutList_) {
+		secondaryMidiOutList_->refreshDeviceList();
+	}
+}
+
+void KeyboardMacroView::updateSecondaryMidiOutSelection()
+{
+	if (!secondaryMidiOutList_) {
+		return;
+	}
+
+	const int selectedRow = int(secondaryMidiOutList_->value().getValue());
+	juce::String selectedName;
+	if (selectedRow > 0) {
+		auto lookup = secondaryMidiOutList_->lookup();
+		auto entry = lookup.find(selectedRow);
+		if (entry == lookup.end()) {
+			secondaryMidiOutList_->value().setValue(0);
+			return;
+		}
+		selectedName = juce::String(entry->second);
+	}
+
+	{
+		std::scoped_lock lock(secondaryMidiOutMutex_);
+		secondaryMidiOutName_ = juce::String(selectedName);
+	}
 }
