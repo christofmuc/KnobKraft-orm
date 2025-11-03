@@ -364,13 +364,8 @@ IF(APPLE)
 	# --target package
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 	IF(SPARKLE_UPDATES)
-		# Copy Sparkle framework as a post-build step
-		add_custom_command(TARGET KnobKraftOrm POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_directory
-				"${SPARKLE_FRAMEWORK_PATH}/Sparkle.framework"
-				"${CMAKE_CURRENT_BINARY_DIR}/KnobKraftOrm.app/Contents/Frameworks/Sparkle.framework"
-			COMMENT "Copying Sparkle framework to app bundle"
-		)
+		# Make sure the private frameworks are in out binary directory
+		file(COPY ${SPARKLE_FRAMEWORK_PATH}/Sparkle.framework DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/KnobKraftOrm.app/Contents/Frameworks)
 	ENDIF()
 
 	IF(CODESIGN_CERTIFICATE_NAME)
