@@ -36,6 +36,10 @@ def stringToSyx(string):
     return list(binascii.unhexlify(string.replace(' ', '')))
 
 
+def syxToString(syx: List[int]) -> str:
+    return binascii.hexlify(bytes(syx), " ").decode("UTF-8")
+
+
 def findSysexDelimiters(messages, max_no=None) -> List[Tuple[int, int]]:
     result = []
     start = 0

@@ -115,6 +115,6 @@ def make_test_data():
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=test_data.all_messages[0], name="SledgeStab 1    ")
 
-    return testing.TestData(sysex=R"testData/Studiologic_Sledge_Theodosys_Sound_Bank.syx", program_generator=make_patches)
+    return testing.TestData(sysex=R"testData/Studiologic_Sledge_Theodosys_Sound_Bank.syx", program_generator=make_patches, expected_patch_count=51)
 
 

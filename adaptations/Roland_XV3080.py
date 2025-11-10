@@ -73,4 +73,5 @@ def make_test_data():
                             program_generator=programs,
                             program_dump_request="f0 41 10 00 10 11 30 00 00 00 00 00 00 4f 01 f7",
                             device_detect_call="f0 7e 00 06 01 f7",
-                            device_detect_reply=("f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7", 0))
+                            device_detect_reply=("f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7", 0),
+                            expected_patch_count=46)

@@ -4,7 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Union
 import knobkraft
 
 roland_id = 0x41  # Roland
@@ -50,7 +50,7 @@ categories = {
     28: ("BPD", "BRIGHT PAD", "Bright Pad Synth"),
     29: ("SPD", "SOFT PAD", "Soft Pad Synth"),
     30: ("VOX", "VOX", "Vox, Choir"),
-    31: ("PLK" "PLUCKED", "Plucked (Harp etc.)"),
+    31: ("PLK", "PLUCKED", "Plucked (Harp etc.)"),
     32: ("ETH", "ETHNIC", "Other Ethnic"),
     33: ("FRT", "FRETTED", "Fretted Inst (Mandolin etc.)"),
     34: ("PRC", "PERCUSSION", "Percussion"),
@@ -96,16 +96,22 @@ class RolandData:
         self.blank_out_zones = None
         self.uses_consecutive_addresses = uses_consecutive_addresses
 
-    def make_black_out_zones(self, model_id_length: int, program_position: int = None, name_blankout: Tuple[int, int, int] = None):
+    def make_black_out_zones(self, model_id_length: int, program_position: Union[int, Tuple[int, int]] = None, device_id_position: int = None, name_blankout: Tuple[int, int, int] = None):
         # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
         # message = [0xf0, roland_id, device & 0x1f] + self.model_id + [command_id] + address + data + [0, 0xf7]
         data_block_overhead = 3 + model_id_length + 1 + 2 + self.num_address_bytes
         self.blank_out_zones = []
-        # Ignore checksums, because they might include the program position and will be different for an edit buffer and a program dump
-        #self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
+        # Ignore checksums, because they might include the program position and name and will be different for an edit buffer and a program dump
+        self.blank_out_zones += [(self._end_index_of_block(x, data_block_overhead) - 1, 1) for x in range(len(self.data_blocks))]
+        if device_id_position is not None:
+            # We want the fingerprint to ignore the device ID
+            self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + device_id_position, 1) for x in range(len(self.data_blocks))]
         if program_position is not None:
             # We want the fingerprint to ignore the program position
-            self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
+            if isinstance(program_position, tuple):
+                self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position[0], program_position[1]) for x in range(len(self.data_blocks))]
+            else:
+                self.blank_out_zones += [(self._start_index_of_block(x, data_block_overhead) + program_position, 1) for x in range(len(self.data_blocks))]
         if name_blankout is not None:
             self.blank_out_zones += [(self._start_index_of_block(name_blankout[0], data_block_overhead) + data_block_overhead - 2
                                       + name_blankout[1], name_blankout[2])]
@@ -403,7 +409,7 @@ class GenericRoland:
             return self._apply_blankout(message.copy(), self.edit_buffer.blank_out_zones)
         elif self.isSingleProgramDump(message):
             return self._apply_blankout(message.copy(), self.program_dump.blank_out_zones)
-        raise "Only works with edit buffers and program dumps"
+        raise Exception("Only works with edit buffers and program dumps")
 
     @knobkraft_api
     def calculateFingerprint(self, message):
@@ -437,6 +443,49 @@ class GenericRoland:
                 patch_name = ''.join([chr(x) for x in data[0:self.patch_name_length]])
             return patch_name
         return 'Invalid'
+
+    @knobkraft_api
+    def renamePatch(self, message: List[int], new_name: str) -> List[int]:
+        """
+        Return a new dump with the patch name changed to `new_name`.
+        Works for both single program dumps and edit buffer dumps.
+        """
+        if not (self.isSingleProgramDump(message) or self.isEditBufferDump(message)):
+            raise Exception("renamePatch: only supports single program dumps or edit buffer dumps")
+
+        # Prepare name bytes
+        name = (new_name or "").strip()
+        # Truncate and pad to exact length
+        name = (name[:self.patch_name_length]).ljust(self.patch_name_length, " ")
+
+        if self.use_roland_character_set:
+            # Map characters to legacy Roland indices; fallback to space when unsupported
+            charset_index: Dict[str, int] = {ch: i for i, ch in enumerate(character_set)}
+            name_bytes = [charset_index.get(ch, charset_index[" "]) for ch in name]
+        else:
+            # Standard 7-bit ASCII (Roland SysEx is 7-bit clean)
+            name_bytes = [ord(ch) & 0x7F for ch in name]
+
+        # Rebuild the entire multi-part SysEx with the new name in the correct sub-message
+        rebuilt: List[int] = []
+        msg_no = 0
+        for start, end in knobkraft.sysex.findSysexDelimiters(message):
+            sub = message[start:end]
+            # Preserve the original device id from this submessage
+            device_id_in_msg = sub[2]
+            command, address, data = self.parseRolandMessage(sub)
+
+            if msg_no == self.patch_name_message_number:
+                # Overwrite the name region at the beginning of this data block
+                data = data.copy()
+                data[0:self.patch_name_length] = name_bytes
+
+            # Always send DT1 (data set) when rebuilding
+            rebuilt += self.buildRolandMessage(device_id_in_msg, command_dt1, address, data)
+            msg_no += 1
+
+        return rebuilt
+
 
     @knobkraft_api
     def storedTags(self, message) -> List[str]:
@@ -559,6 +608,14 @@ class GenericRolandWithBackwardCompatibility:
         if model is not None:
             return model.nameFromDump(message)
         return 'Invalid'
+
+    @knobkraft_api
+    def renamePatch(self, message: List[int], new_name: str) -> List[int]:
+        model = self.model_from_message(message)
+        if model is not None:
+            return model.renamePatch(message, new_name)
+        print("Can't rename patch as model cannot be detected!")
+        return message
 
     @knobkraft_api
     def calculateFingerprint(self, message) -> int:

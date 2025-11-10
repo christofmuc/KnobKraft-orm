@@ -156,7 +156,7 @@ public:
 
 	int getNumRows() override
 	{
-		return (int) bank_->patches().size();
+		return bank_ ? ((int) bank_->patches().size()) : 0;
 	}
 
 	void paintListBoxItem(int rowNumber, Graphics& g, int width, int height, bool rowIsSelected) override

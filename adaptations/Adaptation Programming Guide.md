@@ -113,7 +113,7 @@ It should return a list of banks, and each bank is described by a the following 
 
   * "bank" [int] - The number of the bank. Should be zero-based
   * "name" [str] - The friendly name of the bank
-  * "size" [int] - The number of items in this bank. This allows for banks of differenct sizes for one synth
+  * "size" [int] - The number of items in this bank. This allows for banks of different sizes for one synth
   * "type" [str] - A text describing the type of data in this bank. Could be "Patch", "Tone", "Song", "Rhythm" or whatever else is stored in banks. Will be displayed in the metadata.
   * "isROM" [bool] - Use this to indicate for later bank management functionality that the bank can be read, but not written to
 
@@ -566,6 +566,18 @@ Rewriting the function above for the new interface we get this:
         return all_patches
 
 For a way more complex example, have a look at the implementation in the Roland MKS-70 V4 adaptation.
+
+### Bank Dump Capability ###
+
+The opposite direction, assembling bank dump messages from a list of program dumps, can be implemented as well as a 
+separate capability. For this, just one function is required:
+
+    def convertPatchesToBankDump(patches: List[List[int]]) -> List[int]:
+
+This will get a full bank of patches as a list of lists as input, and has to return one or more MIDI messages as a single
+list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
+there is no other way via Edit Buffer capability or Program Dump capability. 
+
 
 ### Getting the patch's name
 

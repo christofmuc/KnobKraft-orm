@@ -69,6 +69,7 @@ public:
 	void bulkRenamePatches();
 	void receiveManualDump();
 	void deletePatches();
+	void refreshAllAfterDelete();
 	void reindexPatches();
 	void loadPatches();
 	void exportPatches();

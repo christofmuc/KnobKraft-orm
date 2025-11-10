@@ -105,7 +105,12 @@ void CreateListDialog::setList(std::shared_ptr<midikraft::PatchList> list)
 			props.push_back(std::make_shared<TypedNamedValue>("Bank", "General", 0, lookup));
 			bankValue_ = Value(props[1]->value());
 		}
-		std::map<int, std::string> populateModes = { {0, "No fill"}, { 1, "First patches"}, { 2, "Random patches"} };
+		std::map<int, std::string> populateModes = {
+			{ static_cast<int>(TListFillMode::None), "No fill" },
+			{ static_cast<int>(TListFillMode::Top), "First patches" },
+			{ static_cast<int>(TListFillMode::FromActive), "From active patch" },
+			{ static_cast<int>(TListFillMode::Random), "Random patches" }
+		};
 		props.push_back(std::make_shared<TypedNamedValue>("Auto-fill from grid", "Populate", 0, populateModes));
 		fillMode_ = Value(props.back()->value());
 		if (!isBank_) {
@@ -206,12 +211,17 @@ void CreateListDialog::notifyResult()
 			list_ = std::make_shared<midikraft::PatchList>(name.toStdString());
 		}
 	}
+	int selectedMode = static_cast<int>(fillMode_.getValue());
 	TFillParameters fillParameters{ TListFillMode::None, 0 };
-	if (static_cast<int>(fillMode_.getValue()) == 1) {
-		fillParameters.fillMode = TListFillMode::Top;
-	}
-	else if (static_cast<int>(fillMode_.getValue()) == 2) {
-		fillParameters.fillMode = TListFillMode::Random;
+	TListFillMode fillModeSelected = static_cast<TListFillMode>(selectedMode);
+	switch (fillModeSelected) {
+	case TListFillMode::FromActive:
+	case TListFillMode::Top:
+	case TListFillMode::Random:
+		fillParameters.fillMode = fillModeSelected;
+		break;
+	default:
+		break;
 	}
 	fillParameters.number = (size_t) (patchNumber_.getValue().operator int());
 	callback_(list_, fillParameters);

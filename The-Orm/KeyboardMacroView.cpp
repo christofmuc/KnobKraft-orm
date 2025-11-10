@@ -15,34 +15,50 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
+#include <string>
 
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
 const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kFixedSynthSelected = "Fixed synth played";
+const char *kFixedSynthSelectedSettingKey = "Fixed synth played name";
 const char *kUseElectraOne = "Forward Electra One";
 const char *kInputDevice = "MIDI Input Device";
+const char *kInputDeviceSettingKey = "MIDI Input Device Name";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
 const char *kHighestNote = "Highest MIDI Note";
 
 
-class RecordProgress : public ThreadWithProgressWindow, private MidiKeyboardStateListener {
+class KeyboardMacroView::RecordProgress : private MidiKeyboardStateListener {
 public:
-	RecordProgress(MidiKeyboardState &state) : ThreadWithProgressWindow("Press key(s) on your MIDI keyboard", false, true), state_(state), atLeastOneKey_(false), done_(false)
+	RecordProgress(Component* parent, MidiKeyboardState& state) : parent_(parent), state_(state), atLeastOneKey_(false)
 	{
+	}
+
+	void show(std::function<void(std::set<int> const&, bool)> done) {
+		done_ = std::move(done);
+		auto options = juce::MessageBoxOptions().withButton("Clear").withButton("Cancel").withTitle("Press key(s) on your MIDI keyboard").withParentComponent(parent_);
+		state_.addListener(this);
+		messageBox_ = AlertWindow::showScopedAsync(options, [this](int button) {
+			switch (button) {
+			case 1:
+				// Clear
+				done_({}, false);
+				break;
+			case 0:
+				// Cancel, nothing to do
+				done_({}, true);
+				break;
+			default:
+				spdlog::error("Unknown button number pressed, program error in RecordProgress of KeyboardMacroView");
+			}
+			});
 	}
 
 	virtual ~RecordProgress() override {
 		state_.removeListener(this);
-	}
-
-	virtual void run() override {
-		state_.addListener(this);
-		while (!threadShouldExit() && !done_) {
-			Thread::sleep(10);
-		}
 	}
 
 	virtual void handleNoteOn(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity) override {
@@ -60,17 +76,18 @@ public:
 			}
 		}
 		if (keyPressed == 0) {
-			done_ = true;
+			messageBox_.close();
+			done_(notes_, false);
 		}
 	}
 
-	std::set<int> notesSelected() { return notes_; }
-
 private:
+	Component* parent_;
+	std::function<void(std::set<int> const&, bool)> done_;
+	ScopedMessageBox messageBox_;
 	std::set<int> notes_;
 	MidiKeyboardState &state_;
 	bool atLeastOneKey_;
-	bool done_;
 
 };
 
@@ -84,13 +101,17 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	for (auto config : kAllKeyboardMacroEvents) {
 		auto configComponent = new MacroConfig(config,
 			[this](KeyboardMacroEvent event) {
-			RecordProgress recorder(state_);
-			if (recorder.runThread()) {
-				KeyboardMacro newMacro = { event, recorder.notesSelected() };
-				macros_[event] = newMacro;
-				saveSettings();
-				refreshUI();
-			}
+				activeRecorder_ = std::make_shared<RecordProgress>(this, state_);
+				activeRecorder_->show([this, event](std::set<int> const& notes, bool cancelled) {
+					if (!cancelled) {
+						KeyboardMacro newMacro = { event, notes };
+						macros_[event] = newMacro;
+						saveSettings();
+						refreshUI();
+					}
+					activeRecorder_ = nullptr;
+					}
+				);
 		},
 			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
@@ -159,7 +180,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 						auto code = macro.first;
 						MessageManager::callAsync([this, code]() {
 							executeMacro_(code);
-						});
+							});
 					}
 				}
 			}
@@ -257,7 +278,39 @@ void KeyboardMacroView::loadFromSettings() {
 			}
 
 			for (auto& prop : customMasterkeyboardSetup_) {
-				std::string storedValue = Settings::instance().get(prop->name().toStdString());
+				auto propertyName = prop->name();
+				std::string settingKey = propertyName.toStdString();
+				if (propertyName == kInputDevice) {
+					settingKey = kInputDeviceSettingKey;
+				}
+				else if (propertyName == kFixedSynthSelected) {
+					settingKey = kFixedSynthSelectedSettingKey;
+				}
+
+				const std::string storedValue = Settings::instance().get(settingKey);
+				if (storedValue.empty()) {
+					continue;
+				}
+
+				if (propertyName == kInputDevice) {
+					auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
+					if (midiDeviceProp) {
+						int index = midiDeviceProp->indexOfValue(storedValue);
+						if (index != 0) {
+							midiDeviceProp->value().setValue(index);
+						}
+					}
+					continue;
+				}
+
+				if (propertyName == kFixedSynthSelected) {
+					int index = prop->indexOfValue(storedValue);
+					if (index != 0) {
+						prop->value().setValue(index);
+					}
+					continue;
+				}
+
 				int intValue = std::atoi(storedValue.c_str());
 				prop->value().setValue(intValue);
 			}
@@ -267,7 +320,6 @@ void KeyboardMacroView::loadFromSettings() {
 		}
 	}
 }
-
 void KeyboardMacroView::saveSettings() {
 	var result;
 
@@ -285,7 +337,19 @@ void KeyboardMacroView::saveSettings() {
 	Settings::instance().set("MacroDefinitions", json.toStdString());
 
 	for (auto &prop : customMasterkeyboardSetup_) {
-		Settings::instance().set(prop->name().toStdString(), prop->value().toString().toStdString());
+		auto propertyName = prop->name();
+		std::string settingKey = propertyName.toStdString();
+		if (propertyName == kInputDevice) {
+			settingKey = kInputDeviceSettingKey;
+			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else if (propertyName == kFixedSynthSelected) {
+			settingKey = kFixedSynthSelectedSettingKey;
+			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else {
+			Settings::instance().set(settingKey, prop->value().toString().toStdString());
+		}
 	}
 
 	Settings::instance().flush();

@@ -15,7 +15,14 @@
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable: 4100 )
+#endif
 #include <pybind11/embed.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
@@ -28,6 +35,7 @@ namespace knobkraft {
 	class GenericBankDumpCapability;
 	class GenericHasBanksCapability;
 	class GenericHasBankDescriptorsCapability;
+	class GenericBankDumpSendCapability;
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
@@ -35,6 +43,7 @@ namespace knobkraft {
 		*kNameFromDump, *kRenamePatch, *kIsDefaultName,
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank, *kExtractPatchesFromAllBankMessages,
+		*kConvertPatchesToBankDump,
 		*kNumberOfLayers,
 		*kLayerTitles,
 		*kLayerName,
@@ -42,24 +51,17 @@ namespace knobkraft {
 		*kGetStoredTags
 		;
 
-	extern std::vector<const char *> kAdapatationPythonFunctionNames;
+	extern std::vector<const char *> kAdaptationPythonFunctionNames;
 	extern std::vector<const char *> kMinimalRequiredFunctionNames;
 
-#ifndef DEFAULT_VISIBILITY
-#ifdef __GNUC__
-#define DEFAULT_VISIBILITY __attribute__((visibility("default")))
-#else
-#define DEFAULT_VISIBILITY 
-#endif
-#endif
-
-	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice, 
+	class GenericAdaptation : public midikraft::Synth, public midikraft::SimpleDiscoverableDevice,
 		public midikraft::RuntimeCapability<midikraft::HasBanksCapability>,
 		public midikraft::RuntimeCapability<midikraft::HasBankDescriptorsCapability>,
 		public midikraft::RuntimeCapability<midikraft::EditBufferCapability>, 
 		public midikraft::RuntimeCapability<midikraft::ProgramDumpCabability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
+		public midikraft::RuntimeCapability<midikraft::BankSendCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
@@ -134,6 +136,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::HasBanksCapability** outCapability) const override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::HasBankDescriptorsCapability>& outCapability) const override;
 		virtual bool hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::BankSendCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::BankSendCapability** outCapability) const override;
 
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
@@ -165,6 +169,9 @@ namespace knobkraft {
 		friend class GenericHasBankDescriptorsCapability;
 		std::shared_ptr<GenericHasBankDescriptorsCapability> hasBankDescriptorsCapabilityImpl_;
 
+		friend class GenericBankDumpSendCapability;
+		std::shared_ptr<GenericBankDumpSendCapability> hasBankDumpSendCapabilityImpl_;
+
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{
 			if (!adaptation_module) {
@@ -186,7 +193,7 @@ namespace knobkraft {
 		static bool createCompiledAdaptationModule(std::string const &pythonModuleName, std::string const &adaptationCode, std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> &outAddToThis);
 		void logNamespace();
 
-		pybind11::module adaptation_module DEFAULT_VISIBILITY;
+		pybind11::module adaptation_module;
 		std::string filepath_;
 
 		mutable std::map<std::string, std::string> nameCache_;

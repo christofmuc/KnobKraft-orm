@@ -9,6 +9,7 @@
 #include "PatchView.h"
 
 #include "TextSearchBox.h"
+#include "TouchButton.h"
 
 class AdvancedFilterPanel;
 
@@ -32,6 +33,8 @@ public:
 	String advancedTextSearch() const;
 	
 private:
+	void refreshWithFunction(TouchButtonFunction f, ToggleButton& buttonPressed);
+	void unclickAllButtons();
 	std::string currentSynthNameWithMulti();
 	static bool isInMultiSynthMode();
 	void updateCurrentFilter(); 
@@ -44,12 +47,12 @@ private:
 	PatchButtonPanel* patchButtons_;
 	TextSearchBox textSearch_;
 	CategoryButtons categoryFilters_;
-	ToggleButton onlyFaves_;
-	ToggleButton showHidden_;
-	ToggleButton showUndecided_;
-	ToggleButton onlyUntagged_;
-	ToggleButton onlyDuplicates_;
-	ToggleButton andCategories_;
+	TouchToggleButton onlyFaves_;
+	TouchToggleButton showHidden_;
+	TouchToggleButton showUndecided_;
+	TouchToggleButton onlyUntagged_;
+	TouchToggleButton onlyDuplicates_;
+	TouchToggleButton andCategories_;
 	TextButton clearFilters_;
 	ComboBox orderByType_;
 	ComboBox buttonDisplayType_;

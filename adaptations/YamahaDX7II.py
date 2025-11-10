@@ -130,7 +130,7 @@ def isPartOfBankDump(message):
 
 def isBankDumpFinished(messages):
     # We only need a single bank dump message
-    return any([isEditBufferDump(m) for m in messages])
+    return any([isPartOfBankDump(m) for m in messages])
 
 
 def extractPatchesFromBank(message):
@@ -311,4 +311,4 @@ def make_test_data():
                     print("MIDI receive channel 2", system_data[3])
                     print("MIDI device ID", system_data[14])
 
-    return testing.TestData(sysex=R"testData/yamahaDX7II-STUDIOREINE BANK.syx", edit_buffer_generator=make_patches)
+    return testing.TestData(sysex=R"testData/yamahaDX7II-STUDIOREINE BANK.syx", edit_buffer_generator=make_patches, expected_patch_count=64)

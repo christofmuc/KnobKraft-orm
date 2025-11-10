@@ -40,6 +40,8 @@ void RotaryWithLabel::setSynthParameter(TypedNamedValue *param)
 
 	slider.setRange(param->minValue(), param->maxValue(), 1.0);
 	switch (param->valueType()) {
+	case ValueType::List:
+		// fall through
 	case ValueType::Lookup:
 		valueToText_ = [param](double value) -> std::string {
 			int v = (int)trunc(value);

@@ -102,6 +102,8 @@ public:
 	ActiveSynthHolder(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth, Colour const& color) : midikraft::SynthHolder(std::move(synth), color) {
 	}
 
+	virtual ~ActiveSynthHolder() = default;
+
 	std::string getName() override
 	{
 		return synth() ? synth()->getName() : "Unnamed";
@@ -165,7 +167,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		}
 		catch (midikraft::PatchDatabaseException& e) {
 			spdlog::error("Critical error trying to open database, maybe wrong version? Creating a new empty database instead. Error was '{}'", e.what());
-			database_ = std::make_unique<midikraft::PatchDatabase>(false);
+			if (not createNewDatabase()) {
+				juce::AlertWindow::showMessageBox(juce::MessageBoxIconType::WarningIcon, "No database", "No database created - existing. Please use older version of KnobKraft to access this database.");
+				exit(1);
+			}
 		}
 	}
 	else {
@@ -618,7 +623,7 @@ void MainComponent::checkForUpdatesOnStartup() {
 #endif
 }
 
-void MainComponent::createNewDatabase()
+bool MainComponent::createNewDatabase()
 {
 	std::string databasePath = Settings::instance().get("LastDatabasePath");
 	FileChooser databaseChooser("Please enter the name of the database file to create...", File(databasePath), "*.db3");
@@ -626,11 +631,16 @@ void MainComponent::createNewDatabase()
 		File databaseFile(databaseChooser.getResult());
 		if (databaseFile.existsAsFile()) {
 			if (!AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "File already exists", "The file will be overwritten and all contents will be lost! Do you want to proceed?")) {
-				return;
+				return false;
 			}
 			databaseFile.deleteFile();
 		}
-		recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
+		if (database_) {
+			recentFiles_.addFile(File(database_->getCurrentDatabaseFileName()));
+		}
+		else {
+			database_ = std::make_unique<midikraft::PatchDatabase>(false);
+		}
 		if (database_->switchDatabaseFile(databaseFile.getFullPathName().toStdString(), midikraft::PatchDatabase::OpenMode::READ_WRITE)) {
 			persistRecentFileList();
 			// That worked, new database file is in use!
@@ -641,8 +651,10 @@ void MainComponent::createNewDatabase()
 			UIModel::instance()->currentSynth_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
 			UIModel::instance()->databaseChanged.sendChangeMessage();
+			return true;
 		}
 	}
+	return false;
 }
 
 void MainComponent::openDatabase()

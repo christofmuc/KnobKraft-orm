@@ -101,7 +101,7 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	};
 
 	synthBank_ = std::make_unique<SynthBankPanel>(database_, this);
-	patchHistory_ = std::make_unique<PatchHistoryPanel>(this);
+	patchHistory_ = std::make_unique<PatchHistoryPanel>(this, &database_);
 
 	patchSearch_ = std::make_unique<PatchSearchComponent>(this, patchButtons_.get(), database_);
 
@@ -193,6 +193,12 @@ int PatchView::getTotalCount() {
 void PatchView::retrieveFirstPageFromDatabase() {
 	// First, we need to find out how many patches there are (for the paging control)
 	int total = getTotalCount();
+	auto counts = database_.getCategoryCounts(currentFilter());
+	std::string debugReport;
+	for (auto const& entry : counts) {
+		debugReport += entry.category.category() + ": " + String(entry.count).toStdString() + " ";
+	}
+	spdlog::info("Total counts: {}", debugReport);
 	patchButtons_->setTotalCount(total, true);
 	patchButtons_->refresh(true); // This kicks of loading the first page
 	Data::instance().getEphemeral().setProperty(EPROPERTY_LIBRARY_PATCH_LIST, juce::Uuid().toString(), nullptr);
@@ -623,10 +629,31 @@ void PatchView::deletePatches()
 			"They will be gone forever, unless you use a backup!", totalAffected))) {
 		if (AlertWindow::showOkCancelBox(AlertWindow::WarningIcon, "Do you know what you are doing?",
 			"Are you sure?", "Yes", "No")) {
-			int deleted = database_.deletePatches(currentFilter());
-			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", fmt::format("{} patches deleted from database", deleted));
+			auto deleted = database_.deletePatches(currentFilter());
+			AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Patches deleted", fmt::format("{} patches deleted from database, {} hidden.", deleted.first, deleted.second));
 			UIModel::instance()->importListChanged_.sendChangeMessage();
-			retrieveFirstPageFromDatabase();
+			refreshAllAfterDelete();
+		}
+	}
+}
+
+void PatchView::refreshAllAfterDelete() {
+	// Reload grid
+	retrieveFirstPageFromDatabase();
+	// Reload bank
+	synthBank_->reloadFromDatabase();
+	// Refesh history to remove deleted patches
+	patchHistory_->refreshList();
+	// Check if the current patch still exists. Reload, because it might have become hidden
+	auto current = UIModel::instance()->currentPatch();
+	if (current.patch()) {
+		std::vector<midikraft::PatchHolder> loaded;
+		database_.getSinglePatch(current.smartSynth(), current.md5(), loaded);
+		if (loaded.size() > 0) {
+			currentPatchDisplay_->setCurrentPatch(std::make_shared<midikraft::PatchHolder>(loaded[0]));
+		}
+		else {
+			currentPatchDisplay_.reset();
 		}
 	}
 }
@@ -711,7 +738,7 @@ public:
 		else {
 			auto numberNew = database_.mergePatchesIntoDatabase(patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
 			if (numberNew > 0) {
-				spdlog::info("Retrieved {} new or changed patches from the synth, uploaded to database", numberNew);
+				spdlog::info("Got {} new or changed patches, saved to database", numberNew);
 				finished_(outNewPatches);
 			}
 			else {
@@ -825,7 +852,8 @@ void PatchView::bulkImportPIP(File directory) {
 void PatchView::exportPatches()
 {
 	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
-		ExportDialog::showExportDialog(this, "Export patches", [this, patches](midikraft::Librarian::ExportParameters params) {
+		auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
+		ExportDialog::showExportDialog(this, "Export patches", currentSynth, [this, patches](midikraft::Librarian::ExportParameters params) {
 			librarian_.saveSysexPatchesToDisk(params, patches);
 		});
 	});
@@ -836,7 +864,7 @@ void PatchView::exportBank()
 	auto currentBank = synthBank_->getCurrentSynthBank();
 	if (currentBank) {
 		auto patches = currentBank->patches();
-		ExportDialog::showExportDialog(this, "Export bank", [this, patches](midikraft::Librarian::ExportParameters params) {
+		ExportDialog::showExportDialog(this, "Export bank", currentBank->synth(), [this, patches](midikraft::Librarian::ExportParameters params) {
 			librarian_.saveSysexPatchesToDisk(params, patches);
 			});
 	}
@@ -1104,6 +1132,47 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 				while (patches.size() < minimumPatches) {
 					patches.push_back(patches.back());
 				}
+				list->setPatches(patches);
+				finishedCallback();
+				});
+		}
+		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::FromActive) {
+			auto activePatch = UIModel::currentPatch();
+			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback, activePatch](std::vector<midikraft::PatchHolder> patches) {
+				if (patches.empty()) {
+					list->setPatches({});
+					finishedCallback();
+					return;
+				}
+
+				auto matchActive = [&activePatch](midikraft::PatchHolder const& candidate) {
+					if (!activePatch.patch() || !candidate.patch()) {
+						return false;
+					}
+					auto activeSynth = activePatch.synth();
+					auto candidateSynth = candidate.synth();
+					if (activeSynth && candidateSynth && activeSynth->getName() != candidateSynth->getName()) {
+						return false;
+					}
+					return candidate.md5() == activePatch.md5();
+				};
+
+				auto activeIt = std::find_if(patches.begin(), patches.end(), matchActive);
+				if (activeIt != patches.end()) {
+					std::rotate(patches.begin(), activeIt, patches.end());
+				}
+				else {
+					spdlog::warn("Fill from active patch requested, but the active patch was not found in the current grid results. Falling back to top of list.");
+				}
+
+				if (patchesDesired > 0 && patches.size() > patchesDesired) {
+					patches.resize(patchesDesired);
+				}
+
+				while (patches.size() < minimumPatches && !patches.empty()) {
+					patches.push_back(patches.back());
+				}
+
 				list->setPatches(patches);
 				finishedCallback();
 				});

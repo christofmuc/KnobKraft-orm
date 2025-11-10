@@ -13,11 +13,14 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | ------------- | ------------- | --- | --- | --- |
 | Access  | Virus A, B, Classic, KB, Indigo  | works | native | |
 | Access  | Virus C  | beta | native | Thanks to guavadude@gs |
+| Akai | AX80 | beta | adaptation | Thanks to O.S.R.C. on YT for the nudge |
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | works | adaptation | |
+| Behringer | Pro-800 | alpha | adaptation | Thanks to @Andy2No |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
+| Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
@@ -30,8 +33,11 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | DSI/Sequential | Prophet Rev2 | works | native | |
 | DSI/Sequential | Prophet 12 | works | adaptation | Thanks to @Andy2No |
 | Electra | one | works | adaptation |
+| Elektron | Analog Rytm | beta | adaptation | Thanks to @RadekPilich for the request! |
+| Elektron | Digitone | alpha | adaptation |  This needs more work, owners please provide feedback so we can complete it. |
+| E-mu | Morpheus | works | adaptation | Thanks to Kid Who for testing! |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
-| Ensoniq | VFX | alpha | adaptation |  |
+| Ensoniq | VFX/VFX-SD | works | adaptation | Thanks to @dancingdog for testing! |
 | Groove Synthesis | 3rd Wave | works | adaptation | |
 | John Bowen | Solaris | beta | adaptation | Contributed by @conversy! |
 | Kawai | K1/K1m/K1r | beta | adaptation | |
@@ -40,9 +46,14 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |
+| Korg | M1 | works | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
+| Korg | microKORG S | works | adaptation | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
+| Moog | Voyager | works | adaptation | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
+| Novation | Bass Station II | works | adaptation | Thanks to @cockroach! |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
@@ -50,31 +61,37 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Oberheim | OB-X (Encore) | alpha | adaptation | |
 | Oberheim | OB-Xa (Encore) | alpha | adaptation | |
 | Oberheim | OB-8 | beta | adaptation | |
-| Oberheim | OB-X8 | alpha | adaptation | help needed! |
+| Oberheim | OB-X8 | beta | adaptation | help needed! |
 | Pioneer | Toraiz AS-1 | works | adaptation | Thanks to @zzort!  |
 | Roland | JX-8P | alpha | adaptation | |
-| Roland | Juno-DS | in progress | adaptation | |
-| Roland | D-50 | in progress | adaptation | |
+| Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
+| Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
+| Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
-| Sequential | Prophet 5 Rev 4 | works | adaptation | |
-| Sequential | Prophet 6 | beta | adaptation | |
+| Sequential | Prophet-5 Rev 4 | works | adaptation | |
+| Sequential | Prophet-6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
 | Sequential | Take 5 | beta | adaptation | |
+| Sequential | Trigon-6 | works | adaptation | |
 | Studiologic | Sledge | beta | adaptation | |
 | Waldorf | Blofeld | beta | adaptation | |
+| Waldorf | M | works | adaptation | Thanks to @RadekPilich for testing! |
 | Waldorf | MicroWave 1 | beta | adaptation | Thanks to Gerome S! |
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
+| Waldorf | Pulse | works | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
 | Yamaha | DX7II | beta | adaptation | |
+| Yamaha | FS1R | alpha | adaptation | Thanks to @markusschlosser for testing! |
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
 | Yamaha | TX7 | works | adaptation | Thanks to Gerome S!|
+| Yamaha | TX81Z | works | adaptation | Contributed by @summersetter!|
 | Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | Thanks to @milnak!|
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
 
@@ -106,6 +123,10 @@ You can always use the source to build it yourself, please read on for more inst
 
 This software is build and run on Windows 10, macOS 10.15, and several Linux distributions. Note that this is not a commercial project, and as I am using Windows mostly expect some hiccups. But I will get back to you if you report a bug and try to resolve it!
 
+## In the press
+
+@mslinn has written a nice intro with some instructions over at the blog, hop over and have a look: https://mslinn.com/av_studio/720-knobkraft.html.
+
 # Building your own adaptation for a synthesizer
 
 It is possible to create an adaptation for a new synthesizer that is not yet on the supported device list. For that, you'll select an existing adaptation that might be close to what you need (e.g. same manufacturer, same device family), and use a text editor to adapt the Python code controlling how to generate the device specific messages required and what to do with the answers from the synth.
@@ -136,9 +157,14 @@ The recursive clone with  submodules is required to retrieve the following addit
 
 ## Building on Windows
 
-Using CMake and building is a simple step if the prerequisites are fulfilled. Simply open a command line in the downloaded root directory `<KnobKraft-orm>` and run
+Using CMake and building can be simple if the prerequisites are fulfilled: 
+   * Install https://visualstudio.microsoft.com/vs/community/
+   * Confirm Desktop development with C++ and the MSVC C++ (latest) components are also installed
+   * Install latest python https://www.python.org/downloads/windows/
+        
+Simply open a command line in the downloaded root directory `<KnobKraft-orm>` and run the build using cmake:
 
-    cmake -S . -B builds -G "Visual Studio 15 2017 Win64"
+    cmake --fresh -S . -B builds -G "Visual Studio 17 2022" -A x64
 
 This will generate a solution file for Visual Studio in the builds subdirectory. You can build the software to run it immediately with the command
 
