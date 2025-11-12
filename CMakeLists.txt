@@ -299,7 +299,7 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		${CMAKE_CURRENT_LIST_DIR}/MidiKraft
 		${CMAKE_CURRENT_LIST_DIR}/MidiKraft/base/include
 		${CMAKE_CURRENT_LIST_DIR}/MidiKraft/librarian
-		${CMAKE_CURRENT_LIST_DIR}/third_party/cereal/unittests
+		${CMAKE_CURRENT_LIST_DIR}/third_party/doctest
 		${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp/include)
     target_link_libraries(patch_database_migration_test PRIVATE midikraft-database SQLiteCpp)
 endif()

@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include "../third_party/cereal/unittests/doctest.h"
+#include "doctest/doctest.h"
 
 #include "PatchDatabase.h"
 #include "ImportList.h"
