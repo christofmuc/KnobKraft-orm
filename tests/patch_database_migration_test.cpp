@@ -21,6 +21,7 @@ constexpr auto kLegacySynth = "TestSynth";
 constexpr auto kLegacyMd5 = "md5-aaa";
 constexpr auto kLegacyImportId = "import-legacy-001";
 constexpr auto kLegacyImportName = "Legacy Bulk Import";
+constexpr auto kPrefixedImportId = "import:TestSynth:import-legacy-001";
 
 enum ListType {
 	NORMAL_LIST = 0,
@@ -173,14 +174,14 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 		SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READWRITE);
 
 		SQLite::Statement importListQuery(verify, "SELECT list_type, synth, last_synced FROM lists WHERE id = :ID");
-		importListQuery.bind(":ID", kLegacyImportId);
+		importListQuery.bind(":ID", kPrefixedImportId);
 		REQUIRE(importListQuery.executeStep());
 		CHECK(importListQuery.getColumn("list_type").getInt() == ListType::IMPORT_LIST);
 		CHECK(std::string(importListQuery.getColumn("synth").getText()) == kLegacySynth);
 		CHECK(importListQuery.getColumn("last_synced").getInt64() > 0);
 
 		SQLite::Statement pilQuery(verify, "SELECT order_num FROM patch_in_list WHERE id = :ID AND md5 = :MD5");
-		pilQuery.bind(":ID", kLegacyImportId);
+		pilQuery.bind(":ID", kPrefixedImportId);
 		pilQuery.bind(":MD5", kLegacyMd5);
 		REQUIRE(pilQuery.executeStep());
 		CHECK(pilQuery.getColumn(0).getInt() == 0);
@@ -191,13 +192,13 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 
 	auto imports = db.getImportsList(dummySynth.get());
 	REQUIRE(imports.size() == 1);
-	CHECK(imports.front().id == kLegacyImportId);
+	CHECK(imports.front().id == kPrefixedImportId);
 	CHECK(imports.front().name == kLegacyImportName);
 	CHECK(imports.front().countPatches == 1);
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	synthMap[kLegacySynth] = dummySynth;
-	auto list = db.getPatchList({ kLegacyImportId, kLegacyImportName }, synthMap);
+	auto list = db.getPatchList({ kPrefixedImportId, kLegacyImportName }, synthMap);
 	REQUIRE(list);
 	auto importList = std::dynamic_pointer_cast<midikraft::ImportList>(list);
 	REQUIRE(importList);
@@ -207,12 +208,12 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 	CHECK(patchesInList.front().name() == "Bass 01");
 	CHECK(patchesInList.front().synth()->getName() == kLegacySynth);
 
-	db.removePatchFromList(kLegacyImportId, kLegacySynth, kLegacyMd5, 0);
+	db.removePatchFromList(kPrefixedImportId, kLegacySynth, kLegacyMd5, 0);
 
 	{
 		SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
 		SQLite::Statement remainingEntries(verify, "SELECT COUNT(*) FROM patch_in_list WHERE id = :ID");
-		remainingEntries.bind(":ID", kLegacyImportId);
+		remainingEntries.bind(":ID", kPrefixedImportId);
 		REQUIRE(remainingEntries.executeStep());
 		CHECK(remainingEntries.getColumn(0).getInt() == 0);
 	}
