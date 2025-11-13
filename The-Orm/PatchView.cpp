@@ -900,11 +900,12 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 					patchListTree_.refreshAllImports([outNewPatches, this]() {
 						// Select this import
 						auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
-						if (info) {
-							auto name = UIModel::currentSynth()->getName();
+						auto currentSynth = UIModel::currentSynth();
+						if (info && currentSynth) {
+							auto name = currentSynth->getName();
 							auto scopedId = midikraft::SourceInfo::isEditBufferImport(info)
 								? fmt::format("import:{}:{}", name, "EditBufferImport")
-								: fmt::format("import:{}:{}", name, info->md5(UIModel::currentSynth()));
+								: fmt::format("import:{}:{}", name, info->md5(currentSynth));
 							patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, scopedId });
 						}
 					});
