@@ -3,6 +3,7 @@
 #include "doctest/doctest.h"
 
 #include "PatchDatabase.h"
+#include "PatchListType.h"
 #include "ImportList.h"
 #include "Patch.h"
 #include "HasBanksCapability.h"
@@ -22,13 +23,6 @@ constexpr auto kLegacyMd5 = "md5-aaa";
 constexpr auto kLegacyImportId = "import-legacy-001";
 constexpr auto kLegacyImportName = "Legacy Bulk Import";
 constexpr auto kPrefixedImportId = "import:TestSynth:import-legacy-001";
-
-enum ListType {
-	NORMAL_LIST = 0,
-	SYNTH_BANK = 1,
-	USER_BANK = 2,
-	IMPORT_LIST = 3
-};
 
 class ScopedTempFile {
 public:
@@ -176,7 +170,7 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 		SQLite::Statement importListQuery(verify, "SELECT list_type, synth, last_synced FROM lists WHERE id = :ID");
 		importListQuery.bind(":ID", kPrefixedImportId);
 		REQUIRE(importListQuery.executeStep());
-		CHECK(importListQuery.getColumn("list_type").getInt() == ListType::IMPORT_LIST);
+		CHECK(importListQuery.getColumn("list_type").getInt() == midikraft::PatchListType::IMPORT_LIST);
 		CHECK(std::string(importListQuery.getColumn("synth").getText()) == kLegacySynth);
 		CHECK(importListQuery.getColumn("last_synced").getInt64() > 0);
 
