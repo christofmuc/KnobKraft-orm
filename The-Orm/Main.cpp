@@ -17,7 +17,10 @@
 #include "embedded_module.h"
 
 #include <memory>
+#include <chrono>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/dist_sink.h>
 #include "SpdLogJuce.h"
 #include "EditFocusKeeper.h"
 
@@ -58,6 +61,34 @@ static void sentryLogger(sentry_level_t level, const char *message, va_list args
 #endif
 #endif
 
+namespace {
+void configurePersistentLogger(const juce::String& applicationDataDirName)
+{
+	auto storageDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+		.getChildFile(applicationDataDirName)
+		.getChildFile("logs");
+	if (!storageDir.isDirectory()) {
+		auto result = storageDir.createDirectory();
+		ignoreUnused(result);
+	}
+	auto logFile = storageDir.getChildFile("KnobKraftOrm.log");
+
+	constexpr std::size_t maxLogSize = 10 * 1024 * 1024; // 10 MB
+	constexpr std::size_t maxLogFiles = 3;
+	auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logFile.getFullPathName().toStdString(), maxLogSize, maxLogFiles, true);
+	fileSink->set_pattern("%Y-%m-%d %H:%M:%S.%e [%t] %-5l %v");
+
+	auto distSink = std::make_shared<spdlog::sinks::dist_sink_mt>();
+	distSink->add_sink(fileSink);
+
+	auto logger = std::make_shared<spdlog::logger>("KnobKraftOrm", distSink);
+	logger->set_level(spdlog::level::trace);
+	logger->flush_on(spdlog::level::warn);
+	spdlog::set_default_logger(logger);
+	spdlog::flush_every(std::chrono::seconds(1));
+}
+}
+
 //==============================================================================
 class TheOrmApplication  : public JUCEApplication, private ChangeListener
 {
@@ -77,6 +108,7 @@ public:
 		// This method is where you should put your application's initialization code...
 		auto applicationDataDirName = "KnobKraftOrm";
 		Settings::setSettingsID(applicationDataDirName);
+		configurePersistentLogger(applicationDataDirName);
 
 #ifdef USE_SPARKLE
 #ifdef WIN32
@@ -197,6 +229,8 @@ public:
 		sentry_shutdown();
 #endif
 #endif
+
+		spdlog::shutdown();
     }
 
     //==============================================================================

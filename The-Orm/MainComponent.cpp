@@ -69,6 +69,8 @@ extern std::string getOrmVersion();
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 #include <spdlog/sinks/base_sink.h>
+#include <spdlog/sinks/dist_sink.h>
+#include <algorithm>
 
 template<typename Mutex>
 class LogViewSink : public spdlog::sinks::base_sink<Mutex>
@@ -95,6 +97,21 @@ private:
 
 #include <mutex>
 using LogViewSink_mt = LogViewSink<std::mutex>;
+
+namespace {
+std::shared_ptr<spdlog::sinks::dist_sink_mt> getDistributorSink(const std::shared_ptr<spdlog::logger>& logger)
+{
+	if (!logger) {
+		return {};
+	}
+	for (auto& sink : logger->sinks()) {
+		if (auto distSink = std::dynamic_pointer_cast<spdlog::sinks::dist_sink_mt>(sink)) {
+			return distSink;
+		}
+	}
+	return {};
+}
+}
 
 
 class ActiveSynthHolder : public midikraft::SynthHolder, public ActiveListItem {
@@ -144,16 +161,23 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	logArea_(&logView_, BorderSize<int>(8))
 {
 	logger_ = std::make_unique<LogViewLogger>(logView_);
+	logViewSink_ = std::make_shared<LogViewSink_mt>(logView_);
+	logViewSink_->set_pattern("%H:%M:%S: %l %v");
 
-	// Setup spd logging
-	std::vector<spdlog::sink_ptr> sinks;
-	sinks.push_back(std::make_shared<LogViewSink_mt>(logView_));
-	spdLogger_ = std::make_shared<spdlog::logger>("KnobKraftOrm", begin(sinks), end(sinks));
-	spdLogger_->set_pattern("%H:%M:%S: %l %v");
-	//spdLogger_->set_pattern("%Y-%m-%d %H:%M:%S.%e%z %l [%t] %v");
-	spdlog::set_default_logger(spdLogger_);
-	spdlog::flush_every(std::chrono::milliseconds(50));
-	spdlog::set_level(spdlog::level::trace);
+	auto sharedLogger = spdlog::default_logger();
+	jassert(sharedLogger != nullptr);
+	if (!sharedLogger) {
+		sharedLogger = std::make_shared<spdlog::logger>("KnobKraftOrm");
+		sharedLogger->set_level(spdlog::level::trace);
+		spdlog::set_default_logger(sharedLogger);
+	}
+
+	if (auto distSink = getDistributorSink(sharedLogger)) {
+		distSink->add_sink(logViewSink_);
+	}
+	else {
+		sharedLogger->sinks().push_back(logViewSink_);
+	}
 	spdlog::info("Launching KnobKraft Orm");
 
 	auto customDatabase = Settings::instance().get("LastDatabase");
@@ -574,6 +598,19 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+	if (logViewSink_) {
+		if (auto sharedLogger = spdlog::default_logger()) {
+			if (auto distSink = getDistributorSink(sharedLogger)) {
+				distSink->remove_sink(logViewSink_);
+			}
+			else {
+				auto& sinks = sharedLogger->sinks();
+				sinks.erase(std::remove(sinks.begin(), sinks.end(), logViewSink_), sinks.end());
+			}
+		}
+		logViewSink_.reset();
+	}
+
 	// Prevent memory leaks being reported on shutdown
 	EditCategoryDialog::shutdown();
 	ExportDialog::shutdown();
