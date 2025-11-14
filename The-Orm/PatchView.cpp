@@ -58,14 +58,14 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 		showBank();
 	};
 	patchListTree_.onImportListSelected = [this](String id) {
-		setImportListFilter(id);
+		setListFilter(id);
 	};
 	patchListTree_.onUserBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, String id) {
 		setUserBankFilter(synth, id.toStdString());
 		showBank();
 	};
 	patchListTree_.onUserListSelected= [this](String id) {
-		setUserListFilter(id);
+		setListFilter(id);
 	};
 	patchListTree_.onUserListChanged = [this](String id) {
 		if (listFilterID_ == id) {
@@ -456,14 +456,7 @@ void PatchView::copyBankPatchNamesToClipboard() {
 }
 
 
-
-void PatchView::setImportListFilter(String filter)
-{
-	listFilterID_ = filter.toStdString();
-	retrieveFirstPageFromDatabase();
-}
-
-void PatchView::setUserListFilter(String filter)
+void PatchView::setListFilter(String filter)
 {
 	listFilterID_ = filter.toStdString();
 	retrieveFirstPageFromDatabase();

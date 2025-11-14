@@ -118,8 +118,7 @@ private:
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId);
-	void setImportListFilter(String filter);
-	void setUserListFilter(String filter);
+	void setListFilter(String filter);
 	void deleteSomething(nlohmann::json const &infos);
 
 	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
