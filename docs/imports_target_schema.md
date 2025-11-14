@@ -47,7 +47,7 @@
    - `patch_in_list.order_num` is always zero-based and compact (no gaps) after any mutation; helpers like `renumList` remain responsible for re-packing indexes.
 
 5. **Patch metadata**  
-   - `patches.sourceID` stays for now (deprecate later) to keep backward compatibility and to help migration code locate imports. Once the migration proves solid, we can consider removing/repurposing the column in a later schema version.
+   - `patches.sourceID` was kept temporarily (schema ≤17) so the migration CTEs could discover legacy imports. Schema 18 removes the column entirely; new imports rely purely on `lists`/`patch_in_list` membership.
 
 ## Migration Expectations
 1. Add `list_type` column with default `USER_LIST` (0) and backfill existing rows based on current heuristics (active banks vs. user banks).  

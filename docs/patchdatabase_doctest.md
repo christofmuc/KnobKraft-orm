@@ -19,8 +19,11 @@ True
 15
 >>> cur.execute("SELECT name, id, date FROM imports WHERE synth = ?", ("TestSynth",)).fetchall()
 [('Bulk import Jan 2024', 'import-123', '2024-01-01 12:00:00')]
->>> cur.execute("SELECT synth, md5, name, sourceID FROM patches WHERE synth = ?", ("TestSynth",)).fetchall()
-[('TestSynth', 'md5-aaa', 'Bass 01', 'import-123')]
+>>> cur.execute("SELECT synth, md5, name FROM patches WHERE synth = ?", ("TestSynth",)).fetchall()
+[('TestSynth', 'md5-aaa', 'Bass 01')]
+# Legacy fixtures (schema ≤17) also expose the now-removed sourceID column:
+>>> cur.execute("PRAGMA table_info(patches)").fetchall()[8][1]
+'sourceID'
 >>> source_blob = cur.execute("SELECT sourceInfo FROM patches WHERE md5 = 'md5-aaa'").fetchone()[0]
 >>> payload = json.loads(source_blob)
 >>> sorted(payload.keys())

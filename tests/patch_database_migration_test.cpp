@@ -13,6 +13,8 @@
 
 #include <filesystem>
 #include <map>
+#include <algorithm>
+#include <iterator>
 #include <random>
 #include <string>
 
@@ -98,7 +100,7 @@ void createLegacyImportDatabase(const std::filesystem::path& dbPath) {
 	insertImport.exec();
 }
 
-void appendSecondPatchAndNormalizeOrder(const std::filesystem::path& dbPath) {
+void insertSecondLegacyPatch(const std::filesystem::path& dbPath) {
 	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE);
 
 	SQLite::Statement updateProgram(db, "UPDATE patches SET midiProgramNo = ? WHERE md5 = ?");
@@ -107,53 +109,57 @@ void appendSecondPatchAndNormalizeOrder(const std::filesystem::path& dbPath) {
 	updateProgram.exec();
 
 	SQLite::Statement insertPatch(db,
-		"INSERT INTO patches (synth, md5, name, type, data, favorite, regular, hidden, sourceID, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment, author, info) "
-		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		"INSERT INTO patches (synth, md5, name, type, data, favorite, hidden, sourceID, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment) "
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 	constexpr unsigned char kSecondPatchBytes[] = { 0x05, 0x06, 0x07, 0x08 };
 	insertPatch.bind(1, kLegacySynth);
 	insertPatch.bind(2, kSecondMd5);
 	insertPatch.bind(3, kSecondPatchName);
 	insertPatch.bind(4, 0);
 	insertPatch.bind(5, kSecondPatchBytes, static_cast<int>(sizeof(kSecondPatchBytes)));
-	insertPatch.bind(6, 0); // favorite
-	insertPatch.bind(7, 0); // regular
-	insertPatch.bind(8, 0); // hidden
-	insertPatch.bind(9);    // sourceID null
-	insertPatch.bind(10, kLegacyImportName);
-	insertPatch.bind(11, R"({"bulksource":true,"timestamp":"2024-01-01T12:05:00Z"})");
-	insertPatch.bind(12, 0); // midiBankNo
-	insertPatch.bind(13, 0); // midiProgramNo
-	insertPatch.bind(14, 0); // categories
-	insertPatch.bind(15, 0); // categoryUserDecision
-	insertPatch.bind(16, ""); // comment
-	insertPatch.bind(17, ""); // author
-	insertPatch.bind(18, ""); // info
+	insertPatch.bind(6, 0);  // favorite
+	insertPatch.bind(7, 0);  // hidden
+	insertPatch.bind(8, kLegacyImportId);
+	insertPatch.bind(9, kLegacyImportName);
+	insertPatch.bind(10, R"({"bulksource":true,"timestamp":"2024-01-01T12:05:00Z"})");
+	insertPatch.bind(11, 0); // midiBankNo
+	insertPatch.bind(12, 1); // midiProgramNo
+	insertPatch.bind(13, 0); // categories
+	insertPatch.bind(14, 0); // categoryUserDecision
+	insertPatch.bind(15, ""); // comment
 	insertPatch.exec();
-
-	SQLite::Statement normalizeFirst(db, "UPDATE patch_in_list SET order_num = 0 WHERE id = :ID AND md5 = :MD5");
-	normalizeFirst.bind(":ID", kPrefixedImportId.c_str());
-	normalizeFirst.bind(":MD5", kLegacyMd5);
-	normalizeFirst.exec();
-
-	SQLite::Statement insertPil(db, "INSERT INTO patch_in_list (id, synth, md5, order_num) VALUES (?, ?, ?, ?)");
-	insertPil.bind(1, kPrefixedImportId.c_str());
-	insertPil.bind(2, kLegacySynth);
-	insertPil.bind(3, kSecondMd5);
-	insertPil.bind(4, 1);
-	insertPil.exec();
-
-	SQLite::Statement clearSource(db, "UPDATE patches SET sourceID = NULL");
-	clearSource.exec();
 }
 
-void removeSourceIdColumn(const std::filesystem::path& dbPath) {
-	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE);
-	db.exec("DROP INDEX IF EXISTS patch_sourceid_idx");
-	db.exec("ALTER TABLE patches RENAME TO patches_with_source");
-	db.exec("CREATE TABLE patches (synth TEXT NOT NULL, md5 TEXT NOT NULL, name TEXT, type INTEGER, data BLOB, favorite INTEGER, regular INTEGER, hidden INTEGER, sourceName TEXT, sourceInfo TEXT, midiBankNo INTEGER, midiProgramNo INTEGER, categories INTEGER, categoryUserDecision INTEGER, comment TEXT, author TEXT, info TEXT, PRIMARY KEY (synth, md5))");
-	db.exec("INSERT INTO patches (synth, md5, name, type, data, favorite, regular, hidden, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment, author, info) "
-		"SELECT synth, md5, name, type, data, favorite, regular, hidden, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment, author, info FROM patches_with_source");
-	db.exec("DROP TABLE patches_with_source");
+bool tableHasColumn(SQLite::Database& db, std::string const& table, std::string const& column) {
+	auto pragma = "PRAGMA table_info(" + table + ")";
+	SQLite::Statement stmt(db, pragma.c_str());
+	while (stmt.executeStep()) {
+		if (column == stmt.getColumn("name").getText()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool hasIndex(SQLite::Database& db, std::string const& indexName) {
+	SQLite::Statement stmt(db, "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = :NAME");
+	stmt.bind(":NAME", indexName.c_str());
+	return stmt.executeStep();
+}
+
+std::vector<std::string> orderedPatchNames(SQLite::Database& db, std::string const& listId) {
+	SQLite::Statement stmt(db,
+		"SELECT patches.name "
+		"  FROM patch_in_list "
+		"  JOIN patches ON patches.md5 = patch_in_list.md5 AND patches.synth = patch_in_list.synth "
+		" WHERE patch_in_list.id = :ID "
+		" ORDER BY patch_in_list.order_num");
+	stmt.bind(":ID", listId.c_str());
+	std::vector<std::string> names;
+	while (stmt.executeStep()) {
+		names.emplace_back(stmt.getColumn(0).getText());
+	}
+	return names;
 }
 
 class DummyPatch : public midikraft::Patch {
@@ -281,11 +287,20 @@ TEST_CASE("import ordering uses list order when sourceIDs are empty") {
 	auto tmp = makeTempDatabasePath();
 	createLegacyImportDatabase(tmp.path());
 
+	insertSecondLegacyPatch(tmp.path());
+
 	{
 		midikraft::PatchDatabase migrator(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	}
 
-	appendSecondPatchAndNormalizeOrder(tmp.path());
+	{
+		SQLite::Database db(tmp.path().string(), SQLite::OPEN_READWRITE);
+		SQLite::Statement normalize(db, "UPDATE patch_in_list SET order_num = CASE WHEN md5 = :FIRST THEN 0 WHEN md5 = :SECOND THEN 1 ELSE order_num END WHERE id = :ID");
+		normalize.bind(":FIRST", kLegacyMd5);
+		normalize.bind(":SECOND", kSecondMd5);
+		normalize.bind(":ID", kPrefixedImportId.c_str());
+		normalize.exec();
+	}
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	auto synth = std::make_shared<DummySynth>(kLegacySynth);
@@ -297,20 +312,20 @@ TEST_CASE("import ordering uses list order when sourceIDs are empty") {
 
 	auto patches = database.getPatches(filter, 0, -1);
 	REQUIRE(patches.size() == 2);
-	CHECK(patches[0].name() == "Bass 01");
-	CHECK(patches[1].name() == kSecondPatchName);
+
+	std::vector<std::string> actualNames;
+	std::transform(patches.begin(), patches.end(), std::back_inserter(actualNames),
+		[](auto const& patch) { return patch.name(); });
+
+	SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+	auto expectedNames = orderedPatchNames(verify, kPrefixedImportId);
+	CHECK(actualNames == expectedNames);
 }
 
-TEST_CASE("getPatches works when sourceID column was removed") {
+TEST_CASE("schema migration drops sourceID column and index") {
 	auto tmp = makeTempDatabasePath();
 	createLegacyImportDatabase(tmp.path());
-
-	{
-		midikraft::PatchDatabase migrator(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	}
-
-	appendSecondPatchAndNormalizeOrder(tmp.path());
-	removeSourceIdColumn(tmp.path());
+	insertSecondLegacyPatch(tmp.path());
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	auto synth = std::make_shared<DummySynth>(kLegacySynth);
@@ -322,6 +337,14 @@ TEST_CASE("getPatches works when sourceID column was removed") {
 
 	auto patches = database.getPatches(filter, 0, -1);
 	REQUIRE(patches.size() == 2);
-	CHECK(patches[0].name() == "Bass 01");
-	CHECK(patches[1].name() == kSecondPatchName);
+
+	std::vector<std::string> actualNames;
+	std::transform(patches.begin(), patches.end(), std::back_inserter(actualNames),
+		[](auto const& patch) { return patch.name(); });
+
+	SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+	auto expectedNames = orderedPatchNames(verify, kPrefixedImportId);
+	CHECK(actualNames == expectedNames);
+	CHECK_FALSE(tableHasColumn(verify, "patches", "sourceID"));
+	CHECK_FALSE(hasIndex(verify, "patch_sourceid_idx"));
 }
