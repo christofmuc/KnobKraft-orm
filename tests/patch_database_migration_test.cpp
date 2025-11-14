@@ -21,8 +21,10 @@ namespace {
 constexpr int kLegacySchemaVersion = 13;
 constexpr auto kLegacySynth = "TestSynth";
 constexpr auto kLegacyMd5 = "md5-aaa";
+constexpr auto kSecondMd5 = "md5-bbb";
 constexpr auto kLegacyImportId = "import-legacy-001";
 constexpr auto kLegacyImportName = "Legacy Bulk Import";
+constexpr auto kSecondPatchName = "Bass 02";
 const std::string kPrefixedImportId = std::string("import:") + kLegacySynth + ":" + kLegacyImportId;
 
 class ScopedTempFile {
@@ -94,6 +96,54 @@ void createLegacyImportDatabase(const std::filesystem::path& dbPath) {
 	insertImport.bind(3, kLegacyImportId);
 	insertImport.bind(4, "2024-01-01 12:00:00");
 	insertImport.exec();
+}
+
+void appendSecondPatchAndNormalizeOrder(const std::filesystem::path& dbPath) {
+	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE);
+
+	SQLite::Statement updateProgram(db, "UPDATE patches SET midiProgramNo = ? WHERE md5 = ?");
+	updateProgram.bind(1, 64);
+	updateProgram.bind(2, kLegacyMd5);
+	updateProgram.exec();
+
+	SQLite::Statement insertPatch(db,
+		"INSERT INTO patches (synth, md5, name, type, data, favorite, regular, hidden, sourceID, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment, author, info) "
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	constexpr unsigned char kSecondPatchBytes[] = { 0x05, 0x06, 0x07, 0x08 };
+	insertPatch.bind(1, kLegacySynth);
+	insertPatch.bind(2, kSecondMd5);
+	insertPatch.bind(3, kSecondPatchName);
+	insertPatch.bind(4, 0);
+	insertPatch.bind(5, kSecondPatchBytes, static_cast<int>(sizeof(kSecondPatchBytes)));
+	insertPatch.bind(6, 0); // favorite
+	insertPatch.bind(7, 0); // regular
+	insertPatch.bind(8, 0); // hidden
+	insertPatch.bind(9);    // sourceID null
+	insertPatch.bind(10, kLegacyImportName);
+	insertPatch.bind(11, R"({"bulksource":true,"timestamp":"2024-01-01T12:05:00Z"})");
+	insertPatch.bind(12, 0); // midiBankNo
+	insertPatch.bind(13, 0); // midiProgramNo
+	insertPatch.bind(14, 0); // categories
+	insertPatch.bind(15, 0); // categoryUserDecision
+	insertPatch.bind(16, ""); // comment
+	insertPatch.bind(17, ""); // author
+	insertPatch.bind(18, ""); // info
+	insertPatch.exec();
+
+	SQLite::Statement normalizeFirst(db, "UPDATE patch_in_list SET order_num = 0 WHERE id = :ID AND md5 = :MD5");
+	normalizeFirst.bind(":ID", kPrefixedImportId.c_str());
+	normalizeFirst.bind(":MD5", kLegacyMd5);
+	normalizeFirst.exec();
+
+	SQLite::Statement insertPil(db, "INSERT INTO patch_in_list (id, synth, md5, order_num) VALUES (?, ?, ?, ?)");
+	insertPil.bind(1, kPrefixedImportId.c_str());
+	insertPil.bind(2, kLegacySynth);
+	insertPil.bind(3, kSecondMd5);
+	insertPil.bind(4, 1);
+	insertPil.exec();
+
+	SQLite::Statement clearSource(db, "UPDATE patches SET sourceID = NULL");
+	clearSource.exec();
 }
 
 class DummyPatch : public midikraft::Patch {
@@ -215,4 +265,28 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 
 	auto importsAfterDelete = db.getImportsList(dummySynth.get());
 	CHECK(importsAfterDelete.empty());
+}
+
+TEST_CASE("import ordering uses list order when sourceIDs are empty") {
+	auto tmp = makeTempDatabasePath();
+	createLegacyImportDatabase(tmp.path());
+
+	{
+		midikraft::PatchDatabase migrator(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+	}
+
+	appendSecondPatchAndNormalizeOrder(tmp.path());
+
+	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+	auto synth = std::make_shared<DummySynth>(kLegacySynth);
+
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+	synthMap[kLegacySynth] = synth;
+	midikraft::PatchFilter filter(synthMap);
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Import_id;
+
+	auto patches = database.getPatches(filter, 0, -1);
+	REQUIRE(patches.size() == 2);
+	CHECK(patches[0].name() == "Bass 01");
+	CHECK(patches[1].name() == kSecondPatchName);
 }
