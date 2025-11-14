@@ -146,6 +146,16 @@ void appendSecondPatchAndNormalizeOrder(const std::filesystem::path& dbPath) {
 	clearSource.exec();
 }
 
+void removeSourceIdColumn(const std::filesystem::path& dbPath) {
+	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE);
+	db.exec("DROP INDEX IF EXISTS patch_sourceid_idx");
+	db.exec("ALTER TABLE patches RENAME TO patches_with_source");
+	db.exec("CREATE TABLE patches (synth TEXT NOT NULL, md5 TEXT NOT NULL, name TEXT, type INTEGER, data BLOB, favorite INTEGER, regular INTEGER, hidden INTEGER, sourceName TEXT, sourceInfo TEXT, midiBankNo INTEGER, midiProgramNo INTEGER, categories INTEGER, categoryUserDecision INTEGER, comment TEXT, author TEXT, info TEXT, PRIMARY KEY (synth, md5))");
+	db.exec("INSERT INTO patches (synth, md5, name, type, data, favorite, regular, hidden, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment, author, info) "
+		"SELECT synth, md5, name, type, data, favorite, regular, hidden, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment, author, info FROM patches_with_source");
+	db.exec("DROP TABLE patches_with_source");
+}
+
 class DummyPatch : public midikraft::Patch {
 public:
 	DummyPatch() : midikraft::Patch(0) {}
@@ -276,6 +286,31 @@ TEST_CASE("import ordering uses list order when sourceIDs are empty") {
 	}
 
 	appendSecondPatchAndNormalizeOrder(tmp.path());
+
+	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+	auto synth = std::make_shared<DummySynth>(kLegacySynth);
+
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+	synthMap[kLegacySynth] = synth;
+	midikraft::PatchFilter filter(synthMap);
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Import_id;
+
+	auto patches = database.getPatches(filter, 0, -1);
+	REQUIRE(patches.size() == 2);
+	CHECK(patches[0].name() == "Bass 01");
+	CHECK(patches[1].name() == kSecondPatchName);
+}
+
+TEST_CASE("getPatches works when sourceID column was removed") {
+	auto tmp = makeTempDatabasePath();
+	createLegacyImportDatabase(tmp.path());
+
+	{
+		midikraft::PatchDatabase migrator(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+	}
+
+	appendSecondPatchAndNormalizeOrder(tmp.path());
+	removeSourceIdColumn(tmp.path());
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	auto synth = std::make_shared<DummySynth>(kLegacySynth);
