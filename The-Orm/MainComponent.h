@@ -119,7 +119,7 @@ private:
 
 	InsetBox logArea_;
 
-	std::shared_ptr<spdlog::logger> spdLogger_;
+	spdlog::sink_ptr logViewSink_;
 
 	ListenerSet listeners_;
 
