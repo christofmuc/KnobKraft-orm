@@ -96,8 +96,9 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, PatchButt
 				}
 				break;
 			}
+			setButtonData(holder->name());
+			break;
 		}
-		// FallThrough
 		case PatchButtonInfo::CenterName:
 			setButtonData(holder->name());
 			break;
