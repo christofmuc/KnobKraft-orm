@@ -251,11 +251,17 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
 	auto dummySynth = std::make_shared<DummySynth>(kLegacySynth);
 
-	auto imports = db.getImportsList(dummySynth.get());
-	REQUIRE(imports.size() == 1);
-	CHECK(imports.front().id == kPrefixedImportId);
-	CHECK(imports.front().name == kLegacyImportName);
-	CHECK(imports.front().countPatches == 1);
+	{
+		SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+		SQLite::Statement listQuery(verify, "SELECT name FROM lists WHERE id = :ID");
+		listQuery.bind(":ID", kPrefixedImportId.c_str());
+		REQUIRE(listQuery.executeStep());
+		CHECK(std::string(listQuery.getColumn(0).getText()) == kLegacyImportName);
+		SQLite::Statement countQuery(verify, "SELECT COUNT(*) FROM patch_in_list WHERE id = :ID");
+		countQuery.bind(":ID", kPrefixedImportId.c_str());
+		REQUIRE(countQuery.executeStep());
+		CHECK(countQuery.getColumn(0).getInt() == 1);
+	}
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	synthMap[kLegacySynth] = dummySynth;
@@ -279,8 +285,13 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 		CHECK(remainingEntries.getColumn(0).getInt() == 0);
 	}
 
-	auto importsAfterDelete = db.getImportsList(dummySynth.get());
-	CHECK(importsAfterDelete.empty());
+	{
+		SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+		SQLite::Statement countQuery(verify, "SELECT COUNT(*) FROM patch_in_list WHERE id = :ID");
+		countQuery.bind(":ID", kPrefixedImportId.c_str());
+		REQUIRE(countQuery.executeStep());
+		CHECK(countQuery.getColumn(0).getInt() == 0);
+	}
 }
 
 TEST_CASE("import ordering uses list order when sourceIDs are empty") {

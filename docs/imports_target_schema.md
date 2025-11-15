@@ -38,8 +38,8 @@
    - When `importID` (or the derived list id) is set, the SQL must switch to the same join/order path already used for arbitrary lists (ensuring ordering by `order_num`).
 
 3. **Listing imports**  
-   - Replace `getImportsList(Synth*)` with `getImportLists(Synth*)` returning `ListInfo + count`. Implementation: `SELECT id,name,last_synced FROM lists WHERE list_type = IMPORT_LIST AND synth = :SYN ORDER BY last_synced`.  
-   - `PatchListTree` can reuse the existing “lists tree” logic by treating import lists exactly like any other list subtype, i.e., `getPatchList` will instantiate a lightweight `PatchList` (or a small `ImportList` subclass if needed for UI labelling).
+   - Enumerate import lists by querying `lists`/`patch_in_list` directly (e.g., `SELECT id,name FROM lists WHERE list_type = IMPORT_LIST AND synth = :SYN`). No separate API needed; the UI consumes the existing `ListInfo` records.  
+   - `PatchListTree` reuses the regular list tree plumbing: import nodes render under the synth branch, support inline rename, and expose the same drag/drop metadata as any other list type.
 
 4. **Invariants**  
    - `lists.list_type = IMPORT_LIST` ⇒ `lists.synth IS NOT NULL`, `lists.midi_bank_number IS NULL`.  
@@ -53,5 +53,5 @@
 1. Add `list_type` column with default `USER_LIST` (0) and backfill existing rows based on current heuristics (active banks vs. user banks).  
 2. Create import list rows from `imports` joined to `patches`, generating `list_id`, `name`, `last_synced`, and populating `patch_in_list` membership for every patch referencing that `sourceID`.  
 3. Remove or replace the `imports` table (drop table or convert to a read-only view pointing to `lists`).  
-4. Ensure all public APIs (`getImportsList`, `renameImport`, etc.) now operate on the lists infrastructure to keep the UI unchanged while the underlying data moves.  
+4. Ensure all public APIs (import listing in the tree, rename handlers, etc.) now operate on the lists infrastructure to keep the UI unchanged while the underlying data moves.  
 5. Regression tests must cover migrating a schema-14/15 database into the new layout and validating the invariants above.

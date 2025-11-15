@@ -118,7 +118,7 @@ private:
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId);
-	void setListFilter(String filter);
+	void setListFilter(String filter, std::shared_ptr<midikraft::Synth> synth = nullptr);
 	void deleteSomething(nlohmann::json const &infos);
 
 	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
@@ -127,6 +127,7 @@ private:
 
     PatchListTree patchListTree_;
 	std::string listFilterID_;
+	std::shared_ptr<midikraft::Synth> listFilterSynth_;
 	std::unique_ptr<SplitteredComponent> splitters_;
 	TabbedComponent rightSideTab_;
 
