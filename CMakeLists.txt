@@ -291,5 +291,17 @@ add_subdirectory(pytschirp)
 # Main module
 add_subdirectory(The-Orm)
 
+option(BUILD_PATCH_DATABASE_TESTS "Build the PatchDatabase doctest binary" OFF)
+if(BUILD_PATCH_DATABASE_TESTS)
+	add_executable(patch_database_migration_test tests/patch_database_migration_test.cpp)
+	target_include_directories(patch_database_migration_test PRIVATE
+		${CMAKE_CURRENT_LIST_DIR}
+		${CMAKE_CURRENT_LIST_DIR}/MidiKraft
+		${CMAKE_CURRENT_LIST_DIR}/MidiKraft/base/include
+		${CMAKE_CURRENT_LIST_DIR}/MidiKraft/librarian
+		${CMAKE_CURRENT_LIST_DIR}/third_party/doctest
+		${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp/include)
+    target_link_libraries(patch_database_migration_test PRIVATE midikraft-database SQLiteCpp)
+endif()
 
 
