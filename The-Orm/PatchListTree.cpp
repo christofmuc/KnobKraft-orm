@@ -55,19 +55,6 @@ void clampPatchesForBank(std::vector<midikraft::PatchHolder>& patches, std::shar
 	}
 }
 
-void clampPatchesForBank(std::vector<midikraft::PatchHolder>& patches, std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
-	if (!synth || !bank.isValid()) return;
-	int capacity = midikraft::SynthBank::numberOfPatchesInBank(synth, bank);
-	if (capacity <= 0) {
-		patches.clear();
-		return;
-	}
-	if ((int)patches.size() > capacity) {
-		patches.resize(capacity);
-		spdlog::warn("Clamped dropped list to {} patches to fit target bank on synth {}", capacity, synth->getName());
-	}
-}
-
 void keepPatchesForSynth(std::vector<midikraft::PatchHolder>& patches, std::shared_ptr<midikraft::Synth> synth) {
 	if (!synth) return;
 	auto synthName = synth->getName();
