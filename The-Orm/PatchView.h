@@ -114,6 +114,11 @@ private:
 	void updateLastPath();
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
+	void downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
+		const std::vector<MidiBankNumber>& banks,
+		const juce::String& progressTitle,
+		std::function<void(std::vector<midikraft::PatchHolder>)> onLoaded,
+		bool requireDetectedDevice = true);
 	
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
