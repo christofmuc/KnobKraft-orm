@@ -80,6 +80,7 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	})
 	, propertyEditor_(true)
 	, favorite_("Fav!")
+	, regular_("Regular")
 	, hide_("Hide")
 	, metaData_(categories, [this](CategoryButtons::Category categoryClicked, TouchButtonFunction f) {
 		categoryUpdated(categoryClicked, f);
@@ -95,6 +96,11 @@ CurrentPatchDisplay::CurrentPatchDisplay(midikraft::PatchDatabase &database, std
 	favorite_.addListener(this);
 	favorite_.setColour(TextButton::ColourIds::buttonOnColourId, Colour::fromString("ffffa500"));
 	addAndMakeVisible(favorite_);
+
+	regular_.setClickingTogglesState(true);
+	regular_.addListener(this);
+	regular_.setColour(TextButton::ColourIds::buttonOnColourId, Colours::cornflowerblue);
+	addAndMakeVisible(regular_);
 
 	hide_.setClickingTogglesState(true);
 	hide_.addListener(this);
@@ -137,6 +143,7 @@ void CurrentPatchDisplay::setCurrentPatch(std::shared_ptr<midikraft::PatchHolder
 		setupPatchProperties(patch);
 		refreshNameButtonColour();
 		favorite_.setToggleState(patch->isFavorite(), dontSendNotification);
+		regular_.setToggleState(patch->isRegular(), dontSendNotification);
 		hide_.setToggleState(patch->isHidden(), dontSendNotification);
 		
 		refreshCategories();
@@ -334,6 +341,7 @@ void CurrentPatchDisplay::reset()
 	metaDataValues_.clear();
 	layerNameValues_.clear();
 	favorite_.setToggleState(false, dontSendNotification);
+	regular_.setToggleState(false, dontSendNotification);
 	hide_.setToggleState(false, dontSendNotification);
 	metaData_.setActive({});
 	metaData_.setPatchText(nullptr);
@@ -361,8 +369,9 @@ void CurrentPatchDisplay::resized()
 		fb.flexDirection = FlexBox::Direction::row;
 		fb.justifyContent = FlexBox::JustifyContent::center;
 		fb.items.add(FlexItem(favorite_).withMinHeight(LAYOUT_TOUCHBUTTON_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
+		fb.items.add(FlexItem(regular_).withMinHeight(LAYOUT_TOUCHBUTTON_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
 		fb.items.add(FlexItem(hide_).withMinHeight(LAYOUT_TOUCHBUTTON_HEIGHT).withMinWidth(LAYOUT_BUTTON_WIDTH_MIN));
-		auto spaceNeeded = FlexBoxHelper::determineSizeForButtonLayout(this, this, { &favorite_, &hide_ }, nextRow);
+		auto spaceNeeded = FlexBoxHelper::determineSizeForButtonLayout(this, this, { &favorite_, &regular_, &hide_ }, nextRow);
 		fb.performLayout(spaceNeeded.toNearestInt());
 		area.removeFromTop((int) spaceNeeded.getHeight());
 
@@ -383,6 +392,7 @@ void CurrentPatchDisplay::resized()
 
 		// Right side - hide and favorite button
 		hide_.setBounds(rightCorner.removeFromRight(100));
+		regular_.setBounds(rightCorner.removeFromRight(100));
 		favorite_.setBounds(rightCorner.removeFromRight(100));
 
 		//TODO - Need to setup property table
@@ -399,18 +409,37 @@ void CurrentPatchDisplay::resized()
 
 void CurrentPatchDisplay::buttonClicked(Button *button)
 {
-	if (currentPatch_) {
+	if (currentPatch_ && currentPatch_->patch()) {
 		if (button == &favorite_) {
-			if (currentPatch_->patch()) {
-				currentPatch_->setFavorite(midikraft::Favorite(button->getToggleState()));
-				favoriteHandler_(currentPatch_);
+			currentPatch_->setFavorite(midikraft::Favorite(favorite_.getToggleState()));
+			if (favorite_.getToggleState() && regular_.getToggleState()) {
+				regular_.setToggleState(false, dontSendNotification);
+				currentPatch_->setRegular(false);
 			}
+			favoriteHandler_(currentPatch_);
 		}
 		else if (button == &hide_) {
-			if (currentPatch_->patch()) {
-				currentPatch_->setHidden(hide_.getToggleState());
-				favoriteHandler_(currentPatch_);
+			currentPatch_->setHidden(hide_.getToggleState());
+			if (hide_.getToggleState() && regular_.getToggleState()) {
+				regular_.setToggleState(false, dontSendNotification);
+				currentPatch_->setRegular(false);
 			}
+			favoriteHandler_(currentPatch_);
+		}
+		else if (button == &regular_) {
+			bool newState = regular_.getToggleState();
+			currentPatch_->setRegular(newState);
+			if (newState) {
+				if (favorite_.getToggleState()) {
+					favorite_.setToggleState(false, dontSendNotification);
+					currentPatch_->setFavorite(midikraft::Favorite());
+				}
+				if (hide_.getToggleState()) {
+					hide_.setToggleState(false, dontSendNotification);
+					currentPatch_->setHidden(false);
+				}
+			}
+			favoriteHandler_(currentPatch_);
 		}
 	}
 }
@@ -424,6 +453,13 @@ void CurrentPatchDisplay::toggleFavorite()
 {
 	if (currentPatch_ && currentPatch_->patch()) {
 		favorite_.setToggleState(!favorite_.getToggleState(), sendNotificationAsync);
+	}
+}
+
+void CurrentPatchDisplay::toggleRegular()
+{
+	if (currentPatch_ && currentPatch_->patch()) {
+		regular_.setToggleState(!regular_.getToggleState(), sendNotificationAsync);
 	}
 }
 
