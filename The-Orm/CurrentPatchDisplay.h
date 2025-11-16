@@ -61,6 +61,7 @@ public:
 	// For remote control via MidiKeyboard
 	void toggleFavorite();
 	void toggleHide();
+	void toggleRegular();
 
 	// Override to allow custom colour
 	virtual void paint(Graphics& g) override;
@@ -78,6 +79,7 @@ private:
 	PropertyEditor propertyEditor_;
 	String lastOpenState_;
 	TextButton favorite_;
+	TextButton regular_;
 	TextButton hide_;
 	Viewport metaDataScroller_;
 	MetaDataArea metaData_;
