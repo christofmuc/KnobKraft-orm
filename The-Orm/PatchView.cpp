@@ -755,7 +755,9 @@ midikraft::PatchFilter PatchView::currentFilter()
 {
 	auto filter = patchSearch_->getFilter();
 	filter.listID = listFilterID_;
-	if (!filter.listID.empty()) {
+	if (!filter.listID.empty() && !juce::String(filter.listID).startsWith("import:")) {
+		// Only force by-position-in-list ordering for non Import lists.
+		// TODO: This uses the hard coded import: prefix for list IDs, which is not very stable!
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 		if (listFilterSynth_) {
 			filter.synths.clear();
