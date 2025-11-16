@@ -11,8 +11,13 @@
 
 void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth)
 {
-	currentSynth_ = activeSynth;
-	sendChangeMessage();
+	std::shared_ptr<midikraft::Synth> activeLocked = activeSynth.lock();
+	std::shared_ptr<midikraft::Synth> currentLocked = currentSynth_.lock();
+	if (!activeLocked || !currentLocked || (activeLocked->getName() != currentLocked->getName())) {
+		// Change detected, send refresh message
+		currentSynth_ = activeSynth;
+		sendChangeMessage();
+	}
 }
 
 midikraft::Synth* CurrentSynth::synth()
@@ -183,8 +188,11 @@ bool CurrentSynthList::isSynthActive(std::shared_ptr<midikraft::SimpleDiscoverab
 
 void CurrentMultiMode::setMultiSynthMode(bool multiMode)
 {
-	multiSynthMode_ = multiMode;
-	sendChangeMessage();
+	if (multiSynthMode_ != multiMode) {
+		// Only send change message when the value actually changed
+		multiSynthMode_ = multiMode;
+		sendChangeMessage();
+	}
 }
 
 bool CurrentMultiMode::multiSynthMode() const
