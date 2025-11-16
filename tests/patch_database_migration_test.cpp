@@ -24,10 +24,13 @@ constexpr int kLegacySchemaVersion = 13;
 constexpr auto kLegacySynth = "TestSynth";
 constexpr auto kLegacyMd5 = "md5-aaa";
 constexpr auto kSecondMd5 = "md5-bbb";
+constexpr auto kSecondSynth = "TestSynthB";
+constexpr auto kSecondSynthMd5 = "md5-ccc";
 constexpr auto kLegacyImportId = "import-legacy-001";
 constexpr auto kLegacyImportName = "Legacy Bulk Import";
 constexpr auto kSecondPatchName = "Bass 02";
 const std::string kPrefixedImportId = std::string("import:") + kLegacySynth + ":" + kLegacyImportId;
+const std::string kSecondPrefixedImportId = std::string("import:") + kSecondSynth + ":" + kLegacyImportId;
 
 class ScopedTempFile {
 public:
@@ -128,6 +131,38 @@ void insertSecondLegacyPatch(const std::filesystem::path& dbPath) {
 	insertPatch.bind(14, 0); // categoryUserDecision
 	insertPatch.bind(15, ""); // comment
 	insertPatch.exec();
+}
+
+void insertSecondSynthLegacyImport(const std::filesystem::path& dbPath) {
+	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE);
+
+	SQLite::Statement insertPatch(db,
+		"INSERT INTO patches (synth, md5, name, type, data, favorite, hidden, sourceID, sourceName, sourceInfo, midiBankNo, midiProgramNo, categories, categoryUserDecision, comment) "
+		"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	insertPatch.bind(1, kSecondSynth);
+	insertPatch.bind(2, kSecondSynthMd5);
+	insertPatch.bind(3, "Pad 01");
+	insertPatch.bind(4, 0);
+	constexpr unsigned char kPatchBytes[] = { 0x05, 0x06, 0x07, 0x08 };
+	insertPatch.bind(5, kPatchBytes, static_cast<int>(std::size(kPatchBytes)));
+	insertPatch.bind(6, 0);  // favorite
+	insertPatch.bind(7, 0);  // hidden
+	insertPatch.bind(8, kLegacyImportId);
+	insertPatch.bind(9, kLegacyImportName);
+	insertPatch.bind(10, R"({"bulksource":true,"timestamp":"2024-02-02T12:00:00Z"})");
+	insertPatch.bind(11, 0); // midiBankNo
+	insertPatch.bind(12, 0); // midiProgramNo
+	insertPatch.bind(13, 0); // categories
+	insertPatch.bind(14, 0); // categoryUserDecision
+	insertPatch.bind(15, ""); // comment
+	insertPatch.exec();
+
+	SQLite::Statement insertImport(db, "INSERT INTO imports (synth, name, id, date) VALUES (?, ?, ?, ?)");
+	insertImport.bind(1, kSecondSynth);
+	insertImport.bind(2, kLegacyImportName);
+	insertImport.bind(3, kLegacyImportId);
+	insertImport.bind(4, "2024-02-02 12:00:00");
+	insertImport.exec();
 }
 
 bool tableHasColumn(SQLite::Database& db, std::string const& table, std::string const& column) {
@@ -358,4 +393,33 @@ TEST_CASE("schema migration drops sourceID column and index") {
 	CHECK(actualNames == expectedNames);
 	CHECK_FALSE(tableHasColumn(verify, "patches", "sourceID"));
 	CHECK_FALSE(hasIndex(verify, "patch_sourceid_idx"));
+}
+
+TEST_CASE("duplicate import ids per synth migrate without unique constraint issues") {
+	auto tmp = makeTempDatabasePath();
+	createLegacyImportDatabase(tmp.path());
+	insertSecondSynthLegacyImport(tmp.path());
+
+	// Migration should complete even though imports share the same id across different synths
+	REQUIRE_NOTHROW(midikraft::PatchDatabase(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE));
+
+	SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+
+	SQLite::Statement listCount(verify, "SELECT COUNT(*) FROM lists WHERE id IN (:FIRST, :SECOND)");
+	listCount.bind(":FIRST", kPrefixedImportId.c_str());
+	listCount.bind(":SECOND", kSecondPrefixedImportId.c_str());
+	REQUIRE(listCount.executeStep());
+	CHECK(listCount.getColumn(0).getInt() == 2);
+
+	SQLite::Statement pilA(verify, "SELECT synth, md5 FROM patch_in_list WHERE id = :ID");
+	pilA.bind(":ID", kPrefixedImportId.c_str());
+	REQUIRE(pilA.executeStep());
+	CHECK(std::string(pilA.getColumn(0).getText()) == kLegacySynth);
+	CHECK(std::string(pilA.getColumn(1).getText()) == kLegacyMd5);
+
+	SQLite::Statement pilB(verify, "SELECT synth, md5 FROM patch_in_list WHERE id = :ID");
+	pilB.bind(":ID", kSecondPrefixedImportId.c_str());
+	REQUIRE(pilB.executeStep());
+	CHECK(std::string(pilB.getColumn(0).getText()) == kSecondSynth);
+	CHECK(std::string(pilB.getColumn(1).getText()) == kSecondSynthMd5);
 }
