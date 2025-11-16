@@ -768,9 +768,6 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 							return;
 						}
 					}
-					if (targetBank && !ensureSingleSlot(targetBank, currentSize)) {
-						return;
-					}
 					db_.addPatchToList(list, patch[0], insertIndex);
 					spdlog::info("Patch {} added to list {}", patch[0].name(), list.name);
 					if (targetBank) {
