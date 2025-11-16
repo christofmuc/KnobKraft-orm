@@ -55,19 +55,19 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
         , synths_(synths)
         , database_(database)
 {
+	patchListTree_.onImportListSelected = [this](String id, std::shared_ptr<midikraft::Synth> synth) {
+		setListFilter(id, synth);
+	};
 	patchListTree_.onSynthBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank) {
 		setSynthBankFilter(synth, bank);
 		showBank();
-	};
-	patchListTree_.onImportListSelected = [this](String id) {
-		setImportListFilter(id);
 	};
 	patchListTree_.onUserBankSelected = [this](std::shared_ptr<midikraft::Synth> synth, String id) {
 		setUserBankFilter(synth, id.toStdString());
 		showBank();
 	};
 	patchListTree_.onUserListSelected= [this](String id) {
-		setUserListFilter(id);
+		setListFilter(id);
 	};
 	patchListTree_.onUserListChanged = [this](String id) {
 		if (listFilterID_ == id) {
@@ -309,35 +309,42 @@ void PatchView::saveCurrentPatchCategories() {
 
 void PatchView::loadSynthBankFromDatabase(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::string const& bankId)
 {
-	loadPage(0, -1, bankFilter(synth, bankId), [this, synth, bank, bankId](std::vector<midikraft::PatchHolder> patches) {
-		spdlog::info("Bank of {} patches retrieved from database", patches.size());
-
-		// We need to patch the patches' position, so they represent the bank loaded and not their original position on import whenever that was!
-		//TODO - this should possible go into the PatchDatabase code. But it is a load option?
-		int i = 0;
-		for (auto& patch : patches) {
-			patch.setBank(bank);
-			patch.setPatchNumber(MidiProgramNumber::fromZeroBaseWithBank(bank, i++));
-		}
-
-		// Load the bank info from the database as well for the timestamp
-		std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synths;
+	if (synth) {
 		synths[synth->getName()] = synth;
-		midikraft::ListInfo info;
-		info.id = bankId; 
-		info.name = ""; // Don't care for the name
-		auto fullInfo = database_.getPatchList(info, synths);
-		if (fullInfo) {
-			auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
-			if (bankList) {
-				synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
-			} 
-		}
-		else {
-			spdlog::error("Program Error: Invalid synth bank, not stored in database. Can't load into panel");
-			return;
-		}
-	});
+	}
+	midikraft::ListInfo info;
+	info.id = bankId;
+	info.name = "";
+	auto fullInfo = database_.getPatchList(info, synths);
+	if (!fullInfo) {
+		spdlog::error("Program Error: Invalid synth bank, not stored in database. Can't load into panel");
+		return;
+	}
+
+	auto bankList = std::dynamic_pointer_cast<midikraft::SynthBank>(fullInfo);
+	if (!bankList) {
+		spdlog::warn("List {} is not a synth bank; showing contents as-is", bankId);
+		return;
+	}
+
+	auto patches = bankList->patches();
+	spdlog::info("Bank of {} patches retrieved from database", patches.size());
+
+	int i = 0;
+	for (auto& patch : patches) {
+		patch.setBank(bank);
+		patch.setPatchNumber(MidiProgramNumber::fromZeroBaseWithBank(bank, i++));
+	}
+
+	int capacity = bankList->patchCapacity();
+	if (capacity > 0 && (int)patches.size() > capacity) {
+		spdlog::warn("Trimming bank {} from {} patches to its capacity of {}", bankId, patches.size(), capacity);
+		patches.resize(capacity);
+		bankList->setPatches(patches);
+	}
+
+	synthBank_->setBank(bankList, PatchButtonInfo::DefaultDisplay);
 }
 
 void PatchView::retrieveBankFromSynth(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank, std::function<void()> finishedHandler)
@@ -477,6 +484,7 @@ void PatchView::setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, Midi
 }
 
 void PatchView::setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId) {
+	listFilterSynth_ = synth;
 	if (database_.doesListExist(listId)) {
 		// It does, so we can safely load and display it
 		loadSynthBankFromDatabase(synth, MidiBankNumber::invalid(), listId);
@@ -491,18 +499,13 @@ void PatchView::copyBankPatchNamesToClipboard() {
 }
 
 
-
-void PatchView::setImportListFilter(String filter)
-{
-	listFilterID_ = "";
-	sourceFilterID_ = filter.toStdString();
-	retrieveFirstPageFromDatabase();
-}
-
-void PatchView::setUserListFilter(String filter)
+void PatchView::setListFilter(String filter, std::shared_ptr<midikraft::Synth> synth)
 {
 	listFilterID_ = filter.toStdString();
-	sourceFilterID_ = "";
+	listFilterSynth_ = synth;
+	if (listFilterID_.empty()) {
+		listFilterSynth_.reset();
+	}
 	retrieveFirstPageFromDatabase();
 }
 
@@ -751,10 +754,13 @@ void PatchView::selectFirstPatch()
 midikraft::PatchFilter PatchView::currentFilter()
 {
 	auto filter = patchSearch_->getFilter();
-	filter.importID = sourceFilterID_;
 	filter.listID = listFilterID_;
 	if (!filter.listID.empty()) {
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+		if (listFilterSynth_) {
+			filter.synths.clear();
+			filter.synths[listFilterSynth_->getName()] = listFilterSynth_;
+		}
 	}
 	return filter;
 }
@@ -764,8 +770,6 @@ midikraft::PatchFilter PatchView::bankFilter(std::shared_ptr<midikraft::Synth> s
 	// We want to load all patches for this synth that are in the bank list given
 	midikraft::PatchFilter filter({ synth });
 	filter.turnOnAll();
-
-	filter.importID = "";
 	filter.listID = listID;
 	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 	return filter;
@@ -951,21 +955,20 @@ void PatchView::mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoade
 		// Back to UI thread
 		MessageManager::callAsync([this, outNewPatches]() {
 			if (outNewPatches.size() > 0) {
-				patchListTree_.refreshAllImports([outNewPatches, this]() {
-					// Select this import
-					auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
-					if (info) {
-						auto name = UIModel::currentSynth()->getName();
-						if (midikraft::SourceInfo::isEditBufferImport(info)) {
-							patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, "EditBufferImport" });
+					patchListTree_.refreshAllImports([outNewPatches, this]() {
+						// Select this import
+						auto info = outNewPatches[0].sourceInfo(); //TODO this will break should I change the logic in the PatchDatabase, this is a mere convention
+						auto currentSynth = UIModel::currentSynth();
+						if (info && currentSynth) {
+							auto name = currentSynth->getName();
+							auto scopedId = midikraft::SourceInfo::isEditBufferImport(info)
+								? fmt::format("import:{}:{}", name, "EditBufferImport")
+								: fmt::format("import:{}:{}", name, info->md5(currentSynth));
+							patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, scopedId });
 						}
-						else {
-							patchListTree_.selectItemByPath({ "allpatches", "library-" + name, "imports-" + name, info->md5(UIModel::currentSynth()) });
-						}
-					}
 					});
-			}
-		});
+				}
+			});
 	});
 	backgroundThread.runThread();
 }
