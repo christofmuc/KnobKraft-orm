@@ -779,16 +779,20 @@ TreeViewNode* PatchListTree::newTreeViewItemForPatchList(midikraft::ListInfo lis
 				spdlog::error("Invalid drop - none or multiple patches found in database with that identifier. Program error!");
 			}
 		}
-		else if (midikraft::PatchHolder::dragItemIsList(infos)) {
-			if (infos.contains("list_id") && infos.contains("list_name")) {
-				// Add all patches of the dragged list to the target ist
-				auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
-				auto patchesToAdd = loaded_list ? loaded_list->patches() : std::vector<midikraft::PatchHolder>();
-				if (targetBank) {
-					keepPatchesForSynth(patchesToAdd, targetBank->synth());
-					clampPatchesForBank(patchesToAdd, targetBank, currentSize);
-					if (patchesToAdd.empty()) {
+			else if (midikraft::PatchHolder::dragItemIsList(infos)) {
+				if (infos.contains("list_id") && infos.contains("list_name")) {
+					// Add all patches of the dragged list to the target ist
+					auto loaded_list = db_.getPatchList({ infos["list_id"], infos["list_name"] }, synths_);
+					if (!loaded_list) {
+						spdlog::error("Program error - dropped list {} not found in database", std::string(infos["list_id"]));
 						return;
+					}
+					auto patchesToAdd = loaded_list->patches();
+					if (targetBank) {
+						keepPatchesForSynth(patchesToAdd, targetBank->synth());
+						clampPatchesForBank(patchesToAdd, targetBank, currentSize);
+						if (patchesToAdd.empty()) {
+							return;
 					}
 				}
 				if (AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::QuestionIcon, "Add list to list?"
