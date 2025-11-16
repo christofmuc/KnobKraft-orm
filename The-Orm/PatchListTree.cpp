@@ -15,6 +15,7 @@
 #include "SynthBank.h"
 
 #include <limits>
+#include <algorithm>
 
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
@@ -144,7 +145,11 @@ PatchListTree::PatchListTree(midikraft::PatchDatabase& db, std::vector<midikraft
 	};
 	allPatchesItem_->onGenerateChildren = [this]() {
 		std::vector<TreeViewItem*> result;
-		for (auto activeSynth : UIModel::instance()->synthList_.activeSynths()) {
+		auto activeSynths = UIModel::instance()->synthList_.activeSynths();
+		std::sort(activeSynths.begin(), activeSynths.end(), [](auto const& lhs, auto const& rhs) {
+			return lhs->getName() < rhs->getName();
+			});
+		for (auto activeSynth : activeSynths) {
 			std::string synthName = activeSynth->getName();
 			auto synthLibrary = new TreeViewNode(synthName, kLibraryTreePrefix + synthName);
 			synthLibrary->onGenerateChildren = [this, activeSynth]() {

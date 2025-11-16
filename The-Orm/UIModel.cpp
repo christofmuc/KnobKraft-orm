@@ -8,6 +8,7 @@
 
 #include "FileHelpers.h"
 #include "Data.h"
+#include <algorithm>
 
 void CurrentSynth::changeCurrentSynth(std::weak_ptr<midikraft::Synth> activeSynth)
 {
@@ -123,7 +124,11 @@ std::unique_ptr<UIModel> UIModel::instance_;
 void CurrentSynthList::setSynthList(std::vector<midikraft::SynthHolder> const &synths)
 {
 	synths_.clear();
-	for (auto &synth : synths) {
+	auto sortedSynths = synths;
+	std::sort(sortedSynths.begin(), sortedSynths.end(), [](auto const& lhs, auto const& rhs) {
+		return lhs.getName() < rhs.getName();
+	});
+	for (auto &synth : sortedSynths) {
 		synths_.emplace_back(synth, true);
 	}
 	sendChangeMessage();
