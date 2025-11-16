@@ -791,8 +791,10 @@ public:
 		}
 		else {
 			auto numberNew = database_.mergePatchesIntoDatabase(patchesLoaded_, outNewPatches, this, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
-			// Always record the import batches as lists, even when patches already existed.
-			database_.createImportLists(patchesLoaded_);
+			// Only record import list entries for patches that were actually new.
+			if (!outNewPatches.empty()) {
+				database_.createImportLists(outNewPatches);
+			}
 			if (numberNew > 0) {
 				spdlog::info("Got {} new or changed patches, saved to database", numberNew);
 				finished_(outNewPatches);
@@ -881,7 +883,9 @@ public:
 				auto patches = midikraft::PatchInterchangeFormat::load(synths, pip.getFullPathName().toStdString(), detector_);
 				std::vector<midikraft::PatchHolder> outNewPatches;
 				auto numberNew = db_.mergePatchesIntoDatabase(patches, outNewPatches, nullptr, midikraft::PatchDatabase::UPDATE_NAME | midikraft::PatchDatabase::UPDATE_CATEGORIES | midikraft::PatchDatabase::UPDATE_FAVORITE);
-				db_.createImportLists(patches);
+				if (!outNewPatches.empty()) {
+					db_.createImportLists(outNewPatches);
+				}
 				if (numberNew > 0) {
 					spdlog::info("Loaded {} additional patches from file {}", numberNew, pip.getFullPathName());
 				}
