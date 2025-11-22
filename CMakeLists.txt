@@ -1,10 +1,10 @@
 #
-#  Copyright (c) 2020 Christof Ruch. All rights reserved.
+#  Copyright (c) 2020-2025 Christof Ruch. All rights reserved.
 #
 #  Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 
 # Target a specific MacOS version.
 # JUCE 8 refuses to build for anything older than 10.11, so let's try that.
@@ -28,9 +28,15 @@ IF(APPLE)
 
   # For old Apple < macOS 10.15 and Linux, do not allow C++ 17 because it won't work. With the newer nlohmann::json, we can specify the C++ version to use
   add_compile_definitions(JSON_HAS_CPP_14)
+
+  # Required for Sparkle
+  set(BUILD_WITH_INSTALL_RPATH YES)	
 ENDIF()
 
+
 project(KnobKraft_Orm)
+
+OPTION(SPARKLE_UPDATES "Turn on Sparkle/WinSparkle update service")
 
 #set(USE_ASIO true)
 option(ASAN "Use Address Sanitization for Debug version (Windows only for now)" OFF)
@@ -72,11 +78,12 @@ else()
 	set(PYTHON_VERSION_TO_EMBED "3.12" CACHE STRING "Specify which version of Python should be used for embedding.")
 endif()
 
+# Include useful scripts for CMake
+cmake_policy(SET CMP0135 NEW)
+include(FetchContent REQUIRED)
+
 # On Windows, we need to download external dependencies
 IF (WIN32)
-    # Include useful scripts for CMake, and opt in for the new fetch content timestamp behavior
-    cmake_policy(SET CMP0135 NEW)
-    include(FetchContent REQUIRED)
 
     FetchContent_Declare(
 	  icu URL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-Win64-MSVC2019.zip
@@ -138,8 +145,15 @@ ELSEIF(APPLE)
 	if (NOT CMAKE_BUILD_TYPE MATCHES Release)
 		add_compile_definitions(DEBUG)
 	endif()
- 
-    
+
+	IF(SPARKLE_UPDATES)
+		FetchContent_Declare(
+			sparkleframework
+			URL https://github.com/sparkle-project/Sparkle/releases/download/2.6.4/Sparkle-2.6.4.tar.xz
+		)
+		FetchContent_MakeAvailable(sparkleframework)
+    ENDIF()
+
     # The JUCE font rendering is really fat on macOS, let us try to disable this flag
     add_definitions(-DJUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING)
 ELSEIF(UNIX)

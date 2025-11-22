@@ -77,7 +77,7 @@ jobs:
         working-directory: Builds/The-Orm/RelWithDebInfo
         run: |
           sentry-cli upload-dif . --log-level=debug
-        
+
         # Thanks to https://svrooij.io/2021/08/17/github-actions-secret-file/
       - name: Extract update private key from secret
         if: startsWith(github.ref, 'refs/tags/')

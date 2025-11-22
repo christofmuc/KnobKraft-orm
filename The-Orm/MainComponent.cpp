@@ -3,6 +3,17 @@
 
    Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 */
+#ifdef USE_SPARKLE
+#ifdef WIN32
+#include "BinaryData.h"
+#include <winsparkle.h>
+#endif
+#ifdef __APPLE__
+#include "MacSparkle.h"
+
+static SparkleAutoUpdate sAutoUpdate;
+#endif
+#endif
 
 #include "MainComponent.h"
 
@@ -35,13 +46,6 @@
 #ifndef _DEBUG
 #ifdef USE_SENTRY
 #include "sentry.h"
-#endif
-#endif
-
-#ifdef USE_SPARKLE
-#include "BinaryData.h"
-#ifdef WIN32
-#include <winsparkle.h>
 #endif
 #endif
 
@@ -450,9 +454,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	#endif 
 	#endif
 #ifdef USE_SPARKLE
-			{ "Check for updates...", { "Check for updates...", [this] {
+			{ "Check for updates...", { "Check for updates...", [] {
 #ifdef WIN32
 				win_sparkle_check_update_with_ui();
+#endif
+#ifdef __APPLE__
+                sAutoUpdate.checkForUpdates();
 #endif
 			}}},
 #endif
@@ -659,6 +666,10 @@ void MainComponent::checkForUpdatesOnStartup() {
 	win_sparkle_set_error_callback(logSparkleError);
 	win_sparkle_set_shutdown_request_callback(sparkleInducedShutdown);
 	win_sparkle_init();
+#else
+#ifdef __APPLE__
+    sAutoUpdate.checkForUpdates();
+#endif
 #endif
 #endif
 }
