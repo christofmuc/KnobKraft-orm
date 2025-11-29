@@ -481,6 +481,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		switch (event) {
 		case KeyboardMacroEvent::Hide: patchView_->hideCurrentPatch(); break;
 		case KeyboardMacroEvent::Favorite: patchView_->favoriteCurrentPatch(); break;
+		case KeyboardMacroEvent::Regular: patchView_->regularCurrentPatch(); break;
 		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
 		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
 		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;

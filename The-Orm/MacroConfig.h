@@ -15,6 +15,7 @@
 enum class KeyboardMacroEvent {
 	Hide,
 	Favorite,
+	Regular,
 	PreviousPatch,
 	NextPatch,
 	ImportEditBuffer,
@@ -53,6 +54,5 @@ private:
 	TextButton record_;
 	MouseUpAndDownButton play_;
 };
-
 
 

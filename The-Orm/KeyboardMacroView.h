@@ -46,6 +46,8 @@ private:
 	PropertyEditor customSetup_;
 	MidiKeyboardState state_;
 	MidiKeyboardComponent keyboard_;
+	Viewport macroViewport_;
+	std::unique_ptr<Component> macroContainer_;
 	std::shared_ptr<MidiDevicePropertyEditor> midiDeviceList_; // Listen to this to get notified of newly available devices!
 	std::shared_ptr<MidiDevicePropertyEditor> secondaryMidiOutList_;
 	ElectraOneRouter controllerRouter_;

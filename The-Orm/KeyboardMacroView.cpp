@@ -97,6 +97,10 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	addAndMakeVisible(customSetup_);
 	addAndMakeVisible(keyboard_);
 	keyboard_.setOctaveForMiddleC(4); // This is correct for the DSI Synths, I just don't know what the standard is
+	addAndMakeVisible(macroViewport_);
+	macroContainer_ = std::make_unique<Component>();
+	macroViewport_.setScrollBarsShown(true, false);
+	macroViewport_.setViewedComponent(macroContainer_.get(), false);
 
 	// Create config table
 	for (auto config : kAllKeyboardMacroEvents) {
@@ -127,7 +131,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 			}
 		});
 		configs_.add(configComponent);
-		addAndMakeVisible(configComponent);
+		macroContainer_->addAndMakeVisible(configComponent);
 
 		UIModel::instance()->currentSynth_.addChangeListener(this);
 	}
@@ -408,11 +412,19 @@ void KeyboardMacroView::resized()
 	auto keyboardArea = area.removeFromTop(availableHeight / KEYBOARD_HEIGHT_DIVISOR);
 	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(LAYOUT_INSET_NORMAL));
 
-	// Set up table
+	// Config table in scroll area
+	int tableWidth = std::min(area.getWidth(), contentWidth);
+	macroViewport_.setBounds(area.withSizeKeepingCentre(tableWidth, area.getHeight()));
+	const int scrollWidth = macroViewport_.getLocalBounds().getWidth();
+	const int rowWidth = std::max(0, scrollWidth - 2 * LAYOUT_INSET_NORMAL);
+	const int rowX = (scrollWidth - rowWidth) / 2;
+	int y = 0;
 	for (auto c : configs_) {
-		auto row = area.removeFromTop(LAYOUT_LINE_SPACING);
-		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), contentWidth), LAYOUT_LINE_HEIGHT));
+		auto row = Rectangle<int>(rowX, y, rowWidth, LAYOUT_LINE_HEIGHT);
+		c->setBounds(row);
+		y += LAYOUT_LINE_SPACING;
 	}
+	macroContainer_->setBounds(0, 0, scrollWidth, y);
 }
 
 void KeyboardMacroView::setupKeyboardControl() {

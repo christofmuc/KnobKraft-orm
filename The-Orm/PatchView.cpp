@@ -222,6 +222,11 @@ void PatchView::favoriteCurrentPatch()
 	currentPatchDisplay_->toggleFavorite();
 }
 
+void PatchView::regularCurrentPatch()
+{
+	currentPatchDisplay_->toggleRegular();
+}
+
 void PatchView::selectPreviousPatch()
 {
 	patchButtons_->selectPrevious();
