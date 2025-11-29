@@ -9,10 +9,22 @@ endif()
 set(FRAMEWORK_ROOT "${APP_BUNDLE}/Contents/Frameworks/Python.framework")
 set(VERSION_DIR "${FRAMEWORK_ROOT}/Versions/${PYTHON_VERSION}")
 
+# Basic sanity check so we only copy a framework-style layout
+if(NOT EXISTS "${PYTHON_SOURCE}/Resources/Info.plist")
+    message(FATAL_ERROR "Python framework resources not found at '${PYTHON_SOURCE}/Resources'. Point PYTHON_EXECUTABLE to a framework build (python.org pkg).")
+endif()
+
+function(_kk_recreate_symlink target link_name)
+    if(EXISTS "${link_name}" OR IS_SYMLINK "${link_name}")
+        file(REMOVE "${link_name}")
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E create_symlink "${target}" "${link_name}")
+endfunction()
+
 # Ensure the destination folders exist
 file(MAKE_DIRECTORY "${VERSION_DIR}")
 
-# Copy the Python lib directory (strip __pycache__ to keep the bundle clean)
+# Copy the Python framework version directory (strip __pycache__ to keep the bundle clean)
 execute_process(
         COMMAND /bin/bash -c "rsync -a --delete --exclude='__pycache__' --exclude='test' --exclude='*.pyc' \"${PYTHON_SOURCE}/\" \"${VERSION_DIR}/\""
         RESULT_VARIABLE RSYNC_RESULT
@@ -23,6 +35,7 @@ endif()
 
 # Create/refresh the Current symlink so GenericAdaptation finds the framework
 file(MAKE_DIRECTORY "${FRAMEWORK_ROOT}/Versions")
-execute_process(
-        COMMAND "${CMAKE_COMMAND}" -E create_symlink "${PYTHON_VERSION}" "${FRAMEWORK_ROOT}/Versions/Current"
-)
+_kk_recreate_symlink("${PYTHON_VERSION}" "${FRAMEWORK_ROOT}/Versions/Current")
+_kk_recreate_symlink("Versions/Current/Resources" "${FRAMEWORK_ROOT}/Resources")
+_kk_recreate_symlink("Versions/Current/Headers" "${FRAMEWORK_ROOT}/Headers")
+_kk_recreate_symlink("Versions/Current/Python" "${FRAMEWORK_ROOT}/Python")

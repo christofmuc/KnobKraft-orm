@@ -6,22 +6,32 @@ message(STATUS "Integrating dynlibs and signing app bundle ${SIGN_DIRECTORY}")
 if(NOT DEFINED PYTHON_VERSION)
     set(PYTHON_VERSION "3.12")
 endif()
-set(PYTHON_LIB_DEST_DIR "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}")
+set(PYTHON_FRAMEWORK_DEST_DIR "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}")
+if(NOT EXISTS "${PYTHON_SOURCE}/Resources/Info.plist")
+    message(FATAL_ERROR "Python framework resources not found at '${PYTHON_SOURCE}/Resources'. Point PYTHON_EXECUTABLE to a framework build (python.org pkg).")
+endif()
+
+function(_kk_recreate_symlink target link_name)
+    if(EXISTS "${link_name}" OR IS_SYMLINK "${link_name}")
+        file(REMOVE "${link_name}")
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E create_symlink "${target}" "${link_name}")
+endfunction()
 
 # Remove the backslashes from the variable inserted there by passing it around too many times
 string(REPLACE "\\" "" CODESIGN_CERTIFICATE_NAME "${CODESIGN_CERTIFICATE_NAME}")
 
 # First copy everything
 execute_process(
-        COMMAND /bin/bash -c "mkdir -p \"${PYTHON_LIB_DEST_DIR}\" && rsync -av --exclude='__pycache__' --exclude=test --exclude=python.o \"${PYTHON_SOURCE}\" \"${PYTHON_LIB_DEST_DIR}\""
+        COMMAND /bin/bash -c "mkdir -p \"${PYTHON_FRAMEWORK_DEST_DIR}\" && rsync -av --delete --exclude='__pycache__' --exclude=test --exclude=python.o \"${PYTHON_SOURCE}/\" \"${PYTHON_FRAMEWORK_DEST_DIR}/\""
 )
 
 # Make sure Python.framework/Versions/Current exists so the runtime can resolve it
-get_filename_component(PYTHON_FRAMEWORK_DIR "${PYTHON_LIB_DEST_DIR}/.." ABSOLUTE)
-get_filename_component(PYTHON_VERSION_NAME "${PYTHON_LIB_DEST_DIR}" NAME)
-execute_process(
-        COMMAND "${CMAKE_COMMAND}" -E create_symlink "${PYTHON_VERSION_NAME}" "${PYTHON_FRAMEWORK_DIR}/Current"
-)
+get_filename_component(PYTHON_FRAMEWORK_DIR "${PYTHON_FRAMEWORK_DEST_DIR}/.." ABSOLUTE)
+_kk_recreate_symlink("${PYTHON_VERSION}" "${PYTHON_FRAMEWORK_DIR}/Current")
+_kk_recreate_symlink("Versions/Current/Resources" "${PYTHON_FRAMEWORK_DIR}/Resources")
+_kk_recreate_symlink("Versions/Current/Headers" "${PYTHON_FRAMEWORK_DIR}/Headers")
+_kk_recreate_symlink("Versions/Current/Python" "${PYTHON_FRAMEWORK_DIR}/Python")
 
 # Get a list of all .so files in the PYTHON_SOURCE directory and its subdirectories
 cmake_policy(SET CMP0009 NEW)  # Do not follow symlinks

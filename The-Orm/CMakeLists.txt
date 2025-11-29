@@ -331,10 +331,11 @@ IF(APPLE)
 
 	# Always bundle the Python.framework next to the app so the embedded interpreter can start.
 	get_filename_component(PYTHON_SOURCE_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
+	get_filename_component(PYTHON_FRAMEWORK_VERSION_DIR "${PYTHON_SOURCE_DIR}/.." ABSOLUTE)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND "${CMAKE_COMMAND}"
-				-DPYTHON_SOURCE="${PYTHON_SOURCE_DIR}/../lib"
+				-DPYTHON_SOURCE="${PYTHON_FRAMEWORK_VERSION_DIR}"
 				-DPYTHON_VERSION="${PYTHON_VERSION_TO_EMBED}"
 				-DAPP_BUNDLE="$<TARGET_BUNDLE_DIR:KnobKraftOrm>"
 				-P "${CMAKE_SOURCE_DIR}/cmake/embed_python_macos.cmake"
@@ -344,10 +345,11 @@ IF(APPLE)
 		# We need to sign the files as a post build step. Doing this as install step doesn't help because
 		# CPack will already have created a copy and ignore our
 		get_filename_component(PYTHON_SOURCE_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
+		get_filename_component(PYTHON_FRAMEWORK_VERSION_DIR "${PYTHON_SOURCE_DIR}/.." ABSOLUTE)
 		add_custom_command(
 				TARGET KnobKraftOrm POST_BUILD
 				COMMAND "${CMAKE_COMMAND}"
-					-DPYTHON_SOURCE="${PYTHON_SOURCE_DIR}/../lib"
+					-DPYTHON_SOURCE="${PYTHON_FRAMEWORK_VERSION_DIR}"
 					-DPYTHON_VERSION="${PYTHON_VERSION_TO_EMBED}"
 					-DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
 					-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
