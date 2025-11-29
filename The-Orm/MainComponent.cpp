@@ -686,10 +686,12 @@ bool MainComponent::createNewDatabase()
 			// That worked, new database file is in use!
 			Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
 			Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
+			automaticCategories_ = database_->getCategorizer(); // Reload automatic categories for the new database
 			// Refresh UI
 			UIModel::instance()->clear();
 			UIModel::instance()->currentSynth_.sendChangeMessage();
 			UIModel::instance()->windowTitle_.sendChangeMessage();
+			UIModel::instance()->categoriesChanged.sendChangeMessage();
 			UIModel::instance()->databaseChanged.sendChangeMessage();
 			return true;
 		}
@@ -723,9 +725,11 @@ void MainComponent::openDatabase(File& databaseFile)
 				// That worked, new database file is in use!
 				Settings::instance().set("LastDatabasePath", databaseFile.getParentDirectory().getFullPathName().toStdString());
 				Settings::instance().set("LastDatabase", databaseFile.getFullPathName().toStdString());
+				automaticCategories_ = database_->getCategorizer(); // Reload automatic categories for the opened database
 				// Refresh UI
 				UIModel::instance()->currentSynth_.sendChangeMessage();
 				UIModel::instance()->windowTitle_.sendChangeMessage();
+				UIModel::instance()->categoriesChanged.sendChangeMessage();
 				UIModel::instance()->databaseChanged.sendChangeMessage();
 			}
 		}
