@@ -177,12 +177,24 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 				// Check if this is a message we will transform into a macro
 				for (const auto& macro : macros_) {
-					if (isMacroState(macro.second)) {
+					bool matched = isMacroState(macro.second);
+					bool wasActive = macroActiveStates_[macro.first];
+					if (matched && !wasActive) {
+						macroActiveStates_[macro.first] = true;
 						auto code = macro.first;
 						MessageManager::callAsync([this, code]() {
 							executeMacro_(code);
 							});
+					} else if (!matched && wasActive) {
+						macroActiveStates_[macro.first] = false;
 					}
+				}
+			}
+			else if (message.isControllerOfType(123)) {
+				// Keep forwarding CC123 but also clear local state to mirror the synth
+				state_.allNotesOff(0);
+				for (auto& entry : macroActiveStates_) {
+					entry.second = false;
 				}
 			}
 		}

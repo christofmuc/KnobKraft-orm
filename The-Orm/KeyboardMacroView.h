@@ -55,6 +55,7 @@ private:
 
 	std::map<KeyboardMacroEvent, KeyboardMacro> macros_;
 	std::function<void(KeyboardMacroEvent)> executeMacro_;
+	std::map<KeyboardMacroEvent, bool> macroActiveStates_; // Tracks edge-trigger state to avoid repeats while held
 
 	midikraft::MidiController::HandlerHandle handle_ = midikraft::MidiController::makeNoneHandle();
 
