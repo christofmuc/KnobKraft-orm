@@ -3,7 +3,10 @@ message(STATUS "Integrating dynlibs and signing app bundle ${SIGN_DIRECTORY}")
 # Custom Python Framework embedding
 # this confused me, so I just copy all with rsync
 # https://blog.glyph.im/2024/09/python-macos-framework-builds.html
-set(PYTHON_LIB_DEST_DIR "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/3.12")
+if(NOT DEFINED PYTHON_VERSION)
+    set(PYTHON_VERSION "3.12")
+endif()
+set(PYTHON_LIB_DEST_DIR "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}")
 
 # Remove the backslashes from the variable inserted there by passing it around too many times
 string(REPLACE "\\" "" CODESIGN_CERTIFICATE_NAME "${CODESIGN_CERTIFICATE_NAME}")
@@ -11,6 +14,13 @@ string(REPLACE "\\" "" CODESIGN_CERTIFICATE_NAME "${CODESIGN_CERTIFICATE_NAME}")
 # First copy everything
 execute_process(
         COMMAND /bin/bash -c "mkdir -p \"${PYTHON_LIB_DEST_DIR}\" && rsync -av --exclude='__pycache__' --exclude=test --exclude=python.o \"${PYTHON_SOURCE}\" \"${PYTHON_LIB_DEST_DIR}\""
+)
+
+# Make sure Python.framework/Versions/Current exists so the runtime can resolve it
+get_filename_component(PYTHON_FRAMEWORK_DIR "${PYTHON_LIB_DEST_DIR}/.." ABSOLUTE)
+get_filename_component(PYTHON_VERSION_NAME "${PYTHON_LIB_DEST_DIR}" NAME)
+execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E create_symlink "${PYTHON_VERSION_NAME}" "${PYTHON_FRAMEWORK_DIR}/Current"
 )
 
 # Get a list of all .so files in the PYTHON_SOURCE directory and its subdirectories
