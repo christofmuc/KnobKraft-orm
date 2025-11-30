@@ -329,6 +329,18 @@ IF(APPLE)
 	# This section is supposed to build a relocatable macOS DMG installer when you specify the
 	# --target package
 
+	# For local unsigned builds, still embed Python so the app can find its runtime.
+	IF(NOT CODESIGN_CERTIFICATE_NAME)
+		add_custom_command(
+				TARGET KnobKraftOrm POST_BUILD
+				COMMAND "${CMAKE_COMMAND}"
+					-DPYTHON_EXECUTABLE="${PYTHON_EXECUTABLE}"
+					-DPYTHON_VERSION="${PYTHON_VERSION_TO_EMBED}"
+					-DAPP_BUNDLE="$<TARGET_BUNDLE_DIR:KnobKraftOrm>"
+					-P "${CMAKE_SOURCE_DIR}/cmake/embed_python_macos.cmake"
+		)
+	ENDIF()
+
 	IF(CODESIGN_CERTIFICATE_NAME)
 		# We need to sign the files as a post build step. Doing this as install step doesn't help because
 		# CPack will already have created a copy and ignore our
