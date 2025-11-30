@@ -40,11 +40,13 @@ set(BU_CHMOD_BUNDLE_ITEMS TRUE)
 # Patching the bundle utils could fix it: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
 fixup_bundle("${SIGN_DIRECTORY}"  ""  "" IGNORE_ITEM "Python")
 
-# Sign all Python framework binaries and .so after fixup_bundle mutated install names
+# Sign all Python framework binaries, dylibs and .so after fixup_bundle mutated install names
 cmake_policy(SET CMP0009 NEW)  # Do not follow symlinks
 file(GLOB_RECURSE SO_FILES "${SIGN_DIRECTORY}/*.so"
                          "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/bin/*"
-                         "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/Python")
+                         "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/Python"
+                         "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/*.dylib"
+                         "${SIGN_DIRECTORY}/Contents/Frameworks/*.dylib")
 list(REMOVE_DUPLICATES SO_FILES)
 foreach(SO_FILE IN LISTS SO_FILES)
     if(EXISTS "${SO_FILE}")
@@ -54,6 +56,13 @@ foreach(SO_FILE IN LISTS SO_FILES)
         )
     endif()
 endforeach()
+
+# Sign the Python framework bundle root explicitly so its seal is valid
+set(PYTHON_FRAMEWORK_ROOT "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework")
+if(EXISTS "${PYTHON_FRAMEWORK_ROOT}")
+    message(STATUS "Signing Python framework bundle with '${CODESIGN_CERTIFICATE_NAME}'")
+    execute_process(COMMAND codesign --force --timestamp --options runtime --deep --sign "${CODESIGN_CERTIFICATE_NAME}" --keychain build.keychain "${PYTHON_FRAMEWORK_ROOT}")
+endif()
 
 # Lastly, sign our executable
 message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}'")
