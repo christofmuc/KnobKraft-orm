@@ -407,7 +407,8 @@ void KeyboardMacroView::resized()
 	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, keyboardHeight).reduced(LAYOUT_INSET_NORMAL));
 
 	// Two column layout above
-	auto columnsArea = area.withSizeKeepingCentre(maxContentWidth, area.getHeight());
+	int columnsHeight = std::min(area.getHeight(), 600);
+	auto columnsArea = area.withSizeKeepingCentre(maxContentWidth, columnsHeight);
 	int columnWidth = columnsArea.getWidth() / 2;
 	auto leftColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
 	auto rightColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
@@ -420,10 +421,11 @@ void KeyboardMacroView::resized()
 	const int rowWidth = std::max(0, scrollWidth - 2 * LAYOUT_INSET_NORMAL);
 	const int rowX = (scrollWidth - rowWidth) / 2;
 	int y = 0;
+	const int rowHeight = LAYOUT_LINE_SPACING; // Match property editor vertical rhythm
 	for (auto c : configs_) {
-		auto row = Rectangle<int>(rowX, y, rowWidth, LAYOUT_LINE_HEIGHT);
+		auto row = Rectangle<int>(rowX, y, rowWidth, rowHeight);
 		c->setBounds(row);
-		y += LAYOUT_LINE_SPACING;
+		y += rowHeight;
 	}
 	macroContainer_->setBounds(0, 0, scrollWidth, y);
 }
