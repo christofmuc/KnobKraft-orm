@@ -33,22 +33,27 @@ _kk_recreate_symlink("Versions/Current/Resources" "${PYTHON_FRAMEWORK_DIR}/Resou
 _kk_recreate_symlink("Versions/Current/Headers" "${PYTHON_FRAMEWORK_DIR}/Headers")
 _kk_recreate_symlink("Versions/Current/Python" "${PYTHON_FRAMEWORK_DIR}/Python")
 
-# Get a list of all .so files in the PYTHON_SOURCE directory and its subdirectories
-cmake_policy(SET CMP0009 NEW)  # Do not follow symlinks
-file(GLOB_RECURSE SO_FILES "${SIGN_DIRECTORY}/*.so")
-foreach(SO_FILE IN LISTS SO_FILES)
-    message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}': ${SO_FILE}")
-    execute_process(
-            COMMAND codesign --verbose --force --timestamp --sign "${CODESIGN_CERTIFICATE_NAME}"  --keychain build.keychain "${SO_FILE}"
-    )
-endforeach()
-
 # Now fixup our linking and executable paths
 include(BundleUtilities)
 set(BU_CHMOD_BUNDLE_ITEMS TRUE)
 # We need the IGNORE Python because of https://gitlab.kitware.com/cmake/cmake/-/issues/20165
 # Patching the bundle utils could fix it: https://stackoverflow.com/questions/59415784/cmake-macos-bundleutilities-adds-python-interpreter-to-app-and-doesnt-do-fi
 fixup_bundle("${SIGN_DIRECTORY}"  ""  "" IGNORE_ITEM "Python")
+
+# Sign all Python framework binaries and .so after fixup_bundle mutated install names
+cmake_policy(SET CMP0009 NEW)  # Do not follow symlinks
+file(GLOB_RECURSE SO_FILES "${SIGN_DIRECTORY}/*.so"
+                         "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/bin/*"
+                         "${SIGN_DIRECTORY}/Contents/Frameworks/Python.framework/Versions/${PYTHON_VERSION}/Python")
+list(REMOVE_DUPLICATES SO_FILES)
+foreach(SO_FILE IN LISTS SO_FILES)
+    if(EXISTS "${SO_FILE}")
+        message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}': ${SO_FILE}")
+        execute_process(
+                COMMAND codesign --verbose --force --timestamp --sign "${CODESIGN_CERTIFICATE_NAME}"  --keychain build.keychain "${SO_FILE}"
+        )
+    endif()
+endforeach()
 
 # Lastly, sign our executable
 message(STATUS "Signing with '${CODESIGN_CERTIFICATE_NAME}'")
