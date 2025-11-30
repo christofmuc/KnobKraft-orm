@@ -623,6 +623,19 @@ To turn on a delay between messages sent, implement the following function retur
 
 This delay will be used only in those cases where a method returns multiple MIDI messages, not between calls to methods. E.g. if the `createProgramDumpRequest` returns an array which contains two messages, a program change and an edit buffer request message, the Orm will wait the specified milliseconds after sending the first message before sending the second. It will not wait before sending the first message.
 
+Alternatively, you can provide a single `messageTimings()` function that returns a dict of timing values. If present, it replaces the older per-value functions:
+
+```python
+def messageTimings():
+    return {
+        "generalMessageDelay": 50,          # throttle between messages in a burst
+        "deviceDetectWaitMilliseconds": 300, # how long to wait after a detect request
+        "replyTimeoutMs": 1500,             # how long to wait for a response before timing out
+    }
+```
+
+If `messageTimings()` is defined, the Orm will read these keys and ignore the older `generalMessageDelay()` or `deviceDetectWaitMilliseconds()` functions. Keys you leave out fall back to defaults. If `messageTimings()` is not provided, the legacy functions continue to work as before.
+
 ## Renaming patches
 For example, the Orm always allows the user to specify a name for a patch, but that name will not appear on the synth unless you implement the following function. If you don't implement it, the patches will keep their original name even if you change the database name for a patch.
 

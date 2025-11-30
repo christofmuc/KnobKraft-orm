@@ -48,7 +48,8 @@ namespace knobkraft {
 		*kLayerTitles,
 		*kLayerName,
 		*kSetLayerName,
-		*kGetStoredTags
+		*kGetStoredTags,
+		*kMessageTimings
 		;
 
 	extern std::vector<const char *> kAdaptationPythonFunctionNames;
@@ -80,6 +81,7 @@ namespace knobkraft {
 		// Implement the methods needed for device detection
 		std::vector<juce::MidiMessage> deviceDetect(int channel) override;
 		int deviceDetectSleepMS() override;
+		int defaultReplyTimeoutMs() const override;
 		MidiChannel channelIfValidDeviceResponse(const MidiMessage &message) override;
 		bool needsChannelSpecificDetection() override;
 
