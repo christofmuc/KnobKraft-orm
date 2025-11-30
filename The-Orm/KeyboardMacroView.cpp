@@ -397,24 +397,25 @@ void KeyboardMacroView::resized()
 {
 	auto area = getLocalBounds();
 
-	constexpr int SETUP_HEIGHT_DIVISOR = 2;     // Setup gets 1/2 of height
-	constexpr int KEYBOARD_HEIGHT_DIVISOR = 4;   // Keyboard gets 1/4 of height
-
 	// Needed width
 	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + LAYOUT_INSET_NORMAL*2;
-	int contentWidth = std::min(area.getWidth(), 600);
-	int availableHeight = area.getHeight();
+	int maxContentWidth = std::min(area.getWidth(), 1000); // stay consistent with SetupView style
 
-	// On Top, the setup
-	int setupHeight = availableHeight / SETUP_HEIGHT_DIVISOR;
-	customSetup_.setBounds(area.removeFromTop(setupHeight).withSizeKeepingCentre(contentWidth, setupHeight -2* LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
-	// Then the keyboard	
-	auto keyboardArea = area.removeFromTop(availableHeight / KEYBOARD_HEIGHT_DIVISOR);
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(LAYOUT_INSET_NORMAL));
+	// Reserve space for keyboard at the bottom
+	int keyboardHeight = std::min(area.getHeight() / 3, 180);
+	auto keyboardArea = area.removeFromBottom(keyboardHeight);
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, keyboardHeight).reduced(LAYOUT_INSET_NORMAL));
 
-	// Config table in scroll area
-	int tableWidth = std::min(area.getWidth(), contentWidth);
-	macroViewport_.setBounds(area.withSizeKeepingCentre(tableWidth, area.getHeight()));
+	// Two column layout above
+	auto columnsArea = area.withSizeKeepingCentre(maxContentWidth, area.getHeight());
+	int columnWidth = columnsArea.getWidth() / 2;
+	auto leftColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
+	auto rightColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
+
+	customSetup_.setBounds(leftColumn);
+
+	// Config table in scroll area on the right
+	macroViewport_.setBounds(rightColumn);
 	const int scrollWidth = macroViewport_.getLocalBounds().getWidth();
 	const int rowWidth = std::max(0, scrollWidth - 2 * LAYOUT_INSET_NORMAL);
 	const int rowX = (scrollWidth - rowWidth) / 2;
