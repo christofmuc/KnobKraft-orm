@@ -171,17 +171,37 @@ def convertToEditBuffer(channel, message):
 def createBankDumpRequest(channel, bank):
     # This sequence is based on the analysis of the sound editor's communication.
     # Knobkraft should send these four messages in order with a small delay.
+    # Return a flat list - the C++ code will split MIDI messages automatically.
+    """
+    Create the sequence of SysEx messages needed to request a full bank (all-program) dump from the microKORG S.
+    
+    Parameters:
+    	channel (int): MIDI channel (0–15) to address in the SysEx headers.
+    	bank (int): Bank identifier (unused in the message payload but provided for caller semantics).
+    
+    Returns:
+    	sys_ex_bytes (list[int]): A flat list of SysEx bytes representing four consecutive MIDI messages (handshake, two preparatory messages, and the All Program Data Dump Request) in that order.
+    """
     handshake = [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7]
     prep_msg1 = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x00, 0x01, 0x40, 0x0E, 0xf7]
     prep_msg2 = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x00, 0x01, 0x40, 0x0F, 0xf7]
     # This is the actual "All Program Data Dump Request"
     dump_request = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x00, 0x01, 0x40, 0x1D, 0x00, 0xf7]
-    return [handshake, prep_msg1, prep_msg2, dump_request]
+    return handshake + prep_msg1 + prep_msg2 + dump_request
 
 
 def isPartOfBankDump(message):
     # The bank dump is a single, large message. Its command byte is 0x50.
     # It looks similar to a single patch dump, but is much longer.
+    """
+    Determine whether a SysEx message is a Korg microKORG S bank dump message.
+    
+    Parameters:
+        message (list[int]): Sequence of MIDI byte values comprising the SysEx message.
+    
+    Returns:
+        bool: `True` if the message matches the microKORG S bank-dump pattern (large length, SysEx header 0xF0 0x42, command nibble 0x3x, expected header fields, and terminator 0xF7), `False` otherwise.
+    """
     return (len(message) > 1000  # A single patch is small, a bank is huge
             and message[0] == 0xF0
             and message[1] == 0x42
