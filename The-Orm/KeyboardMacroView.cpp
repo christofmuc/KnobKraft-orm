@@ -97,6 +97,10 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	addAndMakeVisible(customSetup_);
 	addAndMakeVisible(keyboard_);
 	keyboard_.setOctaveForMiddleC(4); // This is correct for the DSI Synths, I just don't know what the standard is
+	addAndMakeVisible(macroViewport_);
+	macroContainer_ = std::make_unique<Component>();
+	macroViewport_.setScrollBarsShown(true, false);
+	macroViewport_.setViewedComponent(macroContainer_.get(), false);
 
 	// Create config table
 	for (auto config : kAllKeyboardMacroEvents) {
@@ -127,7 +131,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 			}
 		});
 		configs_.add(configComponent);
-		addAndMakeVisible(configComponent);
+		macroContainer_->addAndMakeVisible(configComponent);
 
 		UIModel::instance()->currentSynth_.addChangeListener(this);
 	}
@@ -177,12 +181,24 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 				// Check if this is a message we will transform into a macro
 				for (const auto& macro : macros_) {
-					if (isMacroState(macro.second)) {
+					bool matched = isMacroState(macro.second);
+					bool wasActive = macroActiveStates_[macro.first];
+					if (matched && !wasActive) {
+						macroActiveStates_[macro.first] = true;
 						auto code = macro.first;
 						MessageManager::callAsync([this, code]() {
 							executeMacro_(code);
 							});
+					} else if (!matched && wasActive) {
+						macroActiveStates_[macro.first] = false;
 					}
+				}
+			}
+			else if (message.isControllerOfType(123)) {
+				// Keep forwarding CC123 but also clear local state to mirror the synth
+				state_.allNotesOff(0);
+				for (auto& entry : macroActiveStates_) {
+					entry.second = false;
 				}
 			}
 		}
@@ -381,26 +397,37 @@ void KeyboardMacroView::resized()
 {
 	auto area = getLocalBounds();
 
-	constexpr int SETUP_HEIGHT_DIVISOR = 2;     // Setup gets 1/2 of height
-	constexpr int KEYBOARD_HEIGHT_DIVISOR = 4;   // Keyboard gets 1/4 of height
-
 	// Needed width
 	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + LAYOUT_INSET_NORMAL*2;
-	int contentWidth = std::min(area.getWidth(), 600);
-	int availableHeight = area.getHeight();
+	int maxContentWidth = std::min(area.getWidth(), 1000); // stay consistent with SetupView style
 
-	// On Top, the setup
-	int setupHeight = availableHeight / SETUP_HEIGHT_DIVISOR;
-	customSetup_.setBounds(area.removeFromTop(setupHeight).withSizeKeepingCentre(contentWidth, setupHeight -2* LAYOUT_INSET_NORMAL).reduced(LAYOUT_INSET_NORMAL));
-	// Then the keyboard	
-	auto keyboardArea = area.removeFromTop(availableHeight / KEYBOARD_HEIGHT_DIVISOR);
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(LAYOUT_INSET_NORMAL));
+	// Reserve space for keyboard at the bottom
+	int keyboardHeight = std::min(area.getHeight() / 3, 180);
+	auto keyboardArea = area.removeFromBottom(keyboardHeight);
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, keyboardHeight).reduced(LAYOUT_INSET_NORMAL));
 
-	// Set up table
+	// Two column layout above
+	int columnsHeight = std::min(area.getHeight(), 600);
+	auto columnsArea = area.withSizeKeepingCentre(maxContentWidth, columnsHeight);
+	int columnWidth = columnsArea.getWidth() / 2;
+	auto leftColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
+	auto rightColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
+
+	customSetup_.setBounds(leftColumn);
+
+	// Config table in scroll area on the right
+	macroViewport_.setBounds(rightColumn);
+	const int scrollWidth = macroViewport_.getLocalBounds().getWidth();
+	const int rowWidth = std::max(0, scrollWidth - 2 * LAYOUT_INSET_NORMAL);
+	const int rowX = (scrollWidth - rowWidth) / 2;
+	int y = 0;
+	const int rowHeight = LAYOUT_LINE_SPACING; // Match property editor vertical rhythm
 	for (auto c : configs_) {
-		auto row = area.removeFromTop(LAYOUT_LINE_SPACING);
-		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), contentWidth), LAYOUT_LINE_HEIGHT));
+		auto row = Rectangle<int>(rowX, y, rowWidth, rowHeight);
+		c->setBounds(row);
+		y += rowHeight;
 	}
+	macroContainer_->setBounds(0, 0, scrollWidth, y);
 }
 
 void KeyboardMacroView::setupKeyboardControl() {

@@ -692,7 +692,7 @@ namespace midikraft {
 			else {
 				//TODO the message handler is never removed in case you do not get a write confirmation. This will crash.
 			}
-		});
+		}, defaultReplyTimeoutMs());
 		controller->enableMidiOutput(midiOutput());
 		controller->enableMidiInput(midiInput());
 		controller->getMidiOutput(midiOutput())->sendBlockOfMessagesFullSpeed(messages);

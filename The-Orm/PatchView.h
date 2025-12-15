@@ -60,6 +60,7 @@ public:
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();
 	void favoriteCurrentPatch();
+	void regularCurrentPatch();
 	void selectPreviousPatch();
 	void selectNextPatch();
 	void retrieveEditBuffer();
@@ -160,4 +161,3 @@ private:
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };
-

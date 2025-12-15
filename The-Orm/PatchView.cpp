@@ -90,9 +90,8 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(database_, predefinedCategories(),
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
-		int total = getTotalCount();
-		patchButtons_->setTotalCount(total, false);
-		patchButtons_->refresh(true);
+		// Keep the current view stable; just repaint existing buttons so metadata updates without re-querying the list
+		patchButtons_->refresh(false);
 		synthBank_->refreshPatch(favoritePatch);
 	}
 	);
@@ -215,13 +214,17 @@ std::shared_ptr<midikraft::PatchList>  PatchView::retrieveListFromDatabase(midik
 
 void PatchView::hideCurrentPatch()
 {
-	selectNextPatch();
 	currentPatchDisplay_->toggleHide();
 }
 
 void PatchView::favoriteCurrentPatch()
 {
 	currentPatchDisplay_->toggleFavorite();
+}
+
+void PatchView::regularCurrentPatch()
+{
+	currentPatchDisplay_->toggleRegular();
 }
 
 void PatchView::selectPreviousPatch()

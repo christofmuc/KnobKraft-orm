@@ -78,7 +78,8 @@ namespace knobkraft {
 		* kFriendlyProgramName = "friendlyProgramName",
 		* kSetupHelp = "setupHelp",
 		* kGetStoredTags = "storedTags",
-		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride";
+		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride",
+		* kMessageTimings = "messageTimings";
 
 	std::vector<const char*> kAdaptationPythonFunctionNames = {
 		kName,
@@ -115,7 +116,8 @@ namespace knobkraft {
 		kFriendlyBankName,
 		kFriendlyProgramName,
 		kSetupHelp,
-		kGetStoredTags
+		kGetStoredTags,
+		kMessageTimings
 	};
 
 	std::vector<const char*> kMinimalRequiredFunctionNames = {
@@ -565,12 +567,34 @@ namespace knobkraft {
 	void GenericAdaptation::sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		py::gil_scoped_acquire acquire;
-		if (pythonModuleHasFunction(kGeneralMessageDelay)) {
+		int delay = 0;
+		bool handled = false;
+		if (pythonModuleHasFunction(kMessageTimings)) {
+			try {
+				py::object result = callMethod(kMessageTimings);
+				if (py::isinstance<py::dict>(result)) {
+					auto dict = result.cast<py::dict>();
+					auto key = py::str("generalMessageDelay");
+					if (dict.contains(key)) {
+						delay = dict[key].cast<int>();
+						handled = true;
+					}
+				}
+			}
+			catch (py::error_already_set& ex) {
+				logAdaptationError(kMessageTimings, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				logAdaptationError(kMessageTimings, ex);
+			}
+		}
+
+		if (!handled && pythonModuleHasFunction(kGeneralMessageDelay)) {
 			try {
 				auto result = callMethod(kGeneralMessageDelay);
-				int delay = py::cast<int>(result);
-				// Be a bit careful with this device, do specify a delay when sending messages
-				midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesThrottled(buffer, delay);
+				delay = py::cast<int>(result);
+				handled = true;
 			}
 			catch (py::error_already_set& ex) {
 				logAdaptationError(kGeneralMessageDelay, ex);
@@ -580,10 +604,14 @@ namespace knobkraft {
 				logAdaptationError(kGeneralMessageDelay, ex);
 			}
 		}
-		else {
-			// No special behavior - just send at full speed
-			midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesFullSpeed(buffer);
+
+		if (handled && delay > 0) {
+			midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesThrottled(buffer, delay);
+			return;
 		}
+
+		// No special behavior - just send at full speed
+		midikraft::MidiController::instance()->getMidiOutput(midiOutput)->sendBlockOfMessagesFullSpeed(buffer);
 	}
 
 	std::string GenericAdaptation::friendlyProgramName(MidiProgramNumber programNo) const
@@ -627,28 +655,57 @@ namespace knobkraft {
 		}
 	}
 
-	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)
+	int GenericAdaptation::defaultReplyTimeoutMs() const
 	{
 		py::gil_scoped_acquire acquire;
-		try {
-			py::object result = callMethod(kCreateDeviceDetectMessage, channel);
-			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
-			return Sysex::vectorToMessages(byteData);
+		if (pythonModuleHasFunction(kMessageTimings)) {
+			try {
+				py::object result = callMethod(kMessageTimings);
+				if (py::isinstance<py::dict>(result)) {
+					auto dict = result.cast<py::dict>();
+					auto key = py::str("replyTimeoutMs");
+					if (dict.contains(key)) {
+						int value = dict[key].cast<int>();
+						if (value > 0) {
+							return value;
+						}
+					}
+				}
+			}
+			catch (py::error_already_set& ex) {
+				logAdaptationError(kMessageTimings, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				logAdaptationError(kMessageTimings, ex);
+			}
 		}
-		catch (py::error_already_set& ex) {
-			logAdaptationError(kCreateDeviceDetectMessage, ex);
-			ex.restore();
-			return {};
-		}
-		catch (std::exception& ex) {
-			logAdaptationError(kCreateDeviceDetectMessage, ex);
-			return {};
-		}
+		return Synth::defaultReplyTimeoutMs();
 	}
 
 	int GenericAdaptation::deviceDetectSleepMS()
 	{
 		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kMessageTimings)) {
+			try
+			{
+				py::object result = callMethod(kMessageTimings);
+				if (py::isinstance<py::dict>(result)) {
+					auto dict = result.cast<py::dict>();
+					auto key = py::str("deviceDetectWaitMilliseconds");
+					if (dict.contains(key)) {
+						return dict[key].cast<int>();
+					}
+				}
+			}
+			catch (py::error_already_set& ex) {
+				logAdaptationError(kMessageTimings, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				logAdaptationError(kMessageTimings, ex);
+			}
+		}
 		if (!pythonModuleHasFunction(kDeviceDetectWaitMilliseconds)) {
 			return 200;
 		}
@@ -666,6 +723,25 @@ namespace knobkraft {
 			logAdaptationError(kDeviceDetectWaitMilliseconds, ex);
 		}
 		return 200;
+	}
+
+	std::vector<juce::MidiMessage> GenericAdaptation::deviceDetect(int channel)
+	{
+		py::gil_scoped_acquire acquire;
+		try {
+			py::object result = callMethod(kCreateDeviceDetectMessage, channel);
+			std::vector<uint8> byteData = intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
+		}
+		catch (py::error_already_set& ex) {
+			logAdaptationError(kCreateDeviceDetectMessage, ex);
+			ex.restore();
+			return {};
+		}
+		catch (std::exception& ex) {
+			logAdaptationError(kCreateDeviceDetectMessage, ex);
+			return {};
+		}
 	}
 
 	MidiChannel GenericAdaptation::channelIfValidDeviceResponse(const MidiMessage& message)
