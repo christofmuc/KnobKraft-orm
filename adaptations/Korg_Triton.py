@@ -1,5 +1,7 @@
 #   Korg Triton Classic – Program mode adaption
 from typing import List
+import knobkraft
+import testing
 
 # ---------------- Constants ----------------
 
@@ -306,3 +308,21 @@ def escapeSysex(data: List[int]) -> List[int]:
             else:
                 break
     return result
+
+
+def make_test_data():
+    def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
+        single_bank = knobkraft.load_sysex("testData/Korg_Triton/bank1-patch1-korgtriton-noisystabber.syx", as_single_list=True)
+        bank_as_list_of_messages = knobkraft.load_sysex("testData/Korg_Triton/bank1-patch1-korgtriton-noisystabber.syx", as_single_list=False)
+        assert isBankDumpFinished(bank_as_list_of_messages)
+        patches = extractPatchesFromBank(single_bank)
+        individual_messages = knobkraft.splitSysex(patches)
+        yield testing.ProgramTestData(message=individual_messages[0], name="Noisy Stabber   ")
+        #patches = knobkraft.splitSysex(extractPatchesFromBank(bank[0]))
+        #yield testing.ProgramTestData(message=patches[0], name="Grandbient")
+        #yield testing.ProgramTestData(message=patches[49], name="ToyNFlt   ")
+
+    def banks(test_data: testing.TestData) -> List:
+        yield test_data.all_messages[0]
+
+    return testing.TestData(sysex="testData/Korg_Triton/bank1-korgtriton-midiox2.syx", edit_buffer_generator=programs, bank_generator=banks, expected_patch_count=128)
