@@ -318,9 +318,16 @@ def make_test_data():
         patches = extractPatchesFromBank(single_bank)
         individual_messages = knobkraft.splitSysex(patches)
         yield testing.ProgramTestData(message=individual_messages[0], name="Noisy Stabber   ")
-        #patches = knobkraft.splitSysex(extractPatchesFromBank(bank[0]))
-        #yield testing.ProgramTestData(message=patches[0], name="Grandbient")
-        #yield testing.ProgramTestData(message=patches[49], name="ToyNFlt   ")
+
+        #full_dump = knobkraft.load_sysex("testData/Korg_Triton/full-korgtriton-midiox.syx")  # full dump has message code 0x50, which is not implemented yet
+        #bank_extracted = []
+        #for message in full_dump:
+        #    if isPartOfBankDump(message):
+        #        bank_extracted.append(bank_extracted)
+        #assert isBankDumpFinished(bank_extracted)
+        # individual_messages = knobkraft.splitSysex(patches)
+        # yield testing.ProgramTestData(message=individual_messages[0], name="Noisy Stabber   ")
+        # yield testing.ProgramTestData(message=individual_messages[3], name="Noisy Stabber   ")
 
     def banks(test_data: testing.TestData) -> List:
         yield test_data.all_messages[0]
