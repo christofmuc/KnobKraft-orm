@@ -93,6 +93,7 @@ set(SOURCES
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
+	UserBankFactory.cpp UserBankFactory.h
 	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
 	win_resources.rc
 	version.cpp.in

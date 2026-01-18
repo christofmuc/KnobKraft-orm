@@ -8,6 +8,7 @@
 
 #include "LayoutConstants.h"
 #include "SynthBank.h"
+#include "UserBankFactory.h"
 
 #include "Capability.h"
 #include "HasBanksCapability.h"
@@ -205,7 +206,7 @@ void CreateListDialog::notifyResult()
 		if (isBank_) {
 			int bankSelected = bankValue_.getValue();
 			bank_ = MidiBankNumber::fromZeroBase(bankSelected, midikraft::SynthBank::numberOfPatchesInBank(synth_, bankSelected));
-			list_ = std::make_shared<midikraft::SynthBank>(name.toStdString(), synth_, bank_);
+			list_ = knobkraft::createUserBank(synth_, bankSelected, name.toStdString());
 		}
 		else {
 			list_ = std::make_shared<midikraft::PatchList>(name.toStdString());

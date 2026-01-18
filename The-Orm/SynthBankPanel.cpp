@@ -192,8 +192,9 @@ void SynthBankPanel::saveToDatabase() {
 void SynthBankPanel::refresh() {
 	if (synthBank_) {
 		synthName_.setText(synthBank_->synth()->getName(), dontSendNotification);
-		if (auto activeBank = std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_))
+		if (synthBank_->isActiveSynthBank())
 		{
+			auto activeBank = std::static_pointer_cast<midikraft::ActiveSynthBank>(synthBank_);
 			auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
 			std::string romText;
 			if (!synthBank_->isWritable()) {
@@ -264,7 +265,10 @@ void SynthBankPanel::changeListenerCallback(ChangeBroadcaster* source)
 }
 
 bool SynthBankPanel::isUserBank() {
-	return std::dynamic_pointer_cast<midikraft::ActiveSynthBank>(synthBank_) == nullptr;
+	if (!synthBank_) {
+		return false;
+	}
+	return synthBank_->isUserBank();
 }
 
 void SynthBankPanel::showInfoIfRequired() {

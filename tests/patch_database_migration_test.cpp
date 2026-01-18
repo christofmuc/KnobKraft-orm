@@ -29,6 +29,7 @@ constexpr auto kSecondSynthMd5 = "md5-ccc";
 constexpr auto kLegacyImportId = "import-legacy-001";
 constexpr auto kLegacyImportName = "Legacy Bulk Import";
 constexpr auto kSecondPatchName = "Bass 02";
+constexpr int kListTypeMigrationSchemaVersion = 18;
 const std::string kPrefixedImportId = std::string("import:") + kLegacySynth + ":" + kLegacyImportId;
 const std::string kSecondPrefixedImportId = std::string("import:") + kSecondSynth + ":" + kLegacyImportId;
 
@@ -101,6 +102,38 @@ void createLegacyImportDatabase(const std::filesystem::path& dbPath) {
 	insertImport.bind(3, kLegacyImportId);
 	insertImport.bind(4, "2024-01-01 12:00:00");
 	insertImport.exec();
+}
+
+void createListTypeRecoveryDatabase(const std::filesystem::path& dbPath) {
+	std::error_code ec;
+	std::filesystem::remove(dbPath, ec);
+	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+	db.exec("CREATE TABLE schema_version (number INTEGER)");
+	SQLite::Statement insertVersion(db, "INSERT INTO schema_version (number) VALUES (?)");
+	insertVersion.bind(1, kListTypeMigrationSchemaVersion);
+	insertVersion.exec();
+
+	db.exec("CREATE TABLE lists(id TEXT PRIMARY KEY, name TEXT NOT NULL, synth TEXT, midi_bank_number INTEGER, last_synced INTEGER, list_type INTEGER)");
+	const std::string userBankId = "UserBank-01";
+	const std::string activeBankId = std::string(kLegacySynth) + "-bank-0";
+	SQLite::Statement insertList(db, "INSERT INTO lists (id, name, synth, midi_bank_number, last_synced, list_type) VALUES (?, ?, ?, ?, ?, ?)");
+	insertList.bind(1, userBankId);
+	insertList.bind(2, "User Bank 01");
+	insertList.bind(3, kLegacySynth);
+	insertList.bind(4, 0);
+	insertList.bind(5, 0);
+	insertList.bind(6, midikraft::PatchListType::SYNTH_BANK);
+	insertList.exec();
+
+	SQLite::Statement insertActive(db, "INSERT INTO lists (id, name, synth, midi_bank_number, last_synced, list_type) VALUES (?, ?, ?, ?, ?, ?)");
+	insertActive.bind(1, activeBankId);
+	insertActive.bind(2, "Active Bank 0");
+	insertActive.bind(3, kLegacySynth);
+	insertActive.bind(4, 0);
+	insertActive.bind(5, 0);
+	insertActive.bind(6, midikraft::PatchListType::SYNTH_BANK);
+	insertActive.exec();
 }
 
 void insertSecondLegacyPatch(const std::filesystem::path& dbPath) {
@@ -422,4 +455,28 @@ TEST_CASE("duplicate import ids per synth migrate without unique constraint issu
 	REQUIRE(pilB.executeStep());
 	CHECK(std::string(pilB.getColumn(0).getText()) == kSecondSynth);
 	CHECK(std::string(pilB.getColumn(1).getText()) == kSecondSynthMd5);
+}
+
+TEST_CASE("migrate misclassified user banks from synth bank type") {
+	auto tmp = makeTempDatabasePath();
+	createListTypeRecoveryDatabase(tmp.path());
+
+	REQUIRE_NOTHROW(midikraft::PatchDatabase(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE));
+
+	SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+	SQLite::Statement versionQuery(verify, "SELECT number FROM schema_version");
+	REQUIRE(versionQuery.executeStep());
+	CHECK(versionQuery.getColumn(0).getInt() == 19);
+
+	const std::string userBankId = "UserBank-01";
+	const std::string activeBankId = std::string(kLegacySynth) + "-bank-0";
+	SQLite::Statement userBankQuery(verify, "SELECT list_type FROM lists WHERE id = :ID");
+	userBankQuery.bind(":ID", userBankId);
+	REQUIRE(userBankQuery.executeStep());
+	CHECK(userBankQuery.getColumn(0).getInt() == midikraft::PatchListType::USER_BANK);
+
+	SQLite::Statement activeBankQuery(verify, "SELECT list_type FROM lists WHERE id = :ID");
+	activeBankQuery.bind(":ID", activeBankId);
+	REQUIRE(activeBankQuery.executeStep());
+	CHECK(activeBankQuery.getColumn(0).getInt() == midikraft::PatchListType::SYNTH_BANK);
 }
