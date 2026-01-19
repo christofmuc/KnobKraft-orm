@@ -11,6 +11,7 @@
 #include "LambdaLayoutBox.h"
 
 #include "PatchHolder.h"
+#include "PatchListFill.h"
 #include "ImportFromSynthDialog.h"
 #include "AutomaticCategory.h"
 #include "PatchDiff.h"
@@ -41,7 +42,6 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
-#include <random>
 #include <algorithm>
 #include <iterator>
 #include <utility>
@@ -1138,29 +1138,6 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 	}*/
 }
 
-template <typename T>
-std::vector<T> getRandomSubset(const std::vector<T>& original, std::size_t subsetSize) {
-	// Copy the original vector
-	std::vector<T> shuffled = original;
-
-	// If subsetSize is larger than the original vector size, limit it
-	if (subsetSize > original.size()) {
-		subsetSize = original.size();
-	}
-
-	// Create a random engine with a seed based on the current time
-	std::random_device rd;
-	std::default_random_engine rng(rd());
-
-	// Shuffle the copied vector
-	std::shuffle(shuffled.begin(), shuffled.end(), rng);
-
-	// Create a vector to store the subset
-	std::vector<T> subset(shuffled.begin(), shuffled.begin() + subsetSize);
-
-	return subset;
-}
-
 void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback) {
 	if (fillParameters.fillMode == CreateListDialog::TListFillMode::None) {
 		finishedCallback();
@@ -1190,12 +1167,10 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
         }
 
         if (fillParameters.fillMode == CreateListDialog::TListFillMode::Top) {
-			loadPage(0, (int) patchesDesired, filter, [list, finishedCallback, minimumPatches](std::vector<midikraft::PatchHolder> patches) {
-				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
-				while (patches.size() < minimumPatches) {
-					patches.push_back(patches.back());
-				}
-				list->setPatches(patches);
+			loadPage(0, (int)patchesDesired, filter, [list, finishedCallback, minimumPatches, patchesDesired](std::vector<midikraft::PatchHolder> patches) {
+				midikraft::PatchListFillRequest request{ midikraft::PatchListFillMode::Top, patchesDesired, minimumPatches };
+				auto result = midikraft::fillPatchList(std::move(patches), nullptr, request);
+				list->setPatches(result.patches);
 				finishedCallback();
 				});
 		}
@@ -1208,46 +1183,20 @@ void PatchView::fillList(std::shared_ptr<midikraft::PatchList> list, CreateListD
 					return;
 				}
 
-				auto matchActive = [&activePatch](midikraft::PatchHolder const& candidate) {
-					if (!activePatch.patch() || !candidate.patch()) {
-						return false;
-					}
-					auto activeSynth = activePatch.synth();
-					auto candidateSynth = candidate.synth();
-					if (activeSynth && candidateSynth && activeSynth->getName() != candidateSynth->getName()) {
-						return false;
-					}
-					return candidate.md5() == activePatch.md5();
-				};
-
-				auto activeIt = std::find_if(patches.begin(), patches.end(), matchActive);
-				if (activeIt != patches.end()) {
-					std::rotate(patches.begin(), activeIt, patches.end());
-				}
-				else {
+				midikraft::PatchListFillRequest request{ midikraft::PatchListFillMode::FromActive, patchesDesired, minimumPatches };
+				auto result = midikraft::fillPatchList(std::move(patches), &activePatch, request);
+				if (!result.activePatchFound) {
 					spdlog::warn("Fill from active patch requested, but the active patch was not found in the current grid results. Falling back to top of list.");
 				}
-
-				if (patchesDesired > 0 && patches.size() > patchesDesired) {
-					patches.resize(patchesDesired);
-				}
-
-				while (patches.size() < minimumPatches && !patches.empty()) {
-					patches.push_back(patches.back());
-				}
-
-				list->setPatches(patches);
+				list->setPatches(result.patches);
 				finishedCallback();
 				});
 		}
 		else if (fillParameters.fillMode == CreateListDialog::TListFillMode::Random) {
 			loadPage(0, -1, filter, [list, patchesDesired, minimumPatches, finishedCallback](std::vector<midikraft::PatchHolder> patches) {
-				// Check if we need to extend the patches list to make sure we have enough patches to make a full bank
-				auto randomPatches = getRandomSubset(patches, patchesDesired);
-				while (randomPatches.size() < minimumPatches) {
-					randomPatches.push_back(randomPatches.back());
-				}
-				list->setPatches(randomPatches);
+				midikraft::PatchListFillRequest request{ midikraft::PatchListFillMode::Random, patchesDesired, minimumPatches };
+				auto result = midikraft::fillPatchList(std::move(patches), nullptr, request);
+				list->setPatches(result.patches);
 				finishedCallback();
 				});
 		}

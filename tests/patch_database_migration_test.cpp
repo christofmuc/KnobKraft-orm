@@ -5,8 +5,7 @@
 #include "PatchDatabase.h"
 #include "PatchListType.h"
 #include "ImportList.h"
-#include "Patch.h"
-#include "HasBanksCapability.h"
+#include "test_helpers.h"
 
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Statement.h>
@@ -32,6 +31,8 @@ constexpr auto kSecondPatchName = "Bass 02";
 constexpr int kListTypeMigrationSchemaVersion = 18;
 const std::string kPrefixedImportId = std::string("import:") + kLegacySynth + ":" + kLegacyImportId;
 const std::string kSecondPrefixedImportId = std::string("import:") + kSecondSynth + ":" + kLegacyImportId;
+
+using test_helpers::DummySynth;
 
 class ScopedTempFile {
 public:
@@ -230,38 +231,6 @@ std::vector<std::string> orderedPatchNames(SQLite::Database& db, std::string con
 	return names;
 }
 
-class DummyPatch : public midikraft::Patch {
-public:
-	DummyPatch() : midikraft::Patch(0) {}
-	MidiProgramNumber patchNumber() const override {
-		return MidiProgramNumber::invalidProgram();
-	}
-};
-
-class DummySynth : public midikraft::Synth, public midikraft::HasBanksCapability {
-public:
-	explicit DummySynth(std::string name) : name_(std::move(name)) {}
-
-	std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber) const override {
-		auto patch = std::make_shared<DummyPatch>();
-		patch->setData(data);
-		return patch;
-	}
-
-	bool isOwnSysex(juce::MidiMessage const&) const override { return true; }
-
-	std::string getName() const override { return name_; }
-
-	// HasBanksCapability
-	int numberOfBanks() const override { return 1; }
-	int numberOfPatches() const override { return 128; }
-	std::string friendlyBankName(MidiBankNumber) const override { return "Dummy Bank"; }
-	std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber) const override { return {}; }
-
-private:
-	std::string name_;
-};
-
 void expectLegacyImports(SQLite::Database& db) {
 	SQLite::Statement versionQuery(db, "SELECT number FROM schema_version");
 	REQUIRE(versionQuery.executeStep());
@@ -317,7 +286,7 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 	}
 
 	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	auto dummySynth = std::make_shared<DummySynth>(kLegacySynth);
+	auto dummySynth = std::make_shared<DummySynth>(kLegacySynth, 128);
 
 	{
 		SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
@@ -382,7 +351,7 @@ TEST_CASE("import ordering uses list order when sourceIDs are empty") {
 	}
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	auto synth = std::make_shared<DummySynth>(kLegacySynth);
+	auto synth = std::make_shared<DummySynth>(kLegacySynth, 128);
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	synthMap[kLegacySynth] = synth;
@@ -407,7 +376,7 @@ TEST_CASE("schema migration drops sourceID column and index") {
 	insertSecondLegacyPatch(tmp.path());
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	auto synth = std::make_shared<DummySynth>(kLegacySynth);
+	auto synth = std::make_shared<DummySynth>(kLegacySynth, 128);
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	synthMap[kLegacySynth] = synth;
