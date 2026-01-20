@@ -75,6 +75,7 @@ public:
 	void loadPatches();
 	void exportPatches();
 	void exportBank();
+	void exportMidnamFile();
 	void createPatchInterchangeFile();
 	void showPatchDiffDialog();
 
@@ -112,7 +113,7 @@ private:
 	void sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation, MidiProgramNumber program, midikraft::PatchHolder& patch);
 	static void sendPatchAsSysex(midikraft::PatchHolder& patch);
 
-	void updateLastPath();
+	static void updateLastPath(std::string &path, std::string const& keyName);
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
 	void downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
@@ -158,6 +159,7 @@ private:
 	midikraft::PatchDatabase &database_;
 	
 	std::string lastPathForPIF_;
+	std::string lastPathForMidnam_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };
