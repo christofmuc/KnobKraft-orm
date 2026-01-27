@@ -200,6 +200,10 @@ TEST_CASE("patch database searches across lists with second synth present") {
 	userList2->setPatches({ patchA3, patchA1 });
 	db.putPatchList(userList2);
 
+	auto mixedUserList = std::make_shared<midikraft::PatchList>("user-list-mixed", "User List Mixed");
+	mixedUserList->setPatches({ patchA1, patchB2, patchA4 });
+	db.putPatchList(mixedUserList);
+
 	std::vector<midikraft::PatchHolder> importOrder = { patchA2, patchA1, patchA4, patchA3 };
 	db.createImportLists(importOrder);
 
@@ -212,6 +216,10 @@ TEST_CASE("patch database searches across lists with second synth present") {
 
 	auto makeFilter = [&synthA]() {
 		std::vector<std::shared_ptr<midikraft::Synth>> synths = { synthA };
+		return midikraft::PatchFilter(synths);
+	};
+	auto makeFilterAll = [&synthA, &synthB]() {
+		std::vector<std::shared_ptr<midikraft::Synth>> synths = { synthA, synthB };
 		return midikraft::PatchFilter(synths);
 	};
 
@@ -236,5 +244,20 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		filter.listID = importListBId;
 		auto result = db.getPatches(filter, 0, -1);
 		expectNames(result, { "A-4", "A-3" });
+	}
+
+	SUBCASE("all patches across both synths") {
+		auto filter = makeFilterAll();
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Name;
+		auto result = db.getPatches(filter, 0, -1);
+		expectNames(result, { "A-1", "A-2", "A-3", "A-4", "B-1", "B-2" });
+	}
+
+	SUBCASE("user list can contain patches from multiple synths") {
+		auto filter = makeFilterAll();
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+		filter.listID = mixedUserList->id();
+		auto result = db.getPatches(filter, 0, -1);
+		expectNames(result, { "A-1", "B-2", "A-4" });
 	}
 }
