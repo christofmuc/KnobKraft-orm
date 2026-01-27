@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <functional>
+#include <set>
 #include <map>
 #include <random>
 #include <string>
@@ -276,6 +277,10 @@ TEST_CASE("patch database searches across lists with second synth present") {
 	mixedUserList->setPatches({ patchA1, patchB2, patchA4 });
 	db.putPatchList(mixedUserList);
 
+	auto duplicateUserList = std::make_shared<midikraft::PatchList>("user-list-dup", "User List Duplicates");
+	duplicateUserList->setPatches({ patchA2, patchA2, patchB2, patchA2, patchA4 });
+	db.putPatchList(duplicateUserList);
+
 	std::vector<midikraft::PatchHolder> importOrder = { patchA2, patchA1, patchA4, patchA3 };
 	db.createImportLists(importOrder);
 
@@ -333,6 +338,15 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		expectNames(result, { "Normal-1", "Fav-2", "Regular-1" });
 	}
 
+	SUBCASE("duplicate list preserves duplicates in filtered results") {
+		auto filter = makeFilterAll();
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+		filter.listID = duplicateUserList->id();
+		filter.onlyFaves = true;
+		auto result = db.getPatches(filter, 0, -1);
+		expectNames(result, { "Fav-1", "Fav-1", "Fav-2", "Fav-1" });
+	}
+
 	struct ListCase {
 		const char* label;
 		std::function<void(midikraft::PatchFilter&)> applyList;
@@ -372,6 +386,12 @@ TEST_CASE("patch database searches across lists with second synth present") {
 			[&importListBId](midikraft::PatchFilter& filter) { filter.listID = importListBId; },
 			midikraft::PatchOrdering::Order_by_Place_in_List,
 			{ patchA4, patchA3 }
+		},
+		{
+			"user list duplicates",
+			[&duplicateUserList](midikraft::PatchFilter& filter) { filter.listID = duplicateUserList->id(); },
+			midikraft::PatchOrdering::Order_by_Place_in_List,
+			{ patchA2, patchA2, patchB2, patchA2, patchA4 }
 		},
 	};
 
@@ -464,4 +484,66 @@ TEST_CASE("patch database searches across lists with second synth present") {
 			}
 		}
 	}
+}
+
+TEST_CASE("patch database import ordering deduplicates patches across imports") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synth = std::make_shared<DummySynth>("ImportSynth", 4, 1);
+	auto importSourceFirst = std::make_shared<midikraft::FromFileSource>("01-first.syx", "/tmp/01-first.syx", MidiProgramNumber::invalidProgram());
+	auto importSourceSecond = std::make_shared<midikraft::FromFileSource>("02-second.syx", "/tmp/02-second.syx", MidiProgramNumber::invalidProgram());
+
+	auto patchInitFirst = makeBankedPatch(synth, "Init", 0, 1, 0x10, importSourceFirst);
+	auto patchInitSecond = makeBankedPatch(synth, "Init", 0, 1, 0x10, importSourceSecond);
+	auto patchUnique = makeBankedPatch(synth, "Unique", 0, 0, 0x11, importSourceFirst);
+
+	db.putPatch(patchInitFirst);
+	db.putPatch(patchUnique);
+	db.putPatch(patchInitSecond);
+
+	db.createImportLists({ patchUnique, patchInitFirst });
+	db.createImportLists({ patchInitSecond });
+
+	std::vector<std::shared_ptr<midikraft::Synth>> synths = { synth };
+	auto filter = midikraft::PatchFilter(synths);
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Import_id;
+	auto result = db.getPatches(filter, 0, -1);
+
+	std::set<std::string> uniqueIds;
+	for (auto const& patch : result) {
+		uniqueIds.insert(patch.md5());
+	}
+	CHECK(result.size() == uniqueIds.size());
+	expectNames(result, { "Unique", "Init" });
+}
+
+TEST_CASE("patch database import list preserves duplicates within list") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synth = std::make_shared<DummySynth>("ImportDupSynth", 4, 1);
+	auto importSource = std::make_shared<midikraft::FromFileSource>("dup-import.syx", "/tmp/dup-import.syx", MidiProgramNumber::invalidProgram());
+
+	auto patchUnique = makeBankedPatch(synth, "Imp-Unique", 0, 0, 0x21, importSource);
+	auto patchInit = makeBankedPatch(synth, "Imp-Init", 0, 1, 0x22, importSource);
+	auto patchInitDup = makeBankedPatch(synth, "Imp-Init", 0, 1, 0x22, importSource);
+
+	db.putPatch(patchUnique);
+	db.putPatch(patchInit);
+
+	db.createImportLists({ patchUnique, patchInit, patchInitDup });
+
+	auto importLists = db.allImportLists(synth);
+	REQUIRE(importLists.size() >= 1);
+	auto importListId = findListId(importLists, "Imported from file dup-import.syx");
+	REQUIRE(!importListId.empty());
+
+	std::vector<std::shared_ptr<midikraft::Synth>> synths = { synth };
+	auto filter = midikraft::PatchFilter(synths);
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+	filter.listID = importListId;
+	auto result = db.getPatches(filter, 0, -1);
+
+	expectNames(result, { "Imp-Unique", "Imp-Init", "Imp-Init" });
 }
