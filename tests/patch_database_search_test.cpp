@@ -72,6 +72,15 @@ void expectNames(std::vector<midikraft::PatchHolder> const& patches, std::vector
 	}
 }
 
+std::string findListId(std::vector<midikraft::ListInfo> const& lists, std::string const& name) {
+	for (auto const& info : lists) {
+		if (info.name == name) {
+			return info.id;
+		}
+	}
+	return {};
+}
+
 } // namespace
 
 TEST_CASE("patch database basic search ordering for single synth") {
@@ -158,5 +167,74 @@ TEST_CASE("patch database basic search ordering for single synth") {
 		filter.listID = list->id();
 		auto result = db.getPatches(filter, 0, -1);
 		expectNames(result, { "Gamma", "Omega", "Zebra", "Alpha", "Beta" });
+	}
+}
+
+TEST_CASE("patch database searches across lists with second synth present") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synthA = std::make_shared<DummySynth>("SearchSynthA", 4, 2);
+	auto synthB = std::make_shared<DummySynth>("SearchSynthB", 4, 1);
+
+	auto importSourceA = std::make_shared<midikraft::FromFileSource>("importA.syx", "/tmp/importA.syx", MidiProgramNumber::invalidProgram());
+	auto importSourceB = std::make_shared<midikraft::FromFileSource>("importB.syx", "/tmp/importB.syx", MidiProgramNumber::invalidProgram());
+
+	auto patchA1 = makeBankedPatch(synthA, "A-1", 0, 0, 0x01, importSourceA);
+	auto patchA2 = makeBankedPatch(synthA, "A-2", 0, 1, 0x02, importSourceA);
+	auto patchA3 = makeBankedPatch(synthA, "A-3", 1, 0, 0x03, importSourceB);
+	auto patchA4 = makeBankedPatch(synthA, "A-4", 1, 1, 0x04, importSourceB);
+
+	auto patchB1 = makeBankedPatch(synthB, "B-1", 0, 0, 0x01, importSourceA);
+	auto patchB2 = makeBankedPatch(synthB, "B-2", 0, 1, 0x02, importSourceB);
+
+	for (auto const& patch : { patchA1, patchA2, patchA3, patchA4, patchB1, patchB2 }) {
+		db.putPatch(patch);
+	}
+
+	auto userList1 = std::make_shared<midikraft::PatchList>("user-list-1", "User List 1");
+	userList1->setPatches({ patchA2, patchA4 });
+	db.putPatchList(userList1);
+
+	auto userList2 = std::make_shared<midikraft::PatchList>("user-list-2", "User List 2");
+	userList2->setPatches({ patchA3, patchA1 });
+	db.putPatchList(userList2);
+
+	std::vector<midikraft::PatchHolder> importOrder = { patchA2, patchA1, patchA4, patchA3 };
+	db.createImportLists(importOrder);
+
+	auto importLists = db.allImportLists(synthA);
+	REQUIRE(importLists.size() >= 2);
+	auto importListAId = findListId(importLists, "Imported from file importA.syx");
+	auto importListBId = findListId(importLists, "Imported from file importB.syx");
+	REQUIRE(!importListAId.empty());
+	REQUIRE(!importListBId.empty());
+
+	auto makeFilter = [&synthA]() {
+		std::vector<std::shared_ptr<midikraft::Synth>> synths = { synthA };
+		return midikraft::PatchFilter(synths);
+	};
+
+	SUBCASE("all patches from synth A ignore synth B") {
+		auto filter = makeFilter();
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Name;
+		auto result = db.getPatches(filter, 0, -1);
+		expectNames(result, { "A-1", "A-2", "A-3", "A-4" });
+	}
+
+	SUBCASE("user list search uses list order") {
+		auto filter = makeFilter();
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+		filter.listID = userList1->id();
+		auto result = db.getPatches(filter, 0, -1);
+		expectNames(result, { "A-2", "A-4" });
+	}
+
+	SUBCASE("import list search uses list order") {
+		auto filter = makeFilter();
+		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+		filter.listID = importListBId;
+		auto result = db.getPatches(filter, 0, -1);
+		expectNames(result, { "A-4", "A-3" });
 	}
 }
