@@ -247,16 +247,18 @@ TEST_CASE("patch database searches across lists with second synth present") {
 	auto importSourceA = std::make_shared<midikraft::FromFileSource>("importA.syx", "/tmp/importA.syx", MidiProgramNumber::invalidProgram());
 	auto importSourceB = std::make_shared<midikraft::FromFileSource>("importB.syx", "/tmp/importB.syx", MidiProgramNumber::invalidProgram());
 
-	auto patchA1 = makeBankedPatch(synthA, "A-1", 0, 0, 0x01, importSourceA);
-	auto patchA2 = makeBankedPatch(synthA, "A-2", 0, 1, 0x02, importSourceA);
-	auto patchA3 = makeBankedPatch(synthA, "A-3", 1, 0, 0x03, importSourceB);
-	auto patchA4 = makeBankedPatch(synthA, "A-4", 1, 1, 0x04, importSourceB);
+	auto patchA1 = makeBankedPatch(synthA, "Normal-1", 0, 0, 0x01, importSourceA);
+	auto patchA2 = makeBankedPatch(synthA, "Fav-1", 0, 1, 0x02, importSourceA);
+	auto patchA3 = makeBankedPatch(synthA, "Hidden-1", 1, 0, 0x03, importSourceB);
+	auto patchA4 = makeBankedPatch(synthA, "Regular-1", 1, 1, 0x04, importSourceB);
 
-	auto patchB1 = makeBankedPatch(synthB, "B-1", 0, 0, 0x01, importSourceA);
-	auto patchB2 = makeBankedPatch(synthB, "B-2", 0, 1, 0x02, importSourceB);
+	auto patchB1 = makeBankedPatch(synthB, "Normal-2", 0, 0, 0x01, importSourceA);
+	auto patchB2 = makeBankedPatch(synthB, "Fav-2", 0, 1, 0x02, importSourceB);
 
 	patchA2.setFavorite(midikraft::Favorite(true));
 	patchB2.setFavorite(midikraft::Favorite(true));
+	patchA3.setHidden(true);
+	patchA4.setRegular(true);
 
 	for (auto const& patch : { patchA1, patchA2, patchA3, patchA4, patchB1, patchB2 }) {
 		db.putPatch(patch);
@@ -297,7 +299,7 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		auto filter = makeFilter();
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Name;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "A-1", "A-2", "A-3", "A-4" });
+		expectNames(result, { "Fav-1", "Normal-1", "Regular-1" });
 	}
 
 	SUBCASE("user list search uses list order") {
@@ -305,7 +307,7 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 		filter.listID = userList1->id();
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "A-2", "A-4" });
+		expectNames(result, { "Fav-1", "Regular-1" });
 	}
 
 	SUBCASE("import list search uses list order") {
@@ -313,14 +315,14 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 		filter.listID = importListBId;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "A-4", "A-3" });
+		expectNames(result, { "Regular-1" });
 	}
 
 	SUBCASE("all patches across both synths") {
 		auto filter = makeFilterAll();
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Name;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "A-1", "A-2", "A-3", "A-4", "B-1", "B-2" });
+		expectNames(result, { "Fav-1", "Fav-2", "Normal-1", "Normal-2", "Regular-1" });
 	}
 
 	SUBCASE("user list can contain patches from multiple synths") {
@@ -328,21 +330,22 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 		filter.listID = mixedUserList->id();
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "A-1", "B-2", "A-4" });
+		expectNames(result, { "Normal-1", "Fav-2", "Regular-1" });
 	}
 
 	struct ListCase {
 		const char* label;
 		std::function<void(midikraft::PatchFilter&)> applyList;
 		midikraft::PatchOrdering ordering;
-		std::vector<std::string> expectedAll;
-		std::vector<std::string> expectedFaves;
+		std::vector<std::reference_wrapper<midikraft::PatchHolder>> base;
 	};
 
-	struct FilterCase {
-		const char* label;
-		std::function<void(midikraft::PatchFilter&)> apply;
-		bool useFavorites;
+	struct VisibilityCase {
+		std::string label;
+		bool onlyFaves = false;
+		bool showHidden = false;
+		bool showRegular = false;
+		bool showUndecided = false;
 	};
 
 	std::vector<ListCase> listCases = {
@@ -350,47 +353,113 @@ TEST_CASE("patch database searches across lists with second synth present") {
 			"all patches across both synths",
 			[](midikraft::PatchFilter&) {},
 			midikraft::PatchOrdering::Order_by_Name,
-			{ "A-1", "A-2", "A-3", "A-4", "B-1", "B-2" },
-			{ "A-2", "B-2" }
+			{ patchA2, patchB2, patchA3, patchA1, patchB1, patchA4 }
 		},
 		{
 			"user list 1",
 			[&userList1](midikraft::PatchFilter& filter) { filter.listID = userList1->id(); },
 			midikraft::PatchOrdering::Order_by_Place_in_List,
-			{ "A-2", "A-4" },
-			{ "A-2" }
+			{ patchA2, patchA4 }
 		},
 		{
 			"user list mixed",
 			[&mixedUserList](midikraft::PatchFilter& filter) { filter.listID = mixedUserList->id(); },
 			midikraft::PatchOrdering::Order_by_Place_in_List,
-			{ "A-1", "B-2", "A-4" },
-			{ "B-2" }
+			{ patchA1, patchB2, patchA4 }
 		},
 		{
 			"import list B",
 			[&importListBId](midikraft::PatchFilter& filter) { filter.listID = importListBId; },
 			midikraft::PatchOrdering::Order_by_Place_in_List,
-			{ "A-4", "A-3" },
-			{ }
+			{ patchA4, patchA3 }
 		},
 	};
 
-	std::vector<FilterCase> filterCases = {
-		{ "all", [](midikraft::PatchFilter&) {}, false },
-		{ "favorites only", [](midikraft::PatchFilter& filter) { filter.onlyFaves = true; }, true },
+	auto matchesVisibility = [](VisibilityCase const& visibility, midikraft::PatchHolder const& patch) {
+		bool hasAnyFilter = visibility.onlyFaves || visibility.showHidden || visibility.showRegular || visibility.showUndecided;
+		if (!hasAnyFilter) {
+			return !patch.isHidden();
+		}
+		bool undecided = !patch.isFavorite() && !patch.isHidden() && !patch.isRegular();
+		bool positive = false;
+		if (visibility.onlyFaves) positive = positive || patch.isFavorite();
+		if (visibility.showHidden) positive = positive || patch.isHidden();
+		if (visibility.showRegular) positive = positive || patch.isRegular();
+		if (visibility.showUndecided) positive = positive || undecided;
+		bool negative = true;
+		if (!visibility.onlyFaves) negative = negative && !patch.isFavorite();
+		if (!visibility.showHidden) negative = negative && !patch.isHidden();
+		if (!visibility.showRegular) negative = negative && !patch.isRegular();
+		return positive && negative;
 	};
 
+	auto expectedNamesFor = [&](ListCase const& listCase, VisibilityCase const& visibility) {
+		std::vector<std::string> expected;
+		for (auto const& patchRef : listCase.base) {
+			auto const& patch = patchRef.get();
+			if (matchesVisibility(visibility, patch)) {
+				expected.push_back(patch.name());
+			}
+		}
+		return expected;
+	};
+
+	auto orderingKey = [](midikraft::PatchHolder const& patch, midikraft::PatchOrdering ordering) {
+		switch (ordering) {
+		case midikraft::PatchOrdering::Order_by_Name:
+			return patch.name() + "|" + std::to_string(patch.bankNumber().toZeroBased()) + "|" + std::to_string(patch.patchNumber().toZeroBasedDiscardingBank());
+		case midikraft::PatchOrdering::Order_by_BankNo:
+			return std::to_string(patch.bankNumber().toZeroBased()) + "|" + std::to_string(patch.patchNumber().toZeroBasedDiscardingBank()) + "|" + patch.name();
+		case midikraft::PatchOrdering::Order_by_ProgramNo:
+			return std::to_string(patch.patchNumber().toZeroBasedDiscardingBank()) + "|" + patch.name();
+		default:
+			return patch.name();
+		}
+	};
+
+	auto assertBaseOrderMatches = [&](ListCase const& listCase) {
+		if (listCase.ordering == midikraft::PatchOrdering::Order_by_Place_in_List) {
+			return;
+		}
+		std::string lastKey;
+		for (auto const& patchRef : listCase.base) {
+			auto const& patch = patchRef.get();
+			auto key = orderingKey(patch, listCase.ordering);
+			if (!lastKey.empty()) {
+				CHECK(lastKey <= key);
+			}
+			lastKey = std::move(key);
+		}
+	};
+
+	std::vector<VisibilityCase> visibilityCases;
+	for (int mask = 0; mask < 16; ++mask) {
+		VisibilityCase visibility;
+		visibility.onlyFaves = (mask & 0x1) != 0;
+		visibility.showHidden = (mask & 0x2) != 0;
+		visibility.showRegular = (mask & 0x4) != 0;
+		visibility.showUndecided = (mask & 0x8) != 0;
+		visibility.label = "faves=" + std::to_string(visibility.onlyFaves)
+			+ " hidden=" + std::to_string(visibility.showHidden)
+			+ " regular=" + std::to_string(visibility.showRegular)
+			+ " undecided=" + std::to_string(visibility.showUndecided);
+		visibilityCases.push_back(visibility);
+	}
+
 	for (auto const& listCase : listCases) {
-		for (auto const& filterCase : filterCases) {
-			auto label = std::string(listCase.label) + " + " + filterCase.label;
+		assertBaseOrderMatches(listCase);
+		for (auto const& visibility : visibilityCases) {
+			auto label = std::string(listCase.label) + " + " + visibility.label;
 			SUBCASE(label.c_str()) {
 				auto filter = makeFilterAll();
 				listCase.applyList(filter);
-				filterCase.apply(filter);
+				filter.onlyFaves = visibility.onlyFaves;
+				filter.showHidden = visibility.showHidden;
+				filter.showRegular = visibility.showRegular;
+				filter.showUndecided = visibility.showUndecided;
 				filter.orderBy = listCase.ordering;
 				auto result = db.getPatches(filter, 0, -1);
-				auto expected = filterCase.useFavorites ? listCase.expectedFaves : listCase.expectedAll;
+				auto expected = expectedNamesFor(listCase, visibility);
 				expectNames(result, expected);
 			}
 		}
