@@ -72,6 +72,21 @@ void expectNames(std::vector<midikraft::PatchHolder> const& patches, std::vector
 	}
 }
 
+struct ExpectedPatchOrder {
+	std::string name;
+	int bankNo;
+	int programNo;
+};
+
+void expectPatchOrder(std::vector<midikraft::PatchHolder> const& patches, std::vector<ExpectedPatchOrder> const& expected) {
+	REQUIRE(patches.size() == expected.size());
+	for (size_t i = 0; i < expected.size(); ++i) {
+		CHECK(patches[i].name() == expected[i].name);
+		CHECK(patches[i].bankNumber().toZeroBased() == expected[i].bankNo);
+		CHECK(patches[i].patchNumber().toZeroBasedDiscardingBank() == expected[i].programNo);
+	}
+}
+
 std::string findListId(std::vector<midikraft::ListInfo> const& lists, std::string const& name) {
 	for (auto const& info : lists) {
 		if (info.name == name) {
@@ -95,13 +110,19 @@ TEST_CASE("patch database basic search ordering for single synth") {
 	auto patchBeta = makeBankedPatch(synth, "Beta", 1, 0, 0x03, importSource);
 	auto patchGamma = makeBankedPatch(synth, "Gamma", 0, 1, 0x04, importSource);
 	auto patchZebra = makeBankedPatch(synth, "Zebra", 0, 2, 0x05, importSource);
+	auto patchAaron = makeBankedPatch(synth, "Aaron", 0, 3, 0x06, importSource);
+	auto patchAlphaTwo = makeBankedPatch(synth, "Alpha", 1, 1, 0x07, importSource);
+	auto patchGammaTwo = makeBankedPatch(synth, "Gamma", 1, 3, 0x08, importSource);
 
 	std::vector<midikraft::PatchHolder> patches = {
 		patchOmega,
-		patchAlpha,
+		patchAlphaTwo,
 		patchBeta,
+		patchAlpha,
+		patchGammaTwo,
 		patchGamma,
-		patchZebra
+		patchZebra,
+		patchAaron,
 	};
 
 	for (auto const& patch : patches) {
@@ -109,10 +130,10 @@ TEST_CASE("patch database basic search ordering for single synth") {
 	}
 
 	auto list = std::make_shared<midikraft::PatchList>("test-list", "Test List");
-	list->setPatches({ patchGamma, patchOmega, patchZebra, patchAlpha, patchBeta });
+	list->setPatches({ patchGamma, patchOmega, patchAaron, patchZebra, patchAlpha, patchAlphaTwo, patchBeta, patchGammaTwo });
 	db.putPatchList(list);
 
-	std::vector<midikraft::PatchHolder> importOrder = { patchBeta, patchOmega, patchGamma, patchAlpha, patchZebra };
+	std::vector<midikraft::PatchHolder> importOrder = { patchBeta, patchOmega, patchGamma, patchAlpha, patchZebra, patchAaron, patchAlphaTwo, patchGammaTwo };
 	db.createImportLists(importOrder);
 
 	auto makeFilter = [&synth]() {
@@ -137,28 +158,64 @@ TEST_CASE("patch database basic search ordering for single synth") {
 		auto filter = makeFilter();
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Name;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "Alpha", "Beta", "Gamma", "Omega", "Zebra" });
+		expectPatchOrder(result, {
+			{ "Aaron", 0, 3 },
+			{ "Alpha", 1, 0 },
+			{ "Alpha", 1, 1 },
+			{ "Beta", 1, 0 },
+			{ "Gamma", 0, 1 },
+			{ "Gamma", 1, 3 },
+			{ "Omega", 0, 0 },
+			{ "Zebra", 0, 2 }
+		});
 	}
 
 	SUBCASE("order by program number") {
 		auto filter = makeFilter();
 		filter.orderBy = midikraft::PatchOrdering::Order_by_ProgramNo;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "Omega", "Gamma", "Zebra", "Alpha", "Beta" });
+		expectPatchOrder(result, {
+			{ "Omega", 0, 0 },
+			{ "Gamma", 0, 1 },
+			{ "Zebra", 0, 2 },
+			{ "Aaron", 0, 3 },
+			{ "Alpha", 1, 0 },
+			{ "Beta", 1, 0 },
+			{ "Alpha", 1, 1 },
+			{ "Gamma", 1, 3 }
+		});
 	}
 
 	SUBCASE("order by bank number") {
 		auto filter = makeFilter();
 		filter.orderBy = midikraft::PatchOrdering::Order_by_BankNo;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "Omega", "Gamma", "Zebra", "Alpha", "Beta" });
+		expectPatchOrder(result, {
+			{ "Omega", 0, 0 },
+			{ "Gamma", 0, 1 },
+			{ "Zebra", 0, 2 },
+			{ "Aaron", 0, 3 },
+			{ "Alpha", 1, 0 },
+			{ "Beta", 1, 0 },
+			{ "Alpha", 1, 1 },
+			{ "Gamma", 1, 3 }
+		});
 	}
 
 	SUBCASE("order by import list") {
 		auto filter = makeFilter();
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Import_id;
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "Beta", "Omega", "Gamma", "Alpha", "Zebra" });
+		expectPatchOrder(result, {
+			{ "Beta", 1, 0 },
+			{ "Omega", 0, 0 },
+			{ "Gamma", 0, 1 },
+			{ "Alpha", 1, 0 },
+			{ "Zebra", 0, 2 },
+			{ "Aaron", 0, 3 },
+			{ "Alpha", 1, 1 },
+			{ "Gamma", 1, 3 }
+		});
 	}
 
 	SUBCASE("order by place in list") {
@@ -166,7 +223,16 @@ TEST_CASE("patch database basic search ordering for single synth") {
 		filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
 		filter.listID = list->id();
 		auto result = db.getPatches(filter, 0, -1);
-		expectNames(result, { "Gamma", "Omega", "Zebra", "Alpha", "Beta" });
+		expectPatchOrder(result, {
+			{ "Gamma", 0, 1 },
+			{ "Omega", 0, 0 },
+			{ "Aaron", 0, 3 },
+			{ "Zebra", 0, 2 },
+			{ "Alpha", 1, 0 },
+			{ "Alpha", 1, 1 },
+			{ "Beta", 1, 0 },
+			{ "Gamma", 1, 3 }
+		});
 	}
 }
 
