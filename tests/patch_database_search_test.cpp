@@ -547,3 +547,124 @@ TEST_CASE("patch database import list preserves duplicates within list") {
 
 	expectNames(result, { "Imp-Unique", "Imp-Init", "Imp-Init" });
 }
+
+TEST_CASE("patch database duplicate-name filter respects visibility combinations") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synth = std::make_shared<DummySynth>("DuplicateSynth", 4, 1);
+	auto importSource = std::make_shared<midikraft::FromFileSource>("dup-flags.syx", "/tmp/dup-flags.syx", MidiProgramNumber::invalidProgram());
+
+	auto dupFav = makeBankedPatch(synth, "Dup", 0, 0, 0x31, importSource);
+	auto dupHidden = makeBankedPatch(synth, "Dup", 0, 1, 0x32, importSource);
+	auto dupRegular = makeBankedPatch(synth, "Dup", 0, 2, 0x33, importSource);
+	auto dupUndecided = makeBankedPatch(synth, "Dup", 0, 3, 0x34, importSource);
+	auto unique = makeBankedPatch(synth, "Solo", 0, 4, 0x35, importSource);
+
+	dupFav.setFavorite(midikraft::Favorite(true));
+	dupHidden.setHidden(true);
+	dupRegular.setRegular(true);
+
+	for (auto const& patch : { dupFav, dupHidden, dupRegular, dupUndecided, unique }) {
+		db.putPatch(patch);
+	}
+
+	struct VisibilityCase {
+		bool onlyFaves = false;
+		bool showHidden = false;
+		bool showRegular = false;
+		bool showUndecided = false;
+	};
+
+	auto matchesVisibility = [](VisibilityCase const& visibility, midikraft::PatchHolder const& patch) {
+		bool hasAnyFilter = visibility.onlyFaves || visibility.showHidden || visibility.showRegular || visibility.showUndecided;
+		if (!hasAnyFilter) {
+			return !patch.isHidden();
+		}
+		bool undecided = !patch.isFavorite() && !patch.isHidden() && !patch.isRegular();
+		bool positive = false;
+		if (visibility.onlyFaves) positive = positive || patch.isFavorite();
+		if (visibility.showHidden) positive = positive || patch.isHidden();
+		if (visibility.showRegular) positive = positive || patch.isRegular();
+		if (visibility.showUndecided) positive = positive || undecided;
+		bool negative = true;
+		if (!visibility.onlyFaves) negative = negative && !patch.isFavorite();
+		if (!visibility.showHidden) negative = negative && !patch.isHidden();
+		if (!visibility.showRegular) negative = negative && !patch.isRegular();
+		return positive && negative;
+	};
+
+	std::vector<std::reference_wrapper<midikraft::PatchHolder>> base = { dupFav, dupHidden, dupRegular, dupUndecided };
+
+	std::vector<VisibilityCase> visibilityCases;
+	for (int mask = 0; mask < 16; ++mask) {
+		VisibilityCase visibility;
+		visibility.onlyFaves = (mask & 0x1) != 0;
+		visibility.showHidden = (mask & 0x2) != 0;
+		visibility.showRegular = (mask & 0x4) != 0;
+		visibility.showUndecided = (mask & 0x8) != 0;
+		visibilityCases.push_back(visibility);
+	}
+
+	std::vector<std::shared_ptr<midikraft::Synth>> synths = { synth };
+
+	for (auto const& visibility : visibilityCases) {
+		auto label = std::string("dup flags f=") + std::to_string(visibility.onlyFaves)
+			+ " h=" + std::to_string(visibility.showHidden)
+			+ " r=" + std::to_string(visibility.showRegular)
+			+ " u=" + std::to_string(visibility.showUndecided);
+		SUBCASE(label.c_str()) {
+			auto filter = midikraft::PatchFilter(synths);
+			filter.onlyDuplicateNames = true;
+			filter.onlyFaves = visibility.onlyFaves;
+			filter.showHidden = visibility.showHidden;
+			filter.showRegular = visibility.showRegular;
+			filter.showUndecided = visibility.showUndecided;
+			filter.orderBy = midikraft::PatchOrdering::Order_by_Name;
+			auto result = db.getPatches(filter, 0, -1);
+
+			std::vector<ExpectedPatchOrder> expected;
+			for (auto const& patchRef : base) {
+				auto const& patch = patchRef.get();
+				if (matchesVisibility(visibility, patch)) {
+					expected.push_back({ patch.name(), patch.bankNumber().toZeroBased(), patch.patchNumber().toZeroBasedDiscardingBank() });
+				}
+			}
+			expectPatchOrder(result, expected);
+		}
+	}
+}
+
+TEST_CASE("patch database duplicate-name filter honors list scope and synth partitioning") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synthA = std::make_shared<DummySynth>("DupListSynthA", 4, 1);
+	auto synthB = std::make_shared<DummySynth>("DupListSynthB", 4, 1);
+	auto importSource = std::make_shared<midikraft::FromFileSource>("dup-list.syx", "/tmp/dup-list.syx", MidiProgramNumber::invalidProgram());
+
+	auto dupA1 = makeBankedPatch(synthA, "DupList", 0, 0, 0x41, importSource);
+	auto dupA2 = makeBankedPatch(synthA, "DupList", 0, 1, 0x42, importSource);
+	auto soloA = makeBankedPatch(synthA, "SoloA", 0, 2, 0x43, importSource);
+
+	auto dupB1 = makeBankedPatch(synthB, "DupList", 0, 3, 0x44, importSource);
+	auto dupB2 = makeBankedPatch(synthB, "DupList", 0, 0, 0x45, importSource);
+	auto soloB = makeBankedPatch(synthB, "SoloB", 0, 1, 0x46, importSource);
+
+	for (auto const& patch : { dupA1, dupA2, soloA, dupB1, dupB2, soloB }) {
+		db.putPatch(patch);
+	}
+
+	auto list = std::make_shared<midikraft::PatchList>("dup-list", "Dup List");
+	list->setPatches({ dupA1, soloA, dupB1, soloB });
+	db.putPatchList(list);
+
+	std::vector<std::shared_ptr<midikraft::Synth>> synths = { synthA, synthB };
+	auto filter = midikraft::PatchFilter(synths);
+	filter.onlyDuplicateNames = true;
+	filter.orderBy = midikraft::PatchOrdering::Order_by_Place_in_List;
+	filter.listID = list->id();
+	auto result = db.getPatches(filter, 0, -1);
+
+	expectNames(result, { "DupList", "DupList" });
+}
