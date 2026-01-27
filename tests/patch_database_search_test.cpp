@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <random>
 #include <string>
@@ -254,6 +255,9 @@ TEST_CASE("patch database searches across lists with second synth present") {
 	auto patchB1 = makeBankedPatch(synthB, "B-1", 0, 0, 0x01, importSourceA);
 	auto patchB2 = makeBankedPatch(synthB, "B-2", 0, 1, 0x02, importSourceB);
 
+	patchA2.setFavorite(midikraft::Favorite(true));
+	patchB2.setFavorite(midikraft::Favorite(true));
+
 	for (auto const& patch : { patchA1, patchA2, patchA3, patchA4, patchB1, patchB2 }) {
 		db.putPatch(patch);
 	}
@@ -325,5 +329,70 @@ TEST_CASE("patch database searches across lists with second synth present") {
 		filter.listID = mixedUserList->id();
 		auto result = db.getPatches(filter, 0, -1);
 		expectNames(result, { "A-1", "B-2", "A-4" });
+	}
+
+	struct ListCase {
+		const char* label;
+		std::function<void(midikraft::PatchFilter&)> applyList;
+		midikraft::PatchOrdering ordering;
+		std::vector<std::string> expectedAll;
+		std::vector<std::string> expectedFaves;
+	};
+
+	struct FilterCase {
+		const char* label;
+		std::function<void(midikraft::PatchFilter&)> apply;
+		bool useFavorites;
+	};
+
+	std::vector<ListCase> listCases = {
+		{
+			"all patches across both synths",
+			[](midikraft::PatchFilter&) {},
+			midikraft::PatchOrdering::Order_by_Name,
+			{ "A-1", "A-2", "A-3", "A-4", "B-1", "B-2" },
+			{ "A-2", "B-2" }
+		},
+		{
+			"user list 1",
+			[&userList1](midikraft::PatchFilter& filter) { filter.listID = userList1->id(); },
+			midikraft::PatchOrdering::Order_by_Place_in_List,
+			{ "A-2", "A-4" },
+			{ "A-2" }
+		},
+		{
+			"user list mixed",
+			[&mixedUserList](midikraft::PatchFilter& filter) { filter.listID = mixedUserList->id(); },
+			midikraft::PatchOrdering::Order_by_Place_in_List,
+			{ "A-1", "B-2", "A-4" },
+			{ "B-2" }
+		},
+		{
+			"import list B",
+			[&importListBId](midikraft::PatchFilter& filter) { filter.listID = importListBId; },
+			midikraft::PatchOrdering::Order_by_Place_in_List,
+			{ "A-4", "A-3" },
+			{ }
+		},
+	};
+
+	std::vector<FilterCase> filterCases = {
+		{ "all", [](midikraft::PatchFilter&) {}, false },
+		{ "favorites only", [](midikraft::PatchFilter& filter) { filter.onlyFaves = true; }, true },
+	};
+
+	for (auto const& listCase : listCases) {
+		for (auto const& filterCase : filterCases) {
+			auto label = std::string(listCase.label) + " + " + filterCase.label;
+			SUBCASE(label.c_str()) {
+				auto filter = makeFilterAll();
+				listCase.applyList(filter);
+				filterCase.apply(filter);
+				filter.orderBy = listCase.ordering;
+				auto result = db.getPatches(filter, 0, -1);
+				auto expected = filterCase.useFavorites ? listCase.expectedFaves : listCase.expectedAll;
+				expectNames(result, expected);
+			}
+		}
 	}
 }
