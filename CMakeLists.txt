@@ -296,6 +296,7 @@ if(BUILD_PATCH_DATABASE_TESTS)
 	add_executable(patch_database_migration_test
 		tests/patch_database_migration_test.cpp
 		tests/patch_list_fill_test.cpp
+		tests/patch_database_search_test.cpp
 		tests/user_bank_save_test.cpp
 		tests/test_helpers.h
 		The-Orm/UserBankFactory.cpp)

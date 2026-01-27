@@ -28,8 +28,8 @@ public:
 
 class DummySynth : public midikraft::Synth, public midikraft::HasBanksCapability {
 public:
-	explicit DummySynth(std::string name, int bankSize = 2)
-		: name_(std::move(name)), bankSize_(bankSize) {}
+	explicit DummySynth(std::string name, int bankSize = 2, int bankCount = 1)
+		: name_(std::move(name)), bankSize_(bankSize), bankCount_(bankCount) {}
 
 	std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber) const override {
 		auto patch = std::make_shared<DummyPatch>();
@@ -41,7 +41,7 @@ public:
 
 	std::string getName() const override { return name_; }
 
-	int numberOfBanks() const override { return 1; }
+	int numberOfBanks() const override { return bankCount_; }
 	int numberOfPatches() const override { return bankSize_; }
 	std::string friendlyBankName(MidiBankNumber) const override { return "Dummy Bank"; }
 	std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber) const override { return {}; }
@@ -49,6 +49,7 @@ public:
 private:
 	std::string name_;
 	int bankSize_;
+	int bankCount_;
 };
 
 inline midikraft::PatchHolder makePatchHolder(std::shared_ptr<DummySynth> synth, std::string const& name, std::vector<uint8> data) {
