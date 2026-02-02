@@ -14,17 +14,18 @@ import knobkraft
 import testing
 import hashlib
 
-from testing.test_data import Simulator
+#  from testing.test_data import Simulator
 
 K5000_SPECIFIC_DEVICE = None
+MEMORY_EXPANSION_AVAILABLE = False
 
 KawaiSysexID = 0x40
 OneBlockDumpRequest = 0x00  # get one patch
-AllBlockDumpRequest = 0x01
+AllBlockDumpRequest = 0x01  # get complete bank
 OneBlockDump = 0x20
 AllBlockDump = 0x21
 
-# Handshake stuff
+# Handshake stuff, K5000 sends these in replies when writing to synth
 WriteComplete = 0x40,
 WriteError = 0x41,
 WriteErrorByProtect = 0x42,
@@ -37,23 +38,31 @@ def name():
 
 
 def createDeviceDetectMessage(channel):  # ✅
-    return [0xF0, KawaiSysexID, channel, 0x60, 0xF7]
+    return [0xF0, 0x7e, channel, 0x06, 0x01, 0xF7]  # K5000 support 2 different detection methods (Kawai and Universal), Universal also supports querying Memory Expansion
 
 
 def channelIfValidDeviceResponse(message):  # ✅
-    global K5000_SPECIFIC_DEVICE
+    global K5000_SPECIFIC_DEVICE, MEMORY_EXPANSION_AVAILABLE
     # Check minimum length to avoid out-of-bounds errors
-    if len(message) != 8:
+    if len(message) != 15:
         return -1
 
     # Verify Sysex header for Kawai K5000
+    # F0,7e,cc,06,O2,4O (=KawaiSysexID), OO,OO,0a,ii,vv,rr,ss,ee,F7
+    # ii 0 device ID
+    # vv,rr,ss: version no.
+
+    # ee:aux
+        # ee=0 : no expansion
+        # ee=1 : expansion inserted
     if (message[0] == 0xF0  # Start of SysEx
-            and message[1] == KawaiSysexID  # Kawai manufacturer ID
+            and message[1] == 0x7e
             and 0x00 <= message[2] <= 0x0F  # Unit channel (0-F for ch 1-16)
-            and message[3] == 0x61  # Fixed ID for this SysEx type
-            and message[4] == 0x00  # Reserved, always 00
-            and message[5] == 0x0A  # Specific function ID for ID request reply
-            and message[7] == 0xF7):  # End of SysEx
+            and message[3] == 0x06  # Fixed ID for this SysEx type
+            and message[4] == 0x02  # Reserved, always 00
+            and message[5] == KawaiSysexID
+            and message[6] == 0x00
+            and message[14] == 0xF7):  # End of SysEx
 
         # Extract channel number (0-F, corresponding to 1-16 MIDI channels)
         channel = message[2]
@@ -66,7 +75,13 @@ def channelIfValidDeviceResponse(message):  # ✅
         }
 
         # Extract device type
-        K5000_SPECIFIC_DEVICE = device_map.get(message[6], "Unknown Device")
+        K5000_SPECIFIC_DEVICE = device_map.get(message[9], "Unknown Device")
+
+        # detect if memory expansion installed or not
+        MEMORY_EXPANSION_AVAILABLE = (message[13] == 0x01)
+
+        expansion_text = "Memory Expansion" if MEMORY_EXPANSION_AVAILABLE else "No Memory Expansion"
+        print(f"Found {K5000_SPECIFIC_DEVICE} with {expansion_text}")
 
         return channel
 
@@ -79,35 +94,42 @@ def needsChannelSpecificDetection():  # ✅
 
 def bankDescriptors() -> List[Dict]:
     """Returns a list of available banks based on the detected K5000 model."""
-    global K5000_SPECIFIC_DEVICE
+    global K5000_SPECIFIC_DEVICE, MEMORY_EXPANSION_AVAILABLE
 
     if K5000_SPECIFIC_DEVICE is None:
-        return []  # Prevent errors if called before detection
+        return []
 
-    # Base bank configurations
-    base_banks = [
-        {"id": 0x00, "name": "A", "size": 128}  # Adjust to 128 once skipping is implemented
-    ]
+    base_banks = []
 
+    # Always present
+    base_banks.append({"bank_byte": 0x00, "name": "A", "size": 128})
+
+    # K5000W ROM bank
     if K5000_SPECIFIC_DEVICE == "K5000W":
-        base_banks.append({"id": 0x01, "name": "B", "size": 128})  # ROMpler Bank for W
+        base_banks.append({"bank_byte": 0x01, "name": "B", "size": 128, "isROM": True})
 
+    # K5000S / K5000R internal RAM
     if K5000_SPECIFIC_DEVICE in ["K5000S", "K5000R"]:
-        base_banks.append({"id": 0x02, "name": "D", "size": 128})  # Adjust to 128 once skipping is implemented
-        base_banks.extend([
-            {"id": 0x03, "name": "E", "size": 128},
-            {"id": 0x04, "name": "F", "size": 128}
-        ])  # Expansion banks
+        base_banks.append({"bank_byte": 0x02, "name": "D", "size": 128})
+
+        # Expansion banks only if expansion is installed
+        if MEMORY_EXPANSION_AVAILABLE:
+            base_banks.extend([
+                {"bank_byte": 0x03, "name": "E", "size": 128},
+                {"bank_byte": 0x04, "name": "F", "size": 128}
+            ])
 
     return [
         {
-            "bank": bank["id"],
+            "bank": kk_index,                 # contiguous 0..N-1 (KK index)
+            "bank_byte": bank["bank_byte"],   # actual synth byte
             "name": f"Bank {bank['name']}",
+            "label": bank["name"],
             "size": bank["size"],
             "type": "Patch",
-            "isROM": bank.get("isROM", False)
+            "isROM": bank.get("isROM", False),
         }
-        for bank in base_banks
+        for kk_index, bank in enumerate(base_banks)
     ]
 
 
@@ -142,7 +164,7 @@ def createProgramDumpRequest(channel: int, patchNo: int) -> List[int]:
         raise ValueError(f"Invalid patch number {patchNo}. Exceeds total patch count.")
 
     # Extract the correct SysEx bank byte
-    bank_byte = selected_bank["bank"]
+    bank_byte = selected_bank["bank_byte"]
 
     # Construct SysEx message
     return [
@@ -184,8 +206,13 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
     if not isSingleProgramDump(message):
         raise Exception("Invalid message format - can't be converted")
 
+    if program_number < 0:
+        raise ValueError(f"Invalid program number {program_number}. Must be >= 0.")
+
     # Get dynamic bank information from bankDescriptors()
     banks = bankDescriptors()
+    if not banks:
+        raise ValueError("No banks available (device not detected yet?).")
 
     # Determine correct bank and patch number
     patch_number = program_number
@@ -200,8 +227,9 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
     if selected_bank is None:
         raise ValueError(f"Invalid program number {program_number}. Exceeds available patches.")
 
-    # Extract bank byte dynamically
-    bank_byte = selected_bank["bank"]
+    # IMPORTANT:
+    # "bank" is KK's contiguous index; "bank_byte" is the synth byte to write into SysEx.
+    bank_byte = selected_bank["bank_byte"]
 
     # Construct the modified SysEx message
     modified_message = message[:7] + [bank_byte, patch_number] + message[9:]
@@ -253,28 +281,33 @@ def createBankDumpRequest(channel: int, bank_identifier) -> List[int]:
 
     Parameters:
     - channel (int): MIDI channel (0-15)/Sysex ID.
-    - bank_identifier (Union[str, int]): Either the bank name (e.g., "A", "D") or the bank ID (e.g., 0, 2).
+    - bank_identifier: Either the KK bank index (int, 0..N-1) OR the bank label ("A", "D", "E", "F", "B").
 
     Returns:
     - List[int]: SysEx message bytes.
-
-    Raises:
-    - ValueError: If the bank name or ID is not found in `bankDescriptors()`.
     """
     banks = bankDescriptors()
 
-    # Determine whether we received a name ("A", "D") or an ID (0x00, 0x02)
-    if isinstance(bank_identifier, int):  # If an integer is passed, it's an ID
+    if isinstance(bank_identifier, int):
+        # Treat ints as KnobKraft bank index (0..N-1)
         selected_bank = next((bank for bank in banks if bank["bank"] == bank_identifier), None)
-    else:  # If a string is passed, it's a bank name
-        selected_bank = next((bank for bank in banks if bank["name"].split()[-1] == str(bank_identifier)), None)
+    else:
+        # Treat strings as the label ("A", "D", ...)
+        selected_bank = next((bank for bank in banks if bank.get("label") == str(bank_identifier)), None)
+
+        # Backward-compatible fallback (if someone passes "Bank A" or similar)
+        if selected_bank is None:
+            selected_bank = next((bank for bank in banks if bank["name"].split()[-1] == str(bank_identifier)), None)
 
     if selected_bank is None:
-        raise ValueError(f"Invalid bank identifier '{bank_identifier}'. Available banks: {[bank['name'] for bank in banks]}")
+        raise ValueError(
+            f"Invalid bank identifier '{bank_identifier}'. "
+            f"Available banks: {[bank['name'] for bank in banks]}"
+        )
 
-    bank_id = selected_bank["bank"]  # Get the correct bank ID
+    bank_byte = selected_bank["bank_byte"]  # <-- synth byte, not KK index
 
-    return [0xF0, KawaiSysexID, channel, AllBlockDumpRequest, 0x00, 0x0A, 0x00, bank_id, 0x00, 0xF7]
+    return [0xF0, KawaiSysexID, channel, AllBlockDumpRequest, 0x00, 0x0A, 0x00, bank_byte, 0x00, 0xF7]
 
 
 def isPartOfBankDump(message):
@@ -301,7 +334,7 @@ ADD_KIT_SIZE = 806
 POOL_SIZE = 0x20000
 MAX_SOURCE_COUNT = 6
 
-# possible amount of sources and resulting file sizes (not used currently)
+# possible amount of sources and resulting file sizes: size: (Amount of PCM sources, Amount of ADD Sources)
 SINGLE_INFO = {
     254: (2, 0),
     340: (3, 0),
@@ -349,12 +382,12 @@ def extractPatchesFromAllBankMessages(messages):
 
     # Determine bank ID from the first message (ensuring it is valid)
     received_bank_byte = messages[0][7] if len(messages[0]) > 7 else None
-    selected_bank = next((b for b in banks if b["bank"] == received_bank_byte), None)
+    selected_bank = next((b for b in banks if b.get("bank_byte") == received_bank_byte), None)
 
     if selected_bank is None:
         raise ValueError(f"Invalid bank byte {received_bank_byte}. No matching bank found.")
 
-    bank_byte = selected_bank["bank"]
+    bank_byte = selected_bank["bank_byte"]
 
     # Flatten all messages into a single data array (excluding SysEx delimiters)
     all_data = []
@@ -387,7 +420,7 @@ def extractPatchesFromAllBankMessages(messages):
 
         # Extract checksum (first byte of patch)
         checksum = patch_data[offset]
-        print(f"Checksum for patch {i+1} (Patch Number {patch_number}) = {checksum:02X}")
+        # print(f"Checksum for patch {i+1} (Patch Number {patch_number}) = {checksum:02X}")
         offset += 1  # ✅ Move past checksum
 
         # Remaining bytes to process
@@ -441,13 +474,11 @@ def extractPatchesFromAllBankMessages(messages):
                 break
 
         if patch_size is None:
-            print(
-                f"Error: Could not determine patch size for {pcm_count} PCM, {add_count} ADD sources in Patch {i + 1}. Skipping.")
+            print(f"Error: Could not determine patch size for {pcm_count} PCM, {add_count} ADD sources in Patch {i + 1}. Skipping.")
             continue
 
         if patch_size <= 0 or patch_size > bytes_left + 1:
-            print(
-                f"Error: Invalid patch size detected for patch {i + 1}. Skipping. Expected {patch_size}, but only {bytes_left} remain.")
+            print(f"Error: Invalid patch size detected for patch {i + 1}. Skipping. Expected {patch_size}, but only {bytes_left} remain.")
             continue
 
         # ---- Extract only the correct patch size ----
@@ -471,7 +502,7 @@ def extractPatchesFromAllBankMessages(messages):
     return patches
 
 
-def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map, don't yet, what to do with it
+def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank (K5000W) has no tone map, don't know yet what to do with it
     TONE_COUNT = 128
     DATA_SIZE = 19
     if len(data) != DATA_SIZE:
@@ -483,7 +514,7 @@ def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank has no tone map
 
 def calculateFingerprint(message: List[int]):
     if isSingleProgramDump(message):
-        patch_name_start = 49  # Adjusted offset to skip the leading zero
+        patch_name_start = 49
         patch_name_length = 8  # Names are exactly 8 characters long
         blanked_out = copy(message)
         blanked_out[patch_name_start:patch_name_start + patch_name_length] = [ord(" ")] * patch_name_length
@@ -491,51 +522,57 @@ def calculateFingerprint(message: List[int]):
     raise Exception("Can only fingerprint Presets")
 
 
-class K5000Simulator(Simulator):
-
-    def __init__(self, test_data: testing.TestData):
-        super().__init__(test_data)
-        self.test_data = test_data
-        self.channel = 0
-        self.bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
-
-    def send(self, message: List[int]) -> List[int]:
-        # Check which message is sent to us, and produce replies
-        if message[:7] == [0xF0, KawaiSysexID, self.channel, OneBlockDumpRequest, 0x00, 0x0a, 0x00]:
-            # This is a program dump request, let's see which bank and patch
-            bank_byte = message[7]
-            patch_number = message[8]
-            if patch_number in self.test_data.all_messages:
-                return self.test_data.all_messages[patch_number]
-            else:
-                return []
-        elif message[:7] == [0xF0, KawaiSysexID, self.channel, AllBlockDumpRequest, 0x00, 0x0a, 0x00]:
-            bank_byte = message[7]  # 0x00 would be A, 0x02 is D, 0x03 is E, 0x04 is F
-            global K5000_SPECIFIC_DEVICE
-            K5000_SPECIFIC_DEVICE = "K5000R"
-            return self.bank_messages[0]
-        else:
-            raise Exception(f"Received unexpected message: {message}")
+def messageTimings():
+    return {
+        "replyTimeoutMs": 1000,             # how long to wait for a response before timing out
+    }
 
 
-def make_test_data():
-    global K5000_SPECIFIC_DEVICE
-    K5000_SPECIFIC_DEVICE = "K5000R"
-
-    def bankGenerator(test_data: testing.TestData) -> List[int]:
-        bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
-        yield bank_messages
-
-    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
-        program_buffers = extractPatchesFromAllBankMessages(data.all_messages)
-        yield testing.ProgramTestData(program_buffers[0], number=0, name="PowerK5K")
-        yield testing.ProgramTestData(program_buffers[1], number=1, name="PowerBas")
-        yield testing.ProgramTestData(program_buffers[-1], number=97, name="Boreal")
-
-    return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
-                            bank_generator=bankGenerator,
-                            program_generator=programs,
-                            device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7],
-                            expected_patch_count=98,
-                            simulator=K5000Simulator,
-                            expected_patch_count_from_simulator=40)
+# class K5000Simulator(Simulator):
+#
+#     def __init__(self, test_data: testing.TestData):
+#         super().__init__(test_data)
+#         self.test_data = test_data
+#         self.channel = 0
+#         self.bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
+#
+#     def send(self, message: List[int]) -> List[int]:
+#         # Check which message is sent to us, and produce replies
+#         if message[:7] == [0xF0, KawaiSysexID, self.channel, OneBlockDumpRequest, 0x00, 0x0a, 0x00]:
+#             # This is a program dump request, let's see which bank and patch
+#             bank_byte = message[7]
+#             patch_number = message[8]
+#             if patch_number in self.test_data.all_messages:
+#                 return self.test_data.all_messages[patch_number]
+#             else:
+#                 return []
+#         elif message[:7] == [0xF0, KawaiSysexID, self.channel, AllBlockDumpRequest, 0x00, 0x0a, 0x00]:
+#             bank_byte = message[7]  # 0x00 would be A, 0x02 is D, 0x03 is E, 0x04 is F
+#             global K5000_SPECIFIC_DEVICE
+#             K5000_SPECIFIC_DEVICE = "K5000R"
+#             return self.bank_messages[0]
+#         else:
+#             raise Exception(f"Received unexpected message: {message}")
+#
+#
+# def make_test_data():
+#     global K5000_SPECIFIC_DEVICE
+#     K5000_SPECIFIC_DEVICE = "K5000R"
+#
+#     def bankGenerator(test_data: testing.TestData) -> List[int]:
+#         bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
+#         yield bank_messages
+#
+#     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+#         program_buffers = extractPatchesFromAllBankMessages(data.all_messages)
+#         yield testing.ProgramTestData(program_buffers[0], number=0, name="PowerK5K")
+#         yield testing.ProgramTestData(program_buffers[1], number=1, name="PowerBas")
+#         yield testing.ProgramTestData(program_buffers[-1], number=97, name="Boreal")
+#
+#     return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
+#                             bank_generator=bankGenerator,
+#                             program_generator=programs,
+#                             device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7],
+#                             expected_patch_count=98,
+#                             simulator=K5000Simulator,
+#                             expected_patch_count_from_simulator=40)
