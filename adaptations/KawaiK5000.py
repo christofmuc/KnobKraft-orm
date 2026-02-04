@@ -26,10 +26,10 @@ OneBlockDump = 0x20
 AllBlockDump = 0x21
 
 # Handshake stuff, K5000 sends these in replies when writing to synth
-WriteComplete = 0x40,
-WriteError = 0x41,
-WriteErrorByProtect = 0x42,
-WriteErrorByMemoryFull = 0x44,
+WriteComplete = 0x40
+WriteError = 0x41
+WriteErrorByProtect = 0x42
+WriteErrorByMemoryFull = 0x44
 WriteErrorByNoExpandMemory = 0x45
 
 
@@ -38,7 +38,7 @@ def name():
 
 
 def createDeviceDetectMessage(channel):  # ✅
-    return [0xF0, 0x7e, channel, 0x06, 0x01, 0xF7]  # K5000 support 2 different detection methods (Kawai and Universal), Universal also supports querying Memory Expansion
+    return [0xF0, 0x7e, channel, 0x06, 0x01, 0xF7]  # K5000 supports 2 different detection methods (Kawai and Universal), Universal also supports querying Memory Expansion
 
 
 def channelIfValidDeviceResponse(message):  # ✅
@@ -80,7 +80,7 @@ def channelIfValidDeviceResponse(message):  # ✅
         # detect if memory expansion installed or not
         MEMORY_EXPANSION_AVAILABLE = (message[13] == 0x01)
 
-        expansion_text = "Memory Expansion" if MEMORY_EXPANSION_AVAILABLE else "No Memory Expansion"
+        expansion_text = "Memory Expansion (Bank E, F)" if MEMORY_EXPANSION_AVAILABLE else "No Memory Expansion"
         print(f"Found {K5000_SPECIFIC_DEVICE} with {expansion_text}")
 
         return channel
@@ -99,25 +99,23 @@ def bankDescriptors() -> List[Dict]:
     if K5000_SPECIFIC_DEVICE is None:
         return []
 
-    base_banks = []
-
-    # Always present
-    base_banks.append({"bank_byte": 0x00, "name": "A", "size": 128})
+    # Always present on all models
+    base_banks = [{"bank_byte": 0x00, "name": "A", "size": 128},]
 
     # K5000W ROM bank
     if K5000_SPECIFIC_DEVICE == "K5000W":
         base_banks.append({"bank_byte": 0x01, "name": "B", "size": 128, "isROM": True})
 
-    # K5000S / K5000R internal RAM
+    # K5000S / K5000R internal RAM bank
     if K5000_SPECIFIC_DEVICE in ["K5000S", "K5000R"]:
         base_banks.append({"bank_byte": 0x02, "name": "D", "size": 128})
 
-        # Expansion banks only if expansion is installed
-        if MEMORY_EXPANSION_AVAILABLE:
-            base_banks.extend([
-                {"bank_byte": 0x03, "name": "E", "size": 128},
-                {"bank_byte": 0x04, "name": "F", "size": 128}
-            ])
+    # Expansion banks (available on W, S, and R)
+    if MEMORY_EXPANSION_AVAILABLE:
+        base_banks.extend([
+            {"bank_byte": 0x03, "name": "E", "size": 128},
+            {"bank_byte": 0x04, "name": "F", "size": 128}
+        ])
 
     return [
         {
@@ -461,10 +459,10 @@ def extractPatchesFromAllBankMessages(messages):
             else:
                 pcm_count += 1
 
-            print(f"Patch {i+1} Source {s+1}: Wave MSB: {wave_msb:02X}, LSB: {wave_lsb:02X} -> Type: {wave_type} -> {'ADD' if is_add else 'PCM'}")
+            # print(f"Patch {i+1} Source {s+1}: Wave MSB: {wave_msb:02X}, LSB: {wave_lsb:02X} -> Type: {wave_type} -> {'ADD' if is_add else 'PCM'}")
 
         # Debug: Total ADD vs PCM count
-        print(f"Patch {i + 1}: {add_count} ADD, {pcm_count} PCM")
+        # print(f"Patch {i + 1}: {add_count} ADD, {pcm_count} PCM")
 
         # ---- Get Patch Size from SINGLE_INFO ----
         patch_size = None
