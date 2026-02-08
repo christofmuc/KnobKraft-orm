@@ -500,7 +500,7 @@ def extractPatchesFromAllBankMessages(messages):
     return patches
 
 
-def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank (K5000W) has no tone map, don't know yet what to do with it
+def getToneMap(data: bytes) -> List[bool]:  # ✅    !!!PCM bank (K5000W) has no tone map
     TONE_COUNT = 128
     DATA_SIZE = 19
     if len(data) != DATA_SIZE:
