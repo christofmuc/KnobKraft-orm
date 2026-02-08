@@ -37,11 +37,11 @@ def name():
     return "Kawai K5000"
 
 
-def createDeviceDetectMessage(channel):  # ✅
+def createDeviceDetectMessage(channel):
     return [0xF0, 0x7e, channel, 0x06, 0x01, 0xF7]  # K5000 supports 2 different detection methods (Kawai and Universal), Universal also supports querying Memory Expansion
 
 
-def channelIfValidDeviceResponse(message):  # ✅
+def channelIfValidDeviceResponse(message):
     global K5000_SPECIFIC_DEVICE, MEMORY_EXPANSION_AVAILABLE
     # Check minimum length to avoid out-of-bounds errors
     if len(message) != 15:
@@ -51,10 +51,10 @@ def channelIfValidDeviceResponse(message):  # ✅
     # F0,7e,cc,06,O2,4O (=KawaiSysexID), OO,OO,0a,ii,vv,rr,ss,ee,F7
     # ii 0 device ID
     # vv,rr,ss: version no.
-
     # ee:aux
         # ee=0 : no expansion
         # ee=1 : expansion inserted
+
     if (message[0] == 0xF0  # Start of SysEx
             and message[1] == 0x7e
             and 0x00 <= message[2] <= 0x0F  # Unit channel (0-F for ch 1-16)
@@ -88,7 +88,7 @@ def channelIfValidDeviceResponse(message):  # ✅
     return -1
 
 
-def needsChannelSpecificDetection():  # ✅
+def needsChannelSpecificDetection():
     return True
 
 
@@ -103,8 +103,8 @@ def bankDescriptors() -> List[Dict]:
     base_banks = [{"bank_byte": 0x00, "name": "A", "size": 128},]
 
     # K5000W ROM bank
-    if K5000_SPECIFIC_DEVICE == "K5000W":
-        base_banks.append({"bank_byte": 0x01, "name": "B", "size": 128, "isROM": True})
+    # if K5000_SPECIFIC_DEVICE == "K5000W":
+    #     base_banks.append({"bank_byte": 0x01, "name": "B", "size": 128, "isROM": True})
 
     # K5000S / K5000R internal RAM bank
     if K5000_SPECIFIC_DEVICE in ["K5000S", "K5000R"]:
@@ -170,7 +170,7 @@ def createProgramDumpRequest(channel: int, patchNo: int) -> List[int]:
     ]
 
 
-def isSingleProgramDump(message):  # ✅
+def isSingleProgramDump(message):
     # Check minimum length to avoid out-of-bounds errors
     if len(message) < 10:
         return False
@@ -241,7 +241,7 @@ def numberFromDump(message) -> int:  # where can I see if successful?
     raise Exception("Can extract number only from single program dump messages")
 
 
-def nameFromDump(message) -> str:  # ✅
+def nameFromDump(message) -> str:
     if not isSingleProgramDump(message):
         raise Exception("Not a program dump")
 
@@ -256,7 +256,7 @@ def nameFromDump(message) -> str:  # ✅
     return clean_name.rstrip("\x7f ")  # Removes trailing DEL (0x7F) and spaces
 
 
-def renamePatch(message, new_name):  # ✅
+def renamePatch(message, new_name):
     if not isSingleProgramDump(message):
         raise Exception("Not a program dump")
 
@@ -526,6 +526,14 @@ def messageTimings():
     }
 
 
+def setupHelp():
+    return "A couple of things about this adaptation and the K5000\n\n" \
+        "This adaptation does not support the B bank of the K5000W, only Bank A.\n" \
+        "Neither Combis or Multis. It does support the Memory Expansion and will detect it, if present.\n\n" \
+        "Be aware that bank dumps will take a while (appr. 2-3 min), due to size.\n\n" \
+
+
+# disabled for now, got an error and didn't bother ;-)
 # class K5000Simulator(Simulator):
 #
 #     def __init__(self, test_data: testing.TestData):
