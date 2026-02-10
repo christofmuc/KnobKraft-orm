@@ -631,6 +631,14 @@ TEST_CASE("patch database duplicate-name filter respects visibility combinations
 				}
 			}
 			expectPatchOrder(result, expected);
+
+			if (result.size() >= 2) {
+				std::set<std::string> md5s;
+				for (auto const& patch : result) {
+					md5s.insert(patch.md5());
+				}
+				CHECK(md5s.size() == result.size());
+			}
 		}
 	}
 }
@@ -667,4 +675,6 @@ TEST_CASE("patch database duplicate-name filter honors list scope and synth part
 	auto result = db.getPatches(filter, 0, -1);
 
 	expectNames(result, { "DupList", "DupList" });
+	REQUIRE(result.size() == 2);
+	CHECK(result[0].md5() != result[1].md5());
 }
