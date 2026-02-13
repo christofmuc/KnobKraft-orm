@@ -27,42 +27,14 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericBankDumpRequestCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
-		spdlog::debug("requestBankDump called for bank {}", bankNo.toZeroBased());
+		spdlog::info("requestBankDump called for bank {}", bankNo.toZeroBased());
 		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
 			int bank = bankNo.toZeroBased();
 			py::object result = me_->callMethod(kCreateBankDumpRequest, c, bank);
-
-			std::vector<juce::MidiMessage> allMessages;
-
-			if (py::isinstance<py::list>(result)) {
-				py::list resultList = result;
-				// Check if it's a list of lists or a list of ints
-				if (py::len(resultList) > 0 && py::isinstance<py::list>(resultList[0])) {
-					// List of lists (multi-message)
-					for (auto item : resultList) {
-						auto msgVec = py::cast<std::vector<int>>(item);
-						auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
-						auto midiMessages = Sysex::vectorToMessages(byteData);
-						allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
-					}
-				} else {
-					// Single message (list of ints)
-					auto msgVec = py::cast<std::vector<int>>(resultList);
-					auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
-					auto midiMessages = Sysex::vectorToMessages(byteData);
-					allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
-				}
-			} else {
-				// Not a list, try to cast directly
-				auto msgVec = py::cast<std::vector<int>>(result);
-				auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
-				auto midiMessages = Sysex::vectorToMessages(byteData);
-				allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
-			}
-			spdlog::debug("requestBankDump returning {} messages", allMessages.size());
-			return allMessages;
+			std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
+			return Sysex::vectorToMessages(byteData);
 		}
 		catch (py::error_already_set &ex) {
 			me_->logAdaptationError(kCreateBankDumpRequest, ex);
