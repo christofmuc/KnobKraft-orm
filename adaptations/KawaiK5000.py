@@ -59,7 +59,7 @@ def channelIfValidDeviceResponse(message):
             and message[1] == 0x7e
             and 0x00 <= message[2] <= 0x0F  # Unit channel (0-F for ch 1-16)
             and message[3] == 0x06  # Fixed ID for this SysEx type
-            and message[4] == 0x02  # Reserved, always 00
+            and message[4] == 0x02
             and message[5] == KawaiSysexID
             and message[6] == 0x00
             and message[14] == 0xF7):  # End of SysEx
@@ -326,7 +326,7 @@ def isBankDumpFinished(messages):
 # https://github.com/coniferprod/KSynthLib/blob/master/KSynthLib/K5000/ToneMap.cs#L27
 MAX_PATCH_COUNT = 128
 TONE_COMMON_DATA_SIZE = 82
-SOURCE_COUNT_OFFSET = 51
+
 SOURCE_DATA_SIZE = 86
 ADD_KIT_SIZE = 806
 POOL_SIZE = 0x20000
@@ -527,9 +527,12 @@ def messageTimings():
 
 
 def setupHelp():
-    return "A couple of things about this adaptation and the K5000\n\n" \
-        "This adaptation does not support the B bank of the K5000W, only Bank A.\n" \
-        "Neither Combis or Multis. It does support the Memory Expansion and will detect it, if present.\n\n" \
+    return "A couple of things about this adaptation and the K5000:\n\n" \
+        "This adaptation supports all 3 versions of the K5000 (R/S/W) and will detect them. \n" \
+        "However it does not support the B bank of the K5000W, only Bank A (and D for S/R), neither Combis/Multis.\n\n" \
+        "It does support the Memory Expansion ME-1 and will detect it, if present.\n" \
+        "The K5000 do not support edit buffer dumps or request.\n" \
+        "You currently cannot import the old .ka1 or .kaa files, but coming soon ;-)\n\n" \
         "Be aware that bank dumps will take a while (appr. 2-3 min), due to size.\n\n" \
 
 
