@@ -461,7 +461,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	buttons_.setButtonDefinitions(buttons);
 	commandManager_.setFirstCommandTarget(&buttons_);
 	commandManager_.registerAllCommandsForTarget(&buttons_);
-	getTopLevelComponent()->addKeyListener(commandManager_.getKeyMappings());
+	if (auto* topLevel = getTopLevelComponent()) {
+		topLevel->addKeyListener(commandManager_.getKeyMappings());
+		topLevel->addKeyListener(this);
+	}
 
 	// Setup menu structure
 	menuModel_ = std::make_unique<LambdaMenuModel>(menuStructure, &commandManager_, &buttons_);
@@ -602,6 +605,11 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+	if (auto* topLevel = getTopLevelComponent()) {
+		topLevel->removeKeyListener(this);
+		topLevel->removeKeyListener(commandManager_.getKeyMappings());
+	}
+
 	if (logViewSink_) {
 		if (auto sharedLogger = spdlog::default_logger()) {
 			if (auto distSink = getDistributorSink(sharedLogger)) {
@@ -1106,6 +1114,13 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 		}
 	}
 	return -1;
+}
+
+bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent)
+{
+	ignoreUnused(originatingComponent);
+
+	return keyboardView_ && keyboardView_->handleComputerKeyboardKeyPress(key);
 }
 
 void MainComponent::aboutBox()

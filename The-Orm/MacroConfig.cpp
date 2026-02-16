@@ -58,30 +58,42 @@ KeyboardMacroEvent KeyboardMacro::fromText(std::string const &event)
 	return KeyboardMacroEvent::Unknown;
 }
 
-MacroConfig::MacroConfig(KeyboardMacroEvent event, 
+MacroConfig::MacroConfig(KeyboardMacroEvent event,
 	std::function<void(KeyboardMacroEvent)> recordHander,
-	std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event), 
+	std::function<void(KeyboardMacroEvent)> keyboardRecordHandler,
+	std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event),
 	recordHander_(recordHander),
+	keyboardRecordHandler_(keyboardRecordHandler),
 	showHandler_(showHandler), play_([this](TextButton *button) { buttonStateChanged(button);  }) // NOLINT
 {
 	addAndMakeVisible(name_);
 	name_.setText(KeyboardMacro::toText(event_), dontSendNotification);
 	addAndMakeVisible(keyList_);
+	addAndMakeVisible(keyboardKey_);
 	addAndMakeVisible(record_);
-	record_.setButtonText("Record keys");
+	record_.setButtonText("Assign MIDI");
 	record_.addListener(this);
+	addAndMakeVisible(keyboardRecord_);
+	keyboardRecord_.setButtonText("Assign key");
+	keyboardRecord_.addListener(this);
 	addAndMakeVisible(play_);
-	play_.setButtonText("Show keys");
+	play_.setButtonText("Show MIDI");
 	play_.addListener(this);
+	setKeyboardData(0);
 }
 
 void MacroConfig::resized()
 {
 	auto area = getLocalBounds();
-	name_.setBounds(area.removeFromLeft(100));
-	play_.setBounds(area.removeFromRight(100));
-	record_.setBounds(area.removeFromRight(100).withTrimmedRight(8));
-	keyList_.setBounds(area.withTrimmedLeft(8).withTrimmedRight(8));
+	name_.setBounds(area.removeFromLeft(110));
+	play_.setBounds(area.removeFromRight(90));
+	keyboardRecord_.setBounds(area.removeFromRight(90).withTrimmedRight(8));
+	record_.setBounds(area.removeFromRight(90).withTrimmedRight(8));
+
+	auto textArea = area.withTrimmedLeft(8).withTrimmedRight(8);
+	auto midiLine = textArea.removeFromTop(textArea.getHeight() / 2);
+	keyList_.setBounds(midiLine);
+	keyboardKey_.setBounds(textArea);
 }
 
 void MacroConfig::setData(KeyboardMacro const &macro)
@@ -95,7 +107,25 @@ void MacroConfig::setData(KeyboardMacro const &macro)
 		}
 		notes += String(n.name());
 	}
-	keyList_.setText(notes, dontSendNotification);
+	if (notes.isEmpty()) {
+		notes = "-";
+	}
+	keyList_.setText("MIDI: " + notes, dontSendNotification);
+}
+
+void MacroConfig::setKeyboardData(int keyCode)
+{
+	if (keyCode > 0) {
+		keyboardKey_.setText("Key: " + juce::KeyPress(keyCode).getTextDescription(), dontSendNotification);
+	}
+	else {
+		keyboardKey_.setText("Key: -", dontSendNotification);
+	}
+}
+
+void MacroConfig::setKeyboardAssignmentPending(bool pending)
+{
+	keyboardRecord_.setButtonText(pending ? "Press key..." : "Assign key");
 }
 
 void MacroConfig::buttonStateChanged(Button *button)
@@ -109,5 +139,8 @@ void MacroConfig::buttonClicked(Button *button)
 {
 	if (button == &record_) {
 		recordHander_(event_);
+	}
+	else if (button == &keyboardRecord_) {
+		keyboardRecordHandler_(event_);
 	}
 }

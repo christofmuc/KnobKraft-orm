@@ -32,7 +32,7 @@ const char *kLowestNote = "Lowest MIDI Note";
 const char *kHighestNote = "Highest MIDI Note";
 
 
-class KeyboardMacroView::RecordProgress : private MidiKeyboardStateListener {
+class KeyboardMacroView::RecordProgress : private MidiKeyboardStateListener, public std::enable_shared_from_this<KeyboardMacroView::RecordProgress> {
 public:
 	RecordProgress(Component* parent, MidiKeyboardState& state) : parent_(parent), state_(state), atLeastOneKey_(false)
 	{
@@ -42,15 +42,20 @@ public:
 		done_ = std::move(done);
 		auto options = juce::MessageBoxOptions().withButton("Clear").withButton("Cancel").withTitle("Press key(s) on your MIDI keyboard").withParentComponent(parent_);
 		state_.addListener(this);
-		messageBox_ = AlertWindow::showScopedAsync(options, [this](int button) {
+		auto weakSelf = weak_from_this();
+		messageBox_ = AlertWindow::showScopedAsync(options, [weakSelf](int button) {
+			auto self = weakSelf.lock();
+			if (!self) {
+				return;
+			}
 			switch (button) {
 			case 1:
 				// Clear
-				done_({}, false);
+				self->done_({}, false);
 				break;
 			case 0:
 				// Cancel, nothing to do
-				done_({}, true);
+				self->done_({}, true);
 				break;
 			default:
 				spdlog::error("Unknown button number pressed, program error in RecordProgress of KeyboardMacroView");
@@ -92,6 +97,65 @@ private:
 
 };
 
+class KeyboardMacroView::KeyboardRecordProgress : public std::enable_shared_from_this<KeyboardMacroView::KeyboardRecordProgress> {
+public:
+	explicit KeyboardRecordProgress(Component* parent) : parent_(parent)
+	{
+	}
+
+	void show(std::function<void(int, bool, bool)> done) {
+		done_ = std::move(done);
+		auto options = juce::MessageBoxOptions()
+			.withButton("Clear")
+			.withButton("Cancel")
+			.withTitle("Press a key on your computer keyboard")
+			.withMessage("Press the key you want to assign.\nESC cancels. Backspace/Delete clears.")
+			.withParentComponent(parent_);
+		auto weakSelf = weak_from_this();
+		messageBox_ = AlertWindow::showScopedAsync(options, [weakSelf](int button) {
+			auto self = weakSelf.lock();
+			if (!self) {
+				return;
+			}
+			switch (button) {
+			case 1:
+				self->done_(0, false, true);
+				break;
+			case 0:
+				self->done_(0, true, false);
+				break;
+			default:
+				spdlog::error("Unknown button number pressed, program error in KeyboardRecordProgress of KeyboardMacroView");
+			}
+		});
+	}
+
+	bool handleKeyPress(const juce::KeyPress& key) {
+		int keyCode = key.getKeyCode();
+		if (keyCode == juce::KeyPress::escapeKey) {
+			messageBox_.close();
+			done_(0, true, false);
+			return true;
+		}
+		if (keyCode == juce::KeyPress::backspaceKey || keyCode == juce::KeyPress::deleteKey) {
+			messageBox_.close();
+			done_(0, false, true);
+			return true;
+		}
+		if (!key.getModifiers().isAnyModifierKeyDown() && keyCode > 0) {
+			messageBox_.close();
+			done_(keyCode, false, false);
+			return true;
+		}
+		return false;
+	}
+
+private:
+	Component* parent_;
+	std::function<void(int, bool, bool)> done_;
+	ScopedMessageBox messageBox_;
+};
+
 KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback) : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard), executeMacro_(callback)
 {
 	addAndMakeVisible(customSetup_);
@@ -104,20 +168,65 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 	// Create config table
 	for (auto config : kAllKeyboardMacroEvents) {
-		auto configComponent = new MacroConfig(config,
-			[this](KeyboardMacroEvent event) {
-				activeRecorder_ = std::make_shared<RecordProgress>(this, state_);
-				activeRecorder_->show([this, event](std::set<int> const& notes, bool cancelled) {
-					if (!cancelled) {
-						KeyboardMacro newMacro = { event, notes };
-						macros_[event] = newMacro;
-						saveSettings();
-						refreshUI();
-					}
-					activeRecorder_ = nullptr;
-					}
-				);
-		},
+			auto configComponent = new MacroConfig(config,
+				[this](KeyboardMacroEvent event) {
+					juce::Component::SafePointer<KeyboardMacroView> safeThis(this);
+					activeRecorder_ = std::make_shared<RecordProgress>(this, state_);
+					activeRecorder_->show([safeThis, event](std::set<int> const& notes, bool cancelled) {
+						if (!safeThis) {
+							return;
+						}
+						if (!cancelled) {
+							KeyboardMacro newMacro = { event, notes };
+							safeThis->macros_[event] = newMacro;
+							safeThis->saveSettings();
+						}
+						MessageManager::callAsync([safeThis]() {
+							if (!safeThis) {
+								return;
+							}
+							safeThis->activeRecorder_ = nullptr;
+							safeThis->refreshUI();
+						});
+						}
+					);
+			},
+				[this](KeyboardMacroEvent event) {
+					juce::Component::SafePointer<KeyboardMacroView> safeThis(this);
+					pendingKeyboardAssignment_ = event;
+					activeKeyboardRecorder_ = std::make_shared<KeyboardRecordProgress>(this);
+					activeKeyboardRecorder_->show([safeThis, event](int keyCode, bool cancelled, bool cleared) {
+						if (!safeThis) {
+							return;
+						}
+						if (!cancelled) {
+							if (cleared) {
+								safeThis->keyboardMacros_.erase(event);
+							}
+							else if (keyCode > 0) {
+								for (auto it = safeThis->keyboardMacros_.begin(); it != safeThis->keyboardMacros_.end();) {
+									if (it->second == keyCode && it->first != event) {
+										it = safeThis->keyboardMacros_.erase(it);
+									}
+									else {
+										++it;
+									}
+								}
+								safeThis->keyboardMacros_[event] = keyCode;
+							}
+							safeThis->saveSettings();
+						}
+						safeThis->pendingKeyboardAssignment_ = KeyboardMacroEvent::Unknown;
+						MessageManager::callAsync([safeThis]() {
+							if (!safeThis) {
+								return;
+							}
+							safeThis->activeKeyboardRecorder_ = nullptr;
+							safeThis->refreshUI();
+						});
+					});
+					refreshUI();
+				},
 			[this](KeyboardMacroEvent event, bool down) {
 			if (macros_.find(event) != macros_.end()) {
 				for (auto key : macros_[event].midiNotes) {
@@ -183,15 +292,19 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 				for (const auto& macro : macros_) {
 					bool matched = isMacroState(macro.second);
 					bool wasActive = macroActiveStates_[macro.first];
-					if (matched && !wasActive) {
-						macroActiveStates_[macro.first] = true;
-						auto code = macro.first;
-						MessageManager::callAsync([this, code]() {
-							executeMacro_(code);
-							});
-					} else if (!matched && wasActive) {
-						macroActiveStates_[macro.first] = false;
-					}
+						if (matched && !wasActive) {
+							macroActiveStates_[macro.first] = true;
+							auto code = macro.first;
+							juce::Component::SafePointer<KeyboardMacroView> safeThis(this);
+							MessageManager::callAsync([safeThis, code]() {
+								if (!safeThis) {
+									return;
+								}
+								safeThis->executeMacro_(code);
+								});
+						} else if (!matched && wasActive) {
+							macroActiveStates_[macro.first] = false;
+						}
 				}
 			}
 			else if (message.isControllerOfType(123)) {
@@ -213,6 +326,9 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 KeyboardMacroView::~KeyboardMacroView()
 {
+	pendingKeyboardAssignment_ = KeyboardMacroEvent::Unknown;
+	activeKeyboardRecorder_ = nullptr;
+	activeRecorder_ = nullptr;
 	midikraft::MidiController::instance()->removeMessageHandler(handle_);
 	saveSettings();
 }
@@ -259,9 +375,18 @@ void KeyboardMacroView::refreshUI() {
 	// Set UI
 	int i = 0;
 	for (auto config : kAllKeyboardMacroEvents) {
+		KeyboardMacro macroData{ config, {} };
 		if (macros_.find(config) != macros_.end()) {
-			configs_[i]->setData(macros_[config]);
+			macroData = macros_[config];
 		}
+		configs_[i]->setData(macroData);
+		if (keyboardMacros_.find(config) != keyboardMacros_.end()) {
+			configs_[i]->setKeyboardData(keyboardMacros_[config]);
+		}
+		else {
+			configs_[i]->setKeyboardData(0);
+		}
+		configs_[i]->setKeyboardAssignmentPending(config == pendingKeyboardAssignment_);
 		i++;
 	}
 }
@@ -289,6 +414,8 @@ void setMidiDeviceFromString(const std::shared_ptr<TypedNamedValue>& prop, const
 
 
 void KeyboardMacroView::loadFromSettings() {
+	macros_.clear();
+	keyboardMacros_.clear();
 	auto json = Settings::instance().get("MacroDefinitions");
 	if (!json.empty()) {
 		try {
@@ -305,14 +432,24 @@ void KeyboardMacroView::loadFromSettings() {
 								}
 							}
 						}
+						int keyboardKeyCode = 0;
+						auto keyCode = macro["KeyCode"];
+						if (keyCode.is_number_integer()) {
+							keyboardKeyCode = (int)keyCode;
+						}
 						auto event = macro["Event"];
 						KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
 						if (event.is_string()) {
 							std::string eventString = event;
 							macroEventCode = KeyboardMacro::fromText(eventString);
 						}
-						if (macroEventCode != KeyboardMacroEvent::Unknown && !midiNoteValues.empty()) {
-							macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+						if (macroEventCode != KeyboardMacroEvent::Unknown) {
+							if (!midiNoteValues.empty()) {
+								macros_[macroEventCode] = { macroEventCode, midiNoteValues };
+							}
+							if (keyboardKeyCode > 0) {
+								keyboardMacros_[macroEventCode] = keyboardKeyCode;
+							}
 						}
 					}
 				}
@@ -358,14 +495,25 @@ void KeyboardMacroView::loadFromSettings() {
 void KeyboardMacroView::saveSettings() {
 	var result;
 
-	for (auto macro : macros_) {
+	for (auto event : kAllKeyboardMacroEvents) {
+		bool hasMidi = macros_.find(event) != macros_.end() && !macros_[event].midiNotes.empty();
+		bool hasKeyboard = keyboardMacros_.find(event) != keyboardMacros_.end() && keyboardMacros_[event] > 0;
+		if (!hasMidi && !hasKeyboard) {
+			continue;
+		}
+
 		var notes;
-		for (auto note : macro.second.midiNotes) {
-			notes.append(note);
+		if (hasMidi) {
+			for (auto note : macros_[event].midiNotes) {
+				notes.append(note);
+			}
 		}
 		auto def = new DynamicObject();
 		def->setProperty("Notes", notes);
-		def->setProperty("Event", String(KeyboardMacro::toText(macro.first)));
+		def->setProperty("Event", String(KeyboardMacro::toText(event)));
+		if (hasKeyboard) {
+			def->setProperty("KeyCode", keyboardMacros_[event]);
+		}
 		result.append(def);
 	}
 	String json = JSON::toString(result);
@@ -421,7 +569,7 @@ void KeyboardMacroView::resized()
 	const int rowWidth = std::max(0, scrollWidth - 2 * LAYOUT_INSET_NORMAL);
 	const int rowX = (scrollWidth - rowWidth) / 2;
 	int y = 0;
-	const int rowHeight = LAYOUT_LINE_SPACING; // Match property editor vertical rhythm
+	const int rowHeight = LAYOUT_LINE_SPACING * 2; // Two lines: MIDI assignment and keyboard assignment
 	for (auto c : configs_) {
 		auto row = Rectangle<int>(rowX, y, rowWidth, rowHeight);
 		c->setBounds(row);
@@ -582,4 +730,29 @@ void KeyboardMacroView::updateSecondaryMidiOutSelection()
 		std::scoped_lock lock(secondaryMidiOutMutex_);
 		secondaryMidiOut_ = secondaryMidiOutList_->selectedDevice();
 	}
+}
+
+bool KeyboardMacroView::handleComputerKeyboardKeyPress(const juce::KeyPress& key)
+{
+	if (activeKeyboardRecorder_) {
+		return activeKeyboardRecorder_->handleKeyPress(key);
+	}
+
+	// Trigger mode
+	if (!customMasterkeyboardSetup_.valueByName(kMacrosEnabled).getValue()) {
+		return false;
+	}
+	if (key.getModifiers().isAnyModifierKeyDown()) {
+		return false;
+	}
+
+	int keyCode = key.getKeyCode();
+	for (auto const& mapping : keyboardMacros_) {
+		if (mapping.second == keyCode) {
+			executeMacro_(mapping.first);
+			spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(mapping.first));
+			return true;
+		}
+	}
+	return false;
 }

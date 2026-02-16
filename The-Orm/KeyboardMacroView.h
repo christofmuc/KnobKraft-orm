@@ -24,9 +24,11 @@ public:
 
 	virtual void resized() override;
 	void handleMidiMessage(const MidiMessage& message, const String& source, bool isOut);
+	bool handleComputerKeyboardKeyPress(const juce::KeyPress& key);
 
 private:
 	class RecordProgress;
+	class KeyboardRecordProgress;
 
 	void setupPropertyEditor();
 	void setupKeyboardControl();
@@ -56,6 +58,8 @@ private:
 	OwnedArray<MacroConfig> configs_;
 
 	std::map<KeyboardMacroEvent, KeyboardMacro> macros_;
+	std::map<KeyboardMacroEvent, int> keyboardMacros_;
+	KeyboardMacroEvent pendingKeyboardAssignment_ = KeyboardMacroEvent::Unknown;
 	std::function<void(KeyboardMacroEvent)> executeMacro_;
 	std::map<KeyboardMacroEvent, bool> macroActiveStates_; // Tracks edge-trigger state to avoid repeats while held
 
@@ -63,6 +67,7 @@ private:
 
 	TypedNamedValueSet customMasterkeyboardSetup_;
 	std::shared_ptr<RecordProgress> activeRecorder_; // Should have maximum one active macro recorders open
+	std::shared_ptr<KeyboardRecordProgress> activeKeyboardRecorder_;
 
 	std::mutex secondaryMidiOutMutex_;
 	juce::MidiDeviceInfo secondaryMidiOut_;

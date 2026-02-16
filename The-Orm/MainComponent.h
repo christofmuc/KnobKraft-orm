@@ -40,13 +40,14 @@
 
 class LogViewLogger;
 
-class MainComponent : public Component, private ChangeListener
+class MainComponent : public Component, private ChangeListener, private juce::KeyListener
 {
 public:
 	MainComponent(bool makeYourOwnSize);
     virtual ~MainComponent() override;
 
 	virtual void resized() override;
+	bool keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent) override;
 
 	void shutdown();
 
