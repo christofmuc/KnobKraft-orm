@@ -36,6 +36,7 @@
 
 class PatchDiff;
 class PatchSearchComponent;
+class SimplePatchGrid;
 
 class PatchView : public Component,
 	public DragAndDropContainer,
@@ -126,6 +127,8 @@ private:
 	void setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId);
 	void setListFilter(String filter, std::shared_ptr<midikraft::Synth> synth = nullptr);
 	void deleteSomething(nlohmann::json const &infos);
+	void registerSecondaryGrid(SimplePatchGrid* grid);
+	void unregisterSecondaryGrid(SimplePatchGrid* grid);
 
 	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
 
@@ -142,6 +145,7 @@ private:
 	Label patchLabel_;
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
+	std::vector<SimplePatchGrid*> secondaryPatchGrids_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
 	std::unique_ptr<SynthBankPanel> synthBank_;
 	std::unique_ptr<PatchHistoryPanel> patchHistory_;

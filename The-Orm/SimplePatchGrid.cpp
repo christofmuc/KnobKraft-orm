@@ -14,6 +14,8 @@
 
 SimplePatchGrid::SimplePatchGrid(PatchView* patchView) : patchView_(patchView)
 {
+	patchView_->registerSecondaryGrid(this);
+
 	grid_ = std::make_unique<PatchButtonPanel>([this](midikraft::PatchHolder& patch) { patchSelectedHandler(patch); }, "secondWindow");
 	addAndMakeVisible(*grid_);
 
@@ -30,6 +32,13 @@ SimplePatchGrid::SimplePatchGrid(PatchView* patchView) : patchView_(patchView)
 	listeners_.triggerAll();
 }
 
+SimplePatchGrid::~SimplePatchGrid()
+{
+	if (patchView_) {
+		patchView_->unregisterSecondaryGrid(this);
+	}
+}
+
 void SimplePatchGrid::resized()
 {
 	auto bounds = getLocalBounds();
@@ -40,6 +49,11 @@ void SimplePatchGrid::reload()
 {
 	grid_->setTotalCount(patchView_->getTotalCount());
 	grid_->refresh(true);
+}
+
+void SimplePatchGrid::applyPatchUpdate(midikraft::PatchHolder const& patch)
+{
+	grid_->updateVisiblePatch(patch);
 }
 
 void SimplePatchGrid::patchSelectedHandler(midikraft::PatchHolder& patch)

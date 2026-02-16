@@ -7,6 +7,7 @@
 #include "PatchView.h"
 
 #include "PatchSearchComponent.h"
+#include "SimplePatchGrid.h"
 #include "InsetBox.h"
 #include "LambdaLayoutBox.h"
 
@@ -90,8 +91,13 @@ PatchView::PatchView(midikraft::PatchDatabase &database, std::vector<midikraft::
 	currentPatchDisplay_ = std::make_unique<CurrentPatchDisplay>(database_, predefinedCategories(),
 		[this](std::shared_ptr<midikraft::PatchHolder> favoritePatch) {
 		database_.putPatch(*favoritePatch);
-		// Keep the current view stable; just repaint existing buttons so metadata updates without re-querying the list
-		patchButtons_->refresh(false);
+		// Keep the current view stable: update only visible buttons in-place without re-querying the list
+		patchButtons_->updateVisiblePatch(*favoritePatch);
+		for (auto* secondaryGrid : secondaryPatchGrids_) {
+			if (secondaryGrid) {
+				secondaryGrid->applyPatchUpdate(*favoritePatch);
+			}
+		}
 		synthBank_->refreshPatch(favoritePatch);
 	}
 	);
@@ -189,6 +195,24 @@ std::vector<CategoryButtons::Category> PatchView::predefinedCategories()
 
 int PatchView::getTotalCount() {
 	return database_.getPatchesCount(currentFilter());
+}
+
+void PatchView::registerSecondaryGrid(SimplePatchGrid* grid)
+{
+	if (!grid) {
+		return;
+	}
+	if (std::find(secondaryPatchGrids_.begin(), secondaryPatchGrids_.end(), grid) == secondaryPatchGrids_.end()) {
+		secondaryPatchGrids_.push_back(grid);
+	}
+}
+
+void PatchView::unregisterSecondaryGrid(SimplePatchGrid* grid)
+{
+	if (!grid) {
+		return;
+	}
+	secondaryPatchGrids_.erase(std::remove(secondaryPatchGrids_.begin(), secondaryPatchGrids_.end(), grid), secondaryPatchGrids_.end());
 }
 
 void PatchView::retrieveFirstPageFromDatabase() {
