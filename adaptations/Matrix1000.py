@@ -8,6 +8,7 @@
 # This is an example adaption to show how a fully working adaption can look like
 from typing import List
 
+import knobkraft
 import testing
 
 
@@ -125,6 +126,23 @@ def convertToProgramDump(channel, message, patchNo):
     raise Exception("Neither edit buffer nor program dump can't be converted")
 
 
+def legacyLoadSupportedExtensions() -> List[str]:
+    # This is a fake legacy loader for testing: treat regular sysex bytes as "legacy" input.
+    return [".syx"]
+
+
+def loadPatchesFromLegacyData(data: List[int]) -> List[List[int]]:
+    patches = []
+    for message in knobkraft.splitSysex(data):
+        if isSingleProgramDump(message) or isEditBufferDump(message):
+            patches.append(message)
+
+    # Also support a single full message passed directly without needing to split.
+    if len(patches) == 0 and (isSingleProgramDump(data) or isEditBufferDump(data)):
+        patches.append(data)
+    return patches
+
+
 def bankName(bank_number):
     return "%03d-%03d" % (bank_number * 100, (bank_number + 1) * 100 - 1)
 
@@ -152,13 +170,22 @@ def nibble(message):
 # Test data picked up by test_adaptation.py
 def make_test_data():
     import binascii
+    patch_from_device = "f01006011002040e040b0402030a0300020103060302000c0000000901030001000c00000000000300020000000f0101000000010000000000040600000000010000000000020302000000080200000100060000000d000f030a03000000000000000009000f0300000000000000000f030d020f030000000000000000000000000f030d0204010000000000000f03080200000f030203080200000000090008020f000f010f020f03000000000000000000000000000000000f03000005000e0102030f030f03000000000000000000000000000000000000000001000f030b0003000f03040000000000000002000f030b000b000f030c000400010209000400020004000a00090c01000a000f03040057f7"
+    patch_message = list(binascii.unhexlify(patch_from_device))
 
     def programs(data) -> List[testing.ProgramTestData]:
-        patch_from_device = "f01006011002040e040b0402030a0300020103060302000c0000000901030001000c00000000000300020000000f0101000000010000000000040600000000010000000000020302000000080200000100060000000d000f030a03000000000000000009000f0300000000000000000f030d020f030000000000000000000000000f030d0204010000000000000f03080200000f030203080200000000090008020f000f010f020f03000000000000000000000000000000000f03000005000e0102030f030f03000000000000000000000000000000000000000001000f030b0003000f03040000000000000002000f030b000b000f030c000400010209000400020004000a00090c01000a000f03040057f7"
-        patch_message = list(binascii.unhexlify(patch_from_device))
         yield testing.ProgramTestData(message=patch_message, name='BNK2: 16', number=16, rename_name="NEW NAME")
+
+    def inspect_legacy_patches(adaptation, patches):
+        assert len(patches) == 1
+        assert adaptation.isSingleProgramDump(patches[0])
+        assert adaptation.nameFromDump(patches[0]) == 'BNK2: 16'
 
     # Matrix1000 only has uppercase letters, so we need to specify a rename target name for the test
     # Flag for the generic tests that converting a program dump to a program dump might yield a new result, as there are two different
     # ways to express a program dump and we cannot guarantee that this always is idempotent
-    return testing.TestData(program_generator=programs, not_idempotent=True)
+    return testing.TestData(program_generator=programs, not_idempotent=True,
+                            legacy_loader_cases=[
+                                testing.LegacyLoaderTestData(file_extension=".syx", file_content=patch_message,
+                                                             expected_patch_count=1, patch_inspector=inspect_legacy_patches)
+                            ])

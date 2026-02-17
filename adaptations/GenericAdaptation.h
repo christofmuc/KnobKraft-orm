@@ -14,6 +14,7 @@
 #include "EditBufferCapability.h"
 #include "ProgramDumpCapability.h"
 #include "BankDumpCapability.h"
+#include "LegacyLoaderCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -36,6 +37,7 @@ namespace knobkraft {
 	class GenericHasBanksCapability;
 	class GenericHasBankDescriptorsCapability;
 	class GenericBankDumpSendCapability;
+	class GenericLegacyLoaderCapability;
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
@@ -44,6 +46,7 @@ namespace knobkraft {
 		*kIsSingleProgramDump, *kIsPartOfSingleProgramDump, *kCreateProgramDumpRequest, *kConvertToProgramDump, *kNumberFromDump,
 		*kCreateBankDumpRequest, *kIsPartOfBankDump, *kIsBankDumpFinished, *kExtractPatchesFromBank, *kExtractPatchesFromAllBankMessages,
 		*kConvertPatchesToBankDump,
+		*kLegacyLoadSupportedExtensions, *kLoadPatchesFromLegacyData,
 		*kNumberOfLayers,
 		*kLayerTitles,
 		*kLayerName,
@@ -63,6 +66,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::BankDumpCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankDumpRequestCapability>,
 		public midikraft::RuntimeCapability<midikraft::BankSendCapability>,
+		public midikraft::RuntimeCapability<midikraft::LegacyLoaderCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
@@ -140,6 +144,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::HasBankDescriptorsCapability** outCapability) const override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::BankSendCapability>& outCapability) const override;
 		virtual bool hasCapability(midikraft::BankSendCapability** outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::LegacyLoaderCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::LegacyLoaderCapability** outCapability) const override;
 
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
@@ -173,6 +179,9 @@ namespace knobkraft {
 
 		friend class GenericBankDumpSendCapability;
 		std::shared_ptr<GenericBankDumpSendCapability> hasBankDumpSendCapabilityImpl_;
+
+		friend class GenericLegacyLoaderCapability;
+		std::shared_ptr<GenericLegacyLoaderCapability> legacyLoaderCapabilityImpl_;
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

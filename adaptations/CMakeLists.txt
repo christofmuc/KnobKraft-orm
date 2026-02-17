@@ -72,6 +72,7 @@ set(Sources
 	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
 	GenericHasBankDescriptorsCapability.cpp GenericHasBankDescriptorsCapability.h
 	GenericHasBanksCapability.cpp GenericHasBanksCapability.h
+	GenericLegacyLoaderCapability.cpp GenericLegacyLoaderCapability.h
 	GenericPatch.cpp GenericPatch.h
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h

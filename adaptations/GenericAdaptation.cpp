@@ -19,6 +19,7 @@
 #include "GenericBankDumpCapability.h"
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
+#include "GenericLegacyLoaderCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -68,6 +69,8 @@ namespace knobkraft {
 		* kExtractPatchesFromBank = "extractPatchesFromBank",
 		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
 		* kConvertPatchesToBankDump = "convertPatchesToBankDump",
+		* kLegacyLoadSupportedExtensions = "legacyLoadSupportedExtensions",
+		* kLoadPatchesFromLegacyData = "loadPatchesFromLegacyData",
 		* kNumberOfLayers = "numberOfLayers",
 		* kLayerTitles = "friendlyLayerTitles",
 		* kLayerName = "layerName",
@@ -108,6 +111,8 @@ namespace knobkraft {
 		kIsBankDumpFinished,
 		kExtractPatchesFromBank,
 		kExtractPatchesFromAllBankMessages,
+		kLegacyLoadSupportedExtensions,
+		kLoadPatchesFromLegacyData,
 		kNumberOfLayers,
 		kLayerName,
 		kSetLayerName,
@@ -151,6 +156,7 @@ namespace knobkraft {
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
+		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -183,6 +189,7 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
+		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
@@ -1046,6 +1053,26 @@ namespace knobkraft {
 		midikraft::BankSendCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = hasBankDumpSendCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::LegacyLoaderCapability** outCapability) const {
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kLegacyLoadSupportedExtensions)
+			&& pythonModuleHasFunction(kLoadPatchesFromLegacyData))
+		{
+			*outCapability = dynamic_cast<midikraft::LegacyLoaderCapability*>(legacyLoaderCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::LegacyLoaderCapability>& outCapability) const {
+		midikraft::LegacyLoaderCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = legacyLoaderCapabilityImpl_;
 			return true;
 		}
 		return false;

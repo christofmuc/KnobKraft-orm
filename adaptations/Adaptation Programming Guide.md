@@ -578,6 +578,30 @@ This will get a full bank of patches as a list of lists as input, and has to ret
 list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
 there is no other way via Edit Buffer capability or Program Dump capability. 
 
+## Legacy file import capability
+
+Some devices have older non-sysex file formats (for example vendor librarian exports). For Python adaptations, this can be implemented with two simple functions:
+
+    def legacyLoadSupportedExtensions() -> List[str]:
+    def loadPatchesFromLegacyData(data: List[int]) -> List[List[int]]:
+
+`legacyLoadSupportedExtensions()` returns the file extensions this loader can parse. Use values like `".m80"` or `".tas1_bank"`. Matching is case-insensitive. You can also return `"*"` to accept any extension.
+
+`loadPatchesFromLegacyData(data)` receives the full file content as a list of byte values (`0..255`) and returns a list of patches. Each patch is again a list of byte values, using the same patch payload format as in the other adaptation functions.
+
+A minimal implementation looks like this:
+
+```python
+def legacyLoadSupportedExtensions():
+    return [".m80", ".mks80"]
+
+
+def loadPatchesFromLegacyData(data):
+    # parse legacy file content here and return one or more patch payloads
+    return [data]
+```
+
+This legacy loader is optional. If you do not implement both functions, the adaptation falls back to normal sysex/mid/json import handling only.
 
 ### Getting the patch's name
 
