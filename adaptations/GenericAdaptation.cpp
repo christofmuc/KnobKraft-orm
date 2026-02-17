@@ -558,7 +558,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		ignoreUnused(place);
-		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module&>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		auto patch = std::make_shared<GenericPatch>(this, adaptation_module, data, GenericPatch::PROGRAM_DUMP);
 		return patch;
 	}
 

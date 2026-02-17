@@ -139,9 +139,37 @@ namespace knobkraft {
 			auto patchList = result.cast<std::vector<std::vector<int>>>();
 
 			midikraft::TPatchVector patches;
-			for (auto const& patchBytes : patchList) {
+			for (auto patchBytes : patchList) {
+				auto patchType = GenericPatch::PROGRAM_DUMP;
+				if (me_->pythonModuleHasFunction(kIsEditBufferDump)) {
+					try {
+						if (me_->callMethod(kIsEditBufferDump, patchBytes).cast<bool>()) {
+							patchType = GenericPatch::EDIT_BUFFER;
+						}
+					}
+					catch (py::error_already_set& ex) {
+						me_->logAdaptationError(kIsEditBufferDump, ex);
+						ex.restore();
+					}
+					catch (std::exception& ex) {
+						me_->logAdaptationError(kIsEditBufferDump, ex);
+					}
+				}
+				if (patchType == GenericPatch::PROGRAM_DUMP && me_->pythonModuleHasFunction(kIsSingleProgramDump)) {
+					try {
+						ignoreUnused(me_->callMethod(kIsSingleProgramDump, patchBytes).cast<bool>());
+					}
+					catch (py::error_already_set& ex) {
+						me_->logAdaptationError(kIsSingleProgramDump, ex);
+						ex.restore();
+					}
+					catch (std::exception& ex) {
+						me_->logAdaptationError(kIsSingleProgramDump, ex);
+					}
+				}
+
 				auto patchData = GenericAdaptation::intVectorToByteVector(patchBytes);
-				patches.push_back(std::make_shared<GenericPatch>(me_, const_cast<py::module&>(me_->adaptation_module), patchData, GenericPatch::PROGRAM_DUMP));
+				patches.push_back(std::make_shared<GenericPatch>(me_, me_->adaptation_module, patchData, patchType));
 			}
 			return patches;
 		}

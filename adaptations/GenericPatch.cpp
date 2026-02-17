@@ -24,7 +24,7 @@ namespace py = pybind11;
 
 namespace knobkraft {
 
-	GenericPatch::GenericPatch(GenericAdaptation const *me, pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::DataFile(dataType, data), me_(me), adaptation_(adaptation_module)
+	GenericPatch::GenericPatch(GenericAdaptation const *me, pybind11::module const &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType) : midikraft::DataFile(dataType, data), me_(me), adaptation_(adaptation_module)
 	{
 	}
 
