@@ -90,8 +90,6 @@ private:
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 	juce::CommandID commandIdForMacro(KeyboardMacroEvent event) const;
-	void assignMacroHotkey(KeyboardMacroEvent event, int keyCode, bool clear);
-	int assignedMacroHotkey(KeyboardMacroEvent event) const;
 	void persistCommandKeyMappings() const;
 	void restoreCommandKeyMappings();
 

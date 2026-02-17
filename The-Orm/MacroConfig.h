@@ -38,14 +38,11 @@ class MacroConfig : public Component,
 public:
 	MacroConfig(KeyboardMacroEvent event,
 		std::function<void(KeyboardMacroEvent)> recordHander,
-		std::function<void(KeyboardMacroEvent)> keyboardRecordHandler,
 		std::function<void(KeyboardMacroEvent, bool)> showHandler);
 
 	virtual void resized() override;
 
 	void setData(KeyboardMacro const &macro);
-	void setKeyboardData(int keyCode);
-	void setKeyboardAssignmentPending(bool pending);
 
 private:
 	void buttonClicked(Button* button) override;
@@ -53,14 +50,10 @@ private:
 
 	KeyboardMacroEvent event_;
 	std::function<void(KeyboardMacroEvent)> recordHander_;
-	std::function<void(KeyboardMacroEvent)> keyboardRecordHandler_;
 	std::function<void(KeyboardMacroEvent, bool)> showHandler_;
 	Label name_;
 	Label keyList_;
-	Label keyboardKey_;
 	TextButton record_;
-	TextButton keyboardRecord_;
 	MouseUpAndDownButton play_;
 };
-
 

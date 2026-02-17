@@ -471,6 +471,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	commandManager_.registerAllCommandsForTarget(this);
 	commandManager_.registerAllCommandsForTarget(&buttons_);
 	restoreCommandKeyMappings();
+	commandManager_.getKeyMappings()->addChangeListener(this);
 	if (auto* topLevel = getTopLevelComponent()) {
 		topLevel->addKeyListener(commandManager_.getKeyMappings());
 	}
@@ -498,12 +499,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			}
 			commandManager_.invokeDirectly(commandId, true);
 		},
-		[this](KeyboardMacroEvent event, int keyCode, bool clear) {
-			assignMacroHotkey(event, keyCode, clear);
-		},
-		[this](KeyboardMacroEvent event) {
-			return assignedMacroHotkey(event);
-		});
+		commandManager_);
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
 	//bcr2000View_ = std::make_unique<BCR2000_Component>(bcr2000);
@@ -614,6 +610,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 MainComponent::~MainComponent()
 {
 	persistCommandKeyMappings();
+	commandManager_.getKeyMappings()->removeChangeListener(this);
 
 	if (auto* topLevel = getTopLevelComponent()) {
 		topLevel->removeKeyListener(commandManager_.getKeyMappings());
@@ -1039,7 +1036,10 @@ void MainComponent::refreshSynthList() {
 
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 {
-	if (source == midikraft::MidiController::instance()) {
+	if (source == commandManager_.getKeyMappings()) {
+		persistCommandKeyMappings();
+	}
+	else if (source == midikraft::MidiController::instance()) {
 		// Kick off a new quickconfigure, as the MIDI interface setup has changed and synth available will be different
 		auto synthList = UIModel::instance()->synthList_.activeSynths();
 		quickconfigreDebounce_.callDebounced([this, synthList]() {
@@ -1213,50 +1213,6 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
 	}
 
 	return true;
-}
-
-void MainComponent::assignMacroHotkey(KeyboardMacroEvent event, int keyCode, bool clear)
-{
-	auto commandId = commandIdForMacro(event);
-	if (commandId == 0) {
-		return;
-	}
-
-	auto* keyMappings = commandManager_.getKeyMappings();
-	if (keyMappings == nullptr) {
-		return;
-	}
-
-	keyMappings->clearAllKeyPresses(commandId);
-	if (!clear && keyCode > 0) {
-		auto keyPress = juce::KeyPress(keyCode);
-		keyMappings->removeKeyPress(keyPress);
-		keyMappings->addKeyPress(commandId, keyPress);
-	}
-	persistCommandKeyMappings();
-}
-
-int MainComponent::assignedMacroHotkey(KeyboardMacroEvent event) const
-{
-	auto commandId = commandIdForMacro(event);
-	if (commandId == 0) {
-		return 0;
-	}
-
-	auto& manager = const_cast<juce::ApplicationCommandManager&>(commandManager_);
-	auto* keyMappings = manager.getKeyMappings();
-	if (keyMappings == nullptr) {
-		return 0;
-	}
-
-	auto keyPresses = keyMappings->getKeyPressesAssignedToCommand(commandId);
-	for (const auto& keyPress : keyPresses) {
-		if (!keyPress.getModifiers().isAnyModifierKeyDown()) {
-			return keyPress.getKeyCode();
-		}
-	}
-
-	return keyPresses.isEmpty() ? 0 : keyPresses.getFirst().getKeyCode();
 }
 
 void MainComponent::persistCommandKeyMappings() const
