@@ -40,14 +40,13 @@
 
 class LogViewLogger;
 
-class MainComponent : public Component, private ChangeListener, private juce::KeyListener
+class MainComponent : public Component, private ChangeListener, public juce::ApplicationCommandTarget
 {
 public:
 	MainComponent(bool makeYourOwnSize);
     virtual ~MainComponent() override;
 
 	virtual void resized() override;
-	bool keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent) override;
 
 	void shutdown();
 
@@ -81,9 +80,20 @@ private:
 	static std::unique_ptr<SecondaryMainWindow> sSecondMainWindow;
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
+
+	// ApplicationCommandTarget
+	juce::ApplicationCommandTarget* getNextCommandTarget() override;
+	void getAllCommands(juce::Array<juce::CommandID>& commands) override;
+	void getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result) override;
+	bool perform(const juce::ApplicationCommandTarget::InvocationInfo& info) override;
 	
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
+	juce::CommandID commandIdForMacro(KeyboardMacroEvent event) const;
+	void assignMacroHotkey(KeyboardMacroEvent event, int keyCode, bool clear);
+	int assignedMacroHotkey(KeyboardMacroEvent event) const;
+	void persistCommandKeyMappings() const;
+	void restoreCommandKeyMappings();
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;

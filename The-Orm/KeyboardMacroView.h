@@ -19,12 +19,13 @@
 
 class KeyboardMacroView : public Component, private ChangeListener, private Value::Listener {
 public:
-	KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback);
+	KeyboardMacroView(std::function<void(KeyboardMacroEvent)> executeCallback,
+		std::function<void(KeyboardMacroEvent, int, bool)> assignKeyboardShortcutCallback,
+		std::function<int(KeyboardMacroEvent)> getKeyboardShortcutCallback);
 	virtual ~KeyboardMacroView() override;
 
 	virtual void resized() override;
 	void handleMidiMessage(const MidiMessage& message, const String& source, bool isOut);
-	bool handleComputerKeyboardKeyPress(const juce::KeyPress& key);
 
 private:
 	class RecordProgress;
@@ -58,9 +59,10 @@ private:
 	OwnedArray<MacroConfig> configs_;
 
 	std::map<KeyboardMacroEvent, KeyboardMacro> macros_;
-	std::map<KeyboardMacroEvent, int> keyboardMacros_;
 	KeyboardMacroEvent pendingKeyboardAssignment_ = KeyboardMacroEvent::Unknown;
 	std::function<void(KeyboardMacroEvent)> executeMacro_;
+	std::function<void(KeyboardMacroEvent, int, bool)> assignKeyboardShortcut_;
+	std::function<int(KeyboardMacroEvent)> getKeyboardShortcut_;
 	std::map<KeyboardMacroEvent, bool> macroActiveStates_; // Tracks edge-trigger state to avoid repeats while held
 
 	midikraft::MidiController::HandlerHandle handle_ = midikraft::MidiController::makeNoneHandle();

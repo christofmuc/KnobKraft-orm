@@ -97,7 +97,7 @@ private:
 
 };
 
-class KeyboardMacroView::KeyboardRecordProgress : public std::enable_shared_from_this<KeyboardMacroView::KeyboardRecordProgress> {
+class KeyboardMacroView::KeyboardRecordProgress : public juce::KeyListener, public std::enable_shared_from_this<KeyboardMacroView::KeyboardRecordProgress> {
 public:
 	explicit KeyboardRecordProgress(Component* parent) : parent_(parent)
 	{
@@ -105,6 +105,10 @@ public:
 
 	void show(std::function<void(int, bool, bool)> done) {
 		done_ = std::move(done);
+		if (auto* topLevel = parent_ ? parent_->getTopLevelComponent() : nullptr) {
+			topLevel_ = topLevel;
+			topLevel_->addKeyListener(this);
+		}
 		auto options = juce::MessageBoxOptions()
 			.withButton("Clear")
 			.withButton("Cancel")
@@ -114,15 +118,15 @@ public:
 		auto weakSelf = weak_from_this();
 		messageBox_ = AlertWindow::showScopedAsync(options, [weakSelf](int button) {
 			auto self = weakSelf.lock();
-			if (!self) {
+			if (!self || self->completed_) {
 				return;
 			}
 			switch (button) {
 			case 1:
-				self->done_(0, false, true);
+				self->finish(0, false, true);
 				break;
 			case 0:
-				self->done_(0, true, false);
+				self->finish(0, true, false);
 				break;
 			default:
 				spdlog::error("Unknown button number pressed, program error in KeyboardRecordProgress of KeyboardMacroView");
@@ -130,33 +134,67 @@ public:
 		});
 	}
 
-	bool handleKeyPress(const juce::KeyPress& key) {
+	~KeyboardRecordProgress() override {
+		detachFromTopLevel();
+	}
+
+	bool keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent) override {
+		ignoreUnused(originatingComponent);
+
+		if (completed_) {
+			return false;
+		}
+
 		int keyCode = key.getKeyCode();
 		if (keyCode == juce::KeyPress::escapeKey) {
+			finish(0, true, false);
 			messageBox_.close();
-			done_(0, true, false);
 			return true;
 		}
 		if (keyCode == juce::KeyPress::backspaceKey || keyCode == juce::KeyPress::deleteKey) {
+			finish(0, false, true);
 			messageBox_.close();
-			done_(0, false, true);
 			return true;
 		}
 		if (!key.getModifiers().isAnyModifierKeyDown() && keyCode > 0) {
+			finish(keyCode, false, false);
 			messageBox_.close();
-			done_(keyCode, false, false);
 			return true;
 		}
 		return false;
 	}
 
 private:
+	void finish(int keyCode, bool cancelled, bool cleared) {
+		if (completed_) {
+			return;
+		}
+		completed_ = true;
+		detachFromTopLevel();
+		done_(keyCode, cancelled, cleared);
+	}
+
+	void detachFromTopLevel() {
+		if (topLevel_ != nullptr) {
+			topLevel_->removeKeyListener(this);
+			topLevel_ = nullptr;
+		}
+	}
+
 	Component* parent_;
+	Component* topLevel_ = nullptr;
 	std::function<void(int, bool, bool)> done_;
 	ScopedMessageBox messageBox_;
+	bool completed_ = false;
 };
 
-KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback) : keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard), executeMacro_(callback)
+KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> executeCallback,
+	std::function<void(KeyboardMacroEvent, int, bool)> assignKeyboardShortcutCallback,
+	std::function<int(KeyboardMacroEvent)> getKeyboardShortcutCallback)
+	: keyboard_(state_, MidiKeyboardComponent::horizontalKeyboard),
+	  executeMacro_(std::move(executeCallback)),
+	  assignKeyboardShortcut_(std::move(assignKeyboardShortcutCallback)),
+	  getKeyboardShortcut_(std::move(getKeyboardShortcutCallback))
 {
 	addAndMakeVisible(customSetup_);
 	addAndMakeVisible(keyboard_);
@@ -200,20 +238,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 							return;
 						}
 						if (!cancelled) {
-							if (cleared) {
-								safeThis->keyboardMacros_.erase(event);
-							}
-							else if (keyCode > 0) {
-								for (auto it = safeThis->keyboardMacros_.begin(); it != safeThis->keyboardMacros_.end();) {
-									if (it->second == keyCode && it->first != event) {
-										it = safeThis->keyboardMacros_.erase(it);
-									}
-									else {
-										++it;
-									}
-								}
-								safeThis->keyboardMacros_[event] = keyCode;
-							}
+							safeThis->assignKeyboardShortcut_(event, keyCode, cleared);
 							safeThis->saveSettings();
 						}
 						safeThis->pendingKeyboardAssignment_ = KeyboardMacroEvent::Unknown;
@@ -380,12 +405,7 @@ void KeyboardMacroView::refreshUI() {
 			macroData = macros_[config];
 		}
 		configs_[i]->setData(macroData);
-		if (keyboardMacros_.find(config) != keyboardMacros_.end()) {
-			configs_[i]->setKeyboardData(keyboardMacros_[config]);
-		}
-		else {
-			configs_[i]->setKeyboardData(0);
-		}
+		configs_[i]->setKeyboardData(getKeyboardShortcut_(config));
 		configs_[i]->setKeyboardAssignmentPending(config == pendingKeyboardAssignment_);
 		i++;
 	}
@@ -415,7 +435,6 @@ void setMidiDeviceFromString(const std::shared_ptr<TypedNamedValue>& prop, const
 
 void KeyboardMacroView::loadFromSettings() {
 	macros_.clear();
-	keyboardMacros_.clear();
 	auto json = Settings::instance().get("MacroDefinitions");
 	if (!json.empty()) {
 		try {
@@ -432,11 +451,6 @@ void KeyboardMacroView::loadFromSettings() {
 								}
 							}
 						}
-						int keyboardKeyCode = 0;
-						auto keyCode = macro["KeyCode"];
-						if (keyCode.is_number_integer()) {
-							keyboardKeyCode = (int)keyCode;
-						}
 						auto event = macro["Event"];
 						KeyboardMacroEvent macroEventCode = KeyboardMacroEvent::Unknown;
 						if (event.is_string()) {
@@ -446,9 +460,6 @@ void KeyboardMacroView::loadFromSettings() {
 						if (macroEventCode != KeyboardMacroEvent::Unknown) {
 							if (!midiNoteValues.empty()) {
 								macros_[macroEventCode] = { macroEventCode, midiNoteValues };
-							}
-							if (keyboardKeyCode > 0) {
-								keyboardMacros_[macroEventCode] = keyboardKeyCode;
 							}
 						}
 					}
@@ -497,8 +508,7 @@ void KeyboardMacroView::saveSettings() {
 
 	for (auto event : kAllKeyboardMacroEvents) {
 		bool hasMidi = macros_.find(event) != macros_.end() && !macros_[event].midiNotes.empty();
-		bool hasKeyboard = keyboardMacros_.find(event) != keyboardMacros_.end() && keyboardMacros_[event] > 0;
-		if (!hasMidi && !hasKeyboard) {
+		if (!hasMidi) {
 			continue;
 		}
 
@@ -511,9 +521,6 @@ void KeyboardMacroView::saveSettings() {
 		auto def = new DynamicObject();
 		def->setProperty("Notes", notes);
 		def->setProperty("Event", String(KeyboardMacro::toText(event)));
-		if (hasKeyboard) {
-			def->setProperty("KeyCode", keyboardMacros_[event]);
-		}
 		result.append(def);
 	}
 	String json = JSON::toString(result);
@@ -730,29 +737,4 @@ void KeyboardMacroView::updateSecondaryMidiOutSelection()
 		std::scoped_lock lock(secondaryMidiOutMutex_);
 		secondaryMidiOut_ = secondaryMidiOutList_->selectedDevice();
 	}
-}
-
-bool KeyboardMacroView::handleComputerKeyboardKeyPress(const juce::KeyPress& key)
-{
-	if (activeKeyboardRecorder_) {
-		return activeKeyboardRecorder_->handleKeyPress(key);
-	}
-
-	// Trigger mode
-	if (!customMasterkeyboardSetup_.valueByName(kMacrosEnabled).getValue()) {
-		return false;
-	}
-	if (key.getModifiers().isAnyModifierKeyDown()) {
-		return false;
-	}
-
-	int keyCode = key.getKeyCode();
-	for (auto const& mapping : keyboardMacros_) {
-		if (mapping.second == keyCode) {
-			executeMacro_(mapping.first);
-			spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(mapping.first));
-			return true;
-		}
-	}
-	return false;
 }

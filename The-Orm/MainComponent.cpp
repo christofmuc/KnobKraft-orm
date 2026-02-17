@@ -61,6 +61,14 @@ const std::string kFullMidiLog{ "fullMidiLog" };
 const std::string kSysexMidiLog{ "sysexMidiLog" };
 const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
 const std::string kCreateNewAdaptation{ "createNewAdaptation" };
+const std::string kCommandKeyMappingsXml{ "CommandKeyMappingsXml" };
+
+constexpr juce::CommandID kMacroHideCommand = 50001;
+constexpr juce::CommandID kMacroFavoriteCommand = 50002;
+constexpr juce::CommandID kMacroRegularCommand = 50003;
+constexpr juce::CommandID kMacroPreviousPatchCommand = 50004;
+constexpr juce::CommandID kMacroNextPatchCommand = 50005;
+constexpr juce::CommandID kMacroImportEditBufferCommand = 50006;
 
 extern std::string getOrmVersion();
 
@@ -459,11 +467,12 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	};
 	buttons_.setButtonDefinitions(buttons);
-	commandManager_.setFirstCommandTarget(&buttons_);
+	commandManager_.setFirstCommandTarget(this);
+	commandManager_.registerAllCommandsForTarget(this);
 	commandManager_.registerAllCommandsForTarget(&buttons_);
+	restoreCommandKeyMappings();
 	if (auto* topLevel = getTopLevelComponent()) {
 		topLevel->addKeyListener(commandManager_.getKeyMappings());
-		topLevel->addKeyListener(this);
 	}
 
 	// Setup menu structure
@@ -480,21 +489,20 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	//recordingView_ = std::make_unique<RecordingView>(*patchView_);
 
 	// Create Macro Definition view
-	keyboardView_ = std::make_unique<KeyboardMacroView>([this](KeyboardMacroEvent event) {
-		switch (event) {
-		case KeyboardMacroEvent::Hide: patchView_->hideCurrentPatch(); break;
-		case KeyboardMacroEvent::Favorite: patchView_->favoriteCurrentPatch(); break;
-		case KeyboardMacroEvent::Regular: patchView_->regularCurrentPatch(); break;
-		case KeyboardMacroEvent::NextPatch: patchView_->selectNextPatch(); break;
-		case KeyboardMacroEvent::PreviousPatch: patchView_->selectPreviousPatch(); break;
-		case KeyboardMacroEvent::ImportEditBuffer: patchView_->retrieveEditBuffer(); break;
-		case KeyboardMacroEvent::Unknown:
-			// Fall through
-		default:
-			spdlog::error("Invalid keyboard macro event detected");
-			return;
-		}
-		spdlog::debug("Keyboard Macro event fired {}", KeyboardMacro::toText(event));
+	keyboardView_ = std::make_unique<KeyboardMacroView>(
+		[this](KeyboardMacroEvent event) {
+			auto commandId = commandIdForMacro(event);
+			if (commandId == 0) {
+				spdlog::error("Invalid keyboard macro event detected");
+				return;
+			}
+			commandManager_.invokeDirectly(commandId, true);
+		},
+		[this](KeyboardMacroEvent event, int keyCode, bool clear) {
+			assignMacroHotkey(event, keyCode, clear);
+		},
+		[this](KeyboardMacroEvent event) {
+			return assignedMacroHotkey(event);
 		});
 
 	// Create the BCR2000 view, the predecessor to the generic editor view
@@ -605,8 +613,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 MainComponent::~MainComponent()
 {
+	persistCommandKeyMappings();
+
 	if (auto* topLevel = getTopLevelComponent()) {
-		topLevel->removeKeyListener(this);
 		topLevel->removeKeyListener(commandManager_.getKeyMappings());
 	}
 
@@ -1116,11 +1125,173 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 	return -1;
 }
 
-bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component* originatingComponent)
+juce::ApplicationCommandTarget* MainComponent::getNextCommandTarget()
 {
-	ignoreUnused(originatingComponent);
+	return &buttons_;
+}
 
-	return keyboardView_ && keyboardView_->handleComputerKeyboardKeyPress(key);
+void MainComponent::getAllCommands(juce::Array<juce::CommandID>& commands)
+{
+	commands.add(kMacroHideCommand);
+	commands.add(kMacroFavoriteCommand);
+	commands.add(kMacroRegularCommand);
+	commands.add(kMacroPreviousPatchCommand);
+	commands.add(kMacroNextPatchCommand);
+	commands.add(kMacroImportEditBufferCommand);
+}
+
+juce::CommandID MainComponent::commandIdForMacro(KeyboardMacroEvent event) const
+{
+	switch (event) {
+	case KeyboardMacroEvent::Hide: return kMacroHideCommand;
+	case KeyboardMacroEvent::Favorite: return kMacroFavoriteCommand;
+	case KeyboardMacroEvent::Regular: return kMacroRegularCommand;
+	case KeyboardMacroEvent::PreviousPatch: return kMacroPreviousPatchCommand;
+	case KeyboardMacroEvent::NextPatch: return kMacroNextPatchCommand;
+	case KeyboardMacroEvent::ImportEditBuffer: return kMacroImportEditBufferCommand;
+	case KeyboardMacroEvent::Unknown:
+		// Fall through
+	default:
+		return 0;
+	}
+}
+
+void MainComponent::getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result)
+{
+	switch (commandID) {
+	case kMacroHideCommand:
+		result.setInfo("Macro: Hide Patch", "Hide current patch", "Macros", 0);
+		break;
+	case kMacroFavoriteCommand:
+		result.setInfo("Macro: Favorite Patch", "Favorite current patch", "Macros", 0);
+		break;
+	case kMacroRegularCommand:
+		result.setInfo("Macro: Regular Patch", "Mark current patch as regular", "Macros", 0);
+		break;
+	case kMacroPreviousPatchCommand:
+		result.setInfo("Macro: Previous Patch", "Select previous patch", "Macros", 0);
+		break;
+	case kMacroNextPatchCommand:
+		result.setInfo("Macro: Next Patch", "Select next patch", "Macros", 0);
+		break;
+	case kMacroImportEditBufferCommand:
+		result.setInfo("Macro: Import Edit Buffer", "Import edit buffer from synth", "Macros", 0);
+		break;
+	default:
+		break;
+	}
+	result.setActive(patchView_ != nullptr);
+}
+
+bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo& info)
+{
+	if (!patchView_) {
+		return false;
+	}
+
+	switch (info.commandID) {
+	case kMacroHideCommand:
+		patchView_->hideCurrentPatch();
+		break;
+	case kMacroFavoriteCommand:
+		patchView_->favoriteCurrentPatch();
+		break;
+	case kMacroRegularCommand:
+		patchView_->regularCurrentPatch();
+		break;
+	case kMacroPreviousPatchCommand:
+		patchView_->selectPreviousPatch();
+		break;
+	case kMacroNextPatchCommand:
+		patchView_->selectNextPatch();
+		break;
+	case kMacroImportEditBufferCommand:
+		patchView_->retrieveEditBuffer();
+		break;
+	default:
+		return false;
+	}
+
+	return true;
+}
+
+void MainComponent::assignMacroHotkey(KeyboardMacroEvent event, int keyCode, bool clear)
+{
+	auto commandId = commandIdForMacro(event);
+	if (commandId == 0) {
+		return;
+	}
+
+	auto* keyMappings = commandManager_.getKeyMappings();
+	if (keyMappings == nullptr) {
+		return;
+	}
+
+	keyMappings->clearAllKeyPresses(commandId);
+	if (!clear && keyCode > 0) {
+		auto keyPress = juce::KeyPress(keyCode);
+		keyMappings->removeKeyPress(keyPress);
+		keyMappings->addKeyPress(commandId, keyPress);
+	}
+	persistCommandKeyMappings();
+}
+
+int MainComponent::assignedMacroHotkey(KeyboardMacroEvent event) const
+{
+	auto commandId = commandIdForMacro(event);
+	if (commandId == 0) {
+		return 0;
+	}
+
+	auto& manager = const_cast<juce::ApplicationCommandManager&>(commandManager_);
+	auto* keyMappings = manager.getKeyMappings();
+	if (keyMappings == nullptr) {
+		return 0;
+	}
+
+	auto keyPresses = keyMappings->getKeyPressesAssignedToCommand(commandId);
+	for (const auto& keyPress : keyPresses) {
+		if (!keyPress.getModifiers().isAnyModifierKeyDown()) {
+			return keyPress.getKeyCode();
+		}
+	}
+
+	return keyPresses.isEmpty() ? 0 : keyPresses.getFirst().getKeyCode();
+}
+
+void MainComponent::persistCommandKeyMappings() const
+{
+	auto& manager = const_cast<juce::ApplicationCommandManager&>(commandManager_);
+	auto* keyMappings = manager.getKeyMappings();
+	if (keyMappings == nullptr) {
+		return;
+	}
+
+	std::unique_ptr<juce::XmlElement> xml(keyMappings->createXml(true));
+	if (xml) {
+		Settings::instance().set(kCommandKeyMappingsXml, xml->toString().toStdString());
+	}
+}
+
+void MainComponent::restoreCommandKeyMappings()
+{
+	auto* keyMappings = commandManager_.getKeyMappings();
+	if (keyMappings == nullptr) {
+		return;
+	}
+
+	auto keyMappingsXml = Settings::instance().get(kCommandKeyMappingsXml);
+	if (keyMappingsXml.empty()) {
+		return;
+	}
+
+	auto xml = juce::XmlDocument::parse(juce::String(keyMappingsXml));
+	if (xml) {
+		keyMappings->restoreFromXml(*xml);
+	}
+	else {
+		spdlog::warn("Failed to parse stored command key mappings XML");
+	}
 }
 
 void MainComponent::aboutBox()
