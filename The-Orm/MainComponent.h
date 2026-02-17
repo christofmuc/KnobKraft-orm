@@ -47,6 +47,7 @@ public:
     virtual ~MainComponent() override;
 
 	virtual void resized() override;
+	void parentHierarchyChanged() override;
 
 	void shutdown();
 
@@ -90,6 +91,7 @@ private:
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 	juce::CommandID commandIdForMacro(KeyboardMacroEvent event) const;
+	void updateCommandKeyListenerTarget();
 	void persistCommandKeyMappings() const;
 	void restoreCommandKeyMappings();
 
@@ -131,6 +133,7 @@ private:
 	spdlog::sink_ptr logViewSink_;
 
 	ListenerSet listeners_;
+	juce::Component* keyListenerTarget_ = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

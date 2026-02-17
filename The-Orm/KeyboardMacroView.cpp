@@ -35,19 +35,25 @@ namespace {
 class KeyMappingDialogContent : public juce::Component {
 public:
 	explicit KeyMappingDialogContent(juce::ApplicationCommandManager& commandManager)
-		: keyEditor_(*commandManager.getKeyMappings(), true)
 	{
-		addAndMakeVisible(keyEditor_);
+		auto* mappings = commandManager.getKeyMappings();
+		jassert(mappings != nullptr);
+		if (mappings != nullptr) {
+			keyEditor_ = std::make_unique<juce::KeyMappingEditorComponent>(*mappings, true);
+			addAndMakeVisible(*keyEditor_);
+		}
 		setSize(900, 520);
 	}
 
 	void resized() override
 	{
-		keyEditor_.setBounds(getLocalBounds().reduced(8));
+		if (keyEditor_) {
+			keyEditor_->setBounds(getLocalBounds().reduced(8));
+		}
 	}
 
 private:
-	juce::KeyMappingEditorComponent keyEditor_;
+	std::unique_ptr<juce::KeyMappingEditorComponent> keyEditor_;
 };
 }
 

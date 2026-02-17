@@ -472,9 +472,13 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	commandManager_.registerAllCommandsForTarget(&buttons_);
 	restoreCommandKeyMappings();
 	commandManager_.getKeyMappings()->addChangeListener(this);
-	if (auto* topLevel = getTopLevelComponent()) {
-		topLevel->addKeyListener(commandManager_.getKeyMappings());
-	}
+	updateCommandKeyListenerTarget();
+	juce::Component::SafePointer<MainComponent> safeThis(this);
+	MessageManager::callAsync([safeThis]() {
+		if (safeThis) {
+			safeThis->updateCommandKeyListenerTarget();
+		}
+	});
 
 	// Setup menu structure
 	menuModel_ = std::make_unique<LambdaMenuModel>(menuStructure, &commandManager_, &buttons_);
@@ -612,8 +616,9 @@ MainComponent::~MainComponent()
 	persistCommandKeyMappings();
 	commandManager_.getKeyMappings()->removeChangeListener(this);
 
-	if (auto* topLevel = getTopLevelComponent()) {
-		topLevel->removeKeyListener(commandManager_.getKeyMappings());
+	if (keyListenerTarget_ != nullptr) {
+		keyListenerTarget_->removeKeyListener(commandManager_.getKeyMappings());
+		keyListenerTarget_ = nullptr;
 	}
 
 	if (logViewSink_) {
@@ -949,6 +954,29 @@ float MainComponent::calcAcceptableGlobalScaleFactor() {
 		}
 	}
 	return goodScale;
+}
+
+void MainComponent::parentHierarchyChanged()
+{
+	Component::parentHierarchyChanged();
+	updateCommandKeyListenerTarget();
+}
+
+void MainComponent::updateCommandKeyListenerTarget()
+{
+	auto* topLevel = getTopLevelComponent();
+	if (topLevel == keyListenerTarget_) {
+		return;
+	}
+
+	if (keyListenerTarget_ != nullptr) {
+		keyListenerTarget_->removeKeyListener(commandManager_.getKeyMappings());
+	}
+
+	keyListenerTarget_ = topLevel;
+	if (keyListenerTarget_ != nullptr) {
+		keyListenerTarget_->addKeyListener(commandManager_.getKeyMappings());
+	}
 }
 
 void MainComponent::resized()
