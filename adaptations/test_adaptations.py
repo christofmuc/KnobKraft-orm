@@ -107,7 +107,7 @@ def get_rename_target_name(program, test_data):
 
 def normalize_extension(extension):
     if not isinstance(extension, str):
-        raise AssertionError("Extension must be a string")
+        raise TypeError("Extension must be a string")
     normalized = extension.strip().lower()
     if normalized == "":
         return normalized
@@ -120,6 +120,11 @@ def normalize_extension(extension):
     if not normalized.startswith("."):
         normalized = "." + normalized
     return normalized
+
+
+def test_normalize_extension_requires_string():
+    with pytest.raises(TypeError, match="Extension must be a string"):
+        normalize_extension(123)
 
 
 @require_implemented("nameFromDump")
