@@ -92,7 +92,7 @@ private:
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
 	juce::CommandID commandIdForMacro(KeyboardMacroEvent event) const;
 	void updateCommandKeyListenerTarget();
-	void persistCommandKeyMappings() const;
+	void persistCommandKeyMappings();
 	void restoreCommandKeyMappings();
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;

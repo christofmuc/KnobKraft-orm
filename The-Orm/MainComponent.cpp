@@ -1243,10 +1243,9 @@ bool MainComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo
 	return true;
 }
 
-void MainComponent::persistCommandKeyMappings() const
+void MainComponent::persistCommandKeyMappings()
 {
-	auto& manager = const_cast<juce::ApplicationCommandManager&>(commandManager_);
-	auto* keyMappings = manager.getKeyMappings();
+	auto* keyMappings = commandManager_.getKeyMappings();
 	if (keyMappings == nullptr) {
 		return;
 	}
