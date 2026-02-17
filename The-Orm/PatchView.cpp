@@ -1070,7 +1070,7 @@ std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgra
 
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 	if (midiLocation && midiLocation->channel().isValid()) {
-		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), program.toZeroBasedDiscardingBank()));
+		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), selectProgram.toZeroBasedDiscardingBank()));
 		spdlog::info("Sending program change to {} for patch {}: program {} {}."
 			, patch.smartSynth()->getName()
 			, patch.name()
