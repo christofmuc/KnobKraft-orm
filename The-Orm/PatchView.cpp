@@ -1054,7 +1054,11 @@ std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgra
 				, selectProgram.isBankKnown() ? "[known bank]" : "[bank not known!]");
 			return customMessages;
 		}
-		spdlog::error("Synth {} implements custom program change, but returned no messages for patch {}", patch.smartSynth()->getName(), patch.name());
+		spdlog::error("Synth {} implements custom program change, but returned no messages for patch {}: program {} {}."
+			, patch.smartSynth()->getName()
+			, patch.name()
+			, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, selectProgram)
+			, selectProgram.isBankKnown() ? "[known bank]" : "[bank not known!]");
 		return {};
 	}
 
