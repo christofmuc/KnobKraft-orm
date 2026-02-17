@@ -17,6 +17,7 @@
 #include "GenericEditBufferCapability.h"
 #include "GenericProgramDumpCapability.h"
 #include "GenericBankDumpCapability.h"
+#include "GenericCustomProgramChangeCapability.h"
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
 
@@ -62,6 +63,7 @@ namespace knobkraft {
 		* kCreateProgramDumpRequest = "createProgramDumpRequest",
 		* kConvertToProgramDump = "convertToProgramDump",
 		* kNumberFromDump = "numberFromDump",
+		* kCreateCustomProgramChange = "createCustomProgramChange",
 		* kCreateBankDumpRequest = "createBankDumpRequest",
 		* kIsPartOfBankDump = "isPartOfBankDump",
 		* kIsBankDumpFinished = "isBankDumpFinished",
@@ -103,6 +105,7 @@ namespace knobkraft {
 		kCreateProgramDumpRequest,
 		kConvertToProgramDump,
 		kNumberFromDump,
+		kCreateCustomProgramChange,
 		kCreateBankDumpRequest,
 		kIsPartOfBankDump,
 		kIsBankDumpFinished,
@@ -151,6 +154,7 @@ namespace knobkraft {
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
+		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -183,6 +187,7 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
+		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
@@ -1046,6 +1051,27 @@ namespace knobkraft {
 		midikraft::BankSendCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = hasBankDumpSendCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::CustomProgramChangeCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kCreateCustomProgramChange))
+		{
+			*outCapability = dynamic_cast<midikraft::CustomProgramChangeCapability*>(customProgramChangeCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::CustomProgramChangeCapability>& outCapability) const
+	{
+		midikraft::CustomProgramChangeCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = customProgramChangeCapabilityImpl_;
 			return true;
 		}
 		return false;
