@@ -20,7 +20,7 @@ public:
 	SimplePatchGrid(PatchView *patchView);
 	~SimplePatchGrid() override;
 
-	virtual void resized();
+	void resized() override;
 	void applyPatchUpdate(midikraft::PatchHolder const& patch);
 
 	std::function<void(midikraft::PatchHolder&)> onPatchSelected;
