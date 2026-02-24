@@ -131,7 +131,11 @@ def legacyLoadSupportedExtensions() -> List[str]:
     return [".syx"]
 
 
-def loadPatchesFromLegacyData(data: List[int]) -> List[List[int]]:
+def loadPatchesFromLegacyData(data: List[int], filename: str = "") -> List[List[int]]:
+    if filename and not filename.lower().endswith(".syx"):
+        # Example use of filename context: reject unsupported legacy file types early.
+        return []
+
     patches = []
     for message in knobkraft.splitSysex(data):
         if isSingleProgramDump(message) or isEditBufferDump(message):

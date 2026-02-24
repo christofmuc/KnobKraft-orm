@@ -145,12 +145,11 @@ namespace knobkraft {
 	midikraft::TPatchVector GenericLegacyLoaderCapability::load(std::string const& filename, std::vector<uint8> const& fileContent)
 	{
 		py::gil_scoped_acquire acquire;
-		ignoreUnused(filename);
 		midikraft::TPatchVector patches;
 
 		try {
 			std::vector<int> data(fileContent.begin(), fileContent.end());
-			py::object result = me_->callMethod(kLoadPatchesFromLegacyData, data);
+			py::object result = me_->callMethod(kLoadPatchesFromLegacyData, data, filename);
 			auto patchList = result.cast<std::vector<std::vector<int>>>();
 
 			for (auto const& patchBytes : patchList) {
