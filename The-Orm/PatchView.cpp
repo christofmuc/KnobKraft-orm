@@ -1095,6 +1095,10 @@ void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::Mid
 		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
 	}
 	else {
+		if (midikraft::Capability::hasCapability<midikraft::CustomProgramChangeCapability>(patch.smartSynth())) {
+			// The custom program change path already emitted a specific error.
+			return;
+		}
 		spdlog::error("Failed to build MIDI bank and program change messages for {}, program error?", patch.smartSynth()->getName());
 	}
 
