@@ -132,13 +132,13 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		ignoreUnused(filename);
+		midikraft::TPatchVector patches;
 
 		try {
 			std::vector<int> data(fileContent.begin(), fileContent.end());
 			py::object result = me_->callMethod(kLoadPatchesFromLegacyData, data);
 			auto patchList = result.cast<std::vector<std::vector<int>>>();
 
-			midikraft::TPatchVector patches;
 			for (auto patchBytes : patchList) {
 				auto patchType = GenericPatch::PROGRAM_DUMP;
 				if (me_->pythonModuleHasFunction(kIsEditBufferDump)) {
@@ -168,10 +168,18 @@ namespace knobkraft {
 					}
 				}
 
-				auto patchData = GenericAdaptation::intVectorToByteVector(patchBytes);
-				patches.push_back(std::make_shared<GenericPatch>(me_, me_->adaptation_module, patchData, patchType));
+				try {
+					auto patchData = GenericAdaptation::intVectorToByteVector(patchBytes);
+					patches.push_back(std::make_shared<GenericPatch>(me_, me_->adaptation_module, patchData, patchType));
+				}
+				catch (py::error_already_set& ex) {
+					me_->logAdaptationError(kLoadPatchesFromLegacyData, ex);
+					ex.restore();
+				}
+				catch (std::exception& ex) {
+					me_->logAdaptationError(kLoadPatchesFromLegacyData, ex);
+				}
 			}
-			return patches;
 		}
 		catch (py::error_already_set& ex) {
 			me_->logAdaptationError(kLoadPatchesFromLegacyData, ex);
@@ -180,7 +188,7 @@ namespace knobkraft {
 		catch (std::exception& ex) {
 			me_->logAdaptationError(kLoadPatchesFromLegacyData, ex);
 		}
-		return {};
+		return patches;
 	}
 
 }
