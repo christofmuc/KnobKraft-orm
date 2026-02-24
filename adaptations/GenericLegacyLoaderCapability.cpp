@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <cctype>
 #include <set>
+#include <stdexcept>
+#include <utility>
 
 namespace py = pybind11;
 
@@ -54,6 +56,11 @@ namespace knobkraft {
 			std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 			return extension;
 		}
+
+		void logLegacyExtensionCacheDisabled(GenericAdaptation* adaptation) {
+			std::runtime_error ex("Legacy extension cache initialization failed; extension support checks are disabled for this adaptation instance.");
+			adaptation->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
+		}
 	}
 
 	void GenericLegacyLoaderCapability::ensureCachedNormalizedExtensions()
@@ -63,6 +70,8 @@ namespace knobkraft {
 			try {
 				py::object result = me_->callMethod(kLegacyLoadSupportedExtensions);
 				std::vector<std::string> extensions = result.cast<std::vector<std::string>>();
+				std::vector<std::string> normalizedExtensions;
+				std::string extensionPatterns;
 				std::set<std::string> uniqueNormalized;
 				std::set<std::string> uniquePatterns;
 				for (auto const& extension : extensions) {
@@ -79,20 +88,25 @@ namespace knobkraft {
 					}
 				}
 
-				cachedNormalizedExtensions_.assign(uniqueNormalized.begin(), uniqueNormalized.end());
+				normalizedExtensions.assign(uniqueNormalized.begin(), uniqueNormalized.end());
 
 				for (auto const& pattern : uniquePatterns) {
-					if (!cachedFileExtensionPatterns_.empty()) {
-						cachedFileExtensionPatterns_ += ";";
+					if (!extensionPatterns.empty()) {
+						extensionPatterns += ";";
 					}
-					cachedFileExtensionPatterns_ += pattern;
+					extensionPatterns += pattern;
 				}
+
+				cachedNormalizedExtensions_ = std::move(normalizedExtensions);
+				cachedFileExtensionPatterns_ = std::move(extensionPatterns);
 			}
 			catch (py::error_already_set& ex) {
+				cachedInitFailed_ = true;
 				me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
 				ex.restore();
 			}
 			catch (std::exception& ex) {
+				cachedInitFailed_ = true;
 				me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
 			}
 		});
@@ -101,6 +115,10 @@ namespace knobkraft {
 	std::string GenericLegacyLoaderCapability::additionalFileExtensions()
 	{
 		ensureCachedNormalizedExtensions();
+		if (cachedInitFailed_) {
+			logLegacyExtensionCacheDisabled(me_);
+			return {};
+		}
 		return cachedFileExtensionPatterns_;
 	}
 
@@ -109,6 +127,10 @@ namespace knobkraft {
 		auto fileExtension = juce::File(filename).getFileExtension().toStdString();
 		std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		ensureCachedNormalizedExtensions();
+		if (cachedInitFailed_) {
+			logLegacyExtensionCacheDisabled(me_);
+			return false;
+		}
 		for (auto const& normalized : cachedNormalizedExtensions_) {
 			if (normalized == "*") {
 				return true;

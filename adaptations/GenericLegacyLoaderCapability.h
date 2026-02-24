@@ -30,6 +30,7 @@ namespace knobkraft {
 
 		GenericAdaptation* me_;
 		std::once_flag cachedNormalizedExtensionsInitOnce_;
+		bool cachedInitFailed_ = false;
 		std::vector<std::string> cachedNormalizedExtensions_;
 		std::string cachedFileExtensionPatterns_;
 	};
