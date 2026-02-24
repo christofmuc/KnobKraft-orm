@@ -92,7 +92,7 @@ namespace knobkraft {
 		};
 
 		GenericPatch(GenericAdaptation const *me, pybind11::module const &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
-        virtual ~GenericPatch() = default;
+        virtual ~GenericPatch() override;
 
 		bool pythonModuleHasFunction(std::string const &functionName) const;
 

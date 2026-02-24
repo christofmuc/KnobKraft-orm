@@ -28,6 +28,13 @@ namespace knobkraft {
 	{
 	}
 
+	GenericPatch::~GenericPatch()
+	{
+		py::gil_scoped_acquire gil;
+		adaptation_.dec_ref();
+		adaptation_.release();
+	}
+
 	bool GenericPatch::pythonModuleHasFunction(std::string const &functionName) const
 	{
 		py::gil_scoped_acquire acquire;
