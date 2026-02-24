@@ -56,74 +56,66 @@ namespace knobkraft {
 		}
 	}
 
+	void GenericLegacyLoaderCapability::ensureCachedNormalizedExtensions()
+	{
+		std::call_once(cachedNormalizedExtensionsInitOnce_, [this]() {
+			py::gil_scoped_acquire acquire;
+			try {
+				py::object result = me_->callMethod(kLegacyLoadSupportedExtensions);
+				std::vector<std::string> extensions = result.cast<std::vector<std::string>>();
+				std::set<std::string> uniqueNormalized;
+				std::set<std::string> uniquePatterns;
+				for (auto const& extension : extensions) {
+					auto normalized = normalizeExtension(extension);
+					if (normalized.empty()) {
+						continue;
+					}
+					uniqueNormalized.insert(normalized);
+					if (normalized == "*") {
+						uniquePatterns.insert("*");
+					}
+					else {
+						uniquePatterns.insert("*" + normalized);
+					}
+				}
+
+				cachedNormalizedExtensions_.assign(uniqueNormalized.begin(), uniqueNormalized.end());
+
+				for (auto const& pattern : uniquePatterns) {
+					if (!cachedFileExtensionPatterns_.empty()) {
+						cachedFileExtensionPatterns_ += ";";
+					}
+					cachedFileExtensionPatterns_ += pattern;
+				}
+			}
+			catch (py::error_already_set& ex) {
+				me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
+				ex.restore();
+			}
+			catch (std::exception& ex) {
+				me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
+			}
+		});
+	}
+
 	std::string GenericLegacyLoaderCapability::additionalFileExtensions()
 	{
-		py::gil_scoped_acquire acquire;
-		try {
-			py::object result = me_->callMethod(kLegacyLoadSupportedExtensions);
-			std::vector<std::string> extensions = result.cast<std::vector<std::string>>();
-
-			std::set<std::string> uniquePatterns;
-			for (auto const& extension : extensions) {
-				auto normalized = normalizeExtension(extension);
-				if (normalized.empty()) {
-					continue;
-				}
-				if (normalized == "*") {
-					uniquePatterns.insert("*");
-				}
-				else {
-					uniquePatterns.insert("*" + normalized);
-				}
-			}
-
-			std::string joined;
-			for (auto const& pattern : uniquePatterns) {
-				if (!joined.empty()) {
-					joined += ";";
-				}
-				joined += pattern;
-			}
-			return joined;
-		}
-		catch (py::error_already_set& ex) {
-			me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
-			ex.restore();
-		}
-		catch (std::exception& ex) {
-			me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
-		}
-		return {};
+		ensureCachedNormalizedExtensions();
+		return cachedFileExtensionPatterns_;
 	}
 
 	bool GenericLegacyLoaderCapability::supportsExtension(std::string const& filename)
 	{
-		py::gil_scoped_acquire acquire;
-		try {
-			auto fileExtension = juce::File(filename).getFileExtension().toStdString();
-			std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
-			py::object result = me_->callMethod(kLegacyLoadSupportedExtensions);
-			std::vector<std::string> extensions = result.cast<std::vector<std::string>>();
-			for (auto const& extension : extensions) {
-				auto normalized = normalizeExtension(extension);
-				if (normalized.empty()) {
-					continue;
-				}
-				if (normalized == "*") {
-					return true;
-				}
-				if (fileExtension == normalized) {
-					return true;
-				}
+		auto fileExtension = juce::File(filename).getFileExtension().toStdString();
+		std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		ensureCachedNormalizedExtensions();
+		for (auto const& normalized : cachedNormalizedExtensions_) {
+			if (normalized == "*") {
+				return true;
 			}
-		}
-		catch (py::error_already_set& ex) {
-			me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
-			ex.restore();
-		}
-		catch (std::exception& ex) {
-			me_->logAdaptationError(kLegacyLoadSupportedExtensions, ex);
+			if (fileExtension == normalized) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -139,7 +131,7 @@ namespace knobkraft {
 			py::object result = me_->callMethod(kLoadPatchesFromLegacyData, data);
 			auto patchList = result.cast<std::vector<std::vector<int>>>();
 
-			for (auto patchBytes : patchList) {
+			for (auto const& patchBytes : patchList) {
 				auto patchType = GenericPatch::PROGRAM_DUMP;
 				if (me_->pythonModuleHasFunction(kIsEditBufferDump)) {
 					try {
@@ -157,6 +149,7 @@ namespace knobkraft {
 				}
 				if (patchType == GenericPatch::PROGRAM_DUMP && me_->pythonModuleHasFunction(kIsSingleProgramDump)) {
 					try {
+						// Intentionally only used as an optional validation/consistency hook.
 						ignoreUnused(me_->callMethod(kIsSingleProgramDump, patchBytes).cast<bool>());
 					}
 					catch (py::error_already_set& ex) {

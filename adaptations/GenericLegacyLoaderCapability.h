@@ -8,6 +8,10 @@
 
 #include "LegacyLoaderCapability.h"
 
+#include <mutex>
+#include <string>
+#include <vector>
+
 namespace knobkraft {
 
 	class GenericAdaptation;
@@ -22,7 +26,12 @@ namespace knobkraft {
 		virtual midikraft::TPatchVector load(std::string const& filename, std::vector<uint8> const& fileContent) override;
 
 	private:
+		void ensureCachedNormalizedExtensions();
+
 		GenericAdaptation* me_;
+		std::once_flag cachedNormalizedExtensionsInitOnce_;
+		std::vector<std::string> cachedNormalizedExtensions_;
+		std::string cachedFileExtensionPatterns_;
 	};
 
 }

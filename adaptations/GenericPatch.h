@@ -148,9 +148,8 @@ namespace knobkraft {
 		std::shared_ptr<GenericStoredTagCapability> genericStoredTagCapabilityImpl_;
 
 		GenericAdaptation const *me_;
-		pybind11::module const &adaptation_;
+		pybind11::module adaptation_;
 	};
 
 
 }
-
