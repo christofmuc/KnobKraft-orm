@@ -1,0 +1,16 @@
+site_name: KnobKraft Orm Documentation
+site_url: https://christofmuc.github.io/KnobKraft-orm/
+theme:
+  name: material
+  palette:
+    scheme: slate # Matches your Digital Workhorse dark theme
+    primary: cyan
+  features:
+    - navigation.tabs
+    - search.highlight
+
+nav:
+  - User Manual: index.md
+  - Adaptation Programming: programming-guide.md
+  - Adaptation Testing: testing-guide.md
+  - Build Instructions: build.md
