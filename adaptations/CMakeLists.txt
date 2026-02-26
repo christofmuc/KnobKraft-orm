@@ -69,6 +69,7 @@ set(Sources
 	CreateNewAdaptationDialog.cpp CreateNewAdaptationDialog.h
 	GenericAdaptation.cpp GenericAdaptation.h
 	GenericBankDumpCapability.cpp GenericBankDumpCapability.h
+	GenericCustomProgramChangeCapability.cpp GenericCustomProgramChangeCapability.h
 	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
 	GenericHasBankDescriptorsCapability.cpp GenericHasBankDescriptorsCapability.h
 	GenericHasBanksCapability.cpp GenericHasBanksCapability.h
