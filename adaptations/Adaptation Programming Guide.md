@@ -508,6 +508,12 @@ As an example, this is how the MS2000 implementation does it:
                 and (message[2] & 0xf0) == 0x30
                 and message[3] == 0x58  # MS2000
                 and (message[4] == 0x50 or message[4] == 0x4c))  # Program Data dump or All Data dump
+
+Like `isPartOfEditBufferDump()` and `isPartOfSingleProgramDump()`, this can also return a tuple
+
+    (is_part_of_dump, reply_message_bytes)
+
+where `reply_message_bytes` is one MIDI message (list of ints) or multiple messages. The reply is sent to the synth even when `is_part_of_dump` is `False`, which is useful for protocols where ACK/NACK messages must be sent for framing messages that should not be stored as dump data.
         
 ### Testing if all messages have been received
 
@@ -520,6 +526,15 @@ The implementation for the Korg MS2000 just checks if in the list of messages gi
             if isPartOfBankDump(message):
                 return True
         return False
+
+`isBankDumpFinished()` can also return a tuple
+
+    (is_finished, reply_message_bytes)
+
+to send protocol replies while checking completion. If both `isPartOfBankDump()` and `isBankDumpFinished()` return reply messages for one incoming MIDI message, both are sent in this order:
+
+1. reply from `isPartOfBankDump()`
+2. reply from `isBankDumpFinished()`
 
 Note that in this function, you will not get a single MIDI message or list of bytes, but rather a list of lists of bytes, i.e. a list of MIDI messages that you can iterate over.
 

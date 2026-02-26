@@ -24,6 +24,69 @@
 namespace py = pybind11;
 
 namespace knobkraft {
+	namespace {
+		std::vector<MidiMessage> pythonReplyToMidiMessages(py::handle replyData) {
+			std::vector<MidiMessage> allMessages;
+			if (replyData.is_none()) {
+				return allMessages;
+			}
+
+			if (py::isinstance<py::list>(replyData)) {
+				py::list resultList = py::reinterpret_borrow<py::list>(replyData);
+				if (py::len(resultList) > 0 && py::isinstance<py::list>(resultList[0])) {
+					for (auto item : resultList) {
+						auto msgVec = py::cast<std::vector<int>>(item);
+						auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
+						auto midiMessages = Sysex::vectorToMessages(byteData);
+						allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
+					}
+				}
+				else {
+					auto msgVec = py::cast<std::vector<int>>(resultList);
+					auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
+					auto midiMessages = Sysex::vectorToMessages(byteData);
+					allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
+				}
+			}
+			else {
+				auto msgVec = py::cast<std::vector<int>>(replyData);
+				auto byteData = GenericAdaptation::intVectorToByteVector(msgVec);
+				auto midiMessages = Sysex::vectorToMessages(byteData);
+				allMessages.insert(allMessages.end(), midiMessages.begin(), midiMessages.end());
+			}
+
+			return allMessages;
+		}
+
+		midikraft::BankDumpCapability::HandshakeReply parseBankPartResponse(py::object const& result) {
+			if (py::isinstance<py::tuple>(result)) {
+				auto resultTuple = py::cast<py::tuple>(result);
+				auto flag = resultTuple[0].cast<bool>();
+				auto replies = pythonReplyToMidiMessages(resultTuple[1]);
+				return { flag, replies };
+			}
+			return { result.cast<bool>(), {} };
+		}
+
+		midikraft::BankDumpCapability::FinishedReply parseBankFinishedResponse(py::object const& result) {
+			if (py::isinstance<py::tuple>(result)) {
+				auto resultTuple = py::cast<py::tuple>(result);
+				auto flag = resultTuple[0].cast<bool>();
+				auto replies = pythonReplyToMidiMessages(resultTuple[1]);
+				return { flag, replies };
+			}
+			return { result.cast<bool>(), {} };
+		}
+
+		std::vector<std::vector<int>> midiMessagesToNestedVector(GenericAdaptation* me, std::vector<MidiMessage> const& bankDump) {
+			std::vector<std::vector<int>> vector;
+			vector.reserve(bankDump.size());
+			for (auto const& message : bankDump) {
+				vector.push_back(me->messageToVector(message));
+			}
+			return vector;
+		}
+	}
 
 	std::vector<juce::MidiMessage> GenericBankDumpRequestCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
@@ -76,11 +139,16 @@ namespace knobkraft {
 
 	bool GenericBankDumpCapability::isBankDump(const MidiMessage& message) const
 	{
+		return isMessagePartOfBankDump(message).isPartOfBankDump;
+	}
+
+	midikraft::BankDumpCapability::HandshakeReply GenericBankDumpCapability::isMessagePartOfBankDump(const MidiMessage& message) const
+	{
 		py::gil_scoped_acquire acquire;
 		try {
 			auto vector = me_->messageToVector(message);
 			py::object result = me_->callMethod(kIsPartOfBankDump, vector);
-			return result.cast<bool>();
+			return parseBankPartResponse(result);
 		}
 		catch (py::error_already_set &ex) {
 			me_->logAdaptationError(kIsPartOfBankDump, ex);
@@ -89,19 +157,21 @@ namespace knobkraft {
 		catch (std::exception &ex) {
 			me_->logAdaptationError(kIsPartOfBankDump, ex);
 		}
-		return false;
+		return { false, {} };
 	}
 
 	bool GenericBankDumpCapability::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
 	{
+		return bankDumpFinishedWithReply(bankDump).isFinished;
+	}
+
+	midikraft::BankDumpCapability::FinishedReply GenericBankDumpCapability::bankDumpFinishedWithReply(std::vector<MidiMessage> const& bankDump) const
+	{
 		py::gil_scoped_acquire acquire;
 		try {
-			std::vector<std::vector<int>> vector;
-			for (auto message : bankDump) {
-				vector.push_back(me_->messageToVector(message));
-			}
+			auto vector = midiMessagesToNestedVector(me_, bankDump);
 			py::object result = me_->callMethod(kIsBankDumpFinished, vector);
-			return result.cast<bool>();
+			return parseBankFinishedResponse(result);
 		}
 		catch (py::error_already_set &ex) {
 			me_->logAdaptationError(kIsBankDumpFinished, ex);
@@ -110,7 +180,7 @@ namespace knobkraft {
 		catch (std::exception &ex) {
 			me_->logAdaptationError(kIsBankDumpFinished, ex);
 		}
-		return false;
+		return { false, {} };
 	}
 
 	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
