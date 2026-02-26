@@ -12,10 +12,10 @@ retry_hdiutil() {
   local i=0
   until hdiutil "$@"
   do
-    if [ "$i" -eq "$max_retries" ]; then
+    i=$((i+1))
+    if [ "$i" -ge "$max_retries" ]; then
       return 1
     fi
-    i=$((i+1))
     sleep 1
   done
 }
