@@ -137,11 +137,6 @@ namespace knobkraft {
 		return {};
 	}
 
-	bool GenericBankDumpCapability::isBankDump(const MidiMessage& message) const
-	{
-		return isMessagePartOfBankDump(message).isPartOfBankDump;
-	}
-
 	midikraft::BankDumpCapability::HandshakeReply GenericBankDumpCapability::isMessagePartOfBankDump(const MidiMessage& message) const
 	{
 		py::gil_scoped_acquire acquire;
@@ -158,11 +153,6 @@ namespace knobkraft {
 			me_->logAdaptationError(kIsPartOfBankDump, ex);
 		}
 		return { false, {} };
-	}
-
-	bool GenericBankDumpCapability::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
-	{
-		return bankDumpFinishedWithReply(bankDump).isFinished;
 	}
 
 	midikraft::BankDumpCapability::FinishedReply GenericBankDumpCapability::bankDumpFinishedWithReply(std::vector<MidiMessage> const& bankDump) const
