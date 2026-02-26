@@ -142,6 +142,21 @@ This should return one or more MIDI messages that will select the bank requested
 
 This would create a MIDI CC with controller number 32, which is used by many synth as the bank select controller.
 
+### Custom Program Change
+
+Some devices need more than a plain bank select/program change to recall a patch from memory. For these synths, you can implement this optional method:
+
+    def createCustomProgramChange(channel, patchNo):
+
+The parameters are:
+
+  * `channel` [int] - The detected MIDI channel (`0..15`)
+  * `patchNo` [int] - The 0-based absolute patch index used by KnobKraft Orm
+
+The function should return one or more MIDI messages as one flat byte list, exactly like other adaptation methods. This can include any combination of CC, Program Change and SysEx.
+
+When this method is implemented, it takes precedence over the default bank-select/program-change logic in the patch send mode `program change` (and in `automatic` when the patch location is known). If the method returns no messages, patch sending via this mode will fail for that action.
+
 ## Device detection
 
 The device detection mechanism needs at least two functions to be implemented to work, two more are optional.
