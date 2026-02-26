@@ -213,6 +213,11 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
 def isPartOfBankDump(message: List[int]):
     global _previous_sysex, _transfer_mode, _num_wsf, _data_packages, _saw_eof, _transfer_aborted
 
+    if len(message) == 0:
+        # Timeout sentinel from Librarian callback path.
+        _reset_bank_state()
+        return False
+
     if not _is_own_sysex(message):
         return False
 
@@ -263,17 +268,27 @@ def isBankDumpFinished(messages: List[List[int]]):
     normalized = _normalize_bank_message_list(messages)
 
     if _transfer_aborted:
+        _reset_bank_state()
         return True, []
 
     if _transfer_mode == "DAT":
-        return _saw_eof and _data_packages >= 16, []
+        is_finished = _saw_eof and _data_packages >= 16
+        if is_finished:
+            _reset_bank_state()
+        return is_finished, []
 
     if _transfer_mode == "BLD":
-        return _data_packages >= 16, []
+        is_finished = _data_packages >= 16
+        if is_finished:
+            _reset_bank_state()
+        return is_finished, []
 
     # Fallback path for offline file parsing without transfer state.
     bulk_blocks = sum(1 for m in normalized if _is_own_sysex(m) and _operation(m) in (OP_BLD, OP_DAT))
-    return bulk_blocks >= 16, []
+    is_finished = bulk_blocks >= 16
+    if is_finished:
+        _reset_bank_state()
+    return is_finished, []
 
 
 def createBankDumpRequest(channel: int, bank: int) -> List[int]:

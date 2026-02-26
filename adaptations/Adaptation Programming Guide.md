@@ -514,6 +514,12 @@ Like `isPartOfEditBufferDump()` and `isPartOfSingleProgramDump()`, this can also
     (is_part_of_dump, reply_message_bytes)
 
 where `reply_message_bytes` is one MIDI message (list of ints) or multiple messages. The reply is sent to the synth even when `is_part_of_dump` is `False`, which is useful for protocols where ACK/NACK messages must be sent for framing messages that should not be stored as dump data.
+
+During live bank download callbacks, a timeout can be relayed as an empty message:
+
+    []
+
+Treat this as a control signal (not MIDI data). Recommended behavior is to clear transient transfer state and return `False` (or `(False, [])`).
         
 ### Testing if all messages have been received
 
@@ -537,6 +543,7 @@ to send protocol replies while checking completion. If both `isPartOfBankDump()`
 2. reply from `isBankDumpFinished()`
 
 Note that in this function, you will not get a single MIDI message or list of bytes, but rather a list of lists of bytes, i.e. a list of MIDI messages that you can iterate over.
+Timeout-relay behavior applies here as well: after a timeout callback, your adaptation may be called again and should work correctly after resetting state.
 
 ### Extracting the patches from a bank dump
 

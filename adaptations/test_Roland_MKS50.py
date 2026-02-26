@@ -83,6 +83,33 @@ def test_bank_finished_after_16_bld_blocks():
     assert finished[0] is True
 
 
+def test_bank_timeout_midflight_then_restart_from_beginning():
+    mks50.createBankDumpRequest(0, 0)
+
+    wsf = [0xF0, mks50.ROLAND_ID, mks50.OP_WSF, 0x01, mks50.MKS50_ID, 0xF7]
+    dat = [0xF0, mks50.ROLAND_ID, mks50.OP_DAT, 0x01, mks50.MKS50_ID, 0x00, 0xF7]
+    assert mks50.isPartOfBankDump(wsf)[0] is False
+    assert mks50.isPartOfBankDump(dat)[0] is True
+
+    # Timeout sentinel relayed by Librarian is an empty message.
+    assert mks50.isPartOfBankDump([]) is False
+
+    # Transfer state must be reset after timeout: DAT without WSF must now be rejected.
+    dat_after_timeout = mks50.isPartOfBankDump(dat)
+    assert isinstance(dat_after_timeout, tuple)
+    assert dat_after_timeout[0] is False
+    assert dat_after_timeout[1][2] == mks50.OP_RJC
+
+    # Restart from scratch and complete in BLD mode.
+    mks50.createBankDumpRequest(0, 0)
+    for index in range(16):
+        bld_marker = [0xF0, mks50.ROLAND_ID, mks50.OP_BLD, 0x00, mks50.MKS50_ID, index & 0x7F, 0xF7]
+        assert mks50.isPartOfBankDump(bld_marker) is True
+    finished = mks50.isBankDumpFinished([])
+    assert isinstance(finished, tuple)
+    assert finished[0] is True
+
+
 def test_legacy_cpp_payload_is_supported():
     legacy_payload = [value & 0x7F for value in range(36)]
 
