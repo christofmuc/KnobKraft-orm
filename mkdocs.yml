@@ -1,4 +1,4 @@
-site_name: KnobKraft Orm Documentation
+site_name: KNOBKRAFT_ORM
 site_url: https://christofmuc.github.io/KnobKraft-orm/docs/
 theme:
   name: material
@@ -13,6 +13,8 @@ theme:
     - search.highlight
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/home-link.js
 
 nav:
   - User Manual: index.md

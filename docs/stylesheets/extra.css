@@ -63,7 +63,8 @@
 }
 
 .md-typeset {
-  font-size: 0.84rem;
+  font-size: 0.76rem;
+  line-height: 1.6;
 }
 
 .md-typeset h1,
@@ -115,6 +116,50 @@
 
 .md-typeset table:not([class]) tr:hover td {
   background: rgba(0, 243, 255, 0.04);
+}
+
+/* Supported-synth tables: stable full-width column layout across manufacturers. */
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table {
+  width: 100%;
+}
+
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) th:nth-child(1),
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) td:nth-child(1),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) th:nth-child(1),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) td:nth-child(1) {
+  width: 42%;
+}
+
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) th:nth-child(2),
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) td:nth-child(2),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) th:nth-child(2),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) td:nth-child(2) {
+  width: 14%;
+}
+
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) th:nth-child(3),
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) td:nth-child(3),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) th:nth-child(3),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) td:nth-child(3) {
+  width: 12%;
+}
+
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) th:nth-child(4),
+.md-typeset a[id^="manufacturer-"] + h2 + .md-typeset__table > table:not([class]) td:nth-child(4),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) th:nth-child(4),
+.md-typeset a[id^="manufacturer-"] + h2 + table:not([class]) td:nth-child(4) {
+  width: 32%;
+  overflow-wrap: anywhere;
 }
 
 .md-typeset code {

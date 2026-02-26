@@ -128,6 +128,49 @@ def build_markdown_table(synths: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
+def build_docs_grouped_content(synths: list[dict[str, str]]) -> str:
+    grouped: dict[str, list[dict[str, str]]] = {}
+    order: list[str] = []
+
+    for row in synths:
+        manufacturer = row["manufacturer"]
+        if manufacturer not in grouped:
+            grouped[manufacturer] = []
+            order.append(manufacturer)
+        grouped[manufacturer].append(row)
+
+    def slugify(value: str) -> str:
+        slug = value.lower()
+        slug = re.sub(r"[^a-z0-9]+", "-", slug)
+        slug = slug.strip("-")
+        return slug or "unknown"
+
+    lines: list[str] = []
+    lines.append("## Manufacturers")
+    lines.append("")
+    lines.extend([f"- [{m}](#manufacturer-{slugify(m)})" for m in order])
+    lines.append("")
+
+    for manufacturer in order:
+        lines.append(f'<a id="manufacturer-{slugify(manufacturer)}"></a>')
+        lines.append(f"## {manufacturer}")
+        lines.append("")
+        lines.append("| Synth | Status | Type | Kudos |")
+        lines.append("| --- | --- | --- | --- |")
+        for row in grouped[manufacturer]:
+            status = row["status"].replace("_", " ")
+            lines.append(
+                "| "
+                f"{escape_md(row['synth'])} | "
+                f"{escape_md(status)} | "
+                f"{escape_md(row['type'])} | "
+                f"{escape_md(row['kudos'])} |"
+            )
+        lines.append("")
+
+    return "\n".join(lines).strip()
+
+
 def replace_marked_block(text: str, begin_marker: str, end_marker: str, replacement: str) -> str:
     pattern = re.compile(
         rf"(?ms)^{re.escape(begin_marker)}\n.*?^{re.escape(end_marker)}$"
@@ -138,13 +181,13 @@ def replace_marked_block(text: str, begin_marker: str, end_marker: str, replacem
     return pattern.sub(new_block, text, count=1)
 
 
-def update_markdown_files(table: str) -> None:
+def update_markdown_files(readme_table: str, docs_content: str) -> None:
     readme = README_FILE.read_text(encoding="utf-8")
-    readme = replace_marked_block(readme, README_BEGIN, README_END, table)
+    readme = replace_marked_block(readme, README_BEGIN, README_END, readme_table)
     README_FILE.write_text(readme, encoding="utf-8")
 
     docs = DOCS_FILE.read_text(encoding="utf-8")
-    docs = replace_marked_block(docs, DOCS_BEGIN, DOCS_END, table)
+    docs = replace_marked_block(docs, DOCS_BEGIN, DOCS_END, docs_content)
     DOCS_FILE.write_text(docs, encoding="utf-8")
 
 
@@ -160,8 +203,9 @@ def write_json(synths: list[dict[str, str]]) -> None:
 
 def main() -> int:
     synths = load_synths()
-    table = build_markdown_table(synths)
-    update_markdown_files(table)
+    readme_table = build_markdown_table(synths)
+    docs_content = build_docs_grouped_content(synths)
+    update_markdown_files(readme_table, docs_content)
     write_json(synths)
     print(f"Generated {len(synths)} synth rows -> README/docs/data JSON")
     return 0

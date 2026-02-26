@@ -47,7 +47,7 @@
             <a href="#features" class="hover:text-sea transition">Features</a>
             <a href="#checker" class="hover:text-sea transition">Compatibility</a>
             <a href="./docs/" class="hover:text-sea transition">Docs</a>
-            <a href="https://github.com/christofmuc/KnobKraft-orm" target="_blank" class="hover:text-sea transition">Source</a>
+            <a href="https://github.com/christofmuc/KnobKraft-orm" target="_blank" rel="noopener noreferrer" class="hover:text-sea transition">GitHub</a>
         </div>
         <a href="https://github.com/christofmuc/KnobKraft-orm/releases" class="bg-sea text-black px-5 py-2 text-xs font-black uppercase tracking-tighter hover:bg-white transition">Download</a>
     </div>
@@ -75,9 +75,12 @@
 
         <div class="monitor-frame overflow-hidden relative group">
             <div class="absolute inset-0 bg-gradient-to-tr from-sea/10 to-transparent pointer-events-none z-10"></div>
-            <img src="https://raw.githubusercontent.com/christofmuc/KnobKraft-orm/master/resources/screenshot_main.png"
-                 alt="KnobKraft Orm Interface"
+            <img src="./docs/youtube-screenshot.PNG"
+                 alt="YouTube thumbnail image showing the KnobKraft Orm interface preview from the intro video."
+                 loading="lazy"
+                 decoding="async"
                  class="w-full h-auto opacity-90 group-hover:opacity-100 transition duration-500 relative z-0">
+            <p class="sr-only">YouTube preview image for the KnobKraft Orm intro video, showing the application interface.</p>
             <div class="absolute bottom-4 right-4 bg-black/80 px-3 py-1 mono text-[10px] text-sea border border-sea/20 z-20">SYS_MONITOR</div>
         </div>
     </div>
@@ -151,7 +154,7 @@
             <div id="statusFilters" class="flex flex-wrap gap-2 mb-6"></div>
 
             <div class="overflow-x-auto max-h-96">
-                <table class="w-full text-left mono text-xs">
+                <table class="w-full text-left mono text-sm">
                     <tbody id="synthTableBody"></tbody>
                 </table>
             </div>
@@ -328,7 +331,7 @@
             const active = state.status === status;
             const activeClass = active ? "bg-sea/20 text-sea border-sea/50" : "bg-black text-slate-400 border-slate-800 hover:border-sea/30";
             return `
-                <button data-status="${status}" class="px-2 py-1 mono text-[10px] uppercase border ${activeClass} transition">
+                <button data-status="${status}" class="px-2 py-1 mono text-xs uppercase border ${activeClass} transition">
                     ${STATUS_LABEL[status]} (${counts[status] || 0})
                 </button>
             `;
@@ -369,10 +372,10 @@
                     <td class="py-3 px-2 text-slate-500 tracking-tighter border-b border-slate-900/50">${escapeHtml(entry.manufacturer)}</td>
                     <td class="py-3 px-2 border-b border-slate-900/50">
                         <div class="font-bold text-slate-200 group-hover:text-sea transition">${escapeHtml(entry.synth)}</div>
-                        <div class="text-[9px] uppercase tracking-widest text-slate-500 mt-1">${escapeHtml(typeLabel)}</div>
+                        <div class="text-[11px] uppercase tracking-widest text-slate-500 mt-1">${escapeHtml(typeLabel)}</div>
                     </td>
                     <td class="py-3 px-2 text-right border-b border-slate-900/50">
-                        <span class="px-2 py-0.5 border ${statusClass} text-[9px]">${escapeHtml(statusLabel)}</span>
+                        <span class="px-2 py-0.5 border ${statusClass} text-[11px]">${escapeHtml(statusLabel)}</span>
                     </td>
                 </tr>
             `;
