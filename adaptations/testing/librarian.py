@@ -169,9 +169,21 @@ class Librarian:
                 is_part_of_bank_dump = part_reply
             else:
                 raise Exception("Expected tuple or bool from isPartOfBankDump")
-        elif adaptation.isBankDumpFinished([message]):
-            # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
-            is_part_of_bank_dump = True
+        else:
+            single_message_finished = adaptation.isBankDumpFinished([message])
+            if isinstance(single_message_finished, tuple):
+                is_finished, next_message = single_message_finished
+                if next_message:
+                    midi_controller.send(next_message)
+                if is_finished:
+                    # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
+                    is_part_of_bank_dump = True
+            elif isinstance(single_message_finished, bool):
+                if single_message_finished:
+                    # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
+                    is_part_of_bank_dump = True
+            else:
+                raise Exception("Expected tuple or bool from isBankDumpFinished")
 
         if is_part_of_bank_dump:
             self.current_download_messages.append(message)
