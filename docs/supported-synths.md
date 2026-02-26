@@ -1,25 +1,18 @@
-<img src="https://user-images.githubusercontent.com/5006524/277113738-73bf9b4f-f089-42b7-bbb2-aa4bf55c1528.png" align="right">
+# Supported Synths
 
-# KnobKraft Orm
+This matrix is generated from a single source of truth: `docs/data/supported-synths.yml`.
 
-[![release](https://img.shields.io/github/v/release/christofmuc/KnobKraft-orm?style=plastic)](https://github.com/christofmuc/KnobKraft-orm/releases)
+Status legend:
 
-A free, modern, cross-platform MIDI SysEx librarian for hardware synthesizers.
+- `works`: production-ready support
+- `beta`: usable, but still needs broad testing
+- `alpha`: early support, expect rough edges
+- `in progress`: implementation underway and not in regular builds yet
 
-## Start Here
+If your synth is in `alpha`/`beta` (or missing), please open an issue with test data and details:
+<https://github.com/christofmuc/KnobKraft-orm/issues>
 
-- Website and docs: <https://christofmuc.github.io/KnobKraft-orm/docs/>
-- Download latest release: <https://github.com/christofmuc/KnobKraft-orm/releases>
-- Build from source: <https://christofmuc.github.io/KnobKraft-orm/docs/build/>
-- Adaptation programming guide: <https://christofmuc.github.io/KnobKraft-orm/docs/programming-guide/>
-- Adaptation testing guide: <https://christofmuc.github.io/KnobKraft-orm/docs/testing-guide/>
-- Report issues / request synth support: <https://github.com/christofmuc/KnobKraft-orm/issues>
-
-## Supported Synths
-
-This table is generated from `docs/data/supported-synths.yml` by `scripts/generate_supported_synths.py`.
-
-<!-- BEGIN:SUPPORTED_SYNTHS -->
+<!-- BEGIN:SUPPORTED_SYNTHS_TABLE -->
 | Manufacturer | Synth | Status | Type | Kudos |
 | --- | --- | --- | --- | --- |
 | Access | Virus A, B, Classic, KB, Indigo | works | native |  |
@@ -105,6 +98,4 @@ This table is generated from `docs/data/supported-synths.yml` by `scripts/genera
 | Yamaha | TX81Z | works | adaptation | Contributed by @summersetter! |
 | Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | Thanks to @milnak! |
 | Zoom | MS Series (50G/60B/70CDR) | works | adaptation | Thanks to @nezetic |
-<!-- END:SUPPORTED_SYNTHS -->
-
-If a synth is missing, or a status needs updating, open an issue (and ideally include test data).
+<!-- END:SUPPORTED_SYNTHS_TABLE -->

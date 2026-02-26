@@ -14,7 +14,6 @@
         .border-sea { border-color: #00f3ff; }
         .vfd-glow { text-shadow: 0 0 12px rgba(0, 243, 255, 0.5); }
 
-        /* Fixed Line Height for headers to prevent clipping */
         h1, h2, h3, h4 { line-height: 1.3 !important; padding-bottom: 0.1em; }
 
         .monitor-frame {
@@ -47,6 +46,7 @@
         <div class="hidden md:flex space-x-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
             <a href="#features" class="hover:text-sea transition">Features</a>
             <a href="#checker" class="hover:text-sea transition">Compatibility</a>
+            <a href="./docs/" class="hover:text-sea transition">Docs</a>
             <a href="https://github.com/christofmuc/KnobKraft-orm" target="_blank" class="hover:text-sea transition">Source</a>
         </div>
         <a href="https://github.com/christofmuc/KnobKraft-orm/releases" class="bg-sea text-black px-5 py-2 text-xs font-black uppercase tracking-tighter hover:bg-white transition">Download</a>
@@ -56,9 +56,9 @@
 <header class="max-w-6xl mx-auto px-6 pt-20 pb-12">
     <div class="grid lg:grid-cols-2 gap-16 items-center">
         <div>
-            <div class="inline-block border border-sea/30 px-3 py-1 rounded text-[10px] mono text-sea mb-6 uppercase tracking-widest bg-sea/5">
-                System Version: 2.1 Alpha
-            </div>
+            <a id="releaseBadge" href="https://github.com/christofmuc/KnobKraft-orm/releases" class="inline-block border border-sea/30 px-3 py-1 rounded text-[10px] mono text-sea mb-6 uppercase tracking-widest bg-sea/5 hover:bg-sea/10 transition">
+                Latest Release: Loading...
+            </a>
             <h1 class="text-5xl md:text-6xl font-black tracking-tight mb-6 text-white">
                 Manage your <span class="text-sea">Hardware</span> without the headache.
             </h1>
@@ -143,21 +143,21 @@
         </div>
 
         <div class="vfd-panel p-8 rounded border-sea/20 border">
-            <div class="flex flex-col md:flex-row justify-between items-baseline mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-baseline mb-4 gap-4">
                 <h2 class="text-2xl font-bold mono vfd-glow text-sea tracking-tighter uppercase">Support_Database</h2>
                 <input type="text" id="synthSearch" placeholder="FILTER BY MODEL..."
                        class="bg-black border border-slate-800 p-3 mono text-sea focus:border-sea focus:outline-none w-full md:w-64 text-sm">
             </div>
+            <div id="statusFilters" class="flex flex-wrap gap-2 mb-6"></div>
 
             <div class="overflow-x-auto max-h-96">
                 <table class="w-full text-left mono text-xs">
-                    <tbody id="synthTableBody">
-                    </tbody>
+                    <tbody id="synthTableBody"></tbody>
                 </table>
             </div>
             <div class="mt-8 pt-6 border-t border-slate-900 text-[10px] text-slate-500 mono uppercase tracking-widest flex justify-between">
-                <span>OVER 80+ DEVICES SUPPORTED</span>
-                <a href="https://github.com/christofmuc/KnobKraft-orm#creating-adaptations" class="text-sea hover:underline">WRITE AN ADAPTATION</a>
+                <span id="synthCountLabel">Loading synth database...</span>
+                <a href="./docs/contributing/#building-your-own-adaptation" class="text-sea hover:underline">WRITE AN ADAPTATION</a>
             </div>
         </div>
     </div>
@@ -172,13 +172,19 @@
                 <li>
                     <a href="./docs/#quick-start" class="group block">
                         <span class="text-white font-bold group-hover:text-sea transition italic">Quick Start Guide →</span>
-                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Get up and running in 5 minutes.</p>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Get up and running in minutes.</p>
                     </a>
                 </li>
                 <li>
                     <a href="./docs/#basic-concepts" class="group block">
                         <span class="text-white font-bold group-hover:text-sea transition italic">Librarian Basics →</span>
-                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Understanding banks, patches, and auditioning.</p>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Banks, patches, and auditioning workflow.</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="./docs/supported-synths/" class="group block">
+                        <span class="text-white font-bold group-hover:text-sea transition italic">Supported Synth Matrix →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Full compatibility table and status legend.</p>
                     </a>
                 </li>
             </ul>
@@ -232,48 +238,214 @@
 </footer>
 
 <script>
-    // Expanded list to make the checker feel substantial
-    const synths = [
-        { m: "Sequential", d: "Prophet Rev2", s: "STABLE" },
-        { m: "Sequential", d: "OB-6", s: "STABLE" },
-        { m: "Sequential", d: "Prophet-6", s: "STABLE" },
-        { m: "Korg", d: "DW-8000 / EX-8000", s: "STABLE" },
-        { m: "Korg", d: "Opsix", s: "ALPHA" },
-        { m: "Korg", d: "Wavestate", s: "ALPHA" },
-        { m: "Korg", d: "Volca FM", s: "STABLE" },
-        { m: "Roland", d: "MKS-80 Super Jupiter", s: "STABLE" },
-        { m: "Roland", d: "D-50 / D-550", s: "STABLE" },
-        { m: "Roland", d: "Juno-DS", s: "BETA" },
-        { m: "Roland", d: "Alpha Juno 1/2", s: "STABLE" },
-        { m: "Oberheim", d: "Matrix 1000", s: "STABLE" },
-        { m: "Waldorf", d: "Blofeld", s: "BETA" },
-        { m: "Waldorf", d: "Microwave I", s: "STABLE" },
-        { m: "Moog", d: "Slim Phatty", s: "STABLE" },
-        { m: "Moog", d: "Sub Phatty", s: "STABLE" },
-        { m: "Access", d: "Virus A/B/C/TI", s: "STABLE" },
-        { m: "Yamaha", d: "DX7 / DX7II", s: "STABLE" },
-        { m: "Yamaha", d: "Reface DX", s: "STABLE" }
-    ];
+    const RELEASE_API_URL = "https://api.github.com/repos/christofmuc/KnobKraft-orm/releases/latest";
+    const SYNTH_DATA_URL = "./data/supported-synths.json";
 
-    function renderTable(filter = "") {
-        const body = document.getElementById('synthTableBody');
-        body.innerHTML = synths
-            .filter(s => (s.m + " " + s.d).toLowerCase().includes(filter.toLowerCase()))
-            .map(s => `
-                    <tr class="group hover:bg-sea/10 transition duration-150">
-                        <td class="py-3 px-2 text-slate-500 tracking-tighter border-b border-slate-900/50">${s.m}</td>
-                        <td class="py-3 px-2 font-bold text-slate-200 group-hover:text-sea transition border-b border-slate-900/50">${s.d}</td>
-                        <td class="py-3 px-2 text-right border-b border-slate-900/50">
-                            <span class="px-2 py-0.5 border ${s.s === 'STABLE' ? 'border-green-900/50 text-green-500' : (s.s === 'BETA' ? 'border-amber-900/50 text-amber-500' : 'border-red-900/50 text-red-500')} text-[9px]">
-                                ${s.s}
-                            </span>
-                        </td>
-                    </tr>
-                `).join('');
+    const STATUS_ORDER = ["all", "works", "beta", "alpha", "in_progress"];
+    const STATUS_LABEL = {
+        all: "All",
+        works: "Works",
+        beta: "Beta",
+        alpha: "Alpha",
+        in_progress: "In Progress"
+    };
+
+    const STATUS_CLASS = {
+        works: "border-green-900/50 text-green-500",
+        beta: "border-amber-900/50 text-amber-500",
+        alpha: "border-red-900/50 text-red-500",
+        in_progress: "border-sky-900/50 text-sky-400"
+    };
+
+    const state = {
+        synths: [],
+        search: "",
+        status: "all"
+    };
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-    document.getElementById('synthSearch').addEventListener('input', (e) => renderTable(e.target.value));
-    renderTable();
+    function normalizeStatus(value) {
+        const status = String(value || "").toLowerCase().replace(/-/g, " ").trim();
+        if (status === "in progress" || status === "in_progess" || status === "in_progress") {
+            return "in_progress";
+        }
+        if (status === "works" || status === "beta" || status === "alpha") {
+            return status;
+        }
+        return "alpha";
+    }
+
+    function filteredSynths() {
+        const query = state.search.toLowerCase();
+        return state.synths.filter((entry) => {
+            const statusMatch = state.status === "all" || entry.status === state.status;
+            const text = `${entry.manufacturer} ${entry.synth}`.toLowerCase();
+            const queryMatch = text.includes(query);
+            return statusMatch && queryMatch;
+        });
+    }
+
+    function updateCountLabel(filteredCount) {
+        const total = state.synths.length;
+        const label = document.getElementById("synthCountLabel");
+
+        if (total === 0) {
+            label.textContent = "SYNTH DATA UNAVAILABLE";
+            return;
+        }
+
+        if (state.search || state.status !== "all") {
+            label.textContent = `SHOWING ${filteredCount} OF ${total} DEVICES`;
+            return;
+        }
+
+        label.textContent = `OVER ${total} DEVICES SUPPORTED`;
+    }
+
+    function renderStatusFilters() {
+        const container = document.getElementById("statusFilters");
+        const counts = {
+            all: state.synths.length,
+            works: 0,
+            beta: 0,
+            alpha: 0,
+            in_progress: 0
+        };
+
+        state.synths.forEach((entry) => {
+            counts[entry.status] = (counts[entry.status] || 0) + 1;
+        });
+
+        container.innerHTML = STATUS_ORDER.map((status) => {
+            const active = state.status === status;
+            const activeClass = active ? "bg-sea/20 text-sea border-sea/50" : "bg-black text-slate-400 border-slate-800 hover:border-sea/30";
+            return `
+                <button data-status="${status}" class="px-2 py-1 mono text-[10px] uppercase border ${activeClass} transition">
+                    ${STATUS_LABEL[status]} (${counts[status] || 0})
+                </button>
+            `;
+        }).join("");
+
+        Array.from(container.querySelectorAll("button")).forEach((button) => {
+            button.addEventListener("click", () => {
+                state.status = button.dataset.status;
+                renderStatusFilters();
+                renderTable();
+            });
+        });
+    }
+
+    function renderTable() {
+        const body = document.getElementById("synthTableBody");
+        const rows = filteredSynths();
+
+        updateCountLabel(rows.length);
+
+        if (rows.length === 0) {
+            body.innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-6 px-2 text-slate-500 border-b border-slate-900/50">
+                        No matching synth entries.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        body.innerHTML = rows.map((entry) => {
+            const statusClass = STATUS_CLASS[entry.status] || STATUS_CLASS.alpha;
+            const statusLabel = STATUS_LABEL[entry.status] || entry.status;
+            const typeLabel = entry.type === "native" ? "native" : "adaptation";
+            return `
+                <tr class="group hover:bg-sea/10 transition duration-150">
+                    <td class="py-3 px-2 text-slate-500 tracking-tighter border-b border-slate-900/50">${escapeHtml(entry.manufacturer)}</td>
+                    <td class="py-3 px-2 border-b border-slate-900/50">
+                        <div class="font-bold text-slate-200 group-hover:text-sea transition">${escapeHtml(entry.synth)}</div>
+                        <div class="text-[9px] uppercase tracking-widest text-slate-500 mt-1">${escapeHtml(typeLabel)}</div>
+                    </td>
+                    <td class="py-3 px-2 text-right border-b border-slate-900/50">
+                        <span class="px-2 py-0.5 border ${statusClass} text-[9px]">${escapeHtml(statusLabel)}</span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    async function loadSynths() {
+        try {
+            const response = await fetch(SYNTH_DATA_URL, { cache: "no-cache" });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const payload = await response.json();
+            if (!payload || !Array.isArray(payload.synths)) {
+                throw new Error("Invalid synth payload");
+            }
+
+            state.synths = payload.synths.map((entry) => ({
+                manufacturer: String(entry.manufacturer || "").trim(),
+                synth: String(entry.synth || "").trim(),
+                status: normalizeStatus(entry.status),
+                type: String(entry.type || "adaptation").toLowerCase() === "native" ? "native" : "adaptation"
+            })).filter((entry) => entry.manufacturer && entry.synth);
+
+            renderStatusFilters();
+            renderTable();
+        } catch (error) {
+            console.error("Failed to load synth data", error);
+            state.synths = [];
+            renderStatusFilters();
+            document.getElementById("synthTableBody").innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-6 px-2 text-slate-500 border-b border-slate-900/50">
+                        Could not load synth list. Open <a class="text-sea underline" href="./docs/supported-synths/">supported synth docs</a>.
+                    </td>
+                </tr>
+            `;
+            updateCountLabel(0);
+        }
+    }
+
+    async function loadLatestRelease() {
+        const badge = document.getElementById("releaseBadge");
+
+        try {
+            const response = await fetch(RELEASE_API_URL, {
+                headers: {
+                    "Accept": "application/vnd.github+json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const payload = await response.json();
+            const version = String(payload.tag_name || "").trim();
+
+            badge.textContent = version ? `Latest Release: ${version}` : "Latest Release: See GitHub";
+        } catch (error) {
+            console.error("Failed to load latest release", error);
+            badge.textContent = "Latest Release: See GitHub";
+        }
+    }
+
+    document.getElementById("synthSearch").addEventListener("input", (event) => {
+        state.search = event.target.value || "";
+        renderTable();
+    });
+
+    loadLatestRelease();
+    loadSynths();
 </script>
 </body>
 </html>

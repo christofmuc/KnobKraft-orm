@@ -18,11 +18,17 @@ jobs:
       - name: Install MkDocs Material
         run: pip install mkdocs-material
 
+      - name: Generate Supported Synth Artifacts
+        run: python scripts/generate_supported_synths.py
+
       - name: Build Documentation
         run: mkdocs build --site-dir public/docs
 
       - name: Prepare Landing Page
-        run: cp index.html public/index.html
+        run: |
+          mkdir -p public/data
+          cp index.html public/index.html
+          cp data/supported-synths.json public/data/supported-synths.json
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

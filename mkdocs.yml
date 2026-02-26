@@ -1,16 +1,26 @@
 site_name: KnobKraft Orm Documentation
-site_url: https://christofmuc.github.io/KnobKraft-orm/
+site_url: https://christofmuc.github.io/KnobKraft-orm/docs/
 theme:
   name: material
+  font:
+    text: Inter
+    code: JetBrains Mono
   palette:
-    scheme: slate # Matches your Digital Workhorse dark theme
+    scheme: slate
     primary: cyan
   features:
     - navigation.tabs
     - search.highlight
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - User Manual: index.md
+  - Supported Synths: supported-synths.md
+  - Download and Install: download.md
   - Adaptation Programming: programming-guide.md
   - Adaptation Testing: testing-guide.md
   - Build Instructions: build.md
+  - Contributing: contributing.md
+  - Acknowledgements: acknowledgements.md
+  - Prior Art: prior-art.md

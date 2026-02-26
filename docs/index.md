@@ -1,29 +1,32 @@
-The adaptations are python scripts for a generic module that let's you hook up other MIDI gear yourself, much in the spirit of the good old SoundDiver adaptations - at least, scripting the MIDI. No custom UI currently is possible or planned as of now.
+# KnobKraft Orm User Manual
 
-So basically everyone who can read the MIDI spec and can do a little scripting could create new adaptations for more devices!
+KnobKraft Orm is a free, modern, cross-platform MIDI SysEx librarian for hardware synthesizers.
 
-# How does it look?
+## Quick Start
 
-[Disclaimer]: The video shows version 1.0.0, a lot has happened since then. Especially the version 2.0.0 introduced the most sought after feature - bank management!
+1. Download the latest installer or DMG from GitHub Releases: <https://github.com/christofmuc/KnobKraft-orm/releases>
+2. Connect your synth and MIDI interface.
+3. Open KnobKraft Orm and go to setup to enable your synth.
+4. Import banks/files, browse patches, and audition directly from the librarian.
 
-I made a video to show you the software and the most basic functionality, checkout the YouTube channel for more examples and advanced features as well
+For adaptation developers, start with the [Adaptation Programming Guide](./programming-guide.md) and validate work with the [Adaptation Testing Guide](./testing-guide.md).
 
-[![](youtube-screenshot.PNG)](https://youtu.be/lPoFOVpTANM)
+## Basic Concepts
 
-# Downloading the software
+- `Database-first workflow`: patches are stored and searchable in a local database.
+- `Auditioning`: selecting a patch sends it to the synth edit buffer (when supported) so you can hear it without overwriting program memory.
+- `Adaptations`: synth support is implemented as Python scripts, allowing the community to add hardware quickly.
 
-I provide installer builds for Windows and disk images for macOS, they are hosted here in github. To install, just grab the latest installer executable or DMG file from the following page and run it. The Mac version needs to be installed (drag into application folder after opening the DMG) and then run with the CTRL-Click Open command (to ignore unknown source warning, as I do not sign the installers with a certificate).
+## Documentation Map
 
-[https://github.com/christofmuc/KnobKraft-orm/releases](https://github.com/christofmuc/KnobKraft-orm/releases)
+- [Supported Synths](./supported-synths.md)
+- [Download and Install](./download.md)
+- [Build from Source](./build.md)
+- [Contributing](./contributing.md)
+- [Acknowledgements](./acknowledgements.md)
+- [Prior Art](./prior-art.md)
 
-Linux is reported to build and run as well, but due to the multitude of possible installations I suggest you follow the build instructions below, it shouldn't be too hard.
+## In the Press
 
-You can always use the source to build it yourself, please read on for more instructions.
-
-## Supported platforms
-
-This software is build and run on Windows 10, macOS 10.15, and several Linux distributions. Note that this is not a commercial project, and as I am using Windows mostly expect some hiccups. But I will get back to you if you report a bug and try to resolve it!
-
-## In the press
-
-@mslinn has written a nice intro with some instructions over at the blog, hop over and have a look: https://mslinn.com/av_studio/720-knobkraft.html.
+A practical intro from @mslinn:
+<https://mslinn.com/av_studio/720-knobkraft.html>

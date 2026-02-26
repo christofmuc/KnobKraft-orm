@@ -13,7 +13,7 @@ Let us distinguish between different things that need testing, and then device a
 Luckily for us, the test items 1 and 2 can be fairly standardized for all adaptations because they all implement the same
 functions and capabilities. Given test data matching the synth, they should even pass the same tests!
 
-To allow for this, a couple of standard tests are provided in the file [test_adaptations.py](test_adaptations.py) does exactly that.
+To allow for this, a couple of standard tests are provided in the file [test_adaptations.py](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/test_adaptations.py) which does exactly that.
 The way this works is that you need to implement a single function in your adaptation, and it will be picked up and tested by our test suite.
 
 Details follow below.
