@@ -91,8 +91,8 @@ namespace knobkraft {
 			EDIT_BUFFER
 		};
 
-		GenericPatch(GenericAdaptation const *me, pybind11::module &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
-        virtual ~GenericPatch() = default;
+		GenericPatch(GenericAdaptation const *me, pybind11::module const &adaptation_module, midikraft::Synth::PatchData const &data, DataType dataType);
+        virtual ~GenericPatch() override;
 
 		bool pythonModuleHasFunction(std::string const &functionName) const;
 
@@ -148,9 +148,8 @@ namespace knobkraft {
 		std::shared_ptr<GenericStoredTagCapability> genericStoredTagCapabilityImpl_;
 
 		GenericAdaptation const *me_;
-		pybind11::module &adaptation_;
+		pybind11::module adaptation_;
 	};
 
 
 }
-
