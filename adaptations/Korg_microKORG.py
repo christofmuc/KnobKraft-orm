@@ -171,12 +171,13 @@ def convertToEditBuffer(channel, message):
 def createBankDumpRequest(channel, bank):
     # This sequence is based on the analysis of the sound editor's communication.
     # Knobkraft should send these four messages in order with a small delay.
+    # Return a flat list - the C++ code will split MIDI messages automatically.
     handshake = [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7]
     prep_msg1 = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x00, 0x01, 0x40, 0x0E, 0xf7]
     prep_msg2 = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x00, 0x01, 0x40, 0x0F, 0xf7]
     # This is the actual "All Program Data Dump Request"
     dump_request = [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x00, 0x01, 0x40, 0x1D, 0x00, 0xf7]
-    return [handshake, prep_msg1, prep_msg2, dump_request]
+    return handshake + prep_msg1 + prep_msg2 + dump_request
 
 
 def isPartOfBankDump(message):
