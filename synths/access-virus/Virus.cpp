@@ -149,25 +149,28 @@ namespace midikraft {
 		return std::vector<MidiMessage>({ createSysexMessage(message) });		
 	}
 
-	bool Virus::isBankDump(const MidiMessage& message) const
+	midikraft::BankDumpCapability::HandshakeReply Virus::isMessagePartOfBankDump(const MidiMessage& message) const
 	{
 		if (isOwnSysex(message)) {
+			if (message.getSysExDataSize() < 7) {
+				return { false, {} };
+			}
 			if (message.getSysExData()[5] == 0x10 /* Single dump */) {
 				uint8 bank = message.getSysExData()[6];
-				return bank >= 0x01 && bank <= 0x08;
+				return { bank >= 0x01 && bank <= 0x08, {} };
 			}
 		}
-		return false;
+		return { false, {} };
 	}
 
-	bool Virus::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
+	midikraft::BankDumpCapability::FinishedReply Virus::bankDumpFinishedWithReply(std::vector<MidiMessage> const &bankDump) const
 	{
 		// Count the number of patch dumps in that stream
 		int found = 0;
 		for (auto message : bankDump) {
 			if (isSingleProgramDump({ message })) found++;
 		}
-		return found == 128;
+		return { found == 128, {} };
 	}
 
 	std::string Virus::friendlyBankName(MidiBankNumber bankNo) const

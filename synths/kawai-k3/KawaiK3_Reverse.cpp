@@ -66,7 +66,7 @@ namespace midikraft {
 
 	void KawaiK3_Reverse::handleNextEditBufferDump(MidiOutput *, juce::MidiMessage editBuffer) {
 		// Now inspect the sysex dump
-		if (k3_.isBankDump(editBuffer)) {
+		if (k3_.isMessagePartOfBankDump(editBuffer).isPartOfBankDump) {
 			auto patch = k3_.patchFromProgramDumpSysex(editBuffer);
 			auto k3patch = std::dynamic_pointer_cast<KawaiK3Patch>(patch);
 			int value = 1;

@@ -92,8 +92,8 @@ namespace midikraft {
 		virtual std::vector<MidiMessage> requestBankDump(MidiBankNumber bankNo) const override;
 
 		// Bank Dump Capability
-		virtual bool isBankDump(const MidiMessage& message) const override;
-		virtual bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
+		virtual midikraft::BankDumpCapability::HandshakeReply isMessagePartOfBankDump(const MidiMessage& message) const override;
+		virtual midikraft::BankDumpCapability::FinishedReply bankDumpFinishedWithReply(std::vector<MidiMessage> const &bankDump) const override;
 		virtual TPatchVector patchesFromSysexBank(std::vector<MidiMessage> const& messages) const override;
 
 		// SoundExpanderCapability

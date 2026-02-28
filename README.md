@@ -68,7 +68,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
-| Roland | MKS-50 | alpha | native | |
+| Roland | MKS-50 | alpha | adaptation | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
 | Roland | V-Drums TD-07 | alpha | adaptation | |
