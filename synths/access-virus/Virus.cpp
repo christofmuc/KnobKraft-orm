@@ -152,6 +152,9 @@ namespace midikraft {
 	midikraft::BankDumpCapability::HandshakeReply Virus::isMessagePartOfBankDump(const MidiMessage& message) const
 	{
 		if (isOwnSysex(message)) {
+			if (message.getSysExDataSize() < 7) {
+				return { false, {} };
+			}
 			if (message.getSysExData()[5] == 0x10 /* Single dump */) {
 				uint8 bank = message.getSysExData()[6];
 				return { bank >= 0x01 && bank <= 0x08, {} };

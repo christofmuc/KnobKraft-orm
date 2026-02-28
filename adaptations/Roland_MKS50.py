@@ -221,12 +221,14 @@ def isPartOfBankDump(message: List[int]):
     if not _is_own_sysex(message):
         return False
 
-    # Native code drops duplicate messages from potentially looped setups.
-    if _previous_sysex == message:
-        return False
+    operation = _operation(message)
+    is_duplicate = _previous_sysex == message
     _previous_sysex = message[:]
 
-    operation = _operation(message)
+    # Native code drops duplicate messages from potentially looped setups, but
+    # transfer handshake frames still need ACK/RJC replies when they repeat.
+    if is_duplicate and not _is_handshake_transfer_frame(message):
+        return False
 
     if operation == OP_BLD:
         _transfer_mode = "BLD"
@@ -234,7 +236,8 @@ def isPartOfBankDump(message: List[int]):
         return True
 
     if operation == OP_WSF:
-        _num_wsf += 1
+        if not is_duplicate:
+            _num_wsf += 1
         if _num_wsf > 2:
             _transfer_aborted = True
             return False, _build_handshake_reply(OP_RJC, message)
@@ -245,7 +248,8 @@ def isPartOfBankDump(message: List[int]):
             _transfer_aborted = True
             return False, _build_handshake_reply(OP_RJC, message)
         _transfer_mode = "DAT"
-        _data_packages += 1
+        if not is_duplicate:
+            _data_packages += 1
         return True, _build_handshake_reply(OP_ACK, message)
 
     if operation == OP_RQF:
@@ -438,6 +442,10 @@ def _is_own_sysex(message: List[int]) -> bool:
 
 def _operation(message: List[int]) -> int:
     return message[2]
+
+
+def _is_handshake_transfer_frame(message: List[int]) -> bool:
+    return _is_own_sysex(message) and _operation(message) in (OP_WSF, OP_DAT, OP_EOF)
 
 
 def _is_tone_apr(message: List[int]) -> bool:

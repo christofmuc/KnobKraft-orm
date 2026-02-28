@@ -70,6 +70,34 @@ def test_bank_handshake_tuple_replies():
     assert isinstance(finished, tuple)
 
 
+def test_duplicate_handshake_frames_still_acknowledge():
+    mks50.createBankDumpRequest(0, 0)
+
+    wsf = [0xF0, mks50.ROLAND_ID, mks50.OP_WSF, 0x03, mks50.MKS50_ID, 0xF7]
+    assert mks50.isPartOfBankDump(wsf)[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
+
+    duplicate_wsf = mks50.isPartOfBankDump(wsf)
+    assert isinstance(duplicate_wsf, tuple)
+    assert duplicate_wsf[0] is False
+    assert duplicate_wsf[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
+
+    dat = [0xF0, mks50.ROLAND_ID, mks50.OP_DAT, 0x03, mks50.MKS50_ID, 0x00, 0xF7]
+    assert mks50.isPartOfBankDump(dat)[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
+
+    duplicate_dat = mks50.isPartOfBankDump(dat)
+    assert isinstance(duplicate_dat, tuple)
+    assert duplicate_dat[0] is True
+    assert duplicate_dat[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
+
+    eof = [0xF0, mks50.ROLAND_ID, mks50.OP_EOF, 0x03, mks50.MKS50_ID, 0xF7]
+    assert mks50.isPartOfBankDump(eof)[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
+
+    duplicate_eof = mks50.isPartOfBankDump(eof)
+    assert isinstance(duplicate_eof, tuple)
+    assert duplicate_eof[0] is False
+    assert duplicate_eof[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
+
+
 def test_bank_finished_after_16_bld_blocks():
     mks50.createBankDumpRequest(0, 0)
 

@@ -25,6 +25,50 @@ namespace py = pybind11;
 
 namespace knobkraft {
 	namespace {
+		bool isStrictBool(py::handle value) {
+			return py::isinstance<py::bool_>(value);
+		}
+
+		bool isIntList(py::handle value) {
+			if (!py::isinstance<py::list>(value)) {
+				return false;
+			}
+
+			py::list values = py::reinterpret_borrow<py::list>(value);
+			for (auto item : values) {
+				if (!py::isinstance<py::int_>(item) || py::isinstance<py::bool_>(item)) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		bool isReplyContainer(py::handle replyData) {
+			if (replyData.is_none()) {
+				return true;
+			}
+
+			if (!py::isinstance<py::list>(replyData)) {
+				return false;
+			}
+
+			py::list resultList = py::reinterpret_borrow<py::list>(replyData);
+			if (py::len(resultList) == 0) {
+				return true;
+			}
+
+			if (py::isinstance<py::list>(resultList[0])) {
+				for (auto item : resultList) {
+					if (!isIntList(item)) {
+						return false;
+					}
+				}
+				return true;
+			}
+
+			return isIntList(replyData);
+		}
+
 		std::vector<MidiMessage> pythonReplyToMidiMessages(py::handle replyData) {
 			std::vector<MidiMessage> allMessages;
 			if (replyData.is_none()) {
@@ -58,24 +102,44 @@ namespace knobkraft {
 			return allMessages;
 		}
 
-		midikraft::BankDumpCapability::HandshakeReply parseBankPartResponse(py::object const& result) {
+		template <typename Reply>
+		Reply invalidBankDumpReply(char const* parserName, char const* reason) {
+			spdlog::warn("Adaptation: {} returned malformed response: {}", parserName, reason);
+			return { false, {} };
+		}
+
+		template <typename Reply>
+		Reply parseBankDumpReply(py::object const& result, char const* parserName) {
 			if (py::isinstance<py::tuple>(result)) {
-				auto resultTuple = py::cast<py::tuple>(result);
+				py::tuple resultTuple = py::reinterpret_borrow<py::tuple>(result);
+				if (resultTuple.size() != 2) {
+					return invalidBankDumpReply<Reply>(parserName, "expected a 2-element tuple");
+				}
+				if (!isStrictBool(resultTuple[0])) {
+					return invalidBankDumpReply<Reply>(parserName, "tuple element 0 must be a bool");
+				}
+				if (!isReplyContainer(resultTuple[1])) {
+					return invalidBankDumpReply<Reply>(parserName, "tuple element 1 must be None, a list of ints, or a list of int lists");
+				}
+
 				auto flag = resultTuple[0].cast<bool>();
 				auto replies = pythonReplyToMidiMessages(resultTuple[1]);
 				return { flag, replies };
 			}
+
+			if (!isStrictBool(result)) {
+				return invalidBankDumpReply<Reply>(parserName, "expected a bool or a 2-element tuple");
+			}
+
 			return { result.cast<bool>(), {} };
 		}
 
+		midikraft::BankDumpCapability::HandshakeReply parseBankPartResponse(py::object const& result) {
+			return parseBankDumpReply<midikraft::BankDumpCapability::HandshakeReply>(result, "isPartOfBankDump");
+		}
+
 		midikraft::BankDumpCapability::FinishedReply parseBankFinishedResponse(py::object const& result) {
-			if (py::isinstance<py::tuple>(result)) {
-				auto resultTuple = py::cast<py::tuple>(result);
-				auto flag = resultTuple[0].cast<bool>();
-				auto replies = pythonReplyToMidiMessages(resultTuple[1]);
-				return { flag, replies };
-			}
-			return { result.cast<bool>(), {} };
+			return parseBankDumpReply<midikraft::BankDumpCapability::FinishedReply>(result, "isBankDumpFinished");
 		}
 
 		std::vector<std::vector<int>> midiMessagesToNestedVector(GenericAdaptation* me, std::vector<MidiMessage> const& bankDump) {
