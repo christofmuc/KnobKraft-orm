@@ -165,7 +165,73 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 set(MANUALLY_RAPID_JSON "${CMAKE_CURRENT_LIST_DIR}/third_party/rapidjson/include")
 
 # Setup pybind11
-set(PYTHON_EXECUTABLE "python3" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_USE option. Default is just python3 expecting it on the path")
+# Try to find Python executable with fallback from python3 to python
+if(NOT PYTHON_EXECUTABLE)
+	# Try python3 first
+	find_program(PYTHON3_EXECUTABLE python3)
+	if(PYTHON3_EXECUTABLE)
+		execute_process(
+			COMMAND ${PYTHON3_EXECUTABLE} --version
+			RESULT_VARIABLE PYTHON3_CHECK_RESULT
+			OUTPUT_VARIABLE PYTHON3_VERSION_OUTPUT
+			ERROR_VARIABLE PYTHON3_VERSION_ERROR
+		)
+		if(NOT PYTHON3_CHECK_RESULT)
+			# Check if it's Python 3.12+
+			set(PYTHON3_VERSION_STRING "${PYTHON3_VERSION_OUTPUT}${PYTHON3_VERSION_ERROR}")
+			if(PYTHON3_VERSION_STRING MATCHES "Python ([0-9]+)\\.([0-9]+)")
+				set(PYTHON3_DETECTED_MAJOR ${CMAKE_MATCH_1})
+				set(PYTHON3_DETECTED_MINOR ${CMAKE_MATCH_2})
+				set(PYTHON3_DETECTED_VERSION "${PYTHON3_DETECTED_MAJOR}.${PYTHON3_DETECTED_MINOR}")
+				if(PYTHON3_DETECTED_MAJOR EQUAL 3 AND PYTHON3_DETECTED_VERSION VERSION_GREATER_EQUAL "3.12")
+					set(PYTHON_EXECUTABLE "${PYTHON3_EXECUTABLE}" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_EMBED option.")
+				else()
+					message(WARNING "Found 'python3' but it is version ${PYTHON3_DETECTED_VERSION}, which is less than the required 3.12. Will try 'python' as fallback.")
+				endif()
+			else()
+				message(WARNING "Found 'python3' but could not determine its version. Will try 'python' as fallback.")
+			endif()
+		endif()
+		unset(PYTHON3_EXECUTABLE CACHE)
+	endif()
+	
+	# If python3 didn't work, try python (but verify it's Python 3, not Python 2)
+	if(NOT PYTHON_EXECUTABLE)
+		find_program(PYTHON_EXECUTABLE_CANDIDATE python)
+		if(PYTHON_EXECUTABLE_CANDIDATE)
+			execute_process(
+				COMMAND ${PYTHON_EXECUTABLE_CANDIDATE} --version
+				RESULT_VARIABLE PYTHON_CHECK_RESULT
+				OUTPUT_VARIABLE PYTHON_VERSION_OUTPUT
+				ERROR_VARIABLE PYTHON_VERSION_ERROR
+			)
+			if(NOT PYTHON_CHECK_RESULT)
+				# Check if it's Python 3.12+ (not Python 2 or older Python 3)
+				set(PYTHON_VERSION_STRING "${PYTHON_VERSION_OUTPUT}${PYTHON_VERSION_ERROR}")
+				if(PYTHON_VERSION_STRING MATCHES "Python ([0-9]+)\\.([0-9]+)")
+					set(PYTHON_DETECTED_MAJOR ${CMAKE_MATCH_1})
+					set(PYTHON_DETECTED_MINOR ${CMAKE_MATCH_2})
+					set(PYTHON_DETECTED_VERSION "${PYTHON_DETECTED_MAJOR}.${PYTHON_DETECTED_MINOR}")
+					if(PYTHON_DETECTED_MAJOR EQUAL 3 AND PYTHON_DETECTED_VERSION VERSION_GREATER_EQUAL "3.12")
+						set(PYTHON_EXECUTABLE "${PYTHON_EXECUTABLE_CANDIDATE}" CACHE STRING "Specify the Python executable location to be used. This must match the PYTHON_VERSION_TO_EMBED option. Fallback to python as python3 was not found.")
+					else()
+						# python points to Python 2 or Python 3 < 3.12, reject it
+						message(WARNING "Found 'python' but it is version ${PYTHON_DETECTED_VERSION}, which is less than the required 3.12. Please install Python 3.12 or later and ensure 'python3' is available.")
+					endif()
+				else()
+					# Could not parse version, reject it
+					message(WARNING "Found 'python' but could not determine its version. Please install Python 3.12 or later and ensure 'python3' is available.")
+				endif()
+			endif()
+			unset(PYTHON_EXECUTABLE_CANDIDATE CACHE)
+		endif()
+	endif()
+	
+	# If still not found, provide helpful error
+	if(NOT PYTHON_EXECUTABLE)
+		message(FATAL_ERROR "Could not find a working Python executable (tried python3 and python). Please install Python 3.12 or later and ensure it is in your PATH.")
+	endif()
+endif()
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
 ELSE()
