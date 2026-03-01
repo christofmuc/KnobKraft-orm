@@ -38,6 +38,7 @@
 #include "ExportDialog.h"
 #include "BulkRenameDialog.h"
 #include "SynthBank.h"
+#include "Midnam.h"
 
 #include "LayoutConstants.h"
 
@@ -963,21 +964,39 @@ void PatchView::exportBank()
 }
 
 
-void PatchView::updateLastPath() {
-	if (lastPathForPIF_.empty()) {
+void PatchView::updateLastPath(std::string& path, std::string const& keyName) {
+	if (path.empty()) {
 		// Read from settings
-		lastPathForPIF_ = Settings::instance().get("lastPatchInterchangePath", "");
-		if (lastPathForPIF_.empty()) {
+		path = Settings::instance().get(keyName, "");
+		if (path.empty()) {
 			// Default directory
-			lastPathForPIF_ = File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString();
+			path = File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName().toStdString();
 		}
+	}
+}
+
+void PatchView::exportMidnamFile()
+{
+	auto currentBank = synthBank_->getCurrentSynthBank();
+	if (currentBank) {
+		updateLastPath(lastPathForMidnam_, "lastMidnamePath");
+
+		FileChooser midnamChooser("Please enter the name of the midnam file to write...", File(lastPathForMidnam_), "*.midnam");
+		if (midnamChooser.browseForFileToSave(true)) {
+			lastPathForMidnam_= midnamChooser.getResult().getFullPathName().toStdString();
+			Settings::instance().set("lastMidnamePath", lastPathForMidnam_);
+			saveToMidnam(lastPathForMidnam_, currentBank);
+		}
+	}
+	else {
+		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Nothing to export", "Please select a bank first!");
 	}
 }
 
 void PatchView::createPatchInterchangeFile()
 {
 	loadPage(0, -1, currentFilter(), [this](std::vector<midikraft::PatchHolder> patches) {
-		updateLastPath();
+		updateLastPath(lastPathForPIF_, "lastPatchInterchangePath");
 		FileChooser pifChooser("Please enter the name of the Patch Interchange Format file to create...", File(lastPathForPIF_), "*.json");
 		if (pifChooser.browseForFileToSave(true)) {
 			midikraft::PatchInterchangeFormat::save(patches, pifChooser.getResult().getFullPathName().toStdString());
