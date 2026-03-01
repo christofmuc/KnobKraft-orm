@@ -1,0 +1,670 @@
+{
+  "generated_at": "2026-02-26T22:58:00.410460+00:00",
+  "count": 83,
+  "synths": [
+    {
+      "manufacturer": "Access",
+      "synth": "Virus A, B, Classic, KB, Indigo",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Access",
+      "synth": "Virus C",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "native",
+      "kudos": "Thanks to guavadude@gs"
+    },
+    {
+      "manufacturer": "Akai",
+      "synth": "AX80",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to O.S.R.C. on YT for the nudge"
+    },
+    {
+      "manufacturer": "Alesis",
+      "synth": "Andromeda A6",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @markusschloesser"
+    },
+    {
+      "manufacturer": "Behringer",
+      "synth": "BCR2000",
+      "status": "in_progress",
+      "statusLabel": "In Progress",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Behringer",
+      "synth": "Deepmind 12",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Behringer",
+      "synth": "Pro-800",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": "Thanks to @Andy2No"
+    },
+    {
+      "manufacturer": "Behringer",
+      "synth": "RD-8",
+      "status": "in_progress",
+      "statusLabel": "In Progress",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Behringer",
+      "synth": "RD-9",
+      "status": "in_progress",
+      "statusLabel": "In Progress",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Behringer",
+      "synth": "Wave",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @willxy!"
+    },
+    {
+      "manufacturer": "Black Corporation",
+      "synth": "Kijimi",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to @ffont and @markusschlosser"
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Evolver",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Mopho",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Mopho X4",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Tetra",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Pro 2",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Prophet 8",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI",
+      "synth": "Tempest",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI/Sequential",
+      "synth": "OB-6",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI/Sequential",
+      "synth": "Prophet Rev2",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "DSI/Sequential",
+      "synth": "Prophet 12",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @Andy2No"
+    },
+    {
+      "manufacturer": "Electra",
+      "synth": "one",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Elektron",
+      "synth": "Analog Rytm",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to @RadekPilich for the request!"
+    },
+    {
+      "manufacturer": "Elektron",
+      "synth": "Digitone",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": "This needs more work, owners please provide feedback so we can complete it."
+    },
+    {
+      "manufacturer": "E-mu",
+      "synth": "Morpheus",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to Kid Who for testing!"
+    },
+    {
+      "manufacturer": "Ensoniq",
+      "synth": "ESQ-1/SQ-80",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Contributed by @Mostelin!"
+    },
+    {
+      "manufacturer": "Ensoniq",
+      "synth": "VFX/VFX-SD",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @dancingdog for testing!"
+    },
+    {
+      "manufacturer": "Groove Synthesis",
+      "synth": "3rd Wave",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "John Bowen",
+      "synth": "Solaris",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Contributed by @conversy!"
+    },
+    {
+      "manufacturer": "Kawai",
+      "synth": "K1/K1m/K1r",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Kawai",
+      "synth": "K3/K3m",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Kawai",
+      "synth": "K4",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "03R/W",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to Philippe!"
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "DW-6000",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "DW-8000/EX-8000",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "M1",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to Jentusalentu at YT for giving the nudge"
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "microKORG S",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @ilantz!"
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "Minilogue XD",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @andy2no"
+    },
+    {
+      "manufacturer": "Korg",
+      "synth": "MS2000/microKORG",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @windo"
+    },
+    {
+      "manufacturer": "Line 6",
+      "synth": "POD Series",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @milnak!"
+    },
+    {
+      "manufacturer": "Moog",
+      "synth": "Voyager",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @troach242 for the nudge and test!"
+    },
+    {
+      "manufacturer": "Novation",
+      "synth": "AStation/KStation",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to @thechildofroth"
+    },
+    {
+      "manufacturer": "Novation",
+      "synth": "Bass Station II",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @cockroach!"
+    },
+    {
+      "manufacturer": "Novation",
+      "synth": "Summit/Peak",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Novation",
+      "synth": "UltraNova",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @nezetic"
+    },
+    {
+      "manufacturer": "Oberheim",
+      "synth": "Matrix 6/6R",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @tsantilis"
+    },
+    {
+      "manufacturer": "Oberheim",
+      "synth": "Matrix 1000",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Oberheim",
+      "synth": "OB-X (Encore)",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Oberheim",
+      "synth": "OB-Xa (Encore)",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Oberheim",
+      "synth": "OB-8",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Oberheim",
+      "synth": "OB-X8",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "help needed!"
+    },
+    {
+      "manufacturer": "Pioneer",
+      "synth": "Toraiz AS-1",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @zzort!"
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "JX-8P",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "Juno-DS",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "contributed by @mslinn! Thank you!"
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "D-50",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Shout out to @summersetter for testing!"
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "JV-80/880/90/1000",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "JV-1080/2080",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "MKS-50",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "MKS-70 (Vecoven)",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to @markusschloesser!"
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "MKS-80",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "native",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "V-Drums TD-07",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Roland",
+      "synth": "XV-3080/5080/5050",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Sequential",
+      "synth": "Pro 3",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Sequential",
+      "synth": "Prophet-5 Rev 4",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Sequential",
+      "synth": "Prophet-6",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Sequential",
+      "synth": "Prophet X",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Sequential",
+      "synth": "Take 5",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Sequential",
+      "synth": "Trigon-6",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Studiologic",
+      "synth": "Sledge",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Waldorf",
+      "synth": "Blofeld",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Waldorf",
+      "synth": "M",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @RadekPilich for testing!"
+    },
+    {
+      "manufacturer": "Waldorf",
+      "synth": "MicroWave 1",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to Gerome S!"
+    },
+    {
+      "manufacturer": "Waldorf",
+      "synth": "Kyra",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": "Thanks to Edisyn!"
+    },
+    {
+      "manufacturer": "Waldorf",
+      "synth": "Pulse",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @markusschlosser and chatGPT!"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "DX7",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "DX7II",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @AgtSlick for testing and the fixes!"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "FS1R",
+      "status": "alpha",
+      "statusLabel": "Alpha",
+      "type": "adaptation",
+      "kudos": "Thanks to @markusschlosser for testing!"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "reface DX",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": ""
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "reface CP",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Thanks to @milnak!"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "TX7",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to Gerome S!"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "TX81Z",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Contributed by @summersetter!"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "Yamaha YC61/YC73/YC88",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @milnak!"
+    },
+    {
+      "manufacturer": "Zoom",
+      "synth": "MS Series (50G/60B/70CDR)",
+      "status": "works",
+      "statusLabel": "Works",
+      "type": "adaptation",
+      "kudos": "Thanks to @nezetic"
+    }
+  ]
+}

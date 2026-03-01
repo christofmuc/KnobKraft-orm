@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KnobKraft Orm | MIDI Sysex Librarian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0b0e14; color: #e2e8f0; overflow-x: hidden; scroll-behavior: smooth; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .text-sea { color: #00f3ff; }
+        .bg-sea { background-color: #00f3ff; }
+        .border-sea { border-color: #00f3ff; }
+        .vfd-glow { text-shadow: 0 0 12px rgba(0, 243, 255, 0.5); }
+
+        h1, h2, h3, h4 { line-height: 1.3 !important; padding-bottom: 0.1em; }
+
+        .monitor-frame {
+            background: #1a1f26;
+            border: 8px solid #2d3748;
+            border-radius: 6px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .vfd-panel {
+            background: #05070a;
+            border: 1px solid #1e293b;
+        }
+        .btn-hardware {
+            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+            border: 1px solid #4a5568;
+            box-shadow: 0 4px 0 #000;
+            transition: all 0.1s;
+        }
+        .btn-hardware:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #000;
+        }
+    </style>
+</head>
+<body class="selection:bg-cyan-900">
+
+<nav class="border-b border-slate-800 bg-[#0b0e14]/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="mono text-sea font-bold text-xl tracking-tighter vfd-glow">KNOBKRAFT_ORM</div>
+        <div class="hidden md:flex space-x-8 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+            <a href="#features" class="hover:text-sea transition">Features</a>
+            <a href="#checker" class="hover:text-sea transition">Compatibility</a>
+            <a href="./docs/" class="hover:text-sea transition">Docs</a>
+            <a href="https://github.com/christofmuc/KnobKraft-orm" target="_blank" rel="noopener noreferrer" class="hover:text-sea transition">GitHub</a>
+        </div>
+        <a href="https://github.com/christofmuc/KnobKraft-orm/releases" class="bg-sea text-black px-5 py-2 text-xs font-black uppercase tracking-tighter hover:bg-white transition">Download</a>
+    </div>
+</nav>
+
+<header class="max-w-6xl mx-auto px-6 pt-20 pb-12">
+    <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div>
+            <a id="releaseBadge" href="https://github.com/christofmuc/KnobKraft-orm/releases" class="inline-block border border-sea/30 px-3 py-1 rounded text-[10px] mono text-sea mb-6 uppercase tracking-widest bg-sea/5 hover:bg-sea/10 transition">
+                Latest Release: Loading...
+            </a>
+            <h1 class="text-5xl md:text-6xl font-black tracking-tight mb-6 text-white">
+                Manage your <span class="text-sea">Hardware</span> without the headache.
+            </h1>
+            <p class="text-lg text-slate-400 mb-8 leading-relaxed">
+                KnobKraft Orm is the modern, cross-platform Sysex Librarian that bridges the gap between your DAW and your physical synth rack.
+            </p>
+            <div class="flex flex-wrap gap-4">
+                <a href="https://github.com/christofmuc/KnobKraft-orm/releases" class="btn-hardware px-8 py-4 rounded text-white font-bold text-sm uppercase tracking-widest">Get Installer</a>
+                <a href="#video" class="px-8 py-4 rounded font-bold text-slate-400 hover:text-sea transition text-sm uppercase tracking-widest flex items-center">
+                    <span class="mr-2">▶</span> Watch Intro
+                </a>
+            </div>
+        </div>
+
+        <div class="monitor-frame overflow-hidden relative group">
+            <div class="absolute inset-0 bg-gradient-to-tr from-sea/10 to-transparent pointer-events-none z-10"></div>
+            <img src="./docs/youtube-screenshot.PNG"
+                 alt="YouTube thumbnail image showing the KnobKraft Orm interface preview from the intro video."
+                 loading="lazy"
+                 decoding="async"
+                 class="w-full h-auto opacity-90 group-hover:opacity-100 transition duration-500 relative z-0">
+            <p class="sr-only">YouTube preview image for the KnobKraft Orm intro video, showing the application interface.</p>
+            <div class="absolute bottom-4 right-4 bg-black/80 px-3 py-1 mono text-[10px] text-sea border border-sea/20 z-20">SYS_MONITOR</div>
+        </div>
+    </div>
+</header>
+
+<section id="features" class="max-w-6xl mx-auto px-6 py-24 border-t border-slate-900">
+    <div class="mb-16">
+        <h2 class="mono text-xs text-sea font-bold uppercase tracking-[0.4em] mb-4">// System Capabilities //</h2>
+        <h3 class="text-4xl font-bold text-white">Built for the Modern Studio</h3>
+        <p class="text-slate-400 mt-4 max-w-2xl">Drop the outdated 90s software. The Orm uses a modern SQLite database and smart heuristics to keep your patches instantly accessible.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-12">
+        <div class="bg-slate-900/50 p-8 rounded border border-slate-800 hover:border-sea/50 transition">
+            <div class="text-3xl mb-4 text-sea">⚡</div>
+            <h4 class="text-xl font-bold text-white mb-3">One-Click Auditioning</h4>
+            <p class="text-slate-400 text-sm leading-relaxed mb-4">Click any patch in your library and it's instantly sent to your synthesizer's edit buffer. Test sounds in context without ever overwriting your internal memory banks.</p>
+        </div>
+
+        <div class="bg-slate-900/50 p-8 rounded border border-slate-800 hover:border-sea/50 transition">
+            <div class="text-3xl mb-4 text-sea">🧠</div>
+            <h4 class="text-xl font-bold text-white mb-3">Smart Categorization</h4>
+            <p class="text-slate-400 text-sm leading-relaxed mb-4">The Orm attempts to automatically categorize patches (Bass, Pad, Lead, Organ) upon import. You can filter, favorite, and color-code thousands of files in seconds.</p>
+        </div>
+
+        <div class="bg-slate-900/50 p-8 rounded border border-slate-800 hover:border-sea/50 transition">
+            <div class="text-3xl mb-4 text-sea">🐍</div>
+            <h4 class="text-xl font-bold text-white mb-3">Python Adaptations</h4>
+            <p class="text-slate-400 text-sm leading-relaxed mb-4">Not just a generic librarian. Support for new synths is added via simple Python scripts. Advanced users can write their own adaptations and contribute them to the community.</p>
+        </div>
+
+        <div class="bg-slate-900/50 p-8 rounded border border-slate-800 hover:border-sea/50 transition">
+            <div class="text-3xl mb-4 text-sea">🗄️</div>
+            <h4 class="text-xl font-bold text-white mb-3">Infinite Database</h4>
+            <p class="text-slate-400 text-sm leading-relaxed mb-4">Powered by a robust database that automatically detects and flags duplicate patches across all your imported banks. Never accidentally store the same factory brass patch 50 times again.</p>
+        </div>
+    </div>
+</section>
+
+<section id="video" class="bg-black py-24 border-t border-slate-900">
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="mono text-xs text-sea font-bold uppercase tracking-[0.4em] mb-4">// Video_Documentation //</h2>
+            <h3 class="text-3xl font-bold text-white">See the Orm in Action</h3>
+        </div>
+        <div class="aspect-video w-full monitor-frame p-1 bg-slate-800 shadow-2xl">
+            <iframe class="w-full h-full rounded"
+                    src="https://www.youtube.com/embed/lPoFOVpTANM"
+                    title="KnobKraft Orm Intro"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</section>
+
+<section id="checker" class="py-24 bg-[#0b0e14]">
+    <div class="max-w-4xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="mono text-xs text-sea font-bold uppercase tracking-[0.4em] mb-4">// Hardware_Compatibility //</h2>
+            <h3 class="text-3xl font-bold text-white">Check Your Gear</h3>
+        </div>
+
+        <div class="vfd-panel p-8 rounded border-sea/20 border">
+            <div class="flex flex-col md:flex-row justify-between items-baseline mb-4 gap-4">
+                <h2 class="text-2xl font-bold mono vfd-glow text-sea tracking-tighter uppercase">Support_Database</h2>
+                <input type="text" id="synthSearch" placeholder="FILTER BY MODEL..."
+                       class="bg-black border border-slate-800 p-3 mono text-sea focus:border-sea focus:outline-none w-full md:w-64 text-sm">
+            </div>
+            <div id="statusFilters" class="flex flex-wrap gap-2 mb-6"></div>
+
+            <div class="overflow-x-auto max-h-96">
+                <table class="w-full text-left mono text-sm">
+                    <tbody id="synthTableBody"></tbody>
+                </table>
+            </div>
+            <div class="mt-8 pt-6 border-t border-slate-900 text-[10px] text-slate-500 mono uppercase tracking-widest flex justify-between">
+                <span id="synthCountLabel">Loading synth database...</span>
+                <a href="./docs/contributing/#building-your-own-adaptation" class="text-sea hover:underline">WRITE AN ADAPTATION</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="docs" class="max-w-6xl mx-auto px-6 py-24 border-t border-slate-900">
+    <div class="grid lg:grid-cols-3 gap-12">
+
+        <div class="space-y-6">
+            <h3 class="mono text-sea text-sm font-bold uppercase tracking-[0.2em] border-b border-sea/20 pb-2">User_Manual</h3>
+            <ul class="space-y-4">
+                <li>
+                    <a href="./docs/#quick-start" class="group block">
+                        <span class="text-white font-bold group-hover:text-sea transition italic">Quick Start Guide →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Get up and running in minutes.</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="./docs/#basic-concepts" class="group block">
+                        <span class="text-white font-bold group-hover:text-sea transition italic">Librarian Basics →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Banks, patches, and auditioning workflow.</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="./docs/supported-synths/" class="group block">
+                        <span class="text-white font-bold group-hover:text-sea transition italic">Supported Synth Matrix →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Full compatibility table and status legend.</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="space-y-6">
+            <h3 class="mono text-orange-500 text-sm font-bold uppercase tracking-[0.2em] border-b border-orange-500/20 pb-2">Adaptation_Dev</h3>
+            <ul class="space-y-4">
+                <li>
+                    <a href="./docs/programming-guide/" class="group block">
+                        <span class="text-white font-bold group-hover:text-orange-500 transition italic">Programming Guide →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Write Python scripts for new hardware.</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="./docs/testing-guide/" class="group block">
+                        <span class="text-white font-bold group-hover:text-orange-500 transition italic">Testing Guide →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">How to verify and debug your adaptations.</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="space-y-6">
+            <h3 class="mono text-slate-400 text-sm font-bold uppercase tracking-[0.2em] border-b border-slate-700 pb-2">Technical_Reference</h3>
+            <ul class="space-y-4">
+                <li>
+                    <a href="./docs/build/" class="group block">
+                        <span class="text-white font-bold group-hover:text-white transition italic">Compilation Guide →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Building from source for Win/Mac/Linux.</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="https://github.com/christofmuc/KnobKraft-orm/issues" class="group block">
+                        <span class="text-white font-bold group-hover:text-white transition italic">Issue Tracker →</span>
+                        <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Report bugs or request new synth support.</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+</section>
+
+<footer class="py-12 text-center border-t border-slate-900 bg-black">
+    <p class="mono text-[10px] text-slate-600 tracking-[0.3em] uppercase mb-4 italic">End of Line</p>
+    <div class="flex justify-center space-x-6 text-slate-400 text-sm">
+        <a href="https://github.com/christofmuc/KnobKraft-orm" class="hover:text-sea transition">GitHub Repository</a>
+        <a href="https://www.youtube.com/@KnobKraft" class="hover:text-sea transition">YouTube Channel</a>
+    </div>
+</footer>
+
+<script>
+    const RELEASE_API_URL = "https://api.github.com/repos/christofmuc/KnobKraft-orm/releases/latest";
+    const SYNTH_DATA_URL = "./data/supported-synths.json";
+
+    const STATUS_ORDER = ["all", "works", "beta", "alpha", "in_progress"];
+    const STATUS_LABEL = {
+        all: "All",
+        works: "Works",
+        beta: "Beta",
+        alpha: "Alpha",
+        in_progress: "In Progress"
+    };
+
+    const STATUS_CLASS = {
+        works: "border-green-900/50 text-green-500",
+        beta: "border-amber-900/50 text-amber-500",
+        alpha: "border-red-900/50 text-red-500",
+        in_progress: "border-sky-900/50 text-sky-400"
+    };
+
+    const state = {
+        synths: [],
+        search: "",
+        status: "all"
+    };
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function normalizeStatus(value) {
+        const status = String(value || "").toLowerCase().replace(/-/g, " ").trim();
+        if (status === "in progress" || status === "in_progess" || status === "in_progress") {
+            return "in_progress";
+        }
+        if (status === "works" || status === "beta" || status === "alpha") {
+            return status;
+        }
+        return "alpha";
+    }
+
+    function filteredSynths() {
+        const query = state.search.toLowerCase();
+        return state.synths.filter((entry) => {
+            const statusMatch = state.status === "all" || entry.status === state.status;
+            const text = `${entry.manufacturer} ${entry.synth}`.toLowerCase();
+            const queryMatch = text.includes(query);
+            return statusMatch && queryMatch;
+        });
+    }
+
+    function updateCountLabel(filteredCount) {
+        const total = state.synths.length;
+        const label = document.getElementById("synthCountLabel");
+
+        if (total === 0) {
+            label.textContent = "SYNTH DATA UNAVAILABLE";
+            return;
+        }
+
+        if (state.search || state.status !== "all") {
+            label.textContent = `SHOWING ${filteredCount} OF ${total} DEVICES`;
+            return;
+        }
+
+        label.textContent = `OVER ${total} DEVICES SUPPORTED`;
+    }
+
+    function renderStatusFilters() {
+        const container = document.getElementById("statusFilters");
+        const counts = {
+            all: state.synths.length,
+            works: 0,
+            beta: 0,
+            alpha: 0,
+            in_progress: 0
+        };
+
+        state.synths.forEach((entry) => {
+            counts[entry.status] = (counts[entry.status] || 0) + 1;
+        });
+
+        container.innerHTML = STATUS_ORDER.map((status) => {
+            const active = state.status === status;
+            const activeClass = active ? "bg-sea/20 text-sea border-sea/50" : "bg-black text-slate-400 border-slate-800 hover:border-sea/30";
+            return `
+                <button data-status="${status}" class="px-2 py-1 mono text-xs uppercase border ${activeClass} transition">
+                    ${STATUS_LABEL[status]} (${counts[status] || 0})
+                </button>
+            `;
+        }).join("");
+
+        Array.from(container.querySelectorAll("button")).forEach((button) => {
+            button.addEventListener("click", () => {
+                state.status = button.dataset.status;
+                renderStatusFilters();
+                renderTable();
+            });
+        });
+    }
+
+    function renderTable() {
+        const body = document.getElementById("synthTableBody");
+        const rows = filteredSynths();
+
+        updateCountLabel(rows.length);
+
+        if (rows.length === 0) {
+            body.innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-6 px-2 text-slate-500 border-b border-slate-900/50">
+                        No matching synth entries.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        body.innerHTML = rows.map((entry) => {
+            const statusClass = STATUS_CLASS[entry.status] || STATUS_CLASS.alpha;
+            const statusLabel = STATUS_LABEL[entry.status] || entry.status;
+            const typeLabel = entry.type === "native" ? "native" : "adaptation";
+            return `
+                <tr class="group hover:bg-sea/10 transition duration-150">
+                    <td class="py-3 px-2 text-slate-500 tracking-tighter border-b border-slate-900/50">${escapeHtml(entry.manufacturer)}</td>
+                    <td class="py-3 px-2 border-b border-slate-900/50">
+                        <div class="font-bold text-slate-200 group-hover:text-sea transition">${escapeHtml(entry.synth)}</div>
+                        <div class="text-[11px] uppercase tracking-widest text-slate-500 mt-1">${escapeHtml(typeLabel)}</div>
+                    </td>
+                    <td class="py-3 px-2 text-right border-b border-slate-900/50">
+                        <span class="px-2 py-0.5 border ${statusClass} text-[11px]">${escapeHtml(statusLabel)}</span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    async function loadSynths() {
+        try {
+            const response = await fetch(SYNTH_DATA_URL, { cache: "no-cache" });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const payload = await response.json();
+            if (!payload || !Array.isArray(payload.synths)) {
+                throw new Error("Invalid synth payload");
+            }
+
+            state.synths = payload.synths.map((entry) => ({
+                manufacturer: String(entry.manufacturer || "").trim(),
+                synth: String(entry.synth || "").trim(),
+                status: normalizeStatus(entry.status),
+                type: String(entry.type || "adaptation").toLowerCase() === "native" ? "native" : "adaptation"
+            })).filter((entry) => entry.manufacturer && entry.synth);
+
+            renderStatusFilters();
+            renderTable();
+        } catch (error) {
+            console.error("Failed to load synth data", error);
+            state.synths = [];
+            renderStatusFilters();
+            document.getElementById("synthTableBody").innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-6 px-2 text-slate-500 border-b border-slate-900/50">
+                        Could not load synth list. Open <a class="text-sea underline" href="./docs/supported-synths/">supported synth docs</a>.
+                    </td>
+                </tr>
+            `;
+            updateCountLabel(0);
+        }
+    }
+
+    async function loadLatestRelease() {
+        const badge = document.getElementById("releaseBadge");
+
+        try {
+            const response = await fetch(RELEASE_API_URL, {
+                headers: {
+                    "Accept": "application/vnd.github+json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const payload = await response.json();
+            const version = String(payload.tag_name || "").trim();
+
+            badge.textContent = version ? `Latest Release: ${version}` : "Latest Release: See GitHub";
+        } catch (error) {
+            console.error("Failed to load latest release", error);
+            badge.textContent = "Latest Release: See GitHub";
+        }
+    }
+
+    document.getElementById("synthSearch").addEventListener("input", (event) => {
+        state.search = event.target.value || "";
+        renderTable();
+    });
+
+    loadLatestRelease();
+    loadSynths();
+</script>
+</body>
+</html>
