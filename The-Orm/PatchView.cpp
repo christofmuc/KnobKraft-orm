@@ -736,6 +736,11 @@ void PatchView::refreshAllAfterDelete() {
 }
 
 void PatchView::reindexPatches() {
+	if (midikraft::Synth::allowDuplicates()) {
+		AlertWindow::showMessageBox(AlertWindow::InfoIcon, "Reindex disabled",
+			"Reindexing is disabled while 'Allow duplicate patches' is enabled in the Options menu.");
+		return;
+	}
 	// We do reindex all patches of the currently selected synth. It does not make sense to reindex less than that.
 	auto currentSynth = UIModel::instance()->currentSynth_.smartSynth();
 	if (!currentSynth) return;

@@ -257,6 +257,8 @@ class Librarian:
                     # Continue with the next edit buffer
                     self._start_download_next_edit_buffer(midi_controller, adaptation, channel, True)
 
+    allow_duplicates: bool = False
+
     def load_sysex(self, adaptation, sysex_messages: List[List[int]]) -> List[List[int]]:
         results: List[List[int]] = []
         program_dumps_by_id: Dict[str, List[int]] = {}
@@ -291,7 +293,7 @@ class Librarian:
                     sliding_window = flatten(list(current_edit_buffers))
                     if adaptation.isEditBufferDump(sliding_window):
                         patch = sliding_window
-                        if adaptation_has_implemented(adaptation, "calculateFingerprint"):
+                        if not self.allow_duplicates and adaptation_has_implemented(adaptation, "calculateFingerprint"):
                             patch_id = adaptation.calculateFingerprint(patch)
                             if patch_id not in program_dumps_by_id:
                                 results.append(patch)

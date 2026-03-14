@@ -207,6 +207,13 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	automaticCategories_ = database_->getCategorizer();
 
+	// Initialize the allow duplicates setting from persisted preferences
+	{
+		bool allowDuplicates = Settings::instance().get("AllowDuplicatePatches", "false") == "true";
+		database_->setAllowDuplicates(allowDuplicates);
+		midikraft::Synth::setAllowDuplicates(allowDuplicates);
+	}
+
 	auto bcr2000 = std::make_shared <midikraft::BCR2000>();
 
 	// Create the list of all synthesizers!	
@@ -276,7 +283,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
 		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
-		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
+		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect}, { "Allow duplicate patches"} }}},
 		{7, { "Help", {
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -341,6 +348,14 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	} } },
 	{"Create new adaptation...", { kCreateNewAdaptation, [this]() {
 		setupView_->createNewAdaptation();
+	} } },
+	{"Allow duplicate patches", { "Allow duplicate patches", [this]() {
+		bool current = Settings::instance().get("AllowDuplicatePatches", "false") == "true";
+		bool newValue = !current;
+		Settings::instance().set("AllowDuplicatePatches", newValue ? "true" : "false");
+		database_->setAllowDuplicates(newValue);
+		midikraft::Synth::setAllowDuplicates(newValue);
+		spdlog::info("Allow duplicate patches: {}", newValue ? "enabled" : "disabled");
 	} } },
 
 		//}, 0x44 /* D */, ModifierKeys::ctrlModifier } },
