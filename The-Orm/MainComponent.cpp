@@ -209,7 +209,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Initialize the allow duplicates setting from persisted preferences
 	{
-		bool allowDuplicates = Settings::instance().get("AllowDuplicatePatches", "false") == "true";
+		bool allowDuplicates = Settings::instance().get("AllowDuplicatePatches", "true") == "true";
 		database_->setAllowDuplicates(allowDuplicates);
 		midikraft::Synth::setAllowDuplicates(allowDuplicates);
 	}
@@ -350,7 +350,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		setupView_->createNewAdaptation();
 	} } },
 	{"Allow duplicate patches", { "Allow duplicate patches", [this]() {
-		bool current = Settings::instance().get("AllowDuplicatePatches", "false") == "true";
+		bool current = Settings::instance().get("AllowDuplicatePatches", "true") == "true";
 		bool newValue = !current;
 		Settings::instance().set("AllowDuplicatePatches", newValue ? "true" : "false");
 		database_->setAllowDuplicates(newValue);
