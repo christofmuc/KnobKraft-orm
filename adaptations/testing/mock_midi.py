@@ -21,12 +21,15 @@ class MockMidiController(MidiController):
         super().__init__()
         self.device = device
         self.sent_messages: List[MidiMessage] = []
+        self.sent_message_delays: List[int] = []
         self.pending_replies: Deque[MidiMessage] = deque()
         self.finished = False
+        self.send_delay = 0
 
     def send(self, message: MidiMessage):
         for outbound in _split_outbound_messages(message):
             self.sent_messages.append(outbound)
+            self.sent_message_delays.append(self.send_delay)
             self.pending_replies.extend(self.device.respond(outbound))
 
     def receive(self, message: MidiMessage):
@@ -46,6 +49,9 @@ class MockMidiController(MidiController):
 
     def mark_finished(self):
         self.finished = True
+
+    def set_send_delay(self, delay_ms: int):
+        self.send_delay = delay_ms
 
 
 class ScriptedMockDevice:

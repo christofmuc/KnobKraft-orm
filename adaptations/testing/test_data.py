@@ -81,6 +81,13 @@ class TestData:
     expected_wire_patch_count: Optional[int] = None
     wire_download_bank: int = 0
     expected_sent_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
+    single_edit_buffer_mock_device_factory: Optional[Callable[[Any, Any], Any]] = None
+    expected_single_edit_buffer_count: int = 1
+    wire_download_banks: Optional[List[int]] = None
+    expected_multi_bank_patch_count: Optional[int] = None
+    expected_multi_bank_sent_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
+    send_to_synth_patch: Optional[Callable[[Any], ByteList]] = None
+    expected_send_to_synth_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
 
     def __post_init__(self):
         self.all_messages = []

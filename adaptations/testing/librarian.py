@@ -1,6 +1,7 @@
 from collections import deque
+from collections.abc import Iterable
 from functools import partial
-from typing import List, Callable, Optional, Dict, Deque, Any
+from typing import List, Callable, Optional, Dict, Deque, Any, Union
 from enum import Enum
 import logging
 
@@ -29,6 +30,14 @@ def adaptation_has_program_dump_capability(adaptation):
 
 def adaptation_has_edit_buffer_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["createEditBufferRequest", "isEditBufferDump"])
+
+
+def adaptation_has_program_send_capability(adaptation):
+    return adaptation_has_all_implemented(adaptation, ["createProgramDumpRequest", "isSingleProgramDump", "convertToProgramDump"])
+
+
+def adaptation_has_edit_buffer_send_capability(adaptation):
+    return adaptation_has_all_implemented(adaptation, ["createEditBufferRequest", "isEditBufferDump", "convertToEditBuffer"])
 
 
 def flatten(xss: List[List[Any]]) -> List[Any]:
@@ -77,6 +86,20 @@ class SynthBank:
         else:
             return adaptation.numberOfPatchesPerBank()
 
+    @staticmethod
+    def default_program_place(adaptation) -> Optional[int]:
+        if adaptation_has_implemented(adaptation, "getDefaultProgramPlace"):
+            return adaptation.getDefaultProgramPlace()
+        if adaptation_has_implemented(adaptation, "defaultProgramPlace"):
+            return adaptation.defaultProgramPlace()
+        if adaptation_has_implemented(adaptation, "bankDescriptors"):
+            banks = adaptation.bankDescriptors()
+            if banks:
+                return banks[0]["size"] - 1
+        if adaptation_has_implemented(adaptation, "numberOfPatchesPerBank"):
+            return adaptation.numberOfPatchesPerBank() - 1
+        return None
+
 
 class BankDownloadMethod(Enum):
     BANKS = 1
@@ -123,9 +146,13 @@ class Librarian:
             midi_controller,
             channel: int,
             adaptation,
-            bank_no: int,
+            bank_no: Union[int, Iterable[int]],
             on_finished: Callable[[List[List[int]]], None]
     ) -> None:
+        if isinstance(bank_no, Iterable) and not isinstance(bank_no, (str, bytes)):
+            self.start_downloading_banks(midi_controller, channel, adaptation, bank_no, on_finished)
+            return
+
         # Initialize state
         self.download_number = 0
         self.on_finished = on_finished
@@ -156,6 +183,117 @@ class Librarian:
 
         else:
             logging.error("Error: This synth has not implemented a single method to retrieve a bank. Please consult the documentation!")
+
+    def start_downloading_banks(
+            self,
+            midi_controller,
+            channel: int,
+            adaptation,
+            bank_numbers: Iterable[int],
+            on_finished: Callable[[List[List[int]]], None]
+    ) -> None:
+        banks = list(bank_numbers)
+        if not banks:
+            self.on_finished = on_finished
+            self._finish_download(midi_controller, [])
+            return
+
+        all_patches: List[List[int]] = []
+        current_bank_index = 0
+
+        def bank_finished(patches: List[List[int]]) -> None:
+            nonlocal current_bank_index
+            all_patches.extend(patches)
+            current_bank_index += 1
+            if current_bank_index >= len(banks):
+                on_finished(all_patches)
+                return
+
+            if hasattr(midi_controller, "finished"):
+                midi_controller.finished = False
+            self.start_downloading_all_patches(
+                midi_controller,
+                channel,
+                adaptation,
+                banks[current_bank_index],
+                bank_finished,
+            )
+
+        self.start_downloading_all_patches(midi_controller, channel, adaptation, banks[0], bank_finished)
+
+    def download_edit_buffer(
+            self,
+            midi_controller,
+            channel: int,
+            adaptation,
+            on_finished: Callable[[List[List[int]]], None]
+    ) -> None:
+        if not adaptation_has_edit_buffer_capability(adaptation):
+            raise Exception("Adaptation has not implemented EditBufferCapability. Can't download edit buffer")
+
+        self.download_number = 0
+        self.start_download_number = 0
+        self.end_download_number = 1
+        self.on_finished = on_finished
+        self.current_download_messages.clear()
+        self.current_edit_buffer.clear()
+        self._active_midi_controller = midi_controller
+
+        midi_controller.add_message_handler(partial(self._handle_next_edit_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel, bank_no=0))
+        self._start_download_next_edit_buffer(midi_controller, adaptation, channel, False)
+
+    def data_file_to_sysex(
+            self,
+            adaptation,
+            channel: int,
+            patch: List[int],
+            target=None
+    ) -> List[List[int]]:
+        if target is not None:
+            if adaptation_has_implemented(adaptation, "dataFileToMessages"):
+                return knobkraft.splitSysex(adaptation.dataFileToMessages(patch, target))
+            raise Exception("Adaptation has no DataFileSendCapability equivalent for explicit send targets")
+
+        if adaptation_has_edit_buffer_send_capability(adaptation):
+            return knobkraft.splitSysex(adaptation.convertToEditBuffer(channel, patch))
+
+        if adaptation_has_program_send_capability(adaptation):
+            place = SynthBank.default_program_place(adaptation)
+            if place is None:
+                raise Exception("Adaptation has no edit buffer and no default program place for send-to-synth")
+            messages = knobkraft.splitSysex(adaptation.convertToProgramDump(channel, patch, place))
+            messages.append([0xc0 | (channel & 0x0f), place & 0x7f])
+            return messages
+
+        raise Exception("Adaptation has no send-to-synth strategy")
+
+    def send_patch_to_synth(
+            self,
+            midi_controller: MidiController,
+            channel: int,
+            adaptation,
+            patch: List[int],
+            target=None
+    ) -> List[List[int]]:
+        messages = self.data_file_to_sysex(adaptation, channel, patch, target)
+        self.send_block_of_messages_to_synth(midi_controller, adaptation, messages)
+        return messages
+
+    def send_block_of_messages_to_synth(self, midi_controller: MidiController, adaptation, messages: List[List[int]]) -> None:
+        delay = self._message_delay(adaptation)
+        if delay > 0 and hasattr(midi_controller, "set_send_delay"):
+            midi_controller.set_send_delay(delay)
+        self._send_block(midi_controller, messages)
+
+    @staticmethod
+    def _message_delay(adaptation) -> int:
+        if adaptation_has_implemented(adaptation, "messageTimings"):
+            timings = adaptation.messageTimings()
+            if isinstance(timings, dict) and "generalMessageDelay" in timings:
+                return timings["generalMessageDelay"]
+        if adaptation_has_implemented(adaptation, "generalMessageDelay"):
+            return adaptation.generalMessageDelay()
+        return 0
 
     def _finish_download(self, midi_controller: MidiController, patches: List[List[int]]):
         if hasattr(midi_controller, "mark_finished"):

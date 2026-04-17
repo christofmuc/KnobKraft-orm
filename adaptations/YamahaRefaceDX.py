@@ -354,6 +354,11 @@ def make_test_data():
         program_generator=program_buffers,
         mock_device_factory=mock_device,
         expected_wire_patch_count=numberOfPatchesPerBank(),
+        single_edit_buffer_mock_device_factory=mock_device,
+        send_to_synth_patch=lambda test_data: test_data.programs[0].message.byte_list,
+        expected_send_to_synth_messages=lambda test_data, adaptation: knobkraft.splitSysex(
+            adaptation.convertToEditBuffer(0, test_data.programs[0].message.byte_list)
+        ),
     )
 
 
