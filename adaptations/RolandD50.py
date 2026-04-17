@@ -162,7 +162,10 @@ class NonGenericRoland:
         self.device_family = device_family  # This is only used in the Identity Reply Message.
         self.device_detect_message = device_detect_message
         self.device_detect_ids = None if device_detect_ids is None else set(device_detect_ids)
-        self.device_id = 0x10  # The Roland can have a device ID from 0x00 to 0x1f
+        # The D-50 uses 0x00..0x0f, equal to MIDI basic channel - 1.
+        # Keep this unset until detection; request/transfer methods fall back
+        # to the channel argument if no device ID has been detected yet.
+        self.device_id = None
         self._model_id_len = len(model_id)
         self.address_size = address_size
         self.edit_buffer = edit_buffer
@@ -224,6 +227,11 @@ class NonGenericRoland:
         # When using a standard message, we actually need to iterate over all device IDs (not implemented yet, only channels 0 to 15)
         return self.device_family is None
 
+    def _target_device_id(self, channel: int) -> int:
+        if self.device_id is not None:
+            return self.device_id & 0x0f
+        return channel & 0x0f
+
     @knobkraft_api
     def bankDescriptors(self) -> List[Dict]:
         return [{"bank": 0, "name": "User Patches", "size": self.program_dump.num_items, "type": "User Patch"}]
@@ -273,7 +281,7 @@ class NonGenericRoland:
     def createEditBufferRequest(self, channel) -> List[int]:
         # The edit buffer is called Patch mode temporary patch
         address, size = self.edit_buffer.address_and_size_for_sub_request(0, 0)
-        return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        return self.buildRolandMessage(self._target_device_id(channel), command_rq1, address, size)
 
     def _createFollowUpEditBufferDumpRequest(self, previousRequestNo):
         # Check if there is a follow up data block
@@ -316,7 +324,7 @@ class NonGenericRoland:
             for message in knobkraft.sysex.splitSysexMessage(message):
                 command, address, data = self.parseRolandMessage(message)
                 edit_buffer_address, _ = self.edit_buffer.address_and_size_for_sub_request(msg_no, 0x00)
-                editBuffer = editBuffer + self.buildRolandMessage(self.device_id, command_dt1, edit_buffer_address, data)
+                editBuffer = editBuffer + self.buildRolandMessage(self._target_device_id(channel), command_dt1, edit_buffer_address, data)
                 msg_no += 1
             return editBuffer
         raise Exception("Invalid argument given, can only convert edit buffers and program dumps to edit buffers")
@@ -324,7 +332,7 @@ class NonGenericRoland:
     @knobkraft_api
     def createProgramDumpRequest(self, channel, patchNo):
         address, size = self.program_dump.address_and_size_for_sub_request(0, patchNo % self.program_dump.num_items)
-        return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+        return self.buildRolandMessage(self._target_device_id(channel), command_rq1, address, size)
 
     def _createFollowUpProgramDumpRequest(self, patchNo, previousRequestNo):
         # Check if there is a follow up data block
@@ -369,7 +377,7 @@ class NonGenericRoland:
             for message in knobkraft.sysex.splitSysexMessage(message):
                 _, _, data = self.parseRolandMessage(message)
                 program_buffer_address, _ = self.program_dump.address_and_size_for_sub_request(msg_no, program_number % self.program_dump.num_items)
-                programDump = programDump + self.buildRolandMessage(self.device_id, command_dt1, program_buffer_address, data)
+                programDump = programDump + self.buildRolandMessage(self._target_device_id(channel), command_dt1, program_buffer_address, data)
                 msg_no += 1
             return programDump
         raise Exception("Can only convert single program dumps to program dumps!")
@@ -519,6 +527,11 @@ def isPartOfBankDump(message):
 
 def bankDownloadMethodOverride():
     return "EDITBUFFERS"
+
+
+def generalMessageDelay():
+    # The D-50 manual requires more than 20 ms between received DT1 messages.
+    return 25
 
 
 def extractPatchesFromAllBankMessages(messages: List[List[int]]) -> List[List[int]]:
