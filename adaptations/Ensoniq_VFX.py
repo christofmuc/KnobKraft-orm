@@ -143,7 +143,7 @@ def isBankDumpFinished(messages):
     return False
 
 
-def extractPatchesFromBank(message):
+def extractPatchesFromBank(message: List[int]) -> List[List[int]]:
     # A bank dump consists of 63607 bytes: 6 in the header, 63600 (in 60 programs of 1060 bytes, to be denibbled to 530), 1 in the footer.
     if isPartOfBankDump(message):
         channel = message[4]  # Surprisingly, the VFX has the channel after the synth model
@@ -169,4 +169,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=programs[1], name='SAMPLE+HOLD', number=16, rename_name="NEW NAME")
         yield testing.ProgramTestData(message=programs[2], name=' FAT-BRASS ', number=16, rename_name="NEW NAME")
 
-    return testing.TestData(edit_buffer_generator=programs, sysex="testData/Ensoniq_VFX/101.syx")
+    return testing.TestData(edit_buffer_generator=programs, sysex="testData/Ensoniq_VFX/101.syx", expected_patch_count=60)

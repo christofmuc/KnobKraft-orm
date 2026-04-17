@@ -30,4 +30,4 @@ def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message= data.all_messages[1], name= 'Wagnerian', number= 1)
 
-    return testing.TestData(sysex="testData/Mopho_Programs_v1.0.syx", program_generator= programs)
+    return testing.TestData(sysex="testData/Mopho_Programs_v1.0.syx", program_generator= programs, expected_patch_count=384)

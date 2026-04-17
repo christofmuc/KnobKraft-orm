@@ -445,6 +445,49 @@ class GenericRoland:
         return 'Invalid'
 
     @knobkraft_api
+    def renamePatch(self, message: List[int], new_name: str) -> List[int]:
+        """
+        Return a new dump with the patch name changed to `new_name`.
+        Works for both single program dumps and edit buffer dumps.
+        """
+        if not (self.isSingleProgramDump(message) or self.isEditBufferDump(message)):
+            raise Exception("renamePatch: only supports single program dumps or edit buffer dumps")
+
+        # Prepare name bytes
+        name = (new_name or "").strip()
+        # Truncate and pad to exact length
+        name = (name[:self.patch_name_length]).ljust(self.patch_name_length, " ")
+
+        if self.use_roland_character_set:
+            # Map characters to legacy Roland indices; fallback to space when unsupported
+            charset_index: Dict[str, int] = {ch: i for i, ch in enumerate(character_set)}
+            name_bytes = [charset_index.get(ch, charset_index[" "]) for ch in name]
+        else:
+            # Standard 7-bit ASCII (Roland SysEx is 7-bit clean)
+            name_bytes = [ord(ch) & 0x7F for ch in name]
+
+        # Rebuild the entire multi-part SysEx with the new name in the correct sub-message
+        rebuilt: List[int] = []
+        msg_no = 0
+        for start, end in knobkraft.sysex.findSysexDelimiters(message):
+            sub = message[start:end]
+            # Preserve the original device id from this submessage
+            device_id_in_msg = sub[2]
+            command, address, data = self.parseRolandMessage(sub)
+
+            if msg_no == self.patch_name_message_number:
+                # Overwrite the name region at the beginning of this data block
+                data = data.copy()
+                data[0:self.patch_name_length] = name_bytes
+
+            # Always send DT1 (data set) when rebuilding
+            rebuilt += self.buildRolandMessage(device_id_in_msg, command_dt1, address, data)
+            msg_no += 1
+
+        return rebuilt
+
+
+    @knobkraft_api
     def storedTags(self, message) -> List[str]:
         if self.category_index is not None:
             if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
@@ -565,6 +608,14 @@ class GenericRolandWithBackwardCompatibility:
         if model is not None:
             return model.nameFromDump(message)
         return 'Invalid'
+
+    @knobkraft_api
+    def renamePatch(self, message: List[int], new_name: str) -> List[int]:
+        model = self.model_from_message(message)
+        if model is not None:
+            return model.renamePatch(message, new_name)
+        print("Can't rename patch as model cannot be detected!")
+        return message
 
     @knobkraft_api
     def calculateFingerprint(self, message) -> int:

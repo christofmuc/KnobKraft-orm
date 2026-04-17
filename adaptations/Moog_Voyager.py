@@ -311,4 +311,4 @@ def make_test_data():
         assert isPartOfBankDump(bank_dump)
         yield bank_dump
 
-    return testing.TestData(sysex="testData/Moog_Voyager/Bank_A_Tasty_Moog_Bass.syx", program_generator=programs, bank_generator=banks, edit_buffer_generator=edit_buffers)
+    return testing.TestData(sysex="testData/Moog_Voyager/Bank_A_Tasty_Moog_Bass.syx", program_generator=programs, bank_generator=banks, edit_buffer_generator=edit_buffers, expected_patch_count=128)

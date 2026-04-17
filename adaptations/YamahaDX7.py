@@ -106,7 +106,7 @@ def isPartOfBankDump(message):
     return len(message) > 5 and message[:6] == [0xf0, 0x43, 0x00, 0x09, 0x20, 0x00]
 
 
-def isBankDumpFinished(messages):
+def isBankDumpFinished(messages: List[List[int]]):
     # We only need a single bank dump message
     return any([isPartOfBankDump(m) for m in messages])
 
@@ -187,6 +187,70 @@ def checksum(data_block):
     return check_sum & 0x7f
 
 
+def singleVoiceToPackedVoice(voice):
+    # Convert unpacked 155-byte voice data back to the 128-byte packed format
+    packed = bytearray(128)
+    dest = VOICE_PACKED.from_buffer_copy(packed)
+
+    index = 0
+    for op in dest.operators:
+        op.first_section[:] = voice[index:index+11]
+        op.scale_left_curve = voice[index+11]
+        op.scale_right_curve = voice[index+12]
+        op.rate_scale = voice[index+13]
+        op.amp_mod_sensivity = voice[index+14]
+        op.key_vel_sensivity = voice[index+15]
+        op.output_level = voice[index+16]
+        op.osc_mode = voice[index+17]
+        op.freq_coarse = voice[index+18]
+        op.freq_fine = voice[index+19]
+        op.detune = voice[index+20]
+        index += 21
+
+    dest.envs[:] = voice[index:index+8]
+    index += 8
+    dest.algorithm = voice[index]
+    dest.feedback = voice[index+1]
+    dest.osc_key_sync = voice[index+2]
+    index += 3
+    dest.lfo[:] = voice[index:index+4]
+    index += 4
+    dest.lfo_sync = voice[index]
+    dest.lfo_wave = voice[index+1]
+    dest.lfo_pitch_mod_sens = voice[index+2]
+    dest.transpose = voice[index+3]
+    dest.name[:] = voice[index+4:index+14]
+
+    return bytes(dest)
+
+
+def convertPatchesToBankDump(patches: List[List[int]]) -> List[int]:
+    if len(patches) != 32:
+        raise ValueError("A full DX7 bank requires exactly 32 patches")
+
+    # Extract voices from single patches (remove Sysex headers and footers)
+    voices = [patch[6:-2] for patch in patches]
+
+    # Ensure each patch is 155 bytes
+    for voice in voices:
+        if len(voice) != 155:
+            raise ValueError("Each patch must contain exactly 155 bytes of voice data")
+
+    # Pack 155-byte voices into 128-byte packed format
+    packed_voices = [singleVoiceToPackedVoice(voice) for voice in voices]
+
+    # Flatten the packed voices into a single bank data block
+    data_block = b''.join(packed_voices)
+
+    # Compute checksum
+    check_sum = checksum(data_block)
+
+    # Construct final Sysex message
+    bank_dump = [0xf0, 0x43, 0x00, 0x09, 0x20, 0x00] + list(data_block) + [check_sum, 0xf7]
+
+    return bank_dump
+
+
 def make_test_data():
 
     def make_patches(test_data: testing.TestData) -> List[testing.ProgramTestData]:
@@ -196,4 +260,11 @@ def make_test_data():
         assert len(patches) == 32
         yield testing.ProgramTestData(patches[0], name="SYN-LEAD 2")
 
-    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches)
+    def banks(test_data: testing.TestData):
+        assert isBankDumpFinished(test_data.all_messages)
+        return test_data.all_messages
+
+    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, bank_generator=banks, expected_patch_count=32)
+
+
+    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, bank_generator=banks)

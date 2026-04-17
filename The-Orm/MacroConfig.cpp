@@ -13,6 +13,7 @@
 std::vector<KeyboardMacroEvent> kAllKeyboardMacroEvents = {
 	KeyboardMacroEvent::Hide,
 	KeyboardMacroEvent::Favorite,
+	KeyboardMacroEvent::Regular,
 	KeyboardMacroEvent::PreviousPatch,
 	KeyboardMacroEvent::NextPatch,
 	KeyboardMacroEvent::ImportEditBuffer
@@ -23,6 +24,7 @@ std::string KeyboardMacro::toText(KeyboardMacroEvent event)
 	switch (event) {
 	case KeyboardMacroEvent::Hide: return "Hide"; 
 	case KeyboardMacroEvent::Favorite: return "Favorite";
+	case KeyboardMacroEvent::Regular: return "Regular";
 	case KeyboardMacroEvent::PreviousPatch: return "PreviousPatch"; 
 	case KeyboardMacroEvent::NextPatch: return "NextPatch"; 
 	case KeyboardMacroEvent::ImportEditBuffer: return "ImportEditBuffer";
@@ -40,6 +42,9 @@ KeyboardMacroEvent KeyboardMacro::fromText(std::string const &event)
 	}
 	else if ("Favorite" == event) {
 		return KeyboardMacroEvent::Favorite;
+	}
+	else if ("Regular" == event) {
+		return KeyboardMacroEvent::Regular;
 	}
 	else if ("PreviousPatch" == event) {
 		return  KeyboardMacroEvent::PreviousPatch;
@@ -106,4 +111,3 @@ void MacroConfig::buttonClicked(Button *button)
 		recordHander_(event_);
 	}
 }
-

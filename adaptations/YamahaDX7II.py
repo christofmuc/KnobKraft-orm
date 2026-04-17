@@ -130,7 +130,7 @@ def isPartOfBankDump(message):
 
 def isBankDumpFinished(messages):
     # We only need a single bank dump message
-    return any([isEditBufferDump(m) for m in messages])
+    return any([isPartOfBankDump(m) for m in messages])
 
 
 def extractPatchesFromBank(message):
@@ -270,7 +270,7 @@ def isOwnSysexOfSubstatusAndGroup(message, substatus, group):
 
 
 def createGroupRequest(channel, group):
-    return [0xf0, 0x20 | (channel & 0x0f), group, 0xf7]
+    return [0xf0, 0x43, 0x20 | (channel & 0x0f), group, 0xf7]
 
 
 def createUniversalDumpRequest(channel, classification_name, data_format_name):
@@ -278,8 +278,8 @@ def createUniversalDumpRequest(channel, classification_name, data_format_name):
         raise Exception("classification_name needs to be a string of length 4, most likely 'LM  '")
     if len(data_format_name) != 6:
         raise Exception("data_format_name must be a string of length 6, like '8973PE'")
-    return [0xf0, 0x20 | (channel & 0x0f), 0x7e] + [ord(c) for c in classification_name] + [ord(c) for c in
-                                                                                            data_format_name] + [0xf7]
+    return [0xf0, 0x43, 0x20 | (channel & 0x0f), 0x7e] + [ord(c) for c in classification_name] + [ord(c) for c in
+                                                                                                  data_format_name] + [0xf7]
 
 
 def checksum(data_block):
@@ -311,4 +311,4 @@ def make_test_data():
                     print("MIDI receive channel 2", system_data[3])
                     print("MIDI device ID", system_data[14])
 
-    return testing.TestData(sysex=R"testData/yamahaDX7II-STUDIOREINE BANK.syx", edit_buffer_generator=make_patches)
+    return testing.TestData(sysex=R"testData/yamahaDX7II-STUDIOREINE BANK.syx", edit_buffer_generator=make_patches, expected_patch_count=64)

@@ -82,5 +82,5 @@ def make_test_data():
             else:
                 print(f'Ignoring unknown message from factory bank sysex {message}')
 
-    return testing.TestData(sysex=R"testData/Roland_JX_8P_FACTORY_BANK_1-32.syx", edit_buffer_generator=make_patches)
+    return testing.TestData(sysex=R"testData/Roland_JX_8P_FACTORY_BANK_1-32.syx", edit_buffer_generator=make_patches, expected_patch_count=32)
 

@@ -263,4 +263,4 @@ def make_test_data():
     return testing.TestData(sysex="testData/Yamaha_TX7_rom1a.syx",
                             edit_buffer_generator=programs,
                             device_detect_call="f0 43 20 00 f7",
-                            device_detect_reply=([0xf0, 0x43, 0x00, 0x00, 0x01, 0x1B], 0))
+                            device_detect_reply=([0xf0, 0x43, 0x00, 0x00, 0x01, 0x1B], 0), expected_patch_count=32)

@@ -103,7 +103,7 @@ def convertToProgramDump(device_id: int, message: List[int], patch_no: int) -> L
         if new_item_no > 127:
             new_item_no -= 127
             data_type += 6
-        return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
+        return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + data_type, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
     raise Exception("Can only convert single program dumps")
 
 
@@ -243,4 +243,4 @@ def make_test_data():
         x_message[6] = AR_SYSEX_DUMPX_ID_BASE + AR_TYPE_SOUND
         yield testing.ProgramTestData(message=x_message, name="CLASSIC 909 KIC", number=384, target_no=280, friendly_number="Sound 000")
 
-    return testing.TestData(sysex="testData/Elektron_AnalogRytm/909kicks.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Elektron_AnalogRytm/909kicks.syx", program_generator=programs, expected_patch_count=7)

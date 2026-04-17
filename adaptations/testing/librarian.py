@@ -4,6 +4,8 @@ from typing import List, Callable, Optional, Dict, Deque, Any
 from enum import Enum
 import logging
 
+import knobkraft
+
 
 def adaptation_has_implemented(adaptation, function_implemented: str):
     return hasattr(adaptation, function_implemented)
@@ -304,7 +306,7 @@ class Librarian:
             current_bank: Deque[List[int]] = deque()
             for message in sysex_messages:
                 # Try to parse and load these messages as a bank dump
-                if adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message) or adaptation.isBankDumpFinished(message):
+                if adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message) or adaptation.isBankDumpFinished([message]):
                     current_bank.append(message)
                     if len(current_bank) > self.max_number_messages_per_bank:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per bank is larger than {self.max_number_messages_per_bank}")
@@ -318,8 +320,11 @@ class Librarian:
                             current_bank.clear()
                         else:
                             more_patches = adaptation.extractPatchesFromBank(sliding_window[0])
-                            logging.info(f"Loaded bank dump from single message with {len(more_patches)} patches")
-                            results.extend(more_patches)
+                            if more_patches:
+                                logging.info(f"Loaded bank dump from single message with {len(more_patches)} patches")
+                                split_patches = knobkraft.splitSysex(more_patches)
+                                results.extend(split_patches)
                             current_bank.clear()
+
 
         return results

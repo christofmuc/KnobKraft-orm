@@ -30,4 +30,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=data.all_messages[2], name='Dakota Chorale', number=2)
         yield testing.ProgramTestData(message=data.all_messages[127], name='Oil Cans', number=127)
 
-    return testing.TestData(sysex="testData/Sequential_Trigon6/T6_Programs_v1.0.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Sequential_Trigon6/T6_Programs_v1.0.syx", program_generator=programs, expected_patch_count=500)

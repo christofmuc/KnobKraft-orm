@@ -172,4 +172,4 @@ def make_test_data():
     def banks(test_data: testing.TestData) -> List:
         yield test_data.all_messages[0]
 
-    return testing.TestData(sysex="testData/Korg_M1/bank21.syx", edit_buffer_generator=programs, bank_generator=banks, device_detect_reply=("F0 7E 00 06 02 42 19 00 08 00 07 01 01 00 F7", 0))
+    return testing.TestData(sysex="testData/Korg_M1/bank21.syx", edit_buffer_generator=programs, bank_generator=banks, device_detect_reply=("F0 7E 00 06 02 42 19 00 08 00 07 01 01 00 F7", 0), expected_patch_count=99)

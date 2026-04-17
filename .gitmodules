@@ -51,3 +51,6 @@
 [submodule "third_party/faiss"]
 	path = third_party/faiss
 	url = https://github.com/facebookresearch/faiss.git
+[submodule "third_party/doctest"]
+	path = third_party/doctest
+	url = https://github.com/doctest/doctest

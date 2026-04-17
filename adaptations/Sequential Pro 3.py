@@ -29,4 +29,4 @@ def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(message=data.all_messages[2], name='Staircase', number=2)
 
-    return testing.TestData(sysex="testData/P3_Factory_Sounds_v1.01.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/P3_Factory_Sounds_v1.01.syx", program_generator=programs, expected_patch_count=512)

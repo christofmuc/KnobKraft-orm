@@ -189,4 +189,4 @@ def make_test_data():
         yield testing.ProgramTestData(message=data.all_messages[5], name="POWER BASS", number=5)
         yield testing.ProgramTestData(message=data.all_messages[123], name="OB  CHORDS", number=123)
 
-    return testing.TestData(sysex="testData/Elektron_Digitone/URRRS x Digitone.syx", program_generator=programs)
+    return testing.TestData(sysex="testData/Elektron_Digitone/URRRS x Digitone.syx", program_generator=programs, expected_patch_count=124)

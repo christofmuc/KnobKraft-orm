@@ -211,4 +211,4 @@ def make_test_data():
     def banks(data: testing.TestData) -> List:
         yield data.all_messages
 
-    return testing.TestData(sysex="testData/Korg_03RW/vicbank1.syx", edit_buffer_generator=programs, bank_generator=banks)
+    return testing.TestData(sysex="testData/Korg_03RW/vicbank1.syx", edit_buffer_generator=programs, bank_generator=banks, expected_patch_count=100)

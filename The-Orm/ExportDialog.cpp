@@ -6,13 +6,47 @@
 
 #include "ExportDialog.h"
 
+#include "BankDumpCapability.h"
+#include "EditBufferCapability.h"
+#include "ProgramDumpCapability.h"
+
+#include <spdlog/spdlog.h>
+
 static std::function<void(midikraft::Librarian::ExportParameters)> sCallback_;
 
-ExportDialog::ExportDialog()
+ExportDialog::ExportDialog(std::shared_ptr<midikraft::Synth> synth)
 {
+	// Check which types should be offered to export
+	auto bankSendCapability = midikraft::Capability::hasCapability<midikraft::BankSendCapability>(synth);
+	auto editBufferCapability = midikraft::Capability::hasCapability<midikraft::EditBufferCapability>(synth);
+	auto programDumpCapability = midikraft::Capability::hasCapability<midikraft::ProgramDumpCabability>(synth);
+
+	std::optional<midikraft::Librarian::ExportFormatOption> defaultFormat;
+	std::map<int, std::string> formats;
+	if (bankSendCapability) {
+		formats[midikraft::Librarian::BANK_DUMP] = "Sysex format full bank with all patches";
+		defaultFormat = midikraft::Librarian::BANK_DUMP;
+	}
+	if (programDumpCapability) {
+		formats[midikraft::Librarian::PROGRAM_DUMPS] = "Sysex format individual program dumps";
+		if (not defaultFormat.has_value()) {
+			defaultFormat = midikraft::Librarian::PROGRAM_DUMPS;
+		}
+	}
+	if (editBufferCapability) {
+		formats[midikraft::Librarian::EDIT_BUFFER_DUMPS] = "Sysex format individual edit buffer dumps";
+		if (not defaultFormat.has_value()) {
+			defaultFormat = midikraft::Librarian::EDIT_BUFFER_DUMPS;
+		}
+	}
+
+	if (!defaultFormat.has_value()) {
+		spdlog::error("Can't export bank for synth '{}', none of bank send, program dump, or edit buffer capability implemented!");
+		throw std::runtime_error("No export method");
+	}
+	
 	// Properties to edit...
-	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Sysex format", "", midikraft::Librarian::PROGRAM_DUMPS,
-		{ {midikraft::Librarian::PROGRAM_DUMPS, "Sysex format individual program dumps"}, { midikraft::Librarian::EDIT_BUFFER_DUMPS, "Sysex format individual edit buffer dumps" } })));
+	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("Sysex format", "", *defaultFormat, formats)));
 	props_.push_back(std::make_shared<TypedNamedValue>(TypedNamedValue("File format", "", midikraft::Librarian::MANY_FILES, 
 		{ {midikraft::Librarian::MANY_FILES, "Each patch separately into a file"}, { midikraft::Librarian::ZIPPED_FILES, "Each patch separately into a file, but all zipped up" }, 
 		{ midikraft::Librarian::ONE_FILE, "One sysex file with all messages" }, { midikraft::Librarian::MID_FILE, "One MIDI file (SMF) to play from a player or DAW" } })));
@@ -54,10 +88,10 @@ static void dialogClosed(int modalResult, ExportDialog* dialog)
 	}
 }
 
-void ExportDialog::showExportDialog(Component *centeredAround, std::string const &title, std::function<void(midikraft::Librarian::ExportParameters)> callback)
+void ExportDialog::showExportDialog(Component *centeredAround, std::string const &title, std::shared_ptr<midikraft::Synth> synth, std::function<void(midikraft::Librarian::ExportParameters)> callback)
 {
 	if (!sExportDialog_) {
-		sExportDialog_ = std::make_unique<ExportDialog>();
+		sExportDialog_ = std::make_unique<ExportDialog>(synth);
 	}
 	sCallback_ = callback;
 
