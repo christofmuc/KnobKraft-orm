@@ -11,6 +11,7 @@ import testing
 import functools
 
 from testing.librarian import Librarian
+from testing.mock_midi import MockMidiController
 
 
 def require_testdata(test_data_field):
@@ -463,4 +464,40 @@ def test_load_sysex_file_via_librarian(adaptation, test_data: testing.TestData):
     librarian = Librarian()
     patches = librarian.load_sysex(adaptation, test_data.all_messages)
     assert len(patches) == test_data.expected_patch_count
+
+
+@require_testdata("mock_device_factory")
+def test_download_all_patches_via_mock_device(adaptation, test_data: testing.TestData):
+    result = []
+    librarian = Librarian()
+    controller = MockMidiController(test_data.mock_device_factory(test_data, adaptation))
+
+    librarian.start_downloading_all_patches(
+        controller,
+        0,
+        adaptation,
+        test_data.wire_download_bank,
+        lambda patches: result.extend(patches),
+    )
+    controller.drain()
+
+    assert controller.finished, (
+        f"Mock download did not finish; sent={len(controller.sent_messages)} "
+        f"pending={len(controller.pending_replies)} loaded={len(result)}"
+    )
+
+    expected_count = test_data.expected_wire_patch_count
+    if expected_count is None:
+        expected_count = test_data.expected_patch_count
+    assert len(result) == expected_count
+
+    if test_data.expected_sent_messages is not None:
+        assert controller.sent_messages == test_data.expected_sent_messages(test_data, adaptation)
+
+    for patch in result:
+        if hasattr(adaptation, "isSingleProgramDump") and adaptation.isSingleProgramDump(patch):
+            continue
+        if hasattr(adaptation, "isEditBufferDump") and adaptation.isEditBufferDump(patch):
+            continue
+        pytest.fail(f"Downloaded patch is neither a program dump nor an edit buffer: {knobkraft.syxToString(patch)}")
 

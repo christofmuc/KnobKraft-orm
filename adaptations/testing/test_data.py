@@ -77,6 +77,10 @@ class TestData:
     rename_name: Optional[str] = None
     not_idempotent: bool = False
     expected_patch_count: int = 1
+    mock_device_factory: Optional[Callable[[Any, Any], Any]] = None
+    expected_wire_patch_count: Optional[int] = None
+    wire_download_bank: int = 0
+    expected_sent_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
 
     def __post_init__(self):
         self.all_messages = []

@@ -19,6 +19,10 @@ def adaptation_has_bank_dump_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["isBankDumpFinished"])
 
 
+def adaptation_has_bank_download_capability(adaptation):
+    return adaptation_has_all_implemented(adaptation, ["createBankDumpRequest", "isBankDumpFinished"])
+
+
 def adaptation_has_program_dump_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["createProgramDumpRequest", "isSingleProgramDump"])
 
@@ -40,6 +44,9 @@ class MidiController:
 
     def add_message_handler(self, handler: MidiMessageHandler) -> None:
         self.handlers.append(handler)
+
+    def clear_message_handlers(self):
+        self.handlers.clear()
 
     def send(self, message: List[int]):
         pass
@@ -83,12 +90,13 @@ class Librarian:
         self.download_number = 0  # The current patch number we try to download
         self.start_download_number = 0  # The number of the first patch we download
         self.end_download_number = 0  # The number of the last patch we download to get a whole bank
-        self.current_download_messages: List[List[int]] = []  # The list of patches already successfully downloaded
-        self.current_edit_buffer: List[int] = []  # Messages collected for the current incoming edit buffer
-        self.current_download_program_dump: List[int] = []  # Messages collected for the current incoming program buffer
+        self.current_download_messages: List[List[int]] = []  # MIDI messages collected for the current download
+        self.current_edit_buffer: List[List[int]] = []  # Messages collected for the current incoming edit buffer
+        self.current_download_program_dump: List[List[int]] = []  # Messages collected for the current incoming program buffer
         self.on_finished: Optional[Callable[[List[List[int]]], None]] = None  # This function is called with the result of load operation
         self.max_number_messages_per_patch = 14  # This is to limit memory and computation time when loading large files
         self.max_number_messages_per_bank = 256  # Again, we need to limit miscalculations. But banks might have many more messages
+        self._active_midi_controller: Optional[MidiController] = None
 
     def determine_bank_download_method(self, adaptation) -> BankDownloadMethod:
         if adaptation_has_implemented(adaptation, "bankDownloadMethodOverride"):
@@ -101,7 +109,7 @@ class Librarian:
                 raise Exception("bankDownloadMethodOverride must return either EDITBUFFERS or PROGRAMS as string. BankDumps would be default anyway.")
 
         # Default behavior - use the "best possible"
-        if adaptation_has_bank_dump_capability(adaptation):
+        if adaptation_has_bank_download_capability(adaptation):
             return BankDownloadMethod.BANKS
         elif adaptation_has_program_dump_capability(adaptation):
             return BankDownloadMethod.PROGRAM_BUFFERS
@@ -122,24 +130,25 @@ class Librarian:
         self.download_number = 0
         self.on_finished = on_finished
         self.current_download_messages.clear()
+        self._active_midi_controller = midi_controller
 
         # Determine the download method
         method = self.determine_bank_download_method(adaptation)
 
         if method == BankDownloadMethod.BANKS:
-            buffer = adaptation.createBankDumpRequest(channel, bank_no)
-            midi_controller.send(buffer)
             midi_controller.add_message_handler(partial(self._handle_next_bank_dump, midi_controller=midi_controller, adaptation=adaptation))
+            buffer = adaptation.createBankDumpRequest(channel, bank_no)
+            self._send_block(midi_controller, buffer)
 
         elif method == BankDownloadMethod.PROGRAM_BUFFERS:
-            midi_controller.add_message_handler(partial(self._handle_next_program_buffer, midi_controller=midi_controller, adaptation=adaptation, bank_no=bank_no))
+            midi_controller.add_message_handler(partial(self._handle_next_program_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel, bank_no=bank_no))
             self.download_number = SynthBank.start_index_in_bank(adaptation, bank_no)
             self.start_download_number = self.download_number
             self.end_download_number = self.download_number + SynthBank.number_of_patches_in_bank(adaptation, bank_no)
             self._start_download_next_program_buffer(midi_controller, adaptation, channel)
 
         elif method == BankDownloadMethod.EDIT_BUFFERS:
-            midi_controller.add_message_handler(partial(self._handle_next_edit_buffer, midi_controller=midi_controller, adaptation=adaptation, bank_no=bank_no))
+            midi_controller.add_message_handler(partial(self._handle_next_edit_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel, bank_no=bank_no))
             self.download_number = SynthBank.start_index_in_bank(adaptation, bank_no)
             self.start_download_number = self.download_number
             self.end_download_number = self.download_number + SynthBank.number_of_patches_in_bank(adaptation, bank_no)
@@ -148,20 +157,40 @@ class Librarian:
         else:
             logging.error("Error: This synth has not implemented a single method to retrieve a bank. Please consult the documentation!")
 
+    def _finish_download(self, midi_controller: MidiController, patches: List[List[int]]):
+        if hasattr(midi_controller, "mark_finished"):
+            midi_controller.mark_finished()
+        if hasattr(midi_controller, "clear_message_handlers"):
+            midi_controller.clear_message_handlers()
+        if self.on_finished is not None:
+            self.on_finished(patches)
+
+    @staticmethod
+    def _send_block(midi_controller: MidiController, messages):
+        if messages is None:
+            return
+        if isinstance(messages, list) and messages and isinstance(messages[0], list):
+            for message in messages:
+                midi_controller.send(message)
+        elif messages:
+            midi_controller.send(messages)
+
     def _handle_next_bank_dump(self, message: List[int], midi_controller: MidiController, adaptation) -> None:
         """
         Handle the next message incoming during a bank dump download
         """
-        if adaptation.adaptation_has_implemented("isPartOfBankDump") and adaptation.isPartOfBankDump(message):
+        is_part = False
+        if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
+            is_part = adaptation.isPartOfBankDump(message)
+        elif adaptation.isBankDumpFinished([message]):
+            is_part = True
+
+        if is_part:
             # This is part of the bank dump. Store in self.current_download_message and check if we're done
             self.current_download_messages.append(message)
             if adaptation.isBankDumpFinished(self.current_download_messages):
-                patches = self.load_sysex(self.current_download_messages)
-                self.on_finished(patches)
-        elif adaptation.isBankDumpFinished(message):
-            # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
-            patches = self.load_sysex(self.current_download_messages)
-            self.on_finished(patches)
+                patches = self.load_sysex(adaptation, self.current_download_messages)
+                self._finish_download(midi_controller, patches)
 
     def _start_download_next_program_buffer(self, midi_controller: MidiController, adaptation, channel: int) -> None:
         """
@@ -169,9 +198,9 @@ class Librarian:
         """
         self.current_download_program_dump.clear()
         messages = adaptation.createProgramDumpRequest(channel, self.download_number)
-        midi_controller.send(messages)
+        self._send_block(midi_controller, messages)
 
-    def _handle_next_program_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int) -> None:
+    def _handle_next_program_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int, bank_no: int) -> None:
         """
         Check if the message received is part of an edit buffer, if yes check if the program dump is complete or even the whole bank
         is complete.
@@ -190,19 +219,19 @@ class Librarian:
             is_part_of_program_buffer = adaptation.isSingleProgramDump(message)
 
         if is_part_of_program_buffer:
-            self.current_download_program_dump.extend(message)
+            self.current_download_program_dump.append(message)
 
             # See if we should send a reply (ACK)
             if next_message:
-                midi_controller.send(next_message)
+                self._send_block(midi_controller, next_message)
 
             # Do we have a complete program dump?
-            if adaptation.isSingleProgramDump(self.current_download_program_dump):
-                self.current_download_messages.append(self.current_download_program_dump)
+            if adaptation.isSingleProgramDump(flatten(self.current_download_program_dump)):
+                self.current_download_messages.extend(self.current_download_program_dump)
                 # Finished?
                 if self.download_number >= self.end_download_number - 1:
-                    patches = self.load_sysex(self.current_download_messages)
-                    self.on_finished(patches)
+                    patches = self.load_sysex(adaptation, self.current_download_messages)
+                    self._finish_download(midi_controller, patches)
                 else:
                     self.download_number += 1
                     self._start_download_next_program_buffer(midi_controller, adaptation, channel)
@@ -219,9 +248,9 @@ class Librarian:
         if send_program_change:
             messages.extend([0xc0 | (channel & 0x0f), self.download_number & 0x7f])
         messages.extend(adaptation.createEditBufferRequest(channel))
-        midi_controller.send(messages)
+        self._send_block(midi_controller, messages)
 
-    def _handle_next_edit_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int) -> None:
+    def _handle_next_edit_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int, bank_no: int) -> None:
         """
         This is called when the next MIDI message is received from the synth. Check if this is part of the edit buffer, if we need to answer
         with a handshake message and whether the bank download is done.
@@ -241,17 +270,17 @@ class Librarian:
 
         if is_part_of_edit_buffer:
             if next_message:
-                midi_controller.send(next_message)
-            self.current_edit_buffer.extend(message)
+                self._send_block(midi_controller, next_message)
+            self.current_edit_buffer.append(message)
 
-            if adaptation.isEditBufferDump(self.current_edit_buffer):
+            if adaptation.isEditBufferDump(flatten(self.current_edit_buffer)):
                 # Got one complete edit buffer!
-                self.current_download_messages.append(self.current_edit_buffer)
+                self.current_download_messages.extend(self.current_edit_buffer)
 
                 # Are we done?
                 if self.download_number >= self.end_download_number - 1:
-                    patches = self.load_sysex(self.current_download_messages)
-                    self.on_finished(patches)
+                    patches = self.load_sysex(adaptation, self.current_download_messages)
+                    self._finish_download(midi_controller, patches)
                 else:
                     self.download_number += 1
                     # Continue with the next edit buffer

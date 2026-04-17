@@ -325,6 +325,8 @@ def changeChannelInMessage(new_channel, message):
 
 
 def make_test_data():
+    from testing.mock_midi import EditBufferMockDevice
+
     def edit_buffers(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         raw_data = list(itertools.chain.from_iterable(test_data.all_messages))
         for d in test_data.all_messages:
@@ -342,6 +344,16 @@ def make_test_data():
         program_dump = convertToProgramDump(1, raw_data, 17)
         yield testing.ProgramTestData(message=program_dump, name="Piano 1   ", rename_name="Piano 2   ", number=17, friendly_number="Bank3-2")
 
-    return testing.TestData(sysex="testData/refaceDX-00-Piano_1___.syx", edit_buffer_generator=edit_buffers, program_generator=program_buffers)
+    def mock_device(test_data: testing.TestData, adaptation):
+        first_edit_buffer = next(iter(test_data.edit_buffers)).message.byte_list
+        return EditBufferMockDevice(adaptation, [first_edit_buffer] * numberOfPatchesPerBank())
+
+    return testing.TestData(
+        sysex="testData/refaceDX-00-Piano_1___.syx",
+        edit_buffer_generator=edit_buffers,
+        program_generator=program_buffers,
+        mock_device_factory=mock_device,
+        expected_wire_patch_count=numberOfPatchesPerBank(),
+    )
 
 
