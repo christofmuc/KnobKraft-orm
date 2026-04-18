@@ -579,10 +579,11 @@ def make_test_data():
         yield testing.ProgramTestData(program_buffers[0], number=0, name="PowerK5K")
         yield testing.ProgramTestData(program_buffers[1], number=1, name="PowerBas")
         yield testing.ProgramTestData(program_buffers[-1], number=97, name="Boreal")
-    return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
+        return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
                             bank_generator=bankGenerator,
                             program_generator=programs,
-                            device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7],
+                            # device_detect_call=[0xF0, KawaiSysexID, 0, 0x60, 0xF7],
+                            device_detect_call=[0xF0, 0x7e, 0, 0x06, 0x01, 0xF7],
                             expected_patch_count=98,
                             simulator=K5000Simulator,
                             expected_patch_count_from_simulator=40)
