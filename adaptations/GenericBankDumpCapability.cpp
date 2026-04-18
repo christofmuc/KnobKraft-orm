@@ -27,7 +27,7 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericBankDumpRequestCapability::requestBankDump(MidiBankNumber bankNo) const
 	{
-		spdlog::info("requestBankDump called for bank {}", bankNo.toZeroBased());
+		spdlog::debug("requestBankDump called for bank {}", bankNo.toZeroBased());
 		py::gil_scoped_acquire acquire;
 		try {
 			int c = me_->channel().toZeroBasedInt();
