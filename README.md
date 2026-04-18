@@ -43,6 +43,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Kawai | K1/K1m/K1r | beta | adaptation | |
 | Kawai | K3/K3m | works | native | |
 | Kawai | K4 | alpha | adaptation | |
+| Kawai | K5000 | beta | adaptation | Heroic effort by @markusschlosser! Most complex! |
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |

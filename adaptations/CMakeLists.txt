@@ -20,7 +20,7 @@ set(adaptation_files
 	"Ensoniqesq1.py" "Ensoniq_VFX.py"
 	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
-	"KawaiK1.py" "Kawai K4.py" 
+	"KawaiK1.py" "Kawai K4.py" "KawaiK5000.py"
 	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" "Korg_M1.py" "Korg_R3.py"
         "Line_6_POD_Series.py" "Korg_microKORG.py"
 	"Matrix 6.py"
