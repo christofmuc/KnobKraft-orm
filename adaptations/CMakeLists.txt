@@ -12,7 +12,7 @@ set(adaptation_files
         "Akai_AX80.py"
 	"AlesisAndromedaA6.py"
 	"BC_Kijimi.py"
-	"Behringer Deepmind 12.py" 
+	"Behringer Deepmind 12.py" "Behringer_Wave.py" "Behringer_Pro_800.py"
 	"DSI Pro 2.py" "DSI Prophet 08.py" "DSI_Evolver.py" "DSI_Mopho.py" "DSI_Mopho_X4.py" "DSI_Tetra.py" "DSI Prophet 12.py" 
 	"ElectraOne.py"
         "Elektron_AnalogRytm.py" "Elektron_Digitone.py"
@@ -21,15 +21,15 @@ set(adaptation_files
 	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
 	"KawaiK1.py" "Kawai K4.py" 
-	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" "Korg_M1.py"
-        "Line_6_POD_Series.py"
+	"Korg_03RW.py" "KorgDW6000.py" "KorgDW8000.py" "KorgMinilogue_XD.py" "KorgMS2000.py" "Korg_M1.py" "Korg_R3.py"
+        "Line_6_POD_Series.py" "Korg_microKORG.py"
 	"Matrix 6.py"
         "Moog_Voyager.py"
-	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py"
+	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py" "Novation_Bass_Station_II.py"
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py" "Oberheim_Teo5.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
-	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py"
+	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py" "Roland_U20_U220.py" "Roland_JD_Xi.py"
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py" "Waldorf_M.py" "Waldorf_Pulse.py"
@@ -61,6 +61,7 @@ set(adaptation_files_test_only
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
 	"knobkraft/__init__.py" "knobkraft/adaptation_module.py" "knobkraft/sysex.py" "knobkraft/test_helper.py"
+        "korg/__init__.py" "korg/GenericKorg.py"
     "testing/__init__.py" "testing/test_data.py"
 )
 
@@ -69,9 +70,11 @@ set(Sources
 	CreateNewAdaptationDialog.cpp CreateNewAdaptationDialog.h
 	GenericAdaptation.cpp GenericAdaptation.h
 	GenericBankDumpCapability.cpp GenericBankDumpCapability.h
+	GenericCustomProgramChangeCapability.cpp GenericCustomProgramChangeCapability.h
 	GenericEditBufferCapability.cpp GenericEditBufferCapability.h
 	GenericHasBankDescriptorsCapability.cpp GenericHasBankDescriptorsCapability.h
 	GenericHasBanksCapability.cpp GenericHasBanksCapability.h
+	GenericLegacyLoaderCapability.cpp GenericLegacyLoaderCapability.h
 	GenericPatch.cpp GenericPatch.h
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
 	PythonUtils.cpp PythonUtils.h
@@ -112,9 +115,10 @@ endif()
 
 if(UNIX AND NOT APPLE)
 	# Define additional install files - in our case, all adaptation files and the python modules
-	install(DIRECTORY sequential/ DESTINATION bin/sequential FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(DIRECTORY roland/ DESTINATION bin/roland FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
-	install(DIRECTORY testing/ DESTINATION bin/testing FILES_MATCHING PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY sequential/ DESTINATION bin/sequential PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY roland/ DESTINATION bin/roland PATTERN "__pycache__" EXCLUDE)
+        install(DIRECTORY korg/ DESTINATION bin/korg PATTERN "__pycache__" EXCLUDE)
+        install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft PATTERN "__pycache__" EXCLUDE)
+	install(DIRECTORY testing/ DESTINATION bin/testing PATTERN "__pycache__" EXCLUDE)
 	install(FILES ${adaptation_files} DESTINATION bin)
 ENDIF()

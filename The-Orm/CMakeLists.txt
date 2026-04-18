@@ -8,13 +8,14 @@ cmake_minimum_required(VERSION 3.14)
 
 # Get the version from our sub cmakefile
 execute_process(
-		COMMAND sh -c "cmake -P '${CMAKE_CURRENT_LIST_DIR}/gitversion.cmake' >/dev/null"
-		ERROR_VARIABLE PROJECT_VERSION
+    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/gitversion.cmake"
+    ERROR_VARIABLE PROJECT_VERSION
+    ERROR_STRIP_TRAILING_WHITESPACE
 )
 # Cleanup output
 string(REGEX REPLACE "^[[:space:]]+|[[:space:]]+$" "" PROJECT_VERSION "${PROJECT_VERSION}")
 string(REGEX REPLACE "\n$" "" PROJECT_VERSION "${PROJECT_VERSION}")
-message(STATUS "Project version is ${PROJECT_VERSION}")
+message(STATUS "Project version is '${PROJECT_VERSION}'")
 
 # Start project
 project(KnobKraftOrm VERSION ${PROJECT_VERSION})
@@ -92,6 +93,7 @@ set(SOURCES
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
+	UserBankFactory.cpp UserBankFactory.h
 	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
 	win_resources.rc
 	version.cpp.in
@@ -104,7 +106,8 @@ set(SOURCES
 # Mac Icon Magic
 if(APPLE)
 set(KnobKraftOrm_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon_orm.icns)
-set_source_files_properties(resources/icon_orm.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+set_source_files_properties(${KnobKraftOrm_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
 ENDIF()
 
 set(MIDIKRAFT_LIBRARIES
@@ -126,10 +129,19 @@ set(MIDIKRAFT_LIBRARIES
 )
 
 add_executable(KnobKraftOrm MACOSX_BUNDLE WIN32 ${KnobKraftOrm_ICON} ${SOURCES})
-target_include_directories(KnobKraftOrm 
-	INTERFACE ${CMAKE_CURRENT_LIST_DIR}})
+target_include_directories(KnobKraftOrm INTERFACE ${CMAKE_CURRENT_LIST_DIR})
+if (CRASH_REPORTING)
+  target_include_directories(KnobKraftOrm SYSTEM PRIVATE "${SENTRY_INSTALL_PATH}/include")
+  if (WIN32)
+    target_link_directories(KnobKraftOrm PRIVATE "${SENTRY_INSTALL_PATH}/lib")
+  endif()
+endif()
+if (SPARKLE_UPDATES AND WIN32)
+  target_include_directories(KnobKraftOrm SYSTEM PRIVATE "${WINSPARKLE_INCLUDE}")
+  target_link_directories(KnobKraftOrm PRIVATE "${WINSPARKLE_LIBDIR}")
+endif()
 target_include_directories(KnobKraftOrm SYSTEM
-	PRIVATE "${SENTRY_INSTALL_PATH}/include" "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}" "${WINSPARKLE_INCLUDE}")
+	PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(KnobKraftOrm PRIVATE JUCE_MODULE_AVAILABLE_gin_gui JUCE_MODULE_AVAILABLE_gin)
 get_target_property(gin_include_dirs gin INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(KnobKraftOrm SYSTEM PRIVATE ${gin_include_dirs})
@@ -171,9 +183,11 @@ ELSEIF(APPLE)
 		pybind11::embed
 		)
 	SET_TARGET_PROPERTIES(KnobKraftOrm PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "KnobKraft Orm ${KnobKraftOrm_VERSION}"
-		MACOSX_BUNDLE_ICON_FILE icon_orm.icns
-		MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
-		)
+			MACOSX_BUNDLE_ICON_FILE icon_orm.icns
+			MACOSX_BUNDLE_BUNDLE_VERSION ${KnobKraftOrm_VERSION}
+			MACOSX_BUNDLE_GUI_IDENTIFIER "com.knobkraft.orm"
+			MACOSX_BUNDLE_IDENTIFIER "com.knobkraft.orm"
+                )
 ELSEIF(UNIX)
 	target_link_libraries(KnobKraftOrm PRIVATE 
 		${JUCE_LIBRARIES} 
@@ -185,7 +199,27 @@ ELSEIF(UNIX)
 		gin
 		spdlog::spdlog
 		)
-	target_compile_options(KnobKraftOrm PRIVATE -pthread -I/usr/include/webkitgtk-4.0 -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/webkitgtk-4.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include)
+        target_include_directories(KnobKraftOrm PRIVATE
+            /usr/include/webkitgtk-4.0
+            /usr/include/at-spi2-atk/2.0
+            /usr/include/at-spi-2.0
+            /usr/include/dbus-1.0
+            /usr/lib/x86_64-linux-gnu/dbus-1.0/include
+            /usr/include/gtk-3.0
+            /usr/include/gio-unix-2.0/
+            /usr/include/cairo
+            /usr/include/pango-1.0
+            /usr/include/harfbuzz
+            /usr/include/atk-1.0
+            /usr/include/pixman-1
+            /usr/include/freetype2
+            /usr/include/libpng16
+            /usr/include/gdk-pixbuf-2.0
+            /usr/include/libsoup-2.4
+            /usr/include/libxml2
+            /usr/include/glib-2.0
+            /usr/lib/x86_64-linux-gnu/glib-2.0/include)
+	target_compile_options(KnobKraftOrm PRIVATE -pthread)
 ENDIF()
 
 # Use all cores
@@ -213,7 +247,7 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc74.dll" "${icu_SOURCE_DIR}/bin64/icudt74.dll"
+					"${icu_SOURCE_DIR}/bin64/icuuc78.dll" "${icu_SOURCE_DIR}/bin64/icudt78.dll"
 					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	add_custom_command(
@@ -236,6 +270,12 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/roland
 		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                -DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/korg
+                -DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/korg
+                -P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
+                )
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND}
 		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/knobkraft
@@ -264,7 +304,16 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		)
 
 IF(WIN32)
-	# Windows only: Build InnoSetup installer
+    # We need to copy the runtime of the embedded Python used, else we get weird errors starting from Python 3.12, probably because it finds
+    # other versions on the drive.
+    add_custom_command(TARGET KnobKraftOrm POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${pythonembedded_SOURCE_DIR}"
+                "$<TARGET_FILE_DIR:KnobKraftOrm>"
+        COMMENT "Copying embedded Python runtime"
+    )
+
+    # Windows only: Build InnoSetup installer
 	find_program(INNOSETUP NAMES iscc ISCC HINTS "${CMAKE_CURRENT_LIST_DIR}/../third_party/Tools.InnoSetup.6.0.5/tools" "c:/program files (x86)/Inno Setup 6")
 	if (INNOSETUP)
 	else()
@@ -280,13 +329,24 @@ IF(WIN32)
 	add_custom_command(
 		TARGET KnobKraftOrm POST_BUILD
 		COMMAND  "${CMAKE_COMMAND}" -E $<${no_copy}:echo> $<${no_copy}:"Not building Installer with "> chdir . ${INNOSETUP} "${CMAKE_CURRENT_BINARY_DIR}/setup.iss"
-		DEPENDS setup.iss 
 	)
 ENDIF()
 
 IF(APPLE)
 	# This section is supposed to build a relocatable macOS DMG installer when you specify the
 	# --target package
+
+	# For local unsigned builds, still embed Python so the app can find its runtime.
+	IF(NOT CODESIGN_CERTIFICATE_NAME)
+		add_custom_command(
+				TARGET KnobKraftOrm POST_BUILD
+				COMMAND "${CMAKE_COMMAND}"
+					-DPYTHON_EXECUTABLE="${PYTHON_EXECUTABLE}"
+					-DPYTHON_VERSION="${PYTHON_VERSION_TO_EMBED}"
+					-DAPP_BUNDLE="$<TARGET_BUNDLE_DIR:KnobKraftOrm>"
+					-P "${CMAKE_SOURCE_DIR}/cmake/embed_python_macos.cmake"
+		)
+	ENDIF()
 
 	IF(CODESIGN_CERTIFICATE_NAME)
 		# We need to sign the files as a post build step. Doing this as install step doesn't help because
@@ -296,10 +356,11 @@ IF(APPLE)
 				TARGET KnobKraftOrm POST_BUILD
 				COMMAND "${CMAKE_COMMAND}"
 					-DPYTHON_SOURCE="${PYTHON_SOURCE_DIR}/../lib"
+					-DPYTHON_VERSION="${PYTHON_VERSION_TO_EMBED}"
 					-DSIGN_DIRECTORY=$<TARGET_BUNDLE_DIR:KnobKraftOrm>
 					-DENTITLEMENTS_FILE="${CMAKE_CURRENT_LIST_DIR}/Codesign.entitlements"
 					-DCODESIGN_CERTIFICATE_NAME="${CODESIGN_CERTIFICATE_NAME}"
-					-P "$(CMAKE_SOURCE_DIR)/cmake/codesign.cmake"
+					-P "${CMAKE_SOURCE_DIR}/cmake/codesign.cmake"
 		)
 	ENDIF()
 

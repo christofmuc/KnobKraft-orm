@@ -235,13 +235,45 @@ void PatchButtonPanel::setPatches(std::vector<midikraft::PatchHolder> const &pat
 	refresh(false);
 	if (autoSelectTarget != -1) {
 		if (autoSelectTarget == 0) {
-			buttonClicked(autoSelectTarget, false);
+			// Trigger selection when paging forward so the first item on the new page becomes active
+			buttonClicked(autoSelectTarget, true);
 		}
 		else if (autoSelectTarget == 1) {
-			buttonClicked(((int) patches_.size()) - 1, false);
+			// Trigger selection when paging backward so the last item on the new page becomes active
+			buttonClicked(((int) patches_.size()) - 1, true);
 		}
 	}
 	setupPageButtons();
+}
+
+bool PatchButtonPanel::updateVisiblePatch(midikraft::PatchHolder const& patch)
+{
+	for (size_t i = 0; i < patches_.size(); ++i) {
+		auto& visiblePatch = patches_[i];
+		bool sameMd5 = visiblePatch.md5() == patch.md5();
+		bool sameSynth = (!visiblePatch.synth() || !patch.synth() || visiblePatch.synth()->getName() == patch.synth()->getName());
+		if (sameMd5 && sameSynth) {
+			visiblePatch = patch;
+
+			if (i < patchButtons_->size() && visiblePatch.patch() && visiblePatch.synth()) {
+				auto displayMode = PatchHolderButton::getCurrentInfoForSynth(visiblePatch.synth()->getName());
+				if (UIModel::instance()->multiMode_.multiSynthMode()) {
+					displayMode = static_cast<PatchButtonInfo>(
+						static_cast<int>(PatchButtonInfo::SubtitleSynth) | (static_cast<int>(displayMode) & static_cast<int>(PatchButtonInfo::CenterMask))
+						);
+				}
+				patchButtons_->buttonWithIndex((int)i)->setPatchHolder(&visiblePatch, displayMode);
+				refreshThumbnail((int)i);
+			}
+			else {
+				// Fallback safety for incomplete data
+				refresh(false);
+			}
+			return true;
+		}
+	}
+
+	return false;
 }
 
 String PatchButtonPanel::createNameOfThubnailCacheFile(midikraft::PatchHolder const &patch) {

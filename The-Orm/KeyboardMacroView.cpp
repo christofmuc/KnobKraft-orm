@@ -11,6 +11,7 @@
 #include "Logger.h"
 #include "Settings.h"
 #include "UIModel.h"
+#include "LayoutConstants.h"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -21,8 +22,11 @@ const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
 const char *kRouteMasterkeyboard = "Forward MIDI to synth";
 const char *kFixedSynthSelected = "Fixed synth played";
+const char *kFixedSynthSelectedSettingKey = "Fixed synth played name";
 const char *kUseElectraOne = "Forward Electra One";
+const char* kSecondaryMIDIOut = "Secondary MIDI OUT";
 const char *kInputDevice = "MIDI Input Device";
+const char *kInputDeviceSettingKey = "MIDI Input Device Name";
 const char *kMidiChannel = "MIDI channel";
 const char *kLowestNote = "Lowest MIDI Note";
 const char *kHighestNote = "Highest MIDI Note";
@@ -93,6 +97,10 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 	addAndMakeVisible(customSetup_);
 	addAndMakeVisible(keyboard_);
 	keyboard_.setOctaveForMiddleC(4); // This is correct for the DSI Synths, I just don't know what the standard is
+	addAndMakeVisible(macroViewport_);
+	macroContainer_ = std::make_unique<Component>();
+	macroViewport_.setScrollBarsShown(true, false);
+	macroViewport_.setViewedComponent(macroContainer_.get(), false);
 
 	// Create config table
 	for (auto config : kAllKeyboardMacroEvents) {
@@ -123,7 +131,7 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 			}
 		});
 		configs_.add(configComponent);
-		addAndMakeVisible(configComponent);
+		macroContainer_->addAndMakeVisible(configComponent);
 
 		UIModel::instance()->currentSynth_.addChangeListener(this);
 	}
@@ -173,12 +181,24 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> cal
 
 				// Check if this is a message we will transform into a macro
 				for (const auto& macro : macros_) {
-					if (isMacroState(macro.second)) {
+					bool matched = isMacroState(macro.second);
+					bool wasActive = macroActiveStates_[macro.first];
+					if (matched && !wasActive) {
+						macroActiveStates_[macro.first] = true;
 						auto code = macro.first;
 						MessageManager::callAsync([this, code]() {
 							executeMacro_(code);
 							});
+					} else if (!matched && wasActive) {
+						macroActiveStates_[macro.first] = false;
 					}
+				}
+			}
+			else if (message.isControllerOfType(123)) {
+				// Keep forwarding CC123 but also clear local state to mirror the synth
+				state_.allNotesOff(0);
+				for (auto& entry : macroActiveStates_) {
+					entry.second = false;
 				}
 			}
 		}
@@ -200,6 +220,7 @@ KeyboardMacroView::~KeyboardMacroView()
 void KeyboardMacroView::setupPropertyEditor() {
 	// Midi Device Selector can broadcast a change message when a new device is detected or removed
 	midiDeviceList_ = std::make_shared<MidiDevicePropertyEditor>(kInputDevice, "Setup Masterkeyboard", true);
+	secondaryMidiOutList_ = std::make_shared<MidiDevicePropertyEditor>(kSecondaryMIDIOut, "Secondary MIDI OUT", false, true, "Disabled");
 	midikraft::MidiController::instance()->addChangeListener(this);
 
 	customMasterkeyboardSetup_.clear();
@@ -211,6 +232,7 @@ void KeyboardMacroView::setupPropertyEditor() {
 	synthListEditor_ = std::make_shared<TypedNamedValue>(kFixedSynthSelected, "MIDI Routing", 1, std::map<int, std::string>());
 	refreshSynthList();
 	customMasterkeyboardSetup_.push_back(synthListEditor_);
+	customMasterkeyboardSetup_.push_back(secondaryMidiOutList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<TypedNamedValue>(kUseElectraOne, "MIDI Routing", false));
 	customMasterkeyboardSetup_.push_back(midiDeviceList_);
 	customMasterkeyboardSetup_.push_back(std::make_shared<MidiChannelPropertyEditor>(kMidiChannel, "Setup Masterkeyboard"));
@@ -244,6 +266,28 @@ void KeyboardMacroView::refreshUI() {
 	}
 }
 
+void setMidiDeviceFromString(const std::shared_ptr<TypedNamedValue>& prop, const std::string& storedValue, bool allowAppend = false) {
+	if (prop) {
+		auto midiDeviceProp = std::dynamic_pointer_cast<MidiDevicePropertyEditor>(prop);
+		if (midiDeviceProp) {
+			if (allowAppend) {
+				auto appended = midiDeviceProp->findOrAppendLookup(storedValue);
+				midiDeviceProp->value().setValue(appended);
+			} 
+			else {
+				int index = midiDeviceProp->indexOfValue(storedValue);
+				if (index != 0) {
+					midiDeviceProp->value().setValue(index);
+				}
+			}
+		}
+		else {
+			spdlog::error("Program error - expected MidiDevicePropertyEditor for the property {}", prop->name());
+		}
+	}
+}
+
+
 void KeyboardMacroView::loadFromSettings() {
 	auto json = Settings::instance().get("MacroDefinitions");
 	if (!json.empty()) {
@@ -275,17 +319,42 @@ void KeyboardMacroView::loadFromSettings() {
 			}
 
 			for (auto& prop : customMasterkeyboardSetup_) {
-				std::string storedValue = Settings::instance().get(prop->name().toStdString());
-				int intValue = std::atoi(storedValue.c_str());
-				prop->value().setValue(intValue);
+				if (!prop) continue;
+
+				auto propertyName = prop->name();
+				std::string settingKey = propertyName.toStdString();
+				if (propertyName == kInputDevice) {
+					settingKey = kInputDeviceSettingKey;
+				}
+				else if (propertyName == kFixedSynthSelected) {
+					settingKey = kFixedSynthSelectedSettingKey;
+				}
+
+				const std::string storedValue = Settings::instance().get(settingKey);
+				if (storedValue.empty()) {
+					// Nothing to be done
+				}
+				else if (propertyName == kInputDevice || propertyName == kSecondaryMIDIOut) {
+					// These are supposed to be MidiDevicePropertyEditors
+					setMidiDeviceFromString(prop, storedValue);
+				} else if (propertyName == kFixedSynthSelected) {
+					int index = prop->indexOfValue(storedValue);
+					if (index != 0) {
+						prop->value().setValue(index);
+					}
+				}
+				else {
+					int intValue = std::atoi(storedValue.c_str());
+					prop->value().setValue(intValue);
+				}
 			}
 		}
 		catch (nlohmann::json::parse_error& e) {
 			spdlog::error("Keyboard macro definition corrupt in settings file, not loading. Error is {}", e.what());
 		}
 	}
+	updateSecondaryMidiOutSelection();
 }
-
 void KeyboardMacroView::saveSettings() {
 	var result;
 
@@ -303,7 +372,22 @@ void KeyboardMacroView::saveSettings() {
 	Settings::instance().set("MacroDefinitions", json.toStdString());
 
 	for (auto &prop : customMasterkeyboardSetup_) {
-		Settings::instance().set(prop->name().toStdString(), prop->value().toString().toStdString());
+		auto propertyName = prop->name();
+		std::string settingKey = propertyName.toStdString();
+		if (propertyName == kInputDevice) {
+			settingKey = kInputDeviceSettingKey;
+			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else if (propertyName == kFixedSynthSelected) {
+			settingKey = kFixedSynthSelectedSettingKey;
+			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else if (propertyName == kSecondaryMIDIOut) {
+			Settings::instance().set(settingKey, prop->lookupValue());
+		}
+		else {
+			Settings::instance().set(settingKey, prop->value().toString().toStdString());
+		}
 	}
 
 	Settings::instance().flush();
@@ -314,20 +398,36 @@ void KeyboardMacroView::resized()
 	auto area = getLocalBounds();
 
 	// Needed width
-	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + 16;
-	int contentWidth = std::min(area.getWidth(), 600);
+	float keyboardDesiredWidth = keyboard_.getTotalKeyboardWidth() + LAYOUT_INSET_NORMAL*2;
+	int maxContentWidth = std::min(area.getWidth(), 1000); // stay consistent with SetupView style
 
-	// On Top, the setup
-	customSetup_.setBounds(area.removeFromTop(260).withSizeKeepingCentre(contentWidth, 260).reduced(8));
-	// Then the keyboard	
-	auto keyboardArea = area.removeFromTop(166);
-	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, std::min(area.getHeight(), 150)).reduced(8));
+	// Reserve space for keyboard at the bottom
+	int keyboardHeight = std::min(area.getHeight() / 3, 180);
+	auto keyboardArea = area.removeFromBottom(keyboardHeight);
+	keyboard_.setBounds(keyboardArea.withSizeKeepingCentre((int)keyboardDesiredWidth, keyboardHeight).reduced(LAYOUT_INSET_NORMAL));
 
-	// Set up table
+	// Two column layout above
+	int columnsHeight = std::min(area.getHeight(), 600);
+	auto columnsArea = area.withSizeKeepingCentre(maxContentWidth, columnsHeight);
+	int columnWidth = columnsArea.getWidth() / 2;
+	auto leftColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
+	auto rightColumn = columnsArea.removeFromLeft(columnWidth).reduced(LAYOUT_INSET_NORMAL);
+
+	customSetup_.setBounds(leftColumn);
+
+	// Config table in scroll area on the right
+	macroViewport_.setBounds(rightColumn);
+	const int scrollWidth = macroViewport_.getLocalBounds().getWidth();
+	const int rowWidth = std::max(0, scrollWidth - 2 * LAYOUT_INSET_NORMAL);
+	const int rowX = (scrollWidth - rowWidth) / 2;
+	int y = 0;
+	const int rowHeight = LAYOUT_LINE_SPACING; // Match property editor vertical rhythm
 	for (auto c : configs_) {
-		auto row = area.removeFromTop(40);
-		c->setBounds(row.withSizeKeepingCentre(std::min(row.getWidth(), contentWidth), 30));
+		auto row = Rectangle<int>(rowX, y, rowWidth, rowHeight);
+		c->setBounds(row);
+		y += rowHeight;
 	}
+	macroContainer_->setBounds(0, 0, scrollWidth, y);
 }
 
 void KeyboardMacroView::setupKeyboardControl() {
@@ -350,6 +450,10 @@ void KeyboardMacroView::valueChanged(Value& value)
 	else if (value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kUseElectraOne))) {
 		controllerRouter_.enable(value.getValue());
 	}
+	else if (customMasterkeyboardSetup_.hasValue(kSecondaryMIDIOut) &&
+		value.refersToSameSourceAs(customMasterkeyboardSetup_.valueByName(kSecondaryMIDIOut))) {
+		updateSecondaryMidiOutSelection();
+	}
 }
 
 void KeyboardMacroView::turnOnMasterkeyboardInput() {
@@ -366,7 +470,9 @@ void KeyboardMacroView::changeListenerCallback(ChangeBroadcaster* source)
 	if (source == midikraft::MidiController::instance()) {
 		// The list of MIDI devices changed, need to refresh the property editor
 		midiDeviceList_->refreshDeviceList();
+		refreshSecondaryMidiOutList();
 		customSetup_.setProperties(customMasterkeyboardSetup_);
+		updateSecondaryMidiOutSelection();
 	}
 	else if (source == &UIModel::instance()->synthList_) {
 		refreshSynthList();
@@ -432,4 +538,48 @@ bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 		}
 	}
 	return allDetected && !extraKeyDetected;
+}
+
+void KeyboardMacroView::handleMidiMessage(const MidiMessage& message, const String& source, bool isOut)
+{
+	if (!isOut) {
+		// Don't relay incoming messages
+		return;
+	}
+
+	juce::MidiDeviceInfo secondaryInfo;
+	{
+		std::scoped_lock lock(secondaryMidiOutMutex_);
+		secondaryInfo = secondaryMidiOut_;
+	}
+
+	if (secondaryInfo.name.isEmpty() || source == secondaryInfo.name) {
+		// No secondary selected or coming from secondary device - avoid loops!
+		return;
+	}
+
+	auto secondaryOutput = midikraft::MidiController::instance()->getMidiOutput(secondaryInfo);
+	if (secondaryOutput->isValid()) {
+		// Forward a copy to the secondary output
+		secondaryOutput->sendMessageNow(message);
+	}
+}
+
+void KeyboardMacroView::refreshSecondaryMidiOutList()
+{
+	if (secondaryMidiOutList_) {
+		secondaryMidiOutList_->refreshDeviceList();
+	}
+}
+
+void KeyboardMacroView::updateSecondaryMidiOutSelection()
+{
+	if (!secondaryMidiOutList_) {
+		return;
+	}
+
+	{
+		std::scoped_lock lock(secondaryMidiOutMutex_);
+		secondaryMidiOut_ = secondaryMidiOutList_->selectedDevice();
+	}
 }

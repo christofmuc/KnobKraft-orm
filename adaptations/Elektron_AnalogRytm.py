@@ -103,7 +103,7 @@ def convertToProgramDump(device_id: int, message: List[int], patch_no: int) -> L
         if new_item_no > 127:
             new_item_no -= 127
             data_type += 6
-        return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + AR_TYPE_SOUND, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
+        return _createElektronMessage(device_id, AR_SYSEX_DUMP_ID_BASE + data_type, [VERSION_HIGH, VERSION_LOW, patch_no & 0x7f] + message[10:-1])
     raise Exception("Can only convert single program dumps")
 
 

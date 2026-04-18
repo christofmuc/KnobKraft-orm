@@ -100,6 +100,21 @@ class ProgramTestData:
 ProgramList = List[ProgramTestData]
 ProgramGenerator = Callable[[Any], ProgramList]
 BankGenerator = Callable[[Any], List]
+LegacyPatchInspector = Callable[[Any, List[ByteList]], None]
+
+
+@dataclass
+class LegacyLoaderTestData:
+    file_extension: str
+    file_content: ByteList
+    expected_patch_count: Optional[int] = None
+    patch_inspector: Optional[LegacyPatchInspector] = None
+
+    def __post_init__(self):
+        if not isinstance(self.file_extension, str):
+            raise ValueError("Legacy loader test data file_extension must be a string")
+        if not isinstance(self.file_content, list) or not all(isinstance(x, int) and 0 <= x < 256 for x in self.file_content):
+            raise ValueError("Legacy loader test data file_content must be a list of bytes (0..255)")
 
 
 @dataclass
@@ -121,6 +136,18 @@ class TestData:
     expected_patch_count: int = 1
     simulator: Type[Simulator] = None
     expected_patch_count_from_simulator: int = 1
+    legacy_loader_cases: Optional[List[LegacyLoaderTestData]] = None
+    mock_device_factory: Optional[Callable[[Any, Any], Any]] = None
+    expected_wire_patch_count: Optional[int] = None
+    wire_download_bank: int = 0
+    expected_sent_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
+    single_edit_buffer_mock_device_factory: Optional[Callable[[Any, Any], Any]] = None
+    expected_single_edit_buffer_count: int = 1
+    wire_download_banks: Optional[List[int]] = None
+    expected_multi_bank_patch_count: Optional[int] = None
+    expected_multi_bank_sent_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
+    send_to_synth_patch: Optional[Callable[[Any], ByteList]] = None
+    expected_send_to_synth_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
 
     def __post_init__(self):
         self.all_messages = []
@@ -144,3 +171,4 @@ class TestData:
             self.program_dump_request = make_midi_message(self.program_dump_request)
         self.device_detect_call = make_midi_message(self.device_detect_call)
         self.device_detect_reply = None if self.device_detect_reply is None else (make_midi_message(self.device_detect_reply[0]), self.device_detect_reply[1])
+        self.legacy_loader_cases = [] if self.legacy_loader_cases is None else self.legacy_loader_cases

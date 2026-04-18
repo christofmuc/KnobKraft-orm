@@ -36,6 +36,7 @@
 
 class PatchDiff;
 class PatchSearchComponent;
+class SimplePatchGrid;
 
 class PatchView : public Component,
 	public DragAndDropContainer,
@@ -60,6 +61,7 @@ public:
 	// Macro controls triggered by the MidiKeyboard
 	void hideCurrentPatch();
 	void favoriteCurrentPatch();
+	void regularCurrentPatch();
 	void selectPreviousPatch();
 	void selectNextPatch();
 	void retrieveEditBuffer();
@@ -114,21 +116,27 @@ private:
 	void updateLastPath();
 
 	void mergeNewPatches(std::vector<midikraft::PatchHolder> patchesLoaded);
+	void downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
+		const std::vector<MidiBankNumber>& banks,
+		const juce::String& progressTitle,
+		std::function<void(std::vector<midikraft::PatchHolder>)> onLoaded,
+		bool requireDetectedDevice = true);
 	
 	void saveCurrentPatchCategories();
 	void setSynthBankFilter(std::shared_ptr<midikraft::Synth> synth, MidiBankNumber bank);
 	void setUserBankFilter(std::shared_ptr<midikraft::Synth> synth, std::string const& listId);
-	void setImportListFilter(String filter);
-	void setUserListFilter(String filter);
+	void setListFilter(String filter, std::shared_ptr<midikraft::Synth> synth = nullptr);
 	void deleteSomething(nlohmann::json const &infos);
+	void registerSecondaryGrid(SimplePatchGrid* grid);
+	void unregisterSecondaryGrid(SimplePatchGrid* grid);
 
 	void fillList(std::shared_ptr<midikraft::PatchList> list, CreateListDialog::TFillParameters fillParameters, std::function<void()> finishedCallback);
 
 	void showBank();
 
     PatchListTree patchListTree_;
-	std::string sourceFilterID_; // This is the old "import" combo box in new
 	std::string listFilterID_;
+	std::shared_ptr<midikraft::Synth> listFilterSynth_;
 	std::unique_ptr<SplitteredComponent> splitters_;
 	TabbedComponent rightSideTab_;
 
@@ -137,6 +145,7 @@ private:
 	Label patchLabel_;
 	std::unique_ptr<PatchSearchComponent> patchSearch_;
 	std::unique_ptr<PatchButtonPanel> patchButtons_;
+	std::vector<SimplePatchGrid*> secondaryPatchGrids_;
 	std::unique_ptr<CurrentPatchDisplay> currentPatchDisplay_;
 	std::unique_ptr<SynthBankPanel> synthBank_;
 	std::unique_ptr<PatchHistoryPanel> patchHistory_;
@@ -156,4 +165,3 @@ private:
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchView)
 };
-

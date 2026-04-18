@@ -142,6 +142,21 @@ This should return one or more MIDI messages that will select the bank requested
 
 This would create a MIDI CC with controller number 32, which is used by many synth as the bank select controller.
 
+### Custom Program Change
+
+Some devices need more than a plain bank select/program change to recall a patch from memory. For these synths, you can implement this optional method:
+
+    def createCustomProgramChange(channel, patchNo):
+
+The parameters are:
+
+  * `channel` [int] - The detected MIDI channel (`0..15`)
+  * `patchNo` [int] - The 0-based absolute patch index used by KnobKraft Orm
+
+The function should return one or more MIDI messages as one flat byte list, exactly like other adaptation methods. This can include any combination of CC, Program Change and SysEx.
+
+When this method is implemented, it takes precedence over the default bank-select/program-change logic in the patch send mode `program change` (and in `automatic` when the patch location is known). If the method returns no messages, patch sending via this mode will fail for that action.
+
 ## Device detection
 
 The device detection mechanism needs at least two functions to be implemented to work, two more are optional.
@@ -578,6 +593,30 @@ This will get a full bank of patches as a list of lists as input, and has to ret
 list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
 there is no other way via Edit Buffer capability or Program Dump capability. 
 
+## Legacy file import capability
+
+Some devices have older non-sysex file formats (for example vendor librarian exports). For Python adaptations, this can be implemented with two simple functions:
+
+    def legacyLoadSupportedExtensions() -> List[str]:
+    def loadPatchesFromLegacyData(data: List[int]) -> List[List[int]]:
+
+`legacyLoadSupportedExtensions()` returns the file extensions this loader can parse. Use values like `".m80"` or `".tas1_bank"`. Matching is case-insensitive. You can also return `"*"` to accept any extension.
+
+`loadPatchesFromLegacyData(data)` receives the full file content as a list of byte values (`0..255`) and returns a list of patches. Each patch is again a list of byte values, using the same patch payload format as in the other adaptation functions.
+
+A minimal implementation looks like this:
+
+```python
+def legacyLoadSupportedExtensions():
+    return [".m80", ".mks80"]
+
+
+def loadPatchesFromLegacyData(data):
+    # parse legacy file content here and return one or more patch payloads
+    return [data]
+```
+
+This legacy loader is optional. If you do not implement both functions, the adaptation falls back to normal sysex/mid/json import handling only.
 
 ### Getting the patch's name
 
@@ -622,6 +661,19 @@ To turn on a delay between messages sent, implement the following function retur
     def generalMessageDelay():
 
 This delay will be used only in those cases where a method returns multiple MIDI messages, not between calls to methods. E.g. if the `createProgramDumpRequest` returns an array which contains two messages, a program change and an edit buffer request message, the Orm will wait the specified milliseconds after sending the first message before sending the second. It will not wait before sending the first message.
+
+Alternatively, you can provide a single `messageTimings()` function that returns a dict of timing values. If present, it replaces the older per-value functions:
+
+```python
+def messageTimings():
+    return {
+        "generalMessageDelay": 50,          # throttle between messages in a burst
+        "deviceDetectWaitMilliseconds": 300, # how long to wait after a detect request
+        "replyTimeoutMs": 1500,             # how long to wait for a response before timing out
+    }
+```
+
+If `messageTimings()` is defined, the Orm will read these keys and ignore the older `generalMessageDelay()` or `deviceDetectWaitMilliseconds()` functions. Keys you leave out fall back to defaults. If `messageTimings()` is not provided, the legacy functions continue to work as before.
 
 ## Renaming patches
 For example, the Orm always allows the user to specify a name for a patch, but that name will not appear on the synth unless you implement the following function. If you don't implement it, the patches will keep their original name even if you change the database name for a patch.

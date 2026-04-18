@@ -17,8 +17,10 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Alesis | Andromeda A6 | works | adaptation | Thanks to @markusschloesser |
 | Behringer | BCR2000 | in progess | native | |
 | Behringer | Deepmind 12 | works | adaptation | |
+| Behringer | Pro-800 | alpha | adaptation | Thanks to @Andy2No |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
+| Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
@@ -45,11 +47,14 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |
 | Korg | M1 | works | adaptation | Thanks to Jentusalentu at YT for giving the nudge |
+| Korg | microKORG S | works | adaptation | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Korg | R3 | alpha | adaptation | 100% AI generated |
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
 | Moog | Voyager | works | adaptation | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
+| Novation | Bass Station II | works | adaptation | Thanks to @cockroach! |
 | Novation | Summit/Peak | alpha | adaptation |  |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
@@ -62,11 +67,13 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
 | Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
+| Roland | JD-Xi | alpha | adaptation | 100% AI generated |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
+| Roland | U-20/U-220 | alpha | adaptation | 100% AI generated |
 | Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
@@ -82,7 +89,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Waldorf | Kyra | alpha | adaptation | Thanks to Edisyn! |
 | Waldorf | Pulse | works | adaptation | Thanks to @markusschlosser and chatGPT! |
 | Yamaha | DX7 | beta | adaptation | |
-| Yamaha | DX7II | beta | adaptation | |
+| Yamaha | DX7II | works | adaptation | Thanks to @AgtSlick for testing and the fixes! |
 | Yamaha | FS1R | alpha | adaptation | Thanks to @markusschlosser for testing! |
 | Yamaha | reface DX | works | adaptation | |
 | Yamaha | reface CP | beta | adaptation | Thanks to @milnak! |
@@ -153,9 +160,14 @@ The recursive clone with  submodules is required to retrieve the following addit
 
 ## Building on Windows
 
-Using CMake and building is a simple step if the prerequisites are fulfilled. Simply open a command line in the downloaded root directory `<KnobKraft-orm>` and run
+Using CMake and building can be simple if the prerequisites are fulfilled: 
+   * Install https://visualstudio.microsoft.com/vs/community/
+   * Confirm Desktop development with C++ and the MSVC C++ (latest) components are also installed
+   * Install latest python https://www.python.org/downloads/windows/
+        
+Simply open a command line in the downloaded root directory `<KnobKraft-orm>` and run the build using cmake:
 
-    cmake -S . -B builds -G "Visual Studio 15 2017 Win64"
+    cmake --fresh -S . -B builds -G "Visual Studio 17 2022" -A x64
 
 This will generate a solution file for Visual Studio in the builds subdirectory. You can build the software to run it immediately with the command
 

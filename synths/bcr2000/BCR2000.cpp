@@ -275,7 +275,7 @@ namespace midikraft {
 				}
 			}
 			// Ignore all other messages
-		});
+		}, defaultReplyTimeoutMs());
 
 		// Send all messages immediately
 		if (messages.size() > 0) {

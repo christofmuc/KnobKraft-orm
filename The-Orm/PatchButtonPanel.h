@@ -27,6 +27,7 @@ public:
 	void setTotalCount(int totalCount, bool resetToPageOne = true);
 	void changeGridSize(int newWidth, int newHeight);
 	void setPatches(std::vector<midikraft::PatchHolder> const& patches, int autoSelectTarget = -1);
+	bool updateVisiblePatch(midikraft::PatchHolder const& patch);
 	
 	void refresh(bool async, int autoSelectTarget = -1);
 

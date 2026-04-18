@@ -6,7 +6,7 @@ on: push
 
 jobs:
   build-macos:
-    runs-on: macos-13
+    runs-on: macos-14
     steps:
     - name: Checkout repository with tags
       uses: actions/checkout@v2

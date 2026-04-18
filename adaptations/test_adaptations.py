@@ -3,6 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import copy
 from typing import Optional
 
 import pytest
@@ -11,7 +12,8 @@ import testing
 import functools
 
 from testing.librarian import Librarian
-from testing.test_data import MidiController
+from testing.test_data import MidiController as SimulatorMidiController
+from testing.mock_midi import MockMidiController, ScriptedMockDevice
 
 
 def require_testdata(test_data_field):
@@ -104,6 +106,28 @@ def get_rename_target_name(program, test_data):
     else:
         # We have specified nothing specific in make_test_data, just use "new name"
         return "new name"
+
+
+def normalize_extension(extension):
+    if not isinstance(extension, str):
+        raise TypeError("Extension must be a string")
+    normalized = extension.strip().lower()
+    if normalized == "":
+        return normalized
+    if normalized == "*":
+        return normalized
+    if normalized.startswith("*."):
+        normalized = normalized[1:]
+    elif normalized.startswith("*"):
+        normalized = normalized[1:]
+    if not normalized.startswith("."):
+        normalized = "." + normalized
+    return normalized
+
+
+def test_normalize_extension_requires_string():
+    with pytest.raises(TypeError, match="Extension must be a string"):
+        normalize_extension(123)
 
 
 @require_implemented("nameFromDump")
@@ -381,6 +405,32 @@ def test_friendly_bank_name(adaptation, test_data: testing.TestData):
     assert adaptation.friendlyBankName(test_data.friendly_bank_name[0]) == test_data.friendly_bank_name[1]
 
 
+@require_implemented("legacyLoadSupportedExtensions")
+@require_testdata("legacy_loader_cases")
+def test_legacy_loader_extensions(adaptation, test_data: testing.TestData):
+    supported_extensions = adaptation.legacyLoadSupportedExtensions()
+    assert isinstance(supported_extensions, list)
+    normalized_supported = {normalize_extension(x) for x in supported_extensions}
+    for case in test_data.legacy_loader_cases:
+        assert normalize_extension(case.file_extension) in normalized_supported
+
+
+@require_implemented("loadPatchesFromLegacyData")
+@require_implemented("legacyLoadSupportedExtensions")
+@require_testdata("legacy_loader_cases")
+def test_legacy_loader_data(adaptation, test_data: testing.TestData):
+    for case in test_data.legacy_loader_cases:
+        patches = adaptation.loadPatchesFromLegacyData(case.file_content)
+        assert isinstance(patches, list)
+        if case.expected_patch_count is not None:
+            assert len(patches) == case.expected_patch_count
+        for patch in patches:
+            assert isinstance(patch, list)
+            assert all(isinstance(x, int) and 0 <= x < 256 for x in patch)
+        if case.patch_inspector is not None:
+            case.patch_inspector(adaptation, patches)
+
+
 @require_implemented("extractPatchesFromBank")
 @require_testdata("banks")
 def test_extract_patches_from_bank(adaptation, test_data: testing.TestData):
@@ -479,10 +529,143 @@ def test_synth_communication(adaptation, test_data: testing.TestData):
             assert adaptation.isSingleProgramDump(patch)
 
     simulator = test_data.simulator(test_data)
-    midi_controller = MidiController(simulator)
+    midi_controller = SimulatorMidiController(simulator)
     librarian = Librarian()
     librarian.start_downloading_all_patches(midi_controller, 0, adaptation, 0, final_check)
     # Run the simulation until no more messages have been produced
     midi_controller.pump()
 
     assert finished
+
+
+def assert_librarian_download_finished(controller, result):
+    assert controller.finished, (
+        f"Mock download did not finish; sent={len(controller.sent_messages)} "
+        f"pending={len(controller.pending_replies)} loaded={len(result)}"
+    )
+
+
+def assert_librarian_downloaded_patches(adaptation, result):
+    for patch in result:
+        if hasattr(adaptation, "isSingleProgramDump") and adaptation.isSingleProgramDump(patch):
+            continue
+        if hasattr(adaptation, "isEditBufferDump") and adaptation.isEditBufferDump(patch):
+            continue
+        pytest.fail(f"Downloaded patch is neither a program dump nor an edit buffer: {knobkraft.syxToString(patch)}")
+
+
+def materialized_send_test_data(test_data: testing.TestData):
+    programs = test_data.programs if isinstance(test_data.programs, list) else list(test_data.programs)
+    edit_buffers = test_data.edit_buffers if isinstance(test_data.edit_buffers, list) else list(test_data.edit_buffers)
+    send_test_data = copy.copy(test_data)
+    send_test_data.programs = programs
+    send_test_data.edit_buffers = edit_buffers
+    return send_test_data
+
+
+def patch_for_send_to_synth(test_data: testing.TestData):
+    send_test_data = materialized_send_test_data(test_data)
+    programs = send_test_data.programs
+    edit_buffers = send_test_data.edit_buffers
+    if send_test_data.send_to_synth_patch is not None:
+        return send_test_data.send_to_synth_patch(send_test_data)
+    if programs:
+        return programs[0].message.byte_list
+    if edit_buffers:
+        return edit_buffers[0].message.byte_list
+    pytest.skip("test_data has no patch for send-to-synth test")
+
+
+@require_testdata("mock_device_factory")
+def test_download_all_patches_via_mock_device(adaptation, test_data: testing.TestData):
+    result = []
+    librarian = Librarian()
+    controller = MockMidiController(test_data.mock_device_factory(test_data, adaptation))
+
+    librarian.start_downloading_all_patches(
+        controller,
+        0,
+        adaptation,
+        test_data.wire_download_bank,
+        lambda patches: result.extend(patches),
+    )
+    controller.drain()
+
+    assert_librarian_download_finished(controller, result)
+
+    expected_count = test_data.expected_wire_patch_count
+    if expected_count is None:
+        expected_count = test_data.expected_patch_count
+    assert len(result) == expected_count
+
+    if test_data.expected_sent_messages is not None:
+        assert controller.sent_messages == test_data.expected_sent_messages(test_data, adaptation)
+
+    assert_librarian_downloaded_patches(adaptation, result)
+
+
+@require_testdata("expected_send_to_synth_messages")
+def test_send_patch_to_synth_via_mock_device(adaptation, test_data: testing.TestData):
+    send_test_data = materialized_send_test_data(test_data)
+    patch = patch_for_send_to_synth(send_test_data)
+    librarian = Librarian()
+    controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
+
+    messages = librarian.send_patch_to_synth(controller, 0, adaptation, patch)
+
+    expected_messages = send_test_data.expected_send_to_synth_messages(send_test_data, adaptation)
+    assert messages == expected_messages
+    assert controller.sent_messages == expected_messages
+    assert controller.sent_message_delays == [Librarian.message_delay(adaptation)] * len(expected_messages)
+
+
+@require_testdata("single_edit_buffer_mock_device_factory")
+def test_download_edit_buffer_via_mock_device(adaptation, test_data: testing.TestData):
+    result = []
+    librarian = Librarian()
+    controller = MockMidiController(test_data.single_edit_buffer_mock_device_factory(test_data, adaptation))
+
+    librarian.download_edit_buffer(
+        controller,
+        0,
+        adaptation,
+        lambda patches: result.extend(patches),
+    )
+    controller.drain()
+
+    assert_librarian_download_finished(controller, result)
+    assert len(result) == test_data.expected_single_edit_buffer_count
+
+    for patch in result:
+        assert adaptation.isEditBufferDump(patch)
+
+
+@require_testdata("wire_download_banks")
+def test_download_multiple_banks_via_mock_device(adaptation, test_data: testing.TestData):
+    if test_data.mock_device_factory is None:
+        pytest.skip("test_data does not provide mock_device_factory, skipping")
+
+    result = []
+    librarian = Librarian()
+    controller = MockMidiController(test_data.mock_device_factory(test_data, adaptation))
+
+    librarian.start_downloading_banks(
+        controller,
+        0,
+        adaptation,
+        test_data.wire_download_banks,
+        lambda patches: result.extend(patches),
+    )
+    controller.drain()
+
+    assert_librarian_download_finished(controller, result)
+
+    expected_count = test_data.expected_multi_bank_patch_count
+    if expected_count is None:
+        expected_count = test_data.expected_wire_patch_count
+    assert len(result) == expected_count
+
+    if test_data.expected_multi_bank_sent_messages is not None:
+        assert controller.sent_messages == test_data.expected_multi_bank_sent_messages(test_data, adaptation)
+
+    assert_librarian_downloaded_patches(adaptation, result)
