@@ -12,7 +12,6 @@ from copy import copy
 from typing import List, Dict
 
 import knobkraft
-import testing
 import hashlib
 
 K5000_SPECIFIC_DEVICE = None
@@ -557,6 +556,7 @@ def setupHelp():
 def make_test_data():
     global K5000_SPECIFIC_DEVICE
     K5000_SPECIFIC_DEVICE = "K5000R"
+    import testing
     from testing.mock_midi import BankDumpMockDevice
 
     def bankGenerator(test_data: testing.TestData) -> List[int]:
