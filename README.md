@@ -50,6 +50,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | microKORG S | works | adaptation | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Korg | R3 | alpha | adaptation | 100% AI generated |
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
 | Moog | Voyager | works | adaptation | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
@@ -66,11 +67,13 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
 | Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
+| Roland | JD-Xi | alpha | adaptation | 100% AI generated |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
+| Roland | U-20/U-220 | alpha | adaptation | 100% AI generated |
 | Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |

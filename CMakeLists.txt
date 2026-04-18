@@ -79,7 +79,7 @@ IF (WIN32)
     include(FetchContent REQUIRED)
 
     FetchContent_Declare(
-	  icu URL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-Win64-MSVC2019.zip
+	  icu URL https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-Win64-MSVC2022.zip
 	)
 	FetchContent_MakeAvailable(icu)
 
@@ -110,7 +110,7 @@ IF (WIN32)
 
 	FetchContent_Declare(
         winsparkle
-        URL https://github.com/vslavik/winsparkle/releases/download/v0.7.0/WinSparkle-0.7.0.zip
+        URL https://github.com/vslavik/winsparkle/releases/download/v0.9.2/WinSparkle-0.9.2.zip
     )
     FetchContent_MakeAvailable(winsparkle)
     set(WINSPARKLE_INCLUDE "${CMAKE_CURRENT_BINARY_DIR}/_deps/winsparkle-src/include")
@@ -201,10 +201,10 @@ ENDIF()
 # CPack installer on macOS.
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_ALL)
 
-# Adding JUCE 6.0
+# Adding JUCE
 add_subdirectory("third_party/JUCE" EXCLUDE_FROM_ALL)
 
-# Adding JUCE modules
+# Adding more third party modules
 add_subdirectory("third_party/")
 
 # Build a static library from juce 
@@ -309,5 +309,3 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp/include)
     target_link_libraries(patch_database_migration_test PRIVATE midikraft-database SQLiteCpp)
 endif()
-
-
