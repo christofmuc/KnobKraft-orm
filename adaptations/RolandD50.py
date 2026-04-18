@@ -283,11 +283,16 @@ class NonGenericRoland:
         address, size = self.edit_buffer.address_and_size_for_sub_request(0, 0)
         return self.buildRolandMessage(self._target_device_id(channel), command_rq1, address, size)
 
-    def _createFollowUpEditBufferDumpRequest(self, previousRequestNo):
+    def _follow_up_device_id(self, message: List[int]) -> int:
+        if self.device_id is not None:
+            return self.device_id
+        return message[2]
+
+    def _createFollowUpEditBufferDumpRequest(self, previousRequestNo, device_id):
         # Check if there is a follow up data block
         if previousRequestNo + 1 < len(self.edit_buffer.data_blocks):
             address, size = self.edit_buffer.address_and_size_for_sub_request(previousRequestNo + 1, 0)
-            return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+            return self.buildRolandMessage(device_id, command_rq1, address, size)
         else:
             return []
 
@@ -301,7 +306,7 @@ class NonGenericRoland:
                 # Find out which data block we got
                 for sub_request in range(len(self.edit_buffer.data_blocks)):
                     if normalized_address == self.edit_buffer.absolute_address(self.edit_buffer.data_blocks[sub_request].address):
-                        return True, self._createFollowUpEditBufferDumpRequest(sub_request)
+                        return True, self._createFollowUpEditBufferDumpRequest(sub_request, self._follow_up_device_id(message))
         return False
 
     @knobkraft_api
@@ -334,11 +339,11 @@ class NonGenericRoland:
         address, size = self.program_dump.address_and_size_for_sub_request(0, patchNo % self.program_dump.num_items)
         return self.buildRolandMessage(self._target_device_id(channel), command_rq1, address, size)
 
-    def _createFollowUpProgramDumpRequest(self, patchNo, previousRequestNo):
+    def _createFollowUpProgramDumpRequest(self, patchNo, previousRequestNo, device_id):
         # Check if there is a follow up data block
         if previousRequestNo + 1 < len(self.program_dump.data_blocks):
             address, size = self.program_dump.address_and_size_for_sub_request(previousRequestNo + 1, patchNo % self.program_dump.num_items)
-            return self.buildRolandMessage(self.device_id, command_rq1, address, size)
+            return self.buildRolandMessage(device_id, command_rq1, address, size)
         else:
             return []
 
@@ -353,7 +358,7 @@ class NonGenericRoland:
                 # Find out which data block we got
                 for sub_request in range(len(self.program_dump.data_blocks)):
                     if normalized_address == self.program_dump.absolute_address(self.program_dump.data_blocks[sub_request].address):
-                        return True, self._createFollowUpProgramDumpRequest(patchNo, sub_request)
+                        return True, self._createFollowUpProgramDumpRequest(patchNo, sub_request, self._follow_up_device_id(message))
         return False
 
     @knobkraft_api
