@@ -136,15 +136,24 @@ def _split_outbound_messages(message: MidiMessage) -> List[MidiMessage]:
                 raise ValueError(f"Unterminated SysEx request: {message[index:]}")
             result.append(message[index:end + 1])
             index = end + 1
-        elif 0xC0 <= status <= 0xCF:
-            if index + 1 >= len(message):
-                raise ValueError(f"Unterminated program change message: {message[index:]}")
-            result.append(message[index:index + 2])
-            index += 2
+        elif 0x80 <= status <= 0xBF or 0xE0 <= status <= 0xEF:
+            index = _append_midi_message_slice(message, index, 3, result)
+        elif 0xC0 <= status <= 0xDF:
+            index = _append_midi_message_slice(message, index, 2, result)
+        elif 0xF8 <= status <= 0xFF:
+            result.append([status])
+            index += 1
         else:
             result.append([status])
             index += 1
     return result
+
+
+def _append_midi_message_slice(message: MidiMessage, index: int, length: int, result: List[MidiMessage]) -> int:
+    if index + length > len(message):
+        raise ValueError(f"Unterminated MIDI message: {message[index:]}")
+    result.append(message[index:index + length])
+    return index + length
 
 
 def _first_message(message: MidiMessage) -> MidiMessage:

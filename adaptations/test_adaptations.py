@@ -3,6 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import copy
 from typing import Optional
 
 import pytest
@@ -482,17 +483,25 @@ def assert_librarian_downloaded_patches(adaptation, result):
         pytest.fail(f"Downloaded patch is neither a program dump nor an edit buffer: {knobkraft.syxToString(patch)}")
 
 
+def materialized_send_test_data(test_data: testing.TestData):
+    programs = test_data.programs if isinstance(test_data.programs, list) else list(test_data.programs)
+    edit_buffers = test_data.edit_buffers if isinstance(test_data.edit_buffers, list) else list(test_data.edit_buffers)
+    send_test_data = copy.copy(test_data)
+    send_test_data.programs = programs
+    send_test_data.edit_buffers = edit_buffers
+    return send_test_data
+
+
 def patch_for_send_to_synth(test_data: testing.TestData):
-    if not isinstance(test_data.programs, list):
-        test_data.programs = list(test_data.programs)
-    if not isinstance(test_data.edit_buffers, list):
-        test_data.edit_buffers = list(test_data.edit_buffers)
-    if test_data.send_to_synth_patch is not None:
-        return test_data.send_to_synth_patch(test_data)
-    if test_data.programs:
-        return test_data.programs[0].message.byte_list
-    if test_data.edit_buffers:
-        return test_data.edit_buffers[0].message.byte_list
+    send_test_data = materialized_send_test_data(test_data)
+    programs = send_test_data.programs
+    edit_buffers = send_test_data.edit_buffers
+    if send_test_data.send_to_synth_patch is not None:
+        return send_test_data.send_to_synth_patch(send_test_data)
+    if programs:
+        return programs[0].message.byte_list
+    if edit_buffers:
+        return edit_buffers[0].message.byte_list
     pytest.skip("test_data has no patch for send-to-synth test")
 
 
@@ -526,16 +535,17 @@ def test_download_all_patches_via_mock_device(adaptation, test_data: testing.Tes
 
 @require_testdata("expected_send_to_synth_messages")
 def test_send_patch_to_synth_via_mock_device(adaptation, test_data: testing.TestData):
-    patch = patch_for_send_to_synth(test_data)
+    send_test_data = materialized_send_test_data(test_data)
+    patch = patch_for_send_to_synth(send_test_data)
     librarian = Librarian()
     controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
 
     messages = librarian.send_patch_to_synth(controller, 0, adaptation, patch)
 
-    expected_messages = test_data.expected_send_to_synth_messages(test_data, adaptation)
+    expected_messages = send_test_data.expected_send_to_synth_messages(send_test_data, adaptation)
     assert messages == expected_messages
     assert controller.sent_messages == expected_messages
-    assert controller.sent_message_delays == [librarian._message_delay(adaptation)] * len(expected_messages)
+    assert controller.sent_message_delays == [Librarian.message_delay(adaptation)] * len(expected_messages)
 
 
 @require_testdata("single_edit_buffer_mock_device_factory")

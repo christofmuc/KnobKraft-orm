@@ -346,7 +346,7 @@ def make_test_data():
 
     def mock_device(test_data: testing.TestData, adaptation):
         first_edit_buffer = next(iter(test_data.edit_buffers)).message.byte_list
-        return EditBufferMockDevice(adaptation, [first_edit_buffer] * numberOfPatchesPerBank())
+        return EditBufferMockDevice(adaptation, [first_edit_buffer.copy() for _ in range(numberOfPatchesPerBank())])
 
     return testing.TestData(
         sysex="testData/refaceDX-00-Piano_1___.syx",

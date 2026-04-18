@@ -280,13 +280,13 @@ class Librarian:
         return messages
 
     def send_block_of_messages_to_synth(self, midi_controller: MidiController, adaptation, messages: List[List[int]]) -> None:
-        delay = self._message_delay(adaptation)
-        if delay > 0 and hasattr(midi_controller, "set_send_delay"):
+        delay = self.message_delay(adaptation)
+        if hasattr(midi_controller, "set_send_delay"):
             midi_controller.set_send_delay(delay)
         self._send_block(midi_controller, messages)
 
     @staticmethod
-    def _message_delay(adaptation) -> int:
+    def message_delay(adaptation) -> int:
         if adaptation_has_implemented(adaptation, "messageTimings"):
             timings = adaptation.messageTimings()
             if isinstance(timings, dict) and "generalMessageDelay" in timings:
@@ -317,11 +317,9 @@ class Librarian:
         """
         Handle the next message incoming during a bank dump download
         """
-        is_part = False
-        if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
-            is_part = adaptation.isPartOfBankDump(message)
-        elif adaptation.isBankDumpFinished([message]):
-            is_part = True
+        is_part = (
+            adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message)
+        ) or adaptation.isBankDumpFinished([message])
 
         if is_part:
             # This is part of the bank dump. Store in self.current_download_message and check if we're done
