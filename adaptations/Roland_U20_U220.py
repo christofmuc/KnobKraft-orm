@@ -35,7 +35,7 @@ _device_id = DEFAULT_DEVICE_ID
 
 
 def name() -> str:
-    return "Roland U-20 / U-220"
+    return "Roland U-20/U-220"
 
 
 def bankDescriptors() -> List[Dict]:

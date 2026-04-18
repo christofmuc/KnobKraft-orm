@@ -49,6 +49,7 @@ Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestD
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\sequential\*.*"; DestDir: "{app}\sequential";Flags: ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\roland\*.*"; DestDir: "{app}\roland";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptations\korg\*.*"; DestDir: "{app}\korg";Flags: ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\knobkraft\*.*"; DestDir: "{app}\knobkraft";Flags: ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\testing\*.*"; DestDir: "{app}\testing";Flags: ignoreversion
 #include "adaptations.iss"
@@ -62,6 +63,9 @@ Type: dirifempty; Name: "{app}\sequential"
 Type: files; Name: "{app}\roland\__pycache__\*.pyc"
 Type: dirifempty; Name: "{app}\roland\__pycache__"
 Type: dirifempty; Name: "{app}\roland"
+Type: files; Name: "{app}\korg\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\korg\__pycache__"
+Type: dirifempty; Name: "{app}\korg"
 Type: files; Name: "{app}\knobkraft\__pycache__\*.pyc"
 Type: dirifempty; Name: "{app}\knobkraft\__pycache__"
 Type: dirifempty; Name: "{app}\knobkraft"
