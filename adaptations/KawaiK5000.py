@@ -58,7 +58,7 @@ def channelIfValidDeviceResponse(message):
             and message[1] == 0x7e
             and 0x00 <= message[2] <= 0x0F  # Unit channel (0-F for ch 1-16)
             and message[3] == 0x06  # Fixed ID for this SysEx type
-            and message[4] == 0x02
+            and message[4] == 0x02  # Sub-ID2: Identity Reply
             and message[5] == KawaiSysexID
             and message[6] == 0x00
             and message[14] == 0xF7):  # End of SysEx
@@ -94,9 +94,6 @@ def needsChannelSpecificDetection():
 def bankDescriptors() -> List[Dict]:
     """Returns a list of available banks based on the detected K5000 model."""
     global K5000_SPECIFIC_DEVICE, MEMORY_EXPANSION_AVAILABLE
-
-    if K5000_SPECIFIC_DEVICE is None:
-        return []
 
     # Always present on all models
     base_banks = [{"bank_byte": 0x00, "name": "A", "size": 128},]
@@ -203,6 +200,9 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
     if not isSingleProgramDump(message):
         raise Exception("Invalid message format - can't be converted")
 
+    if not 0 <= channel <= 15:
+        raise ValueError(f"Invalid channel {channel}. Must be 0..15.")
+
     if program_number < 0:
         raise ValueError(f"Invalid program number {program_number}. Must be >= 0.")
 
@@ -229,14 +229,21 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
     bank_byte = selected_bank["bank_byte"]
 
     # Construct the modified SysEx message
-    modified_message = message[:7] + [bank_byte, patch_number] + message[9:]
+    modified_message = copy(message)
+    modified_message[2] = channel & 0x0F
+    modified_message[7] = bank_byte
+    modified_message[8] = patch_number
 
     return modified_message
 
 
 def numberFromDump(message) -> int:  # where can I see if successful?
     if isSingleProgramDump(message):
-        return message[8]
+        bank_byte = message[7]
+        for bank_index, bank in enumerate(bankDescriptors()):
+            if bank["bank_byte"] == bank_byte:
+                return bank_index * 128 + message[8]
+        raise ValueError(f"Unknown K5000 bank byte {bank_byte}.")
     raise Exception("Can extract number only from single program dump messages")
 
 
@@ -434,19 +441,25 @@ def extractPatchesFromAllBankMessages(messages):
 
         # Extract source count (from Common Data byte 50)
         source_count_offset = 50
-        source_count = min(patch_body[source_count_offset], 6)  # Max 6 sources
+        source_count = min(patch_body[source_count_offset], MAX_SOURCE_COUNT)
 
         # ---- PCM/ADD Classification Per Source ----
         add_count = 0
         pcm_count = 0
         source_type_offset = TONE_COMMON_DATA_SIZE + 27  # First wave type
+        incomplete_source_data = False
 
         for s in range(source_count):
             source_offset = source_type_offset + (s * SOURCE_DATA_SIZE)
 
             if source_offset + 1 >= len(patch_body):  # Avoid out-of-bounds access
-                pcm_count += 1
-                continue
+                print(
+                    f"Warning: Patch {i + 1} declares {source_count} sources, "
+                    f"but source {s + 1} at offset {source_offset} exceeds "
+                    f"patch body length {len(patch_body)}. Skipping."
+                )
+                incomplete_source_data = True
+                break
 
             # Extract MSB and LSB
             wave_msb = patch_body[source_offset]
@@ -461,6 +474,9 @@ def extractPatchesFromAllBankMessages(messages):
                 pcm_count += 1
 
             # print(f"Patch {i+1} Source {s+1}: Wave MSB: {wave_msb:02X}, LSB: {wave_lsb:02X} -> Type: {wave_type} -> {'ADD' if is_add else 'PCM'}")
+
+        if incomplete_source_data:
+            continue
 
         # Debug: Total ADD vs PCM count
         # print(f"Patch {i + 1}: {add_count} ADD, {pcm_count} PCM")
