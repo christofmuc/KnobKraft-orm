@@ -107,6 +107,28 @@ def get_rename_target_name(program, test_data):
         return "new name"
 
 
+def normalize_extension(extension):
+    if not isinstance(extension, str):
+        raise TypeError("Extension must be a string")
+    normalized = extension.strip().lower()
+    if normalized == "":
+        return normalized
+    if normalized == "*":
+        return normalized
+    if normalized.startswith("*."):
+        normalized = normalized[1:]
+    elif normalized.startswith("*"):
+        normalized = normalized[1:]
+    if not normalized.startswith("."):
+        normalized = "." + normalized
+    return normalized
+
+
+def test_normalize_extension_requires_string():
+    with pytest.raises(TypeError, match="Extension must be a string"):
+        normalize_extension(123)
+
+
 @require_implemented("nameFromDump")
 @require_implemented("renamePatch")
 @require_testdata("programs")
@@ -382,6 +404,32 @@ def test_friendly_bank_name(adaptation, test_data: testing.TestData):
     assert adaptation.friendlyBankName(test_data.friendly_bank_name[0]) == test_data.friendly_bank_name[1]
 
 
+@require_implemented("legacyLoadSupportedExtensions")
+@require_testdata("legacy_loader_cases")
+def test_legacy_loader_extensions(adaptation, test_data: testing.TestData):
+    supported_extensions = adaptation.legacyLoadSupportedExtensions()
+    assert isinstance(supported_extensions, list)
+    normalized_supported = {normalize_extension(x) for x in supported_extensions}
+    for case in test_data.legacy_loader_cases:
+        assert normalize_extension(case.file_extension) in normalized_supported
+
+
+@require_implemented("loadPatchesFromLegacyData")
+@require_implemented("legacyLoadSupportedExtensions")
+@require_testdata("legacy_loader_cases")
+def test_legacy_loader_data(adaptation, test_data: testing.TestData):
+    for case in test_data.legacy_loader_cases:
+        patches = adaptation.loadPatchesFromLegacyData(case.file_content)
+        assert isinstance(patches, list)
+        if case.expected_patch_count is not None:
+            assert len(patches) == case.expected_patch_count
+        for patch in patches:
+            assert isinstance(patch, list)
+            assert all(isinstance(x, int) and 0 <= x < 256 for x in patch)
+        if case.patch_inspector is not None:
+            case.patch_inspector(adaptation, patches)
+
+
 @require_implemented("extractPatchesFromBank")
 @require_testdata("banks")
 def test_extract_patches_from_bank(adaptation, test_data: testing.TestData):
@@ -598,4 +646,3 @@ def test_download_multiple_banks_via_mock_device(adaptation, test_data: testing.
         assert controller.sent_messages == test_data.expected_multi_bank_sent_messages(test_data, adaptation)
 
     assert_librarian_downloaded_patches(adaptation, result)
-

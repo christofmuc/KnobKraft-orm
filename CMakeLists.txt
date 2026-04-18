@@ -201,7 +201,7 @@ ENDIF()
 # CPack installer on macOS.
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp EXCLUDE_FROM_ALL)
 
-# Adding JUCE 
+# Adding JUCE
 add_subdirectory("third_party/JUCE" EXCLUDE_FROM_ALL)
 
 # Adding more third party modules
