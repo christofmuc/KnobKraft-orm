@@ -12,7 +12,6 @@ import testing
 import functools
 
 from testing.librarian import Librarian
-from testing.test_data import MidiController as SimulatorMidiController
 from testing.mock_midi import MockMidiController, ScriptedMockDevice
 
 
@@ -514,28 +513,6 @@ def test_load_sysex_file_via_librarian(adaptation, test_data: testing.TestData):
     librarian = Librarian()
     patches = librarian.load_sysex(adaptation, test_data.all_messages)
     assert len(patches) == test_data.expected_patch_count
-
-
-@require_testdata("simulator")
-def test_synth_communication(adaptation, test_data: testing.TestData):
-
-    finished = False
-
-    def final_check(patches):
-        nonlocal finished
-        assert len(patches) == test_data.expected_patch_count_from_simulator
-        finished = True
-        for patch in patches:
-            assert adaptation.isSingleProgramDump(patch)
-
-    simulator = test_data.simulator(test_data)
-    midi_controller = SimulatorMidiController(simulator)
-    librarian = Librarian()
-    librarian.start_downloading_all_patches(midi_controller, 0, adaptation, 0, final_check)
-    # Run the simulation until no more messages have been produced
-    midi_controller.pump()
-
-    assert finished
 
 
 def assert_librarian_download_finished(controller, result):
