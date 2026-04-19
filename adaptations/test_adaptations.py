@@ -488,7 +488,7 @@ def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
 @require_implemented("convertPatchesToBankDump")
 @require_testdata("banks")
 def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
-    for bank in knobkraft.splitSysex(test_data.banks):
+    for bank in test_data.banks:
         bank_messages = []
         for message in bank:
             if adaptation.isPartOfBankDump(message):

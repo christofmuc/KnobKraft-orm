@@ -96,6 +96,9 @@ def test_extract_bld_into_apr_and_edit_buffer_conversion():
     [
         ("FACTORYA.SYX", ["PolySynth1", "JazzGuitar", "Xylophone "]),
         ("GLORIOUS_ALPHA.SYX", ["AlphaBrass", "Synth Brew", "HyperPulse"]),
+        ("ALIEN_MKS50_aJUNO1-2.SYX", ["RAVEMASTER", "Wave   EXP", "Null      "]),
+        ("MIKEJUNO.SYX", ["Euro Bass ", "Acidic 1  ", "What Stab "]),
+        ("MISC1_MKS50_aJUNO1-2.SYX", ["MunaStrong", "Fell Gated", "Hombrah   "]),
         ("EZBANK1.SYX", ["EZKick    ", "EZTom     ", "EZSnare   "]),
     ],
 )
@@ -116,6 +119,66 @@ def test_real_non_tone_fixtures_extract_no_tone_patches(filename):
     messages = _load_fixture_messages(filename)
 
     assert mks50.extractPatchesFromAllBankMessages(messages) == []
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "FACTORYA.SYX",
+        "GLORIOUS_ALPHA.SYX",
+        "ALIEN_MKS50_aJUNO1-2.SYX",
+        "MIKEJUNO.SYX",
+        "MISC1_MKS50_aJUNO1-2.SYX",
+    ],
+)
+def test_real_tone_banks_round_trip_to_alpha_juno_bld_format(filename):
+    messages = _load_fixture_messages(filename)
+    patches = mks50.extractPatchesFromAllBankMessages(messages)
+
+    exported = mks50.convertPatchesToBankDump(patches)
+
+    assert exported == messages
+    assert len(exported) == 16
+    for block_no, message in enumerate(exported):
+        assert message[:9] == [
+            0xF0,
+            mks50.ROLAND_ID,
+            mks50.OP_BLD,
+            0x00,
+            mks50.MKS50_ID,
+            mks50.LEVEL_TONE,
+            mks50.GROUP_TONE,
+            0x00,
+            block_no * 4,
+        ]
+        assert message[-1] == 0xF7
+
+
+def test_partial_bank_export_pads_to_64_valid_tones():
+    source_messages = _load_fixture_messages("GLORIOUS_ALPHA.SYX")
+    source_patches = mks50.extractPatchesFromAllBankMessages(source_messages)[:2]
+
+    exported = mks50.convertPatchesToBankDump(source_patches)
+    reimported = mks50.extractPatchesFromAllBankMessages(exported)
+
+    assert len(exported) == 16
+    assert len(reimported) == 64
+    assert [mks50.nameFromDump(patch) for patch in reimported[:3]] == [
+        "AlphaBrass",
+        "Synth Brew",
+        "AAAAAAAAAA",
+    ]
+    assert mks50.calculateFingerprint(reimported[0]) == mks50.calculateFingerprint(source_patches[0])
+    assert mks50.calculateFingerprint(reimported[1]) == mks50.calculateFingerprint(source_patches[1])
+    assert all(mks50.isEditBufferDump(patch) for patch in reimported)
+
+
+def test_bank_export_rejects_more_than_64_patches():
+    source_messages = _load_fixture_messages("FACTORYA.SYX")
+    source_patches = mks50.extractPatchesFromAllBankMessages(source_messages)
+
+    with pytest.raises(ValueError, match="at most 64"):
+        mks50.convertPatchesToBankDump(source_patches + [source_patches[0]])
 
 
 def test_ezbank1_fixture_split_sysex_ignores_truncated_tail():

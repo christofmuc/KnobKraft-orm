@@ -114,7 +114,8 @@ def name() -> str:
 def setupHelp() -> str:
     return (
         "The MKS-50 cannot be queried for full bank dumps from software.\n\n"
-        "To download banks, start a bulk dump from the MKS-50 front panel.\n"
+        "Alpha Juno-1/2 tone banks use the same tone dump format and can be imported/exported here.\n\n"
+        "To download banks, start a bulk dump from the MKS-50 or Alpha Juno front panel.\n"
         "Use Tone dump modes (for example T-a / T-b), not patch/chord dump modes.\n\n"
         "For two-way dumps, the adaptation now sends handshake ACK/RJC replies automatically."
     )
@@ -209,6 +210,41 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
     # MKS-50 has no direct "store to location" sysex in this adaptation path.
     del program_number
     return convertToEditBuffer(channel, message)
+
+
+def convertPatchesToBankDump(patches) -> List[List[int]]:
+    patch_messages = _normalize_patch_dump_list(patches)
+    if len(patch_messages) == 0:
+        raise ValueError("MKS-50 bank export requires at least one patch")
+    if len(patch_messages) > numberOfPatchesPerBank():
+        raise ValueError("A full MKS-50/Alpha Juno tone bank can contain at most 64 patches")
+
+    normalized_patches = [convertToEditBuffer(0, patch) for patch in patch_messages]
+    while len(normalized_patches) < numberOfPatchesPerBank():
+        normalized_patches.append(_default_apr_patch(0))
+
+    bank_messages: List[List[int]] = []
+    for block_no in range(16):
+        start_patch = block_no * 4
+        payload: List[int] = []
+        for patch in normalized_patches[start_patch:start_patch + 4]:
+            payload.extend(_nibblize(_pack_apr_patch(patch)))
+        bank_messages.append(
+            [
+                0xF0,
+                ROLAND_ID,
+                OP_BLD,
+                0x00,
+                MKS50_ID,
+                LEVEL_TONE,
+                GROUP_TONE,
+                0x00,
+                start_patch,
+            ]
+            + payload
+            + [0xF7]
+        )
+    return bank_messages
 
 
 def isPartOfBankDump(message: List[int]):
@@ -511,6 +547,27 @@ def _normalize_bank_message_list(messages: Sequence) -> List[List[int]]:
     return list(messages)  # type: ignore[return-value]
 
 
+def _normalize_patch_dump_list(patches) -> List[List[int]]:
+    if len(patches) == 0:
+        return []
+
+    if isinstance(patches[0], int):
+        return knobkraft.splitSysexMessage(patches)
+
+    result: List[List[int]] = []
+    for patch in patches:
+        if len(patch) == 0:
+            continue
+        if isinstance(patch[0], int):
+            result.append(patch)
+        else:
+            flat_patch: List[int] = []
+            for message in patch:
+                flat_patch.extend(message)
+            result.extend(knobkraft.splitSysexMessage(flat_patch))
+    return result
+
+
 def _is_own_sysex(message: List[int]) -> bool:
     return (
         len(message) >= 6
@@ -573,6 +630,10 @@ def _make_apr_message_from_payload(channel: int, payload: List[int], name_data: 
     return result
 
 
+def _default_apr_patch(channel: int) -> List[int]:
+    return _make_apr_message_from_payload(channel, [0] * APR_TONE_DATA_SIZE, [0] * APR_NAME_SIZE)
+
+
 def _valid_dat_checksum(message: List[int]) -> bool:
     checksum = 0
     for index in range(5, 261):
@@ -611,6 +672,33 @@ def _apply_tone_mapping(packed_data: List[int]) -> List[int]:
         value = (packed_data[source_byte] >> lsb_index) & ((1 << bit_count) - 1)
         apr_data[target] |= value << target_bit_index
     return apr_data
+
+
+def _pack_apr_patch(message: List[int]) -> List[int]:
+    if not _is_tone_apr(message):
+        raise ValueError("MKS-50 bank export expects APR tone patches")
+
+    apr_data = message[7:43]
+    packed_data = [0] * 32
+    for source_byte, lsb_index, bit_count, target, target_bit_index in TONE_MAPPING:
+        value = (apr_data[target] >> target_bit_index) & ((1 << bit_count) - 1)
+        packed_data[source_byte] |= value << lsb_index
+
+    name_data = message[43:53]
+    while len(name_data) < APR_NAME_SIZE:
+        name_data.append(SPACE_CHAR_INDEX)
+    for index, name_byte in enumerate(name_data[:APR_NAME_SIZE]):
+        packed_data[21 + index] = (packed_data[21 + index] & 0xC0) | (name_byte & 0x3F)
+
+    return packed_data
+
+
+def _nibblize(packed_data: List[int]) -> List[int]:
+    wire_data: List[int] = []
+    for byte_value in packed_data:
+        wire_data.append(byte_value & 0x0F)
+        wire_data.append((byte_value >> 4) & 0x0F)
+    return wire_data
 
 
 def _decode_name_from_packed(packed_data: List[int]) -> str:
