@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 import hashlib
 
 # -----------------------------
@@ -15,6 +15,7 @@ CMD_DT1 = 0x12  # Data Transfer 1 (DT1)
 
 # SE-02 edit buffer dump blocks (DT1 address starts with 0x05)
 EDITBUF_ADDR_PREFIX = (0x05,)
+EDITBUF_BLOCK_OFFSETS = ((0x00, 0x00), (0x00, 0x40), (0x01, 0x00), (0x01, 0x40))
 
 # Optional tracing (disabled by default in public release)
 TRACE_ENABLED = False
@@ -160,14 +161,7 @@ def _retarget_dt1(blob: bytes, channel, target_bb: int):
     dev = _device_id_from_channel(channel)
 
     for m in msgs:
-        if not (
-            len(m) >= 14
-            and m[0] == 0xF0
-            and m[1] == ROLAND_ID
-            and m[6] == MODEL_ID
-            and m[7] == CMD_DT1
-            and m[-1] == 0xF7
-        ):
+        if not _is_se02_dt1(m):
             continue
 
         changed = False
@@ -197,6 +191,7 @@ def _is_se02_dt1(msg: bytes) -> bool:
         and msg[6] == MODEL_ID
         and msg[7] == CMD_DT1
         and msg[-1] == 0xF7
+        and _roland_checksum_7bit(bytes(msg[8:-2])) == msg[-2]
     )
 
 
@@ -213,6 +208,41 @@ def _is_editbuf_dt1(msg: bytes) -> bool:
         return False
     a = _addr4(msg)
     return bool(a) and a[0] in EDITBUF_ADDR_PREFIX
+
+
+def _editbuf_block_info(msg: bytes) -> Optional[Tuple[int, Tuple[int, int]]]:
+    if not _is_editbuf_dt1(msg):
+        return None
+    a = _addr4(msg)
+    if not a:
+        return None
+    return a[1], (a[2], a[3])
+
+
+def _ordered_valid_editbuf_blocks(blocks: Sequence[bytes]) -> List[bytes]:
+    if len(blocks) != len(EDITBUF_BLOCK_OFFSETS):
+        return []
+
+    bb = None
+    by_offset: Dict[Tuple[int, int], bytes] = {}
+    for block in blocks:
+        info = _editbuf_block_info(block)
+        if info is None:
+            return []
+
+        block_bb, offset = info
+        if bb is None:
+            bb = block_bb
+        elif block_bb != bb:
+            return []
+
+        if offset not in EDITBUF_BLOCK_OFFSETS or offset in by_offset:
+            return []
+        by_offset[offset] = block
+
+    if len(by_offset) != len(EDITBUF_BLOCK_OFFSETS):
+        return []
+    return [by_offset[offset] for offset in EDITBUF_BLOCK_OFFSETS]
 
 
 # -----------------------------
@@ -296,15 +326,16 @@ def isPartOfEditBufferDump(message) -> bool:
 
 def isEditBufferDump(message) -> bool:
     """
-    True if the blob contains a full edit buffer dump (4 DT1 messages).
-    We detect this by splitting the blob into SysEx messages and counting DT1 blocks.
+    True if the blob contains a full edit buffer dump.
+    A complete SE-02 edit buffer dump has the four expected DT1 block offsets
+    for the same bank/slot identifier.
     """
     blob = _to_blob(message)
     if len(blob) < 12:
         return False
     msgs = _split_sysex(blob) if blob.count(b"\xF0") >= 2 else ([blob] if blob else [])
     dt1 = [m for m in msgs if _is_editbuf_dt1(m)]
-    ok = (len(dt1) == 4)
+    ok = bool(_ordered_valid_editbuf_blocks(dt1))
     if ok:
         _trace(f"isEditBufferDump(len={len(blob)} msgs={len(msgs)} ok={ok})")
     return ok
@@ -426,7 +457,7 @@ def extractPatches(messages):
     File import hook:
     Orm gives a list of SysEx messages; we return a list of "patch blobs".
     SE-02 edit buffer dump = 4 DT1 messages.
-    We concatenate 4 DT1 blocks into one blob.
+    We concatenate each valid group of the four expected DT1 blocks into one blob.
     """
     _trace(f"extractPatches(count={len(messages) if messages is not None else 'None'})")
     if not messages:
@@ -441,12 +472,14 @@ def extractPatches(messages):
     _trace(f"extractPatches: editbuf_dt1_blocks={len(dt1_blocks)}")
 
     patches: List[bytes] = []
-    for i in range(0, len(dt1_blocks) // 4):
-        blocks = dt1_blocks[i * 4 : (i + 1) * 4]
-        patches.append(b"".join(blocks))
-    remainder = len(dt1_blocks) % 4
-    if remainder:
-        _trace(f"extractPatches: ignored incomplete trailing block group of {remainder} DT1 messages")
+    group_size = len(EDITBUF_BLOCK_OFFSETS)
+    for start in range(0, len(dt1_blocks), group_size):
+        blocks = dt1_blocks[start : start + group_size]
+        ordered_blocks = _ordered_valid_editbuf_blocks(blocks)
+        if ordered_blocks:
+            patches.append(b"".join(ordered_blocks))
+        else:
+            _trace(f"extractPatches: ignored invalid DT1 block group at index {start // group_size}")
 
     _trace(f"extractPatches: returning patches={len(patches)}")
     return patches
@@ -667,11 +700,10 @@ def convertToProgramDump(channel, message, program_number):
     blob = _to_blob(message)
     try:
         target_bb = int(program_number)
-    except Exception:
-        target_bb = 0
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"program_number must be an int in the range 0..127, got {program_number!r}") from exc
     if not 0 <= target_bb <= 127:
-        _trace(f"convertToProgramDump: invalid program_number={program_number}, defaulting to USER slot 0")
-        target_bb = 0
+        raise ValueError(f"program_number must be an int in the range 0..127, got {program_number!r}")
     out_blob, msg_count, addr_fixed, dev_fixed, touched_dt1 = _retarget_dt1(blob, channel, target_bb)
     _trace(
         f"convertToProgramDump: channel={channel} program_number={program_number} target_bb={target_bb} "
