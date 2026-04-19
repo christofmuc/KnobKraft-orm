@@ -5,6 +5,7 @@
 #
 
 import hashlib
+from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import knobkraft
@@ -248,8 +249,9 @@ def isPartOfBankDump(message: List[int]):
             _transfer_aborted = True
             return False, _build_handshake_reply(OP_RJC, message)
         _transfer_mode = "DAT"
-        if not is_duplicate:
-            _data_packages += 1
+        if is_duplicate:
+            return False, _build_handshake_reply(OP_ACK, message)
+        _data_packages += 1
         return True, _build_handshake_reply(OP_ACK, message)
 
     if operation == OP_RQF:
@@ -259,7 +261,7 @@ def isPartOfBankDump(message: List[int]):
     if operation == OP_EOF:
         _transfer_mode = "DAT"
         _saw_eof = True
-        return False, _build_handshake_reply(OP_ACK, message)
+        return not is_duplicate, _build_handshake_reply(OP_ACK, message)
 
     if operation in (OP_RJC, OP_ERR):
         _transfer_aborted = True
@@ -415,6 +417,85 @@ def calculateFingerprint(message: List[int]) -> str:
         return hashlib.md5(bytearray(apr_data)).hexdigest()
 
     return hashlib.md5(bytearray(message)).hexdigest()
+
+
+def make_test_data():
+    import testing
+    from testing.mock_midi import PassiveBankDumpMockDevice
+
+    fixture_dir = Path(__file__).parent / "testData" / "Roland_MKS50"
+    factory_bank = knobkraft.load_sysex(str(fixture_dir / "FACTORYA.SYX"))
+    factory_patches = extractPatchesFromAllBankMessages(factory_bank)
+
+    def programs(_: testing.TestData) -> List[testing.ProgramTestData]:
+        return [
+            testing.ProgramTestData(factory_patches[0], name="PolySynth1", number=0, rename_name="Renamed"),
+            testing.ProgramTestData(factory_patches[1], name="JazzGuitar", number=1, rename_name="New Name"),
+            testing.ProgramTestData(factory_patches[2], name="Xylophone ", number=2, rename_name="Brass 2"),
+        ]
+
+    def edit_buffers(_: testing.TestData) -> List[testing.ProgramTestData]:
+        return [
+            testing.ProgramTestData(factory_patches[0], name="PolySynth1", number=0, rename_name="Renamed"),
+            testing.ProgramTestData(factory_patches[1], name="JazzGuitar", number=1, rename_name="New Name"),
+        ]
+
+    def banks(_: testing.TestData) -> List[List[List[int]]]:
+        return [factory_bank]
+
+    dat_messages = _make_test_dat_bank_messages(channel=0)
+    ack = _build_handshake_reply(OP_ACK, [0xF0, ROLAND_ID, OP_DAT, 0x00, MKS50_ID, 0xF7])
+
+    return testing.TestData(
+        sysex=str(fixture_dir / "FACTORYA.SYX"),
+        program_generator=programs,
+        edit_buffer_generator=edit_buffers,
+        bank_generator=banks,
+        program_dump_request=(0, 0, createProgramDumpRequest(0, 0)),
+        device_detect_reply=(factory_bank[0], 0),
+        friendly_bank_name=(0, "Bank A"),
+        expected_patch_count=64,
+        mock_device_factory=lambda _test_data, _adaptation: PassiveBankDumpMockDevice(
+            dat_messages,
+            accepted_replies=[ack],
+        ),
+        expected_wire_patch_count=64,
+        expected_sent_messages=lambda _test_data, _adaptation: [ack] * 18,
+        send_to_synth_patch=lambda _test_data: factory_patches[0],
+        expected_send_to_synth_messages=lambda _test_data, _adaptation: [convertToEditBuffer(0, factory_patches[0])],
+    )
+
+
+def _make_test_dat_bank_messages(channel: int = 0) -> List[List[int]]:
+    messages = [[0xF0, ROLAND_ID, OP_WSF, channel & 0x0F, MKS50_ID, 0xF7]]
+    for block_no in range(16):
+        messages.append(_make_test_dat_block(block_no, channel))
+    messages.append([0xF0, ROLAND_ID, OP_EOF, channel & 0x0F, MKS50_ID, 0xF7])
+    return messages
+
+
+def _make_test_dat_block(block_no: int, channel: int = 0) -> List[int]:
+    payload: List[int] = []
+    for patch_no in range(4):
+        name = f"{block_no:02d}{patch_no:02d}ABCDEF"
+        payload.extend(_nibblize_test_packed_patch(_encode_test_packed_patch(name)))
+    checksum = (-sum(payload)) & 0x7F
+    return [0xF0, ROLAND_ID, OP_DAT, channel & 0x0F, MKS50_ID] + payload + [checksum, 0xF7]
+
+
+def _encode_test_packed_patch(patch_name: str) -> List[int]:
+    packed = [0] * 32
+    for index, character in enumerate(patch_name[:APR_NAME_SIZE]):
+        packed[21 + index] = PATCH_NAME_CHARS.index(character)
+    return packed
+
+
+def _nibblize_test_packed_patch(packed: List[int]) -> List[int]:
+    wire: List[int] = []
+    for byte in packed:
+        wire.append(byte & 0x0F)
+        wire.append((byte >> 4) & 0x0F)
+    return wire
 
 
 def _normalize_sysex_list(message: List[int]) -> List[List[int]]:
