@@ -97,7 +97,7 @@ jobs:
       - name: Prepare update key and generate code signature
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          .\builds\_deps\winsparkle-src\bin\sign_update.bat Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe ${{ steps.extract_pem.outputs.SECRET_FILE }} > update.sig
+          .\builds\_deps\winsparkle-src\bin\legacy_sign_update.bat Builds/The-Orm/knobkraft_orm_setup_${{env.ORM_VERSION}}.exe ${{ steps.extract_pem.outputs.SECRET_FILE }} > update.sig
           type update.sig
 
       - name: Update appcast.xml to add the new release
