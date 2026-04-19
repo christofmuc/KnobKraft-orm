@@ -158,11 +158,10 @@ def _retarget_dt1(blob: bytes, channel, target_bb: int):
     addr_fixed = 0
     dev_fixed = 0
     dev = _device_id_from_channel(channel)
-    target_bb = target_bb & 0x7F
 
     for m in msgs:
         if not (
-            len(m) >= 13
+            len(m) >= 14
             and m[0] == 0xF0
             and m[1] == ROLAND_ID
             and m[6] == MODEL_ID
@@ -172,7 +171,7 @@ def _retarget_dt1(blob: bytes, channel, target_bb: int):
             continue
 
         changed = False
-        if dev is not None and m[2] != 0x7F and m[2] != dev:
+        if dev is not None and m[2] != dev:
             m[2] = dev
             dev_fixed += 1
             changed = True
@@ -192,7 +191,7 @@ def _is_se02_dt1(msg: bytes) -> bool:
     # Typical SE-02 DT1:
     # F0 41 <dev> 00 00 00 44 12 ... F7
     return (
-        len(msg) >= 12
+        len(msg) >= 14
         and msg[0] == 0xF0
         and msg[1] == ROLAND_ID
         and msg[6] == MODEL_ID
@@ -667,8 +666,11 @@ def convertToProgramDump(channel, message, program_number):
     """
     blob = _to_blob(message)
     try:
-        target_bb = int(program_number) & 0x7F
+        target_bb = int(program_number)
     except Exception:
+        target_bb = 0
+    if not 0 <= target_bb <= 127:
+        _trace(f"convertToProgramDump: invalid program_number={program_number}, defaulting to USER slot 0")
         target_bb = 0
     out_blob, msg_count, addr_fixed, dev_fixed, touched_dt1 = _retarget_dt1(blob, channel, target_bb)
     _trace(
