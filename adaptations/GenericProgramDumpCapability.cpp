@@ -33,7 +33,7 @@ namespace knobkraft {
 		for (auto const& m : message) {
 			std::copy(m.getRawData(), m.getRawData() + m.getRawDataSize(), std::back_inserter(data));
 		}
-		return std::make_shared<GenericPatch>(me_, const_cast<py::module &>(me_->adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		return std::make_shared<GenericPatch>(me_, me_->adaptation_module, data, GenericPatch::PROGRAM_DUMP);
 	}
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::requestPatch(int patchNo) const
