@@ -194,7 +194,7 @@ The LDFLAGS is required for a certain combination of gcc version/pybind11, else 
 
 ## Building on Arch Linux with Docker
 
-If the Linux binary from the release page does not run on your distribution because of library version mismatches, you can build a local Arch Linux binary in Docker. This is based on the setup contributed in issue #319.
+If you are running Arch Linux (or an Arch derivative) and the release binary fails due to library mismatches, you can build an Arch-linked binary in Docker using `docker/archlinux/Dockerfile`. This is based on the setup contributed in issue #319.
 
 Clone the repository with submodules and build the Docker image from the repository root:
 
@@ -202,7 +202,7 @@ Clone the repository with submodules and build the Docker image from the reposit
     cd KnobKraft-orm
     docker build -f docker/archlinux/Dockerfile -t knobkraft-orm-arch .
 
-The Docker build compiles KnobKraft Orm and runs the PatchDatabase doctest binary. To copy the compiled application out of the image:
+The Docker build compiles KnobKraft Orm and runs the PatchDatabase doctest binary. The resulting `KnobKraftOrm` executable is linked against Arch Linux libraries and is expected to run on Arch or Arch-derivative hosts only; for Debian, Ubuntu, Fedora, or other distributions, use the native Linux build instructions above or create a matching distro-specific Docker build instead. To copy the compiled application out of the image:
 
     container_id=$(docker create knobkraft-orm-arch)
     docker cp "$container_id:/KnobKraft-orm/builds/The-Orm" ./The-Orm-arch
