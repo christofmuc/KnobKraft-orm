@@ -17,8 +17,10 @@
 #include "GenericEditBufferCapability.h"
 #include "GenericProgramDumpCapability.h"
 #include "GenericBankDumpCapability.h"
+#include "GenericCustomProgramChangeCapability.h"
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
+#include "GenericLegacyLoaderCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -62,12 +64,15 @@ namespace knobkraft {
 		* kCreateProgramDumpRequest = "createProgramDumpRequest",
 		* kConvertToProgramDump = "convertToProgramDump",
 		* kNumberFromDump = "numberFromDump",
+		* kCreateCustomProgramChange = "createCustomProgramChange",
 		* kCreateBankDumpRequest = "createBankDumpRequest",
 		* kIsPartOfBankDump = "isPartOfBankDump",
 		* kIsBankDumpFinished = "isBankDumpFinished",
 		* kExtractPatchesFromBank = "extractPatchesFromBank",
 		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
 		* kConvertPatchesToBankDump = "convertPatchesToBankDump",
+		* kLegacyLoadSupportedExtensions = "legacyLoadSupportedExtensions",
+		* kLoadPatchesFromLegacyData = "loadPatchesFromLegacyData",
 		* kNumberOfLayers = "numberOfLayers",
 		* kLayerTitles = "friendlyLayerTitles",
 		* kLayerName = "layerName",
@@ -103,11 +108,14 @@ namespace knobkraft {
 		kCreateProgramDumpRequest,
 		kConvertToProgramDump,
 		kNumberFromDump,
+		kCreateCustomProgramChange,
 		kCreateBankDumpRequest,
 		kIsPartOfBankDump,
 		kIsBankDumpFinished,
 		kExtractPatchesFromBank,
 		kExtractPatchesFromAllBankMessages,
+		kLegacyLoadSupportedExtensions,
+		kLoadPatchesFromLegacyData,
 		kNumberOfLayers,
 		kLayerName,
 		kSetLayerName,
@@ -151,6 +159,8 @@ namespace knobkraft {
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
+		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
+		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -183,6 +193,8 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
+		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
+		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
@@ -551,7 +563,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		ignoreUnused(place);
-		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module&>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		auto patch = std::make_shared<GenericPatch>(this, adaptation_module, data, GenericPatch::PROGRAM_DUMP);
 		return patch;
 	}
 
@@ -1046,6 +1058,47 @@ namespace knobkraft {
 		midikraft::BankSendCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = hasBankDumpSendCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::LegacyLoaderCapability** outCapability) const {
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kLegacyLoadSupportedExtensions)
+			&& pythonModuleHasFunction(kLoadPatchesFromLegacyData))
+		{
+			*outCapability = dynamic_cast<midikraft::LegacyLoaderCapability*>(legacyLoaderCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::LegacyLoaderCapability>& outCapability) const {
+		midikraft::LegacyLoaderCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = legacyLoaderCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::CustomProgramChangeCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kCreateCustomProgramChange))
+		{
+			*outCapability = dynamic_cast<midikraft::CustomProgramChangeCapability*>(customProgramChangeCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::CustomProgramChangeCapability>& outCapability) const
+	{
+		midikraft::CustomProgramChangeCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = customProgramChangeCapabilityImpl_;
 			return true;
 		}
 		return false;

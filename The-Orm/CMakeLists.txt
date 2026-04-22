@@ -93,6 +93,7 @@ set(SOURCES
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
 	UIModel.cpp UIModel.h
+	UserBankFactory.cpp UserBankFactory.h
 	VerticalPatchButtonList.cpp VerticalPatchButtonList.h
 	win_resources.rc
 	version.cpp.in
@@ -246,7 +247,7 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc74.dll" "${icu_SOURCE_DIR}/bin64/icudt74.dll"
+					"${icu_SOURCE_DIR}/bin64/icuuc78.dll" "${icu_SOURCE_DIR}/bin64/icudt78.dll"
 					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	add_custom_command(
@@ -269,6 +270,12 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/roland
 		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                -DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/korg
+                -DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/korg
+                -P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
+                )
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND}
 		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/knobkraft

@@ -5,8 +5,7 @@
 #include "PatchDatabase.h"
 #include "PatchListType.h"
 #include "ImportList.h"
-#include "Patch.h"
-#include "HasBanksCapability.h"
+#include "test_helpers.h"
 
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Statement.h>
@@ -29,8 +28,11 @@ constexpr auto kSecondSynthMd5 = "md5-ccc";
 constexpr auto kLegacyImportId = "import-legacy-001";
 constexpr auto kLegacyImportName = "Legacy Bulk Import";
 constexpr auto kSecondPatchName = "Bass 02";
+constexpr int kListTypeMigrationSchemaVersion = 18;
 const std::string kPrefixedImportId = std::string("import:") + kLegacySynth + ":" + kLegacyImportId;
 const std::string kSecondPrefixedImportId = std::string("import:") + kSecondSynth + ":" + kLegacyImportId;
+
+using test_helpers::DummySynth;
 
 class ScopedTempFile {
 public:
@@ -101,6 +103,38 @@ void createLegacyImportDatabase(const std::filesystem::path& dbPath) {
 	insertImport.bind(3, kLegacyImportId);
 	insertImport.bind(4, "2024-01-01 12:00:00");
 	insertImport.exec();
+}
+
+void createListTypeRecoveryDatabase(const std::filesystem::path& dbPath) {
+	std::error_code ec;
+	std::filesystem::remove(dbPath, ec);
+	SQLite::Database db(dbPath.string(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+	db.exec("CREATE TABLE schema_version (number INTEGER)");
+	SQLite::Statement insertVersion(db, "INSERT INTO schema_version (number) VALUES (?)");
+	insertVersion.bind(1, kListTypeMigrationSchemaVersion);
+	insertVersion.exec();
+
+	db.exec("CREATE TABLE lists(id TEXT PRIMARY KEY, name TEXT NOT NULL, synth TEXT, midi_bank_number INTEGER, last_synced INTEGER, list_type INTEGER)");
+	const std::string userBankId = "UserBank-01";
+	const std::string activeBankId = std::string(kLegacySynth) + "-bank-0";
+	SQLite::Statement insertList(db, "INSERT INTO lists (id, name, synth, midi_bank_number, last_synced, list_type) VALUES (?, ?, ?, ?, ?, ?)");
+	insertList.bind(1, userBankId);
+	insertList.bind(2, "User Bank 01");
+	insertList.bind(3, kLegacySynth);
+	insertList.bind(4, 0);
+	insertList.bind(5, 0);
+	insertList.bind(6, midikraft::PatchListType::SYNTH_BANK);
+	insertList.exec();
+
+	SQLite::Statement insertActive(db, "INSERT INTO lists (id, name, synth, midi_bank_number, last_synced, list_type) VALUES (?, ?, ?, ?, ?, ?)");
+	insertActive.bind(1, activeBankId);
+	insertActive.bind(2, "Active Bank 0");
+	insertActive.bind(3, kLegacySynth);
+	insertActive.bind(4, 0);
+	insertActive.bind(5, 0);
+	insertActive.bind(6, midikraft::PatchListType::SYNTH_BANK);
+	insertActive.exec();
 }
 
 void insertSecondLegacyPatch(const std::filesystem::path& dbPath) {
@@ -197,38 +231,6 @@ std::vector<std::string> orderedPatchNames(SQLite::Database& db, std::string con
 	return names;
 }
 
-class DummyPatch : public midikraft::Patch {
-public:
-	DummyPatch() : midikraft::Patch(0) {}
-	MidiProgramNumber patchNumber() const override {
-		return MidiProgramNumber::invalidProgram();
-	}
-};
-
-class DummySynth : public midikraft::Synth, public midikraft::HasBanksCapability {
-public:
-	explicit DummySynth(std::string name) : name_(std::move(name)) {}
-
-	std::shared_ptr<midikraft::DataFile> patchFromPatchData(const Synth::PatchData& data, MidiProgramNumber) const override {
-		auto patch = std::make_shared<DummyPatch>();
-		patch->setData(data);
-		return patch;
-	}
-
-	bool isOwnSysex(juce::MidiMessage const&) const override { return true; }
-
-	std::string getName() const override { return name_; }
-
-	// HasBanksCapability
-	int numberOfBanks() const override { return 1; }
-	int numberOfPatches() const override { return 128; }
-	std::string friendlyBankName(MidiBankNumber) const override { return "Dummy Bank"; }
-	std::vector<juce::MidiMessage> bankSelectMessages(MidiBankNumber) const override { return {}; }
-
-private:
-	std::string name_;
-};
-
 void expectLegacyImports(SQLite::Database& db) {
 	SQLite::Statement versionQuery(db, "SELECT number FROM schema_version");
 	REQUIRE(versionQuery.executeStep());
@@ -284,7 +286,7 @@ TEST_CASE("legacy imports migrate into list records and APIs work") {
 	}
 
 	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	auto dummySynth = std::make_shared<DummySynth>(kLegacySynth);
+	auto dummySynth = std::make_shared<DummySynth>(kLegacySynth, 128);
 
 	{
 		SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
@@ -349,7 +351,7 @@ TEST_CASE("import ordering uses list order when sourceIDs are empty") {
 	}
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	auto synth = std::make_shared<DummySynth>(kLegacySynth);
+	auto synth = std::make_shared<DummySynth>(kLegacySynth, 128);
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	synthMap[kLegacySynth] = synth;
@@ -374,7 +376,7 @@ TEST_CASE("schema migration drops sourceID column and index") {
 	insertSecondLegacyPatch(tmp.path());
 
 	midikraft::PatchDatabase database(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
-	auto synth = std::make_shared<DummySynth>(kLegacySynth);
+	auto synth = std::make_shared<DummySynth>(kLegacySynth, 128);
 
 	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
 	synthMap[kLegacySynth] = synth;
@@ -422,4 +424,28 @@ TEST_CASE("duplicate import ids per synth migrate without unique constraint issu
 	REQUIRE(pilB.executeStep());
 	CHECK(std::string(pilB.getColumn(0).getText()) == kSecondSynth);
 	CHECK(std::string(pilB.getColumn(1).getText()) == kSecondSynthMd5);
+}
+
+TEST_CASE("migrate misclassified user banks from synth bank type") {
+	auto tmp = makeTempDatabasePath();
+	createListTypeRecoveryDatabase(tmp.path());
+
+	REQUIRE_NOTHROW(midikraft::PatchDatabase(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE));
+
+	SQLite::Database verify(tmp.path().string(), SQLite::OPEN_READONLY);
+	SQLite::Statement versionQuery(verify, "SELECT number FROM schema_version");
+	REQUIRE(versionQuery.executeStep());
+	CHECK(versionQuery.getColumn(0).getInt() == 19);
+
+	const std::string userBankId = "UserBank-01";
+	const std::string activeBankId = std::string(kLegacySynth) + "-bank-0";
+	SQLite::Statement userBankQuery(verify, "SELECT list_type FROM lists WHERE id = :ID");
+	userBankQuery.bind(":ID", userBankId);
+	REQUIRE(userBankQuery.executeStep());
+	CHECK(userBankQuery.getColumn(0).getInt() == midikraft::PatchListType::USER_BANK);
+
+	SQLite::Statement activeBankQuery(verify, "SELECT list_type FROM lists WHERE id = :ID");
+	activeBankQuery.bind(":ID", activeBankId);
+	REQUIRE(activeBankQuery.executeStep());
+	CHECK(activeBankQuery.getColumn(0).getInt() == midikraft::PatchListType::SYNTH_BANK);
 }

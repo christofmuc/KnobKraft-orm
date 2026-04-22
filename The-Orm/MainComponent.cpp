@@ -1110,7 +1110,7 @@ int MainComponent::findIndexOfTabWithNameEnding(TabbedComponent* mainTabs, Strin
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020-2024 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2026 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
 		"\n"
 		"The homepage of the project is https://github.com/christofmuc/KnobKraft-orm\n"
