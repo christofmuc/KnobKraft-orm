@@ -25,7 +25,7 @@
 #include "Matrix1000.h"
 #include "BCR2000.h"
 #include "MKS80.h"
-#include "MKS50.h"
+// #include "MKS50.h" // Disabled while migrating MKS-50 to Python adaptation
 
 #include "GenericAdaptation.h"
 #include "PatchInterchangeFormat.h"
@@ -216,7 +216,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
+	// synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour)); // Disabled while migrating MKS-50 to Python adaptation
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));

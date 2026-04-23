@@ -71,7 +71,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | JD-Xi | alpha | adaptation | 100% AI generated |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
-| Roland | MKS-50 | alpha | native | |
+| Roland | MKS-50 | alpha | adaptation | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
 | Roland | SE-02 | beta | adaptation | Thanks to @MammaScan! |

@@ -61,9 +61,11 @@ def splitSysex(byte_list):
         sysex = []
         if byte_list[index] == 0xf0:
             # Sysex start
-            while byte_list[index] != 0xf7 and index < len(byte_list):
+            while index < len(byte_list) and byte_list[index] != 0xf7:
                 sysex.append(byte_list[index])
                 index += 1
+            if index >= len(byte_list):
+                break
             sysex.append(0xf7)
             index += 1
             result.append(sysex)

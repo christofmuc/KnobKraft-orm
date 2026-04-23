@@ -194,7 +194,7 @@ if(NOT PYTHON_EXECUTABLE)
 		endif()
 		unset(PYTHON3_EXECUTABLE CACHE)
 	endif()
-	
+
 	# If python3 didn't work, try python (but verify it's Python 3, not Python 2)
 	if(NOT PYTHON_EXECUTABLE)
 		find_program(PYTHON_EXECUTABLE_CANDIDATE python)
@@ -226,7 +226,7 @@ if(NOT PYTHON_EXECUTABLE)
 			unset(PYTHON_EXECUTABLE_CANDIDATE CACHE)
 		endif()
 	endif()
-	
+
 	# If still not found, provide helpful error
 	if(NOT PYTHON_EXECUTABLE)
 		message(FATAL_ERROR "Could not find a working Python executable (tried python3 and python). Please install Python 3.12 or later and ensure it is in your PATH.")
