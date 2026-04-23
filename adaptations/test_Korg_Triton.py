@@ -11,7 +11,7 @@ def test_extract_programs_from_full_dump():
     bank_programs = knobkraft.splitSysex(adaptation.extractPatchesFromBank(bank_dump[0]))
     rebuilt_bank_dump = adaptation.convertPatchesToBankDump(bank_programs)
 
-    assert len(full_dump_programs) >= 256
+    assert len(full_dump_programs) == 640
     assert full_dump_programs[:len(bank_programs)] == bank_programs
     assert rebuilt_bank_dump == bank_dump
     assert adaptation.isSingleProgramDump(full_dump_programs[0])

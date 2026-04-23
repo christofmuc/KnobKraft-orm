@@ -1,6 +1,6 @@
 #   Korg Triton Classic - Program mode adaptation
 import hashlib
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import knobkraft
 import testing
@@ -23,7 +23,20 @@ PROGRAM_DATA_SIZE = 540
 PROGRAM_NAME_LENGTH = 16
 PATCHES_PER_BANK = 128
 INTERNAL_BANKS = 5
-MIN_ALL_DATA_PROGRAM_RUN = 64
+GLOBAL_DATA_SIZE = 850
+DRUMKIT_DATA_SIZE = 4112
+DRUMKIT_COUNT = 64
+ARPEGGIO_PATTERN_DATA_SIZE = 320
+ARPEGGIO_PATTERN_COUNT = 232
+COMBINATION_DATA_SIZE = 448
+COMBINATION_BANK_COUNT = 4
+ALL_DATA_HEADER_SIZE = 11
+ALL_DATA_PROGRAM_OFFSET = (
+    GLOBAL_DATA_SIZE
+    + DRUMKIT_DATA_SIZE * DRUMKIT_COUNT
+    + ARPEGGIO_PATTERN_DATA_SIZE * ARPEGGIO_PATTERN_COUNT
+    + COMBINATION_DATA_SIZE * PATCHES_PER_BANK * COMBINATION_BANK_COUNT
+)
 
 
 def name():
@@ -428,52 +441,22 @@ def _build_single_program_dump(channel: int, available_banks: int, bank: int, pa
     ] + escapeSysex(program_data) + [0xF7]
 
 
-def _looks_like_program_name(data: List[int], offset: int):
-    name_bytes = data[offset:offset + PROGRAM_NAME_LENGTH]
-    if len(name_bytes) < PROGRAM_NAME_LENGTH:
-        return False
-    return all(32 <= value <= 126 for value in name_bytes) and any(value != 0x20 for value in name_bytes)
-
-
-def _find_all_data_program_run(data: List[int]) -> Tuple[Optional[int], int]:
-    best_start = None
-    best_count = 0
-
-    for residue in range(PROGRAM_DATA_SIZE):
-        current_start = None
-        current_count = 0
-        for offset in range(residue, len(data) - PROGRAM_NAME_LENGTH + 1, PROGRAM_DATA_SIZE):
-            if _looks_like_program_name(data, offset):
-                if current_start is None:
-                    current_start = offset
-                current_count += 1
-                if current_count > best_count:
-                    best_start = current_start
-                    best_count = current_count
-            else:
-                current_start = None
-                current_count = 0
-
-    return best_start, best_count
-
-
 def _extract_patches_from_all_data_dump(message):
     if not _has_triton_header(message, ALL_DATA_DUMP):
         raise Exception("Not a Triton all-data dump")
 
     channel = _message_channel(message)
-    data = unescapeSysex(message[11:-1])
-    start, count = _find_all_data_program_run(data)
-    if start is None or count < MIN_ALL_DATA_PROGRAM_RUN:
-        raise Exception("Could not locate a Triton program block inside the all-data dump")
+    available_banks = message[5] & 0x7F
+    data = unescapeSysex(message[ALL_DATA_HEADER_SIZE:-1])
+    bank_count = INTERNAL_BANKS
 
     programs = []
-    for index in range(count):
-        offset = start + index * PROGRAM_DATA_SIZE
+    for index in range(bank_count * PATCHES_PER_BANK):
+        offset = ALL_DATA_PROGRAM_OFFSET + index * PROGRAM_DATA_SIZE
         program_data = data[offset:offset + PROGRAM_DATA_SIZE]
         if len(program_data) < PROGRAM_DATA_SIZE:
-            break
+            raise Exception("Triton all-data dump ended before the documented program block was complete")
         bank = index // PATCHES_PER_BANK
         patch = index % PATCHES_PER_BANK
-        programs.append(_build_single_program_dump(channel, _available_banks_byte(), bank, patch, program_data))
+        programs.append(_build_single_program_dump(channel, available_banks, bank, patch, program_data))
     return programs
