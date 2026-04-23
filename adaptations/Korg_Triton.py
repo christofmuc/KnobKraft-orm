@@ -20,6 +20,7 @@ PROGRAM_PARAMETER_DUMP = 0x4C
 ALL_DATA_DUMP = 0x50
 
 PROGRAM_DATA_SIZE = 540
+MOSS_PROGRAM_DATA_SIZE = 604
 PROGRAM_NAME_LENGTH = 16
 PATCHES_PER_BANK = 128
 INTERNAL_BANKS = 5
@@ -375,7 +376,9 @@ def _program_type(message):
     if isEditBufferDump(message):
         return message[5] & 0x7F
     if isSingleProgramDump(message):
-        return message[5] & 0x01
+        if len(unescapeSysex(_payload_from_dump(message))) == MOSS_PROGRAM_DATA_SIZE:
+            return 0x01
+        return 0x00
     return 0x00
 
 
