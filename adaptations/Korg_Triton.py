@@ -1,4 +1,12 @@
-#   Korg Triton Classic - Program mode adaptation
+"""
+Korg Triton Classic program-mode adaptation.
+
+This intentionally targets the original Triton/Triton Pro/Triton ProX generation,
+not the full Triton family. The Rack, Le, and Studio share some commands, but
+their operational model IDs, bank selector widths, data sizes, and all-data
+layouts diverge enough that they should get separate adaptations or a future
+Triton-family helper layer.
+"""
 import hashlib
 from typing import List, Optional
 
@@ -23,7 +31,17 @@ PROGRAM_DATA_SIZE = 540
 MOSS_PROGRAM_DATA_SIZE = 604
 PROGRAM_NAME_LENGTH = 16
 PATCHES_PER_BANK = 128
+
+# Classic exposes internal banks A-E as the normal PCM program banks. Bank F is
+# only present when the optional EXB-MOSS board is installed, so this adaptation
+# keeps the default bank list to the five banks every Classic has.
 INTERNAL_BANKS = 5
+
+# Classic all-data dumps are documented as:
+# [Global], [64 Drumkits], [232 Arp Patterns], [4 Combination Banks],
+# [All Program Parameter Data], [Song Address], [Cue Lists], [Sequence Data].
+# The table sizes below ground the program offset instead of scanning the dump
+# heuristically. For the supplied fixture, this computes offset 567634.
 GLOBAL_DATA_SIZE = 850
 DRUMKIT_DATA_SIZE = 4112
 DRUMKIT_COUNT = 64
@@ -83,6 +101,7 @@ def createEditBufferRequest(channel):
 
 
 def createProgramDumpRequest(channel, patchNo):
+    """Request one Classic program: F0 42 3g 50 1C 00kk0bbb pp 00 F7."""
     bank, program = divmod(patchNo, PATCHES_PER_BANK)
     return [
         0xF0,
@@ -146,6 +165,9 @@ def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
         return message[:2] + [0x30 | (channel & 0x0F)] + message[3:]
     if isSingleProgramDump(message):
+        # 4C dumps carry "available banks" in byte 5, not program type. The
+        # current-buffer 40 form wants PCM/MOSS type there, so derive it from
+        # the documented payload size.
         return [0xF0, KORG, 0x30 | (channel & 0x0F), TRITON_SERIES, CURRENT_PROGRAM_DUMP, _program_type(message)] + _payload_from_dump(message) + [0xF7]
     raise Exception("Neither edit buffer nor program dump. Can't convert to edit buffer.")
 
@@ -195,6 +217,7 @@ def bankDescriptors():
 
 
 def createBankDumpRequest(channel, bank):
+    """Request one Classic program bank using the 3-bit bank selector."""
     return [
         0xF0,
         KORG,
@@ -219,13 +242,15 @@ def isBankDumpFinished(messages):
 
 
 def extractPatchesFromBank(message):
+    """Extract Classic 4C all/one-bank dumps into numbered 4C one-program dumps."""
     if not (_has_triton_header(message, PROGRAM_PARAMETER_DUMP) and _dump_kind(message) in (0x00, 0x01)):
         raise Exception("Not a Triton program bank dump")
 
     channel = message[2] & 0x0F
     available_banks = message[5] & 0x7F
     base_bank = _dump_bank(message)
-    raw_programs = _split_unescaped_programs(unescapeSysex(message[8:-1]))
+    program_size = MOSS_PROGRAM_DATA_SIZE if base_bank == 5 else PROGRAM_DATA_SIZE
+    raw_programs = _split_unescaped_programs(unescapeSysex(message[8:-1]), program_size)
 
     result = []
     for index, program_data in enumerate(raw_programs):
@@ -236,6 +261,7 @@ def extractPatchesFromBank(message):
 
 
 def extractPatchesFromAllBankMessages(messages):
+    """Extract Classic 4C bank dumps and 50 all-data dumps."""
     patches = []
     for message in messages:
         if _has_triton_header(message, ALL_DATA_DUMP):
@@ -357,6 +383,8 @@ def _has_triton_header(message, command: Optional[int] = None):
 
 
 def _selector_byte(kind: int, bank: int):
+    # Triton Classic uses 00kk0bbb. Rack and Studio use 00kkbbbb for EXB banks;
+    # those models should not reuse this helper unchanged.
     return ((kind & 0x03) << 4) | (bank & 0x07)
 
 
@@ -402,8 +430,8 @@ def _payload_from_dump(message):
 
 def _program_data_from_dump(message):
     data = unescapeSysex(_payload_from_dump(message))
-    if len(data) != PROGRAM_DATA_SIZE:
-        raise Exception(f"Expected {PROGRAM_DATA_SIZE} bytes of Triton program data, got {len(data)}")
+    if len(data) not in (PROGRAM_DATA_SIZE, MOSS_PROGRAM_DATA_SIZE):
+        raise Exception(f"Expected {PROGRAM_DATA_SIZE} or {MOSS_PROGRAM_DATA_SIZE} bytes of Triton program data, got {len(data)}")
     return data
 
 
@@ -420,14 +448,14 @@ def _encode_name(name_to_encode):
     return [ord(char) if 32 <= ord(char) <= 126 else 0x20 for char in name_to_encode[:PROGRAM_NAME_LENGTH].ljust(PROGRAM_NAME_LENGTH)]
 
 
-def _split_unescaped_programs(unescaped_data: List[int]):
-    if len(unescaped_data) < PROGRAM_DATA_SIZE:
+def _split_unescaped_programs(unescaped_data: List[int], program_size: int):
+    if len(unescaped_data) < program_size:
         raise Exception("Program dump did not contain enough data for a single program")
-    if len(unescaped_data) % PROGRAM_DATA_SIZE != 0:
-        raise Exception(f"Program dump payload is not divisible by {PROGRAM_DATA_SIZE} bytes")
+    if len(unescaped_data) % program_size != 0:
+        raise Exception(f"Program dump payload is not divisible by {program_size} bytes")
     return [
-        unescaped_data[index:index + PROGRAM_DATA_SIZE]
-        for index in range(0, len(unescaped_data), PROGRAM_DATA_SIZE)
+        unescaped_data[index:index + program_size]
+        for index in range(0, len(unescaped_data), program_size)
     ]
 
 
@@ -445,11 +473,14 @@ def _build_single_program_dump(channel: int, available_banks: int, bank: int, pa
 
 
 def _extract_patches_from_all_data_dump(message):
+    """Extract the documented Classic program block from a 50 all-data dump."""
     if not _has_triton_header(message, ALL_DATA_DUMP):
         raise Exception("Not a Triton all-data dump")
 
     channel = _message_channel(message)
     available_banks = message[5] & 0x7F
+    if available_banks != 0:
+        raise Exception("Triton Classic all-data dumps with optional MOSS bank F are not implemented yet")
     data = unescapeSysex(message[ALL_DATA_HEADER_SIZE:-1])
     bank_count = INTERNAL_BANKS
 
