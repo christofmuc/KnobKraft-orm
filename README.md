@@ -70,6 +70,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
 | Roland | JD-Xi | alpha | adaptation | 100% AI generated |
 | Roland | JD-800 | alpha | adaptation | real-bank-grounded GenericRoland adaptation |
+| Roland | SC-88ST Pro | alpha | adaptation | documented User Patch/User Patch bank support |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
 | Roland | MKS-50 | alpha | native | |
