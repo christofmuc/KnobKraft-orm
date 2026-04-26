@@ -95,11 +95,7 @@ def defaultProgramPlace():
 
 def createProgramDumpRequest(channel, patchNo):
     global _expect_bank_dump
-    # Workaround for a framework ambiguity: an Xpander all-data dump is a stream of normal
-# single-program dumps. Current KnobKraft parsing can load those once as program dumps
-# and again as a bank dump, so this flag suppresses program-dump detection while a bank
-# request is in flight. See BUG_bank_dump_program_dump_double_parse.md in the repo root.
-_expect_bank_dump = False
+    _expect_bank_dump = False
     return [0xF0, MANUFACTURER_ID, DEVICE_ID, REQUEST_SINGLE_PROGRAM, SINGLE_PATCH_CLASS, patchNo % PATCH_COUNT, 0xF7]
 
 
@@ -145,11 +141,7 @@ def extractPatchesFromBank(bank):
 def extractPatchesFromAllBankMessages(messages):
     global _expect_bank_dump
     programs = _collect_bank_programs(messages)
-    # Workaround for a framework ambiguity: an Xpander all-data dump is a stream of normal
-# single-program dumps. Current KnobKraft parsing can load those once as program dumps
-# and again as a bank dump, so this flag suppresses program-dump detection while a bank
-# request is in flight. See BUG_bank_dump_program_dump_double_parse.md in the repo root.
-_expect_bank_dump = False
+    _expect_bank_dump = False
     return [programs[number] for number in sorted(programs.keys())]
 
 
@@ -262,6 +254,8 @@ def _xpander_bank_messages():
 
 
 def make_test_data():
+    from testing.mock_midi import BankDumpMockDevice
+
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
         yield testing.ProgramTestData(
             message=SAMPLE_PROGRAM,
@@ -282,7 +276,7 @@ def make_test_data():
         device_detect_reply=(renamePatch(convertToProgramDump(0, SAMPLE_PROGRAM, 0), "WEIRDLFO"), 1),
         expected_patch_count=1,
         friendly_bank_name=(0, "Internal"),
-        mock_device_factory=lambda _test_data, adaptation: __import__("testing.mock_midi", fromlist=["BankDumpMockDevice"]).BankDumpMockDevice(adaptation, _xpander_bank_messages()),
+        mock_device_factory=lambda _test_data, adaptation: BankDumpMockDevice(adaptation, _xpander_bank_messages()),
         expected_wire_patch_count=PATCH_COUNT,
         expected_sent_messages=lambda _test_data, adaptation: [[0xF0, MANUFACTURER_ID, DEVICE_ID, REQUEST_ALL_DATA, SINGLE_PATCH_CLASS, 0xF7]],
         wire_download_banks=[0, 0],
@@ -297,5 +291,3 @@ def make_test_data():
             [0xC0, adaptation.defaultProgramPlace()],
         ],
     )
-
-
