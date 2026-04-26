@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 
 import knobkraft
 import testing
-from roland import DataBlock, RolandData, GenericRoland, command_dt1
+from roland import DataBlock, RolandData, GenericRoland, command_dt1, command_rq1
 
 
 this_module = sys.modules[__name__]
@@ -240,9 +240,14 @@ def extractPatchesFromAllBankMessages(messages):
     return [program.message.byte_list for program in _programs_from_bank_messages(messages)]
 
 
+def createBankDumpRequest(channel, bank):
+    return jd_800.buildRolandMessage(jd_800.device_id, command_rq1, [0x05, 0x00, 0x00], [0x01, 0x40, 0x00])
+
+
 def setupHelp():
     return (
-        "Set JD-800 MIDI Unit Number to 17 and enable Rx Exclusive ON-1. "
+        "Set JD-800 MIDI Unit Number to 17 and enable Rx Exclusive ON-1, "
+        "or use Rx Exclusive ON-2 to ignore the Unit Number. "
         "Canonical single programs are 384 bytes as 256+128 DT1 blocks. "
         "Large 25536-byte .syx files are treated as full 64-patch memory dumps chunked into 256-byte pages."
     )
@@ -259,7 +264,7 @@ def _responses_for_edit_buffer(adaptation, edit_buffer):
 
 
 def make_test_data():
-    from testing.mock_midi import ScriptedMockDevice
+    from testing.mock_midi import BankDumpMockDevice, ScriptedMockDevice
 
     bank_messages = _raw_bank_path("JDBOOK.SYX")
 
@@ -284,6 +289,9 @@ def make_test_data():
         first_edit_buffer = test_data.edit_buffers[0].message.byte_list
         return ScriptedMockDevice(_responses_for_edit_buffer(adaptation, first_edit_buffer))
 
+    def bank_mock_device(_test_data: testing.TestData, adaptation):
+        return BankDumpMockDevice(adaptation, bank_messages)
+
     return testing.TestData(
         sysex=_testdata_path("JDBOOK.SYX"),
         program_generator=programs,
@@ -291,10 +299,14 @@ def make_test_data():
         bank_generator=banks,
         expected_patch_count=64,
         program_dump_request=(0, 11, "F0 41 10 3D 11 05 21 00 00 02 00 58 F7"),
+        mock_device_factory=bank_mock_device,
+        expected_wire_patch_count=64,
+        expected_sent_messages=lambda _test_data, adaptation: [adaptation.createBankDumpRequest(0, 0)],
         single_edit_buffer_mock_device_factory=single_edit_buffer_mock_device,
         send_to_synth_patch=lambda test_data: test_data.edit_buffers[0].message.byte_list,
         expected_send_to_synth_messages=lambda test_data, adaptation: knobkraft.splitSysex(
             adaptation.convertToEditBuffer(0, test_data.edit_buffers[0].message.byte_list)
         ),
     )
+
 
