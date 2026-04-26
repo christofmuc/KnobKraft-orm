@@ -29,7 +29,7 @@ set(adaptation_files
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py" "Oberheim_Teo5.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
-	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py" "Roland_U20_U220.py" "Roland_JD_Xi.py" "Roland_SE02.py"
+	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py" "Roland_U20_U220.py" "Roland_JD_Xi.py" "Roland_JD800.py" "Roland_SE02.py"
 	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py" "Waldorf_M.py" "Waldorf_Pulse.py"
@@ -122,3 +122,4 @@ if(UNIX AND NOT APPLE)
 	install(DIRECTORY testing/ DESTINATION bin/testing PATTERN "__pycache__" EXCLUDE)
 	install(FILES ${adaptation_files} DESTINATION bin)
 ENDIF()
+
