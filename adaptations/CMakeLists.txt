@@ -26,7 +26,7 @@ set(adaptation_files
 	"Matrix 6.py"
         "Moog_Voyager.py"
 	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py" "Novation_Bass_Station_II.py"
-	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py" "Oberheim_Teo5.py"
+	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py" "Oberheim_Teo5.py" "Oberheim_Xpander.py" "Oberheim_Matrix12.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
 	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS70V4.py" "Roland_TD-07.py" "Roland_U20_U220.py" "Roland_JD_Xi.py" "Roland_SE02.py"
