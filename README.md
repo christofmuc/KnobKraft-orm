@@ -57,6 +57,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
 | Novation | Bass Station II | works | adaptation | Thanks to @cockroach! |
 | Novation | Summit/Peak | alpha | adaptation |  |
+| Novation | Supernova/Nova family | beta | adaptation | Awaiting broader user feedback across variants |
 | Novation | UltraNova | works | adaptation | Thanks to @nezetic |
 | Oberheim | Matrix 6/6R | works | adaptation | Thanks to @tsantilis |
 | Oberheim | Matrix 1000 | works | native | |
