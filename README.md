@@ -35,6 +35,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Electra | one | works | adaptation |
 | Elektron | Analog Rytm | beta | adaptation | Thanks to @RadekPilich for the request! |
 | Elektron | Digitone | alpha | adaptation |  This needs more work, owners please provide feedback so we can complete it. |
+| Edirol | SD-90 | alpha | adaptation | documented temporary-patch adaptation; real dump validation still needed |
 | E-mu | Morpheus | works | adaptation | Thanks to Kid Who for testing! |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
 | Ensoniq | VFX/VFX-SD | works | adaptation | Thanks to @dancingdog for testing! |
