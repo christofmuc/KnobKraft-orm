@@ -22,6 +22,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | RD-9 | in progress | adaptation | |
 | Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
+| Clavia | Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | official Lead-family fixtures; Nord Lead 3+ is a separate protocol |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
