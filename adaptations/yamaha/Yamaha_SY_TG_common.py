@@ -195,7 +195,7 @@ class YamahaSYTGBase:
 
     def channelIfValidDeviceResponse(self, buf: List[int]) -> int:
         if len(buf) < 32:
-            return False  # filter out irrelevant messages like active sensing
+            return -1  # filter out irrelevant messages like active sensing
         if self._validateVoiceMessage(buf):
             if self.nameFromDump(buf).strip() == self.first_preset_name.strip():  # ignore whitespace
                 rtn = buf[OFFSET_DEVICE_ID]
