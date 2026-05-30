@@ -2,6 +2,19 @@
 # Yamaha SY55 / TG55 adaptation.
 
 Adaptation created by github.com/hmmbug.
+
+The SY55 and TG55 are nearly identical in terms of capabilities and MIDI spec.
+There's no easy way to distinguish between them (1) so this adaptation is a
+single combined one for both synths.
+
+## NOTES
+
+1. The only way I've found to distinguish these synths involved making use
+   of a physical difference: the SY55 has a single stereo output, the TG55 has
+   two stereo outputs. The MIDI spec has an "output select" parameter which
+   could be used to identify the synths. Since that would require editing the
+   loaded patch I've not implemented it as I don't think it's acceptable to
+   modify patches without the user knowing.
 """
 from enum import IntEnum
 import logging
@@ -176,7 +189,7 @@ def make_test_data():
         ],
         device_detect_call=[
             SYSEX_START, YAMAHA_ID, 0x20, synth.synth_id, 0x4c, 0x4d, 0x20, 0x20,
-            0x38, 0x31, 0x30, 0x33, 0x53, 0x59, 0x00, 0x00,
+            0x38, 0x31, 0x30, 0x33, 0x56, 0x43, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x02, 0x00, SYSEX_END
         ],
