@@ -87,7 +87,7 @@ while the rack version of it (the TG500) does have PRESET banks.
 import hashlib
 import logging
 from types import ModuleType
-from typing import List
+from typing import List, Optional
 
 import knobkraft.sysex
 
@@ -123,6 +123,7 @@ class YamahaSYTGBase:
 
         # voice dump parameters
         msg_id_voice_dump:str,  # Used for device detection.
+        msg_id_all_voice_dump:Optional[str],
         voice_default_name:str,
         voice_name_length:int,
         offset_voice_name:int,
@@ -152,7 +153,8 @@ class YamahaSYTGBase:
         self.first_preset_name = first_preset_name
 
         # voice
-        self.msg_id_voice_dump = msg_id_voice_dump
+        self.msg_id_voice_dump = msg_id_voice_dump  # request ID for single voice
+        self.msg_id_all_voice_dump = msg_id_all_voice_dump  # request ID for voice bank
         self.voice_default_name = voice_default_name
         self.voice_name_length = voice_name_length
         self.offset_voice_name = offset_voice_name
