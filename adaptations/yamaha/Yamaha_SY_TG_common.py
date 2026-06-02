@@ -123,7 +123,6 @@ class YamahaSYTGBase:
 
         # voice dump parameters
         msg_id_voice_dump:str,  # Used for device detection.
-        msg_id_all_voice_dump:Optional[str],
         voice_default_name:str,
         voice_name_length:int,
         offset_voice_name:int,
@@ -143,6 +142,9 @@ class YamahaSYTGBase:
         # requests
         offset_req_memory_type:int,
         offset_req_memory_number:int,
+
+        # voice dump keyword params
+        msg_id_all_voice_dump:Optional[str]=None,
 
         # misc
         help_string:str="",
@@ -301,14 +303,20 @@ class YamahaSYTGBase:
         logging.debug(f"make_message({device_id}, msg={msg}, add_checksum={add_checksum}): {bytes2str(buf)}")
         return buf
 
+    def _calculateRawChecksum(self, data: List[int]) -> int:
+        """
+        Checksum the whole data array.
+        """
+        data_sum = sum(data) & 0x7f  # sum & mask to 7 bit values
+        checksum = (0x80 - data_sum) & 0x7f  # subtract from 128 (0x80), mask again for 7-bit value
+        return checksum
+
     def _calculateChecksum(self, data: List[int]) -> int:
         """
         Checksum the SysEx array. This excludes the first 6 bytes (f0 43 0n, 7a + 2 byte data length).
         Returns the checksum byte to be inserted at OFFSET_CHECKSUM.
         """
-        data_sum = sum(data[6:-2]) & 0x7f  # sum & mask to 7 bit values
-        checksum = (0x80 - data_sum) & 0x7f  # subtract from 128 (0x80), mask again for 7-bit value
-        return checksum
+        return self._calculateRawChecksum(data[6:-2])
 
     def _validateMessage(self, buf: List[int]) -> bool:
         if len(buf) < 32:

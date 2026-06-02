@@ -15,7 +15,7 @@ Adaptation created by github.com/hmmbug.
     17-19   0x?? Unknown
     20-27   Voice name
     ...
-    
+
 """
 from enum import IntEnum
 import logging
@@ -63,54 +63,81 @@ BANKS = [
 
 class YamahaSY22(YamahaSYTGBase):
 
-    # def createBankDumpRequest(self, channel:int, bank:int) -> List[int]:
-    #     if self.msg_id_all_voice_dump is None:
-    #         raise ValueError("msg_id_all_voice_dump is undefined")
-    #     return [
-    #         SYSEX_START, YAMAHA_ID, (channel & 0x0f), self.synth_id,
-    #         *str2bytes(self.msg_id_all_voice_dump), SYSEX_END
-    #     ]
+    def createBankDumpRequest(self, channel:int, bank:int) -> List[int]:
+        if self.msg_id_all_voice_dump is None:
+            raise ValueError("msg_id_all_voice_dump is undefined")
+        return [
+            SYSEX_START, YAMAHA_ID, (channel & 0x0f), self.synth_id,
+            *str2bytes(self.msg_id_all_voice_dump), SYSEX_END
+        ]
 
-    # def extractPatchesFromBank(self, bank: List[int]) -> List[List[int]]:
-    #     patches = [
-    #         p for p in knobkraft.sysex.splitSysexMessage(bank)
-    #         if self._validateVoiceMessage(p)
-    #     ]
-    #     logging.debug(f"extractPatchesFromBank(): {len(patches)} patches extracted")
-    #     return patches
+    def extractPatchesFromBank(self, bank: List[int]) -> List[List[int]]:
+        # check for "PK  2203VM" to ensure we've a bank message to process
+        if self.msg_id_all_voice_dump is None:
+            raise ValueError("Undefined: msg_id_all_voice_dump")
+        # check correct msg id
+        if bank[6:16] != str2bytes(self.msg_id_all_voice_dump):
+            raise ValueError("Not a all voice bank dump.")
+
+        prefix = [SYSEX_START, YAMAHA_ID, 0, 0x7e, 0x04, 0x3e] + str2bytes(self.msg_id_voice_dump)
+        suffix = [0, SYSEX_END]
+
+        patches = []
+        offset = 16
+        patch_len = 574  # each voice is 574 bytes
+        chunk_start = 1 << 16
+        chunk_end = 0
+        while len(patches) < 64:
+            # 16-589; 590-1163; 1164-1737; 1738-2312
+            for x in range(4):
+                chunk_start = min(chunk_start, offset)
+                chunk_end = max(chunk_end, offset+patch_len-1)
+                patch = prefix + bank[offset:offset+patch_len-1] + suffix
+                patch[OFFSET_CHECKSUM] = self._calculateChecksum(patch)
+                patches.append(patch)
+                offset += patch_len
+            if len(patches) == 4:
+                chunk = str2bytes(self.msg_id_all_voice_dump) + bank[chunk_start:chunk_end]
+            else:
+                chunk = bank[chunk_start:chunk_end]
+            if bank[offset+1] != self._calculateRawChecksum(chunk):
+                raise ValueError(f"Invalid checksum at offset {offset+1}.")
+            offset += 3  # skip checksum + 2 length bytes
+        logging.debug(f"extractPatchesFromBank(): {len(patches)} patches extracted")
+        return patches
 
     # def _validateBulkVoiceMessage(self, buf: List[int]) -> bool:
     #     rtn = self._validateMessage(buf) and self._getMessageType(buf) == str2bytes(self.msg_id_voice_dump)
     #     logging.debug(f"validate_voice_message: rtn:{rtn}")
     #     return rtn
 
-    def convertPatchesToBankDump(self, patches: List[List[int]]) -> List[int]:
-        # SY55, TG55 patch -> bank conversion
-        device_id = (self.detected_device_id if self.detected_device_id else 0) & 0x0f
-        rtn = []
-        for idx, patch in enumerate(patches):
-            buf = patch.copy()
-            buf[OFFSET_DEVICE_ID] = device_id
-            buf[self.offset_memory_type] = MemoryType.INTERNAL
-            buf[self.offset_memory_number] = idx
-            buf[OFFSET_CHECKSUM] = self._calculateChecksum(buf)
-            rtn.append(buf)
-        return rtn
+    # def convertPatchesToBankDump(self, patches: List[List[int]]) -> List[int]:
+    #     # SY22 patch -> bank conversion
+    #     device_id = (self.detected_device_id if self.detected_device_id else 0) & 0x0f
+    #     rtn = []
+    #     for idx, patch in enumerate(patches):
+    #         buf = patch.copy()
+    #         buf[OFFSET_DEVICE_ID] = device_id
+    #         buf[self.offset_memory_type] = MemoryType.INTERNAL
+    #         buf[self.offset_memory_number] = idx
+    #         buf[OFFSET_CHECKSUM] = self._calculateChecksum(buf)
+    #         rtn.append(buf)
+    #     return rtn
 
-    def createCustomProgramChange(self, channel: int, patchNo: int) -> List[int]:
-        memtype, memnum = self._mapPatchNumToSynthMemory(patchNo)
-        if memtype == MemoryType.INTERNAL:
-            bank_pc = 119
-        elif memtype == MemoryType.PRESET:
-            bank_pc = 121
-        else:
-            raise ValueError(f"Invalid memory type ({memtype}).")
-        rtn = [
-            0xc0 | (channel & 0x0f), bank_pc,   # 'direct mode' program change for bank selection (manual ref 2.1.3)
-            0xc0 | (channel & 0x0f), memnum     # select the voice in the bank, based on patchNo MOD 64
-        ]
-        logging.debug(f"createCustomProgramChange({channel},{patchNo}) -> {bytes2str(rtn)}")
-        return rtn
+    # def createCustomProgramChange(self, channel: int, patchNo: int) -> List[int]:
+    #     memtype, memnum = self._mapPatchNumToSynthMemory(patchNo)
+    #     if memtype == MemoryType.INTERNAL:
+    #         bank_pc = 119
+    #     elif memtype == MemoryType.PRESET:
+    #         bank_pc = 121
+    #     else:
+    #         raise ValueError(f"Invalid memory type ({memtype}).")
+    #     rtn = [
+    #         0xc0 | (channel & 0x0f), bank_pc,   # 'direct mode' program change for bank selection (manual ref 2.1.3)
+    #         0xc0 | (channel & 0x0f), memnum     # select the voice in the bank, based on patchNo MOD 64
+    #     ]
+    #     logging.debug(f"createCustomProgramChange({channel},{patchNo}) -> {bytes2str(rtn)}")
+    #     return rtn
 
     def friendlyProgramName(self, patchNo):
         # SY22/55/etc with 1x INTERNAL bank and 1x PRESET bank:
@@ -145,8 +172,8 @@ class YamahaSY22(YamahaSYTGBase):
         super().install(module)
         # setattr(module, 'createBankDumpRequest', self.createBankDumpRequest)
         # setattr(module, 'extractPatchesFromBank', self.extractPatchesFromBank)
-        setattr(module, 'convertPatchesToBankDump', self.convertPatchesToBankDump)
-        setattr(module, 'createCustomProgramChange', self.createCustomProgramChange)
+        # setattr(module, 'convertPatchesToBankDump', self.convertPatchesToBankDump)
+        # setattr(module, 'createCustomProgramChange', self.createCustomProgramChange)
         setattr(module, 'friendlyProgramName', self.friendlyProgramName)
         setattr(module, 'bankSlotToPatchNo', self.bankSlotToPatchNo)
 
@@ -161,7 +188,7 @@ synth = YamahaSY22(
     msg_id_all_voice_dump="PK  2203VM",
     voice_default_name="Initial ",
     voice_name_length=8,
-    offset_voice_name=33,  # UNKNOWN
+    offset_voice_name=19,
 
     # banks
     memory_types=MemoryType,
