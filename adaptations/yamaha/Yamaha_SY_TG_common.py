@@ -182,7 +182,7 @@ class YamahaSYTGBase:
         return self.help_string
 
 
-    # ##### DEVICE DETECTION CAPACBILITIES
+    # ##### DEVICE DETECTION CAPABILITIES
 
     def createDeviceDetectMessage(self, channel: int) -> List[int]:
         device_id = 0x20 | (channel & 0x0f)
