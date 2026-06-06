@@ -388,9 +388,9 @@ class YamahaSYTGBase:
 
     def _memoryTypeNumberChecks(self, memory_type:int, memory_number: int):
         if memory_type not in self.memory_types:
-            raise Exception(f"Invalid format (memory_type) for SY77/TG77 dump request given: {format}")
+            raise Exception(f"Invalid format (memory_type) for dump request given: {format}")
         if not (0 <= memory_number <= 63):
-            raise Exception(f"Invalid format (memory_number) for SY77/TG77 dump request given: {format} (out of range)")
+            raise Exception(f"Invalid format (memory_number) for dump request given: {format} (out of range)")
 
     def isDefaultName(self, patchName: int) -> bool:
         rtn = patchName == self.voice_default_name
