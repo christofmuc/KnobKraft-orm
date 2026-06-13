@@ -11,7 +11,7 @@
 | offset_memory_number | n/a | n/a | n/a | 31 | 31 | 31 | 31 | 31 | 31 | 31 | 31 | 
 | offset_req_memory_type | n/a | n/a | n/a | 28 | 28 | 28 | 28 | 28 | 28 | 28 | 28 | 
 | offset_req_memory_number | n/a | n/a | n/a | 29 | 29 | 29 | 29 | 29 | 29 | 29 | 29 | 
-| offset_voice_name | 20? | 20? | 20 | 33 | 33 | 33 | 33 | 105 | 105 | 33 | n/a | 
+| offset_voice_name | 19 | 19 | 20 | 33 | 33 | 33 | 33 | 105 | 105 | 33 | n/a | 
 | voice_name_length | 8 | 8 | 8 | 10 | 10 | 10 | 10 | 8 | 8 | 10 | n/a | 
 | voice_default_name | Initial | Initial | Initial | INIT VOICE | INIT VOICE | INIT VOICE | INIT VOICE | Init Vce | Init Vce | INIT VOICE | n/a | 
 | first_preset_name | "Genesis_" | "AP:Rock_" | "SP*Pro33" | "Piano_____" | "Piano_____" | "GrandPiano" | "SP\|Cosmo__" | n/a | "AP Grand" | "AP\|Rocks__" | -- | 
