@@ -98,10 +98,10 @@ synth = YamahaTG33(
     banks=BANKS,
 
     # data offsets in voice bulk dumps
-    offset_memory_type=30,          # location of memory type (eg. INT, Preset)
-    offset_memory_number=31,        # location of memory number (eg. patch num.)
-    offset_req_memory_type=28,      # location of memory type in request
-    offset_req_memory_number=29,    # location of memory num. in request
+    offset_memory_type=-1,          # location of memory type (eg. INT, Preset)
+    offset_memory_number=-1,        # location of memory number (eg. patch num.)
+    offset_req_memory_type=-1,      # location of memory type in request
+    offset_req_memory_number=-1,    # location of memory num. in request
 
     # misc
     help_string=HELP_STRING,

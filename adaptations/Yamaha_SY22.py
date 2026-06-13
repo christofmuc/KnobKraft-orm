@@ -58,20 +58,8 @@ class MemoryType(IntEnum):
 
 
 BANKS = [
-    {
-        "bank": 0,
-        "name": "Internal",
-        "size": 64,
-        "type": "Voice",
-        "isROM": False,
-    },
-    {
-        "bank": 1,
-        "name": "Preset",
-        "size": 64,
-        "type": "Voice",
-        "isROM": True,
-    },
+    { "bank": 0, "name": "Internal", "size": 64, "type": "Voice", "isROM": False, },
+    { "bank": 1, "name": "Preset",   "size": 64, "type": "Voice", "isROM": True,  },
 ]
 
 
@@ -275,11 +263,6 @@ class YamahaSY22(YamahaSYTGBase):
         buf = msg.copy()
         buf[OFFSET_DEVICE_ID] = channel & 0x0F
         buf[OFFSET_CHECKSUM] = self._calculateChecksum(buf)
-        logging.debug(
-            f"convertToEditBuffer({channel}, msg): "
-            f"MemType/Num:{msg[self.offset_memory_type]:02x}{msg[self.offset_memory_number]:02x}"
-            f"->{buf[self.offset_memory_type]:02x}{buf[self.offset_memory_number]:02x}"
-        )
         return buf
 
     def isEditBufferDump(self, buf: List[int]) -> bool:
@@ -310,6 +293,8 @@ class YamahaSY22(YamahaSYTGBase):
             raise ValueError(f"Invalid patchno ({patchno})")
         return rtn
 
+    # ##### KNOBCRAFT FUNCTIONS
+
     def install(self, module):
         super().install(module)
         setattr(module, "createBankDumpRequest", self.createBankDumpRequest)
@@ -335,10 +320,10 @@ synth = YamahaSY22(
     memory_types=MemoryType,
     banks=BANKS,
     # data offsets in voice bulk dumps
-    offset_memory_type=30,  # location of memory type (eg. INT, Preset)
-    offset_memory_number=31,  # location of memory number (eg. patch num.)
-    offset_req_memory_type=28,  # location of memory type in request
-    offset_req_memory_number=29,  # location of memory num. in request
+    offset_memory_type=-1,  # location of memory type (eg. INT, Preset)
+    offset_memory_number=-1,  # location of memory number (eg. patch num.)
+    offset_req_memory_type=-1,  # location of memory type in request
+    offset_req_memory_number=-1,  # location of memory num. in request
     # misc
     help_string=HELP_STRING,
 )

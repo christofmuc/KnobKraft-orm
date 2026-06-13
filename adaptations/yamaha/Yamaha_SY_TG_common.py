@@ -480,8 +480,10 @@ class YamahaSYTGBase:
 
     def blankedOut(self, buf: List[int]) -> List[int]:
         buf[OFFSET_DEVICE_ID] = 0
-        buf[self.offset_memory_type] = 0
-        buf[self.offset_memory_number] = 0
+        if self.offset_memory_type != -1:
+            buf[self.offset_memory_type] = 0
+        if self.offset_memory_number != -1:
+            buf[self.offset_memory_number] = 0
         buf[OFFSET_CHECKSUM] = 0
         buf[
             self.offset_voice_name : self.offset_voice_name + self.voice_name_length
