@@ -163,13 +163,13 @@ class YamahaSY77(YamahaSYTGBase):
     def _mapPatchNumToSynthMemory(self, patchno: int) -> tuple[int, int]:
         "Maps Knobcraft flat patch numbers to synth memory types and banks"
         rtn = None
-        if patchno <= 63:
+        if 0 <= patchno <= 63:
             rtn = (int(self.memory_types["INTERNAL"]), patchno)
         elif patchno <= 127:
             rtn = (int(self.memory_types["PRESET1"]), patchno - 64)
         elif patchno <= 191:
             rtn = (int(self.memory_types["PRESET2"]), patchno - 128)
-        if rtn is None:
+        else:
             raise ValueError(f"Invalid patchno ({patchno})")
         return rtn
 

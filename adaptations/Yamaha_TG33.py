@@ -64,8 +64,9 @@ BANKS = [
 
 class YamahaTG33(YamahaSY22):
     # TG33 can load SY22 dumps (although this could be confused with SY35 too)
-    msg_id_alt_voice_dump="PK  2203AE"
-    msg_id_alt_bulk_dump="PK  2203VM"
+    msg_id_alt_all_voice_dump="PK  2203AE"
+    # bulk dump currently unused
+    # msg_id_alt_all_bulk_dump="PK  2203VM"
 
     def _validateVoiceMessage(self, buf: List[int]) -> bool:
         rtn = (
@@ -74,7 +75,7 @@ class YamahaTG33(YamahaSY22):
                 # accept either TG33 or SY22 voice files.
                 # This might get confused with SY35 also.
                 self._getMessageType(buf) == str2bytes(self.msg_id_voice_dump) or
-                self._getMessageType(buf) == str2bytes(self.msg_id_alt_voice_dump)
+                self._getMessageType(buf) == str2bytes(self.msg_id_alt_all_voice_dump)
             )
         )
         logging.debug(f"validate_voice_message: rtn:{rtn}")

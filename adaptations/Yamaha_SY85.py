@@ -146,7 +146,7 @@ class YamahaSY85(YamahaSYTGBase):
         # On SY85/TG500, the last voice of each bank is drum voice and uses
         # the identifier of DR instead of VC
         if (patchNo & 0b00111111) == 63:
-            buf[15:17] = [0x44, 0x52]  # DR for Drum Voice
+            buf[12:14] = [0x44, 0x52]  # DR for Drum Voice
         return buf
 
     def createCustomProgramChange(self, channel: int, patchNo: int) -> List[int]:

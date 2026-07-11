@@ -3,30 +3,30 @@
 
 | Parameter | SY22 | SY35 | TG33 | SY55 | TG55 | SY77 | TG77 | SY85 | TG500 | SY99 | SY99 Additional Voice Data | NOTES |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| synth_id (si) | 0x7e | 0x7e | 0x7e | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 
-| msg_id_bank_dump (bk) | PK__2203VM | PK__2203VM | LM__0012VC | -- | -- | -- | -- | -- | -- | -- | -- | 
-| msg_id_voice_dump (vo) | PK__2203AE | PK__2203AE | LM__0012VE | LM__8103VC | LM__8103VC | LM__8101VC | LM__8101VC | LM__0065VC | LM__0065VC | LM__8101VC | LM__0040VC | 
-| **SYSEX PARAMETER OFFSETS** |  |  |  |  |  |  |  |  |  |  |  | 
-| offset_memory_type | n/a | n/a | n/a | 30 | 30 | 30 | 30 | 30 | 30 | 30 | 30 | 
-| offset_memory_number | n/a | n/a | n/a | 31 | 31 | 31 | 31 | 31 | 31 | 31 | 31 | 
-| offset_req_memory_type | n/a | n/a | n/a | 28 | 28 | 28 | 28 | 28 | 28 | 28 | 28 | 
-| offset_req_memory_number | n/a | n/a | n/a | 29 | 29 | 29 | 29 | 29 | 29 | 29 | 29 | 
-| offset_voice_name | 19 | 19 | 20 | 33 | 33 | 33 | 33 | 105 | 105 | 33 | n/a | 
-| voice_name_length | 8 | 8 | 8 | 10 | 10 | 10 | 10 | 8 | 8 | 10 | n/a | 
-| voice_default_name | Initial | Initial | Initial | INIT VOICE | INIT VOICE | INIT VOICE | INIT VOICE | Init Vce | Init Vce | INIT VOICE | n/a | 
-| first_preset_name | "Genesis_" | "AP:Rock_" | "SP*Pro33" | "Piano_____" | "Piano_____" | "GrandPiano" | "SP\|Cosmo__" | n/a | "AP Grand" | "AP\|Rocks__" | -- | 
-| **SYSEX MESSAGE FORMATS** |  |  |  |  |  |  |  |  |  |  |  | 
-| Header (hdr) | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI |  | 
-| 1 Voice Data Dump Request | [hdr] [vo] f7 | [hdr] [vo] f7 | [hdr] [vo] f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | 
-| 64 Voice Data Dump Request | [hdr] bk f7 | [hdr] bk f7 | [hdr] bk f7 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | -- | 
-|  |  |  |  |  |  |  |  |  |  |  |  | 
-| 1 Voice Data Dump | [hdr] [bc] [vo] [voice data] CS f7 | [hdr] [bc] [vo] [voice data] CS f7 | [hdr] [bc] [vo] [voice data] CS f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | Retrieves edit buffer if no `memory_type` and `memory_number` params are available
-| 64 Voice Data Dump | [hdr] [bc] bk [voice data x4 CS] [100ms] ... f7 | [hdr] [bc] bk [voice data x4 CS] [100ms] ... f7 | [hdr] [bc] bk [voice data x4 CS] [100ms] ... f7 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | 
-| Memory Types | n/a | n/a | INTERNAL:0 | INTERNAL:0 | INTERNAL:0 | INTERNAL:0 | INTERNAL:0 | INTERNAL1:0 | INTERNAL1:0 | INTERNAL:0 | INTERNAL:0 | 
-|  |  |  | PRESET1:2 | PRESET:2 | PRESET:2 | PRESET1:2 | PRESET1:2 | INTERNAL2:3 | INTERNAL2:3 | PRESET1:2 | PRESET1:2 | 
-|  |  |  | PRESET2:3 | EDIT:7F | EDIT:7F | PRESET2:3 | PRESET2:3 | INTERNAL3:6 | EDIT:7F | PRESET2:3 | PRESET2:3 | 
-|  |  |  | EDIT:7F |  |  | EDIT:7F | EDIT:7F | INTERNAL4:9 |  | EDIT:7F | EDIT:7F | 
-|  |  |  |  |  |  |  |  | EDIT:7F |  |  |  | 
+| synth_id (si) | 0x7e | 0x7e | 0x7e | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | 0x7a | |
+| msg_id_bank_dump (bk) | PK__2203VM | PK__2203VM | LM__0012VC | -- | -- | -- | -- | -- | -- | -- | -- |  |
+| msg_id_voice_dump (vo) | PK__2203AE | PK__2203AE | LM__0012VE | LM__8103VC | LM__8103VC | LM__8101VC | LM__8101VC | LM__0065VC | LM__0065VC | LM__8101VC | LM__0040VC | |
+| **SYSEX PARAMETER OFFSETS** |  |  |  |  |  |  |  |  |  |  |  | |
+| offset_memory_type | n/a | n/a | n/a | 30 | 30 | 30 | 30 | 30 | 30 | 30 | 30 | |
+| offset_memory_number | n/a | n/a | n/a | 31 | 31 | 31 | 31 | 31 | 31 | 31 | 31 | |
+| offset_req_memory_type | n/a | n/a | n/a | 28 | 28 | 28 | 28 | 28 | 28 | 28 | 28 | |
+| offset_req_memory_number | n/a | n/a | n/a | 29 | 29 | 29 | 29 | 29 | 29 | 29 | 29 | |
+| offset_voice_name | 19 | 19 | 20 | 33 | 33 | 33 | 33 | 105 | 105 | 33 | n/a | |
+| voice_name_length | 8 | 8 | 8 | 10 | 10 | 10 | 10 | 8 | 8 | 10 | n/a | |
+| voice_default_name | Initial | Initial | Initial | INIT VOICE | INIT VOICE | INIT VOICE | INIT VOICE | Init Vce | Init Vce | INIT VOICE | n/a | |
+| first_preset_name | "Genesis_" | "AP:Rock_" | "SP*Pro33" | "Piano_____" | "Piano_____" | "GrandPiano" | "SP\|Cosmo__" | n/a | "AP Grand" | "AP\|Rocks__" | -- | |
+| **SYSEX MESSAGE FORMATS** |  |  |  |  |  |  |  |  |  |  |  | |
+| Header (hdr) | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI | f0 43 0n SI |  | |
+| 1 Voice Data Dump Request | [hdr] [vo] f7 | [hdr] [vo] f7 | [hdr] [vo] f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | [hdr] [vo] [0 x14] mem_type mem_num f7 | |
+| 64 Voice Data Dump Request | [hdr] bk f7 | [hdr] bk f7 | [hdr] bk f7 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | -- | |
+|  |  |  |  |  |  |  |  |  |  |  |  | |
+| 1 Voice Data Dump | [hdr] [bc] [vo] [voice data] CS f7 | [hdr] [bc] [vo] [voice data] CS f7 | [hdr] [bc] [vo] [voice data] CS f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | [hdr] [bc] [vo] [0 x16] f7 | Retrieves edit buffer if no `memory_type` and `memory_number` params are available |
+| 64 Voice Data Dump | [hdr] [bc] bk [voice data x4 CS] [100ms] ... f7 | [hdr] [bc] bk [voice data x4 CS] [100ms] ... f7 | [hdr] [bc] bk [voice data x4 CS] [100ms] ... f7 | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | |
+| Memory Types | n/a | n/a | INTERNAL:0 | INTERNAL:0 | INTERNAL:0 | INTERNAL:0 | INTERNAL:0 | INTERNAL1:0 | INTERNAL1:0 | INTERNAL:0 | INTERNAL:0 | |
+|  |  |  | PRESET1:2 | PRESET:2 | PRESET:2 | PRESET1:2 | PRESET1:2 | INTERNAL2:3 | INTERNAL2:3 | PRESET1:2 | PRESET1:2 | |
+|  |  |  | PRESET2:3 | EDIT:7F | EDIT:7F | PRESET2:3 | PRESET2:3 | INTERNAL3:6 | EDIT:7F | PRESET2:3 | PRESET2:3 | |
+|  |  |  | EDIT:7F |  |  | EDIT:7F | EDIT:7F | INTERNAL4:9 |  | EDIT:7F | EDIT:7F | |
+|  |  |  |  |  |  |  |  | EDIT:7F |  |  |  | |
 
 Notes:
 - `msg_id_bank_dump`, `msg_id_voice_dump`, and `first_preset_name` values use spaces in the specs, not underscores `_`.

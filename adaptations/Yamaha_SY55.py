@@ -111,7 +111,7 @@ class YamahaSY55(YamahaSYTGBase):
         # same format as displayed on synth screen
         memtype, memnum = self._mapPatchNumToSynthMemory(patchNo)
         memname = self.short_memname[memtype]
-        bankslot = memnum % 16 + 1
+        bankslot = memnum + 1
         rtn = f"{memname}{bankslot:02d}"
         logging.debug(
             f"friendlyProgramName: MemType/Num: {memtype}/{memnum} -> rtn:{rtn}"
