@@ -475,7 +475,7 @@ class Librarian:
 
     def load_sysex(self, adaptation, sysex_messages: List[List[int]]) -> List[List[int]]:
         results: List[List[int]] = []
-        program_dumps_by_id: Dict[str, List[int]] = {}
+        program_dump_counts_by_id: Dict[str, int] = {}
 
         if adaptation_has_program_dump_capability(adaptation):
             current_program_dumps: Deque[List[int]] = deque()
@@ -492,7 +492,8 @@ class Librarian:
                         patch = sliding_window
                         results.append(patch)
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            program_dumps_by_id[adaptation.calculateFingerprint(patch)] = patch
+                            patch_id = adaptation.calculateFingerprint(patch)
+                            program_dump_counts_by_id[patch_id] = program_dump_counts_by_id.get(patch_id, 0) + 1
                         current_program_dumps.clear()
 
         if adaptation_has_edit_buffer_capability(adaptation):
@@ -511,7 +512,7 @@ class Librarian:
                         patch = sliding_window
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
                             patch_id = adaptation.calculateFingerprint(patch)
-                            if patch_id not in program_dumps_by_id:
+                            if patch_id not in program_dump_counts_by_id:
                                 results.append(patch)
                             else:
                                 # Ignore edit buffer, as we already loaded a program dump with the same ID
@@ -524,6 +525,18 @@ class Librarian:
             if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
                 adaptation.isPartOfBankDump([])
             current_bank: Deque[List[int]] = deque()
+            unmatched_program_dump_counts_by_id = program_dump_counts_by_id.copy()
+
+            def append_bank_patches(patches: List[List[int]]) -> None:
+                for patch in patches:
+                    if adaptation_has_implemented(adaptation, "calculateFingerprint"):
+                        patch_id = adaptation.calculateFingerprint(patch)
+                        unmatched_count = unmatched_program_dump_counts_by_id.get(patch_id, 0)
+                        if unmatched_count > 0:
+                            unmatched_program_dump_counts_by_id[patch_id] = unmatched_count - 1
+                            continue
+                    results.append(patch)
+
             for message in sysex_messages:
                 # Try to parse and load these messages as a bank dump
                 is_part = adaptation_has_implemented(adaptation, "isPartOfBankDump") and handshake_flag(adaptation.isPartOfBankDump(message))
@@ -540,14 +553,14 @@ class Librarian:
                         if adaptation_has_implemented(adaptation, "extractPatchesFromAllBankMessages"):
                             more_patches = adaptation.extractPatchesFromAllBankMessages(sliding_window)
                             logging.info(f"Loaded bank dump with {len(more_patches)} patches")
-                            results.extend(more_patches)
+                            append_bank_patches(more_patches)
                             current_bank.clear()
                         else:
                             more_patches = adaptation.extractPatchesFromBank(sliding_window[0])
                             if more_patches:
                                 logging.info(f"Loaded bank dump from single message with {len(more_patches)} patches")
                                 split_patches = knobkraft.splitSysex(more_patches)
-                                results.extend(split_patches)
+                                append_bank_patches(split_patches)
                             current_bank.clear()
 
 
