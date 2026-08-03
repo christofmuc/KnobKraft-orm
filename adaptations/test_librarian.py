@@ -59,3 +59,28 @@ def test_load_sysex_deduplicates_bank_patches_by_occurrence():
     patches = Librarian().load_sysex(PartiallyOverlappingBankAdaptation, messages)
 
     assert patches == [program_dump(0, 10), program_dump(1, 10)]
+
+
+class MutatingFingerprintBankAdaptation:
+    @staticmethod
+    def isPartOfBankDump(message):
+        return True
+
+    @staticmethod
+    def isBankDumpFinished(messages):
+        return len(messages) == 1
+
+    @staticmethod
+    def extractPatchesFromAllBankMessages(messages):
+        return [program_dump(0, 10)]
+
+    @staticmethod
+    def calculateFingerprint(message):
+        message[2] = 99
+        return str(message)
+
+
+def test_load_sysex_preserves_bank_patch_when_fingerprint_mutates_input():
+    patches = Librarian().load_sysex(MutatingFingerprintBankAdaptation, [[0xF0, 0x02, 0xF7]])
+
+    assert patches == [program_dump(0, 10)]

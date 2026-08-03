@@ -530,7 +530,7 @@ class Librarian:
             def append_bank_patches(patches: List[List[int]]) -> None:
                 for patch in patches:
                     if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                        patch_id = adaptation.calculateFingerprint(patch)
+                        patch_id = adaptation.calculateFingerprint(patch.copy())
                         unmatched_count = unmatched_program_dump_counts_by_id.get(patch_id, 0)
                         if unmatched_count > 0:
                             unmatched_program_dump_counts_by_id[patch_id] = unmatched_count - 1
