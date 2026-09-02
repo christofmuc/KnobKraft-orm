@@ -38,13 +38,6 @@ target_compile_features(knobkraft-recall-core PUBLIC cxx_std_20)
 set_target_properties(knobkraft-recall-core PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 target_compile_definitions(knobkraft-recall-core PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 
-# WP-00 currently names a local constant DOMAIN. MSVC's UCRT defines DOMAIN
-# while including <cmath>, so keep the dependency source untouched and contain
-# the Windows workaround in this consumer until WP-00 can rename the constant.
-if(MSVC)
-	target_compile_options(midikraft-session PRIVATE "/FI${CMAKE_CURRENT_LIST_DIR}/cmake/MsvcDomainCompatibility.h")
-endif()
-
 juce_add_plugin(KnobKraftRecall
 	VERSION 0.1.0
 	COMPANY_NAME "KnobKraft"
