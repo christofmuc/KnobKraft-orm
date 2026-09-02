@@ -1,8 +1,14 @@
-# KnobKraft Recall VST3 shell
+# KnobKraft Recall VST3 plugin
 
-This directory contains the host-neutral, transparent VST3 shell. It embeds a
-complete `SessionManifest` in DAW project state but performs no networking,
-database, adaptation, MIDI-port, or hardware work.
+This directory contains the host-neutral, transparent VST3 plugin. It embeds a
+complete `SessionManifest` in DAW project state and uses the local Recall IPC
+transport to connect to a running KnobKraft application. The processor owns the
+reconnecting client, so closing the editor does not end the engine session.
+
+The editor supports configured-synth binding, paged patch search, embedding a
+selected patch, and explicit manual Send/Cancel with progress and errors.
+Physical MIDI, adaptations, and the database remain exclusively in KnobKraft.
+Automatic recall and multiple project sounds are intentionally not implemented.
 
 ## Small standalone build
 

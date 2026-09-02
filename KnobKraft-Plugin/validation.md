@@ -4,7 +4,10 @@
 
 Build and run `knobkraft-recall-tests`. They cover bit-identical mono/stereo
 float and double pass-through, zero reported latency, codec-backed state round
-trip, plugin duplication, and recoverable corrupt-state behavior.
+trip, plugin duplication, recoverable corrupt-state behavior, the complete UI
+state reducer, and the manual-recall workflow over a temporary fake IPC server.
+The IPC test covers connection, configured-synth rebind, patch search/selection,
+Send/Cancel, save during transfer, editor close/reopen, and server reconnect.
 
 For a `pluginval` installation, run:
 
@@ -18,7 +21,8 @@ Build `extras/AudioPluginHost` from the checked-out JUCE version, scan the VST3
 bundle above, insert **KnobKraft Recall** on mono and stereo audio, and verify:
 
 1. audio is unchanged and the host reports zero samples of plugin latency;
-2. the editor says `Engine: Disconnected` and shows the embedded fixture;
+2. with KnobKraft closed, the editor says `Engine: Disconnected` and still shows
+   the embedded fixture;
 3. saving, closing, and reopening a project restores the same patch and fingerprint;
 4. duplicating the plugin preserves its complete embedded state;
 5. replacing the saved state with corrupt or future-version JSON shows a state
@@ -28,6 +32,9 @@ bundle above, insert **KnobKraft Recall** on mono and stereo audio, and verify:
 ## Real hosts
 
 Repeat save/reopen, duplication, mono/stereo audio, and offline editor checks in
-REAPER and Ableton Live. WP-03 intentionally includes no IPC or MIDI behavior.
-Record host and plugin versions alongside results; these checks require locally
-installed hosts and are not automated by this repository.
+REAPER and Ableton Live. With a compatible KnobKraft engine bridge running,
+verify connection, explicit synth rebind, patch search/selection, manual Send,
+progress, Cancel, and reconnect after restarting KnobKraft. No action during
+plugin scanning or project loading may launch KnobKraft or send MIDI. Record host
+and plugin versions alongside results; these checks require locally installed
+hosts and are not automated by this repository.

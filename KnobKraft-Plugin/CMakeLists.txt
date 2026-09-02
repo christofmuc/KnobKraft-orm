@@ -18,6 +18,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 set(KNOBKRAFT_RECALL_CORE_SOURCES
+	src/EngineClient.cpp
+	src/EngineClient.h
 	src/PluginEditor.cpp
 	src/PluginEditor.h
 	src/PluginProcessor.cpp
@@ -33,6 +35,8 @@ target_link_libraries(knobkraft-recall-core
 		midikraft::session
 		juce::juce_audio_processors
 		juce::juce_gui_extra
+	PRIVATE
+		nlohmann_json::nlohmann_json
 )
 target_compile_features(knobkraft-recall-core PUBLIC cxx_std_20)
 set_target_properties(knobkraft-recall-core PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
@@ -71,7 +75,7 @@ target_compile_definitions(KnobKraftRecall PUBLIC
 option(BUILD_KNOBKRAFT_PLUGIN_TESTS "Build KnobKraft Recall processor and state tests" OFF)
 if(BUILD_KNOBKRAFT_PLUGIN_TESTS)
 	add_executable(knobkraft-recall-tests tests/PluginTests.cpp)
-	target_link_libraries(knobkraft-recall-tests PRIVATE knobkraft-recall-core)
+	target_link_libraries(knobkraft-recall-tests PRIVATE knobkraft-recall-core nlohmann_json::nlohmann_json)
 	target_compile_features(knobkraft-recall-tests PRIVATE cxx_std_20)
 	add_test(NAME knobkraft-recall-tests COMMAND knobkraft-recall-tests)
 endif()
