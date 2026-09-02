@@ -170,6 +170,16 @@ namespace midikraft {
 		return found == 128;
 	}
 
+	BankDumpCapability::HandshakeReply Virus::isMessagePartOfBankDump(const MidiMessage& message) const
+	{
+		return { isBankDump(message), {} };
+	}
+
+	BankDumpCapability::FinishedReply Virus::bankDumpFinishedWithReply(std::vector<MidiMessage> const& bankDump) const
+	{
+		return { isBankDumpFinished(bankDump), {} };
+	}
+
 	std::string Virus::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		char bankChar(char(bankNo.toZeroBased() + 'A'));

@@ -225,6 +225,16 @@ namespace midikraft {
 		return hasBank && hasWave;
 	}
 
+	BankDumpCapability::HandshakeReply KawaiK3::isMessagePartOfBankDump(const MidiMessage& message) const
+	{
+		return { isBankDump(message), {} };
+	}
+
+	BankDumpCapability::FinishedReply KawaiK3::bankDumpFinishedWithReply(std::vector<MidiMessage> const& bankDump) const
+	{
+		return { isBankDumpFinished(bankDump), {} };
+	}
+
 	std::string KawaiK3::friendlyBankName(MidiBankNumber bankNo) const
 	{
 		switch (bankNo.toZeroBased()) {

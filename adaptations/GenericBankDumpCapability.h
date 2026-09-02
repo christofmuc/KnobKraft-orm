@@ -17,8 +17,10 @@ namespace knobkraft {
 		GenericBankDumpCapability(GenericAdaptation *me) : me_(me) {}
         virtual ~GenericBankDumpCapability() = default;
 		
-		bool isBankDump(const MidiMessage& message) const override;
-		bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const override;
+		bool isBankDump(const MidiMessage& message) const;
+		bool isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const;
+		midikraft::BankDumpCapability::HandshakeReply isMessagePartOfBankDump(const MidiMessage& message) const override;
+		midikraft::BankDumpCapability::FinishedReply bankDumpFinishedWithReply(std::vector<MidiMessage> const& bankDump) const override;
 		midikraft::TPatchVector patchesFromSysexBank(std::vector<MidiMessage> const& messages) const override;
 
 	private:

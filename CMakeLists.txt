@@ -41,6 +41,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
+if(BUILD_KNOBKRAFT_PLUGIN_TESTS OR MIDIKRAFT_BUILD_SESSION_TESTS)
+	enable_testing()
+endif()
+
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
 
