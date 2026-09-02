@@ -545,6 +545,12 @@ to send protocol replies while checking completion. If both `isPartOfBankDump()`
 Note that in this function, you will not get a single MIDI message or list of bytes, but rather a list of lists of bytes, i.e. a list of MIDI messages that you can iterate over.
 Timeout-relay behavior applies here as well: after a timeout callback, your adaptation may be called again and should work correctly after resetting state.
 
+Handshake protocols that can explicitly reject or abort a transfer may return a three-element tuple:
+
+    (is_finished, was_successful, reply_message_bytes)
+
+When `is_finished` is true and `was_successful` is false, the download is cancelled and no partial patches are imported. Boolean results and legacy two-element tuples continue to imply a successful transfer.
+
 ### Extracting the patches from a bank dump
 
 Now, this is easily the most involved function we have to build. The mission is to read a MIDI message, which we have previously identified to be part of the bank dump stream, and construct a new list of single edit buffer or program buffer messages, which can be stored separately in the database of the Librarian, and also sent into the synth for audition.
@@ -609,11 +615,11 @@ For a way more complex example, have a look at the implementation in the Roland 
 The opposite direction, assembling bank dump messages from a list of program dumps, can be implemented as well as a 
 separate capability. For this, just one function is required:
 
-    def convertPatchesToBankDump(patches: List[List[int]]) -> List[int]:
+    def convertPatchesToBankDump(patches: List[List[int]]) -> Union[List[int], List[List[int]]]:
 
-This will get a full bank of patches as a list of lists as input, and has to return one or more MIDI messages as a single
-list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
-there is no other way via Edit Buffer capability or Program Dump capability. 
+This gets a full bank of patches as a list of lists. It may return one flat list containing one or more MIDI messages,
+or a list containing one integer list per MIDI message. This functionality is active for the Export Patches dialog when
+Full Bank is selected, or when there is no other way via Edit Buffer capability or Program Dump capability.
 
 ## Legacy file import capability
 

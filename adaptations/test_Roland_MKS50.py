@@ -196,7 +196,7 @@ def test_bank_handshake_tuple_replies():
     wsf = [0xF0, mks50.ROLAND_ID, mks50.OP_WSF, 0x03, mks50.MKS50_ID, 0xF7]
     part = mks50.isPartOfBankDump(wsf)
     assert isinstance(part, tuple)
-    assert part[0] is False
+    assert part[0] is True
     assert part[1] == [0xF0, mks50.ROLAND_ID, mks50.OP_ACK, 0x03, mks50.MKS50_ID, 0xF7]
 
     dat = [0xF0, mks50.ROLAND_ID, mks50.OP_DAT, 0x03, mks50.MKS50_ID, 0x00, 0xF7]
@@ -264,7 +264,7 @@ def test_dat_transfer_finishes_on_eof_and_extracts_64_patches():
         if is_part:
             stored_messages.append(message)
 
-    assert len(stored_messages) == 17
+    assert len(stored_messages) == 18
     finished = mks50.isBankDumpFinished(stored_messages)
     assert isinstance(finished, tuple)
     assert finished[0] is True
@@ -324,14 +324,14 @@ def test_mock_midi_dat_download_acks_handshake_and_drops_duplicate_dat():
 def test_bank_finished_after_16_bld_blocks():
     mks50.createBankDumpRequest(0, 0)
 
-    # For transfer progress tracking, the callback only needs BLD opcodes.
-    for index in range(16):
-        bld_marker = [0xF0, mks50.ROLAND_ID, mks50.OP_BLD, 0x00, mks50.MKS50_ID, index & 0x7F, 0xF7]
-        assert mks50.isPartOfBankDump(bld_marker) is True
+    messages = _load_fixture_messages("FACTORYA.SYX")
+    for message in messages:
+        assert mks50.isPartOfBankDump(message) is True
 
-    finished = mks50.isBankDumpFinished([])
+    finished = mks50.isBankDumpFinished(messages)
     assert isinstance(finished, tuple)
     assert finished[0] is True
+    assert finished[1] is True
 
 
 def test_bank_timeout_midflight_then_restart_from_beginning():
@@ -339,7 +339,7 @@ def test_bank_timeout_midflight_then_restart_from_beginning():
 
     wsf = [0xF0, mks50.ROLAND_ID, mks50.OP_WSF, 0x01, mks50.MKS50_ID, 0xF7]
     dat = [0xF0, mks50.ROLAND_ID, mks50.OP_DAT, 0x01, mks50.MKS50_ID, 0x00, 0xF7]
-    assert mks50.isPartOfBankDump(wsf)[0] is False
+    assert mks50.isPartOfBankDump(wsf)[0] is True
     assert mks50.isPartOfBankDump(dat)[0] is True
 
     # Timeout sentinel relayed by Librarian is an empty message.
@@ -353,12 +353,13 @@ def test_bank_timeout_midflight_then_restart_from_beginning():
 
     # Restart from scratch and complete in BLD mode.
     mks50.createBankDumpRequest(0, 0)
-    for index in range(16):
-        bld_marker = [0xF0, mks50.ROLAND_ID, mks50.OP_BLD, 0x00, mks50.MKS50_ID, index & 0x7F, 0xF7]
-        assert mks50.isPartOfBankDump(bld_marker) is True
-    finished = mks50.isBankDumpFinished([])
+    messages = _load_fixture_messages("FACTORYA.SYX")
+    for message in messages:
+        assert mks50.isPartOfBankDump(message) is True
+    finished = mks50.isBankDumpFinished(messages)
     assert isinstance(finished, tuple)
     assert finished[0] is True
+    assert finished[1] is True
 
 
 def test_excessive_wsf_rejects_transfer():
@@ -371,6 +372,9 @@ def test_excessive_wsf_rejects_transfer():
 
     assert rejected[0] is False
     assert rejected[1][2] == mks50.OP_RJC
+    finished = mks50.isBankDumpFinished([])
+    assert finished[0] is True
+    assert finished[1] is False
 
 
 def test_rqf_and_err_abort_transfer():
@@ -380,12 +384,57 @@ def test_rqf_and_err_abort_transfer():
 
     assert rejected[0] is False
     assert rejected[1][2] == mks50.OP_RJC
-    assert mks50.isBankDumpFinished([])[0] is True
+    finished = mks50.isBankDumpFinished([])
+    assert finished[0] is True
+    assert finished[1] is False
 
     mks50.createBankDumpRequest(0, 0)
     err = [0xF0, mks50.ROLAND_ID, mks50.OP_ERR, 0x01, mks50.MKS50_ID, 0xF7]
     assert mks50.isPartOfBankDump(err) is False
-    assert mks50.isBankDumpFinished([])[0] is True
+    finished = mks50.isBankDumpFinished([])
+    assert finished[0] is True
+    assert finished[1] is False
+
+
+def test_mock_midi_rejected_transfer_cancels_without_importing_empty_bank():
+    result = []
+    librarian = Librarian()
+    controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
+
+    librarian.start_downloading_all_patches(controller, 1, mks50, 0, lambda patches: result.extend(patches))
+    controller.pending_replies.append(
+        [0xF0, mks50.ROLAND_ID, mks50.OP_RQF, 0x01, mks50.MKS50_ID, 0xF7])
+    controller.drain()
+
+    assert controller.cancelled is True
+    assert result == []
+    assert controller.sent_messages == [
+        [0xF0, mks50.ROLAND_ID, mks50.OP_RJC, 0x01, mks50.MKS50_ID, 0xF7]
+    ]
+
+
+def test_separate_incomplete_offline_imports_do_not_share_transfer_state():
+    messages = _load_fixture_messages("FACTORYA.SYX")
+    librarian = Librarian()
+
+    assert librarian.load_sysex(mks50, messages[:8]) == []
+    assert librarian.load_sysex(mks50, messages[8:]) == []
+    assert len(librarian.load_sysex(mks50, messages)) == 64
+
+
+def test_multi_patch_block_fingerprint_includes_every_patch():
+    bld = _build_bld_block()
+    changed_bld = bld.copy()
+    changed_bld[9 + 64] = 1  # Low nibble of packed source byte 0 in the second patch.
+
+    assert mks50.calculateFingerprint(changed_bld) != mks50.calculateFingerprint(bld)
+
+    dat = _build_dat_block(0)
+    changed_dat = dat.copy()
+    changed_dat[5 + 64] = 1
+    changed_dat[-2] = (-sum(changed_dat[5:261])) & 0x7F
+
+    assert mks50.calculateFingerprint(changed_dat) != mks50.calculateFingerprint(dat)
 
 
 def test_dat_checksum_error_is_reported():

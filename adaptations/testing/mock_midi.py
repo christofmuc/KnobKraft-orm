@@ -24,6 +24,7 @@ class MockMidiController(MidiController):
         self.sent_message_delays: List[int] = []
         self.pending_replies: Deque[MidiMessage] = deque()
         self.finished = False
+        self.cancelled = False
         self.send_delay = 0
         if hasattr(device, "initial_messages"):
             self.pending_replies.extend([message.copy() for message in device.initial_messages()])
@@ -50,6 +51,10 @@ class MockMidiController(MidiController):
         return steps
 
     def mark_finished(self):
+        self.finished = True
+
+    def mark_cancelled(self):
+        self.cancelled = True
         self.finished = True
 
     def set_send_delay(self, delay_ms: int):

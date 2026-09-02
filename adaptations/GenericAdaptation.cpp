@@ -141,7 +141,9 @@ namespace knobkraft {
 	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptationPyOutputRedirect;
 
 	void checkForPythonOutputAndLog() {
-		sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
+		if (sGenericAdaptationPyOutputRedirect) {
+			sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
+		}
 	}
 
 	class FatalAdaptationException : public std::runtime_error {
@@ -193,6 +195,9 @@ namespace knobkraft {
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
+		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
+		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
+		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
 		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		adaptation_module = adaptationModule;

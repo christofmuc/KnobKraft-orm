@@ -139,7 +139,30 @@ namespace knobkraft {
 		}
 
 		midikraft::BankDumpCapability::FinishedReply parseBankFinishedResponse(py::object const& result) {
-			return parseBankDumpReply<midikraft::BankDumpCapability::FinishedReply>(result, "isBankDumpFinished");
+			if (py::isinstance<py::tuple>(result)) {
+				py::tuple resultTuple = py::reinterpret_borrow<py::tuple>(result);
+				if (resultTuple.size() == 3) {
+					if (!isStrictBool(resultTuple[0]) || !isStrictBool(resultTuple[1])) {
+						return invalidBankDumpReply<midikraft::BankDumpCapability::FinishedReply>(
+							"isBankDumpFinished", "tuple elements 0 and 1 must be bools");
+					}
+					if (!isReplyContainer(resultTuple[2])) {
+						return invalidBankDumpReply<midikraft::BankDumpCapability::FinishedReply>(
+							"isBankDumpFinished", "tuple element 2 must be None, a list of ints, or a list of int lists");
+					}
+
+					return {
+						resultTuple[0].cast<bool>(),
+						pythonReplyToMidiMessages(resultTuple[2]),
+						resultTuple[1].cast<bool>()
+					};
+				}
+			}
+
+			// A bool or the legacy (finished, reply) tuple implies success.
+			auto reply = parseBankDumpReply<midikraft::BankDumpCapability::FinishedReply>(result, "isBankDumpFinished");
+			reply.wasSuccessful = true;
+			return reply;
 		}
 
 		std::vector<std::vector<int>> midiMessagesToNestedVector(GenericAdaptation* me, std::vector<MidiMessage> const& bankDump) {
@@ -293,8 +316,9 @@ namespace knobkraft {
 					vector.push_back(GenericAdaptation::midiMessagesToVector(messages));
 				}
 				py::object result = me_->callMethod(kConvertPatchesToBankDump, vector);
-				std::vector<uint8> byteData = GenericAdaptation::intVectorToByteVector(result.cast<std::vector<int>>());
-				bankMessages = Sysex::vectorToMessages(byteData);
+				// Adaptations may return one flat MIDI byte stream or a list containing one
+				// integer list per MIDI message. Handshake replies use the same representation.
+				bankMessages = pythonReplyToMidiMessages(result);
 			}
 			catch (py::error_already_set& ex) {
 				me_->logAdaptationError(kConvertPatchesToBankDump, ex);

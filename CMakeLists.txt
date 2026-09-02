@@ -361,6 +361,7 @@ option(BUILD_PATCH_DATABASE_TESTS "Build the PatchDatabase doctest binary" OFF)
 if(BUILD_PATCH_DATABASE_TESTS)
 	add_executable(patch_database_migration_test
 		tests/patch_database_migration_test.cpp
+		tests/bank_dump_capability_test.cpp
 		tests/patch_list_fill_test.cpp
 		tests/patch_database_search_test.cpp
 		tests/user_bank_save_test.cpp
@@ -373,5 +374,9 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		${CMAKE_CURRENT_LIST_DIR}/MidiKraft/librarian
 		${CMAKE_CURRENT_LIST_DIR}/third_party/doctest
 		${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp/include)
-    target_link_libraries(patch_database_migration_test PRIVATE midikraft-database SQLiteCpp)
+    target_link_libraries(patch_database_migration_test PRIVATE
+		midikraft-database
+		knobkraft-generic-adaptation
+		midikraft-access-virus
+		SQLiteCpp)
 endif()

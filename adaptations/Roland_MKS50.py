@@ -278,7 +278,9 @@ def isPartOfBankDump(message: List[int]):
         if _num_wsf > 2:
             _transfer_aborted = True
             return False, _build_handshake_reply(OP_RJC, message)
-        return False, _build_handshake_reply(OP_ACK, message)
+        # Keep the initial WSF in the collected stream. It is needed to validate
+        # DAT frames again when the completed download is parsed as an offline bank.
+        return not is_duplicate, _build_handshake_reply(OP_ACK, message)
 
     if operation == OP_DAT:
         if _num_wsf < 1:
@@ -311,26 +313,18 @@ def isBankDumpFinished(messages: List[List[int]]):
 
     if _transfer_aborted:
         _reset_bank_state()
-        return True, []
+        return True, False, []
 
-    if _transfer_mode == "DAT":
-        is_finished = _saw_eof and _data_packages >= 16
-        if is_finished:
-            _reset_bank_state()
-        return is_finished, []
-
-    if _transfer_mode == "BLD":
-        is_finished = _data_packages >= 16
-        if is_finished:
-            _reset_bank_state()
-        return is_finished, []
-
-    # Fallback path for offline file parsing without transfer state.
-    bulk_blocks = sum(1 for m in normalized if _is_own_sysex(m) and _operation(m) in (OP_BLD, OP_DAT))
-    is_finished = bulk_blocks >= 16
+    # Completion must depend only on the messages in this particular download/import.
+    # Protocol counters are used for handshake validation, but may outlive an incomplete
+    # offline import because the adaptation module itself remains loaded.
+    bld_blocks = sum(1 for message in normalized if _is_tone_bld(message))
+    dat_blocks = sum(1 for message in normalized if _is_tone_dat(message))
+    saw_eof = any(_is_own_sysex(message) and _operation(message) == OP_EOF for message in normalized)
+    is_finished = bld_blocks >= 16 or (dat_blocks >= 16 and saw_eof)
     if is_finished:
         _reset_bank_state()
-    return is_finished, []
+    return is_finished, True, []
 
 
 def createBankDumpRequest(channel: int, bank: int) -> List[int]:
@@ -443,14 +437,18 @@ def calculateFingerprint(message: List[int]) -> str:
         return hashlib.md5(bytearray(payload)).hexdigest()
 
     if _is_tone_bld(data):
-        packed = _extract_single_packed_patch(data, 0, 9)
-        apr_data = _apply_tone_mapping(packed)
-        return hashlib.md5(bytearray(apr_data)).hexdigest()
+        voice_data: List[int] = []
+        for patch_no in range(4):
+            packed = _extract_single_packed_patch(data, patch_no, 9)
+            voice_data.extend(_apply_tone_mapping(packed))
+        return hashlib.md5(bytearray(voice_data)).hexdigest()
 
-    if _operation(data) == OP_DAT and len(data) == 263:
-        packed = _extract_single_packed_patch(data, 0, 5)
-        apr_data = _apply_tone_mapping(packed)
-        return hashlib.md5(bytearray(apr_data)).hexdigest()
+    if _is_tone_dat(data):
+        voice_data = []
+        for patch_no in range(4):
+            packed = _extract_single_packed_patch(data, patch_no, 5)
+            voice_data.extend(_apply_tone_mapping(packed))
+        return hashlib.md5(bytearray(voice_data)).hexdigest()
 
     return hashlib.md5(bytearray(message)).hexdigest()
 
@@ -613,6 +611,10 @@ def _is_tone_bld(message: List[int]) -> bool:
         and message[6] == GROUP_TONE
         and message[7] == 0x00
     )
+
+
+def _is_tone_dat(message: List[int]) -> bool:
+    return _is_own_sysex(message) and _operation(message) == OP_DAT and len(message) == 263
 
 
 def _build_handshake_reply(operation: int, request: List[int]) -> List[int]:

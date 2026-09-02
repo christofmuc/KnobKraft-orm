@@ -515,6 +515,12 @@ to send protocol replies while checking completion. If both `isPartOfBankDump()`
 
 Note that in this function, you will not get a single MIDI message or list of bytes, but rather a list of lists of bytes, i.e. a list of MIDI messages that you can iterate over.
 
+Handshake protocols that can explicitly reject or abort a transfer may return a three-element tuple:
+
+    (is_finished, was_successful, reply_message_bytes)
+
+When `is_finished` is true and `was_successful` is false, the download is cancelled and no partial patches are imported. Boolean results and legacy two-element tuples continue to imply a successful transfer.
+
 ### Extracting the patches from a bank dump
 
 Now, this is easily the most involved function we have to build. The mission is to read a MIDI message, which we have previously identified to be part of the bank dump stream, and construct a new list of single edit buffer or program buffer messages, which can be stored separately in the database of the Librarian, and also sent into the synth for audition.

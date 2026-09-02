@@ -50,6 +50,20 @@ def handshake_flag(value) -> bool:
     return bool(value)
 
 
+def bank_finished_reply(value):
+    if isinstance(value, tuple):
+        if len(value) == 3:
+            is_finished, was_successful, next_message = value
+            return bool(is_finished), bool(was_successful), next_message
+        if len(value) == 2:
+            is_finished, next_message = value
+            return bool(is_finished), True, next_message
+        raise Exception("Expected a 2- or 3-element tuple from isBankDumpFinished")
+    if isinstance(value, bool):
+        return value, True, None
+    raise Exception("Expected tuple or bool from isBankDumpFinished")
+
+
 MidiMessageHandler = Callable[[List[int]], None]
 
 
@@ -310,6 +324,13 @@ class Librarian:
             self.on_finished(patches)
 
     @staticmethod
+    def _cancel_download(midi_controller: MidiController):
+        if hasattr(midi_controller, "mark_cancelled"):
+            midi_controller.mark_cancelled()
+        if hasattr(midi_controller, "clear_message_handlers"):
+            midi_controller.clear_message_handlers()
+
+    @staticmethod
     def _send_block(midi_controller: MidiController, messages):
         if messages is None:
             return
@@ -335,37 +356,28 @@ class Librarian:
             else:
                 raise Exception("Expected tuple or bool from isPartOfBankDump")
         else:
-            single_message_finished = adaptation.isBankDumpFinished([message])
-            if isinstance(single_message_finished, tuple):
-                is_finished, next_message = single_message_finished
-                if next_message:
-                    self._send_block(midi_controller, next_message)
-                if is_finished:
-                    # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
-                    is_part_of_bank_dump = True
-            elif isinstance(single_message_finished, bool):
-                if single_message_finished:
-                    # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
-                    is_part_of_bank_dump = True
-            else:
-                raise Exception("Expected tuple or bool from isBankDumpFinished")
+            is_finished, was_successful, next_message = bank_finished_reply(
+                adaptation.isBankDumpFinished([message]))
+            if next_message:
+                self._send_block(midi_controller, next_message)
+            if is_finished and was_successful:
+                # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
+                is_part_of_bank_dump = True
 
         if is_part_of_bank_dump:
             self.current_download_messages.append(message)
 
-        finished_reply = adaptation.isBankDumpFinished(self.current_download_messages)
-        if isinstance(finished_reply, tuple):
-            is_finished, next_message = finished_reply
-            if next_message:
-                self._send_block(midi_controller, next_message)
-        elif isinstance(finished_reply, bool):
-            is_finished = finished_reply
-        else:
-            raise Exception("Expected tuple or bool from isBankDumpFinished")
+        is_finished, was_successful, next_message = bank_finished_reply(
+            adaptation.isBankDumpFinished(self.current_download_messages))
+        if next_message:
+            self._send_block(midi_controller, next_message)
 
         if is_finished:
-            patches = self.load_sysex(adaptation, self.current_download_messages)
-            self._finish_download(midi_controller, patches)
+            if was_successful:
+                patches = self.load_sysex(adaptation, self.current_download_messages)
+                self._finish_download(midi_controller, patches)
+            else:
+                self._cancel_download(midi_controller)
 
     def _start_download_next_program_buffer(self, midi_controller: MidiController, adaptation, channel: int) -> None:
         """
@@ -509,17 +521,22 @@ class Librarian:
                         current_edit_buffers.clear()
 
         if adaptation_has_bank_dump_capability(adaptation):
+            if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
+                adaptation.isPartOfBankDump([])
             current_bank: Deque[List[int]] = deque()
             for message in sysex_messages:
                 # Try to parse and load these messages as a bank dump
                 is_part = adaptation_has_implemented(adaptation, "isPartOfBankDump") and handshake_flag(adaptation.isPartOfBankDump(message))
-                if is_part or handshake_flag(adaptation.isBankDumpFinished([message])):
+                single_finished, single_successful, _ = bank_finished_reply(adaptation.isBankDumpFinished([message]))
+                if is_part or (single_finished and single_successful):
                     current_bank.append(message)
                     if len(current_bank) > self.max_number_messages_per_bank:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per bank is larger than {self.max_number_messages_per_bank}")
                         current_bank.popleft()
                     sliding_window: List[List[int]] = list(current_bank)
-                    if handshake_flag(adaptation.isBankDumpFinished(sliding_window)):
+                    is_finished, was_successful, _ = bank_finished_reply(
+                        adaptation.isBankDumpFinished(sliding_window))
+                    if is_finished and was_successful:
                         if adaptation_has_implemented(adaptation, "extractPatchesFromAllBankMessages"):
                             more_patches = adaptation.extractPatchesFromAllBankMessages(sliding_window)
                             logging.info(f"Loaded bank dump with {len(more_patches)} patches")
