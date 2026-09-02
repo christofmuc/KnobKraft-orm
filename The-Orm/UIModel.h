@@ -15,6 +15,7 @@
 #include "SynthBank.h"
 
 #include "Data.h"
+#include "ConfiguredSynthInstance.h"
 
 juce::Identifier const PROPERTY_SYNTH_LIST {"SynthList"};
 juce::Identifier const PROPERTY_BUTTON_INFO_TYPE {"ButtonInfoType"};
@@ -132,6 +133,7 @@ public:
 	CurrentPatchValues currentPatchValues_; // Listen to this to find out if the current patch was modified
 	ChangeBroadcaster importListChanged_; // Listen to this get refresh the list of imports
 	CurrentSynthList synthList_;
+	midikraft::session::ConfiguredSynthInstanceRegistry configuredSynths_;
 	ThumbnailChanges thumbnails_;
 	WindowTitleChanges windowTitle_;
 	ChangeBroadcaster categoriesChanged; // Listen to this to get notified of category list changes

@@ -89,6 +89,7 @@ set(SOURCES
 	ScriptedQuery.cpp ScriptedQuery.h
 	SecondaryWindow.cpp SecondaryWindow.h
 	SettingsView.cpp SettingsView.h
+	SynthInstancePersistence.cpp SynthInstancePersistence.h
 	SetupView.cpp SetupView.h
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
@@ -114,6 +115,7 @@ set(MIDIKRAFT_LIBRARIES
 		juce-utils 
 		juce-widgets 
 		midikraft-base 
+		midikraft-session
 		midikraft-librarian 
 		midikraft-database 
 		midikraft-access-virus

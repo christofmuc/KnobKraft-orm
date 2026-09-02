@@ -17,6 +17,7 @@
 #include "SimplePatchGrid.h"
 #include "SecondaryWindow.h"
 #include "Settings.h"
+#include "SynthInstancePersistence.h"
 
 #include "Virus.h"
 #include "Rev2.h"
@@ -228,6 +229,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	}
 
 	UIModel::instance()->synthList_.setSynthList(synths);
+	if (!SynthInstancePersistence::restore(UIModel::instance()->configuredSynths_)) {
+		spdlog::error("Configured synth identity state is invalid; preserving it without migration");
+	}
 
 	// Load activated state
 	for (auto synth : synths) {
@@ -243,6 +247,10 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 			active = false;
 		}
 		UIModel::instance()->synthList_.setSynthActive(synth.device().get(), active);
+		if (active && !SynthInstancePersistence::registerDevice(
+			UIModel::instance()->configuredSynths_, synth.device(), synth.device()->getName())) {
+			spdlog::error("Could not initialize persistent identity for configured synth '{}'", synth.device()->getName());
+		}
 	}
 
 	refreshSynthList();

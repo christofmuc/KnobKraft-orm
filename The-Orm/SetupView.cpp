@@ -15,6 +15,7 @@
 #include "GenericAdaptation.h"
 #include "CreateNewAdaptationDialog.h"
 #include "AutoDetectProgressWindow.h"
+#include "SynthInstancePersistence.h"
 #include "LoopDetection.h"
 
 
@@ -187,6 +188,10 @@ void SetupView::valueChanged(Value& value)
 				auto activeKey = String(synthFound.getName()) + String("-activated");
 				Settings::instance().set(activeKey.toStdString(), value.getValue().toString().toStdString());
 				autoDetection_->persistSetting(synthFound.device().get());
+				if (value.getValue()) {
+					(void)SynthInstancePersistence::registerDevice(
+						UIModel::instance()->configuredSynths_, synthFound.device(), synthFound.device()->getName());
+				}
 				rebuildSetupColumn();
 				return;
 			}
@@ -220,6 +225,8 @@ void SetupView::valueChanged(Value& value)
 					jassertfalse;
 				}
 				autoDetection_->persistSetting(synthFound.device().get());
+				(void)SynthInstancePersistence::updateDevice(UIModel::instance()->configuredSynths_, synthFound.device());
+				(void)SynthInstancePersistence::save(UIModel::instance()->configuredSynths_);
 				/*timedAction_.callDebounced([this]() {
 					quickConfigure();
 				}, 1000);*/
@@ -259,6 +266,8 @@ void SetupView::quickConfigure()
 {
 	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
 	autoDetection_->quickconfigure(currentSynths); // This rather should be synchronous!
+	for (auto const& synth : currentSynths) (void)SynthInstancePersistence::updateDevice(UIModel::instance()->configuredSynths_, synth);
+	(void)SynthInstancePersistence::save(UIModel::instance()->configuredSynths_);
 	refreshData();
 }
 
@@ -301,6 +310,8 @@ void SetupView::autoDetect() {
 	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
 	AutoDetectProgressWindow window(currentSynths);
 	if (window.runThread()) {
+		for (auto const& synth : currentSynths) (void)SynthInstancePersistence::updateDevice(UIModel::instance()->configuredSynths_, synth);
+		(void)SynthInstancePersistence::save(UIModel::instance()->configuredSynths_);
 		refreshData();
 	}
 }
