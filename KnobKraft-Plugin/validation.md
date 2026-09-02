@@ -18,7 +18,7 @@ Build `extras/AudioPluginHost` from the checked-out JUCE version, scan the VST3
 bundle above, insert **KnobKraft Recall** on mono and stereo audio, and verify:
 
 1. audio is unchanged and the host reports zero samples of plugin latency;
-2. the editor says `Engine • Disconnected` and shows the embedded fixture;
+2. the editor says `Engine: Disconnected` and shows the embedded fixture;
 3. saving, closing, and reopening a project restores the same patch and fingerprint;
 4. duplicating the plugin preserves its complete embedded state;
 5. replacing the saved state with corrupt or future-version JSON shows a state

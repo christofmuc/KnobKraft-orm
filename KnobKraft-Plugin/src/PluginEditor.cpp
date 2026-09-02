@@ -29,7 +29,7 @@ namespace knobkraft::recall {
 		configureLabel(*this, storedStatus_, 14.0f, juce::Colour(0xff75d7b0));
 		configureLabel(*this, stateError_, 13.0f, juce::Colour(0xffff8d8d));
 		title_.setText("KnobKraft Recall", juce::dontSendNotification);
-		engineStatus_.setText("Engine  •  Disconnected", juce::dontSendNotification);
+		engineStatus_.setText("Engine: Disconnected", juce::dontSendNotification);
 		setSize(560, 310);
 		refresh();
 		startTimerHz(4);
@@ -60,7 +60,7 @@ namespace knobkraft::recall {
 	void PluginEditor::refresh() {
 		auto const snapshot = processor_.state().snapshot();
 		auto const& manifest = snapshot->manifest;
-		instanceName_.setText("Instance  •  " + juce::String(manifest.instanceName), juce::dontSendNotification);
+		instanceName_.setText("Instance: " + juce::String(manifest.instanceName), juce::dontSendNotification);
 
 		juce::String patchName = "No embedded project sound";
 		juce::String fingerprint;
@@ -73,9 +73,9 @@ namespace knobkraft::recall {
 				}
 			}
 		}
-		patchName_.setText("Project sound  •  " + patchName, juce::dontSendNotification);
-		fingerprint_.setText(fingerprint.isEmpty() ? juce::String() : "Fingerprint  •  " + fingerprint, juce::dontSendNotification);
-		storedStatus_.setText(snapshot->serializedState.empty() ? "Not stored in project" : "✓ Stored in project", juce::dontSendNotification);
+		patchName_.setText("Project sound: " + patchName, juce::dontSendNotification);
+		fingerprint_.setText(fingerprint.isEmpty() ? juce::String() : "Fingerprint: " + fingerprint, juce::dontSendNotification);
+		storedStatus_.setText(snapshot->serializedState.empty() ? "Not stored in project" : "Stored in project", juce::dontSendNotification);
 
 		if (snapshot->decodeError) {
 			auto const& error = *snapshot->decodeError;
@@ -83,7 +83,7 @@ namespace knobkraft::recall {
 				+ (error.rawStatePreserved ? " (raw state preserved)" : ""), juce::dontSendNotification);
 		}
 		else {
-			stateError_.setText("Manual recall only • No MIDI or hardware access in this shell", juce::dontSendNotification);
+			stateError_.setText("Manual recall only - No MIDI or hardware access in this shell", juce::dontSendNotification);
 		}
 	}
 
