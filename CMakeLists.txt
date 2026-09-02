@@ -338,6 +338,13 @@ option(MIDIKRAFT_BUILD_LIBRARIAN "" ON)
 option(MIDIKRAFT_BUILD_DATABASE "" ON)
 add_subdirectory(MidiKraft)
 
+# KnobKraft Recall is deliberately kept in its own directory so it can also be
+# configured as a small standalone plugin build without pulling in the Orm app.
+option(BUILD_KNOBKRAFT_PLUGIN "Build the KnobKraft Recall VST3 plugin" ON)
+if(BUILD_KNOBKRAFT_PLUGIN)
+	add_subdirectory(KnobKraft-Plugin)
+endif()
+
 # Import the synths currently supported
 add_subdirectory(synths/access-virus)
 add_subdirectory(synths/bcr2000)
