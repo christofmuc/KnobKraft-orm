@@ -75,7 +75,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
 | Roland | SE-02 | beta | adaptation | Thanks to @MammaScan! |
-| Roland | U-20/U-220 | alpha | adaptation | 100% AI generated |
+| Roland | U-20/U-220 | alpha | adaptation | 100% AI generated. Thanks to @Casuallynoted for testing! |
 | Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential| Pro 3 | works | adaptation | |
