@@ -11,7 +11,7 @@ import knobkraft
 import testing
 import functools
 
-from testing.librarian import Librarian
+from testing.librarian import Librarian, handshake_flag
 from testing.mock_midi import MockMidiController, ScriptedMockDevice
 
 
@@ -454,7 +454,7 @@ def test_extract_patches_from_all_bank_messages(adaptation, test_data: testing.T
     for bank in test_data.banks:
         bank_messages = []
         for message in bank:
-            if adaptation.isPartOfBankDump(message):
+            if handshake_flag(adaptation.isPartOfBankDump(message)):
                 bank_messages.append(message)
             else:
                 print(f"Not a bank message: {knobkraft.syxToString(message)}")
@@ -491,7 +491,7 @@ def test_convert_patches_to_bank(adaptation, test_data: testing.TestData):
     for bank in test_data.banks:
         bank_messages = []
         for message in bank:
-            if adaptation.isPartOfBankDump(message):
+            if handshake_flag(adaptation.isPartOfBankDump(message)):
                 bank_messages.append(message)
             else:
                 print(f"Not a bank message: {knobkraft.syxToString(message)}")
