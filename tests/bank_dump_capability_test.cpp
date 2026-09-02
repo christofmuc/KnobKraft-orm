@@ -3,7 +3,9 @@
 #include "BankDumpCapability.h"
 #include "GenericAdaptation.h"
 #include "MidiHelpers.h"
+#include "MidiController.h"
 #include "Virus.h"
+#include "test_helpers.h"
 
 #include <pybind11/embed.h>
 
@@ -11,6 +13,40 @@
 #include <vector>
 
 namespace {
+
+class BankSequenceSynth : public test_helpers::DummySynth, public midikraft::BankDumpCapability {
+public:
+	BankSequenceSynth() : DummySynth("Bank sequence test") {}
+
+	HandshakeReply isMessagePartOfBankDump(const juce::MidiMessage& message) const override {
+		if (message.getRawDataSize() == 0) {
+			resetCalls++;
+			return { false, {} };
+		}
+		return { true, {} };
+	}
+
+	FinishedReply bankDumpFinishedWithReply(std::vector<juce::MidiMessage> const& bankDump) const override {
+		if (bankDump.empty()) {
+			return { false, {} };
+		}
+		auto code = bankDump.back().getRawData()[1];
+		if (code == 0x01) {
+			return { true, {}, false };
+		}
+		return { code == 0x02, {} };
+	}
+
+	midikraft::TPatchVector patchesFromSysexBank(std::vector<juce::MidiMessage> const& messages) const override {
+		parsedBankSize = messages.size();
+		auto patch = std::make_shared<test_helpers::DummyPatch>();
+		patch->setData({ 0x02 });
+		return { patch };
+	}
+
+	mutable int resetCalls = 0;
+	mutable size_t parsedBankSize = 0;
+};
 
 TEST_CASE("generic bank dump bridge accepts nested messages and failed completion") {
 	pybind11::scoped_interpreter python;
@@ -67,6 +103,19 @@ TEST_CASE("Virus rejects truncated SysEx safely") {
 	CHECK_FALSE(virus.isSingleProgramDump({ truncatedSingle }));
 	CHECK_FALSE(virus.bankDumpFinishedWithReply({ truncatedSingle }).isFinished);
 	CHECK_FALSE(virus.channelIfValidDeviceResponse(headerOnly).isValid());
+}
+
+TEST_CASE("offline parsing clears a failed bank before a later valid bank") {
+	BankSequenceSynth synth;
+	auto failedBank = MidiHelpers::sysexMessage({ 0x01 });
+	auto validBank = MidiHelpers::sysexMessage({ 0x02 });
+
+	auto patches = synth.loadSysex({ failedBank, validBank });
+
+	CHECK(midikraft::MidiController::isTimeoutMessage(midikraft::MidiController::makeTimeoutMessage()));
+	REQUIRE(patches.size() == 1);
+	CHECK(synth.parsedBankSize == 1);
+	CHECK(synth.resetCalls == 2);
 }
 
 }
