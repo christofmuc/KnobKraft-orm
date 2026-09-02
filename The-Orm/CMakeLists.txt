@@ -81,6 +81,7 @@ set(SOURCES
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
 	PatchPerSynthList.cpp PatchPerSynthList.h
+	PluginSessionsWidget.cpp PluginSessionsWidget.h
 	PatchSearchComponent.cpp PatchSearchComponent.h
 	PatchTextBox.cpp PatchTextBox.h
 	PatchView.cpp PatchView.h
@@ -106,6 +107,30 @@ set(SOURCES
 	${SENTRY_CONFIG_HEADER}
 	redist/agpl-3.0.txt
 )
+
+add_library(knobkraft-plugin-sessions-model STATIC
+	PluginSessionsModel.cpp PluginSessionsModel.h)
+target_include_directories(knobkraft-plugin-sessions-model PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(knobkraft-plugin-sessions-model PUBLIC midikraft-session)
+target_compile_features(knobkraft-plugin-sessions-model PUBLIC cxx_std_20)
+
+if(MSVC)
+	target_compile_options(knobkraft-plugin-sessions-model PRIVATE /W4 /WX)
+else()
+	target_compile_options(knobkraft-plugin-sessions-model PRIVATE -Wall -Wextra -pedantic -Werror)
+endif()
+
+if(BUILD_PLUGIN_SESSIONS_TESTS)
+	add_executable(knobkraft-plugin-sessions-tests tests/PluginSessionsModelTests.cpp)
+	target_link_libraries(knobkraft-plugin-sessions-tests PRIVATE knobkraft-plugin-sessions-model midikraft-session)
+	target_compile_features(knobkraft-plugin-sessions-tests PRIVATE cxx_std_20)
+	if(MSVC)
+		target_compile_options(knobkraft-plugin-sessions-tests PRIVATE /W4 /WX)
+	else()
+		target_compile_options(knobkraft-plugin-sessions-tests PRIVATE -Wall -Wextra -pedantic -Werror)
+	endif()
+	add_test(NAME knobkraft-plugin-sessions-tests COMMAND knobkraft-plugin-sessions-tests)
+endif()
 
 # Mac Icon Magic
 if(APPLE)
@@ -167,7 +192,7 @@ IF(WIN32)
 		set(ASAN_LINK_LIB clang_rt.asan_dbg_dynamic-x86_64)
 		target_link_options(KnobKraftOrm PRIVATE  /wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib)
 	endif()
-	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES}
+	target_link_libraries(KnobKraftOrm PRIVATE ${JUCE_LIBRARIES} ${MIDIKRAFT_LIBRARIES} knobkraft-plugin-sessions-model
 		icuuc
 		SQLiteCpp
 		sqlite3
@@ -181,6 +206,7 @@ ELSEIF(APPLE)
 		${JUCE_LIBRARIES}
 		ICU::data ICU::uc
 		${MIDIKRAFT_LIBRARIES}
+		knobkraft-plugin-sessions-model
 		SQLiteCpp
 		sqlite3
 		gin
@@ -199,6 +225,7 @@ ELSEIF(UNIX)
 		${LINUX_JUCE_LINK_LIBRARIES}
 		ICU::data ICU::uc
 		${MIDIKRAFT_LIBRARIES}
+		knobkraft-plugin-sessions-model
 		SQLiteCpp
 		sqlite3
 		gin
