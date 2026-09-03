@@ -85,6 +85,16 @@ namespace knobkraft {
 		return false;
 	}
 
+	midikraft::BankDumpCapability::HandshakeReply GenericBankDumpCapability::isMessagePartOfBankDump(const MidiMessage& message) const
+	{
+		return { isBankDump(message), {} };
+	}
+
+	midikraft::BankDumpCapability::FinishedReply GenericBankDumpCapability::bankDumpFinishedWithReply(std::vector<MidiMessage> const& bankDump) const
+	{
+		return { isBankDumpFinished(bankDump), {} };
+	}
+
 	midikraft::TPatchVector GenericBankDumpCapability::patchesFromSysexBank(std::vector<MidiMessage> const& messages) const
 	{
 		spdlog::debug("patchesFromSysexBank called with {} messages", messages.size());

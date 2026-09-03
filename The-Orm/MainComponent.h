@@ -35,6 +35,7 @@
 #include "RecordingView.h"
 #include "BCR2000_Component.h"
 #include "AdaptationView.h"
+#include "PluginSessionsWidget.h"
 
 #include <spdlog/logger.h>
 
@@ -49,8 +50,12 @@ public:
 	virtual void resized() override;
 
 	void shutdown();
+	void setPluginSessionService(midikraft::session::SessionService* service);
+	void setPluginSessionSynths(std::vector<midikraft::session::SessionSynthInfo> synths);
+	void setPluginSessionNavigationHandler(knobkraft::sessions::PluginSessionsController::NavigationHandler handler);
 
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
+	midikraft::PatchDatabase& patchDatabase();
 
 private:
 	void checkForUpdatesOnStartup();
@@ -74,6 +79,7 @@ private:
     float calcAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
+	void refreshPluginSessionSynths();
 	static void aboutBox();
 
 	void openSecondMainWindow(bool fromSettings);
@@ -100,6 +106,8 @@ private:
 	LambdaButtonStrip buttons_;
 	ApplicationCommandManager commandManager_;
 	MenuBarComponent menuBar_;
+	knobkraft::sessions::PluginSessionsWidget pluginSessionsWidget_;
+	midikraft::session::SessionService* pluginSessionService_ = nullptr;
 
 	SynthList synthList_;
 	PatchPerSynthList patchList_;

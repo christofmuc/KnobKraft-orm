@@ -41,6 +41,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 
+option(BUILD_PLUGIN_SESSIONS_TESTS "Build the standalone Plugin Sessions view-model tests" OFF)
+option(BUILD_KNOBKRAFT_RECALL_INTEGRATION_TESTS "Build the Recall end-to-end integration tests" OFF)
+if(BUILD_KNOBKRAFT_PLUGIN_TESTS OR MIDIKRAFT_BUILD_SESSION_TESTS OR BUILD_KNOBKRAFT_ENGINE_BRIDGE_TESTS OR BUILD_PLUGIN_SESSIONS_TESTS OR BUILD_KNOBKRAFT_RECALL_INTEGRATION_TESTS)
+	enable_testing()
+endif()
+
 # To avoid dependency on WebKit. This also came with MacOS, but as webkit is heavyweight, it is probably a good idea to turn it off for all
 option(JUCE_CONFIG_JUCE_WEB_BROWSER OFF) 
 
@@ -232,6 +238,38 @@ if(NOT PYTHON_EXECUTABLE)
 		message(FATAL_ERROR "Could not find a working Python executable (tried python3 and python). Please install Python 3.12 or later and ensure it is in your PATH.")
 	endif()
 endif()
+
+# The embedded runtime and the Python development library must use the same
+# major/minor version. Otherwise the application links against (for example)
+# python314.dll while packaging python312.dll and cannot start.
+execute_process(
+	COMMAND "${PYTHON_EXECUTABLE}" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+	RESULT_VARIABLE PYTHON_SELECTED_VERSION_RESULT
+	OUTPUT_VARIABLE PYTHON_SELECTED_VERSION
+	ERROR_VARIABLE PYTHON_SELECTED_VERSION_ERROR
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT PYTHON_SELECTED_VERSION_RESULT EQUAL 0)
+	message(FATAL_ERROR "Could not query PYTHON_EXECUTABLE '${PYTHON_EXECUTABLE}': ${PYTHON_SELECTED_VERSION_ERROR}")
+endif()
+if(NOT PYTHON_SELECTED_VERSION VERSION_EQUAL PYTHON_VERSION_TO_EMBED)
+	message(FATAL_ERROR
+		"PYTHON_EXECUTABLE is Python ${PYTHON_SELECTED_VERSION}, but the packaged runtime is Python ${PYTHON_VERSION_TO_EMBED}. "
+		"Select a matching interpreter or change PYTHON_VERSION_TO_DOWNLOAD.")
+endif()
+
+# pybind11 3 uses CMake's modern FindPython module. Point it at the interpreter
+# selected above so it cannot silently choose a different installed version.
+set(PYBIND11_FINDPYTHON ON CACHE STRING "Use CMake FindPython for pybind11" FORCE)
+set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}" CACHE FILEPATH "Python interpreter used for embedding" FORCE)
+unset(Python_INCLUDE_DIR CACHE)
+unset(Python_LIBRARY CACHE)
+if(WIN32)
+	get_filename_component(Python_ROOT_DIR "${PYTHON_EXECUTABLE}" DIRECTORY)
+	set(Python_ROOT_DIR "${Python_ROOT_DIR}" CACHE PATH "Python installation used for embedding" FORCE)
+	set(Python_FIND_STRATEGY LOCATION)
+endif()
+find_package(Python ${PYTHON_VERSION_TO_EMBED} COMPONENTS Interpreter Development.Module Development.Embed REQUIRED)
+
 IF(WIN32)
 	message("USING PYTHON ${PYTHON_EXECUTABLE}")		
 ELSE()
@@ -337,6 +375,13 @@ add_subdirectory(juce-widgets)
 option(MIDIKRAFT_BUILD_LIBRARIAN "" ON)
 option(MIDIKRAFT_BUILD_DATABASE "" ON)
 add_subdirectory(MidiKraft)
+
+# KnobKraft Recall is deliberately kept in its own directory so it can also be
+# configured as a small standalone plugin build without pulling in the Orm app.
+option(BUILD_KNOBKRAFT_PLUGIN "Build the KnobKraft Recall VST3 plugin" ON)
+if(BUILD_KNOBKRAFT_PLUGIN)
+	add_subdirectory(KnobKraft-Plugin)
+endif()
 
 # Import the synths currently supported
 add_subdirectory(synths/access-virus)
