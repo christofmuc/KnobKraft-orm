@@ -120,7 +120,6 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-behringer-bcr2000
 		midikraft-kawai-k3
 		midikraft-oberheim-matrix1000
-		midikraft-roland-mks50 
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
