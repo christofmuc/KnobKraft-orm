@@ -79,6 +79,7 @@ private:
     float calcAcceptableGlobalScaleFactor();
 	Colour getUIColour(LookAndFeel_V4::ColourScheme::UIColour colourToGet);
 	void refreshSynthList();
+	void refreshPluginSessionSynths();
 	static void aboutBox();
 
 	void openSecondMainWindow(bool fromSettings);
@@ -106,6 +107,7 @@ private:
 	ApplicationCommandManager commandManager_;
 	MenuBarComponent menuBar_;
 	knobkraft::sessions::PluginSessionsWidget pluginSessionsWidget_;
+	midikraft::session::SessionService* pluginSessionService_ = nullptr;
 
 	SynthList synthList_;
 	PatchPerSynthList patchList_;

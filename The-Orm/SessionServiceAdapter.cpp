@@ -101,6 +101,10 @@ namespace knobkraft::recall {
 			std::vector<DeviceQueue*> queues;
 			{
 				std::lock_guard lock(stateMutex);
+				for (auto const& [id, job] : jobsByTransfer) {
+					(void)id;
+					job->cancelled.store(true);
+				}
 				for (auto& [id, queue] : deviceQueues) {
 					(void)id;
 					queues.push_back(queue.get());

@@ -159,6 +159,18 @@ namespace {
 		CHECK(waitFor(service, queued.value().value.status.transferId).status.state == TransferState::Cancelled);
 	}
 
+	void shutdownCancelsQueuedTransfers() {
+		FakeBackend backend;
+		backend.sendDuration = 200ms;
+		{
+			SessionServiceAdapter service(backend);
+			CHECK(service.applyToEditBuffer(apply("shutdown-running")));
+			CHECK(service.applyToEditBuffer(apply("shutdown-queued")));
+			std::this_thread::sleep_for(20ms);
+		}
+		CHECK(backend.sends.load() <= 1);
+	}
+
 	class SharedLease final : public PrimaryServerLease {
 	public:
 		explicit SharedLease(std::shared_ptr<std::atomic_bool> held) : held_(std::move(held)) {}
@@ -195,6 +207,7 @@ int main() {
 	validatesBeforeQueueing();
 	serializesAndDeduplicatesPerDevice();
 	reportsBusyAndCancellation();
+	shutdownCancelsQueuedTransfers();
 	secondaryServerCannotReplaceDiscovery();
 	if (failures) std::cerr << failures << " WP-05 checks failed\n";
 	return failures ? 1 : 0;

@@ -365,6 +365,21 @@ private:
 		pluginBridge_ = std::make_unique<knobkraft::recall::PluginBridgeServer>(*recallService_);
 		auto started = pluginBridge_->start();
 		if (started) {
+			mainComponent->setPluginSessionService(recallService_.get());
+			mainComponent->setPluginSessionNavigationHandler([this](knobkraft::sessions::NavigationIntent const& intent) {
+				if (!recallService_) return;
+				using midikraft::session::NavigationTargetKind;
+				auto target = NavigationTargetKind::Application;
+				if (intent.target == knobkraft::sessions::NavigationTarget::Synth) target = NavigationTargetKind::ConfiguredSynth;
+				else if (intent.target == knobkraft::sessions::NavigationTarget::Patch) target = NavigationTargetKind::Patch;
+				midikraft::session::OpenKnobKraftRequest request {
+					{ "knobkraft-widget-navigation-" + juce::Uuid().toDashedString().toStdString(),
+						"knobkraft-standalone", intent.pluginInstanceId, std::nullopt },
+					target, intent.targetId
+				};
+				auto result = recallService_->openKnobKraft(request);
+				if (!result) spdlog::warn("Recall session navigation failed: {}", result.error().message);
+			});
 			spdlog::info("KnobKraft Recall plugin bridge is listening on loopback");
 		}
 		else {
@@ -379,6 +394,10 @@ private:
 
 	void stopPluginBridge()
 	{
+		if (auto* mainComponent = dynamic_cast<MainComponent*>(mainWindow ? mainWindow->getContentComponent() : nullptr)) {
+			mainComponent->setPluginSessionNavigationHandler({});
+			mainComponent->setPluginSessionService(nullptr);
+		}
 		if (pluginBridge_) pluginBridge_->stop();
 		pluginBridge_.reset();
 		recallService_.reset();

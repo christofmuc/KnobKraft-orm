@@ -270,6 +270,22 @@ if(BUILD_KNOBKRAFT_ENGINE_BRIDGE_TESTS)
 	add_test(NAME knobkraft-engine-bridge COMMAND knobkraft-engine-bridge-tests)
 endif()
 
+if(BUILD_KNOBKRAFT_RECALL_INTEGRATION_TESTS)
+	add_executable(knobkraft-recall-integration-tests
+		SessionServiceAdapter.cpp SessionServiceAdapter.h
+		PluginBridgeServer.cpp PluginBridgeServer.h
+		tests/RecallVerticalSliceTests.cpp)
+	target_include_directories(knobkraft-recall-integration-tests PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+	target_link_libraries(knobkraft-recall-integration-tests PRIVATE
+		knobkraft-recall-core knobkraft-plugin-sessions-model midikraft-session juce::juce_gui_basics)
+	if(MSVC)
+		target_compile_options(knobkraft-recall-integration-tests PRIVATE /W4 /WX)
+	else()
+		target_compile_options(knobkraft-recall-integration-tests PRIVATE -Wall -Wextra -pedantic -Werror)
+	endif()
+	add_test(NAME knobkraft-recall-integration COMMAND knobkraft-recall-integration-tests)
+endif()
+
 # Use all cores
 IF (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")

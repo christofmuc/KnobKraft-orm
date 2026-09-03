@@ -970,7 +970,9 @@ void MainComponent::resized()
 }
 
 void MainComponent::setPluginSessionService(midikraft::session::SessionService* service) {
+	pluginSessionService_ = service;
 	pluginSessionsWidget_.setSessionService(service);
+	refreshPluginSessionSynths();
 }
 
 void MainComponent::setPluginSessionSynths(std::vector<midikraft::session::SessionSynthInfo> synths) {
@@ -1048,6 +1050,19 @@ void MainComponent::refreshSynthList() {
 		synthList_.setActiveListItem(UIModel::currentSynth()->getName());
 	}
 	patchList_.setPatches(patchList);
+	refreshPluginSessionSynths();
+}
+
+void MainComponent::refreshPluginSessionSynths() {
+	if (!pluginSessionService_) {
+		pluginSessionsWidget_.setSynths({});
+		return;
+	}
+	midikraft::session::ListSynthsRequest request;
+	request.context = { "knobkraft-session-widget-synths", "knobkraft-standalone", {}, std::nullopt };
+	request.page.pageSize = 200;
+	auto result = pluginSessionService_->listConfiguredSynthInstances(request);
+	if (result) pluginSessionsWidget_.setSynths(std::move(result.value().value.items));
 }
 
 void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
