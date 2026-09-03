@@ -23,6 +23,9 @@
 #include <spdlog/sinks/dist_sink.h>
 #include "SpdLogJuce.h"
 #include "EditFocusKeeper.h"
+#include "KnobKraftEngineBackend.h"
+#include "PluginBridgeServer.h"
+#include "SessionServiceAdapter.h"
 
 #include "version.cpp"
 
@@ -148,6 +151,7 @@ public:
 		Data::instance().initializeFromSettings();
 
 		mainWindow = std::make_unique<MainWindow> (getWindowTitle());
+		startPluginBridge();
 
 #ifndef _DEBUG
 #ifdef USE_SENTRY
@@ -201,6 +205,7 @@ public:
 
     void shutdown() override
     {
+		stopPluginBridge();
 		// Unregister
 		UIModel::instance()->windowTitle_.removeChangeListener(this);
 
@@ -236,6 +241,7 @@ public:
     //==============================================================================
     void systemRequestedQuit() override
     {
+		stopPluginBridge();
 		// Shut down database (that makes a backup)
 		// Do this before calling quit
 		auto mainComp = dynamic_cast<MainComponent *>(mainWindow->getContentComponent());
@@ -340,7 +346,49 @@ public:
 
 
 private:
+	void startPluginBridge()
+	{
+		auto* mainComponent = dynamic_cast<MainComponent*>(mainWindow ? mainWindow->getContentComponent() : nullptr);
+		if (!mainComponent) {
+			spdlog::error("Recall bridge was not started because the main component is unavailable");
+			return;
+		}
+		recallBackend_ = std::make_unique<knobkraft::recall::KnobKraftEngineBackend>(mainComponent->patchDatabase(), [this] {
+			if (mainWindow) {
+				mainWindow->setVisible(true);
+				mainWindow->toFront(true);
+			}
+		});
+		knobkraft::recall::SessionServiceAdapterConfig adapterConfig;
+		adapterConfig.auditLog = [](std::string const& message) { spdlog::info("{}", message); };
+		recallService_ = std::make_unique<knobkraft::recall::SessionServiceAdapter>(*recallBackend_, std::move(adapterConfig));
+		pluginBridge_ = std::make_unique<knobkraft::recall::PluginBridgeServer>(*recallService_);
+		auto started = pluginBridge_->start();
+		if (started) {
+			spdlog::info("KnobKraft Recall plugin bridge is listening on loopback");
+		}
+		else {
+			// More than one application process is allowed. Only the lease holder
+			// publishes discovery; a secondary process remains fully functional.
+			spdlog::info("KnobKraft Recall plugin bridge inactive: {}", started.error().message);
+			pluginBridge_.reset();
+			recallService_.reset();
+			recallBackend_.reset();
+		}
+	}
+
+	void stopPluginBridge()
+	{
+		if (pluginBridge_) pluginBridge_->stop();
+		pluginBridge_.reset();
+		recallService_.reset();
+		recallBackend_.reset();
+	}
+
     std::unique_ptr<MainWindow> mainWindow;
+	std::unique_ptr<knobkraft::recall::KnobKraftEngineBackend> recallBackend_;
+	std::unique_ptr<knobkraft::recall::SessionServiceAdapter> recallService_;
+	std::unique_ptr<knobkraft::recall::PluginBridgeServer> pluginBridge_;
 };
 
 //==============================================================================

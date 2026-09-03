@@ -51,6 +51,7 @@ public:
 	void shutdown();
 
 	std::string getDatabaseFileName() const; // This is only there to expose it to the MainApplication for the Window Title?
+	midikraft::PatchDatabase& patchDatabase();
 
 private:
 	void checkForUpdatesOnStartup();

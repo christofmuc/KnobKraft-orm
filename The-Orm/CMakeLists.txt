@@ -68,6 +68,7 @@ set(SOURCES
 	ExportDialog.cpp ExportDialog.h
 	ImportFromSynthDialog.cpp ImportFromSynthDialog.h
 	KeyboardMacroView.cpp KeyboardMacroView.h
+	KnobKraftEngineBackend.cpp KnobKraftEngineBackend.h
 	LibrarianProgressWindow.h
 	MacroConfig.cpp MacroConfig.h
 	MainComponent.h MainComponent.cpp	
@@ -85,11 +86,13 @@ set(SOURCES
 	PatchView.cpp PatchView.h
 	ReceiveManualDumpWindow.cpp ReceiveManualDumpWindow.h
 	RecordingView.cpp RecordingView.h
+	PluginBridgeServer.cpp PluginBridgeServer.h
 	RotaryWithLabel.cpp RotaryWithLabel.h
 	ScriptedQuery.cpp ScriptedQuery.h
 	SecondaryWindow.cpp SecondaryWindow.h
 	SettingsView.cpp SettingsView.h
 	SynthInstancePersistence.cpp SynthInstancePersistence.h
+	SessionServiceAdapter.cpp SessionServiceAdapter.h
 	SetupView.cpp SetupView.h
 	SimplePatchGrid.cpp SimplePatchGrid.h
 	SynthBankPanel.cpp SynthBankPanel.h
@@ -223,6 +226,22 @@ ELSEIF(UNIX)
             /usr/lib/x86_64-linux-gnu/glib-2.0/include)
 	target_compile_options(KnobKraftOrm PRIVATE -pthread)
 ENDIF()
+
+option(BUILD_KNOBKRAFT_ENGINE_BRIDGE_TESTS "Build KnobKraft Recall engine bridge tests" OFF)
+if(BUILD_KNOBKRAFT_ENGINE_BRIDGE_TESTS)
+	add_executable(knobkraft-engine-bridge-tests
+		SessionServiceAdapter.cpp SessionServiceAdapter.h
+		PluginBridgeServer.cpp PluginBridgeServer.h
+		tests/SessionServiceAdapterTests.cpp)
+	target_include_directories(knobkraft-engine-bridge-tests PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+	target_link_libraries(knobkraft-engine-bridge-tests PRIVATE midikraft-session juce::juce_core)
+	if(MSVC)
+		target_compile_options(knobkraft-engine-bridge-tests PRIVATE /W4 /WX)
+	else()
+		target_compile_options(knobkraft-engine-bridge-tests PRIVATE -Wall -Wextra -pedantic -Werror)
+	endif()
+	add_test(NAME knobkraft-engine-bridge COMMAND knobkraft-engine-bridge-tests)
+endif()
 
 # Use all cores
 IF (MSVC)

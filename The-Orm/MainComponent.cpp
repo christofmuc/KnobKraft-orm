@@ -977,6 +977,12 @@ std::string MainComponent::getDatabaseFileName() const
 	return database_->getCurrentDatabaseFileName();
 }
 
+midikraft::PatchDatabase& MainComponent::patchDatabase()
+{
+	jassert(database_ != nullptr);
+	return *database_;
+}
+
 void MainComponent::refreshSynthList() {
 	std::vector<std::shared_ptr<ActiveListItem>> listItems;
 	std::vector<midikraft::PatchHolder> patchList;
