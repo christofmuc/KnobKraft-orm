@@ -61,6 +61,50 @@ def test_load_sysex_deduplicates_bank_patches_by_occurrence():
     assert patches == [program_dump(0, 10), program_dump(1, 10)]
 
 
+class MutatingFingerprintProgramAdaptation:
+    @staticmethod
+    def createProgramDumpRequest(channel, patch_no):
+        return []
+
+    @staticmethod
+    def isSingleProgramDump(message):
+        return len(message) == 5 and message[1] == 0x01
+
+    @staticmethod
+    def calculateFingerprint(message):
+        message[2] = 99
+        return str(message)
+
+
+def test_load_sysex_preserves_program_patch_when_fingerprint_mutates_input():
+    patches = Librarian().load_sysex(MutatingFingerprintProgramAdaptation, [program_dump(0, 10)])
+
+    assert patches == [program_dump(0, 10)]
+
+
+class MutatingFingerprintEditBufferAdaptation:
+    @staticmethod
+    def createEditBufferRequest(channel):
+        return []
+
+    @staticmethod
+    def isEditBufferDump(message):
+        return len(message) == 5 and message[1] == 0x02
+
+    @staticmethod
+    def calculateFingerprint(message):
+        message[2] = 99
+        return str(message)
+
+
+def test_load_sysex_preserves_edit_buffer_when_fingerprint_mutates_input():
+    edit_buffer = [0xF0, 0x02, 0, 10, 0xF7]
+
+    patches = Librarian().load_sysex(MutatingFingerprintEditBufferAdaptation, [edit_buffer])
+
+    assert patches == [edit_buffer]
+
+
 class MutatingFingerprintBankAdaptation:
     @staticmethod
     def isPartOfBankDump(message):

@@ -492,7 +492,7 @@ class Librarian:
                         patch = sliding_window
                         results.append(patch)
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            patch_id = adaptation.calculateFingerprint(patch)
+                            patch_id = adaptation.calculateFingerprint(patch.copy())
                             program_dump_counts_by_id[patch_id] = program_dump_counts_by_id.get(patch_id, 0) + 1
                         current_program_dumps.clear()
 
@@ -511,7 +511,7 @@ class Librarian:
                     if adaptation.isEditBufferDump(sliding_window):
                         patch = sliding_window
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            patch_id = adaptation.calculateFingerprint(patch)
+                            patch_id = adaptation.calculateFingerprint(patch.copy())
                             if patch_id not in program_dump_counts_by_id:
                                 results.append(patch)
                             else:
