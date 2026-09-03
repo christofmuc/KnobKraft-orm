@@ -114,6 +114,8 @@ public:
 
 TEST_CASE("generic bank dump bridge and MKS-50 legacy records remain compatible") {
 	pybind11::scoped_interpreter python;
+	auto pythonSystem = pybind11::module_::import("sys");
+	CHECK_FALSE(pybind11::hasattr(pythonSystem, "_knobkraft_adaptation_api_version"));
 	auto adaptation = knobkraft::GenericAdaptation::fromBinaryCode(
 		"bank_dump_bridge_test",
 		R"(
@@ -140,6 +142,7 @@ def extractPatchesFromAllBankMessages(messages):
 )");
 
 	REQUIRE(adaptation);
+	CHECK(pythonSystem.attr("_knobkraft_adaptation_api_version").cast<int>() == 2);
 	std::shared_ptr<midikraft::BankSendCapability> sendCapability;
 	REQUIRE(adaptation->hasCapability(sendCapability));
 	auto bankMessages = sendCapability->createBankMessages({});

@@ -17,6 +17,14 @@ Implementing each device as its own C++ module quickly became too much effort, a
 
 Technically, the C++ program uses Python in so called embedded mode, and the Python interpreter is executed in the same process as the main program, which is why you sadly can also crash or hang the main program by making mistakes in the Python code. Don't worry, it happens to everybody.
 
+### Host API compatibility
+
+An adaptation that depends on behavior added to the C++/Python bridge must declare that dependency when it is imported:
+
+    knobkraft.require_host_api_version(2, "My adaptation")
+
+The host advertises this API level before executing adaptation code. A missing level is treated as level 0, so an adaptation with this guard also refuses to load if it is copied into an older KnobKraft Orm installation. Increment the host API level only for an incompatible bridge change or a new bridge feature that an adaptation must be able to require; it is independent of both the application release number and the database schema version.
+
 ## Creating a new Adaptation
 
 New adaptations are stored as a single Python file with the ending `.py` in a directory on your computer, and are read in on start of the KnobKraft Orm.

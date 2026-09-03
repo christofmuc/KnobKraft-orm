@@ -10,6 +10,15 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import knobkraft
 
+REQUIRED_HOST_API_VERSION = 2
+
+if not hasattr(knobkraft, "require_host_api_version"):
+    raise RuntimeError(
+        "Roland MKS-50 requires KnobKraft adaptation API level 2 for bank-dump "
+        "handshake support. Please update KnobKraft Orm."
+    )
+knobkraft.require_host_api_version(REQUIRED_HOST_API_VERSION, "Roland MKS-50")
+
 ROLAND_ID = 0x41
 MKS50_ID = 0x23
 

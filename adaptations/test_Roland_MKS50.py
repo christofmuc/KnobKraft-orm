@@ -1,3 +1,5 @@
+import importlib.util
+import sys
 from pathlib import Path
 
 import knobkraft
@@ -6,6 +8,33 @@ import pytest
 import Roland_MKS50 as mks50
 from testing.librarian import Librarian
 from testing.mock_midi import MockMidiController, ScriptedMockDevice
+
+
+def _load_adaptation_copy(module_name: str):
+    spec = importlib.util.spec_from_file_location(module_name, Path(mks50.__file__))
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("host_api_version", [None, 1])
+def test_refuses_host_without_required_adaptation_api(monkeypatch, host_api_version):
+    if host_api_version is None:
+        monkeypatch.delattr(sys, "_knobkraft_adaptation_api_version", raising=False)
+    else:
+        monkeypatch.setattr(sys, "_knobkraft_adaptation_api_version", host_api_version)
+
+    with pytest.raises(RuntimeError, match=r"requires KnobKraft adaptation API level 2"):
+        _load_adaptation_copy(f"Roland_MKS50_api_{host_api_version}")
+
+
+def test_refuses_legacy_knobkraft_helper_without_api_guard(monkeypatch):
+    monkeypatch.delattr(knobkraft, "require_host_api_version")
+
+    with pytest.raises(RuntimeError, match=r"requires KnobKraft adaptation API level 2"):
+        _load_adaptation_copy("Roland_MKS50_legacy_helper")
 
 
 def _encode_packed_patch(name: str) -> list[int]:

@@ -135,6 +135,8 @@ namespace knobkraft {
 	};
 
 	const char* kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
+	constexpr auto kAdaptationApiVersionAttribute = "_knobkraft_adaptation_api_version";
+	constexpr int kAdaptationApiVersion = 2;
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;
 	std::unique_ptr<py::gil_scoped_release> sGenericAdaptationDontLockGIL;
@@ -146,6 +148,10 @@ namespace knobkraft {
 		}
 	}
 
+	void publishAdaptationApiVersion() {
+		py::module_::import("sys").attr(kAdaptationApiVersionAttribute) = kAdaptationApiVersion;
+	}
+
 	class FatalAdaptationException : public std::runtime_error {
 	public:
 		using std::runtime_error::runtime_error;
@@ -154,6 +160,7 @@ namespace knobkraft {
 	GenericAdaptation::GenericAdaptation(std::string const& pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
 		py::gil_scoped_acquire acquire;
+		publishAdaptationApiVersion();
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
@@ -191,6 +198,7 @@ namespace knobkraft {
 	GenericAdaptation::GenericAdaptation(pybind11::module adaptationModule)
 	{
 		py::gil_scoped_acquire acquire;
+		publishAdaptationApiVersion();
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
@@ -213,6 +221,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		try {
+			publishAdaptationApiVersion();
 			auto importlib = py::module::import("importlib.util");
 			checkForPythonOutputAndLog();
 			auto spec = importlib.attr("spec_from_loader")(moduleName, py::none()); // Create an empty module with the right name
