@@ -6,6 +6,7 @@
 from typing import List
 from knobkraft import unescapeSysex_deepmind as unescape_sysex
 import hashlib
+import testing
 
 _MAX_NAME_CHARS = 16
 
@@ -152,11 +153,11 @@ def isSingleProgramDump(messages) -> bool:
             dev = _fds_device_id(m)
             by_device.setdefault(dev, []).append(m)
 
-    has_eof = any(_is_ubxa_eof(m) for m in all_msgs)
-    for msgs in by_device.values():
+    eof_devices = {m[2] for m in all_msgs if _is_ubxa_eof(m)}
+    for device_id, msgs in by_device.items():
         has_header = any(_is_fds(m, 0x01) for m in msgs)
         has_data = any(_is_fds(m, 0x02) for m in msgs)
-        if has_header and has_data and has_eof:
+        if has_header and has_data and device_id in eof_devices:
             return True
 
     return False
@@ -206,10 +207,10 @@ def channelIfValidDeviceResponse(message: List[int]) -> int:
 # the proper MIDI CC Bank Select messages before the Program Change!
 def bankDescriptors() -> List[dict]:
     return [
-        {"bank": 0, "name": "Bank A", "size": 127, "msb": 0, "lsb": 0},  # was 128
-        {"bank": 1, "name": "Bank B", "size": 127, "msb": 0, "lsb": 1},  # was 128
-        {"bank": 2, "name": "Bank C", "size": 127, "msb": 0, "lsb": 2},  # was 128
-        {"bank": 3, "name": "Bank D", "size": 127, "msb": 0, "lsb": 3}   # was 128
+        {"bank": 0, "name": "Bank A", "size": 128, "msb": 0, "lsb": 0},
+        {"bank": 1, "name": "Bank B", "size": 128, "msb": 0, "lsb": 1},
+        {"bank": 2, "name": "Bank C", "size": 128, "msb": 0, "lsb": 2},
+        {"bank": 3, "name": "Bank D", "size": 128, "msb": 0, "lsb": 3}
     ]
 
 def friendlyBankName(bank_number: int) -> str:
@@ -223,18 +224,15 @@ def bankSelect(channel, bank):
     ]
     
 def createCustomProgramChange(channel: int, patchNo: int) -> List[int]:
-    bank_letter = chr(ord('A') + (patchNo // 127))
-    patch_num = patchNo % 127
-    
-    filename = f"PatchX {bank_letter}{patch_num:03d}     "
+    filename = _program_filename(patchNo)
     filename_bytes = [ord(c) for c in filename]
     
     header = sysex_prefix + [0x7F, 0x74, 0x07, 0x03]
     return header + _BIN_PREFIX + filename_bytes + _FW_VERSION + [sysex_suffix]
     
 def friendlyProgramName(program: int) -> str:
-    bank = program // 127          # was 128
-    patch = (program % 127) + 1   # was % 128, now 1-indexed
+    bank = program // 128
+    patch = (program % 128) + 1
     return f"{chr(ord('A') + bank)}{patch:03d}"
 
 # ---------------------------------------------------------------------------
@@ -242,20 +240,53 @@ def friendlyProgramName(program: int) -> str:
 # ---------------------------------------------------------------------------
 
 def createProgramDumpRequest(channel: int, patchNo: int) -> List[int]:
-    bank_letter = chr(ord('A') + (patchNo // 127))  # was 128
-    patch_num = (patchNo % 127) + 1                  # was % 128, now 1-indexed
-    
-    filename = f"PatchX {bank_letter}{patch_num:03d}     "
+    filename = _program_filename(patchNo)
     filename_bytes = [ord(c) for c in filename]
     
     header = sysex_prefix + [0x7F, 0x74, 0x07, 0x03]
     return header + _BIN_PREFIX + filename_bytes + _FW_VERSION + [sysex_suffix]
 
-def convertToProgramDump(channel: int, patchNo: int, messages) -> List[int]:
+
+def _program_filename(patch_no: int) -> str:
+    if not 0 <= patch_no < 512:
+        raise ValueError(f"Invalid UB-Xa patch number: {patch_no}")
+    bank_letter = chr(ord('A') + patch_no // 128)
+    patch_number = patch_no % 128 + 1
+    return f"PatchX {bank_letter}{patch_number:03d}     "
+
+def _with_filename(messages, filename: str) -> List[int]:
     result = []
     for msg in _split_sysex(messages):
+        msg = list(msg)
+        if _is_fds(msg, 0x01):
+            for bin_idx in range(len(msg) - len(_BIN_PREFIX) + 1):
+                if msg[bin_idx:bin_idx + len(_BIN_PREFIX)] == _BIN_PREFIX:
+                    # FDS header packets store a four-byte file size between
+                    # the BIN marker and the fixed-width filename.
+                    filename_start = bin_idx + len(_BIN_PREFIX) + 4
+                    filename_end = filename_start + _MAX_NAME_CHARS
+                    if filename_end <= len(msg) - 1:
+                        msg[filename_start:filename_end] = [ord(c) for c in filename]
+                    break
         result.extend(msg)
     return result
+
+
+def _header_filename(messages) -> str:
+    for msg in _split_sysex(messages):
+        if not _is_fds(msg, 0x01):
+            continue
+        for bin_idx in range(len(msg) - len(_BIN_PREFIX) + 1):
+            if msg[bin_idx:bin_idx + len(_BIN_PREFIX)] == _BIN_PREFIX:
+                filename_start = bin_idx + len(_BIN_PREFIX) + 4
+                filename_end = filename_start + _MAX_NAME_CHARS
+                if filename_end <= len(msg) - 1:
+                    return ''.join(chr(value) for value in msg[filename_start:filename_end])
+    return ""
+
+
+def convertToProgramDump(channel: int, messages, patchNo: int) -> List[int]:
+    return _with_filename(messages, _program_filename(patchNo))
 
 def createEditBufferRequest(channel: int) -> List[int]:
     filename = "Upper Patch     "
@@ -304,6 +335,12 @@ def nameFromDump(messages) -> str:
     return "Unknown"
 
 def numberFromDump(messages) -> int:
+    filename = _header_filename(messages)
+    if (len(filename) >= 11 and filename.startswith("PatchX ")
+            and filename[7] in "ABCD" and filename[8:11].isdigit()):
+        patch_number = int(filename[8:11])
+        if 1 <= patch_number <= 128:
+            return (ord(filename[7]) - ord('A')) * 128 + patch_number - 1
     return -1
 
 def calculateFingerprint(messages) -> str:
@@ -327,30 +364,49 @@ def isPartOfEditBufferDump(message):
     return isPartOfSingleProgramDump(message)
 
 def convertToEditBuffer(channel: int, messages) -> List[int]:
-    result = []
-    for msg in _split_sysex(messages):
-        msg = list(msg)
-        if _is_fds(msg, 0x01): # If this is the header packet
-            # Search for the BIN wrapper sequence: 7F 42 49 4E 20
-            bin_idx = -1
-            for i in range(len(msg) - 5):
-                if msg[i:i+5] == [0x7F, 0x42, 0x49, 0x4E, 0x20]:
-                    bin_idx = i
-                    break
-                    
-            # If found, the actual 16-byte filename starts 9 bytes after the wrapper
-            if bin_idx != -1 and bin_idx + 9 + 16 <= len(msg):
-                filename = "Upper Patch     "
-                filename_bytes = [ord(c) for c in filename]
-                # Overwrite the filename in the header packet
-                msg[bin_idx + 9 : bin_idx + 9 + 16] = filename_bytes
-                
-        result.extend(msg)
-    return result
+    return _with_filename(messages, "Upper Patch     ")
 
-# ---------------------------------------------------------------------------
-# Rename
-# ---------------------------------------------------------------------------
 
-def renamePatch(messages, new_name: str) -> List[int]:
-    return list(messages)
+def _escape_synthetic_fds(raw_data: List[int]) -> List[int]:
+    encoded = []
+    for offset in range(0, len(raw_data), 7):
+        group = raw_data[offset:offset + 7]
+        msbits = 0
+        low_bytes = []
+        for index, value in enumerate(group):
+            if value & 0x80:
+                msbits |= 1 << index
+            low_bytes.append(value & 0x7F)
+        encoded.extend([msbits] + low_bytes)
+    return encoded
+
+
+def make_test_data():
+    # Synthetic structure only: the payload deliberately contains no musical
+    # patch data and is generated from the documented FDS 7-bit packing.
+    device_id = 1
+    filename = "PatchX A001     "
+    header = (sysex_prefix + [device_id, 0x74, 0x07, 0x01, 0x00]
+              + _BIN_PREFIX + [0x00, 0x00, 0x00, 0x60]
+              + [ord(char) for char in filename] + [0xF7])
+    encoded = _escape_synthetic_fds([0] * 96)
+    data = (sysex_prefix + [device_id, 0x74, 0x07, 0x02, 0x01, 0x00]
+            + encoded + [0x00, 0xF7])
+    eof = [0xF0, 0x7E, device_id, 0x7B, 0x00, 0xF7]
+    program = header + data + eof
+
+    def programs(_data: testing.TestData):
+        yield testing.ProgramTestData(
+            message=program,
+            name="Unknown",
+            number=0,
+            friendly_number="A001",
+            target_no=128,
+        )
+
+    return testing.TestData(
+        program_generator=programs,
+        program_dump_request=(0, 0, createProgramDumpRequest(0, 0)),
+        device_detect_call=createDeviceDetectMessage(0),
+        device_detect_reply=(header, 0),
+    )

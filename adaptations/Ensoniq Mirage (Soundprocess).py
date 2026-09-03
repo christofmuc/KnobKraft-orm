@@ -3,22 +3,34 @@
 #
 #   SysEx structure derived from the Electra One template for this device.
 #
-#   All SysEx messages use the Ensoniq 3-byte manufacturer ID + device ID header:
+#   This adaptation follows the alternate header used by the Electra One
+#   SoundProcess template and community traces:
 #       F0 00 00 23 01 ...
-#   (0x00 0x00 0x23 = Ensoniq manufacturer ID, 0x01 = device ID)
+#   The scanned SoundProcess manual instead documents F0 0F 7F; this mismatch
+#   still needs confirmation with real hardware.
 #
 #   Key commands (from Electra One template):
 #       Computer Control ON:    F0 00 00 23 01 02 F7
 #       Read Patch (request):   F0 00 00 23 01 04 NN F7   (NN = patch 1-48)
-#       Write Patch (response): F0 00 00 23 01 44 NN [124 nybble bytes] F7
+#       Write Patch (response): F0 00 00 23 01 44 NN [140 nybble bytes] F7
 #
-#   The 124 nybble bytes encode 62 raw parameter bytes (low nybble first, then
-#   high nybble), as confirmed by the Electra One response rules (byte indices 0-123).
+#   The SoundProcess manual specifies a 70-byte patch parameter block. MIDI
+#   data is low-nybble/high-nybble encoded, producing 140 data bytes on the wire.
 #
-#   Message length: 1(F0) + 5(header) + 1(patch#) + 124(data) + 1(F7) = 132 bytes
+#   Message length: 1(F0) + 5(header/command) + 1(patch#) + 140(data) + 1(F7) = 148 bytes
 #
 
 import hashlib
+import knobkraft
+import testing
+
+
+SYSEX_PREFIX = [0xF0, 0x00, 0x00, 0x23, 0x01]
+COMPUTER_CONTROL = 0x02
+READ_PATCH = 0x04
+WRITE_PATCH = 0x44
+PATCH_DATA_SIZE = 140
+PATCHES_PER_BANK = 48
 
 
 def name():
@@ -35,8 +47,7 @@ def setupHelp():
         "interface settings (50-100ms is usually sufficient).\n\n"
         "SoundProcess supports 48 patches. Bank dump is not supported by the OS, so patches "
         "are fetched one at a time.\n\n"
-        "Note: The SoundProcess patch dump does not include a patch name, so patches will be "
-        "identified by their slot number."
+        "SoundProcess patch dumps include an eight-character patch name."
     )
 
 
@@ -51,8 +62,8 @@ def messageTimings():
 def createDeviceDetectMessage(channel):
     # This runs when KnobKraft is looking for the synth.
     # We send CC ON (0x02) + a small "trash" request (0x04) to clear the buffer.
-    cc_command = [0xF0, 0x00, 0x00, 0x23, 0x01, 0x02, 0xF7]
-    read_patch = [0xF0, 0x00, 0x00, 0x23, 0x01, 0x04, 0x01, 0xF7]
+    cc_command = SYSEX_PREFIX + [COMPUTER_CONTROL, 0xF7]
+    read_patch = SYSEX_PREFIX + [READ_PATCH, 0x01, 0xF7]
     return cc_command + read_patch
 
 
@@ -61,9 +72,7 @@ def needsChannelSpecificDetection():
 
 
 def channelIfValidDeviceResponse(message):
-    # During Auto-Detect, ONLY return 0 if we see the full 148-byte data.
-    # If we see the 8-byte ACK (0x00), return -1 to stay on the line.
-    if len(message) == 148 and message[0] == 0xF0 and message[5] == 0x44:
+    if isSingleProgramDump(message):
         return 0
     return -1
     
@@ -76,16 +85,13 @@ def createEditBufferRequest(channel):
     return createProgramDumpRequest(channel, 0)
 
 
-
-
 def convertToEditBuffer(channel, message):
-    # There is no edit buffer on the Mirage — sending a Write Patch command
-    # always targets the slot number embedded in the message header.
-    # We prepend the CC activation command to ensure the Mirage is ready.
-    if isSingleProgramDump(message):
-        cc_command = [0xF0, 0x00, 0x00, 0x23, 0x01, 0x02, 0xF7]
-        return cc_command + list(message)
-    return list(message)
+    # SoundProcess has no volatile edit buffer; patch slot 1 is the stand-in.
+    return convertToProgramDump(channel, message, 0)
+
+
+def isEditBufferDump(message):
+    return isSingleProgramDump(message) and message[6] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -94,19 +100,33 @@ def convertToEditBuffer(channel, message):
 
 def createProgramDumpRequest(channel, program_number):
     patch_num = (program_number % 48) + 1
-    cc_command = [0xF0, 0x00, 0x00, 0x23, 0x01, 0x02, 0xF7]
-    read_patch = [0xF0, 0x00, 0x00, 0x23, 0x01, 0x04, patch_num, 0xF7]
+    cc_command = SYSEX_PREFIX + [COMPUTER_CONTROL, 0xF7]
+    read_patch = SYSEX_PREFIX + [READ_PATCH, patch_num, 0xF7]
     return cc_command + read_patch
 
 
 def isSingleProgramDump(message):
     if not hasattr(message, '__len__'):
         return False
-    return (len(message) == 148 and message[0] == 0xF0 and message[5] == 0x44)
+    return (
+        len(message) == 148
+        and list(message[:5]) == SYSEX_PREFIX
+        and message[5] == WRITE_PATCH
+        and 1 <= message[6] <= PATCHES_PER_BANK
+        and all(value <= 0x0F for value in message[7:147])
+        and message[147] == 0xF7
+    )
+
+
+def convertToProgramDump(channel, message, program_number):
+    if not isSingleProgramDump(message):
+        raise ValueError("Can only convert SoundProcess single program dumps")
+    converted = list(message)
+    converted[6] = (program_number % PATCHES_PER_BANK) + 1
+    return converted
 
 def calculateFingerprint(message):
-    # Hash the 140 bytes of actual parameter data (Index 7 to 146)
-    if len(message) == 148:
+    if isSingleProgramDump(message):
         data = message[7:147]
         return hashlib.md5(bytearray(data)).hexdigest()
     return ""
@@ -114,21 +134,23 @@ def calculateFingerprint(message):
 def numberFromDump(message):
     # The Trace shows the patch number is at index 6.
     # Mirage/SoundProcess uses 1-48, KnobKraft needs 0-47.
-    if len(message) == 148:
+    if isSingleProgramDump(message):
         return message[6] - 1
     return -1
 
 def nameFromDump(message):
-    if len(message) == 148:
-        return "Patch {}".format(message[6])
+    if isSingleProgramDump(message):
+        payload = message[7:147]
+        raw_patch = [payload[index] | (payload[index + 1] << 4)
+                     for index in range(0, PATCH_DATA_SIZE, 2)]
+        return ''.join(chr(value) if 32 <= value < 127 else ' '
+                       for value in raw_patch[62:70]).rstrip()
     return "Unknown"
 
 
 # ---------------------------------------------------------------------------
 # Layout
 # ---------------------------------------------------------------------------
-
-PATCHES_PER_BANK = 48
 
 def numberOfBanks():
     return 48 // PATCHES_PER_BANK
@@ -137,11 +159,11 @@ def numberOfPatchesPerBank():
     return PATCHES_PER_BANK
 
 def createBankDumpRequest(channel, bank):
-    cc_command = [0xF0, 0x00, 0x00, 0x23, 0x01, 0x02, 0xF7]
+    cc_command = SYSEX_PREFIX + [COMPUTER_CONTROL, 0xF7]
     messages = cc_command
     start = bank * PATCHES_PER_BANK + 1
     for patch_num in range(start, start + PATCHES_PER_BANK):
-        messages += [0xF0, 0x00, 0x00, 0x23, 0x01, 0x04, patch_num, 0xF7]
+        messages += SYSEX_PREFIX + [READ_PATCH, patch_num, 0xF7]
     return messages
     
 def isPartOfBankDump(message):
@@ -156,7 +178,42 @@ def isBankDumpFinished(messages):
         return False
         
 def extractPatchesFromBank(messages):
-    return messages
+    if not messages:
+        return []
+    split_messages = knobkraft.splitSysex(messages) if isinstance(messages[0], int) else messages
+    return [value for message in split_messages if isSingleProgramDump(message) for value in message]
+
+
+def extractPatchesFromAllBankMessages(messages):
+    return [message for message in messages if isSingleProgramDump(message)]
     
 def friendlyBankName(bank_number):
     return "Bank {}".format(bank_number + 1)
+
+
+def make_test_data():
+    # Synthetic protocol fixture based on the manual's 70-byte parameter block.
+    raw_patch = list(range(70))
+    raw_patch[62:70] = b"SYNTHETC"
+    payload = [nibble for value in raw_patch for nibble in (value & 0x0F, value >> 4)]
+    program = SYSEX_PREFIX + [WRITE_PATCH, 1] + payload + [0xF7]
+
+    def programs(_data: testing.TestData):
+        yield testing.ProgramTestData(
+            message=program,
+            name="SYNTHETC",
+            number=0,
+            target_no=11,
+            change_number_changes_name=True,
+        )
+
+    def edit_buffers(_data: testing.TestData):
+        yield testing.ProgramTestData(message=program, name="SYNTHETC", number=0)
+
+    return testing.TestData(
+        program_generator=programs,
+        edit_buffer_generator=edit_buffers,
+        program_dump_request=(0, 0, "F0 00 00 23 01 02 F7 F0 00 00 23 01 04 01 F7"),
+        device_detect_call="F0 00 00 23 01 02 F7 F0 00 00 23 01 04 01 F7",
+        device_detect_reply=(program, 0),
+    )

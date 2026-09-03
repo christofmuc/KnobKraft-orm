@@ -20,8 +20,10 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Pro-800 | alpha | adaptation | Thanks to @Andy2No |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
+| Behringer | UB-Xa | alpha | adaptation | Contributed by @Casuallynoted; hardware validation needed |
 | Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
+| Casio | CZ-101/CZ-1000 | alpha | adaptation | Contributed by @Casuallynoted; hardware validation needed |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
@@ -37,6 +39,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Elektron | Digitone | alpha | adaptation |  This needs more work, owners please provide feedback so we can complete it. |
 | E-mu | Morpheus | works | adaptation | Thanks to Kid Who for testing! |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
+| Ensoniq | Mirage (SoundProcess) | alpha | adaptation | Contributed by @Casuallynoted; alternate SysEx header needs hardware validation |
 | Ensoniq | VFX/VFX-SD | works | adaptation | Thanks to @dancingdog for testing! |
 | Groove Synthesis | 3rd Wave | works | adaptation | |
 | John Bowen | Solaris | beta | adaptation | Contributed by @conversy! |

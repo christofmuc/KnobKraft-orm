@@ -4,9 +4,14 @@
 
 import hashlib
 import knobkraft
+import testing
 from typing import Dict, List
 
 CASIO_ID = 0x44
+_CZ_NIBBLE_PAYLOAD_SIZE = 256
+_CZ_SEND_DATA = 0x30
+_CZ_RECEIVE_DATA = 0x20
+_CZ_EDIT_BUFFER = 0x60
 
 def name():
     return "Casio CZ-101 / CZ-1000"
@@ -31,15 +36,10 @@ def needsChannelSpecificDetection():
     return True
 
 def channelIfValidDeviceResponse(message):
-    # When we send a Send Request (0x10), the CZ responds with an ACK (0x30).
-    # We explicitly check for this ACK to avoid validating our own echoed requests (e.g., via IAC Bus).
-    if len(message) >= 6 and message[0] == 0xF0 and message[1] == CASIO_ID:
-        channel_byte = message[4]
-        command_byte = message[5]
-        
-        # 0x70 is the base channel identifier, 0x30 is the Casio ACK response
-        if (channel_byte & 0xF0) == 0x70 and command_byte == 0x30:
-            return channel_byte & 0x0F
+    # Validate the complete 263-byte send-data reply so an echoed request or
+    # unrelated Casio message cannot produce a false-positive detection.
+    if isSingleProgramDump(message) and len(message) == 263 and message[5] == _CZ_SEND_DATA:
+        return message[4] & 0x0F
     return -1
 
 def bankDescriptors() -> List[Dict]:
@@ -70,41 +70,75 @@ def nibble_cz(data: List[int]) -> List[int]:
         packed_data.append((byte >> 4) & 0x0F)
     return packed_data
 
+
+def _program_byte(patch_no: int) -> int:
+    """Map KnobKraft's linear program number to the CZ memory address."""
+    if 0 <= patch_no < 16:
+        return 0x20 + patch_no
+    if 16 <= patch_no < 32:
+        return 0x40 + patch_no - 16
+    raise ValueError(f"Invalid patch number for CZ-101: {patch_no}")
+
+
+def _nibble_payload(message: List[int]):
+    """Return the patch payload from either documented CZ single-patch form.
+
+    Dumps sent by the synth are 263 bytes long and do not repeat the requested
+    program address. Files intended for transmission to the synth are 264 bytes
+    long and contain that address after command 0x20.
+    """
+    if not hasattr(message, "__len__") or len(message) not in (263, 264):
+        return None
+    if list(message[:4]) != [0xF0, CASIO_ID, 0x00, 0x00] or message[-1] != 0xF7:
+        return None
+    if (message[4] & 0xF0) != 0x70:
+        return None
+
+    if len(message) == 263 and message[5] == _CZ_SEND_DATA:
+        payload = message[6:-1]
+    elif len(message) == 264 and message[5] == _CZ_RECEIVE_DATA:
+        payload = message[7:-1]
+    else:
+        return None
+
+    if len(payload) != _CZ_NIBBLE_PAYLOAD_SIZE or any(value > 0x0F for value in payload):
+        return None
+    return list(payload)
+
 def isSingleProgramDump(message: List[int]) -> bool:
-    # A CZ single patch payload is 128 bytes sent as 256 nibbles + SysEx headers.
-    # The total length is typically 263 bytes.
-    if len(message) >= 263 and message[0] == 0xF0 and message[1] == CASIO_ID:
-        return True
-    return False
+    return _nibble_payload(message) is not None
 
 def isEditBufferDump(message: List[int]) -> bool:
-    # The CZ edit buffer (temporary sound area) uses program number 0x60
-    return isSingleProgramDump(message)
+    if not isSingleProgramDump(message):
+        return False
+    # A 263-byte reply does not contain the source address, so a reply to an
+    # edit-buffer request cannot be distinguished from a stored-program reply.
+    return len(message) == 263 or message[6] == _CZ_EDIT_BUFFER
 
 def convertToEditBuffer(channel, message):
-    if isEditBufferDump(message):
-        return message
-    if isSingleProgramDump(message):
-        # To send to the edit buffer, we'd need to format a "Receive Request 1" 
-        # targeting program 0x60, followed by the data. 
-        # This requires adjusting the header bytes depending on how KnobKraft handles the handshake.
-        return message
-    raise Exception("Can only convert single program dumps")
+    payload = _nibble_payload(message)
+    if payload is None:
+        raise ValueError("Can only convert CZ single program dumps")
+    return [0xF0, CASIO_ID, 0x00, 0x00, 0x70 | (channel & 0x0F),
+            _CZ_RECEIVE_DATA, _CZ_EDIT_BUFFER] + payload + [0xF7]
+
+
+def convertToProgramDump(channel, message, program_number):
+    payload = _nibble_payload(message)
+    if payload is None:
+        raise ValueError("Can only convert CZ single program dumps")
+    return [0xF0, CASIO_ID, 0x00, 0x00, 0x70 | (channel & 0x0F),
+            _CZ_RECEIVE_DATA, _program_byte(program_number)] + payload + [0xF7]
 
 def nameFromDump(message):
     # CZ-101 patches do not contain ASCII name data. 
     return "CZ Patch"
 
 def calculateFingerprint(message):
-    if isSingleProgramDump(message):
-        # Extract the payload (ignoring headers) to hash the actual patch data
-        index = knobkraft.sysex.findSysexDelimiters(message)
-        if len(index) > 0:
-            start, end = index[0]
-            # Strip standard headers and F7
-            payload = message[start+5:end-1]
-            return hashlib.md5(bytearray(payload)).hexdigest()
-    raise Exception("Can't calculate fingerprint of non-program dump message")
+    payload = _nibble_payload(message)
+    if payload is None:
+        raise ValueError("Can't calculate fingerprint of non-program dump message")
+    return hashlib.md5(bytearray(payload)).hexdigest()
 
 # ==============================================================================
 # CZ-101 Parameter Mapping (256 bytes un-nibbled)
@@ -154,19 +188,15 @@ def messageTimings():
     }
 
 def createProgramDumpRequest(channel, patch_no):
-    # Map KnobKraft's 0-31 absolute index to CZ-101's internal program hex values
-    if 0 <= patch_no < 16:
-        # Bank 0 (Internal Sounds): 0x20 .. 0x2F
-        program_byte = 0x20 + patch_no
-    elif 16 <= patch_no < 32:
-        # Bank 1 (Cartridge Sounds): 0x40 .. 0x4F
-        program_byte = 0x40 + (patch_no - 16)
-    else:
-        raise Exception(f"Invalid patch number for CZ-101: {patch_no}")
-    
-    # 1. The Send Request (0x10) + 2. The Go Ahead Command (0x31)
-    # Packed tightly together into one illegal-but-effective 10-byte SysEx missile!
+    program_byte = _program_byte(patch_no)
+
+    # Casio's documented combined Send Request (0x10) and Go Ahead (0x31).
     return [0xF0, CASIO_ID, 0x00, 0x00, 0x70 | (channel & 0x0F), 0x10, program_byte, 0x70 | (channel & 0x0F), 0x31, 0xF7]
+
+
+def createEditBufferRequest(channel):
+    return [0xF0, CASIO_ID, 0x00, 0x00, 0x70 | (channel & 0x0F), 0x10,
+            _CZ_EDIT_BUFFER, 0x70 | (channel & 0x0F), 0x31, 0xF7]
 
 def createBankDumpRequest(channel, bank_id):
     messages = []
@@ -196,3 +226,23 @@ def extractPatchesFromAllBankMessages(messages):
             patches.append(msg)
     
     return patches
+
+
+def make_test_data():
+    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+        yield testing.ProgramTestData(
+            message=data.all_messages[0],
+            name="CZ Patch",
+            target_no=11,
+        )
+
+    fixture_payload = knobkraft.load_sysex("testData/Casio_CZ101/bassbling.syx")[0][7:-1]
+    device_reply = [0xF0, CASIO_ID, 0x00, 0x00, 0x76, _CZ_SEND_DATA] + fixture_payload + [0xF7]
+    return testing.TestData(
+        sysex="testData/Casio_CZ101/bassbling.syx",
+        program_generator=programs,
+        program_dump_request=(3, 17, "F0 44 00 00 73 10 41 73 31 F7"),
+        device_detect_call="F0 44 00 00 70 10 20 70 31 F7",
+        device_detect_reply=(device_reply, 6),
+        expected_patch_count=1,
+    )
