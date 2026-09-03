@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "EngineClient.h"
 #include "PluginState.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -15,6 +16,7 @@ namespace knobkraft::recall {
 	class PluginProcessor final : public juce::AudioProcessor {
 	public:
 		PluginProcessor();
+		explicit PluginProcessor(EngineClientSettings engineSettings);
 
 		void prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock) override;
 		void releaseResources() override;
@@ -41,12 +43,15 @@ namespace knobkraft::recall {
 
 		[[nodiscard]] PluginState& state() noexcept { return state_; }
 		[[nodiscard]] PluginState const& state() const noexcept { return state_; }
+		[[nodiscard]] EngineClient& engineClient() noexcept { return engineClient_; }
+		[[nodiscard]] EngineClient const& engineClient() const noexcept { return engineClient_; }
 
 	private:
 		template<typename Sample>
 		void passThrough(juce::AudioBuffer<Sample>& buffer) noexcept;
 
 		PluginState state_;
+		EngineClient engineClient_;
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginProcessor)
 	};

@@ -15,11 +15,15 @@
 
 namespace knobkraft::recall {
 
-	PluginProcessor::PluginProcessor()
+	PluginProcessor::PluginProcessor() : PluginProcessor(defaultEngineClientSettings()) {
+	}
+
+	PluginProcessor::PluginProcessor(EngineClientSettings engineSettings)
 		: AudioProcessor(BusesProperties()
 			.withInput("Input", juce::AudioChannelSet::stereo(), true)
 			.withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-		  state_(PluginState::embeddedFixture(juce::Uuid().toString().toStdString())) {
+		  state_(PluginState::embeddedFixture(juce::Uuid().toString().toStdString())),
+		  engineClient_(state_, std::move(engineSettings)) {
 		setLatencySamples(0);
 	}
 
@@ -83,7 +87,14 @@ namespace knobkraft::recall {
 			return;
 		}
 		auto const* first = static_cast<std::uint8_t const*>(data);
-		state_.restore(std::span<std::uint8_t const>(first, static_cast<std::size_t>(sizeInBytes)));
+		if (state_.restore(std::span<std::uint8_t const>(first, static_cast<std::size_t>(sizeInBytes)))) {
+			auto manifest = state_.snapshot()->manifest;
+			// WP-06 deliberately implements manual recall only. Do not let a state
+			// value for a future policy acquire automatic behavior in this binary.
+			manifest.recallPolicy = midikraft::session::RecallPolicy::Manual;
+			state_.replaceManifest(std::move(manifest));
+		}
+		engineClient_.manifestChanged();
 	}
 
 }

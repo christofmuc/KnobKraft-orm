@@ -13,24 +13,42 @@ namespace knobkraft::recall {
 
 	class PluginProcessor;
 
-	class PluginEditor final : public juce::AudioProcessorEditor, private juce::Timer {
+	class PluginEditor final : public juce::AudioProcessorEditor, private juce::ChangeListener {
 	public:
 		explicit PluginEditor(PluginProcessor& processor);
+		~PluginEditor() override;
 
 		void paint(juce::Graphics& graphics) override;
 		void resized() override;
 
 	private:
-		void timerCallback() override;
+		void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 		void refresh();
+		void commitInstanceName();
 
 		PluginProcessor& processor_;
 		juce::Label title_;
 		juce::Label engineStatus_;
-		juce::Label instanceName_;
+		juce::TextEditor instanceName_;
+		juce::TextButton openKnobKraft_ { "Open KnobKraft" };
+		juce::Label bindingStatus_;
+		juce::ComboBox synthPicker_;
+		juce::TextButton rebind_ { "Rebind" };
+		juce::TextEditor patchSearch_;
+		juce::TextButton search_ { "Search" };
+		juce::ComboBox patchPicker_;
+		juce::TextButton choosePatch_ { "Choose" };
+		juce::TextButton morePatches_ { "More" };
 		juce::Label patchName_;
 		juce::Label fingerprint_;
+		juce::Label provenance_;
 		juce::Label storedStatus_;
+		juce::TextButton send_ { "Send to synth" };
+		juce::TextButton cancel_ { "Cancel" };
+		juce::ProgressBar progress_;
+		double progressValue_ = 0.0;
+		juce::Label transferStatus_;
+		juce::Label recallPolicy_;
 		juce::Label stateError_;
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PluginEditor)
