@@ -99,10 +99,12 @@ class MutatingFingerprintEditBufferAdaptation:
 
 def test_load_sysex_preserves_edit_buffer_when_fingerprint_mutates_input():
     edit_buffer = [0xF0, 0x02, 0, 10, 0xF7]
+    expected_edit_buffer = edit_buffer.copy()
 
     patches = Librarian().load_sysex(MutatingFingerprintEditBufferAdaptation, [edit_buffer])
 
-    assert patches == [edit_buffer]
+    assert patches == [expected_edit_buffer]
+    assert edit_buffer == expected_edit_buffer
 
 
 class MutatingFingerprintBankAdaptation:
