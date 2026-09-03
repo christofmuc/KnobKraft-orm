@@ -24,7 +24,10 @@ class MockMidiController(MidiController):
         self.sent_message_delays: List[int] = []
         self.pending_replies: Deque[MidiMessage] = deque()
         self.finished = False
+        self.cancelled = False
         self.send_delay = 0
+        if hasattr(device, "initial_messages"):
+            self.pending_replies.extend([message.copy() for message in device.initial_messages()])
 
     def send(self, message: MidiMessage):
         for outbound in _split_outbound_messages(message):
@@ -48,6 +51,10 @@ class MockMidiController(MidiController):
         return steps
 
     def mark_finished(self):
+        self.finished = True
+
+    def mark_cancelled(self):
+        self.cancelled = True
         self.finished = True
 
     def set_send_delay(self, delay_ms: int):
@@ -79,6 +86,30 @@ class BankDumpMockDevice:
         if message == self.expected_request:
             return [reply.copy() for reply in self.bank_messages]
         raise AssertionError(f"Unexpected bank request: {knobkraft.syxToString(message)}")
+
+
+class PassiveBankDumpMockDevice:
+    def __init__(
+            self,
+            bank_messages: Iterable[MidiMessage],
+            *,
+            accepted_replies: Optional[Iterable[MidiMessage]] = None,
+            ignore_unmatched: bool = False):
+        self.bank_messages = [message.copy() for message in bank_messages]
+        self.accepted_replies = {tuple(reply) for reply in accepted_replies or []}
+        self.ignore_unmatched = ignore_unmatched
+        self.unmatched_requests: List[MidiMessage] = []
+
+    def initial_messages(self) -> List[MidiMessage]:
+        return [message.copy() for message in self.bank_messages]
+
+    def respond(self, message: MidiMessage) -> List[MidiMessage]:
+        if tuple(message) in self.accepted_replies:
+            return []
+        self.unmatched_requests.append(message.copy())
+        if self.ignore_unmatched:
+            return []
+        raise AssertionError(f"Unexpected passive bank reply: {knobkraft.syxToString(message)}")
 
 
 class ProgramDumpMockDevice:

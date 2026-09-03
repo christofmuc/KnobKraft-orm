@@ -206,13 +206,13 @@ namespace midikraft {
 		return false;
 	}
 
-	bool KawaiK3::isBankDump(const MidiMessage& message) const
+	midikraft::BankDumpCapability::HandshakeReply KawaiK3::isMessagePartOfBankDump(const MidiMessage& message) const
 	{
 		// This should return for all messages that are part of a bank dump, and I want to include the wave dump here as well
-		return isBankDumpAndNotWaveDump(message) || isWaveBufferDump(message);
+		return { isBankDumpAndNotWaveDump(message) || isWaveBufferDump(message), {} };
 	}
 
-	bool KawaiK3::isBankDumpFinished(std::vector<MidiMessage> const &bankDump) const
+	midikraft::BankDumpCapability::FinishedReply KawaiK3::bankDumpFinishedWithReply(std::vector<MidiMessage> const &bankDump) const
 	{
 		// For the K3, the bank is a single Midi Message. But we have requested also the WaveDump, so we need to check if both are present in the
 		// stream
@@ -222,7 +222,7 @@ namespace midikraft {
 			if (isBankDumpAndNotWaveDump(message)) hasBank = true;
 			if (isWaveBufferDump(message)) hasWave = true;
 		}
-		return hasBank && hasWave;
+		return { hasBank && hasWave, {} };
 	}
 
 	std::string KawaiK3::friendlyBankName(MidiBankNumber bankNo) const

@@ -194,7 +194,7 @@ if(NOT PYTHON_EXECUTABLE)
 		endif()
 		unset(PYTHON3_EXECUTABLE CACHE)
 	endif()
-	
+
 	# If python3 didn't work, try python (but verify it's Python 3, not Python 2)
 	if(NOT PYTHON_EXECUTABLE)
 		find_program(PYTHON_EXECUTABLE_CANDIDATE python)
@@ -226,7 +226,7 @@ if(NOT PYTHON_EXECUTABLE)
 			unset(PYTHON_EXECUTABLE_CANDIDATE CACHE)
 		endif()
 	endif()
-	
+
 	# If still not found, provide helpful error
 	if(NOT PYTHON_EXECUTABLE)
 		message(FATAL_ERROR "Could not find a working Python executable (tried python3 and python). Please install Python 3.12 or later and ensure it is in your PATH.")
@@ -343,7 +343,6 @@ add_subdirectory(synths/access-virus)
 add_subdirectory(synths/bcr2000)
 add_subdirectory(synths/kawai-k3)
 add_subdirectory(synths/oberheim-matrix1000)
-add_subdirectory(synths/roland-mks50)
 add_subdirectory(synths/roland-mks80)
 add_subdirectory(synths/sequential-rev2)
 add_subdirectory(synths/sequential-ob6)
@@ -361,6 +360,7 @@ option(BUILD_PATCH_DATABASE_TESTS "Build the PatchDatabase doctest binary" OFF)
 if(BUILD_PATCH_DATABASE_TESTS)
 	add_executable(patch_database_migration_test
 		tests/patch_database_migration_test.cpp
+		tests/bank_dump_capability_test.cpp
 		tests/patch_list_fill_test.cpp
 		tests/patch_database_search_test.cpp
 		tests/user_bank_save_test.cpp
@@ -373,5 +373,11 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		${CMAKE_CURRENT_LIST_DIR}/MidiKraft/librarian
 		${CMAKE_CURRENT_LIST_DIR}/third_party/doctest
 		${CMAKE_CURRENT_LIST_DIR}/third_party/SQLiteCpp/include)
-    target_link_libraries(patch_database_migration_test PRIVATE midikraft-database SQLiteCpp)
+	target_compile_definitions(patch_database_migration_test PRIVATE
+		KNOBKRAFT_TEST_SOURCE_DIR="${CMAKE_CURRENT_LIST_DIR}")
+    target_link_libraries(patch_database_migration_test PRIVATE
+		midikraft-database
+		knobkraft-generic-adaptation
+		midikraft-access-virus
+		SQLiteCpp)
 endif()

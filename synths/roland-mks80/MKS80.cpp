@@ -140,7 +140,6 @@ namespace midikraft {
 			{
 			case 0b00100000: /* Level 1 */
 				if (message[0].getSysExData()[5] == 1 /* Group ID*/) {
-					//return MKS50_Patch::createFromToneAPR(message);
 					jassertfalse;
 				}
 				else {
