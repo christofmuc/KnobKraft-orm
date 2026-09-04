@@ -18,6 +18,9 @@ MODEL_ID_CLASSIC = 0x04
 PATCH_DATA_SIZE = 132
 PATCH_MESSAGE_SIZE = 6 + PATCH_DATA_SIZE + 1
 
+# Lead 1/2 and even the 2X request table document only types 0x0B..0x0E.
+# The 2X dump table supports ten banks. Do not extrapolate request types:
+# 0x14 (which would be bank 10) is the All Controllers Request command.
 CLASSIC_BANK_COUNT = 4
 PATCHES_PER_BANK = 99
 MAX_IMPORT_BANKS = 10
@@ -38,7 +41,16 @@ def setupHelp():
         "This adaptation targets the classic Nord Lead SysEx family used by the Nord Lead 1, Nord Lead 2, "
         "and Nord Lead 2X program dumps. Patch dumps do not contain patch names in the documented 66-parameter "
         "payload, so KnobKraft shows location-based names only. Nord Lead 3 and later Nord Lead models use a "
-        "different SysEx format and are not covered by this adaptation."
+        "different SysEx format and are not covered by this adaptation. "
+        "Set the Global MIDI channel to the channel selected in KnobKraft. Select a normal synth patch "
+        "in Slot A (not a percussion kit) for detection and audition; audition replaces Slot A only. "
+        "Live downloads expose four banks of 99 program locations (displayed as banks 0-3); bank availability "
+        "depends on the instrument and installed memory card. 2X dumps from all ten banks can be imported "
+        "and exported, but live requests for banks 4-9 are deliberately unsupported because the 2X manual "
+        "does not document their request codes. Use a front-panel dump/file for those banks. "
+        "Program-dump playback may overwrite locations in the bank currently selected on the instrument; "
+        "normal audition uses the temporary edit buffer instead. Percussion kits and performances are "
+        "not supported. Tested with official files and mock MIDI, not with hardware."
     )
 
 
@@ -59,8 +71,8 @@ def generalMessageDelay():
 
 
 def channelIfValidDeviceResponse(message):
-    if isEditBufferDump(message) or isSingleProgramDump(message):
-        return message[2] & 0x0F
+    if isEditBufferDump(message) and message[5] == 0:
+        return message[2]
     return -1
 
 
@@ -73,9 +85,9 @@ def numberOfPatchesPerBank():
 
 
 def friendlyBankName(bank):
-    if 0 <= bank < MAX_IMPORT_BANKS:
-        return f"Bank {bank}"
-    return f"Bank {bank + 1}"
+    if not 0 <= bank < MAX_IMPORT_BANKS:
+        raise ValueError(f"Invalid Nord Lead bank {bank}")
+    return f"Bank {bank}"
 
 
 def friendlyProgramName(program):
@@ -92,8 +104,8 @@ def createEditBufferRequest(channel):
 
 def createProgramDumpRequest(channel, patch_no):
     bank, slot = divmod(patch_no, PATCHES_PER_BANK)
-    if not (0 <= bank < MAX_IMPORT_BANKS):
-        raise Exception(f"Program {patch_no} is out of range for {name()}")
+    if not (0 <= bank < CLASSIC_BANK_COUNT):
+        raise ValueError(f"Program {patch_no} is outside the four documented live-request banks")
     return [0xF0, MANUFACTURER_ID, channel & 0x0F, MODEL_ID_CLASSIC, FIRST_PROGRAM_REQUEST_TYPE + bank, slot, 0xF7]
 
 
@@ -144,7 +156,7 @@ def blankedOut(message):
 
 
 def calculateFingerprint(message):
-    return hashlib.md5(bytearray(blankedOut(message))).hexdigest()
+    return hashlib.md5(bytearray(blankedOut(message)), usedforsecurity=False).hexdigest()
 
 
 def legacyLoadSupportedExtensions() -> List[str]:
@@ -164,8 +176,10 @@ def _has_classic_header(message: List[int]) -> bool:
         len(message) >= 7
         and message[0] == 0xF0
         and message[1] == MANUFACTURER_ID
+        and 0 <= message[2] <= 0x0F
         and message[3] == MODEL_ID_CLASSIC
         and message[-1] == 0xF7
+        and all(0 <= byte <= 0x0F for byte in message[6:-1])
     )
 
 
@@ -175,7 +189,7 @@ def _payload_from_patch_message(message: List[int]) -> List[int]:
 
 def _read_vlq(data: bytes, index: int) -> Tuple[int, int]:
     value = 0
-    while True:
+    for _ in range(4):
         if index >= len(data):
             raise ValueError("Unexpected end of MIDI data while decoding VLQ")
         byte = data[index]
@@ -183,85 +197,118 @@ def _read_vlq(data: bytes, index: int) -> Tuple[int, int]:
         value = (value << 7) | (byte & 0x7F)
         if byte < 0x80:
             return value, index
+    raise ValueError("MIDI VLQ exceeds four bytes")
 
 
-def _skip_channel_message(status: int, index: int) -> int:
-    if 0xC0 <= status <= 0xDF:
-        return index + 1
-    return index + 2
+def _read_midi_payload(track: bytes, pos: int) -> Tuple[bytes, int]:
+    length, pos = _read_vlq(track, pos)
+    end = pos + length
+    if end > len(track):
+        raise ValueError("MIDI event payload extends beyond track")
+    return track[pos:end], end
 
 
 def _extract_sysex_from_midi_bytes(data: bytes) -> List[List[int]]:
-    if len(data) < 14 or data[:4] != b"MThd":
+    if data[:4] != b"MThd":
         return []
-
+    if len(data) < 14:
+        raise ValueError("Truncated MIDI header")
     header_length = int.from_bytes(data[4:8], "big")
-    if header_length < 6:
-        return []
-
+    if header_length < 6 or 8 + header_length > len(data):
+        raise ValueError("Invalid MIDI header length")
+    midi_format = int.from_bytes(data[8:10], "big")
     track_count = int.from_bytes(data[10:12], "big")
+    if midi_format not in (0, 1, 2) or track_count == 0 or (midi_format == 0 and track_count != 1):
+        raise ValueError("Invalid MIDI format or track count")
     index = 8 + header_length
     messages: List[List[int]] = []
-    running_status = None
-    pending_sysex: List[int] = []
-
     for _ in range(track_count):
         if index + 8 > len(data) or data[index:index + 4] != b"MTrk":
-            break
+            raise ValueError("Missing MIDI track")
         track_length = int.from_bytes(data[index + 4:index + 8], "big")
+        if index + 8 + track_length > len(data):
+            raise ValueError("Truncated MIDI track")
         track = data[index + 8:index + 8 + track_length]
         index += 8 + track_length
 
         pos = 0
         running_status = None
         pending_sysex = []
+        ended = False
         while pos < len(track):
             _, pos = _read_vlq(track, pos)
             if pos >= len(track):
-                break
+                raise ValueError("Missing MIDI event after delta time")
 
             status = track[pos]
             if status >= 0x80:
                 pos += 1
-                running_status = None if status in (0xF0, 0xF7, 0xFF) else status
+                running_status = status if 0x80 <= status <= 0xEF else None
             elif running_status is not None:
                 status = running_status
             else:
-                break
+                raise ValueError("MIDI data byte without running status")
 
             if status == 0xFF:
                 if pos >= len(track):
-                    break
+                    raise ValueError("Missing MIDI meta-event type")
+                meta_type = track[pos]
                 pos += 1
-                meta_length, pos = _read_vlq(track, pos)
-                pos += meta_length
+                if meta_type >= 0x80:
+                    raise ValueError("Invalid MIDI meta-event type")
+                payload, pos = _read_midi_payload(track, pos)
+                if meta_type == 0x2F:
+                    if payload or pos != len(track) or pending_sysex:
+                        raise ValueError("Invalid end-of-track or incomplete SysEx")
+                    ended = True
                 continue
 
             if status in (0xF0, 0xF7):
-                sysex_length, pos = _read_vlq(track, pos)
-                payload = list(track[pos:pos + sysex_length])
-                pos += sysex_length
+                payload_bytes, pos = _read_midi_payload(track, pos)
+                payload = list(payload_bytes)
                 if status == 0xF0:
+                    if pending_sysex:
+                        raise ValueError("New SysEx before previous message completed")
                     pending_sysex = [0xF0] + payload
                 elif pending_sysex:
                     pending_sysex.extend(payload)
                 else:
-                    pending_sysex = [0xF0] + payload
+                    # An unpaired F7 event is an SMF escape, not an implicit
+                    # SysEx start. Only extract explicitly framed messages.
+                    escaped = []
+                    for byte in payload:
+                        if byte == 0xF0:
+                            if escaped:
+                                raise ValueError("Nested SysEx in MIDI escape")
+                            escaped = [byte]
+                        elif escaped:
+                            escaped.append(byte)
+                            if byte == 0xF7:
+                                messages.append(escaped)
+                                escaped = []
+                    if escaped:
+                        raise ValueError("Incomplete SysEx in MIDI escape")
+                    continue
 
+                sysex_data = pending_sysex[1:-1] if pending_sysex[-1] == 0xF7 else pending_sysex[1:]
+                if any(byte >= 0x80 for byte in sysex_data):
+                    raise ValueError("Embedded status byte in MIDI SysEx")
                 if pending_sysex and pending_sysex[-1] == 0xF7:
                     messages.append(pending_sysex)
                     pending_sysex = []
                 continue
 
             if 0x80 <= status <= 0xEF:
-                pos = _skip_channel_message(status, pos)
+                end = pos + (1 if 0xC0 <= status <= 0xDF else 2)
+                if end > len(track) or any(byte >= 0x80 for byte in track[pos:end]):
+                    raise ValueError("Truncated or invalid MIDI channel event")
+                pos = end
                 continue
-
-            if status in (0xF1, 0xF3):
-                pos += 1
-            elif status == 0xF2:
-                pos += 2
-
+            raise ValueError(f"Unsupported MIDI file event status {status:#x}")
+        if not ended:
+            raise ValueError("MIDI track has no end-of-track event")
+    if index != len(data):
+        raise ValueError("Unexpected data after declared MIDI tracks")
     return messages
 
 

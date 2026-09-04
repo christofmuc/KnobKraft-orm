@@ -43,6 +43,7 @@ set(adaptation_files_test_shipped
     "test_adaptations.py"
     "test_AndromedaA6.py"
     "test_BC_Kijimi.py"
+    "test_Clavia_Nord_Lead.py"
     "test_implementation_status.py"
     "test_jv80.py"
     "test_JV1080.py"
