@@ -1,0 +1,23 @@
+/* Shared navigation geometry: keep links in place between Home and MkDocs. */
+.site-header { border-bottom: 1px solid var(--kk-border); background: var(--kk-chassis); color: var(--kk-text); font: 16px/1.7 var(--kk-text-font); }
+.site-header .header-inner { box-sizing: border-box; max-width: 1200px; margin-inline: auto; padding: 16px 32px; display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: 'brand nav github'; align-items: center; gap: 16px; min-height: 88px; }
+.site-header .brand { grid-area: brand; display: inline-flex; align-items: center; gap: 11.2px; font: 700 16.8px/1.4 var(--kk-label-font); color: var(--kk-cyan); text-decoration: none; letter-spacing: -.04em; }
+.site-header .brand img { width: 40px; height: 40px; }
+.site-header .nav-links { grid-area: nav; display: flex; justify-content: flex-end; gap: 20.8px; align-items: center; flex-wrap: wrap; }
+.site-header .nav-links a { color: var(--kk-muted); text-decoration: none; font-size: 14.4px; }
+.site-header .nav-links a:hover, .site-header .nav-links a[aria-current] { color: var(--kk-cyan); }
+.site-header .nav-links a.download { color: var(--kk-chassis); background: var(--kk-cyan); padding: 8px 13.6px; border-radius: 3px; font-weight: 700; }
+.site-header .kk-github { grid-area: github; justify-self: end; }
+@media (max-width: 1100px) {
+  .site-header .header-inner { grid-template-columns: 1fr auto; grid-template-areas: 'brand github' 'nav nav'; }
+  .site-header .nav-links { justify-content: center; gap: 16px; }
+}
+@media (max-width: 760px) {
+  .site-header .header-inner { padding-inline: 20px; }
+  .site-header .nav-links { gap: 10.4px 16px; }
+}
+@media (max-width: 380px) {
+  .site-header .brand { font-size: 14px; gap: 6.4px; }
+  .site-header .brand img { width: 32px; height: 32px; }
+  .site-header .kk-github span { display: none; }
+}

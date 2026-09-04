@@ -1,0 +1,15 @@
+{
+  "connect": {"reviewed": "2026-09-04", "basis": "Core 2.9-era workflow", "video": null},
+  "library-and-hardware": {"reviewed": "2026-09-04", "basis": "Core 2.9-era workflow", "video": null},
+  "import-a-bank": {"reviewed": "2026-09-04", "basis": "Core 2.9-era workflow", "video": null},
+  "overview": {
+    "reviewed": "2026-09-04", "basis": "Historical introduction",
+    "video": {
+      "youtube_id": "lPoFOVpTANM",
+      "title": "KnobKraft Orm original introduction",
+      "demonstrated_version": "1.0.0",
+      "synth": "Sequential Prophet Rev2",
+      "transcript": null
+    }
+  }
+}
