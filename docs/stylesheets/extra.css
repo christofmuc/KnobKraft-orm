@@ -22,18 +22,21 @@
 .md-tabs { background: #0f1620; border-bottom: 1px solid var(--kk-border); }
 .md-tabs__link { font-size: .75rem; opacity: 1; color: var(--kk-muted); }
 .md-tabs__link--active, .md-tabs__link:hover { color: var(--kk-cyan); }
-.md-typeset { font-size: .85rem; line-height: 1.75; }
-.md-typeset h1 { font-weight: 700; color: #f4f7fb; letter-spacing: -.035em; margin-bottom: 1em; }
+.md-typeset { font-size: .75rem; line-height: 1.6; }
+.md-typeset h1 { font-size: 1.8em; font-weight: 700; color: #f4f7fb; letter-spacing: -.035em; margin-bottom: .8em; }
 .md-typeset h2, .md-typeset h3 { font-weight: 650; color: #f4f7fb; }
+.md-typeset h2 { font-size: 1.4em; margin: 1.8em 0 .6em; }
+.md-typeset h3 { font-size: 1.15em; margin: 1.4em 0 .5em; }
+.md-typeset p, .md-typeset ul, .md-typeset ol { margin-block: .8em; }
 .md-typeset a { text-decoration: underline; text-underline-offset: .2em; }
 .md-typeset blockquote { border-left: 3px solid var(--kk-cyan); color: var(--kk-text); padding: .5rem 1rem; background: #65e5ec08; }
-.md-typeset table:not([class]) { font-size: .75rem; border-color: var(--kk-border); background: #111923; }
+.md-typeset table:not([class]) { font-size: .7rem; border-color: var(--kk-border); background: #111923; }
 .md-typeset table:not([class]) th { background: #182332; color: var(--kk-text); }
 .md-typeset code { border-radius: 3px; }
-.md-nav { font-size: .75rem; }
+.md-nav { font-size: .7rem; }
 .md-content__inner { max-width: 50rem; padding-block: .75rem; }
 .md-search__form { background: #080d15; }
-.md-typeset .lesson-meta { color: var(--kk-muted); border-bottom: 1px solid var(--kk-border); padding-bottom: 1rem; font-size: .75rem; }
+.md-typeset .lesson-meta { color: var(--kk-muted); border-bottom: 1px solid var(--kk-border); padding-bottom: .6rem; font-size: .7rem; }
 .md-typeset .video { width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--kk-border); }
 :focus-visible { outline: 2px solid var(--kk-cyan); outline-offset: 3px; }
-@media (max-width: 760px) { .md-typeset { font-size: .85rem; } .md-content__inner { padding: 0 .2rem; } }
+@media (max-width: 760px) { .md-content__inner { padding: 0 .2rem; } }

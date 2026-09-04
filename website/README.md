@@ -49,7 +49,7 @@ Home links are resolved by the theme relative to each page's depth, so navigatio
 
 `assets/tokens.css` is identity version 1: dark chassis, calmer reading panels, cyan actions, orange development accents, Inter prose, JetBrains Mono labels. The existing app mark is reused unmodified and credited to W07. The two variable fonts come from the Google Fonts `ofl/inter` and `ofl/jetbrainsmono` directories, with their OFL licenses alongside them. All styling/fonts are local; only opening the published video loads third-party media.
 
-Use at least 16px body text, keep glow out of long-form reading, use normal product spelling in prose, and reserve the uppercase wordmark for branding. Frame real application imagery with a single quiet equipment-panel border. Do not imply DAW recall, universal edit-buffer safety or sound-similarity duplicate detection.
+Use 16px body text on the homepage and compact 15px documentation text with 1.6 line height. Keep glow out of long-form reading, use normal product spelling in prose, and reserve the uppercase wordmark for branding. Frame real application imagery with a single quiet equipment-panel border. Do not imply DAW recall, universal edit-buffer safety or sound-similarity duplicate detection.
 
 ## Validation and CI
 
