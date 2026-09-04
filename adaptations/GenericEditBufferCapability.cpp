@@ -111,6 +111,10 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericEditBufferCapability::patchToSysex(std::shared_ptr<midikraft::DataFile> patch) const
 	{
+		if (!patch) {
+			spdlog::warn("Cannot convert an empty patch to an edit buffer dump");
+			return {};
+		}
 		py::gil_scoped_acquire acquire;
 		try {
 			auto data = patch->data();

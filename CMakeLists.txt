@@ -364,6 +364,7 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		tests/patch_list_fill_test.cpp
 		tests/patch_database_search_test.cpp
 		tests/user_bank_save_test.cpp
+		tests/bank_send_test.cpp
 		tests/test_helpers.h
 		The-Orm/UserBankFactory.cpp)
 	target_include_directories(patch_database_migration_test PRIVATE
