@@ -38,7 +38,8 @@
     "stylesheets/fonts/Inter.ttf": "website/assets/fonts/Inter.ttf",
     "stylesheets/fonts/JetBrainsMono.ttf": "website/assets/fonts/JetBrainsMono.ttf",
     "stylesheets/fonts/OFL-Inter.txt": "website/assets/fonts/OFL-Inter.txt",
-    "stylesheets/fonts/OFL-JetBrainsMono.txt": "website/assets/fonts/OFL-JetBrainsMono.txt"
+    "stylesheets/fonts/OFL-JetBrainsMono.txt": "website/assets/fonts/OFL-JetBrainsMono.txt",
+    "stylesheets/header.css": "website/assets/header.css"
   },
   "landing_assets": [
     "site.css",
@@ -48,6 +49,7 @@
     "fonts/Inter.ttf",
     "fonts/JetBrainsMono.ttf",
     "fonts/OFL-Inter.txt",
-    "fonts/OFL-JetBrainsMono.txt"
+    "fonts/OFL-JetBrainsMono.txt",
+    "header.css"
   ]
 }

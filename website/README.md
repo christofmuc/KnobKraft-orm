@@ -51,6 +51,8 @@ Home links are resolved by the theme relative to each page's depth, so navigatio
 
 Use 16px body text on the homepage and compact 15px documentation text with 1.6 line height. Keep glow out of long-form reading, use normal product spelling in prose, and reserve the uppercase wordmark for branding. Frame real application imagery with a single quiet equipment-panel border. Do not imply DAW recall, universal edit-buffer safety or sound-similarity duplicate detection.
 
+`assets/header.css` shares the header geometry between the landing page and the Material header override. Keep the main links in the same order and position across both; documentation search and the mobile contents control occupy a separate row below them.
+
 ## Validation and CI
 
 `scripts/check_website.py` validates the built artifact, and is invoked by the build. Optional browser QA uses Playwright 1.62.1 with Chromium installed:

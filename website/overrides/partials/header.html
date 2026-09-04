@@ -1,0 +1,25 @@
+<header class="md-header site-header" data-md-component="header">
+  <div class="header-inner">
+    <a class="brand" href="{{ config.extra.homepage | url }}" aria-label="KnobKraft Orm home">
+      <img src="{{ config.theme.logo | url }}" alt="" width="40" height="40">KNOBKRAFT_ORM
+    </a>
+    <nav class="nav-links" aria-label="Main navigation">
+      {% for title in ['Home', 'Supported Synths', 'Learn', 'Manual', 'FAQ / Help', 'Develop', 'Download'] %}
+        {% for item in nav.items if item.title == title %}
+          {% set target = item.children[0] if item.children else item %}
+          <a href="{{ target.url | url }}"{% if title == 'Download' %} class="download"{% endif %}{% if item.active %} aria-current="page"{% endif %}>{{ title }}</a>
+        {% endfor %}
+      {% endfor %}
+    </nav>
+    {% include 'partials/source.html' %}
+  </div>
+  <div class="kk-doc-tools">
+    <button class="kk-contents" type="button" aria-label="Open documentation contents" onclick="document.getElementById('__drawer').click()">
+      <span class="md-icon">{% include '.icons/material/menu.svg' %}</span> Contents
+    </button>
+    <label class="md-header__button md-icon kk-search-toggle" for="__search" aria-label="Search documentation">
+      {% include '.icons/material/magnify.svg' %}
+    </label>
+    {% include 'partials/search.html' %}
+  </div>
+</header>

@@ -50,14 +50,14 @@ fs.mkdirSync(output, { recursive: true });
   assert.match(await page.locator('.md-search-result').innerText(), /[Ff]ingerprint/);
   await page.screenshot({ path: path.join(output, 'search-desktop.png') });
   await search.press('Escape');
-  await page.locator('.md-tabs').getByRole('link', { name: 'Home', exact: true }).click();
+  await page.locator('.site-header .nav-links').getByRole('link', { name: 'Home', exact: true }).click();
   assert.equal(page.url(), base);
   for (const width of [390, 320]) {
     await inspect('', `home-${width}`, width);
     await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Learn', exact: true }).click();
     assert.equal(page.url(), new URL('docs/learn/', base).href);
     await inspect('docs/learn/import-a-bank/', `tutorial-${width}`, width);
-    await page.locator('.md-header label[for="__drawer"]').click();
+    await page.getByRole('button', { name: 'Open documentation contents' }).click();
     await page.locator('label.md-nav__title[for="__nav_4"]').click();
     const mobileHome = page.locator('.md-nav--primary').getByRole('link', { name: 'Home', exact: true });
     await mobileHome.click();
