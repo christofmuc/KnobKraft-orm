@@ -152,8 +152,8 @@ def vlq(value):
 EOT = b"\x00\xff\x2f\x00"
 
 
-def smf(*tracks, format=0):
-    return (b"MThd\x00\x00\x00\x06" + format.to_bytes(2, "big")
+def smf(*tracks, smf_format=0):
+    return (b"MThd\x00\x00\x00\x06" + smf_format.to_bytes(2, "big")
             + len(tracks).to_bytes(2, "big") + b"\x00\x60"
             + b"".join(b"MTrk" + len(t).to_bytes(4, "big") + t for t in tracks))
 
@@ -174,11 +174,11 @@ def test_midi_complete_split_and_escaped_sysex(patch):
     assert nord.loadPatchesFromLegacyData(list(smf(event(0xF7, patch[1:]) + EOT))) == []
 
 
-@pytest.mark.parametrize("format", [1, 2])
-def test_midi_multiple_tracks_and_channel_running_status(patch, format):
+@pytest.mark.parametrize("smf_format", [1, 2])
+def test_midi_multiple_tracks_and_channel_running_status(patch, smf_format):
     channel_events = b"\x00\x90\x3c\x40\x00\x3d\x41\x00\xc0\x01\x00\x02\x00\xd0\x30"
     meta = b"\x00\xff\x01\x03abc"
-    data = smf(channel_events + meta + EOT, event(0xF0, patch[1:]) + EOT, format=format)
+    data = smf(channel_events + meta + EOT, event(0xF0, patch[1:]) + EOT, smf_format=smf_format)
     assert nord.loadPatchesFromLegacyData(list(data)) == [patch]
 
 
@@ -201,6 +201,19 @@ def test_malformed_tracks_raise_value_error(track):
         nord.loadPatchesFromLegacyData(list(smf(track)))
 
 
+@pytest.mark.parametrize("status", [0x80, 0x90, 0xF1, 0xF8, 0xFF])
+@pytest.mark.parametrize("same_escape", [False, True])
+def test_malformed_escaped_sysex_never_returns_partial_patches(patch, status, same_escape):
+    malformed = patch.copy()
+    malformed[6] = status
+    if same_escape:
+        track = event(0xF7, patch + malformed)
+    else:
+        track = event(0xF0, patch[1:]) + event(0xF7, malformed)
+    with pytest.raises(ValueError, match="Embedded status byte in MIDI SysEx"):
+        nord.loadPatchesFromLegacyData(list(smf(track + EOT)))
+
+
 def test_bad_headers_and_truncations_never_return_partial_patches(patch):
     good = smf(event(0xF0, patch[1:]) + EOT)
     for length in range(4, len(good)):
@@ -208,9 +221,9 @@ def test_bad_headers_and_truncations_never_return_partial_patches(patch):
             nord.loadPatchesFromLegacyData(list(good[:length]))
     for malformed in [
         good + b"extra", good[:4] + b"\x00\x00\x00\x05" + good[8:],
-        smf(EOT, format=3), smf(), smf(EOT, EOT),
+        smf(EOT, smf_format=3), smf(), smf(EOT, EOT),
         smf(event(0xF0, patch[1:]) + b"\x00\xf0\x7f" + EOT),
-        smf(EOT, b"\x00\x3c\x40" + EOT, format=1),
+        smf(EOT, b"\x00\x3c\x40" + EOT, smf_format=1),
     ]:
         with pytest.raises(ValueError):
             nord.loadPatchesFromLegacyData(list(malformed))
