@@ -44,6 +44,26 @@ def flatten(xss: List[List[Any]]) -> List[Any]:
     return [x for xs in xss for x in xs]
 
 
+def handshake_flag(value) -> bool:
+    if isinstance(value, tuple):
+        return bool(value[0])
+    return bool(value)
+
+
+def bank_finished_reply(value):
+    if isinstance(value, tuple):
+        if len(value) == 3:
+            is_finished, was_successful, next_message = value
+            return bool(is_finished), bool(was_successful), next_message
+        if len(value) == 2:
+            is_finished, next_message = value
+            return bool(is_finished), True, next_message
+        raise Exception("Expected a 2- or 3-element tuple from isBankDumpFinished")
+    if isinstance(value, bool):
+        return value, True, None
+    raise Exception("Expected tuple or bool from isBankDumpFinished")
+
+
 MidiMessageHandler = Callable[[List[int]], None]
 
 
@@ -304,6 +324,13 @@ class Librarian:
             self.on_finished(patches)
 
     @staticmethod
+    def _cancel_download(midi_controller: MidiController):
+        if hasattr(midi_controller, "mark_cancelled"):
+            midi_controller.mark_cancelled()
+        if hasattr(midi_controller, "clear_message_handlers"):
+            midi_controller.clear_message_handlers()
+
+    @staticmethod
     def _send_block(midi_controller: MidiController, messages):
         if messages is None:
             return
@@ -317,16 +344,40 @@ class Librarian:
         """
         Handle the next message incoming during a bank dump download
         """
-        is_part = (
-            adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message)
-        ) or adaptation.isBankDumpFinished([message])
+        is_part_of_bank_dump = False
+        if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
+            part_reply = adaptation.isPartOfBankDump(message)
+            if isinstance(part_reply, tuple):
+                is_part_of_bank_dump, next_message = part_reply
+                if next_message:
+                    self._send_block(midi_controller, next_message)
+            elif isinstance(part_reply, bool):
+                is_part_of_bank_dump = part_reply
+            else:
+                raise Exception("Expected tuple or bool from isPartOfBankDump")
+        else:
+            is_finished, was_successful, next_message = bank_finished_reply(
+                adaptation.isBankDumpFinished([message]))
+            if next_message:
+                self._send_block(midi_controller, next_message)
+            if is_finished and was_successful:
+                # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
+                is_part_of_bank_dump = True
 
-        if is_part:
-            # This is part of the bank dump. Store in self.current_download_message and check if we're done
+        if is_part_of_bank_dump:
             self.current_download_messages.append(message)
-            if adaptation.isBankDumpFinished(self.current_download_messages):
+
+        is_finished, was_successful, next_message = bank_finished_reply(
+            adaptation.isBankDumpFinished(self.current_download_messages))
+        if next_message:
+            self._send_block(midi_controller, next_message)
+
+        if is_finished:
+            if was_successful:
                 patches = self.load_sysex(adaptation, self.current_download_messages)
                 self._finish_download(midi_controller, patches)
+            else:
+                self._cancel_download(midi_controller)
 
     def _start_download_next_program_buffer(self, midi_controller: MidiController, adaptation, channel: int) -> None:
         """
@@ -424,13 +475,14 @@ class Librarian:
 
     def load_sysex(self, adaptation, sysex_messages: List[List[int]]) -> List[List[int]]:
         results: List[List[int]] = []
-        program_dumps_by_id: Dict[str, List[int]] = {}
+        program_dump_counts_by_id: Dict[str, int] = {}
 
         if adaptation_has_program_dump_capability(adaptation):
             current_program_dumps: Deque[List[int]] = deque()
             for message in sysex_messages:
                 # Try to parse and load these messages as program dumps
-                if adaptation_has_implemented(adaptation, "isPartOfSingleProgramDump") and adaptation.isPartOfSingleProgramDump(message) or adaptation.isSingleProgramDump(message):
+                is_part = adaptation_has_implemented(adaptation, "isPartOfSingleProgramDump") and handshake_flag(adaptation.isPartOfSingleProgramDump(message))
+                if is_part or adaptation.isSingleProgramDump(message):
                     current_program_dumps.append(message)
                     while len(current_program_dumps) > self.max_number_messages_per_patch:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per patch is larger than {self.max_number_messages_per_patch}")
@@ -440,7 +492,8 @@ class Librarian:
                         patch = sliding_window
                         results.append(patch)
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            program_dumps_by_id[adaptation.calculateFingerprint(patch)] = patch
+                            patch_id = adaptation.calculateFingerprint(patch.copy())
+                            program_dump_counts_by_id[patch_id] = program_dump_counts_by_id.get(patch_id, 0) + 1
                         current_program_dumps.clear()
 
         if adaptation_has_edit_buffer_capability(adaptation):
@@ -448,7 +501,8 @@ class Librarian:
             patch_no = 0
             for message in sysex_messages:
                 # Try to parse and load these messages as edit buffers
-                if adaptation_has_implemented(adaptation, "isPartOfEditBufferDump") and adaptation.isPartOfEditBufferDump(message) or adaptation.isEditBufferDump(message):
+                is_part = adaptation_has_implemented(adaptation, "isPartOfEditBufferDump") and handshake_flag(adaptation.isPartOfEditBufferDump(message))
+                if is_part or adaptation.isEditBufferDump(message):
                     current_edit_buffers.append(message)
                     if len(current_edit_buffers) > self.max_number_messages_per_patch:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per patch is larger than {self.max_number_messages_per_patch}")
@@ -457,8 +511,8 @@ class Librarian:
                     if adaptation.isEditBufferDump(sliding_window):
                         patch = sliding_window
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            patch_id = adaptation.calculateFingerprint(patch)
-                            if patch_id not in program_dumps_by_id:
+                            patch_id = adaptation.calculateFingerprint(patch.copy())
+                            if patch_id not in program_dump_counts_by_id:
                                 results.append(patch)
                             else:
                                 # Ignore edit buffer, as we already loaded a program dump with the same ID
@@ -468,27 +522,45 @@ class Librarian:
                         current_edit_buffers.clear()
 
         if adaptation_has_bank_dump_capability(adaptation):
+            if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
+                adaptation.isPartOfBankDump([])
             current_bank: Deque[List[int]] = deque()
+            unmatched_program_dump_counts_by_id = program_dump_counts_by_id.copy()
+
+            def append_bank_patches(patches: List[List[int]]) -> None:
+                for patch in patches:
+                    if adaptation_has_implemented(adaptation, "calculateFingerprint"):
+                        patch_id = adaptation.calculateFingerprint(patch.copy())
+                        unmatched_count = unmatched_program_dump_counts_by_id.get(patch_id, 0)
+                        if unmatched_count > 0:
+                            unmatched_program_dump_counts_by_id[patch_id] = unmatched_count - 1
+                            continue
+                    results.append(patch)
+
             for message in sysex_messages:
                 # Try to parse and load these messages as a bank dump
-                if adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message) or adaptation.isBankDumpFinished([message]):
+                is_part = adaptation_has_implemented(adaptation, "isPartOfBankDump") and handshake_flag(adaptation.isPartOfBankDump(message))
+                single_finished, single_successful, _ = bank_finished_reply(adaptation.isBankDumpFinished([message]))
+                if is_part or (single_finished and single_successful):
                     current_bank.append(message)
                     if len(current_bank) > self.max_number_messages_per_bank:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per bank is larger than {self.max_number_messages_per_bank}")
                         current_bank.popleft()
                     sliding_window: List[List[int]] = list(current_bank)
-                    if adaptation.isBankDumpFinished(sliding_window):
+                    is_finished, was_successful, _ = bank_finished_reply(
+                        adaptation.isBankDumpFinished(sliding_window))
+                    if is_finished and was_successful:
                         if adaptation_has_implemented(adaptation, "extractPatchesFromAllBankMessages"):
                             more_patches = adaptation.extractPatchesFromAllBankMessages(sliding_window)
                             logging.info(f"Loaded bank dump with {len(more_patches)} patches")
-                            results.extend(more_patches)
+                            append_bank_patches(more_patches)
                             current_bank.clear()
                         else:
                             more_patches = adaptation.extractPatchesFromBank(sliding_window[0])
                             if more_patches:
                                 logging.info(f"Loaded bank dump from single message with {len(more_patches)} patches")
                                 split_patches = knobkraft.splitSysex(more_patches)
-                                results.extend(split_patches)
+                                append_bank_patches(split_patches)
                             current_bank.clear()
 
 

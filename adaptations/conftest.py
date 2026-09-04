@@ -9,6 +9,11 @@ import os
 import sys
 
 
+# Pytest imports adaptations without the C++ application, so advertise the API
+# level provided by the current GenericAdaptation host bridge.
+setattr(sys, "_knobkraft_adaptation_api_version", 2)
+
+
 def load_adaptation(adaptation_file):
     # Dynamically load the adaptation and create the generic test suite all adaptations must undergo
     spec = importlib.util.spec_from_file_location(adaptation_file, adaptation_file)
