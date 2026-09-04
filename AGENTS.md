@@ -109,3 +109,20 @@ Record pending builds, unresolved reviews and hardware gaps. Inspect packaged ar
 5. Check that the appcast references the correct installer and version, its signature is present, and its release-notes link renders correctly. Never expose signing keys or tokens in logs or notes.
 6. If a publishing job fails, inspect the release and appcast before retrying. Do not delete/recreate assets, tags, releases or appcast entries without agreement on the recovery action. If an existing release body is stale, update it explicitly after approval rather than assuming the creation script overwrites it.
 7. Notify relevant reporters/contributors of the available release when requested. Close only issues actually resolved; leave partial fixes and hardware-verification requests clearly tracked. Finish with the release link and a truthful summary of validation and remaining limitations.
+
+## 7. Finish the release-ready issue lifecycle
+
+The GitHub label is exactly `Ready for release`, on both issues and pull requests. It marks work in flight for a forthcoming release, not an archive of shipped changes.
+
+1. Wait until the release's intended assets, release notes and appcast are published and verified. A successful build alone is not enough. During 2.10.0, an Ubuntu asset upload created an empty release before Windows ran; `make_github_release.py` then skipped creation and left the body empty. After approval, `gh release edit <version> --notes-file release_notes/<version>.md` repaired only the description. Verify the resulting text against the tagged notes; never rerun `write_appcast.py` just to repair the GitHub description.
+2. When post-release housekeeping is authorized, enumerate labeled items in **all states**, including merged/closed PRs and closed issues, and include affected issues from the release ledger even if unlabeled. Use pagination; GitHub's REST issues endpoint includes PRs:
+
+   ```text
+   gh api --method GET repos/christofmuc/KnobKraft-orm/issues -f state=all -f "labels=Ready for release" -f per_page=100 --paginate
+   ```
+
+3. Match each item to a verified published version. Read release notes and issue discussions; check linked fix/merge commits against the release tag with `git merge-base --is-ancestor`. Check equivalent code for cherry-picks or squashes. Neither age, closure, nor a PR's merge alone establishes that a fix shipped. Distinguish a resolved subproblem from a broader request or later follow-up.
+4. Re-read the current issue and comments before writing. Post one short release update with the release link, accurate scope, contributor/reporter thanks, and any migration or hardware caveats. Avoid duplicate comments on retries. Close fully resolved open issues as completed; leave partially resolved or genuinely unverified reports open and explain what remains. Do not close every issue merely mentioned in release notes.
+5. Remove **only** `Ready for release` from verified shipped PRs and resolved shipped issues, preserving all other labels and PR state. Keep unresolved/ambiguous items labeled until their status is settled. Do not delete the label definition. Already closed historical items normally need only label removal, not redundant notification comments or reopening/reclosing.
+6. For a historical sweep, keep an audit ledger outside the published release notes: item number/type, a verified containing release, evidence, action, and exceptions. Re-enumerate labeled items after cleanup, verify closures and comments, and report counts plus the items left in flight. Treat the sweep as a one-time operation; future releases should clear their own shipped items immediately after verification.
+7. Workflow-documentation follow-ups after tagging must not move the published tag or silently change the approved release commit. Commit them separately and push only with authorization.
