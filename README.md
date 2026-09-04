@@ -79,6 +79,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | U-20/U-220 | alpha | adaptation | 100% AI generated. Thanks to @Casuallynoted for testing! |
 | Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
+| Sequential | Fourm | beta | adaptation | Real dump tested; hardware verification pending |
 | Sequential| Pro 3 | works | adaptation | |
 | Sequential | Prophet-5 Rev 4 | works | adaptation | |
 | Sequential | Prophet-6 | beta | adaptation | |

@@ -31,7 +31,7 @@ set(adaptation_files
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
 	"Roland JX-8P.py" "Roland_JV80.py" "Roland_JV1080.py" "Roland_XV3080.py" "RolandD50.py" "Roland_MKS50.py" "Roland_MKS70V4.py" "Roland_TD-07.py" "Roland_U20_U220.py" "Roland_JD_Xi.py" "Roland_SE02.py"
-	"Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" 
+	"Sequential_Fourm.py" "Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py"
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py" "Waldorf_M.py" "Waldorf_Pulse.py"
 	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "Yamaha_FS1R.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha_TX81Z.py" "Yamaha-YC-Series.py"
@@ -50,6 +50,7 @@ set(adaptation_files_test_shipped
     "test_Roland_MKS50.py"
     "test_Roland_MKS70_V4.py"
     "test_Roland_XV3080.py"
+    "test_Sequential_Fourm.py"
     "test_YamahaRefaceDX.py"
 )
 
