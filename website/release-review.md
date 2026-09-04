@@ -1,6 +1,6 @@
 # First website release review
 
-Prepared locally for existing PR 519, `feature/website`. Nothing in this task authorizes a push, merge, deployment or GitHub message.
+Prepared for existing PR 519, `feature/website`. The owner approved publication to GitHub Pages on 4 September 2026 after reviewing the local site. The earlier preparation notes below record the original local-only review.
 
 ## Inputs and source reconciliation
 
@@ -38,3 +38,7 @@ Before applying, fetch and recheck both remote heads. If `feature/website` is st
 5. Observe the first authorised master deployment and environment checks. The existing Pages Actions build mode was verified read-only and the workflow was corrected to match; its remote run is deliberately not triggered by this preparation task.
 
 The site is reviewable with these explicit boundaries. No new video, transcript, device test result or release has been invented.
+
+## Publication refresh — 4 September 2026
+
+Before publication, integrated master `5671813d`, preserving the Nord Lead follow-up and its model/memory-card limitations. Rechecked published release 2.10.0 and all four Windows, macOS, Linux and Ubuntu24 assets. Confirmed the six previously unreleased adaptations are selected in the 2.10.0 packaging manifest, refreshed downloads and availability labels, and preserved alpha/beta and hardware-verification caveats. GitHub Pages remains configured for Actions; its manually disabled workflow needs enabling for this authorized publication.

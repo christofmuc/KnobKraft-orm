@@ -1,4 +1,4 @@
-const state = { synths: [], query: '', status: 'all' };
+const state = { synths: [], query: '', status: 'all', releaseChecked: '' };
 const labels = { all: 'All', works: 'Works', beta: 'Beta', alpha: 'Alpha', in_progress: 'In progress' };
 const body = document.getElementById('synthTableBody');
 const count = document.getElementById('synthCountLabel');
@@ -13,7 +13,7 @@ function render() {
     }
     tr.lastElementChild.className = `status ${row.status}`;
     tr.children[1].dataset.manufacturer = row.manufacturer;
-    if (row.availability !== '2.9.0') {
+    if (row.availability !== state.releaseChecked) {
       const note = document.createElement('small'); note.textContent = row.availability; tr.children[1].append(note);
     }
     body.append(tr);
@@ -33,6 +33,7 @@ async function load() {
     const data = await response.json();
     if (!Array.isArray(data.synths) || !data.synths.length) throw new Error('Empty compatibility list');
     state.synths = data.synths;
+    state.releaseChecked = data.release_checked;
     for (const [status, label] of Object.entries(labels)) {
       const button = document.createElement('button'); button.type = 'button'; button.dataset.status = status;
       const total = state.synths.filter(row => status === 'all' || row.status === status).length;

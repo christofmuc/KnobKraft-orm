@@ -2,15 +2,15 @@
 
 KnobKraft Orm is free and open source. Get official builds from [GitHub Releases](https://github.com/christofmuc/KnobKraft-orm/releases/latest).
 
-**Latest release checked: 2.9.0, published 19 April 2026.** Check the release notes and assets for the build you install; newer source may include synth support not yet in the published installers.
+**Latest release checked: 2.10.0, published 4 September 2026.** Check the release notes and assets for the build you install; newer source may include synth support not yet in the published installers.
 
-| Platform | Release 2.9.0 download | Install |
+| Platform | Release 2.10.0 download | Install |
 | --- | --- | --- |
-| Windows | [Windows installer (.exe)](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/knobkraft_orm_setup_2.9.0.exe) | Run the installer, then launch KnobKraft Orm. |
-| macOS | [macOS disk image (.dmg)](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/KnobKraft_Orm-2.9.0-Darwin.dmg) | Open the image and drag the app into Applications. The DMG includes Python. |
-| Linux | [Linux archive](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/KnobKraft_Orm-2.9.0-Linux.tar.gz) · [Ubuntu 24 archive](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/KnobKraft_Orm-2.9.0-Ubuntu24.tar.gz) | Extract the matching archive. Linux binaries depend on distribution libraries; use the release notes or build for your distribution if they do not run. |
+| Windows | [Windows installer (.exe)](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.10.0/knobkraft_orm_setup_2.10.0.exe) | Run the installer, then launch KnobKraft Orm. |
+| macOS | [macOS disk image (.dmg)](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.10.0/KnobKraft_Orm-2.10.0-Darwin.dmg) | Open the image and drag the app into Applications. The DMG includes Python. |
+| Linux | [Linux archive](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.10.0/KnobKraft_Orm-2.10.0-Linux.tar.gz) · [Ubuntu 24 archive](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.10.0/KnobKraft_Orm-2.10.0-Ubuntu24.tar.gz) | Extract the matching archive. Linux binaries depend on distribution libraries; use the release notes or build for your distribution if they do not run. |
 
-[Read the 2.9.0 release notes](https://github.com/christofmuc/KnobKraft-orm/releases/tag/2.9.0). For other platforms and toolchains, see [Build from source](build.md).
+[Read the 2.10.0 release notes](https://github.com/christofmuc/KnobKraft-orm/releases/tag/2.10.0). For other platforms and toolchains, see [Build from source](build.md).
 
 ## First launch
 

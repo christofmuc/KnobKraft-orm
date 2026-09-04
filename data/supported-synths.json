@@ -1,6 +1,6 @@
 {
-  "source_revision": "a7c5cb9ca9d7a747805c853e344217a42e655325",
-  "release_checked": "2.9.0",
+  "source_revision": "5671813d05fe2ca2a15103efd2ff6c258c3404f3",
+  "release_checked": "2.10.0",
   "count": 92,
   "synths": [
     {
@@ -10,7 +10,7 @@
       "statusLabel": "Works",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Access",
@@ -19,7 +19,7 @@
       "statusLabel": "Beta",
       "type": "native",
       "kudos": "Thanks to guavadude@gs",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Akai",
@@ -28,7 +28,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to O.S.R.C. on YT for the nudge",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Alesis",
@@ -37,7 +37,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @markusschloesser",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Behringer",
@@ -46,7 +46,7 @@
       "statusLabel": "In Progress",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Behringer",
@@ -55,7 +55,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Behringer",
@@ -64,7 +64,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Thanks to @Andy2No",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Behringer",
@@ -91,7 +91,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Contributed by @Casuallynoted; hardware validation needed",
-      "availability": "After 2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Behringer",
@@ -100,7 +100,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @willxy!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Black Corporation",
@@ -109,7 +109,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to @ffont and @markusschlosser",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Casio",
@@ -118,7 +118,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Contributed by @Casuallynoted; hardware validation needed",
-      "availability": "After 2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Clavia",
@@ -127,7 +127,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Four documented live-request banks (availability depends on model and installed memory card); ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+",
-      "availability": "After 2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -136,7 +136,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -145,7 +145,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -154,7 +154,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -163,7 +163,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -172,7 +172,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -181,7 +181,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI",
@@ -190,7 +190,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI/Sequential",
@@ -199,7 +199,7 @@
       "statusLabel": "Works",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI/Sequential",
@@ -208,7 +208,7 @@
       "statusLabel": "Works",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "DSI/Sequential",
@@ -217,7 +217,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @Andy2No",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Elektron",
@@ -226,7 +226,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to @RadekPilich for the request!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Elektron",
@@ -235,7 +235,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "This needs more work, owners please provide feedback so we can complete it.",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "E-mu",
@@ -244,7 +244,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to Kid Who for testing!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Ensoniq",
@@ -253,7 +253,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Contributed by @Mostelin!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Ensoniq",
@@ -262,7 +262,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Contributed by @Casuallynoted; alternate SysEx header needs hardware validation",
-      "availability": "After 2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Ensoniq",
@@ -271,7 +271,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @dancingdog for testing!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Groove Synthesis",
@@ -280,7 +280,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "John Bowen",
@@ -289,7 +289,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Contributed by @conversy!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Kawai",
@@ -298,7 +298,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Kawai",
@@ -307,7 +307,7 @@
       "statusLabel": "Works",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Kawai",
@@ -316,7 +316,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Kawai",
@@ -325,7 +325,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Heroic effort by @markusschlosser! Most complex!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -334,7 +334,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to Philippe!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -343,7 +343,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -352,7 +352,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -361,7 +361,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to Jentusalentu at YT for giving the nudge",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -370,7 +370,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @ilantz!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -379,7 +379,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @andy2no",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -388,7 +388,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @windo",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Korg",
@@ -397,7 +397,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "100% AI generated",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Line 6",
@@ -406,7 +406,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @milnak!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Moog",
@@ -415,7 +415,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @troach242 for the nudge and test!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Novation",
@@ -424,7 +424,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to @thechildofroth",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Novation",
@@ -433,7 +433,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @cockroach!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Novation",
@@ -442,7 +442,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Novation",
@@ -451,7 +451,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @nezetic",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Oberheim",
@@ -460,7 +460,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @tsantilis",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Oberheim",
@@ -469,7 +469,7 @@
       "statusLabel": "Works",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Oberheim",
@@ -478,7 +478,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Oberheim",
@@ -487,7 +487,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Oberheim",
@@ -496,7 +496,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Oberheim",
@@ -505,7 +505,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "help needed!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Pioneer",
@@ -514,7 +514,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @zzort!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -523,7 +523,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -532,7 +532,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "contributed by @mslinn! Thank you!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -541,7 +541,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Shout out to @summersetter for testing!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -550,7 +550,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "100% AI generated",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -559,7 +559,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -568,7 +568,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -577,7 +577,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -586,7 +586,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to @markusschloesser!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -595,7 +595,7 @@
       "statusLabel": "Works",
       "type": "native",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -604,7 +604,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "DT1 dumps and USB backup PRM import (MammaScan converter mapping). Thanks to @MammaScan!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -613,7 +613,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "100% AI generated. Thanks to @Casuallynoted for testing!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -622,7 +622,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Roland",
@@ -631,7 +631,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -640,7 +640,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Real dump tested; hardware verification pending",
-      "availability": "After 2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -649,7 +649,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "User/factory bank metadata and transfer pacing thanks to @RadekPilich",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -658,7 +658,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -667,7 +667,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -676,7 +676,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -685,7 +685,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Sequential",
@@ -694,7 +694,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "After 2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Studiologic",
@@ -703,7 +703,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Waldorf",
@@ -712,7 +712,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Waldorf",
@@ -721,7 +721,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @RadekPilich for testing!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Waldorf",
@@ -730,7 +730,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to Gerome S!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Waldorf",
@@ -739,7 +739,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Thanks to Edisyn!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Waldorf",
@@ -748,7 +748,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @markusschlosser and chatGPT!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -757,7 +757,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -766,7 +766,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @AgtSlick for testing and the fixes!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -775,7 +775,7 @@
       "statusLabel": "Alpha",
       "type": "adaptation",
       "kudos": "Thanks to @markusschlosser for testing!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -784,7 +784,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -793,7 +793,7 @@
       "statusLabel": "Beta",
       "type": "adaptation",
       "kudos": "Thanks to @milnak!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -802,7 +802,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to Gerome S!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -811,7 +811,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Contributed by @summersetter!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Yamaha",
@@ -820,7 +820,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @milnak!",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     },
     {
       "manufacturer": "Zoom",
@@ -829,7 +829,7 @@
       "statusLabel": "Works",
       "type": "adaptation",
       "kudos": "Thanks to @nezetic",
-      "availability": "2.9.0"
+      "availability": "2.10.0"
     }
   ]
 }

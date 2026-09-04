@@ -94,7 +94,7 @@ def load_synths() -> list[dict[str, str]]:
         synth_type = normalize_type(row.get("type", ""))
 
         availability = str(row.get("availability", "")).strip()
-        if availability not in ("2.9.0", "After 2.9.0", "Not in regular builds"):
+        if availability not in (str(raw["release_checked"]), f"After {raw["release_checked"]}", "Not in regular builds"):
             raise ValueError(f"Invalid release availability in row #{index}: {availability!r}")
         if any(r["manufacturer"] == manufacturer and r["synth"] == synth for r in result):
             raise ValueError(f"Duplicate synth row: {manufacturer} {synth}")
