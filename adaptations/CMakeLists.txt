@@ -25,7 +25,7 @@ set(adaptation_files
         "Line_6_POD_Series.py" "Korg_microKORG.py"
 	"Matrix 6.py"
         "Moog_Voyager.py"
-	"Novation_Summit.py" "Novation_UltraNova.py" "Novation_AStation.py" "Novation_Bass_Station_II.py"
+	"Novation_Summit.py" "Novation_Supernova.py" "Novation_UltraNova.py" "Novation_AStation.py" "Novation_Bass_Station_II.py"
 	"OberheimOB8.py" "OberheimOBX.py" "OberheimOBXa.py" "OberheimOBX8.py" "Oberheim_Teo5.py"
 	"PioneerToraiz-AS1.py" 
 	"QuasimidiCyber6.py" 
