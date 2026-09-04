@@ -1,10 +1,37 @@
 # Roland SE-02 adaptation for KnobKraft Orm
 # Stable v1 workflow: audition via Edit Buffer (DT1). Permanent storage via manual WRITE on the SE-02.
 
+# PRM conversion derived from https://github.com/MammaScan/se02-prm2syx
+# bin/prm2syx v2.0.0, commit 6b3d5109d675a1cb01c9d2bf75bc2a3d5ddf0a18.
+# The following MIT notice covers the derived mapping, template and conversion.
+# MIT License
+#
+# Copyright (c) 2026 MammaScan
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 import hashlib
+from pathlib import Path
+import re
 
 # -----------------------------
 # Constants (SE-02 / Roland DT1)
@@ -16,6 +43,73 @@ CMD_DT1 = 0x12  # Data Transfer 1 (DT1)
 # SE-02 edit buffer dump blocks (DT1 address starts with 0x05)
 EDITBUF_ADDR_PREFIX = (0x05,)
 EDITBUF_BLOCK_OFFSETS = ((0x00, 0x00), (0x00, 0x40), (0x01, 0x00), (0x01, 0x40))
+
+# Reverse-engineered PRM mapping and template from prm2syx (see MIT notice above).
+# Unmapped bytes retain template values; this is not a documented Roland format.
+PRM_TEMPLATE_PAYLOAD = bytes.fromhex(
+    "02090040285f0000000000000101000000000000000000000000000000000000"
+    "0f00000000000000000000000000000000000000000000000000000000000000"
+    "00000000000000000000000000a2f65600003c00008a2652010000e400940001"
+    "000200000000000100000200000000000e24160000000000"
+)
+PRM_PARAMETER_INDICES = {
+    "COM_AFT_SENS1": 2,
+    "COM_AFT_SENS2": 3,
+    "COM_BENDRANGE": 0,
+    "COM_DYNAMICS": 4,
+    "COM_MOD_SENS": 1,
+    "COM_TRNS_SW": 19,
+    "COM_VOLUME": 5,
+    "CTRL_GLIDE": 20,
+    "CTRL_GLIDE_TYPE": 21,
+    "CTRL_WHL": 22,
+    "DLY_AMOUNT": 102,
+    "DLY_REGEN": 101,
+    "DLY_TIME": 100,
+    "FLT_ATTACK1": 56,
+    "FLT_ATTACK2": 57,
+    "FLT_CONTOUR": 65,
+    "FLT_CUTOFF": 55,
+    "FLT_DECAY1": 59,
+    "FLT_DECAY2": 60,
+    "FLT_EMPHASIS": 58,
+    "FLT_GATE": 69,
+    "FLT_KEY13": 61,
+    "FLT_KEY23": 62,
+    "FLT_MTRIG": 66,
+    "FLT_NORM": 67,
+    "FLT_REL": 68,
+    "FLT_SUSTAIN1": 63,
+    "FLT_SUSTAIN2": 64,
+    "LFO_FILTER": 78,
+    "LFO_FLT": 80,
+    "LFO_MODE": 81,
+    "LFO_OSC": 76,
+    "LFO_OSC_SEL": 79,
+    "LFO_RATE": 75,
+    "LFO_SYNC": 82,
+    "LFO_WAVE": 77,
+    "MIX_FEEDBACK": 50,
+    "MIX_NOISE": 49,
+    "MIX_OSC1": 51,
+    "MIX_OSC2": 52,
+    "MIX_OSC3": 53,
+    "OSC_ENV1": 41,
+    "OSC_FINE1": 32,
+    "OSC_FINE2": 33,
+    "OSC_KYBD": 42,
+    "OSC_RANGE1": 29,
+    "OSC_RANGE2": 30,
+    "OSC_RANGE3": 31,
+    "OSC_SYNC": 40,
+    "OSC_WAVEFORM1": 37,
+    "OSC_WAVEFORM2": 38,
+    "OSC_WAVEFORM3": 39,
+    "OSC_XMOD": 43,
+    "XMOD_O2FLT": 46,
+    "XMOD_O3PW": 48,
+    "XMOD_O3TO": 47,
+}
 
 # Optional tracing (disabled by default in public release)
 TRACE_ENABLED = False
@@ -42,9 +136,13 @@ def name() -> str:
 def setupHelp() -> str:
     return (
         "On the SE-02, enable SysEx receive/transmit in the system MIDI settings. "
-        "This adaptation supports importing SE-02 DT1 editor dumps and auditioning "
+        "This adaptation supports importing SE-02 DT1 editor dumps and USB backup "
+        "PRM files, and auditioning "
         "patches by sending them to the edit buffer. Store a sound permanently with "
-        "WRITE on the SE-02 after auditioning."
+        "WRITE on the SE-02 after auditioning. "
+        "PRM import uses MammaScan's reverse-engineered parameter mapping and default "
+        "template for missing or unmapped bytes. COM_OCT, COM_TRNS, COM_PWM_DEPTH, "
+        "and COM_PWM_RATE are not converted."
     )
 
 
@@ -293,6 +391,68 @@ def channelIfValidDeviceResponse(msg):
 # -----------------------------
 # Import path: Orm reads files → calls these
 # -----------------------------
+def legacyLoadSupportedExtensions() -> List[str]:
+    return [".prm"]
+
+
+def loadPatchesFromLegacyData(data: List[int], filename: str = "") -> List[List[int]]:
+    """Convert one USB backup PRM to one patch containing four DT1 messages.
+
+    Mapping, template and byte/nibble conversion follow MammaScan's prm2syx v2.
+    Missing/unmapped parameters retain the upstream template values. The four
+    performance controls omitted upstream remain omitted here too.
+    """
+    if filename and not filename.lower().endswith(".prm"):
+        return []
+    try:
+        text = bytes(data).decode("utf-8-sig")
+    except (UnicodeDecodeError, ValueError):
+        return []
+
+    parameters = {}
+    for line in text.splitlines():
+        line = line.strip()
+        match = re.match(r"^([A-Za-z0-9_]+)\((-?\d+)\);", line)
+        if match:
+            parameters[match[1]] = int(match[2])
+        elif re.match(r"[A-Za-z0-9_]+", line):
+            key = re.match(r"[A-Za-z0-9_]+", line)[0]
+            if key in PRM_PARAMETER_INDICES:
+                # Do not silently replace a malformed sound parameter with a default.
+                return []
+    if not parameters.keys() & PRM_PARAMETER_INDICES.keys():
+        return []
+
+    payload = bytearray(PRM_TEMPLATE_PAYLOAD)
+    for key, index in PRM_PARAMETER_INDICES.items():
+        if key in parameters:
+            payload[index] = parameters[key] & 0xFF
+
+    # Preserve the backup's display slot using the adaptation's existing 05 bb
+    # convention. convertToEditBuffer subsequently targets 05 00 for auditioning.
+    # Unlike the CLI's 06 bb output, this is recognized by the existing import path.
+    slot = _prm_slot_from_filename(filename)
+    patch: List[int] = []
+    offset = 0
+    for (a2, a3), length in zip(EDITBUF_BLOCK_OFFSETS, (32, 32, 32, 24)):
+        block = payload[offset:offset + length]
+        nibbles = [n for value in block for n in (value >> 4, value & 0x0F)]
+        patch.extend(_build_dt1(0x10, (0x05, slot, a2, a3), nibbles))
+        offset += length
+    return [patch]
+
+
+def _prm_slot_from_filename(filename: str) -> int:
+    stem = Path(filename.replace("\\", "/")).stem
+    for pattern in (r"\bSE02[_\-\s]*PATCH[_\-\s]*(\d{1,3})\b",
+                    r"\bPATCH[_\-\s]*(\d{1,3})\b", r"^\s*(\d{1,3})\s*$"):
+        match = re.search(pattern, stem, re.IGNORECASE)
+        if match:
+            slot = int(match[1])
+            return slot - 1 if 1 <= slot <= 128 else 0
+    return 0
+
+
 def isOwnSysex(message) -> bool:
     """
     Helps Orm decide which adaptation matches incoming SysEx.
@@ -724,6 +884,17 @@ def convertToProgramDump(channel, message, program_number):
 def make_test_data():
     import testing
 
+    fixture_dir = Path(__file__).parent / "testData" / "Roland_SE02"
+
+    def inspect_prm_patch(adaptation, patches):
+        assert adaptation.isEditBufferDump(patches[0])
+        assert len(patches[0]) == 296
+
+    def prm_edit_buffers(_test_data):
+        patch = loadPatchesFromLegacyData(list((fixture_dir / "PATCH_65.PRM").read_bytes()))[0]
+        yield testing.ProgramTestData(message=patch, name="SE-02 (imported)", target_no=23)
+        yield from edit_buffers(_test_data)
+
     def make_patch(slot: int, name_text: str) -> List[int]:
         dev = 0x10
         name_bytes = [0x00, 0x00] + [ord(c) for c in name_text] + [0x00]
@@ -753,7 +924,13 @@ def make_test_data():
 
     return testing.TestData(
         program_generator=programs,
-        edit_buffer_generator=edit_buffers,
+        edit_buffer_generator=prm_edit_buffers,
+        legacy_loader_cases=[testing.LegacyLoaderTestData(
+            file_extension=".prm",
+            file_content=list((fixture_dir / "PATCH_65.PRM").read_bytes()),
+            expected_patch_count=1,
+            patch_inspector=inspect_prm_patch,
+        )],
         device_detect_call=[0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7],
         device_detect_reply=([0xF0, 0x7E, 0x10, 0x06, 0x02, 0x41, MODEL_ID, 0x00, 0x00, 0x00, 0xF7], 0),
         friendly_bank_name=(0, "USER"),
