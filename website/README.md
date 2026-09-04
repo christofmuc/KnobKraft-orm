@@ -24,7 +24,7 @@ Production scripts, video plans, raw API responses, task records and internal pr
 
 `docs/data/supported-synths.yml` is authoritative after this reconciliation. Status labels were preserved from current master README `a7c5cb9ca9d7a747805c853e344217a42e655325`, not copied from the stale legacy `docs/README.md`. The 92 rows are named synth/family entries, not a count of verified devices or guaranteed workflows. Status is not inferred from file existence or a passing unit test.
 
-The release column was checked against tag `2.9.0` and `adaptations/CMakeLists.txt`. UB-Xa, CZ-101/1000, Nord Lead family, Mirage SoundProcess, Fourm and the newly packaged Trigon-6 are marked **After 2.9.0**. In-progress entries are marked outside regular builds. Newer MKS-50, SE-02 PRM and Pro 3 functionality is called out above the table. Teo-5 and Quasimidi Cyber-6 are packaged but absent from the maintained master matrix; their support status needs maintainer reconciliation before adding a new status claim here.
+The release column was checked against tag `2.10.0` and `adaptations/CMakeLists.txt`. UB-Xa, CZ-101/1000, Nord Lead family, Mirage SoundProcess, Fourm and Trigon-6 are included in that release; their maturity and hardware-verification limits still apply. The MKS-50 Python replacement, SE-02 PRM import and Pro 3 bank/pacing updates are also included. Entries not packaged remain marked **Not in regular builds**. Teo-5 and Quasimidi Cyber-6 are packaged but absent from the maintained master matrix; their support status needs maintainer reconciliation before adding a new status claim here.
 
 After editing the YAML:
 
@@ -34,6 +34,16 @@ python scripts/generate_supported_synths.py --check
 ```
 
 Commit all three deterministic outputs: README table, supported-synths manual page, and `data/supported-synths.json`. Builds use `--check` and fail on stale output. No timestamp changes are generated on repeat runs. Update the release column and download page when the next release is published; do not label merged source as released merely because the build succeeds.
+
+## Refresh the website after an app release
+
+Complete this step after a new stable release and its assets are public, as part of the release procedure in `AGENTS.md`. Do not advertise a draft, prerelease or incomplete asset set as the latest stable release.
+
+1. Query the published release and its assets with `gh release view <version> --repo christofmuc/KnobKraft-orm --json tagName,publishedAt,isDraft,isPrerelease,assets`. Confirm the intended version is also returned by `gh release view --repo christofmuc/KnobKraft-orm --json tagName`.
+2. Update `docs/download.md`: checked version/date, platform table, all four asset URLs and release-notes link. Copy exact published asset URLs; filenames include the version, so changing only the URL tag or using `releases/latest/download/` with an old filename will break downloads. Keep the general `releases/latest` link as a fallback.
+3. Update the checked-release wording in `index.html` and `docs/supported-synths.md`. Review `docs/data/supported-synths.yml` against the released tag and packaging manifest; update `release_checked`, `source_revision` and each row's availability together. Preserve alpha/beta status and hardware caveats; leave source-only additions labelled `After <version>`. Historical tutorial/video versions describe their original basis and must not be replaced mechanically.
+4. Run `python scripts/generate_supported_synths.py`, then `python scripts/build_website.py` and `git diff --check`. Commit the sources and generated `README.md`, `docs/supported-synths.md` and `data/supported-synths.json` together. The local checker checks local links; the GitHub asset query and live checks cover external downloads.
+5. Publish the website update through the authorized master workflow. Observe the **Website and Docs** workflow for the exact commit through successful deployment, then check the live homepage, download page, release-notes link and all four asset targets. Updating the app release alone does not refresh the website. Do not move the release tag or regenerate the appcast just to update website links.
 
 ## Tutorials and media
 
