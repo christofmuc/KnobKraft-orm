@@ -55,7 +55,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | MKS-80 | works | native | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
 | Sequential | Fourm | beta | adaptation | Real dump tested; hardware verification pending |
-| Sequential| Pro 3 | works | adaptation | |
+| Sequential | Pro 3 | works | adaptation | User/factory bank metadata and transfer pacing thanks to @RadekPilich |
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
