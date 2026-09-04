@@ -138,6 +138,10 @@ namespace knobkraft {
 
 	std::vector<juce::MidiMessage> GenericProgramDumpCapability::patchToProgramDumpSysex(std::shared_ptr<midikraft::DataFile> patch, MidiProgramNumber programNumber) const
 	{
+		if (!patch) {
+			spdlog::warn("Cannot convert an empty patch to a program dump");
+			return {};
+		}
 		py::gil_scoped_acquire acquire;
 		try
 		{

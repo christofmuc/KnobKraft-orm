@@ -459,11 +459,16 @@ void PatchView::downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
 void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
 {
 	if (!bankToSend) return;
+	if (bankToSend->hasEmptySlots()) {
+		AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::WarningIcon, "Bank has empty slots",
+			"Fill all slots with patches before sending this bank to the synth. No patches have been sent.");
+		return;
+	}
 
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToSend->synth());
 	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToSend->synth());
 	if (location) {
-		if (location->channel().isValid() && device->wasDetected()) {
+		if (location->channel().isValid() && device && device->wasDetected()) {
 			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Sending bank to Synth");
 			progressWindow->setMessage("Starting send");
 			if (bankToSend->synth() /*&& device->wasDetected()*/) {
