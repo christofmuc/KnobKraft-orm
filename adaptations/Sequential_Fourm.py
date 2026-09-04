@@ -5,7 +5,7 @@
 #
 import sys
 from pathlib import Path
-from typing import List
+from typing import Iterator
 
 import sequential
 import testing
@@ -14,18 +14,19 @@ this_module = sys.modules[__name__]
 SAMPLE_FILE = Path(__file__).resolve().parent / "testData" / "Sequential_Fourm" / "a_new_legend.syx"
 
 
-sequential.GenericSequential(
+fourm = sequential.GenericSequential(
     name="Sequential Fourm",
     device_id=0x3B,
     banks=4,
     patches_per_bank=128,
     name_len=19,
     name_position=89,
-).install(this_module)
+)
+fourm.install(this_module)
 
 
 def make_test_data():
-    def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
+    def programs(data: testing.TestData) -> Iterator[testing.ProgramTestData]:
         yield testing.ProgramTestData(
             message=data.all_messages[0],
             name="A New Legend",
@@ -33,9 +34,9 @@ def make_test_data():
             rename_name="Fourm Rename Test",
         )
 
-    def edit_buffers(data: testing.TestData) -> List[testing.ProgramTestData]:
+    def edit_buffers(data: testing.TestData) -> Iterator[testing.ProgramTestData]:
         yield testing.ProgramTestData(
-            message=convertToEditBuffer(0, data.all_messages[0]),
+            message=fourm.convertToEditBuffer(0, data.all_messages[0]),
             name="A New Legend",
             rename_name="Fourm Rename Test",
         )
