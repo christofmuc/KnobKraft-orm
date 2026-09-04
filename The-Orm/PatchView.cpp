@@ -23,6 +23,7 @@
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
 #include "StoredPatchNameCapability.h"
+#include "CustomProgramChangeCapability.h"
 #include "ScriptedQuery.h"
 #include "LibrarianProgressWindow.h"
 
@@ -458,11 +459,16 @@ void PatchView::downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
 void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
 {
 	if (!bankToSend) return;
+	if (bankToSend->hasEmptySlots()) {
+		AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::WarningIcon, "Bank has empty slots",
+			"Fill all slots with patches before sending this bank to the synth. No patches have been sent.");
+		return;
+	}
 
 	auto device = std::dynamic_pointer_cast<midikraft::DiscoverableDevice>(bankToSend->synth());
 	auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(bankToSend->synth());
 	if (location) {
-		if (location->channel().isValid() && device->wasDetected()) {
+		if (location->channel().isValid() && device && device->wasDetected()) {
 			auto progressWindow = std::make_shared<LibrarianProgressWindow>(librarian_, "Sending bank to Synth");
 			progressWindow->setMessage("Starting send");
 			if (bankToSend->synth() /*&& device->wasDetected()*/) {
@@ -1038,6 +1044,29 @@ std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgra
 		bankNumberToSelect = program.bank();
 	}
 
+	auto selectProgram = program;
+	if (!selectProgram.isBankKnown() && bankNumberToSelect.isValid()) {
+		selectProgram = MidiProgramNumber::fromZeroBaseWithBank(bankNumberToSelect, program.toZeroBasedDiscardingBank());
+	}
+
+	if (auto customProgramChange = midikraft::Capability::hasCapability<midikraft::CustomProgramChangeCapability>(patch.smartSynth())) {
+		auto customMessages = customProgramChange->createCustomProgramChangeMessages(selectProgram);
+		if (!customMessages.empty()) {
+			spdlog::info("Sending custom program change to {} for patch {}: program {} {}."
+				, patch.smartSynth()->getName()
+				, patch.name()
+				, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, selectProgram)
+				, selectProgram.isBankKnown() ? "[known bank]" : "[bank not known!]");
+			return customMessages;
+		}
+		spdlog::error("Synth {} implements custom program change, but returned no messages for patch {}: program {} {}."
+			, patch.smartSynth()->getName()
+			, patch.name()
+			, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, selectProgram)
+			, selectProgram.isBankKnown() ? "[known bank]" : "[bank not known!]");
+		return {};
+	}
+
 	std::vector<juce::MidiMessage> selectPatch;
 	if (auto bankDescriptors = midikraft::Capability::hasCapability<midikraft::HasBankDescriptorsCapability>(patch.smartSynth())) {
 		auto bankSelect = bankDescriptors->bankSelectMessages(bankNumberToSelect);
@@ -1050,12 +1079,12 @@ std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgra
 
 	auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
 	if (midiLocation && midiLocation->channel().isValid()) {
-		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), program.toZeroBasedDiscardingBank()));
+		selectPatch.push_back(MidiMessage::programChange(midiLocation->channel().toOneBasedInt(), selectProgram.toZeroBasedDiscardingBank()));
 		spdlog::info("Sending program change to {} for patch {}: program {} {}."
 			, patch.smartSynth()->getName()
 			, patch.name()
-			, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, program)
-			, program.isBankKnown() ? "[known bank]" : "[bank not known!]");			
+			, patch.smartSynth()->friendlyProgramAndBankName(bankNumberToSelect, selectProgram)
+			, selectProgram.isBankKnown() ? "[known bank]" : "[bank not known!]");
 		return selectPatch;
 	} else {
 		spdlog::error("Program error - Synth {} has not been detected, can't build MIDI messages to select bank and program", patch.smartSynth()->getName());
@@ -1071,6 +1100,10 @@ void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::Mid
 		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
 	}
 	else {
+		if (midikraft::Capability::hasCapability<midikraft::CustomProgramChangeCapability>(patch.smartSynth())) {
+			// The custom program change path already emitted a specific error.
+			return;
+		}
 		spdlog::error("Failed to build MIDI bank and program change messages for {}, program error?", patch.smartSynth()->getName());
 	}
 

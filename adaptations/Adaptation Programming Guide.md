@@ -17,6 +17,14 @@ Implementing each device as its own C++ module quickly became too much effort, a
 
 Technically, the C++ program uses Python in so called embedded mode, and the Python interpreter is executed in the same process as the main program, which is why you sadly can also crash or hang the main program by making mistakes in the Python code. Don't worry, it happens to everybody.
 
+### Host API compatibility
+
+An adaptation that depends on behavior added to the C++/Python bridge must declare that dependency when it is imported:
+
+    knobkraft.require_host_api_version(2, "My adaptation")
+
+The host advertises this API level before executing adaptation code. A missing level is treated as level 0, so an adaptation with this guard also refuses to load if it is copied into an older KnobKraft Orm installation. Increment the host API level only for an incompatible bridge change or a new bridge feature that an adaptation must be able to require; it is independent of both the application release number and the database schema version.
+
 ## Creating a new Adaptation
 
 New adaptations are stored as a single Python file with the ending `.py` in a directory on your computer, and are read in on start of the KnobKraft Orm.
@@ -141,6 +149,21 @@ This should return one or more MIDI messages that will select the bank requested
         return [0xb0 | (channel & 0x0f), 32, bank]
 
 This would create a MIDI CC with controller number 32, which is used by many synth as the bank select controller.
+
+### Custom Program Change
+
+Some devices need more than a plain bank select/program change to recall a patch from memory. For these synths, you can implement this optional method:
+
+    def createCustomProgramChange(channel, patchNo):
+
+The parameters are:
+
+  * `channel` [int] - The detected MIDI channel (`0..15`)
+  * `patchNo` [int] - The 0-based absolute patch index used by KnobKraft Orm
+
+The function should return one or more MIDI messages as one flat byte list, exactly like other adaptation methods. This can include any combination of CC, Program Change and SysEx.
+
+When this method is implemented, it takes precedence over the default bank-select/program-change logic in the patch send mode `program change` (and in `automatic` when the patch location is known). If the method returns no messages, patch sending via this mode will fail for that action.
 
 ## Device detection
 
@@ -493,6 +516,18 @@ As an example, this is how the MS2000 implementation does it:
                 and (message[2] & 0xf0) == 0x30
                 and message[3] == 0x58  # MS2000
                 and (message[4] == 0x50 or message[4] == 0x4c))  # Program Data dump or All Data dump
+
+Like `isPartOfEditBufferDump()` and `isPartOfSingleProgramDump()`, this can also return a tuple
+
+    (is_part_of_dump, reply_message_bytes)
+
+where `reply_message_bytes` is one MIDI message (list of ints) or multiple messages. The reply is sent to the synth even when `is_part_of_dump` is `False`, which is useful for protocols where ACK/NACK messages must be sent for framing messages that should not be stored as dump data.
+
+During live bank download callbacks, a timeout can be relayed as an empty message:
+
+    []
+
+Treat this as a control signal (not MIDI data). Recommended behavior is to clear transient transfer state and return `False` (or `(False, [])`).
         
 ### Testing if all messages have been received
 
@@ -506,7 +541,23 @@ The implementation for the Korg MS2000 just checks if in the list of messages gi
                 return True
         return False
 
+`isBankDumpFinished()` can also return a tuple
+
+    (is_finished, reply_message_bytes)
+
+to send protocol replies while checking completion. If both `isPartOfBankDump()` and `isBankDumpFinished()` return reply messages for one incoming MIDI message, both are sent in this order:
+
+1. reply from `isPartOfBankDump()`
+2. reply from `isBankDumpFinished()`
+
 Note that in this function, you will not get a single MIDI message or list of bytes, but rather a list of lists of bytes, i.e. a list of MIDI messages that you can iterate over.
+Timeout-relay behavior applies here as well: after a timeout callback, your adaptation may be called again and should work correctly after resetting state.
+
+Handshake protocols that can explicitly reject or abort a transfer may return a three-element tuple:
+
+    (is_finished, was_successful, reply_message_bytes)
+
+When `is_finished` is true and `was_successful` is false, the download is cancelled and no partial patches are imported. Boolean results and legacy two-element tuples continue to imply a successful transfer.
 
 ### Extracting the patches from a bank dump
 
@@ -572,12 +623,36 @@ For a way more complex example, have a look at the implementation in the Roland 
 The opposite direction, assembling bank dump messages from a list of program dumps, can be implemented as well as a 
 separate capability. For this, just one function is required:
 
-    def convertPatchesToBankDump(patches: List[List[int]]) -> List[int]:
+    def convertPatchesToBankDump(patches: List[List[int]]) -> Union[List[int], List[List[int]]]:
 
-This will get a full bank of patches as a list of lists as input, and has to return one or more MIDI messages as a single
-list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
-there is no other way via Edit Buffer capability or Program Dump capability. 
+This gets a full bank of patches as a list of lists. It may return one flat list containing one or more MIDI messages,
+or a list containing one integer list per MIDI message. This functionality is active for the Export Patches dialog when
+Full Bank is selected, or when there is no other way via Edit Buffer capability or Program Dump capability.
 
+## Legacy file import capability
+
+Some devices have older non-sysex file formats (for example vendor librarian exports). For Python adaptations, this can be implemented with two simple functions:
+
+    def legacyLoadSupportedExtensions() -> List[str]:
+    def loadPatchesFromLegacyData(data: List[int]) -> List[List[int]]:
+
+`legacyLoadSupportedExtensions()` returns the file extensions this loader can parse. Use values like `".m80"` or `".tas1_bank"`. Matching is case-insensitive. You can also return `"*"` to accept any extension.
+
+`loadPatchesFromLegacyData(data)` receives the full file content as a list of byte values (`0..255`) and returns a list of patches. Each patch is again a list of byte values, using the same patch payload format as in the other adaptation functions.
+
+A minimal implementation looks like this:
+
+```python
+def legacyLoadSupportedExtensions():
+    return [".m80", ".mks80"]
+
+
+def loadPatchesFromLegacyData(data):
+    # parse legacy file content here and return one or more patch payloads
+    return [data]
+```
+
+This legacy loader is optional. If you do not implement both functions, the adaptation falls back to normal sysex/mid/json import handling only.
 
 ### Getting the patch's name
 

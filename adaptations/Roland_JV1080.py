@@ -28,6 +28,9 @@ _jv1080_program_buffer_addresses = RolandData("JV-1080 User Patches", 128, 4, 4,
 # But we need to do this for all valid device IDs, as the sysex ID could be set to a non-standard ID (standard is 0x10)
 _jv1080_system_common = RolandData("JV-1080 System Common", 1, 4, 4, (0x00, 0x00, 0x00, 0x00),
                                    [DataBlock((0x00, 0x00, 0x00, 0x00), 0x28, "System common")])
+for _layout in (_jv1080_edit_buffer_addresses, _jv1080_program_buffer_addresses):
+    _layout.supported_layouts.update([(0x4a, 0x81, 0x81, 0x81, 0x81)])
+
 jv_1080 = GenericRoland("Roland JV-1080", model_id=[0x6a], address_size=4, edit_buffer=_jv1080_edit_buffer_addresses,
                         program_dump=_jv1080_program_buffer_addresses,
                         device_detect_message = _jv1080_system_common)

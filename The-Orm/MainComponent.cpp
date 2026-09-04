@@ -25,7 +25,6 @@
 #include "Matrix1000.h"
 #include "BCR2000.h"
 #include "MKS80.h"
-#include "MKS50.h"
 
 #include "GenericAdaptation.h"
 #include "PatchInterchangeFormat.h"
@@ -224,7 +223,6 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::KawaiK3>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::OB6>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Rev2>(), buttonColour));
-	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS50>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::MKS80>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(std::make_shared<midikraft::Virus>(), buttonColour));
 	synths.emplace_back(midikraft::SynthHolder(bcr2000, buttonColour));
@@ -1279,7 +1277,7 @@ void MainComponent::restoreCommandKeyMappings()
 
 void MainComponent::aboutBox()
 {
-	String message = "This software is copyright 2020-2024 by Christof Ruch\n\n"
+	String message = "This software is copyright 2020-2026 by Christof Ruch\n\n"
 		"Released under dual license, by default under AGPL-3.0, but an MIT licensed version is available on request by the author\n"
 		"\n"
 		"The homepage of the project is https://github.com/christofmuc/KnobKraft-orm\n"

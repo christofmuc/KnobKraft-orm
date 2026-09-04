@@ -20,8 +20,11 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Pro-800 | alpha | adaptation | Thanks to @Andy2No |
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
+| Behringer | UB-Xa | alpha | adaptation | Contributed by @Casuallynoted; hardware validation needed |
 | Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
+| Casio | CZ-101/CZ-1000 | alpha | adaptation | Contributed by @Casuallynoted; hardware validation needed |
+| Clavia | Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | Four live banks; ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
@@ -37,12 +40,14 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Elektron | Digitone | alpha | adaptation |  This needs more work, owners please provide feedback so we can complete it. |
 | E-mu | Morpheus | works | adaptation | Thanks to Kid Who for testing! |
 | Ensoniq | ESQ-1/SQ-80 | works | adaptation | Contributed by @Mostelin! |
+| Ensoniq | Mirage (SoundProcess) | alpha | adaptation | Contributed by @Casuallynoted; alternate SysEx header needs hardware validation |
 | Ensoniq | VFX/VFX-SD | works | adaptation | Thanks to @dancingdog for testing! |
 | Groove Synthesis | 3rd Wave | works | adaptation | |
 | John Bowen | Solaris | beta | adaptation | Contributed by @conversy! |
 | Kawai | K1/K1m/K1r | beta | adaptation | |
 | Kawai | K3/K3m | works | native | |
 | Kawai | K4 | alpha | adaptation | |
+| Kawai | K5000 | beta | adaptation | Heroic effort by @markusschlosser! Most complex! |
 | Korg | 03R/W | works | adaptation | Thanks to Philippe! |
 | Korg | DW-6000 | works | adaptation | |
 | Korg | DW-8000/EX-8000 | works | adaptation | |
@@ -50,6 +55,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Korg | microKORG S | works | adaptation | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | Thanks to @andy2no|
 | Korg | MS2000/microKORG | works | adaptation | Thanks to @windo|
+| Korg | R3 | alpha | adaptation | 100% AI generated |
 | Line 6 | POD Series | works | adaptation | Thanks to @milnak! |
 | Moog | Voyager | works | adaptation | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | Thanks to @thechildofroth |
@@ -66,14 +72,18 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | JX-8P | alpha | adaptation | |
 | Roland | Juno-DS | works | adaptation | contributed by @mslinn! Thank you! |
 | Roland | D-50 | works | adaptation | Shout out to @summersetter for testing! |
+| Roland | JD-Xi | alpha | adaptation | 100% AI generated |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
-| Roland | MKS-50 | alpha | native | |
+| Roland | MKS-50 | alpha | adaptation | |
 | Roland | MKS-70 (Vecoven) | beta | adaptation | Thanks to @markusschloesser!|
 | Roland | MKS-80 | works | native | |
+| Roland | SE-02 | beta | adaptation | Thanks to @MammaScan! |
+| Roland | U-20/U-220 | alpha | adaptation | 100% AI generated. Thanks to @Casuallynoted for testing! |
 | Roland | V-Drums TD-07 | alpha | adaptation | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
-| Sequential| Pro 3 | works | adaptation | |
+| Sequential | Fourm | beta | adaptation | Real dump tested; hardware verification pending |
+| Sequential | Pro 3 | works | adaptation | User/factory bank metadata and transfer pacing thanks to @RadekPilich |
 | Sequential | Prophet-5 Rev 4 | works | adaptation | |
 | Sequential | Prophet-6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |
@@ -174,7 +184,7 @@ This will produce the executable in the path `builds\The-Orm\Release`, namely a 
 
 ## Building on Linux
 
-See the azure-pipelines.yml file for some hints how the Ubuntu server is doing it. Mainly, you need to install a long list of prerequisites and development libraries:
+See the GitHub Actions workflow files for some hints how the Ubuntu server is doing it. Mainly, you need to install a long list of prerequisites and development libraries:
 
     sudo apt-get -y update && sudo apt-get install -y libcurl4-openssl-dev pkg-config libtbb-dev libasound2-dev libboost-dev libgtk-3-dev libwebkit2gtk-4.0-dev libglew-dev libjack-dev libicu-dev libpython3-all-dev
 
@@ -186,6 +196,25 @@ and then can use CMake just like on Windows to compile the software:
 This will produce a single executable `builds/The-Orm/KnobKraftOrm` that you can run.
 
 The LDFLAGS is required for a certain combination of gcc version/pybind11, else you will run into internal compiler errors. See issue #6 for a discussion.
+
+## Building on Arch Linux with Docker
+
+If you are running Arch Linux (or an Arch derivative) and the release binary fails due to library mismatches, you can build an Arch-linked binary in Docker using `docker/archlinux/Dockerfile`. This is based on the setup contributed in issue #319.
+
+Clone the repository with submodules and build the Docker image from the repository root:
+
+    git clone --recurse-submodules https://github.com/christofmuc/KnobKraft-orm
+    cd KnobKraft-orm
+    docker build -f docker/archlinux/Dockerfile -t knobkraft-orm-arch .
+
+The Docker build compiles KnobKraft Orm and runs the PatchDatabase doctest binary. The resulting `KnobKraftOrm` executable is linked against Arch Linux libraries and is expected to run on Arch or Arch-derivative hosts only; for Debian, Ubuntu, Fedora, or other distributions, use the native Linux build instructions above or create a matching distro-specific Docker build instead. To copy the compiled application out of the image:
+
+    container_id=$(docker create knobkraft-orm-arch)
+    docker cp "$container_id:/KnobKraft-orm/builds/The-Orm" ./The-Orm-arch
+    docker rm "$container_id"
+    ./The-Orm-arch/KnobKraftOrm
+
+The same Dockerfile is built by the `Arch Linux Docker Build` GitHub Action so the documented Arch build path is checked regularly.
 
 ## Building on macOS
 

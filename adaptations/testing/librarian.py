@@ -1,6 +1,7 @@
 from collections import deque
+from collections.abc import Iterable
 from functools import partial
-from typing import List, Callable, Optional, Dict, Deque, Any
+from typing import List, Callable, Optional, Dict, Deque, Any, Union
 from enum import Enum
 import logging
 
@@ -19,6 +20,10 @@ def adaptation_has_bank_dump_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["isBankDumpFinished"])
 
 
+def adaptation_has_bank_download_capability(adaptation):
+    return adaptation_has_all_implemented(adaptation, ["createBankDumpRequest", "isBankDumpFinished"])
+
+
 def adaptation_has_program_dump_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["createProgramDumpRequest", "isSingleProgramDump"])
 
@@ -27,8 +32,36 @@ def adaptation_has_edit_buffer_capability(adaptation):
     return adaptation_has_all_implemented(adaptation, ["createEditBufferRequest", "isEditBufferDump"])
 
 
+def adaptation_has_program_send_capability(adaptation):
+    return adaptation_has_all_implemented(adaptation, ["createProgramDumpRequest", "isSingleProgramDump", "convertToProgramDump"])
+
+
+def adaptation_has_edit_buffer_send_capability(adaptation):
+    return adaptation_has_all_implemented(adaptation, ["createEditBufferRequest", "isEditBufferDump", "convertToEditBuffer"])
+
+
 def flatten(xss: List[List[Any]]) -> List[Any]:
     return [x for xs in xss for x in xs]
+
+
+def handshake_flag(value) -> bool:
+    if isinstance(value, tuple):
+        return bool(value[0])
+    return bool(value)
+
+
+def bank_finished_reply(value):
+    if isinstance(value, tuple):
+        if len(value) == 3:
+            is_finished, was_successful, next_message = value
+            return bool(is_finished), bool(was_successful), next_message
+        if len(value) == 2:
+            is_finished, next_message = value
+            return bool(is_finished), True, next_message
+        raise Exception("Expected a 2- or 3-element tuple from isBankDumpFinished")
+    if isinstance(value, bool):
+        return value, True, None
+    raise Exception("Expected tuple or bool from isBankDumpFinished")
 
 
 MidiMessageHandler = Callable[[List[int]], None]
@@ -40,6 +73,9 @@ class MidiController:
 
     def add_message_handler(self, handler: MidiMessageHandler) -> None:
         self.handlers.append(handler)
+
+    def clear_message_handlers(self):
+        self.handlers.clear()
 
     def send(self, message: List[int]):
         pass
@@ -70,6 +106,20 @@ class SynthBank:
         else:
             return adaptation.numberOfPatchesPerBank()
 
+    @staticmethod
+    def default_program_place(adaptation) -> Optional[int]:
+        if adaptation_has_implemented(adaptation, "getDefaultProgramPlace"):
+            return adaptation.getDefaultProgramPlace()
+        if adaptation_has_implemented(adaptation, "defaultProgramPlace"):
+            return adaptation.defaultProgramPlace()
+        if adaptation_has_implemented(adaptation, "bankDescriptors"):
+            banks = adaptation.bankDescriptors()
+            if banks:
+                return banks[0]["size"] - 1
+        if adaptation_has_implemented(adaptation, "numberOfPatchesPerBank"):
+            return adaptation.numberOfPatchesPerBank() - 1
+        return None
+
 
 class BankDownloadMethod(Enum):
     BANKS = 1
@@ -83,12 +133,13 @@ class Librarian:
         self.download_number = 0  # The current patch number we try to download
         self.start_download_number = 0  # The number of the first patch we download
         self.end_download_number = 0  # The number of the last patch we download to get a whole bank
-        self.current_download_messages: List[List[int]] = []  # The list of patches already successfully downloaded
-        self.current_edit_buffer: List[int] = []  # Messages collected for the current incoming edit buffer
-        self.current_download_program_dump: List[int] = []  # Messages collected for the current incoming program buffer
+        self.current_download_messages: List[List[int]] = []  # MIDI messages collected for the current download
+        self.current_edit_buffer: List[List[int]] = []  # Messages collected for the current incoming edit buffer
+        self.current_download_program_dump: List[List[int]] = []  # Messages collected for the current incoming program buffer
         self.on_finished: Optional[Callable[[List[List[int]]], None]] = None  # This function is called with the result of load operation
         self.max_number_messages_per_patch = 14  # This is to limit memory and computation time when loading large files
         self.max_number_messages_per_bank = 256  # Again, we need to limit miscalculations. But banks might have many more messages
+        self._active_midi_controller: Optional[MidiController] = None
 
     def determine_bank_download_method(self, adaptation) -> BankDownloadMethod:
         if adaptation_has_implemented(adaptation, "bankDownloadMethodOverride"):
@@ -101,7 +152,7 @@ class Librarian:
                 raise Exception("bankDownloadMethodOverride must return either EDITBUFFERS or PROGRAMS as string. BankDumps would be default anyway.")
 
         # Default behavior - use the "best possible"
-        if adaptation_has_bank_dump_capability(adaptation):
+        if adaptation_has_bank_download_capability(adaptation):
             return BankDownloadMethod.BANKS
         elif adaptation_has_program_dump_capability(adaptation):
             return BankDownloadMethod.PROGRAM_BUFFERS
@@ -115,31 +166,36 @@ class Librarian:
             midi_controller,
             channel: int,
             adaptation,
-            bank_no: int,
+            bank_no: Union[int, Iterable[int]],
             on_finished: Callable[[List[List[int]]], None]
     ) -> None:
+        if isinstance(bank_no, Iterable) and not isinstance(bank_no, (str, bytes)):
+            self.start_downloading_banks(midi_controller, channel, adaptation, bank_no, on_finished)
+            return
+
         # Initialize state
         self.download_number = 0
         self.on_finished = on_finished
         self.current_download_messages.clear()
+        self._active_midi_controller = midi_controller
 
         # Determine the download method
         method = self.determine_bank_download_method(adaptation)
 
         if method == BankDownloadMethod.BANKS:
-            buffer = adaptation.createBankDumpRequest(channel, bank_no)
-            midi_controller.send(buffer)
             midi_controller.add_message_handler(partial(self._handle_next_bank_dump, midi_controller=midi_controller, adaptation=adaptation))
+            buffer = adaptation.createBankDumpRequest(channel, bank_no)
+            self._send_block(midi_controller, buffer)
 
         elif method == BankDownloadMethod.PROGRAM_BUFFERS:
-            midi_controller.add_message_handler(partial(self._handle_next_program_buffer, midi_controller=midi_controller, adaptation=adaptation, bank_no=bank_no))
+            midi_controller.add_message_handler(partial(self._handle_next_program_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel, bank_no=bank_no))
             self.download_number = SynthBank.start_index_in_bank(adaptation, bank_no)
             self.start_download_number = self.download_number
             self.end_download_number = self.download_number + SynthBank.number_of_patches_in_bank(adaptation, bank_no)
             self._start_download_next_program_buffer(midi_controller, adaptation, channel)
 
         elif method == BankDownloadMethod.EDIT_BUFFERS:
-            midi_controller.add_message_handler(partial(self._handle_next_edit_buffer, midi_controller=midi_controller, adaptation=adaptation, bank_no=bank_no))
+            midi_controller.add_message_handler(partial(self._handle_next_edit_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel, bank_no=bank_no))
             self.download_number = SynthBank.start_index_in_bank(adaptation, bank_no)
             self.start_download_number = self.download_number
             self.end_download_number = self.download_number + SynthBank.number_of_patches_in_bank(adaptation, bank_no)
@@ -148,20 +204,180 @@ class Librarian:
         else:
             logging.error("Error: This synth has not implemented a single method to retrieve a bank. Please consult the documentation!")
 
+    def start_downloading_banks(
+            self,
+            midi_controller,
+            channel: int,
+            adaptation,
+            bank_numbers: Iterable[int],
+            on_finished: Callable[[List[List[int]]], None]
+    ) -> None:
+        banks = list(bank_numbers)
+        if not banks:
+            self.on_finished = on_finished
+            self._finish_download(midi_controller, [])
+            return
+
+        all_patches: List[List[int]] = []
+        current_bank_index = 0
+
+        def bank_finished(patches: List[List[int]]) -> None:
+            nonlocal current_bank_index
+            all_patches.extend(patches)
+            current_bank_index += 1
+            if current_bank_index >= len(banks):
+                on_finished(all_patches)
+                return
+
+            if hasattr(midi_controller, "finished"):
+                midi_controller.finished = False
+            self.start_downloading_all_patches(
+                midi_controller,
+                channel,
+                adaptation,
+                banks[current_bank_index],
+                bank_finished,
+            )
+
+        self.start_downloading_all_patches(midi_controller, channel, adaptation, banks[0], bank_finished)
+
+    def download_edit_buffer(
+            self,
+            midi_controller,
+            channel: int,
+            adaptation,
+            on_finished: Callable[[List[List[int]]], None]
+    ) -> None:
+        if not adaptation_has_edit_buffer_capability(adaptation):
+            raise Exception("Adaptation has not implemented EditBufferCapability. Can't download edit buffer")
+
+        self.download_number = 0
+        self.start_download_number = 0
+        self.end_download_number = 1
+        self.on_finished = on_finished
+        self.current_download_messages.clear()
+        self.current_edit_buffer.clear()
+        self._active_midi_controller = midi_controller
+
+        midi_controller.add_message_handler(partial(self._handle_next_edit_buffer, midi_controller=midi_controller, adaptation=adaptation, channel=channel, bank_no=0))
+        self._start_download_next_edit_buffer(midi_controller, adaptation, channel, False)
+
+    def data_file_to_sysex(
+            self,
+            adaptation,
+            channel: int,
+            patch: List[int],
+            target=None
+    ) -> List[List[int]]:
+        if target is not None:
+            if adaptation_has_implemented(adaptation, "dataFileToMessages"):
+                return knobkraft.splitSysex(adaptation.dataFileToMessages(patch, target))
+            raise Exception("Adaptation has no DataFileSendCapability equivalent for explicit send targets")
+
+        if adaptation_has_edit_buffer_send_capability(adaptation):
+            return knobkraft.splitSysex(adaptation.convertToEditBuffer(channel, patch))
+
+        if adaptation_has_program_send_capability(adaptation):
+            place = SynthBank.default_program_place(adaptation)
+            if place is None:
+                raise Exception("Adaptation has no edit buffer and no default program place for send-to-synth")
+            messages = knobkraft.splitSysex(adaptation.convertToProgramDump(channel, patch, place))
+            messages.append([0xc0 | (channel & 0x0f), place & 0x7f])
+            return messages
+
+        raise Exception("Adaptation has no send-to-synth strategy")
+
+    def send_patch_to_synth(
+            self,
+            midi_controller: MidiController,
+            channel: int,
+            adaptation,
+            patch: List[int],
+            target=None
+    ) -> List[List[int]]:
+        messages = self.data_file_to_sysex(adaptation, channel, patch, target)
+        self.send_block_of_messages_to_synth(midi_controller, adaptation, messages)
+        return messages
+
+    def send_block_of_messages_to_synth(self, midi_controller: MidiController, adaptation, messages: List[List[int]]) -> None:
+        delay = self.message_delay(adaptation)
+        if hasattr(midi_controller, "set_send_delay"):
+            midi_controller.set_send_delay(delay)
+        self._send_block(midi_controller, messages)
+
+    @staticmethod
+    def message_delay(adaptation) -> int:
+        if adaptation_has_implemented(adaptation, "messageTimings"):
+            timings = adaptation.messageTimings()
+            if isinstance(timings, dict) and "generalMessageDelay" in timings:
+                return timings["generalMessageDelay"]
+        if adaptation_has_implemented(adaptation, "generalMessageDelay"):
+            return adaptation.generalMessageDelay()
+        return 0
+
+    def _finish_download(self, midi_controller: MidiController, patches: List[List[int]]):
+        if hasattr(midi_controller, "mark_finished"):
+            midi_controller.mark_finished()
+        if hasattr(midi_controller, "clear_message_handlers"):
+            midi_controller.clear_message_handlers()
+        if self.on_finished is not None:
+            self.on_finished(patches)
+
+    @staticmethod
+    def _cancel_download(midi_controller: MidiController):
+        if hasattr(midi_controller, "mark_cancelled"):
+            midi_controller.mark_cancelled()
+        if hasattr(midi_controller, "clear_message_handlers"):
+            midi_controller.clear_message_handlers()
+
+    @staticmethod
+    def _send_block(midi_controller: MidiController, messages):
+        if messages is None:
+            return
+        if isinstance(messages, list) and messages and isinstance(messages[0], list):
+            for message in messages:
+                midi_controller.send(message)
+        elif messages:
+            midi_controller.send(messages)
+
     def _handle_next_bank_dump(self, message: List[int], midi_controller: MidiController, adaptation) -> None:
         """
         Handle the next message incoming during a bank dump download
         """
-        if adaptation.adaptation_has_implemented("isPartOfBankDump") and adaptation.isPartOfBankDump(message):
-            # This is part of the bank dump. Store in self.current_download_message and check if we're done
+        is_part_of_bank_dump = False
+        if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
+            part_reply = adaptation.isPartOfBankDump(message)
+            if isinstance(part_reply, tuple):
+                is_part_of_bank_dump, next_message = part_reply
+                if next_message:
+                    self._send_block(midi_controller, next_message)
+            elif isinstance(part_reply, bool):
+                is_part_of_bank_dump = part_reply
+            else:
+                raise Exception("Expected tuple or bool from isPartOfBankDump")
+        else:
+            is_finished, was_successful, next_message = bank_finished_reply(
+                adaptation.isBankDumpFinished([message]))
+            if next_message:
+                self._send_block(midi_controller, next_message)
+            if is_finished and was_successful:
+                # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
+                is_part_of_bank_dump = True
+
+        if is_part_of_bank_dump:
             self.current_download_messages.append(message)
-            if adaptation.isBankDumpFinished(self.current_download_messages):
-                patches = self.load_sysex(self.current_download_messages)
-                self.on_finished(patches)
-        elif adaptation.isBankDumpFinished(message):
-            # Simple case - the bank dump is only a single message and no isPartOfBankDump() has been implemented
-            patches = self.load_sysex(self.current_download_messages)
-            self.on_finished(patches)
+
+        is_finished, was_successful, next_message = bank_finished_reply(
+            adaptation.isBankDumpFinished(self.current_download_messages))
+        if next_message:
+            self._send_block(midi_controller, next_message)
+
+        if is_finished:
+            if was_successful:
+                patches = self.load_sysex(adaptation, self.current_download_messages)
+                self._finish_download(midi_controller, patches)
+            else:
+                self._cancel_download(midi_controller)
 
     def _start_download_next_program_buffer(self, midi_controller: MidiController, adaptation, channel: int) -> None:
         """
@@ -169,9 +385,9 @@ class Librarian:
         """
         self.current_download_program_dump.clear()
         messages = adaptation.createProgramDumpRequest(channel, self.download_number)
-        midi_controller.send(messages)
+        self._send_block(midi_controller, messages)
 
-    def _handle_next_program_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int) -> None:
+    def _handle_next_program_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int, bank_no: int) -> None:
         """
         Check if the message received is part of an edit buffer, if yes check if the program dump is complete or even the whole bank
         is complete.
@@ -190,19 +406,19 @@ class Librarian:
             is_part_of_program_buffer = adaptation.isSingleProgramDump(message)
 
         if is_part_of_program_buffer:
-            self.current_download_program_dump.extend(message)
+            self.current_download_program_dump.append(message)
 
             # See if we should send a reply (ACK)
             if next_message:
-                midi_controller.send(next_message)
+                self._send_block(midi_controller, next_message)
 
             # Do we have a complete program dump?
-            if adaptation.isSingleProgramDump(self.current_download_program_dump):
-                self.current_download_messages.append(self.current_download_program_dump)
+            if adaptation.isSingleProgramDump(flatten(self.current_download_program_dump)):
+                self.current_download_messages.extend(self.current_download_program_dump)
                 # Finished?
                 if self.download_number >= self.end_download_number - 1:
-                    patches = self.load_sysex(self.current_download_messages)
-                    self.on_finished(patches)
+                    patches = self.load_sysex(adaptation, self.current_download_messages)
+                    self._finish_download(midi_controller, patches)
                 else:
                     self.download_number += 1
                     self._start_download_next_program_buffer(midi_controller, adaptation, channel)
@@ -219,9 +435,9 @@ class Librarian:
         if send_program_change:
             messages.extend([0xc0 | (channel & 0x0f), self.download_number & 0x7f])
         messages.extend(adaptation.createEditBufferRequest(channel))
-        midi_controller.send(messages)
+        self._send_block(midi_controller, messages)
 
-    def _handle_next_edit_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int) -> None:
+    def _handle_next_edit_buffer(self, message: List[int], midi_controller: MidiController, adaptation, channel: int, bank_no: int) -> None:
         """
         This is called when the next MIDI message is received from the synth. Check if this is part of the edit buffer, if we need to answer
         with a handshake message and whether the bank download is done.
@@ -241,17 +457,17 @@ class Librarian:
 
         if is_part_of_edit_buffer:
             if next_message:
-                midi_controller.send(next_message)
-            self.current_edit_buffer.extend(message)
+                self._send_block(midi_controller, next_message)
+            self.current_edit_buffer.append(message)
 
-            if adaptation.isEditBufferDump(self.current_edit_buffer):
+            if adaptation.isEditBufferDump(flatten(self.current_edit_buffer)):
                 # Got one complete edit buffer!
-                self.current_download_messages.append(self.current_edit_buffer)
+                self.current_download_messages.extend(self.current_edit_buffer)
 
                 # Are we done?
                 if self.download_number >= self.end_download_number - 1:
-                    patches = self.load_sysex(self.current_download_messages)
-                    self.on_finished(patches)
+                    patches = self.load_sysex(adaptation, self.current_download_messages)
+                    self._finish_download(midi_controller, patches)
                 else:
                     self.download_number += 1
                     # Continue with the next edit buffer
@@ -259,13 +475,14 @@ class Librarian:
 
     def load_sysex(self, adaptation, sysex_messages: List[List[int]]) -> List[List[int]]:
         results: List[List[int]] = []
-        program_dumps_by_id: Dict[str, List[int]] = {}
+        program_dump_counts_by_id: Dict[str, int] = {}
 
         if adaptation_has_program_dump_capability(adaptation):
             current_program_dumps: Deque[List[int]] = deque()
             for message in sysex_messages:
                 # Try to parse and load these messages as program dumps
-                if adaptation_has_implemented(adaptation, "isPartOfSingleProgramDump") and adaptation.isPartOfSingleProgramDump(message) or adaptation.isSingleProgramDump(message):
+                is_part = adaptation_has_implemented(adaptation, "isPartOfSingleProgramDump") and handshake_flag(adaptation.isPartOfSingleProgramDump(message))
+                if is_part or adaptation.isSingleProgramDump(message):
                     current_program_dumps.append(message)
                     while len(current_program_dumps) > self.max_number_messages_per_patch:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per patch is larger than {self.max_number_messages_per_patch}")
@@ -275,7 +492,8 @@ class Librarian:
                         patch = sliding_window
                         results.append(patch)
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            program_dumps_by_id[adaptation.calculateFingerprint(patch)] = patch
+                            patch_id = adaptation.calculateFingerprint(patch.copy())
+                            program_dump_counts_by_id[patch_id] = program_dump_counts_by_id.get(patch_id, 0) + 1
                         current_program_dumps.clear()
 
         if adaptation_has_edit_buffer_capability(adaptation):
@@ -283,7 +501,8 @@ class Librarian:
             patch_no = 0
             for message in sysex_messages:
                 # Try to parse and load these messages as edit buffers
-                if adaptation_has_implemented(adaptation, "isPartOfEditBufferDump") and adaptation.isPartOfEditBufferDump(message) or adaptation.isEditBufferDump(message):
+                is_part = adaptation_has_implemented(adaptation, "isPartOfEditBufferDump") and handshake_flag(adaptation.isPartOfEditBufferDump(message))
+                if is_part or adaptation.isEditBufferDump(message):
                     current_edit_buffers.append(message)
                     if len(current_edit_buffers) > self.max_number_messages_per_patch:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per patch is larger than {self.max_number_messages_per_patch}")
@@ -292,8 +511,8 @@ class Librarian:
                     if adaptation.isEditBufferDump(sliding_window):
                         patch = sliding_window
                         if adaptation_has_implemented(adaptation, "calculateFingerprint"):
-                            patch_id = adaptation.calculateFingerprint(patch)
-                            if patch_id not in program_dumps_by_id:
+                            patch_id = adaptation.calculateFingerprint(patch.copy())
+                            if patch_id not in program_dump_counts_by_id:
                                 results.append(patch)
                             else:
                                 # Ignore edit buffer, as we already loaded a program dump with the same ID
@@ -303,27 +522,45 @@ class Librarian:
                         current_edit_buffers.clear()
 
         if adaptation_has_bank_dump_capability(adaptation):
+            if adaptation_has_implemented(adaptation, "isPartOfBankDump"):
+                adaptation.isPartOfBankDump([])
             current_bank: Deque[List[int]] = deque()
+            unmatched_program_dump_counts_by_id = program_dump_counts_by_id.copy()
+
+            def append_bank_patches(patches: List[List[int]]) -> None:
+                for patch in patches:
+                    if adaptation_has_implemented(adaptation, "calculateFingerprint"):
+                        patch_id = adaptation.calculateFingerprint(patch.copy())
+                        unmatched_count = unmatched_program_dump_counts_by_id.get(patch_id, 0)
+                        if unmatched_count > 0:
+                            unmatched_program_dump_counts_by_id[patch_id] = unmatched_count - 1
+                            continue
+                    results.append(patch)
+
             for message in sysex_messages:
                 # Try to parse and load these messages as a bank dump
-                if adaptation_has_implemented(adaptation, "isPartOfBankDump") and adaptation.isPartOfBankDump(message) or adaptation.isBankDumpFinished([message]):
+                is_part = adaptation_has_implemented(adaptation, "isPartOfBankDump") and handshake_flag(adaptation.isPartOfBankDump(message))
+                single_finished, single_successful, _ = bank_finished_reply(adaptation.isBankDumpFinished([message]))
+                if is_part or (single_finished and single_successful):
                     current_bank.append(message)
                     if len(current_bank) > self.max_number_messages_per_bank:
                         logging.debug(f"Dropping message during parsing as potential number of MIDI messages per bank is larger than {self.max_number_messages_per_bank}")
                         current_bank.popleft()
                     sliding_window: List[List[int]] = list(current_bank)
-                    if adaptation.isBankDumpFinished(sliding_window):
+                    is_finished, was_successful, _ = bank_finished_reply(
+                        adaptation.isBankDumpFinished(sliding_window))
+                    if is_finished and was_successful:
                         if adaptation_has_implemented(adaptation, "extractPatchesFromAllBankMessages"):
                             more_patches = adaptation.extractPatchesFromAllBankMessages(sliding_window)
                             logging.info(f"Loaded bank dump with {len(more_patches)} patches")
-                            results.extend(more_patches)
+                            append_bank_patches(more_patches)
                             current_bank.clear()
                         else:
                             more_patches = adaptation.extractPatchesFromBank(sliding_window[0])
                             if more_patches:
                                 logging.info(f"Loaded bank dump from single message with {len(more_patches)} patches")
                                 split_patches = knobkraft.splitSysex(more_patches)
-                                results.extend(split_patches)
+                                append_bank_patches(split_patches)
                             current_bank.clear()
 
 

@@ -42,13 +42,14 @@ Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppExeName}"; DestDir: "
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\{#MyAppName}.pdb"; DestDir: "{app}"; 
 Source: "${VCREDIST_PATH}\{#VCRedistFileName}"; DestDir: {tmp}; Flags: dontcopy deleteafterinstall
 Source: "${pythonembedded_SOURCE_DIR}\*.*"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc74.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt74.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icuuc78.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\icudt78.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\sentry.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\crashpad_handler.exe"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_CURRENT_BINARY_DIR}\RelWithDebInfo\WinSparkle.dll"; DestDir: "{app}"; Flags: skipifsourcedoesntexist ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\sequential\*.*"; DestDir: "{app}\sequential";Flags: ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\roland\*.*"; DestDir: "{app}\roland";Flags: ignoreversion
+Source: "${CMAKE_SOURCE_DIR}\adaptations\korg\*.*"; DestDir: "{app}\korg";Flags: ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\knobkraft\*.*"; DestDir: "{app}\knobkraft";Flags: ignoreversion
 Source: "${CMAKE_SOURCE_DIR}\adaptations\testing\*.*"; DestDir: "{app}\testing";Flags: ignoreversion
 #include "adaptations.iss"
@@ -62,6 +63,9 @@ Type: dirifempty; Name: "{app}\sequential"
 Type: files; Name: "{app}\roland\__pycache__\*.pyc"
 Type: dirifempty; Name: "{app}\roland\__pycache__"
 Type: dirifempty; Name: "{app}\roland"
+Type: files; Name: "{app}\korg\__pycache__\*.pyc"
+Type: dirifempty; Name: "{app}\korg\__pycache__"
+Type: dirifempty; Name: "{app}\korg"
 Type: files; Name: "{app}\knobkraft\__pycache__\*.pyc"
 Type: dirifempty; Name: "{app}\knobkraft\__pycache__"
 Type: dirifempty; Name: "{app}\knobkraft"

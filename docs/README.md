@@ -17,6 +17,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | RD-8 | in progress | adaptation | |
 | Behringer | RD-9 | in progress | adaptation | |
 | Black Corporation | Kijimi | in progress | adaptation | Thanks to @ffont|
+| Clavia | Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | Four live banks; ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
@@ -50,10 +51,11 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Roland | D-50 | in progress | adaptation | |
 | Roland | JV-80/880/90/1000 | beta | adaptation | |
 | Roland | JV-1080/2080 | beta | adaptation | |
-| Roland | MKS-50 | alpha | native | |
+| Roland | MKS-50 | alpha | adaptation | |
 | Roland | MKS-80 | works | native | |
 | Roland | XV-3080/5080/5050 | works | adaptation | |
-| Sequential| Pro 3 | works | adaptation | |
+| Sequential | Fourm | beta | adaptation | Real dump tested; hardware verification pending |
+| Sequential | Pro 3 | works | adaptation | User/factory bank metadata and transfer pacing thanks to @RadekPilich |
 | Sequential | Prophet 5 Rev 4 | works | adaptation | |
 | Sequential | Prophet 6 | beta | adaptation | |
 | Sequential | Prophet X | works | adaptation | |

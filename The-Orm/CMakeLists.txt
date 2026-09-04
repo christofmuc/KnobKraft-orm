@@ -120,7 +120,6 @@ set(MIDIKRAFT_LIBRARIES
 		midikraft-behringer-bcr2000
 		midikraft-kawai-k3
 		midikraft-oberheim-matrix1000
-		midikraft-roland-mks50 
 		midikraft-roland-mks80 
 		midikraft-sequential-rev2   
 		midikraft-sequential-ob6  
@@ -247,7 +246,7 @@ IF(WIN32)
 	add_custom_command(
 			TARGET KnobKraftOrm POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
-					"${icu_SOURCE_DIR}/bin64/icuuc74.dll" "${icu_SOURCE_DIR}/bin64/icudt74.dll"
+					"${icu_SOURCE_DIR}/bin64/icuuc78.dll" "${icu_SOURCE_DIR}/bin64/icudt78.dll"
 					${SENTRY_DISTRIBUTION_FILES} ${WINSPARKLE_DISTRIBUTION_FILES}
 					${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 	add_custom_command(
@@ -270,6 +269,12 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/roland
 		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
 		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                -DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/korg
+                -DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/korg
+                -P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
+                )
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND}
 		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/knobkraft

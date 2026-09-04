@@ -12,7 +12,7 @@ import knobkraft
 
 this_module = sys.modules[__name__]
 
-# JV-80. The JV-880/JV-90/JV-1000 share the model ID of the JV-80, but have one respectively two bytes more size than the JV-80. How do I handle that?
+# JV-880/JV-90/JV-1000 share the model ID but have longer tone blocks.
 _jv80_patch_data = [DataBlock((0x00, 0x00, 0x00, 0x00), 0x22, "Patch common"),
                     DataBlock((0x00, 0x00, 0x08, 0x00), 0x73, "Patch tone 1"),  # 0x74 size for the JV-880, 0x75 size for the JV-90/JV-1000
                     DataBlock((0x00, 0x00, 0x09, 0x00), 0x73, "Patch tone 2"),  # 0x74 size for the JV-880, 0x75 size for the JV-90/JV-1000
@@ -32,6 +32,10 @@ _jv80_program_buffer_addresses = RolandData("JV-80 Internal Patch"
                                             , blocks=_jv80_patch_data)
 _jv80_system_common = RolandData("JV-80 System Common", 1, 4, 4, (0x00, 0x00, 0x00, 0x00),
                                  [DataBlock((0x00, 0x00, 0x00, 0x00), 0x21, "System common")])
+# Accept complete model variants, not a mixture of tone lengths in one patch.
+for _layout in (_jv80_edit_buffer_addresses, _jv80_program_buffer_addresses):
+    _layout.supported_layouts.update([(0x22, size, size, size, size) for size in (0x74, 0x75)])
+
 jv_80 = GenericRoland("Roland JV-80",
                       model_id=[0x46],
                       address_size=4,

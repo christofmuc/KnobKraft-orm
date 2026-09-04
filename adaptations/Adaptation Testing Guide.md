@@ -165,11 +165,47 @@ example device detect messages and expected answers to test your device detectio
             if xv_3080.isPartOfSingleProgramDump(message):
             <snip>
 
-        return testing.TestData(sysex="testData/jv1080_AGSOUND1.SYX",
+    return testing.TestData(sysex="testData/jv1080_AGSOUND1.SYX",
                                 program_generator=programs,
                                 program_dump_request="f0 41 10 00 10 11 30 00 00 00 00 00 00 4f 01 f7",
                                 device_detect_call="f0 7e 00 06 01 f7",
                                 device_detect_reply=("f0 7e 10 06 02 41 10 01 00 00 00 00 00 00 f7", 0))
+
+### Testing legacy file loaders
+
+If your adaptation implements the optional legacy file loader functions
+
+    def legacyLoadSupportedExtensions():
+    def loadPatchesFromLegacyData(data):
+
+you can test them through the same generic `test_adaptations.py` suite.
+
+For this, add `legacy_loader_cases` to your `testing.TestData` return value. Each case is a `testing.LegacyLoaderTestData` item containing:
+
+* `file_extension`: extension expected to be supported by `legacyLoadSupportedExtensions`
+* `file_content`: full file bytes as list of integers (`0..255`)
+* `expected_patch_count` (optional): expected number of patches returned
+* `patch_inspector` (optional): callback `(adaptation, patches)` for synth-specific checks
+
+Example:
+
+    def inspect_legacy_patches(adaptation, patches):
+        assert len(patches[0]) > 0
+        assert adaptation.nameFromDump(patches[0]) == "Init"
+
+    def make_test_data():
+        return testing.TestData(
+            legacy_loader_cases=[
+                testing.LegacyLoaderTestData(
+                    file_extension=".m80",
+                    file_content=list(open("testData/MySynth/bank.m80", "rb").read()),
+                    expected_patch_count=64,
+                    patch_inspector=inspect_legacy_patches,
+                )
+            ]
+        )
+
+This keeps the loader tests generic and Python-only: the test code calls your adaptation module directly, independent from C++ runtime tests.
 
 
 That's it, you don't need to write more code to get your unit tests going, unless you want to make tests that are
