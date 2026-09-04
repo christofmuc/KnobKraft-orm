@@ -1,0 +1,16 @@
+/* KnobKraft identity v1. Shared by the landing page and manual. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url('./fonts/Inter.ttf') format('truetype'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url('./fonts/JetBrainsMono.ttf') format('truetype'); }
+:root {
+  --kk-chassis: #0b0e14;
+  --kk-panel: #131922;
+  --kk-display: #05070a;
+  --kk-border: #303d4e;
+  --kk-text: #e6edf5;
+  --kk-muted: #a8b6c8;
+  --kk-cyan: #65e5ec;
+  --kk-cyan-bright: #00f3ff;
+  --kk-orange: #ffba7a;
+  --kk-text-font: Inter, system-ui, sans-serif;
+  --kk-label-font: 'JetBrains Mono', ui-monospace, monospace;
+}

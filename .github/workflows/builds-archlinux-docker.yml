@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Arch Linux Docker Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-archlinux-docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+    - name: Checkout repository with tags and submodules
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Build Arch Linux Docker image
+      run: docker build --pull -f docker/archlinux/Dockerfile -t knobkraft-orm-arch .
+
+    - name: Verify executable can be copied from the image
+      run: |
+        container_id=$(docker create knobkraft-orm-arch)
+        docker cp "$container_id:/KnobKraft-orm/builds/The-Orm/KnobKraftOrm" ./KnobKraftOrm-arch
+        docker rm "$container_id"
+        test -s ./KnobKraftOrm-arch

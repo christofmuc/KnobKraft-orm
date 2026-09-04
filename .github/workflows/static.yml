@@ -1,37 +1,46 @@
-name: Deploy Website and Docs
+name: Website and Docs
 on:
+  pull_request:
+    branches: [master]
   push:
-    branches:
-      - master
+    branches: [master]
+
+permissions:
+  contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: website/requirements.txt
+      - name: Install website dependencies
+        run: python -m pip install -r website/requirements.txt
+      - name: Build and validate selected public sources
+        run: python scripts/build_website.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public/
+          include-hidden-files: true
 
-      - name: Install MkDocs Material
-        run: pip install mkdocs-material
-
-      - name: Generate Supported Synth Artifacts
-        run: python scripts/generate_supported_synths.py
-
-      - name: Build Documentation
-        run: mkdocs build --site-dir public/docs
-
-      - name: Prepare Landing Page
-        run: |
-          mkdir -p public/data
-          cp index.html public/index.html
-          cp data/supported-synths.json public/data/supported-synths.json
-
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
+        id: deployment
+        uses: actions/deploy-pages@v4

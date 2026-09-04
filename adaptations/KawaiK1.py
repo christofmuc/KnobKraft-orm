@@ -350,4 +350,9 @@ def make_test_data():
                             device_detect_call=[240, 64, 0, 96, 247],
                             device_detect_reply=([0xf0, 0x40, 2, 0x61, 0x00, 0x03, 0xf7], 2),
                             friendly_bank_name=(0, "Int-Singles I/1"),
-                            program_dump_request=(2, 31, [0xf0, 0x40, 2, 0x00, 0x00, 0x03, 0x00, 31, 0xf7]))
+                            program_dump_request=(2, 31, [0xf0, 0x40, 2, 0x00, 0x00, 0x03, 0x00, 31, 0xf7]),
+                            send_to_synth_patch=lambda test_data: test_data.programs[0].message.byte_list,
+                            expected_send_to_synth_messages=lambda test_data, adaptation: [
+                                adaptation.convertToProgramDump(0, test_data.programs[0].message.byte_list, 31),
+                                [0xc0, 31],
+                            ])

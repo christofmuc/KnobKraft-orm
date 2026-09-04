@@ -13,3 +13,6 @@ build/
 builds/
 node_modules/
 public/
+
+.venv/
+site/

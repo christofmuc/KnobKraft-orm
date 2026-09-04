@@ -20,6 +20,7 @@
 #include "GenericCustomProgramChangeCapability.h"
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
+#include "GenericLegacyLoaderCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -70,6 +71,8 @@ namespace knobkraft {
 		* kExtractPatchesFromBank = "extractPatchesFromBank",
 		* kExtractPatchesFromAllBankMessages = "extractPatchesFromAllBankMessages",
 		* kConvertPatchesToBankDump = "convertPatchesToBankDump",
+		* kLegacyLoadSupportedExtensions = "legacyLoadSupportedExtensions",
+		* kLoadPatchesFromLegacyData = "loadPatchesFromLegacyData",
 		* kNumberOfLayers = "numberOfLayers",
 		* kLayerTitles = "friendlyLayerTitles",
 		* kLayerName = "layerName",
@@ -111,6 +114,8 @@ namespace knobkraft {
 		kIsBankDumpFinished,
 		kExtractPatchesFromBank,
 		kExtractPatchesFromAllBankMessages,
+		kLegacyLoadSupportedExtensions,
+		kLoadPatchesFromLegacyData,
 		kNumberOfLayers,
 		kLayerName,
 		kSetLayerName,
@@ -130,13 +135,21 @@ namespace knobkraft {
 	};
 
 	const char* kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
+	constexpr auto kAdaptationApiVersionAttribute = "_knobkraft_adaptation_api_version";
+	constexpr int kAdaptationApiVersion = 2;
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;
 	std::unique_ptr<py::gil_scoped_release> sGenericAdaptationDontLockGIL;
 	std::unique_ptr<PyStdErrOutStreamRedirect> sGenericAdaptationPyOutputRedirect;
 
 	void checkForPythonOutputAndLog() {
-		sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
+		if (sGenericAdaptationPyOutputRedirect) {
+			sGenericAdaptationPyOutputRedirect->flushToLogger("Adaptation");
+		}
+	}
+
+	void publishAdaptationApiVersion() {
+		py::module_::import("sys").attr(kAdaptationApiVersionAttribute) = kAdaptationApiVersion;
 	}
 
 	class FatalAdaptationException : public std::runtime_error {
@@ -147,6 +160,7 @@ namespace knobkraft {
 	GenericAdaptation::GenericAdaptation(std::string const& pythonModuleFilePath) : filepath_(pythonModuleFilePath)
 	{
 		py::gil_scoped_acquire acquire;
+		publishAdaptationApiVersion();
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
@@ -154,6 +168,7 @@ namespace knobkraft {
 		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
 		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
+		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		try {
 			// Validate that the filename is a good idea
@@ -183,10 +198,15 @@ namespace knobkraft {
 	GenericAdaptation::GenericAdaptation(pybind11::module adaptationModule)
 	{
 		py::gil_scoped_acquire acquire;
+		publishAdaptationApiVersion();
 		editBufferCapabilityImpl_ = std::make_shared<GenericEditBufferCapability>(this);
 		programDumpCapabilityImpl_ = std::make_shared<GenericProgramDumpCapability>(this);
 		bankDumpCapabilityImpl_ = std::make_shared<GenericBankDumpCapability>(this);
 		bankDumpRequestCapabilityImpl_ = std::make_shared<GenericBankDumpRequestCapability>(this);
+		hasBanksCapabilityImpl_ = std::make_shared<GenericHasBanksCapability>(this);
+		hasBankDescriptorsCapabilityImpl_ = std::make_shared<GenericHasBankDescriptorsCapability>(this);
+		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
+		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
 		adaptation_module = adaptationModule;
 	}
@@ -201,6 +221,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		try {
+			publishAdaptationApiVersion();
 			auto importlib = py::module::import("importlib.util");
 			checkForPythonOutputAndLog();
 			auto spec = importlib.attr("spec_from_loader")(moduleName, py::none()); // Create an empty module with the right name
@@ -556,7 +577,7 @@ namespace knobkraft {
 	{
 		py::gil_scoped_acquire acquire;
 		ignoreUnused(place);
-		auto patch = std::make_shared<GenericPatch>(this, const_cast<py::module&>(adaptation_module), data, GenericPatch::PROGRAM_DUMP);
+		auto patch = std::make_shared<GenericPatch>(this, adaptation_module, data, GenericPatch::PROGRAM_DUMP);
 		return patch;
 	}
 
@@ -1051,6 +1072,26 @@ namespace knobkraft {
 		midikraft::BankSendCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = hasBankDumpSendCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::LegacyLoaderCapability** outCapability) const {
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kLegacyLoadSupportedExtensions)
+			&& pythonModuleHasFunction(kLoadPatchesFromLegacyData))
+		{
+			*outCapability = dynamic_cast<midikraft::LegacyLoaderCapability*>(legacyLoaderCapabilityImpl_.get());
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::LegacyLoaderCapability>& outCapability) const {
+		midikraft::LegacyLoaderCapability* cap;
+		if (hasCapability(&cap)) {
+			outCapability = legacyLoaderCapabilityImpl_;
 			return true;
 		}
 		return false;

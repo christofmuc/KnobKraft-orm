@@ -36,9 +36,11 @@ if [ "$cmd" = "detach" ]; then
 
   # Last-resort fallback for stale/busy mounts.
   if [ -n "${2:-}" ]; then
-    hdiutil detach -force "$2"
+    hdiutil "$@" -force
     exit 0
   fi
+
+  exit 1
 fi
 
 # For all other commands, just run once.

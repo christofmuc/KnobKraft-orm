@@ -1,17 +1,27 @@
-# Download and Install
+# Download KnobKraft Orm
 
-## Official Releases
+KnobKraft Orm is free and open source. Get official builds from [GitHub Releases](https://github.com/christofmuc/KnobKraft-orm/releases/latest).
 
-Installers and DMG files are published on GitHub Releases:
-<https://github.com/christofmuc/KnobKraft-orm/releases>
+**Latest release checked: 2.9.0, published 19 April 2026.** Check the release notes and assets for the build you install; newer source may include synth support not yet in the published installers.
 
-## Platform Notes
+| Platform | Release 2.9.0 download | Install |
+| --- | --- | --- |
+| Windows | [Windows installer (.exe)](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/knobkraft_orm_setup_2.9.0.exe) | Run the installer, then launch KnobKraft Orm. |
+| macOS | [macOS disk image (.dmg)](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/KnobKraft_Orm-2.9.0-Darwin.dmg) | Open the image and drag the app into Applications. The DMG includes Python. |
+| Linux | [Linux archive](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/KnobKraft_Orm-2.9.0-Linux.tar.gz) · [Ubuntu 24 archive](https://github.com/christofmuc/KnobKraft-orm/releases/download/2.9.0/KnobKraft_Orm-2.9.0-Ubuntu24.tar.gz) | Extract the matching archive. Linux binaries depend on distribution libraries; use the release notes or build for your distribution if they do not run. |
 
-- `Windows`: installer executable is provided.
-- `macOS`: open the DMG, drag the app into Applications, then run once via Ctrl-click > Open if Gatekeeper warns about unknown publisher.
-- `Linux`: no universal installer yet; build from source using the [Build Instructions](./build.md).
+[Read the 2.9.0 release notes](https://github.com/christofmuc/KnobKraft-orm/releases/tag/2.9.0). For other platforms and toolchains, see [Build from source](build.md).
 
-## Supported Platforms
+## First launch
 
-KnobKraft Orm is actively used on Windows 10+, macOS, and Linux distributions. If you hit a platform-specific issue, please report it with logs and system details:
-<https://github.com/christofmuc/KnobKraft-orm/issues>
+If macOS blocks the downloaded app, follow the operating system's instructions for opening a trusted downloaded application. Older Ctrl-click and Python/Homebrew advice can depend on the macOS and KnobKraft version; it is not a prerequisite to install an old Python for the current DMG.
+
+On any platform, report a launch problem with your exact operating system, processor and app version in [GitHub issues](https://github.com/christofmuc/KnobKraft-orm/issues).
+
+## Connect and import
+
+Continue with [your first session](learn/index.md). You can import compatible files and organise a library without connected hardware. To hear patches, connect the matching synth and monitor its audio output.
+
+## Updating an existing library
+
+Before updating, keep a separate [database copy](manual/07-export-and-backups.md#save-a-database-copy), along with custom adaptations and settings. A new app version may migrate a database; retain the original copy if you need to return to an older version.

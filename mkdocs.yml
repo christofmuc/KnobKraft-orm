@@ -1,28 +1,64 @@
-site_name: KNOBKRAFT_ORM
+site_name: KnobKraft Orm
+site_description: Learn to collect, organise and transfer patches for supported hardware synthesizers.
 site_url: https://christofmuc.github.io/KnobKraft-orm/docs/
+docs_dir: docs
+site_dir: public/docs
+strict: true
+exclude_docs: |
+  /README.md
+not_in_nav: |
+  /Adaptation Programming Guide.md
+hooks:
+  - website/hooks.py
 theme:
   name: material
-  font:
-    text: Inter
-    code: JetBrains Mono
+  logo: assets/icon_orm.png
+  favicon: assets/icon_orm.png
+  font: false
   palette:
     scheme: slate
-    primary: cyan
+    primary: custom
+    accent: custom
   features:
     - navigation.tabs
+    - navigation.indexes
+    - navigation.top
     - search.highlight
+    - search.suggest
+plugins:
+  - search
 extra_css:
   - stylesheets/extra.css
 extra_javascript:
-  - javascripts/home-link.js
-
+  - javascripts/legacy-routes.js
+extra:
+  homepage: ../
 nav:
-  - User Manual: index.md
+  - Home: https://christofmuc.github.io/KnobKraft-orm/
+  - Download: download.md
   - Supported Synths: supported-synths.md
-  - Download and Install: download.md
-  - Adaptation Programming: programming-guide.md
-  - Adaptation Testing: testing-guide.md
-  - Build Instructions: build.md
-  - Contributing: contributing.md
-  - Acknowledgements: acknowledgements.md
-  - Prior Art: prior-art.md
+  - Learn:
+      - Start here: learn/index.md
+      - Connect your synth: learn/connect.md
+      - Library and hardware: learn/library-and-hardware.md
+      - Import a bank: learn/import-a-bank.md
+      - Original introduction: learn/overview.md
+  - Manual:
+      - Contents: index.md
+      - Library and hardware: manual/01-library-and-hardware.md
+      - MIDI setup: manual/02-midi-setup.md
+      - Import sounds: manual/03-importing.md
+      - Browse and audition: manual/04-browsing-and-auditioning.md
+      - Search and categories: manual/05-search-and-categories.md
+      - Lists and banks: manual/06-lists-and-banks.md
+      - Export and backups: manual/07-export-and-backups.md
+      - Glossary: manual/glossary.md
+  - FAQ / Help: help.md
+  - Develop:
+      - Get involved: develop.md
+      - Programming guide: programming-guide.md
+      - Testing guide: testing-guide.md
+      - Build from source: build.md
+      - Contributing: contributing.md
+      - Acknowledgements: acknowledgements.md
+      - Prior art: prior-art.md

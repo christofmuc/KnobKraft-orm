@@ -3,6 +3,7 @@
 #include "PatchDatabase.h"
 #include "PatchListType.h"
 #include "SynthBank.h"
+#include "Librarian.h"
 #include "The-Orm/UserBankFactory.h"
 #include "test_helpers.h"
 
@@ -201,4 +202,29 @@ TEST_CASE("user bank factory creates user bank list entries") {
 	listQuery.bind(":ID", bank->id().c_str());
 	REQUIRE(listQuery.executeStep());
 	CHECK(listQuery.getColumn(0).getInt() == midikraft::PatchListType::USER_BANK);
+}
+
+TEST_CASE("sending a saved and reloaded empty user bank fails safely") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+	auto synth = std::make_shared<DummySynth>("DummySynth", 8);
+	auto bank = knobkraft::createUserBank(synth, 0, "Empty bank");
+	db.putPatchList(bank);
+
+	std::map<std::string, std::weak_ptr<midikraft::Synth>> synthMap;
+	synthMap[synth->getName()] = synth;
+	auto reloaded = std::dynamic_pointer_cast<midikraft::SynthBank>(db.getPatchList({ bank->id(), bank->name() }, synthMap));
+	REQUIRE(reloaded);
+	REQUIRE(reloaded->patches().size() == 8);
+	for (auto const& patch : reloaded->patches()) {
+		REQUIRE_FALSE(patch.patch());
+	}
+
+	midikraft::Librarian librarian({});
+	int callbacks = 0;
+	librarian.sendBankToSynth(*reloaded, true, nullptr, [&](bool completed) {
+		++callbacks;
+		CHECK_FALSE(completed);
+	});
+	CHECK(callbacks == 1);
 }

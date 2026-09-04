@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -94,6 +93,11 @@ def load_synths() -> list[dict[str, str]]:
         status = normalize_status(row.get("status", ""))
         synth_type = normalize_type(row.get("type", ""))
 
+        availability = str(row.get("availability", "")).strip()
+        if availability not in ("2.9.0", "After 2.9.0", "Not in regular builds"):
+            raise ValueError(f"Invalid release availability in row #{index}: {availability!r}")
+        if any(r["manufacturer"] == manufacturer and r["synth"] == synth for r in result):
+            raise ValueError(f"Duplicate synth row: {manufacturer} {synth}")
         result.append(
             {
                 "manufacturer": manufacturer,
@@ -102,6 +106,7 @@ def load_synths() -> list[dict[str, str]]:
                 "statusLabel": STATUS_LABELS[status],
                 "type": synth_type,
                 "kudos": kudos,
+                "availability": availability,
             }
         )
 
@@ -110,8 +115,8 @@ def load_synths() -> list[dict[str, str]]:
 
 def build_markdown_table(synths: list[dict[str, str]]) -> str:
     lines = [
-        "| Manufacturer | Synth | Status | Type | Kudos |",
-        "| --- | --- | --- | --- | --- |",
+        "| Manufacturer | Synth | Status | Type | Release | Notes / thanks |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
 
     for row in synths:
@@ -122,6 +127,7 @@ def build_markdown_table(synths: list[dict[str, str]]) -> str:
             f"{escape_md(row['synth'])} | "
             f"{escape_md(status)} | "
             f"{escape_md(row['type'])} | "
+            f"{escape_md(row['availability'])} | "
             f"{escape_md(row['kudos'])} |"
         )
 
@@ -155,8 +161,8 @@ def build_docs_grouped_content(synths: list[dict[str, str]]) -> str:
         lines.append(f'<a id="manufacturer-{slugify(manufacturer)}"></a>')
         lines.append(f"## {manufacturer}")
         lines.append("")
-        lines.append("| Synth | Status | Type | Kudos |")
-        lines.append("| --- | --- | --- | --- |")
+        lines.append("| Synth | Status | Type | Release | Notes / thanks |")
+        lines.append("| --- | --- | --- | --- | --- |")
         for row in grouped[manufacturer]:
             status = row["status"].replace("_", " ")
             lines.append(
@@ -164,6 +170,7 @@ def build_docs_grouped_content(synths: list[dict[str, str]]) -> str:
                 f"{escape_md(row['synth'])} | "
                 f"{escape_md(status)} | "
                 f"{escape_md(row['type'])} | "
+                f"{escape_md(row['availability'])} | "
                 f"{escape_md(row['kudos'])} |"
             )
         lines.append("")
@@ -191,22 +198,36 @@ def update_markdown_files(readme_table: str, docs_content: str) -> None:
     DOCS_FILE.write_text(docs, encoding="utf-8")
 
 
-def write_json(synths: list[dict[str, str]]) -> None:
-    JSON_FILE.parent.mkdir(parents=True, exist_ok=True)
+def json_content(synths: list[dict[str, str]]) -> str:
+    source = yaml.safe_load(DATA_FILE.read_text(encoding="utf-8"))
     payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "source_revision": source["source_revision"],
+        "release_checked": source["release_checked"],
         "count": len(synths),
         "synths": synths,
     }
-    JSON_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return json.dumps(payload, indent=2) + "\n"
 
 
 def main() -> int:
     synths = load_synths()
     readme_table = build_markdown_table(synths)
     docs_content = build_docs_grouped_content(synths)
-    update_markdown_files(readme_table, docs_content)
-    write_json(synths)
+    expected = {
+        README_FILE: replace_marked_block(README_FILE.read_text(encoding="utf-8"), README_BEGIN, README_END, readme_table),
+        DOCS_FILE: replace_marked_block(DOCS_FILE.read_text(encoding="utf-8"), DOCS_BEGIN, DOCS_END, docs_content),
+        JSON_FILE: json_content(synths),
+    }
+    if "--check" in sys.argv:
+        stale = [str(path.relative_to(ROOT)) for path, content in expected.items()
+                 if not path.exists() or path.read_text(encoding="utf-8") != content]
+        if stale:
+            raise SystemExit("Stale generated synth files: " + ", ".join(stale))
+        print(f"Verified {len(synths)} synth rows; generated artifacts are current")
+        return 0
+    for path, content in expected.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
     print(f"Generated {len(synths)} synth rows -> README/docs/data JSON")
     return 0
 

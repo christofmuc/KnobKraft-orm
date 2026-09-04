@@ -5,9 +5,19 @@
 #
 
 import hashlib
+from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import knobkraft
+
+REQUIRED_HOST_API_VERSION = 2
+
+if not hasattr(knobkraft, "require_host_api_version"):
+    raise RuntimeError(
+        "Roland MKS-50 requires KnobKraft adaptation API level 2 for bank-dump "
+        "handshake support. Please update KnobKraft Orm."
+    )
+knobkraft.require_host_api_version(REQUIRED_HOST_API_VERSION, "Roland MKS-50")
 
 ROLAND_ID = 0x41
 MKS50_ID = 0x23
@@ -113,7 +123,8 @@ def name() -> str:
 def setupHelp() -> str:
     return (
         "The MKS-50 cannot be queried for full bank dumps from software.\n\n"
-        "To download banks, start a bulk dump from the MKS-50 front panel.\n"
+        "Alpha Juno-1/2 tone banks use the same tone dump format and can be imported/exported here.\n\n"
+        "To download banks, start a bulk dump from the MKS-50 or Alpha Juno front panel.\n"
         "Use Tone dump modes (for example T-a / T-b), not patch/chord dump modes.\n\n"
         "For two-way dumps, the adaptation now sends handshake ACK/RJC replies automatically."
     )
@@ -210,6 +221,41 @@ def convertToProgramDump(channel: int, message: List[int], program_number: int) 
     return convertToEditBuffer(channel, message)
 
 
+def convertPatchesToBankDump(patches) -> List[List[int]]:
+    patch_messages = _normalize_patch_dump_list(patches)
+    if len(patch_messages) == 0:
+        raise ValueError("MKS-50 bank export requires at least one patch")
+    if len(patch_messages) > numberOfPatchesPerBank():
+        raise ValueError("A full MKS-50/Alpha Juno tone bank can contain at most 64 patches")
+
+    normalized_patches = [convertToEditBuffer(0, patch) for patch in patch_messages]
+    while len(normalized_patches) < numberOfPatchesPerBank():
+        normalized_patches.append(_default_apr_patch(0))
+
+    bank_messages: List[List[int]] = []
+    for block_no in range(16):
+        start_patch = block_no * 4
+        payload: List[int] = []
+        for patch in normalized_patches[start_patch:start_patch + 4]:
+            payload.extend(_nibblize(_pack_apr_patch(patch)))
+        bank_messages.append(
+            [
+                0xF0,
+                ROLAND_ID,
+                OP_BLD,
+                0x00,
+                MKS50_ID,
+                LEVEL_TONE,
+                GROUP_TONE,
+                0x00,
+                start_patch,
+            ]
+            + payload
+            + [0xF7]
+        )
+    return bank_messages
+
+
 def isPartOfBankDump(message: List[int]):
     global _previous_sysex, _transfer_mode, _num_wsf, _data_packages, _saw_eof, _transfer_aborted
 
@@ -221,12 +267,14 @@ def isPartOfBankDump(message: List[int]):
     if not _is_own_sysex(message):
         return False
 
-    # Native code drops duplicate messages from potentially looped setups.
-    if _previous_sysex == message:
-        return False
+    operation = _operation(message)
+    is_duplicate = _previous_sysex == message
     _previous_sysex = message[:]
 
-    operation = _operation(message)
+    # Native code drops duplicate messages from potentially looped setups, but
+    # transfer handshake frames still need ACK/RJC replies when they repeat.
+    if is_duplicate and not _is_handshake_transfer_frame(message):
+        return False
 
     if operation == OP_BLD:
         _transfer_mode = "BLD"
@@ -234,17 +282,22 @@ def isPartOfBankDump(message: List[int]):
         return True
 
     if operation == OP_WSF:
-        _num_wsf += 1
+        if not is_duplicate:
+            _num_wsf += 1
         if _num_wsf > 2:
             _transfer_aborted = True
             return False, _build_handshake_reply(OP_RJC, message)
-        return False, _build_handshake_reply(OP_ACK, message)
+        # Keep the initial WSF in the collected stream. It is needed to validate
+        # DAT frames again when the completed download is parsed as an offline bank.
+        return not is_duplicate, _build_handshake_reply(OP_ACK, message)
 
     if operation == OP_DAT:
         if _num_wsf < 1:
             _transfer_aborted = True
             return False, _build_handshake_reply(OP_RJC, message)
         _transfer_mode = "DAT"
+        if is_duplicate:
+            return False, _build_handshake_reply(OP_ACK, message)
         _data_packages += 1
         return True, _build_handshake_reply(OP_ACK, message)
 
@@ -255,7 +308,7 @@ def isPartOfBankDump(message: List[int]):
     if operation == OP_EOF:
         _transfer_mode = "DAT"
         _saw_eof = True
-        return False, _build_handshake_reply(OP_ACK, message)
+        return not is_duplicate, _build_handshake_reply(OP_ACK, message)
 
     if operation in (OP_RJC, OP_ERR):
         _transfer_aborted = True
@@ -269,26 +322,18 @@ def isBankDumpFinished(messages: List[List[int]]):
 
     if _transfer_aborted:
         _reset_bank_state()
-        return True, []
+        return True, False, []
 
-    if _transfer_mode == "DAT":
-        is_finished = _saw_eof and _data_packages >= 16
-        if is_finished:
-            _reset_bank_state()
-        return is_finished, []
-
-    if _transfer_mode == "BLD":
-        is_finished = _data_packages >= 16
-        if is_finished:
-            _reset_bank_state()
-        return is_finished, []
-
-    # Fallback path for offline file parsing without transfer state.
-    bulk_blocks = sum(1 for m in normalized if _is_own_sysex(m) and _operation(m) in (OP_BLD, OP_DAT))
-    is_finished = bulk_blocks >= 16
+    # Completion must depend only on the messages in this particular download/import.
+    # Protocol counters are used for handshake validation, but may outlive an incomplete
+    # offline import because the adaptation module itself remains loaded.
+    bld_blocks = sum(1 for message in normalized if _is_tone_bld(message))
+    dat_blocks = sum(1 for message in normalized if _is_tone_dat(message))
+    saw_eof = any(_is_own_sysex(message) and _operation(message) == OP_EOF for message in normalized)
+    is_finished = bld_blocks >= 16 or (dat_blocks >= 16 and saw_eof)
     if is_finished:
         _reset_bank_state()
-    return is_finished, []
+    return is_finished, True, []
 
 
 def createBankDumpRequest(channel: int, bank: int) -> List[int]:
@@ -401,16 +446,99 @@ def calculateFingerprint(message: List[int]) -> str:
         return hashlib.md5(bytearray(payload)).hexdigest()
 
     if _is_tone_bld(data):
-        packed = _extract_single_packed_patch(data, 0, 9)
-        apr_data = _apply_tone_mapping(packed)
-        return hashlib.md5(bytearray(apr_data)).hexdigest()
+        voice_data: List[int] = []
+        for patch_no in range(4):
+            packed = _extract_single_packed_patch(data, patch_no, 9)
+            voice_data.extend(_apply_tone_mapping(packed))
+        return hashlib.md5(bytearray(voice_data)).hexdigest()
 
-    if _operation(data) == OP_DAT and len(data) == 263:
-        packed = _extract_single_packed_patch(data, 0, 5)
-        apr_data = _apply_tone_mapping(packed)
-        return hashlib.md5(bytearray(apr_data)).hexdigest()
+    if _is_tone_dat(data):
+        voice_data = []
+        for patch_no in range(4):
+            packed = _extract_single_packed_patch(data, patch_no, 5)
+            voice_data.extend(_apply_tone_mapping(packed))
+        return hashlib.md5(bytearray(voice_data)).hexdigest()
 
     return hashlib.md5(bytearray(message)).hexdigest()
+
+
+def make_test_data():
+    import testing
+    from testing.mock_midi import PassiveBankDumpMockDevice
+
+    fixture_dir = Path(__file__).parent / "testData" / "Roland_MKS50"
+    factory_bank = knobkraft.load_sysex(str(fixture_dir / "FACTORYA.SYX"))
+    factory_patches = extractPatchesFromAllBankMessages(factory_bank)
+
+    def programs(_: testing.TestData) -> List[testing.ProgramTestData]:
+        return [
+            testing.ProgramTestData(factory_patches[0], name="PolySynth1", number=0, rename_name="Renamed"),
+            testing.ProgramTestData(factory_patches[1], name="JazzGuitar", number=1, rename_name="New Name"),
+            testing.ProgramTestData(factory_patches[2], name="Xylophone ", number=2, rename_name="Brass 2"),
+        ]
+
+    def edit_buffers(_: testing.TestData) -> List[testing.ProgramTestData]:
+        return [
+            testing.ProgramTestData(factory_patches[0], name="PolySynth1", number=0, rename_name="Renamed"),
+            testing.ProgramTestData(factory_patches[1], name="JazzGuitar", number=1, rename_name="New Name"),
+        ]
+
+    def banks(_: testing.TestData) -> List[List[List[int]]]:
+        return [factory_bank]
+
+    dat_messages = _make_test_dat_bank_messages(channel=0)
+    ack = _build_handshake_reply(OP_ACK, [0xF0, ROLAND_ID, OP_DAT, 0x00, MKS50_ID, 0xF7])
+
+    return testing.TestData(
+        sysex=str(fixture_dir / "FACTORYA.SYX"),
+        program_generator=programs,
+        edit_buffer_generator=edit_buffers,
+        bank_generator=banks,
+        program_dump_request=(0, 0, createProgramDumpRequest(0, 0)),
+        device_detect_reply=(factory_bank[0], 0),
+        friendly_bank_name=(0, "Bank A"),
+        expected_patch_count=64,
+        mock_device_factory=lambda _test_data, _adaptation: PassiveBankDumpMockDevice(
+            dat_messages,
+            accepted_replies=[ack],
+        ),
+        expected_wire_patch_count=64,
+        expected_sent_messages=lambda _test_data, _adaptation: [ack] * 18,
+        send_to_synth_patch=lambda _test_data: factory_patches[0],
+        expected_send_to_synth_messages=lambda _test_data, _adaptation: [convertToEditBuffer(0, factory_patches[0])],
+    )
+
+
+def _make_test_dat_bank_messages(channel: int = 0) -> List[List[int]]:
+    messages = [[0xF0, ROLAND_ID, OP_WSF, channel & 0x0F, MKS50_ID, 0xF7]]
+    for block_no in range(16):
+        messages.append(_make_test_dat_block(block_no, channel))
+    messages.append([0xF0, ROLAND_ID, OP_EOF, channel & 0x0F, MKS50_ID, 0xF7])
+    return messages
+
+
+def _make_test_dat_block(block_no: int, channel: int = 0) -> List[int]:
+    payload: List[int] = []
+    for patch_no in range(4):
+        name = f"{block_no:02d}{patch_no:02d}ABCDEF"
+        payload.extend(_nibblize_test_packed_patch(_encode_test_packed_patch(name)))
+    checksum = (-sum(payload)) & 0x7F
+    return [0xF0, ROLAND_ID, OP_DAT, channel & 0x0F, MKS50_ID] + payload + [checksum, 0xF7]
+
+
+def _encode_test_packed_patch(patch_name: str) -> List[int]:
+    packed = [0] * 32
+    for index, character in enumerate(patch_name[:APR_NAME_SIZE]):
+        packed[21 + index] = PATCH_NAME_CHARS.index(character)
+    return packed
+
+
+def _nibblize_test_packed_patch(packed: List[int]) -> List[int]:
+    wire: List[int] = []
+    for byte in packed:
+        wire.append(byte & 0x0F)
+        wire.append((byte >> 4) & 0x0F)
+    return wire
 
 
 def _normalize_sysex_list(message: List[int]) -> List[List[int]]:
@@ -426,6 +554,27 @@ def _normalize_bank_message_list(messages: Sequence) -> List[List[int]]:
     return list(messages)  # type: ignore[return-value]
 
 
+def _normalize_patch_dump_list(patches) -> List[List[int]]:
+    if len(patches) == 0:
+        return []
+
+    if isinstance(patches[0], int):
+        return knobkraft.splitSysexMessage(patches)
+
+    result: List[List[int]] = []
+    for patch in patches:
+        if len(patch) == 0:
+            continue
+        if isinstance(patch[0], int):
+            result.append(patch)
+        else:
+            flat_patch: List[int] = []
+            for message in patch:
+                flat_patch.extend(message)
+            result.extend(knobkraft.splitSysexMessage(flat_patch))
+    return result
+
+
 def _is_own_sysex(message: List[int]) -> bool:
     return (
         len(message) >= 6
@@ -438,6 +587,10 @@ def _is_own_sysex(message: List[int]) -> bool:
 
 def _operation(message: List[int]) -> int:
     return message[2]
+
+
+def _is_handshake_transfer_frame(message: List[int]) -> bool:
+    return _is_own_sysex(message) and _operation(message) in (OP_WSF, OP_DAT, OP_EOF)
 
 
 def _is_tone_apr(message: List[int]) -> bool:
@@ -469,6 +622,10 @@ def _is_tone_bld(message: List[int]) -> bool:
     )
 
 
+def _is_tone_dat(message: List[int]) -> bool:
+    return _is_own_sysex(message) and _operation(message) == OP_DAT and len(message) == 263
+
+
 def _build_handshake_reply(operation: int, request: List[int]) -> List[int]:
     return [0xF0, ROLAND_ID, operation, request[3] & 0x0F, MKS50_ID, 0xF7]
 
@@ -482,6 +639,10 @@ def _make_apr_message_from_payload(channel: int, payload: List[int], name_data: 
     result.extend(normalized_name)
     result.append(0xF7)
     return result
+
+
+def _default_apr_patch(channel: int) -> List[int]:
+    return _make_apr_message_from_payload(channel, [0] * APR_TONE_DATA_SIZE, [0] * APR_NAME_SIZE)
 
 
 def _valid_dat_checksum(message: List[int]) -> bool:
@@ -522,6 +683,33 @@ def _apply_tone_mapping(packed_data: List[int]) -> List[int]:
         value = (packed_data[source_byte] >> lsb_index) & ((1 << bit_count) - 1)
         apr_data[target] |= value << target_bit_index
     return apr_data
+
+
+def _pack_apr_patch(message: List[int]) -> List[int]:
+    if not _is_tone_apr(message):
+        raise ValueError("MKS-50 bank export expects APR tone patches")
+
+    apr_data = message[7:43]
+    packed_data = [0] * 32
+    for source_byte, lsb_index, bit_count, target, target_bit_index in TONE_MAPPING:
+        value = (apr_data[target] >> target_bit_index) & ((1 << bit_count) - 1)
+        packed_data[source_byte] |= value << lsb_index
+
+    name_data = message[43:53]
+    while len(name_data) < APR_NAME_SIZE:
+        name_data.append(SPACE_CHAR_INDEX)
+    for index, name_byte in enumerate(name_data[:APR_NAME_SIZE]):
+        packed_data[21 + index] = (packed_data[21 + index] & 0xC0) | (name_byte & 0x3F)
+
+    return packed_data
+
+
+def _nibblize(packed_data: List[int]) -> List[int]:
+    wire_data: List[int] = []
+    for byte_value in packed_data:
+        wire_data.append(byte_value & 0x0F)
+        wire_data.append((byte_value >> 4) & 0x0F)
+    return wire_data
 
 
 def _decode_name_from_packed(packed_data: List[int]) -> str:

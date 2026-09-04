@@ -4,6 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
+import copy
 from typing import List, Tuple, Optional, Dict, Union
 import knobkraft
 
@@ -84,7 +85,8 @@ class DataBlock:
 
 
 class RolandData:
-    def __init__(self, data_name: str, num_items: int, num_address_bytes: int, num_size_bytes: int, base_address: Tuple, blocks: List[DataBlock], uses_consecutive_addresses: Optional[bool] = False):
+    def __init__(self, data_name: str, num_items: int, num_address_bytes: int, num_size_bytes: int, base_address: Tuple, blocks: List[DataBlock], uses_consecutive_addresses: Optional[bool] = False,
+                 supported_layouts: Optional[List[Tuple[int, ...]]] = None):
         self.data_name = data_name
         self.num_items = num_items  # This is the "bank size" of that data type
         self.num_address_bytes = num_address_bytes
@@ -95,6 +97,9 @@ class RolandData:
         self.allowed_addresses = set([self.absolute_address(x.address) for x in self.data_blocks])
         self.blank_out_zones = None
         self.uses_consecutive_addresses = uses_consecutive_addresses
+        # Each tuple describes a complete supported model variant, in block order.
+        self.supported_layouts = {tuple(block.size for block in blocks)}
+        self.supported_layouts.update(supported_layouts or [])
 
     def make_black_out_zones(self, model_id_length: int, program_position: Union[int, Tuple[int, int]] = None, device_id_position: int = None, name_blankout: Tuple[int, int, int] = None):
         # Calculate the additional bytes each data block takes. This is sysex header, checksum and sysex end, plus model ID and device ID
@@ -186,7 +191,8 @@ class GenericRoland:
                  patch_name_message_number: Optional[int] = 0,
                  patch_name_length: Optional[int] = 12,
                  use_roland_character_set: Optional[bool] = False,
-                 uses_consecutive_addresses: Optional[bool] = False):
+                 uses_consecutive_addresses: Optional[bool] = False,
+                 patch_name_offset: int = 0):
         self._name = name
         self.model_id = model_id
         self.device_family = device_family  # This is only used in the Identity Reply Message.
@@ -200,12 +206,10 @@ class GenericRoland:
         self.category_index = category_index
         self.patch_name_message_number = patch_name_message_number
         self.patch_name_length = patch_name_length
+        self.patch_name_offset = patch_name_offset
         self.use_roland_character_set = use_roland_character_set
         self.uses_consecutive_addresses = uses_consecutive_addresses
-        # Calculate the fingerprint blank out zones for edit buffer (just the name) and program dump (program position and name)
-        edit_buffer.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len)
-        program_dump.make_black_out_zones(self._model_id_len, program_position=5 + self._model_id_len,
-                                          name_blankout=(0, 0, 12))  # name always is in block 0 with index 0 and length 12
+        self._address_maps = {}
 
     @knobkraft_api
     def name(self):
@@ -229,20 +233,26 @@ class GenericRoland:
     def channelIfValidDeviceResponse(self, message: List[int]) -> int:
         if self.device_family is not None:
             # The Roland usually will reply on a Universal Device Identity Reply message
-            if (len(message) > 6 + self._model_id_len
+            if (len(message) >= 15
                     and message[0] == 0xf0  # Sysex
                     and message[1] == 0x7e  # Non-realtime
                     and message[3] == 0x06  # Device request
                     and message[4] == 0x02  # Device request reply
                     and message[5] == 0x41  # Roland
-                    and message[6:6 + self._model_id_len] == self.device_family):  # Family code expected, this is *not* the model ID
+                    and message[6:6 + len(self.device_family)] == self.device_family
+                    and message[-1] == 0xf7
+                    and all(0 <= x < 0x80 for x in message[1:-1])
+                    and message[2] <= 0x1f):
                 # and message[8:10] == [0x00, 0x00]):  # Family code
                 self.device_id = message[2]  # Store the device ID for later, we'll need it
                 return message[2] & 0x0f  # Simulate MIDI channel, but of course this is stupid
         elif self.device_detect_message is not None:
             # Check if the message is our own, and at the address we were expecting
             if self.isOwnSysex(message):
-                command, address, reply = self.parseRolandMessage(message)
+                try:
+                    command, address, reply = self.parseRolandMessage(message)
+                except ValueError:
+                    return -1
                 if command == command_dt1 and address == list(self.device_detect_message.absolute_address(self.device_detect_message.data_blocks[0].address)):
                     self.device_id = message[2]
                     return message[2] & 0x0f
@@ -272,13 +282,18 @@ class GenericRoland:
         return message
 
     def parseRolandMessage(self, message: list) -> Tuple[int, List[int], List[int]]:
+        if (len(message) < self._checksum_start() + self.address_size + 2
+                or not self.isOwnSysex(message) or message[-1] != 0xf7
+                or not all(isinstance(x, int) and 0 <= x < 0x80 for x in message[1:-1])
+                or message[2] > 0x1f):
+            raise ValueError("Invalid Roland message framing, model or device ID")
         checksum_start = self._checksum_start()
         checksum = self.roland_checksum(message[checksum_start:-2])
         if checksum == message[-2]:
             command = message[3 + self._model_id_len]
             address = message[checksum_start:checksum_start + self.address_size]
             return command, address, message[checksum_start + self.address_size:-2]
-        raise Exception("Checksum error in Roland message parsing, expected", message[-2], "but got", checksum)
+        raise ValueError("Checksum error in Roland message parsing", message[-2], checksum)
 
     def getCommandAndAddressFromRolandMessage(self, message: list) -> Tuple[int, List[int]]:
         checksum_start = self._checksum_start()
@@ -291,103 +306,145 @@ class GenericRoland:
     @knobkraft_api
     def createEditBufferRequest(self, channel) -> List[int]:
         # The edit buffer is called Patch mode temporary patch
-        address, size = self.edit_buffer.address_and_size_for_sub_request(0, 0)
+        address, size = self._address_for_sub_request(self.edit_buffer, 0, 0)
         return self.buildRolandMessage(self.device_id, command_rq1, address, size)
 
     def _createFollowUpEditBufferDumpRequest(self, previousRequestNo):
         # Check if there is a follow up data block
         if previousRequestNo + 1 < len(self.edit_buffer.data_blocks):
-            address, size = self.edit_buffer.address_and_size_for_sub_request(previousRequestNo + 1, 0)
+            address, size = self._address_for_sub_request(self.edit_buffer, previousRequestNo + 1, 0)
             return self.buildRolandMessage(self.device_id, command_rq1, address, size)
         else:
             return []
 
+    def _address_for_sub_request(self, layout, block_no, item):
+        # Models with a different part stride can override this one address hook.
+        return layout.address_and_size_for_sub_request(block_no, item)
+
+    def _block_address_map(self, layout):
+        # Use concrete addresses, including program/part context, rather than
+        # dropping an address byte. Cache per instance, never on shared layouts.
+        if layout not in self._address_maps:
+            addresses = {}
+            for item in range(layout.num_items):
+                for block_no in range(len(layout.data_blocks)):
+                    address, _ = self._address_for_sub_request(layout, block_no, item)
+                    key = tuple(address)
+                    if key in addresses:
+                        raise ValueError("Ambiguous Roland block layout")
+                    addresses[key] = (block_no, item)
+            self._address_maps[layout] = addresses
+        return self._address_maps[layout]
+
+    def _parse_block(self, message, layout):
+        command, address, data = self.parseRolandMessage(message)
+        if command != command_dt1:
+            raise ValueError("Expected a Roland DT1 block")
+        match = self._block_address_map(layout).get(tuple(address))
+        if match is None:
+            raise ValueError("Unknown Roland block address or program")
+        block_no, item = match
+        if not any(len(data) == sizes[block_no] for sizes in layout.supported_layouts):
+            raise ValueError("Unsupported Roland block size")
+        return block_no, item, address, data
+
+    def _parse_dump(self, message, layout):
+        blocks = {}
+        context = None
+        end_of_previous = 0
+        for start, end in knobkraft.sysex.findSysexDelimiters(message):
+            if start != end_of_previous:
+                raise ValueError("Unexpected data between Roland blocks")
+            sub = message[start:end]
+            block_no, item, address, data = self._parse_block(sub, layout)
+            if block_no in blocks:
+                raise ValueError("Duplicate Roland block")
+            if context is not None and context != (sub[2], item):
+                raise ValueError("Mixed Roland devices or programs")
+            context = (sub[2], item)
+            blocks[block_no] = (address, data)
+            end_of_previous = end
+        if end_of_previous != len(message) or len(blocks) != len(layout.data_blocks):
+            raise ValueError("Incomplete Roland dump")
+        if tuple(len(blocks[i][1]) for i in range(len(blocks))) not in layout.supported_layouts:
+            raise ValueError("Mixed or unsupported Roland layout variants")
+        return blocks, context
+
+    def _validated_dump(self, message):
+        for layout in (self.program_dump, self.edit_buffer):
+            try:
+                blocks, context = self._parse_dump(message, layout)
+                return layout, blocks, context
+            except ValueError:
+                pass
+        raise ValueError("Expected a complete, valid Roland edit buffer or program dump")
+
+    def _is_dump(self, messages, layout):
+        try:
+            self._parse_dump(messages, layout)
+            return True
+        except ValueError:
+            return False
+
     @knobkraft_api
     def isPartOfEditBufferDump(self, message):
-        # Accept a certain set of addresses. This does not verify the checksum, for speed reasons, or check the size
-        if self.isOwnSysex(message):
-            command, address = self.getCommandAndAddressFromRolandMessage(message)
-            if command == command_dt1:
-                normalized_address = tuple(self.edit_buffer.reset_to_base_address(address))
-                # Find out which data block we got
-                for sub_request in range(len(self.edit_buffer.data_blocks)):
-                    if normalized_address == self.edit_buffer.absolute_address(self.edit_buffer.data_blocks[sub_request].address):
-                        return True, self._createFollowUpEditBufferDumpRequest(sub_request)
-        return False
+        try:
+            block_no, _, _, _ = self._parse_block(message, self.edit_buffer)
+            return True, self._createFollowUpEditBufferDumpRequest(block_no)
+        except ValueError:
+            return False
 
     @knobkraft_api
     def isEditBufferDump(self, messages):
-        addresses = set()
-        for message in knobkraft.sysex.findSysexDelimiters(messages):
-            if self.isOwnSysex(messages[message[0]:message[1]]):
-                _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
-                addresses.add(tuple(self.edit_buffer.reset_to_base_address(address)))
-        return all(a in addresses for a in self.edit_buffer.allowed_addresses)
+        return self._is_dump(messages, self.edit_buffer)
+
+    def _convert_dump(self, message, destination, item, device_id=None):
+        source, blocks, _ = self._validated_dump(message)
+        by_identity = {source.data_blocks[i].address: data for i, (_, data) in blocks.items()}
+        if set(by_identity) != {block.address for block in destination.data_blocks}:
+            raise ValueError("Incompatible Roland source and destination layouts")
+        payloads = [by_identity[block.address] for block in destination.data_blocks]
+        if tuple(map(len, payloads)) not in destination.supported_layouts:
+            raise ValueError("Unsupported Roland destination layout variant")
+        result = []
+        for block_no, data in enumerate(payloads):
+            address, _ = self._address_for_sub_request(destination, block_no, item)
+            result += self.buildRolandMessage(self.device_id if device_id is None else device_id,
+                                              command_dt1, address, data)
+        return result
 
     @knobkraft_api
     def convertToEditBuffer(self, channel, message):
-        editBuffer = []
-        if self.isEditBufferDump(message) or self.isSingleProgramDump(message):
-            # We need to poke the device ID and the edit buffer address into the messages
-            msg_no = 0
-            for message in knobkraft.sysex.splitSysexMessage(message):
-                command, address, data = self.parseRolandMessage(message)
-                edit_buffer_address, _ = self.edit_buffer.address_and_size_for_sub_request(msg_no, 0x00)
-                editBuffer = editBuffer + self.buildRolandMessage(self.device_id, command_dt1, edit_buffer_address, data)
-                msg_no += 1
-            return editBuffer
-        raise Exception("Invalid argument given, can only convert edit buffers and program dumps to edit buffers")
+        return self._convert_dump(message, self.edit_buffer, 0)
 
     @knobkraft_api
     def createProgramDumpRequest(self, channel, patchNo):
-        address, size = self.program_dump.address_and_size_for_sub_request(0, patchNo % self.program_dump.num_items)
+        address, size = self._address_for_sub_request(self.program_dump, 0, patchNo % self.program_dump.num_items)
         return self.buildRolandMessage(self.device_id, command_rq1, address, size)
 
     def _createFollowUpProgramDumpRequest(self, patchNo, previousRequestNo):
         # Check if there is a follow up data block
         if previousRequestNo + 1 < len(self.program_dump.data_blocks):
-            address, size = self.program_dump.address_and_size_for_sub_request(previousRequestNo + 1, patchNo % self.program_dump.num_items)
+            address, size = self._address_for_sub_request(self.program_dump, previousRequestNo + 1, patchNo % self.program_dump.num_items)
             return self.buildRolandMessage(self.device_id, command_rq1, address, size)
         else:
             return []
 
     @knobkraft_api
     def isPartOfSingleProgramDump(self, message):
-        # Accept a certain set of addresses
-        if self.isOwnSysex(message):
-            command, address = self.getCommandAndAddressFromRolandMessage(message)
-            if command == command_dt1:
-                patchNo = self._patch_number_from_address(address)
-                normalized_address = tuple(self.program_dump.reset_to_base_address(address))
-                # Find out which data block we got
-                for sub_request in range(len(self.program_dump.data_blocks)):
-                    if normalized_address == self.program_dump.absolute_address(self.program_dump.data_blocks[sub_request].address):
-                        return True, self._createFollowUpProgramDumpRequest(patchNo, sub_request)
-        return False
+        try:
+            block_no, item, _, _ = self._parse_block(message, self.program_dump)
+            return True, self._createFollowUpProgramDumpRequest(item, block_no)
+        except ValueError:
+            return False
 
     @knobkraft_api
     def isSingleProgramDump(self, messages):
-        addresses = set()
-        programs = set()
-        for message in knobkraft.sysex.findSysexDelimiters(messages):
-            _, address = self.getCommandAndAddressFromRolandMessage(messages[message[0]:message[1]])
-            addresses.add(self.program_dump.reset_to_base_address(address))
-            programs.add(self._patch_number_from_address(address))
-        return len(programs) == 1 and all(a in addresses for a in self.program_dump.allowed_addresses)
+        return self._is_dump(messages, self.program_dump)
 
     @knobkraft_api
     def convertToProgramDump(self, channel, message, program_number):
-        programDump = []
-        if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
-            # We need to poke the device ID and the program number into the messages
-            msg_no = 0
-            for message in knobkraft.sysex.splitSysexMessage(message):
-                _, _, data = self.parseRolandMessage(message)
-                program_buffer_address, _ = self.program_dump.address_and_size_for_sub_request(msg_no, program_number % self.program_dump.num_items)
-                programDump = programDump + self.buildRolandMessage(self.device_id, command_dt1, program_buffer_address, data)
-                msg_no += 1
-            return programDump
-        raise Exception("Can only convert single program dumps to program dumps!")
+        return self._convert_dump(message, self.program_dump, program_number % self.program_dump.num_items)
 
     @staticmethod
     def _apply_blankout(data: List[int], blankout: List[Tuple[int, int]]):
@@ -404,12 +461,20 @@ class GenericRoland:
         return result
 
     def blankedOut(self, message):
-        # Use the prepared blank out zones to clear out a) program place and b) patch name
-        if self.isEditBufferDump(message):
-            return self._apply_blankout(message.copy(), self.edit_buffer.blank_out_zones)
-        elif self.isSingleProgramDump(message):
-            return self._apply_blankout(message.copy(), self.program_dump.blank_out_zones)
-        raise Exception("Only works with edit buffers and program dumps")
+        # Canonical program-slot-zero DT1 serialization preserves the legacy hash
+        # of ordered, nominal-size program dumps at the default device ID.
+        # Construct each block separately so variant lengths cannot shift masks
+        # into sound data. See docs/roland-fingerprints.md for database migration.
+        canonical = self._convert_dump(message, self.program_dump, 0, device_id=0x10)
+        result = []
+        for block_no, sub in enumerate(knobkraft.splitSysex(canonical)):
+            sub[self._checksum_start() + 1] = 0  # legacy program-position mask
+            sub[-2] = 0
+            if block_no == self.patch_name_message_number:
+                name_start = self._checksum_start() + self.address_size + self.patch_name_offset
+                sub[name_start:name_start + self.patch_name_length] = [0] * self.patch_name_length
+            result.extend(sub)
+        return result
 
     @knobkraft_api
     def calculateFingerprint(self, message):
@@ -425,24 +490,23 @@ class GenericRoland:
 
     @knobkraft_api
     def numberFromDump(self, message) -> int:
-        if not self.isSingleProgramDump(message):
+        try:
+            _, context = self._parse_dump(message, self.program_dump)
+            return context[1]
+        except ValueError:
             return 0
-        messages = knobkraft.sysex.findSysexDelimiters(message, 1)
-        _, address = self.getCommandAndAddressFromRolandMessage(message[messages[0][0]:messages[0][1]])
-        return self._patch_number_from_address(address)
 
     @knobkraft_api
     def nameFromDump(self, message) -> str:
-        if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
-            msg_no = self.patch_name_message_number
-            messages = knobkraft.sysex.findSysexDelimiters(message, msg_no + 1)
-            _, _, data = self.parseRolandMessage(message[messages[msg_no][0]:messages[msg_no][1]])
-            if self.use_roland_character_set:
-                patch_name = ''.join([character_set[x] for x in data[0:self.patch_name_length]])
-            else:
-                patch_name = ''.join([chr(x) for x in data[0:self.patch_name_length]])
-            return patch_name
-        return 'Invalid'
+        try:
+            _, blocks, _ = self._validated_dump(message)
+        except ValueError:
+            return 'Invalid'
+        data = blocks[self.patch_name_message_number][1]
+        name = data[self.patch_name_offset:self.patch_name_offset + self.patch_name_length]
+        if self.use_roland_character_set:
+            return ''.join(character_set[x] if x < len(character_set) else ' ' for x in name)
+        return ''.join(chr(x) for x in name)
 
     @knobkraft_api
     def renamePatch(self, message: List[int], new_name: str) -> List[int]:
@@ -450,8 +514,7 @@ class GenericRoland:
         Return a new dump with the patch name changed to `new_name`.
         Works for both single program dumps and edit buffer dumps.
         """
-        if not (self.isSingleProgramDump(message) or self.isEditBufferDump(message)):
-            raise Exception("renamePatch: only supports single program dumps or edit buffer dumps")
+        layout, blocks, context = self._validated_dump(message)
 
         # Prepare name bytes
         name = (new_name or "").strip()
@@ -466,37 +529,25 @@ class GenericRoland:
             # Standard 7-bit ASCII (Roland SysEx is 7-bit clean)
             name_bytes = [ord(ch) & 0x7F for ch in name]
 
-        # Rebuild the entire multi-part SysEx with the new name in the correct sub-message
         rebuilt: List[int] = []
-        msg_no = 0
-        for start, end in knobkraft.sysex.findSysexDelimiters(message):
-            sub = message[start:end]
-            # Preserve the original device id from this submessage
-            device_id_in_msg = sub[2]
-            command, address, data = self.parseRolandMessage(sub)
-
-            if msg_no == self.patch_name_message_number:
-                # Overwrite the name region at the beginning of this data block
-                data = data.copy()
-                data[0:self.patch_name_length] = name_bytes
-
-            # Always send DT1 (data set) when rebuilding
-            rebuilt += self.buildRolandMessage(device_id_in_msg, command_dt1, address, data)
-            msg_no += 1
-
+        for block_no in range(len(layout.data_blocks)):
+            address, data = blocks[block_no]
+            data = data.copy()
+            if block_no == self.patch_name_message_number:
+                data[self.patch_name_offset:self.patch_name_offset + self.patch_name_length] = name_bytes
+            rebuilt += self.buildRolandMessage(context[0], command_dt1, address, data)
         return rebuilt
-
 
     @knobkraft_api
     def storedTags(self, message) -> List[str]:
         if self.category_index is not None:
-            if self.isSingleProgramDump(message) or self.isEditBufferDump(message):
-                messages = knobkraft.sysex.findSysexDelimiters(message, 1)
-                _, _, data = self.parseRolandMessage(message[messages[0][0]:messages[0][1]])
-                category = data[self.category_index]
-                if 0 <= category < len(categories):
-                    return [categories[category][1]]
-                print(f"Warning - encountered invalid category number {category} for which no text is defined, ignoring")
+            try:
+                _, blocks, _ = self._validated_dump(message)
+            except ValueError:
+                return []
+            data = blocks[0][1]
+            if self.category_index < len(data) and data[self.category_index] in categories:
+                return [categories[data[self.category_index]][1]]
         return []
 
     def install(self, module):
@@ -510,13 +561,19 @@ class GenericRoland:
 
 class GenericRolandWithBackwardCompatibility:
     def __init__(self, main_model: GenericRoland, compatible_models: List[GenericRoland]):
-        self.main_model = GenericRoland(main_model.name(), main_model.model_id, main_model.address_size, main_model.edit_buffer,
-                                        main_model.program_dump,
-                                        category_index=main_model.category_index,
-                                        device_family=main_model.device_family,
-                                        device_detect_message=main_model.device_detect_message,
-                                        device_detect_ids=main_model.device_detect_ids)
-        self.models_supported = [main_model] + compatible_models
+        # Own the destination and protocol instances. Detection must not mutate
+        # imported JV adaptations or another wrapper constructed from these models.
+        self.models_supported = copy.deepcopy([main_model] + compatible_models)
+        self.main_model = self.models_supported[0]
+
+    def _destination_model(self, message):
+        model = self.model_from_message(message)
+        if model is None:
+            raise ValueError("Unsupported Roland source model")
+        # Keep protocol/layout selection independent of the destination device ID.
+        destination = copy.copy(model)
+        destination.device_id = self.main_model.device_id
+        return destination
 
     def model_from_message(self, message) -> Optional[GenericRoland]:
         for synth in self.models_supported:
@@ -535,7 +592,11 @@ class GenericRolandWithBackwardCompatibility:
     @knobkraft_api
     def channelIfValidDeviceResponse(self, message: List[int]) -> int:
         # The Roland usually will reply on a Universal Device Identity Reply message
-        return self.main_model.channelIfValidDeviceResponse(message)
+        channel = self.main_model.channelIfValidDeviceResponse(message)
+        if channel >= 0:
+            for model in self.models_supported:
+                model.device_id = self.main_model.device_id
+        return channel
 
     @knobkraft_api
     def needsChannelSpecificDetection(self) -> bool:
@@ -566,8 +627,7 @@ class GenericRolandWithBackwardCompatibility:
 
     @knobkraft_api
     def convertToEditBuffer(self, _channel, message):
-        model = self.model_from_message(message)
-        return model.convertToEditBuffer(model.device_id, message)
+        return self._destination_model(message).convertToEditBuffer(_channel, message)
 
     @knobkraft_api
     def createProgramDumpRequest(self, _channel, patchNo):
@@ -590,10 +650,7 @@ class GenericRolandWithBackwardCompatibility:
 
     @knobkraft_api
     def convertToProgramDump(self, _channel, message, program_number):
-        model = self.model_from_message(message)
-        if model is not None:
-            return model.convertToProgramDump(self.main_model.device_id, message, program_number)
-        raise Exception("Can only convert edit buffers and program dumps of one of the compatible synths!")
+        return self._destination_model(message).convertToProgramDump(_channel, message, program_number)
 
     @knobkraft_api
     def numberFromDump(self, message) -> int:

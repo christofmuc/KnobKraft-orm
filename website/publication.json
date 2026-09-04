@@ -1,0 +1,53 @@
+{
+  "pages": [
+    "index.md",
+    "download.md",
+    "supported-synths.md",
+    "help.md",
+    "develop.md",
+    "learn/index.md",
+    "learn/connect.md",
+    "learn/library-and-hardware.md",
+    "learn/import-a-bank.md",
+    "learn/overview.md",
+    "manual/01-library-and-hardware.md",
+    "manual/02-midi-setup.md",
+    "manual/03-importing.md",
+    "manual/04-browsing-and-auditioning.md",
+    "manual/05-search-and-categories.md",
+    "manual/06-lists-and-banks.md",
+    "manual/07-export-and-backups.md",
+    "manual/glossary.md",
+    "programming-guide.md",
+    "testing-guide.md",
+    "build.md",
+    "contributing.md",
+    "acknowledgements.md",
+    "prior-art.md",
+    "Adaptation Programming Guide.md"
+  ],
+  "docs_assets": [
+    "stylesheets/extra.css",
+    "javascripts/legacy-routes.js",
+    "SetupTab.PNG",
+    "youtube-screenshot.PNG"
+  ],
+  "shared_assets": {
+    "stylesheets/tokens.css": "website/assets/tokens.css",
+    "assets/icon_orm.png": "website/assets/icon_orm.png",
+    "stylesheets/fonts/Inter.ttf": "website/assets/fonts/Inter.ttf",
+    "stylesheets/fonts/JetBrainsMono.ttf": "website/assets/fonts/JetBrainsMono.ttf",
+    "stylesheets/fonts/OFL-Inter.txt": "website/assets/fonts/OFL-Inter.txt",
+    "stylesheets/fonts/OFL-JetBrainsMono.txt": "website/assets/fonts/OFL-JetBrainsMono.txt"
+  },
+  "landing_assets": [
+    "site.css",
+    "tokens.css",
+    "site.js",
+    "icon_orm.png",
+    "fonts/Inter.ttf",
+    "fonts/JetBrainsMono.ttf",
+    "fonts/OFL-Inter.txt",
+    "fonts/OFL-JetBrainsMono.txt"
+  ]
+}

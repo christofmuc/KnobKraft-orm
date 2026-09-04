@@ -101,7 +101,7 @@ namespace midikraft {
 	bool Virus::isEditBufferDump(const std::vector<MidiMessage>& message) const
 	{
 		// The Virus uses a single message for an edit buffer dump
-		if (message.size() == 1 && isOwnSysex(message[0])) {
+		if (message.size() == 1 && isOwnSysex(message[0]) && message[0].getSysExDataSize() > 7) {
 			if (message[0].getSysExData()[5] == 0x10 /* Single dump */) {
 				uint8 bank = message[0].getSysExData()[6];
 				uint8 program = message[0].getSysExData()[7];
@@ -113,7 +113,7 @@ namespace midikraft {
 
 	bool Virus::isSingleProgramDump(const std::vector<MidiMessage>& message) const
 	{
-		if (message.size() == 1 && isOwnSysex(message[0])) {
+		if (message.size() == 1 && isOwnSysex(message[0]) && message[0].getSysExDataSize() > 7) {
 			if (message[0].getSysExData()[5] == 0x10 /* Single dump */) {
 				uint8 bank = message[0].getSysExData()[6];
 				return bank >= 0x01 && bank <= 0x08;
@@ -151,7 +151,7 @@ namespace midikraft {
 
 	midikraft::BankDumpCapability::HandshakeReply Virus::isMessagePartOfBankDump(const MidiMessage& message) const
 	{
-		if (isOwnSysex(message)) {
+		if (isOwnSysex(message) && message.getSysExDataSize() > 6) {
 			if (message.getSysExData()[5] == 0x10 /* Single dump */) {
 				uint8 bank = message.getSysExData()[6];
 				return { bank >= 0x01 && bank <= 0x08, {} };
@@ -263,7 +263,7 @@ namespace midikraft {
 
 	MidiChannel Virus::channelIfValidDeviceResponse(const MidiMessage &message)
 	{
-		if (isOwnSysex(message)) {
+		if (isOwnSysex(message) && message.getSysExDataSize() > 5) {
 			if (message.getSysExData()[5] == 0x12) {
 				// Undocumented in the manual, but that seems to be the "Global Dump" package.
 				//uint8 bb = message.getSysExData()[6];
@@ -284,7 +284,7 @@ namespace midikraft {
 	}
 
 	std::vector<uint8> Virus::getPagesFromMessage(MidiMessage const &message, int dataStartIndex) const {
-		if (isOwnSysex(message)) {
+		if (isOwnSysex(message) && dataStartIndex >= 4 && message.getSysExDataSize() > dataStartIndex) {
 			// Extract the data block and check the checksum
 			std::vector<uint8> data;
 			int sum = 0;

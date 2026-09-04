@@ -17,6 +17,14 @@ Implementing each device as its own C++ module quickly became too much effort, a
 
 Technically, the C++ program uses Python in so called embedded mode, and the Python interpreter is executed in the same process as the main program, which is why you sadly can also crash or hang the main program by making mistakes in the Python code. Don't worry, it happens to everybody.
 
+### Host API compatibility
+
+An adaptation that depends on behavior added to the C++/Python bridge must declare that dependency when it is imported:
+
+    knobkraft.require_host_api_version(2, "My adaptation")
+
+The host advertises this API level before executing adaptation code. A missing level is treated as level 0, so an adaptation with this guard also refuses to load if it is copied into an older KnobKraft Orm installation. Increment the host API level only for an incompatible bridge change or a new bridge feature that an adaptation must be able to require; it is independent of both the application release number and the database schema version.
+
 ## Creating a new Adaptation
 
 New adaptations are stored as a single Python file with the ending `.py` in a directory on your computer, and are read in on start of the KnobKraft Orm.
@@ -25,19 +33,19 @@ The Orm will read in all python files in the specified directory, so you can nam
 
 To find out or change the directory where those are stored, press the button `Set User Adaptation Dir` in the Setup tab for version 1.x, and in the Options menu for version 2.x.
 
-[![](SetupTab.PNG)]
+![Synth setup](SetupTab.PNG)
 
 If you accept the directory you chose, press the button next to it `Create new adaptation`. A dialog will pop up and show you a list of adaptations available to copy out.
 
 **Important: The file copied is an exact copy of the code for the device you selected. The presence of this file will override the built-in version of the adaptation for this synth. The first thing you want to do to the newly created file is probably to change the value returned by the name() function, because this defines the identity of the device.**
 
-Whenever you change the file, you will have to restart the KnobKraft Orm to load the new version. Pay close attention to the log messages of the Orm, they will tell you what went wrong in the Python code should an error occur. 
+Whenever you change the file, you will have to restart the KnobKraft Orm to load the new version. Pay close attention to the log messages of the Orm, they will tell you what went wrong in the Python code should an error occur.
 
 You can also use the `print()` statement in Python to print text into the log window of the Orm, which is very useful for debugging. Even more important might be the MIDI log showing you the communication betweem the Orm and the device.
 
 ## Where to start
 
-The first thing, as I said before, is to change the text returned by the name() function - this name is the unique identifier for the device, so after you selected it please don't change it anymore if you want the database to find your patches again. 
+The first thing, as I said before, is to change the text returned by the name() function - this name is the unique identifier for the device, so after you selected it please don't change it anymore if you want the database to find your patches again.
 
 Then you probably want to create a new test database via the File New... function. When I create new adaptations, I make sure not to pollute my production database with all my patches and favorites. You can switch between databases most easily with the File Recent... function.
 
@@ -50,7 +58,7 @@ The minimum to implement are functions for the following tasks:
 3. Requesting a specific program, and checking an arbitrary MIDI message if it is a program dump from our device
 4. Turning any valid program message or edit buffer message into an edit buffer send command that will be sent to the device.
 
-*Some synths do not have an edit buffer (the Kawai K3 for example), it is good practice to implement the edit buffer functions to use e.g. the highest program slot in order not to accidentally destroy the contant of program place 1. Remember to make a backup if possible at all of the device before you start sending any commmands to it.* 
+*Some synths do not have an edit buffer (the Kawai K3 for example), it is good practice to implement the edit buffer functions to use e.g. the highest program slot in order not to accidentally destroy the contant of program place 1. Remember to make a backup if possible at all of the device before you start sending any commmands to it.*
 
 ## Data types
 
@@ -63,9 +71,9 @@ The data types used in the interface between the main program and the adaptation
 
 # Testing
 
-Now is a good time, before jumping right into the programming exercise, to think about how you will test that 
-your adaptation code actually works. For this, I have written the 
-[Adaptation Testing Guide](https://github.com/christofmuc/KnobKraft-orm/blob/master/adaptations/Adaptation%20Testing%20Guide.md), 
+Now is a good time, before jumping right into the programming exercise, to think about how you will test that
+your adaptation code actually works. For this, I have written the
+[Adaptation Testing Guide](testing-guide.md),
 please check it out!
 
 # List of functions to implement
@@ -85,9 +93,9 @@ Example implementation:
     def name():
         return "Korg DW6000"
 
-## Storage size 
+## Storage size
 
-Most synths (actually all vintage synths) organize their program places into banks and programs. The KnobKraft Orm does not follow that method, but rather enumerates program places in a device linearly from 0 to how many programs it can store, bank number times program number per bank. You need to do the calculation in addressing the synths bank and program on your own, and if need be also add program change and bank select messages appropriately. 
+Most synths (actually all vintage synths) organize their program places into banks and programs. The KnobKraft Orm does not follow that method, but rather enumerates program places in a device linearly from 0 to how many programs it can store, bank number times program number per bank. You need to do the calculation in addressing the synths bank and program on your own, and if need be also add program change and bank select messages appropriately.
 
 ### Old method
 
@@ -167,7 +175,7 @@ The device detection mechanism needs at least two functions to be implemented to
 
     def createDeviceDetectMessage(channel):
 
-This method should return a single MIDI message or multiple MIDI messages in the form of a single list of byte-values integers used to detect the device. 
+This method should return a single MIDI message or multiple MIDI messages in the form of a single list of byte-values integers used to detect the device.
 
 Most often, this is the Identity Request message from the list of Universal Sysex messages (https://www.midi.org/specifications-old/item/table-4-universal-system-exclusive-messages), but it could be anything, really.
 
@@ -225,7 +233,7 @@ It is optional, if you do not implement it, it will return `True`.
 
 You guessed it, return the number of milliseconds the main program will wait for the synth to answer before it moves on testing the next MIDI output. If this number is too low, you will get very confused because the synth will be detected on the wrong interface. Better start with a higher number, and when everything works bring this value down by experimenting. 200 ms is a good value for most devices, and is the default if you do not implement this method.
 
-Note that the main program will only wait once for all 16 channels, if you have channel specific detection turned on. The assumption is that there is no collision between the 16 different detect messages sent, and the device will only reply to one of them. 
+Note that the main program will only wait once for all 16 channels, if you have channel specific detection turned on. The assumption is that there is no collision between the 16 different detect messages sent, and the device will only reply to one of them.
 
 **[Hack that needs to be removed: return a negative number from the deviceDetectWaitMilliseconds() method, and no device detect will be attempted]**
 
@@ -278,7 +286,7 @@ Second function to implement is very similar again, to check if a generic MIDI m
 
     def isEditBufferDump(message):
 
-Should return True or False appropriately. 
+Should return True or False appropriately.
 
 Here is the implementation for the DW6000:
 
@@ -290,7 +298,7 @@ Here is the implementation for the DW6000:
                 and (message[2] & 0xf0) == 0x30  # Format, ignore MIDI Channel in lower 4 bits
                 and message[3] == 0x04  # DW-6000
                 and message[4] == 0x40  # Data Dump
-                )    
+                )
 Important here is that in the third byte index by `message[2]` I want to only check the upper 4 bits and ignore the lower 4 bits, as they contain the MIDI channel and might be any value from 0..15. So with a binary and operator `&` I mask the upper 4 bits, and compare only those.
 
 *And yes, if you followed so far you see now that I should rather use the edit buffer request message to detect if a DW6000 is connected, because its reply reveals the channel.*
@@ -350,7 +358,7 @@ This is the function required:
 
 Parameters given are `channel`, the channel detected, and the `message`, which is the patch stored in the database. The return value is a MIDI message or multiple MIDI messages (all in a single list of integers) that will be sent to the synth.
 
-In the simplest case, we just send the message as is. This is the case when the edit buffer message sent by the synth is the same as it will retrieve. Most synths - but not all - are programmed that way. 
+In the simplest case, we just send the message as is. This is the case when the edit buffer message sent by the synth is the same as it will retrieve. Most synths - but not all - are programmed that way.
 
 The simplest implementation you can get away is:
 
@@ -386,7 +394,7 @@ I have hacked this possibility into the edit buffer (and program dump) capabilit
 
 So for example, in case a device like the DW6000 would need an acknowledge message before it will send the next path, this could be implemented like this:
 
-    def isPartOfEditBufferDump(message):        
+    def isPartOfEditBufferDump(message):
         if (len(message) > 4
                 and message[0] == 0xf0
                 and message[1] == 0x42  # Korg
@@ -409,7 +417,7 @@ To enable the Program Dump Capability for your adaptation, which will be used in
     def isSingleProgramDump(message)
     def convertToProgramDump(channel, message, program_number)
 
-The third function currently is not used, but is the basis for the upcoming feature of bank mangement - to send a patch into a specific position in the synths memory, not just the edit buffer or a hard-coded "pseudo edit buffer" like slot 100. 
+The third function currently is not used, but is the basis for the upcoming feature of bank mangement - to send a patch into a specific position in the synths memory, not just the edit buffer or a hard-coded "pseudo edit buffer" like slot 100.
 
 Additionally, when you have implement all three functions to enable the ProgramDumpCapability on the adaptation, you can also add the following optional function:
 
@@ -430,7 +438,7 @@ The channel handed into this function again is the channel the synth was detecte
 
 Here is the implementation for the DW6000:
 
-    def createProgramDumpRequest(channel, patchNo):        
+    def createProgramDumpRequest(channel, patchNo):
         # This is done by creating a program change request and then an edit buffer request
         return [0b11000000 | channel, patchNo] + createEditBufferRequest(channel)
 
@@ -440,7 +448,7 @@ Also important here is that we use the binary or | operator to put the channel i
 
 The + operator is used in Python to concatenate two lists, forming one list out of two. Very handy.
 
-### Checking if a message is a program dump 
+### Checking if a message is a program dump
 
 The second function we need to implement to get the program dump mechanism working is
 
@@ -490,7 +498,7 @@ Not all synths (e.g the Modor NF-1) allow requesting a bank dump, so in that cas
 
 You guessed it by now, you need to create a MIDI message that will make the synth send us the requested bank. Here is an example for the Korg MS2000/microKorg, where the operation is called Program Data Dump Request. We can ignore the bank parameter here, as the MS2000 effectively has only one bank:
 
-    def createBankDumpRequest(channel, bank):        
+    def createBankDumpRequest(channel, bank):
         return [0xf0, 0x42, 0x30 | (channel & 0x0f), 0x58, 0x1c, 0xf7]
 
 Implementing this is shown as the **Bank Dump Request Capability**, and really only works when you also implement the other methods of the Bank Dump Capability.
@@ -520,7 +528,7 @@ During live bank download callbacks, a timeout can be relayed as an empty messag
     []
 
 Treat this as a control signal (not MIDI data). Recommended behavior is to clear transient transfer state and return `False` (or `(False, [])`).
-        
+
 ### Testing if all messages have been received
 
 For some synths, the bank dump is only a single MIDI message, so you could just test the first message of the array given and then return True, for other synths that send a bank dump as a stream of messages you might want to implement this function to e.g. count the number of patches and decide if you have the right amount.
@@ -544,6 +552,12 @@ to send protocol replies while checking completion. If both `isPartOfBankDump()`
 
 Note that in this function, you will not get a single MIDI message or list of bytes, but rather a list of lists of bytes, i.e. a list of MIDI messages that you can iterate over.
 Timeout-relay behavior applies here as well: after a timeout callback, your adaptation may be called again and should work correctly after resetting state.
+
+Handshake protocols that can explicitly reject or abort a transfer may return a three-element tuple:
+
+    (is_finished, was_successful, reply_message_bytes)
+
+When `is_finished` is true and `was_successful` is false, the download is cancelled and no partial patches are imported. Boolean results and legacy two-element tuples continue to imply a successful transfer.
 
 ### Extracting the patches from a bank dump
 
@@ -571,7 +585,7 @@ Here is the full example for the Korg MS2000, which has to unescape the sysex, i
 The `extractPatchesFromBank` works when each single MIDI message contains one or more patches, and each patch can be represented by a single MIDI message.
 This is true for many very old synths, but newer synths with more complex data structures might require an even more complex function.
 
-Instead of `extractPatchesFromBank`, we can implement the `extractPatchesFromAllBankMessages`. If this is defined, any implementation of extractPatchesFromBank 
+Instead of `extractPatchesFromBank`, we can implement the `extractPatchesFromAllBankMessages`. If this is defined, any implementation of extractPatchesFromBank
 is ignored.
 
 The signature of the `extractPatchesFromAllBankMessages` is this:
@@ -606,19 +620,43 @@ For a way more complex example, have a look at the implementation in the Roland 
 
 ### Bank Dump Capability ###
 
-The opposite direction, assembling bank dump messages from a list of program dumps, can be implemented as well as a 
+The opposite direction, assembling bank dump messages from a list of program dumps, can be implemented as well as a
 separate capability. For this, just one function is required:
 
-    def convertPatchesToBankDump(patches: List[List[int]]) -> List[int]:
+    def convertPatchesToBankDump(patches: List[List[int]]) -> Union[List[int], List[List[int]]]:
 
-This will get a full bank of patches as a list of lists as input, and has to return one or more MIDI messages as a single
-list of integers. This functionality is active for the Export Patches dialog when Full Bank is selected, or when
-there is no other way via Edit Buffer capability or Program Dump capability. 
+This gets a full bank of patches as a list of lists. It may return one flat list containing one or more MIDI messages,
+or a list containing one integer list per MIDI message. This functionality is active for the Export Patches dialog when
+Full Bank is selected, or when there is no other way via Edit Buffer capability or Program Dump capability.
 
+## Legacy file import capability
+
+Some devices have older non-sysex file formats (for example vendor librarian exports). For Python adaptations, this can be implemented with two simple functions:
+
+    def legacyLoadSupportedExtensions() -> List[str]:
+    def loadPatchesFromLegacyData(data: List[int]) -> List[List[int]]:
+
+`legacyLoadSupportedExtensions()` returns the file extensions this loader can parse. Use values like `".m80"` or `".tas1_bank"`. Matching is case-insensitive. You can also return `"*"` to accept any extension.
+
+`loadPatchesFromLegacyData(data)` receives the full file content as a list of byte values (`0..255`) and returns a list of patches. Each patch is again a list of byte values, using the same patch payload format as in the other adaptation functions.
+
+A minimal implementation looks like this:
+
+```python
+def legacyLoadSupportedExtensions():
+    return [".m80", ".mks80"]
+
+
+def loadPatchesFromLegacyData(data):
+    # parse legacy file content here and return one or more patch payloads
+    return [data]
+```
+
+This legacy loader is optional. If you do not implement both functions, the adaptation falls back to normal sysex/mid/json import handling only.
 
 ### Getting the patch's name
 
-The database stores patches either as edit buffer dumps or as program dumps, whatever it got when the patch was downloaded. So all other functions we will write will have to deal with these two possibilities. 
+The database stores patches either as edit buffer dumps or as program dumps, whatever it got when the patch was downloaded. So all other functions we will write will have to deal with these two possibilities.
 
 One method we can implement later, when everything is ready, is the method to retrieve the patch's name. If the synth has no name memory, we will code it with a constant string anyway, but also during development it can be useful to defer the patch name extraction to later.
 
@@ -648,7 +686,7 @@ The funky last return line is a Python idiom to convert a list of bytes (or inte
 
 # Optional capabilities
 
-Some capabilities are not required to be implemented, but enhance the user experience. 
+Some capabilities are not required to be implemented, but enhance the user experience.
 
 ## Throttling communication
 
@@ -690,7 +728,7 @@ Input is a MIDI message with an edit buffer or program dump, and the new name fo
 
 You can see that it is the responsibility of this method to do a check on the name, and convert to length and character set used by that synth. If the synth is vintage, this might be more involved.
 
-**Important: Modifying the name inside a patch will generate a new patch with the new name in the database instead of the expected renamed patch unless the ´calculateFingerprint` method is 
+**Important: Modifying the name inside a patch will generate a new patch with the new name in the database instead of the expected renamed patch unless the ´calculateFingerprint` method is
 also implemented and correctly ignores the name. See section "better duplicate detection" below for more information on how to do this.**
 
 ## Better handling of given names vs default names
@@ -721,14 +759,14 @@ For case number 2, let's look at the implementation of this function for the Obe
 
     def nameFromDump(message):
         if isSingleProgramDump(message):
-            program = numberFromDump(message)            
+            program = numberFromDump(message)
             return "OB-8: %s" % friendlyProgramName(program)
 
 And this will produce strings like `OB8: AB9` or `OB8: ACD7`. Now to detect all of the possibly generated names and decide whether they are default or not becomes more complex, and we will use the regular expression library from Python to set up a general detector to decide if the name given was actually generated by the above function (needs an `import re` statement at the top of the file):
 
     def isDefaultName(patchName):
         return re.match("OB-8: [A-D]*[1-8]", patchName) is not None
-        
+
 If this looks scary to you, then probably only because you have not used regular expressions before. They are a very powerful and useful tool to master, so attention is encouraged.
 
 
@@ -761,7 +799,7 @@ If you like to see the name of the Bank as the synth displays it, you can implem
 
     def friendlyBankName(bank_number):
 
-and return a string calculated from the bank number (0 based integer) that is displayed whereever a patch location is shown in the Orm. 
+and return a string calculated from the bank number (0 based integer) that is displayed whereever a patch location is shown in the Orm.
 
 As an example, a Kawai K3 adaptation might implement this as
 
@@ -820,7 +858,7 @@ To make it work, just return a list of strings like this:
 
 Some synths store sound categories or tags. As the KnobKraft Orm has these as a central part of the UI, of course we want to be able to import them as well. It is easy enough and requires two steps: Implementing a function and then defining an import mapping.
 
-The function that needs definition is 
+The function that needs definition is
 
     def storedTags(self, message) -> List[str]:
 
@@ -855,9 +893,9 @@ This just returns a text string displayed. Make sure to quote a possible multili
 
 ## Examples
 
-The KnobKraft Orm ships with quite a few examples of adaptations. 
+The KnobKraft Orm ships with quite a few examples of adaptations.
 
-All existing adaptations can be found in the directory with the source code, or here at github at 
+All existing adaptations can be found in the directory with the source code, or here at github at
 
 https://github.com/christofmuc/KnobKraft-orm/tree/master/adaptations
 
