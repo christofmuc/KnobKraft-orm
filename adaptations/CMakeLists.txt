@@ -18,7 +18,7 @@ set(adaptation_files
 	"ElectraOne.py"
         "Elektron_AnalogRytm.py" "Elektron_Digitone.py"
 	"Emu_Morpheus.py"
-	"Ensoniqesq1.py" "Ensoniq_VFX.py" "Ensoniq Mirage (Soundprocess).py"
+	"Ensoniqesq1.py" "Ensoniq_VFX.py" "Ensoniq_Mirage_Soundprocess.py"
 	"GrooveSynthesis_3rdWave.py" 
 	"JB_Solaris.py"
 	"KawaiK1.py" "Kawai K4.py" "KawaiK5000.py"
