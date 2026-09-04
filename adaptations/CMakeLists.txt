@@ -55,6 +55,7 @@ set(adaptation_files_test_shipped
     "test_Roland_MKS50.py"
     "test_Roland_MKS70_V4.py"
     "test_Roland_XV3080.py"
+    "test_Roland_SE02.py"
     "test_Sequential_Fourm.py"
     "test_Sequential_Pro_3.py"
     "test_YamahaRefaceDX.py"
