@@ -98,7 +98,7 @@ Use the <a href="../../#checker">searchable model filter</a>, or choose a manufa
 
 | Synth | Status | Type | Release | Notes / thanks |
 | --- | --- | --- | --- | --- |
-| Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | After 2.9.0 | Four live banks; ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
+| Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | After 2.9.0 | Four documented live-request banks (availability depends on model and installed memory card); ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
 
 <a id="manufacturer-dsi"></a>
 ## DSI

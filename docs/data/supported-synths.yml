@@ -83,7 +83,7 @@ synths:
   synth: Nord Lead / Nord Lead 2 / Nord Lead 2X
   status: alpha
   type: adaptation
-  kudos: Four live banks; ten-bank 2X file import/export; official fixtures and mock
+  kudos: Four documented live-request banks (availability depends on model and installed memory card); ten-bank 2X file import/export; official fixtures and mock
     MIDI tested, hardware verification pending; no Nord Lead 3+
   availability: After 2.9.0
 - manufacturer: DSI

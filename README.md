@@ -35,7 +35,7 @@ This table is generated from `docs/data/supported-synths.yml` by `scripts/genera
 | Behringer | Wave | works | adaptation | 2.9.0 | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | 2.9.0 | Thanks to @ffont and @markusschlosser |
 | Casio | CZ-101/CZ-1000 | alpha | adaptation | After 2.9.0 | Contributed by @Casuallynoted; hardware validation needed |
-| Clavia | Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | After 2.9.0 | Four live banks; ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
+| Clavia | Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | After 2.9.0 | Four documented live-request banks (availability depends on model and installed memory card); ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
 | DSI | Evolver | beta | adaptation | 2.9.0 |  |
 | DSI | Mopho | works | adaptation | 2.9.0 |  |
 | DSI | Mopho X4 | works | adaptation | 2.9.0 |  |
