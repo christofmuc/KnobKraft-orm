@@ -17,6 +17,9 @@
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
+#include <atomic>
+#include <utility>
+
 // Standardize text
 const char *kMacrosEnabled = "Macros enabled";
 const char *kAutomaticSetup = "Use current synth as master";
@@ -77,11 +80,11 @@ public:
 			switch (button) {
 			case 1:
 				// Clear
-				self->done_({}, false);
+				self->finish({}, false);
 				break;
 			case 0:
 				// Cancel, nothing to do
-				self->done_({}, true);
+				self->finish({}, true);
 				break;
 			default:
 				spdlog::error("Unknown button number pressed, program error in RecordProgress of KeyboardMacroView");
@@ -95,6 +98,9 @@ public:
 
 	virtual void handleNoteOn(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float velocity) override {
 		ignoreUnused(source, midiChannel, velocity);
+		if (completionQueued_) {
+			return;
+		}
 		notes_.insert(midiNoteNumber);
 		atLeastOneKey_ = true;
 	}
@@ -107,19 +113,37 @@ public:
 				keyPressed++;
 			}
 		}
-		if (keyPressed == 0) {
-			messageBox_.close();
-			done_(notes_, false);
+		if (atLeastOneKey_ && keyPressed == 0 && !completionQueued_.exchange(true)) {
+			// MIDI callbacks must not close dialogs or update settings. Keep a copy
+			// of the recorded chord and discard delivery if the recorder is gone.
+			MessageManager::callAsync([weakSelf = weak_from_this(), notes = notes_]() {
+				if (auto self = weakSelf.lock()) {
+					self->finish(notes, false);
+				}
+			});
 		}
 	}
 
 private:
+	void finish(std::set<int> const& notes, bool cancelled) {
+		jassert(MessageManager::getInstance()->isThisTheMessageThread());
+		completionQueued_ = true;
+		// Clear/Cancel and an already queued note-off may both arrive. Consume
+		// the callback before closing the dialog so completion is exactly once.
+		auto done = std::exchange(done_, {});
+		if (done) {
+			messageBox_.close();
+			done(notes, cancelled);
+		}
+	}
+
 	Component* parent_;
 	std::function<void(std::set<int> const&, bool)> done_;
 	ScopedMessageBox messageBox_;
 	std::set<int> notes_;
 	MidiKeyboardState &state_;
 	bool atLeastOneKey_;
+	std::atomic<bool> completionQueued_{ false };
 
 };
 
@@ -157,13 +181,8 @@ KeyboardMacroView::KeyboardMacroView(std::function<void(KeyboardMacroEvent)> exe
 							safeThis->macros_[event] = newMacro;
 							safeThis->saveSettings();
 						}
-						MessageManager::callAsync([safeThis]() {
-							if (!safeThis) {
-								return;
-							}
-							safeThis->activeRecorder_ = nullptr;
-							safeThis->refreshUI();
-						});
+						safeThis->activeRecorder_ = nullptr;
+						safeThis->refreshUI();
 						}
 					);
 				},
