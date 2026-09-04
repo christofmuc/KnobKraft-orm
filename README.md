@@ -8,12 +8,12 @@ A free, modern, cross-platform MIDI SysEx librarian for hardware synthesizers.
 
 ## Start Here
 
-- Website and docs: <https://christofmuc.github.io/KnobKraft-orm/docs/>
-- Install on Linux with Nix: <https://christofmuc.github.io/KnobKraft-orm/docs/download/#installing-on-linux-with-nix>
+- Website and docs: <https://knobkraft.com/docs/>
+- Install on Linux with Nix: <https://knobkraft.com/docs/download/#installing-on-linux-with-nix>
 - Download latest release: <https://github.com/christofmuc/KnobKraft-orm/releases>
-- Build from source: <https://christofmuc.github.io/KnobKraft-orm/docs/build/>
-- Adaptation programming guide: <https://christofmuc.github.io/KnobKraft-orm/docs/programming-guide/>
-- Adaptation testing guide: <https://christofmuc.github.io/KnobKraft-orm/docs/testing-guide/>
+- Build from source: <https://knobkraft.com/docs/build/>
+- Adaptation programming guide: <https://knobkraft.com/docs/programming-guide/>
+- Adaptation testing guide: <https://knobkraft.com/docs/testing-guide/>
 - Report issues / request synth support: <https://github.com/christofmuc/KnobKraft-orm/issues>
 
 ## Supported Synths

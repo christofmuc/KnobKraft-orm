@@ -53,6 +53,8 @@ The sole initial video is the existing `lPoFOVpTANM` introduction, explicitly la
 
 ## URLs and shared identity
 
+The public domain is `https://knobkraft.com/`, with documentation under `/docs/`. Set the custom domain in GitHub Pages settings (Actions deployments do not use a `CNAME` file), keep HTTPS enforced once the certificate is ready, and keep the homepage canonical URL, MkDocs `site_url` and README links aligned. Navigation remains relative so local previews also work.
+
 The existing MkDocs page URLs and homepage `#quick-start` / `#basic-concepts` anchors remain. The former Docsify `#/Adaptation Programming Guide`, testing-guide and README routes redirect through a committed script. The old spaced programming-guide path is a small reader-facing bridge. `docs/README.md` remains a repository bridge and is excluded from MkDocs because it shares the index URL.
 
 Home links are resolved by the theme relative to each page's depth, so navigation also works below the GitHub Pages project prefix or a local preview prefix. There is no missing `home-link.js` dependency. The one remaining navigation script is committed and included in the allowlist.

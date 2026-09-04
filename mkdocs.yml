@@ -1,6 +1,6 @@
 site_name: KnobKraft Orm
 site_description: Learn to collect, organise and transfer patches for supported hardware synthesizers.
-site_url: https://christofmuc.github.io/KnobKraft-orm/docs/
+site_url: https://knobkraft.com/docs/
 repo_url: https://github.com/christofmuc/KnobKraft-orm
 repo_name: GitHub
 edit_uri: ''
@@ -38,7 +38,7 @@ extra_javascript:
 extra:
   homepage: ../
 nav:
-  - Home: https://christofmuc.github.io/KnobKraft-orm/
+  - Home: https://knobkraft.com/
   - Download: download.md
   - Supported Synths: supported-synths.md
   - Learn:
