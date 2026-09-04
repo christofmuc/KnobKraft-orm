@@ -24,6 +24,7 @@ Questions and help with implementing new synths wanted! Or if you have found a b
 | Behringer | Wave | works | adaptation | Thanks to @willxy! |
 | Black Corporation | Kijimi | beta | adaptation | Thanks to @ffont and @markusschlosser |
 | Casio | CZ-101/CZ-1000 | alpha | adaptation | Contributed by @Casuallynoted; hardware validation needed |
+| Clavia | Nord Lead / Nord Lead 2 / Nord Lead 2X | alpha | adaptation | Four live banks; ten-bank 2X file import/export; official fixtures and mock MIDI tested, hardware verification pending; no Nord Lead 3+ |
 | DSI | Evolver | beta | adaptation | |
 | DSI | Mopho | works | adaptation | |
 | DSI | Mopho X4 | works | adaptation | |
