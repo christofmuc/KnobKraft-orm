@@ -12,6 +12,20 @@ KnobKraft Orm is free and open source. Get official builds from [GitHub Releases
 
 [Read the 2.10.0 release notes](https://github.com/christofmuc/KnobKraft-orm/releases/tag/2.10.0). For other platforms and toolchains, see [Build from source](build.md).
 
+## Installing on Linux with Nix
+
+KnobKraft Orm is available in [Nixpkgs](https://github.com/NixOS/nixpkgs/tree/master/pkgs/by-name/kn/knobkraft-orm), thanks to package maintainer [@backtail](https://github.com/backtail). Nix can be used on Ubuntu and other Linux distributions as well as NixOS; switching your operating system is not necessary.
+
+After [installing the Nix package manager](https://nixos.org/download/), try Orm with:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' run nixpkgs#knobkraft-orm
+```
+
+Nix provides the package's dependencies and downloads prebuilt packages when available, or builds them from source. The packaged version depends on your selected Nixpkgs revision and may lag behind our latest release.
+
+This is a possible route for Ubuntu users whose downloaded release binary has incompatible system libraries. Orm's GUI and MIDI operation through Nix on Ubuntu have not yet been verified by the project. Graphics drivers may need additional integration such as [nixGL](https://github.com/nix-community/nixGL), and MIDI devices must be accessible to your Linux user. Please report your distribution, package version and MIDI interface when sharing results.
+
 ## First launch
 
 If macOS blocks the downloaded app, follow the operating system's instructions for opening a trusted downloaded application. Older Ctrl-click and Python/Homebrew advice can depend on the macOS and KnobKraft version; it is not a prerequisite to install an old Python for the current DMG.
