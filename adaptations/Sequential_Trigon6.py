@@ -24,6 +24,11 @@ synth = sequential.GenericSequential(name="Sequential Trigon-6",
                                      ).install(this_module)
 
 
+def isDefaultName(patch_name):
+    # Keep a name assigned in the librarian when the synth still sends its default.
+    return patch_name.strip() == "Basic Program"
+
+
 # Test data picked up by test_adaptation.py
 def make_test_data():
     def programs(data: testing.TestData) -> List[testing.ProgramTestData]:
