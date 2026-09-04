@@ -14,3 +14,6 @@
   --kk-text-font: Inter, system-ui, sans-serif;
   --kk-label-font: 'JetBrains Mono', ui-monospace, monospace;
 }
+.kk-github { display: inline-flex; align-items: center; justify-content: center; gap: .5em; min-height: 44px; padding: .4em .55em; border: 1px solid var(--kk-border); border-radius: 4px; color: var(--kk-text); text-decoration: none; font: 600 14px/1.4 var(--kk-text-font); white-space: nowrap; }
+.kk-github svg { width: 24px; height: 24px; fill: currentColor; flex: none; }
+.kk-github:hover { color: var(--kk-cyan); border-color: var(--kk-cyan); }

@@ -16,6 +16,9 @@
 .md-header { border-bottom: 1px solid var(--kk-border); box-shadow: none; }
 .md-header__topic:first-child { font-family: var(--kk-label-font); font-size: .9rem; color: var(--kk-cyan); }
 .md-header .md-logo img { height: 1.8rem; width: 1.8rem; }
+.md-header__source { display: block; width: auto; margin-left: .4rem; }
+.md-header .kk-github { margin-right: .3rem; }
+@media (max-width: 600px) { .md-header .kk-github span { display: none; } .md-header .kk-github { border-color: transparent; padding-inline: .4em; } }
 .md-tabs { background: #0f1620; border-bottom: 1px solid var(--kk-border); }
 .md-tabs__link { font-size: .75rem; opacity: 1; color: var(--kk-muted); }
 .md-tabs__link--active, .md-tabs__link:hover { color: var(--kk-cyan); }
