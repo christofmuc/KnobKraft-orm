@@ -49,7 +49,7 @@ Complete this step after a new stable release and its assets are public, as part
 
 Stable pages under `docs/learn/` carry a `tutorial` ID. `tutorials.json` stores reviewed date, written-guide basis and optional published video metadata once. A video record requires a real YouTube ID, title, demonstrated version and synth. The hook renders the embedded video and attribution. An optional `transcript` names a reviewed, allowlisted Markdown file. Leave video/transcript values null when no published material exists; the page remains useful without empty video panels or promises.
 
-The sole initial video is the existing `lPoFOVpTANM` introduction, explicitly labelled **1.0.0 / Prophet Rev2**. Its original screenshot is preserved and labelled historical. It is not a screenshot of release 2.9.0.
+The sole initial video is the existing `lPoFOVpTANM` introduction, explicitly labelled **1.0.0 / Prophet Rev2**. Its original screenshot is preserved and labelled historical. It is not a screenshot of release 2.9.0. Render the local screenshot as a link instead of embedding a remote player; the page must not contact YouTube before the reader follows that link.
 
 ## URLs and shared identity
 

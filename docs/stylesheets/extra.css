@@ -37,6 +37,10 @@
 .md-content__inner { max-width: 50rem; padding-block: .75rem; }
 .md-search__form { background: #080d15; }
 .md-typeset .lesson-meta { color: var(--kk-muted); border-bottom: 1px solid var(--kk-border); padding-bottom: .6rem; font-size: .7rem; }
-.md-typeset .video { width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--kk-border); }
+.md-typeset .video-preview { display: block; border: 1px solid var(--kk-border); }
+.md-typeset .video-preview img { display: block; width: 100%; margin: 0; }
+.kk-legal-links { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+.kk-legal-links a { color: var(--kk-muted); }
+.kk-legal-links a:hover { color: var(--kk-cyan); }
 :focus-visible { outline: 2px solid var(--kk-cyan); outline-offset: 3px; }
 @media (max-width: 760px) { .md-content__inner { padding: 0 .2rem; } }

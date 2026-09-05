@@ -54,12 +54,14 @@ def on_page_markdown(markdown, page, config, files):
         if not re.fullmatch(r'[A-Za-z0-9_-]{11}', video['youtube_id']):
             raise PluginError('Invalid YouTube ID')
         title = html.escape(video['title'], quote=True)
-        markdown += f'\n\n<iframe class="video" src="https://www.youtube-nocookie.com/embed/{video["youtube_id"]}" title="{title}" loading="lazy" allowfullscreen></iframe>\n\n'
-        markdown += f'Demonstrated: **{video["demonstrated_version"]}**, {video["synth"]}. [Watch on YouTube](https://www.youtube.com/watch?v={video["youtube_id"]}).\n'
+        from mkdocs.utils import get_relative_url
+        preview = get_relative_url('youtube-screenshot.PNG', page.file.dest_uri)
+        watch_url = f'https://www.youtube.com/watch?v={video["youtube_id"]}'
+        markdown += f'\n\n<a class="video-preview" href="{watch_url}"><img src="{preview}" alt="Preview of {title}"></a>\n\n'
+        markdown += f'Demonstrated: **{video["demonstrated_version"]}**, {video["synth"]}. [Watch on YouTube]({watch_url}, "External link; YouTube receives data after you follow it").\n'
         if video.get('transcript'):
             # A reviewed local Markdown transcript must also be allowlisted.
             if video['transcript'] not in manifest()['pages']:
                 raise PluginError('Transcript must be a selected public page')
-            from mkdocs.utils import get_relative_url
             markdown += f'\n[Read the transcript]({get_relative_url(video["transcript"], page.file.src_uri)}).\n'
     return markdown
