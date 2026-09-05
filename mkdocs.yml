@@ -66,3 +66,6 @@ nav:
       - Contributing: contributing.md
       - Acknowledgements: acknowledgements.md
       - Prior art: prior-art.md
+  - Rechtliches:
+      - Impressum: impressum.md
+      - Datenschutz: datenschutz.md
