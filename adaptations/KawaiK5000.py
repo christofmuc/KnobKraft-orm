@@ -179,6 +179,42 @@ def isSingleProgramDump(message):
             and message[-1] == 0xF7)  # End of SysEx
 
 
+def expectsUploadReply(sent_message):
+    # Program dumps are acknowledged. Other messages in the send block, such as
+    # the program change used after auditioning, do not receive a reply.
+    return isSingleProgramDump(sent_message)
+
+
+def isPartOfUploadReply(message, sent_message):
+    if not isSingleProgramDump(sent_message):
+        return None
+
+    channel = sent_message[2]
+    if (len(message) != 7
+            or message[:3] != [0xF0, KawaiSysexID, channel]
+            or message[4:] != [0x00, 0x0A, 0xF7]):
+        return None
+
+    result = message[3]
+    if result == WriteComplete:
+        return {"status": "accepted"}
+
+    errors = {
+        WriteError: ("write_error", "The K5000 could not write the patch"),
+        WriteErrorByProtect: ("write_protected", "K5000 memory is write protected"),
+        WriteErrorByMemoryFull: ("memory_full", "K5000 memory is full"),
+        WriteErrorByNoExpandMemory: (
+            "expansion_missing",
+            "The required K5000 expansion board is missing",
+        ),
+    }
+    if result not in errors:
+        return None
+
+    code, description = errors[result]
+    return {"status": "error", "code": code, "message": description}
+
+
 def convertToProgramDump(channel: int, message: List[int], program_number: int) -> List[int]:
     """
     Converts a received program dump into a properly formatted SysEx message,
@@ -539,6 +575,7 @@ def calculateFingerprint(message: List[int]):
 def messageTimings():
     return {
         "replyTimeoutMs": 1000,             # how long to wait for a response before timing out
+        "uploadReplyTimeoutMs": 5000,       # how long to wait for write complete/error
     }
 
 

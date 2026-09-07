@@ -1,6 +1,6 @@
 # Reactive upload handshakes in the Python adaptation API
 
-Status: proposed design for [issue #426](https://github.com/christofmuc/KnobKraft-orm/issues/426). Based on the local checkout inspected on 2026-09-07. This document does not implement the API.
+Status: implemented in draft PR [#568](https://github.com/christofmuc/KnobKraft-orm/pull/568), with transport support in [MidiKraft PR #13](https://github.com/christofmuc/MidiKraft/pull/13), for [issue #426](https://github.com/christofmuc/KnobKraft-orm/issues/426). Hardware verification is still required before declaring the issue fixed.
 
 ## Recommendation
 
@@ -9,6 +9,13 @@ Add an optional `UploadHandshakeCapability`, enabled for Python adaptations by o
 ```python
 def isPartOfUploadReply(message, sent_message):
     """Classify an incoming message while waiting for the current upload step."""
+```
+
+Adaptations whose outgoing blocks also contain messages without acknowledgements can add a predicate:
+
+```python
+def expectsUploadReply(sent_message):
+    """Return whether this outgoing message is an acknowledged upload step."""
 ```
 
 Do not add a separate `prepareUpload()` hook. The upload operation already has the useful matching context: the outgoing message currently awaiting a reply, the remaining outgoing queue, the selected MIDI ports, and the transaction state. C++ owns that state and passes the current outgoing message to Python when a reply arrives.
@@ -59,7 +66,7 @@ The reactive upload callback therefore needs a richer disposition than the exist
 
 ## Where this fits today
 
-| Existing component | Current responsibility | Proposed change |
+| Existing component | Existing responsibility | Implemented change |
 |---|---|---|
 | `convertToProgramDump()` / `convertToEditBuffer()` | Convert patch data into outgoing messages | Keep signatures and return types |
 | `convertPatchesToBankDump()` | Construct a device-specific bank dump | Keep signature and return type |
@@ -114,7 +121,7 @@ Unrelated traffic does not extend the deadline and is not stored as patch data. 
 
 ### Capability discovery and timing
 
-No function means legacy fire-and-forget behavior. A callable `isPartOfUploadReply` enables the capability. A noncallable value with that name is an adaptation configuration error: importing and downloading can remain available, but uploads must fail with a useful diagnostic.
+No `isPartOfUploadReply` function means legacy fire-and-forget behavior. A callable `isPartOfUploadReply` enables the capability. `expectsUploadReply(sent_message)` is optional and defaults to `True`; when implemented it must return a Boolean. A noncallable hook is an adaptation configuration error: importing and downloading can remain available, but uploads must fail with a useful diagnostic.
 
 Add one optional key to the existing timing dictionary:
 
@@ -136,6 +143,8 @@ For an adaptation with `UploadHandshakeCapability`, each MIDI message produced b
 2. Wait until the hook returns `accepted` or `error`.
 3. Send any response messages returned by the hook.
 4. Advance only after acceptance.
+
+When `expectsUploadReply(sent_message)` returns `False`, the host sends that message and advances immediately. This covers auxiliary messages such as the program change appended after a K5000 audition without weakening acknowledgement handling for the preceding program dump.
 
 This rule supports the K5000 single-message program write and protocols such as 3rd Wave multisample transfer, where a header and every sample message receive separate acknowledgements.
 
@@ -178,6 +187,8 @@ def isPartOfUploadReply(message, sent_message):
     error_code, description = errors[code]
     return {"status": "error", "code": error_code, "message": description}
 ```
+
+The K5000 also implements `expectsUploadReply(sent_message)` by returning `isSingleProgramDump(sent_message)`. Its trailing program change is therefore sent after the acknowledged dump without waiting for a reply that will never arrive.
 
 The K5000 reply has no bank, program number, or transaction identifier. Matching the input, model, and channel is necessary but cannot disambiguate two concurrent writes. Writes to that device must be serialized, and an uncertain result must stop the sequence without automatic retry.
 
@@ -227,6 +238,10 @@ struct UploadHandshakeReply {
 class UploadHandshakeCapability {
 public:
     virtual ~UploadHandshakeCapability() = default;
+
+    virtual bool expectsUploadReply(const MidiMessage& sentMessage) const {
+        return true;
+    }
 
     virtual UploadHandshakeReply isMessagePartOfUploadReply(
         const MidiMessage& message,
@@ -298,13 +313,10 @@ Adaptations without the hook preserve current sending behavior and do not requir
 
 File export, clipboard conversion, offline import, and download recognition never invoke the upload hook. Upload replies are protocol control messages, not patch data.
 
-## Implementation and validation plan
+## Implementation and validation status
 
-1. Implement the capability, Python bridge validation, and timing key. Document the hook in the Adaptation Programming Guide when runtime support lands.
-2. Implement `UploadOperation`, scheduled output, device reservation, and fake-transport tests. Cover source filtering, early replies, unrelated traffic through the deadline, `continue` responses, cancellation, disconnect, and exactly-once cleanup.
-3. Route individual and bank uploads through the operation. Verify that conversion failure sends nothing, failure at patch N prevents patch N+1, accepted replies control progress, and incomplete banks remain dirty.
-4. Add the K5000 hook and focused tests for all reply codes, wrong channel/model/framing, unrelated messages, malformed return values, Python exceptions, invalid timing, timeout, and missing input.
-5. Add protocol-level tests for a multi-message upload: the second message must not be sent before acceptance of the first, returned response messages must be ordered correctly, and an intermediate error must discard the remaining queue.
-6. Verify the real K5000 with a known patch, write protection, available error conditions, and a missing reply. Capture MIDI traces to validate timing and stop behavior. Hardware verification remains the gate for claiming issue #426 fixed.
+The implementation adds the capability and validated Python bridge, an asynchronous upload operation, per-message sequencing, cancellation, bank continuations, the timing key, and the K5000 classifier. Automated tests cover accepted replies, response ordering, per-message opt-out, device errors, timeout state, malformed bridge results, correlation checks, and all documented K5000 reply codes.
+
+The remaining validation is hardware-facing: verify the real K5000 with a known patch, write protection, available error conditions, and a missing reply, and capture MIDI traces to confirm the timeout budget. Broader reservation of downloads and detection against an active upload can follow separately; this implementation serializes uploads per synth and stops a bank at its first unsuccessful step.
 
 The proposed hook intentionally handles reactive, message-by-message upload handshakes without duplicating outgoing state in Python. If a future protocol requires dynamic branching beyond immediate responses, retransmission, or acknowledged groups of original messages, generalize the operation into a stateful protocol driver while preserving this reactive contract as the simple case.

@@ -16,6 +16,7 @@
 #include "BankDumpCapability.h"
 #include "LegacyLoaderCapability.h"
 #include "CustomProgramChangeCapability.h"
+#include "UploadHandshakeCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -40,6 +41,7 @@ namespace knobkraft {
 	class GenericBankDumpSendCapability;
 	class GenericLegacyLoaderCapability;
 	class GenericCustomProgramChangeCapability;
+	class GenericUploadHandshakeCapability;
 	void checkForPythonOutputAndLog();
 
 	extern const char *kIsEditBufferDump, *kIsPartOfEditBufferDump, *kCreateEditBufferRequest, *kConvertToEditBuffer,
@@ -55,7 +57,9 @@ namespace knobkraft {
 		*kLayerName,
 		*kSetLayerName,
 		*kGetStoredTags,
-		*kMessageTimings
+		*kMessageTimings,
+		*kExpectsUploadReply,
+		*kIsPartOfUploadReply
 		;
 
 	extern std::vector<const char *> kAdaptationPythonFunctionNames;
@@ -71,6 +75,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::BankSendCapability>,
 		public midikraft::RuntimeCapability<midikraft::LegacyLoaderCapability>,
 		public midikraft::RuntimeCapability<midikraft::CustomProgramChangeCapability>,
+		public midikraft::RuntimeCapability<midikraft::UploadHandshakeCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
@@ -152,6 +157,8 @@ namespace knobkraft {
 		virtual bool hasCapability(midikraft::LegacyLoaderCapability** outCapability) const override;
 		virtual bool hasCapability(std::shared_ptr<midikraft::CustomProgramChangeCapability>& outCapability) const override;
 		virtual bool hasCapability(midikraft::CustomProgramChangeCapability** outCapability) const override;
+		virtual bool hasCapability(std::shared_ptr<midikraft::UploadHandshakeCapability>& outCapability) const override;
+		virtual bool hasCapability(midikraft::UploadHandshakeCapability** outCapability) const override;
 
 		// Common error logging
 		void logAdaptationError(const char *methodName, std::exception &e) const;
@@ -190,6 +197,8 @@ namespace knobkraft {
 		std::shared_ptr<GenericLegacyLoaderCapability> legacyLoaderCapabilityImpl_;
 		friend class GenericCustomProgramChangeCapability;
 		std::shared_ptr<GenericCustomProgramChangeCapability> customProgramChangeCapabilityImpl_;
+		friend class GenericUploadHandshakeCapability;
+		std::shared_ptr<GenericUploadHandshakeCapability> uploadHandshakeCapabilityImpl_;
 
 		template <typename ... Args> pybind11::object callMethod(std::string const &methodName, Args& ... args) const
 		{

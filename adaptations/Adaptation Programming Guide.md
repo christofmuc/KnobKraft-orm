@@ -706,10 +706,43 @@ def messageTimings():
         "generalMessageDelay": 50,          # throttle between messages in a burst
         "deviceDetectWaitMilliseconds": 300, # how long to wait after a detect request
         "replyTimeoutMs": 1500,             # how long to wait for a response before timing out
+        "uploadReplyTimeoutMs": 5000,       # how long to wait for each upload acknowledgement
     }
 ```
 
 If `messageTimings()` is defined, the Orm will read these keys and ignore the older `generalMessageDelay()` or `deviceDetectWaitMilliseconds()` functions. Keys you leave out fall back to defaults. If `messageTimings()` is not provided, the legacy functions continue to work as before.
+
+## Acknowledging uploads
+
+Some synths reply after accepting or rejecting a program write. To make the Orm wait for that result before sending the next message, implement `isPartOfUploadReply(message, sent_message)`. The first argument is an incoming MIDI message and the second is the outgoing message currently awaiting a reply. Both are flat byte lists including SysEx framing bytes.
+
+Return `None` for unrelated input. Return a dictionary for a related result:
+
+```python
+def isPartOfUploadReply(message, sent_message):
+    if not isReplyFor(message, sent_message):
+        return None
+    if isWriteComplete(message):
+        return {"status": "accepted"}
+    if isWriteError(message):
+        return {
+            "status": "error",
+            "code": "write_failed",
+            "message": "The synth rejected the write",
+        }
+    return None
+```
+
+The supported statuses are `accepted`, `continue`, and `error`. `accepted` completes the current step. `continue` keeps waiting for that same step. Either status may include a `messages` entry containing a flat byte list of complete MIDI messages to send as an immediate protocol response. An `error` result requires nonempty `code` and `message` strings and stops the upload.
+
+Defining `isPartOfUploadReply()` enables upload acknowledgement handling for the adaptation. The Orm sends one converted message at a time and advances only after `accepted`. If a converted block also contains messages that do not receive acknowledgements, add this optional predicate:
+
+```python
+def expectsUploadReply(sent_message):
+    return isProgramDump(sent_message)
+```
+
+It defaults to `True`. For example, an adaptation can acknowledge its program dump while letting a trailing program change advance immediately. Configure the per-step deadline with the positive integer `uploadReplyTimeoutMs` in `messageTimings()`; it defaults to 5000 ms. Unrelated input and `continue` replies do not extend the deadline, and the Orm does not retry a timed-out write automatically.
 
 ## Renaming patches
 For example, the Orm always allows the user to specify a name for a patch, but that name will not appear on the synth unless you implement the following function. If you don't implement it, the patches will keep their original name even if you change the database name for a patch.
