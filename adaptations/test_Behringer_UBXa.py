@@ -1,6 +1,9 @@
 import importlib.util
 from pathlib import Path
 
+from testing.librarian import Librarian
+from testing.mock_midi import MockMidiController, ScriptedMockDevice
+
 
 def _load_adaptation():
     path = Path(__file__).parent / "Behringer_UB-Xa.py"
@@ -39,6 +42,80 @@ def test_eof_must_belong_to_same_device_as_header_and_data():
 
     assert not ubxa.isSingleProgramDump(mixed_devices)
     assert ubxa.isSingleProgramDump(complete)
+
+
+def _issue_574_edit_buffer():
+    path = Path(__file__).parent / "testData" / "Behringer_UBXa_issue574-midi-log.txt"
+    messages = []
+    for line in path.read_text().splitlines():
+        if ": In  UB-Xa " not in line or "Sysex [" not in line:
+            continue
+        timestamp = line[:12]
+        if timestamp < "00:35:29.603":
+            continue
+        payload = line.split("Sysex [", 1)[1].split("]", 1)[0]
+        messages.append([int(byte, 16) for byte in payload.split()])
+    return messages
+
+
+def test_broadcast_fds_transfer_accepts_hardware_eof_device_id():
+    # Issue #574 hardware trace: FDS header/data use transfer ID 0x7f while
+    # the universal SysEx EOF is addressed to device 0x00.
+    messages = _issue_574_edit_buffer()
+    dump = _flatten(messages)
+
+    assert len(messages) == 9
+    assert ubxa.isSingleProgramDump(dump)
+    assert ubxa.isEditBufferDump(dump)
+    assert len(ubxa._fds_extract_raw(messages)) == 742
+    assert ubxa.nameFromDump(dump) == "ARP 7         BB"
+
+
+def test_issue_574_edit_buffer_download_completes_via_mock_midi():
+    messages = _issue_574_edit_buffer()
+    device = ScriptedMockDevice(
+        {tuple(ubxa.createEditBufferRequest(0)): messages},
+        ignore_unmatched=True,
+    )
+    midi = MockMidiController(device)
+    downloaded = []
+
+    Librarian().download_edit_buffer(midi, 0, ubxa, downloaded.extend)
+    midi.drain()
+
+    assert midi.finished
+    assert downloaded == [_flatten(messages)]
+    assert midi.sent_messages[1:] == [
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x00, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x00, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x01, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x02, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x03, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x04, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x05, 0xF7],
+        [0xF0, 0x7E, 0x7F, 0x7E, 0x06, 0xF7],
+        [0xF0, 0x7E, 0x00, 0x7E, 0x00, 0xF7],
+    ]
+
+
+def test_issue_574_bank_b_download_uses_program_requests_and_completes():
+    messages = _issue_574_edit_buffer()
+    responses = {
+        tuple(ubxa.createProgramDumpRequest(0, program)): messages
+        for program in range(128, 256)
+    }
+    midi = MockMidiController(ScriptedMockDevice(responses, ignore_unmatched=True))
+    downloaded = []
+
+    Librarian().start_downloading_all_patches(midi, 0, ubxa, 1, downloaded.extend)
+    midi.drain(max_steps=2000)
+
+    assert midi.finished
+    assert len(downloaded) == 128
+    program_requests = [message for message in midi.sent_messages if message[:7] == ubxa.sysex_prefix]
+    assert len(program_requests) == 128
+    assert b"PatchX B001     " in bytes(program_requests[0])
+    assert b"PatchX B128     " in bytes(program_requests[-1])
 
 
 def test_fds_ack_uses_device_and_packet_number():
