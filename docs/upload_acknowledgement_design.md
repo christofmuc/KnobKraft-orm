@@ -111,9 +111,9 @@ The meanings are:
 | `accepted` | The current outgoing step succeeded; advance the queue |
 | `error` | The current step failed; stop the operation |
 
-`messages` is optional for `continue` and `accepted`. When present, it is a flat byte list containing zero or more complete MIDI messages. The host sends those messages before continuing to wait or advancing the original queue. This is symmetrical with the replies returned by existing `isPartOf...Dump()` hooks.
+`messages` is valid only for `continue` and `accepted`. When present, it is a flat byte list containing zero or more complete MIDI messages. The host sends those messages before continuing to wait or advancing the original queue. This is symmetrical with the replies returned by existing `isPartOf...Dump()` hooks.
 
-For `error`, `code` and `message` are required nonempty strings. `code` is stable and machine-readable; `message` is suitable for display. Error results do not send response bytes or advance the queue.
+For `error`, `code` and `message` are required nonempty strings. `code` is stable and machine-readable; `message` is suitable for display. Error results must not include response messages and do not advance the queue.
 
 An unknown status, malformed result, invalid response bytes, or Python exception is an adaptation error. Stop the upload and report it. Never interpret a parsing failure as acceptance or silently fall back to fire-and-forget after bytes have been submitted.
 

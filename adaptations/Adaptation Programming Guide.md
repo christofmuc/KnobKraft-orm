@@ -733,7 +733,7 @@ def isPartOfUploadReply(message, sent_message):
     return None
 ```
 
-The supported statuses are `accepted`, `continue`, and `error`. `accepted` completes the current step. `continue` keeps waiting for that same step. Either status may include a `messages` entry containing a flat byte list of complete MIDI messages to send as an immediate protocol response. An `error` result requires nonempty `code` and `message` strings and stops the upload.
+The supported statuses are `accepted`, `continue`, and `error`. `accepted` completes the current step. `continue` keeps waiting for that same step. Only `accepted` and `continue` may include a `messages` entry containing a flat byte list of complete MIDI messages to send as an immediate protocol response. An `error` result must not include response messages; it requires nonempty `code` and `message` strings and stops the upload.
 
 Defining `isPartOfUploadReply()` enables upload acknowledgement handling for the adaptation. The Orm sends one converted message at a time and advances only after `accepted`. If a converted block also contains messages that do not receive acknowledgements, add this optional predicate:
 
