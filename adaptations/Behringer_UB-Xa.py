@@ -149,25 +149,24 @@ def isSingleProgramDump(messages) -> bool:
     all_msgs = _split_sysex(messages)
     by_device = {}
     for m in all_msgs:
-        if _is_fds(m, 0x01) or _is_fds(m, 0x02):
-            dev = _fds_device_id(m)
-            by_device.setdefault(dev, []).append(m)
-
-    eof_messages = [m for m in all_msgs if _is_ubxa_eof(m)]
-    for device_id, msgs in by_device.items():
-        has_header = any(_is_fds(m, 0x01) for m in msgs)
-        has_data = any(_is_fds(m, 0x02) for m in msgs)
-        # Hardware traces show that the UB-Xa sends FDS packets to the
-        # broadcast transfer ID 0x7f, but terminates that transfer with a
-        # universal SysEx EOF addressed to device 0x00.  A targeted transfer
-        # must still be terminated by the same device, while a broadcast FDS
-        # transfer may be terminated by any valid UB-Xa EOF on this MIDI input.
-        has_matching_eof = any(
-            device_id == 0x7F or eof[2] == device_id
-            for eof in eof_messages
-        )
-        if has_header and has_data and has_matching_eof:
-            return True
+        if _is_fds(m, 0x01):
+            # A new header starts (or restarts) the transfer for this ID.
+            by_device[_fds_device_id(m)] = False
+        elif _is_fds(m, 0x02):
+            device_id = _fds_device_id(m)
+            if device_id in by_device:
+                by_device[device_id] = True
+        elif _is_ubxa_eof(m):
+            # Hardware traces show that the UB-Xa sends FDS packets to the
+            # broadcast transfer ID 0x7f, but terminates that transfer with a
+            # universal SysEx EOF addressed to device 0x00.  A targeted
+            # transfer must still be terminated by the same device.  Checking
+            # during ordered traversal also prevents a stale earlier EOF from
+            # completing a later partial transfer.
+            if any(
+                    has_data and (device_id == 0x7F or m[2] == device_id)
+                    for device_id, has_data in by_device.items()):
+                return True
 
     return False
 

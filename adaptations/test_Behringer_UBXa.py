@@ -44,6 +44,16 @@ def test_eof_must_belong_to_same_device_as_header_and_data():
     assert ubxa.isSingleProgramDump(complete)
 
 
+def test_eof_must_follow_broadcast_header_and_data():
+    stale_eof_then_partial_transfer = _flatten([_eof(0), _header(0x7F), _data(0x7F)])
+    complete_transfer_after_stale_eof = _flatten([
+        _eof(0), _header(0x7F), _data(0x7F), _eof(0)
+    ])
+
+    assert not ubxa.isSingleProgramDump(stale_eof_then_partial_transfer)
+    assert ubxa.isSingleProgramDump(complete_transfer_after_stale_eof)
+
+
 def _issue_574_edit_buffer():
     path = Path(__file__).parent / "testData" / "Behringer_UBXa_issue574-midi-log.txt"
     messages = []
