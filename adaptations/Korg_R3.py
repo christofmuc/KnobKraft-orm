@@ -4,6 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 import hashlib
+from pathlib import Path
 from typing import List
 
 import knobkraft
@@ -172,40 +173,14 @@ def _encode_name(new_name):
     return [ord(c) if 32 <= ord(c) <= 126 else 32 for c in new_name[:program_name_length].ljust(program_name_length)]
 
 
-def _build_program_data(patch_name: str, seed: int) -> List[int]:
-    data = [(seed + i * 17) & 0xff for i in range(program_data_size)]
-    data[program_name_offset:program_name_offset + program_name_length] = _encode_name(patch_name)
-    return data
-
-
-def _program_dump(channel: int, program_number: int, patch_name: str, seed: int) -> List[int]:
-    return korg.buildMessage(
-        channel,
-        model_id,
-        command_program_data_dump,
-        korg.split_14bit(program_number) + korg.escapeSysex(_build_program_data(patch_name, seed)),
-    )
-
-
-def _edit_buffer_dump(channel: int, patch_name: str, seed: int) -> List[int]:
-    return korg.buildMessage(
-        channel,
-        model_id,
-        command_current_program_data_dump,
-        korg.escapeSysex(_build_program_data(patch_name, seed)),
-    )
-
-
 def make_test_data():
     from testing.mock_midi import EditBufferMockDevice, ProgramDumpMockDevice
 
-    program_messages = [
-        _program_dump(0, 0, "BassSaw", 0x11),
-        _program_dump(0, 1, "HyperVoc", 0x22),
-        _program_dump(0, 7, "Screamin", 0x33),
-        _program_dump(0, 8, "Justice", 0x44),
-    ]
-    edit_buffer_message = _edit_buffer_dump(0, "EditR3", 0x55)
+    # Fixed, independently generated protocol fixtures; not hardware captures.
+    # See testData/Korg_R3/README.md for sources and generation instructions.
+    messages = knobkraft.load_sysex(str(Path(__file__).parent / "testData/Korg_R3/synthetic.syx"))
+    program_messages = messages[:4]
+    edit_buffer_message = messages[4]
 
     def programs(_: testing.TestData) -> List[testing.ProgramTestData]:
         return [
