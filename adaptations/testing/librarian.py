@@ -1,5 +1,6 @@
 from collections import deque
 from collections.abc import Iterable
+from dataclasses import dataclass
 from functools import partial
 from typing import List, Callable, Optional, Dict, Deque, Any, Union
 from enum import Enum
@@ -77,11 +78,15 @@ class MidiController:
     def clear_message_handlers(self):
         self.handlers.clear()
 
+    def remove_message_handler(self, handler: MidiMessageHandler) -> None:
+        if handler in self.handlers:
+            self.handlers.remove(handler)
+
     def send(self, message: List[int]):
         pass
 
     def receive(self, message: List[int]):
-        for handler in self.handlers:
+        for handler in self.handlers.copy():
             handler(message)
 
 
@@ -127,6 +132,30 @@ class BankDownloadMethod(Enum):
     EDIT_BUFFERS = 3
 
 
+class UploadStatus(Enum):
+    ACKNOWLEDGED = "acknowledged"
+    SENT_WITHOUT_ACKNOWLEDGEMENT = "sent_without_acknowledgement"
+    DEVICE_ERROR = "device_error"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
+    ADAPTATION_ERROR = "adaptation_error"
+
+
+@dataclass
+class UploadResult:
+    status: UploadStatus
+    code: str = ""
+    message: str = ""
+    completed_messages: int = 0
+    outcome_uncertain: bool = False
+
+    def successful(self) -> bool:
+        return self.status in (
+            UploadStatus.ACKNOWLEDGED,
+            UploadStatus.SENT_WITHOUT_ACKNOWLEDGEMENT,
+        )
+
+
 class Librarian:
 
     def __init__(self):
@@ -140,6 +169,7 @@ class Librarian:
         self.max_number_messages_per_patch = 14  # This is to limit memory and computation time when loading large files
         self.max_number_messages_per_bank = 256  # Again, we need to limit miscalculations. But banks might have many more messages
         self._active_midi_controller: Optional[MidiController] = None
+        self._active_upload = None
 
     def determine_bank_download_method(self, adaptation) -> BankDownloadMethod:
         if adaptation_has_implemented(adaptation, "bankDownloadMethodOverride"):
@@ -293,17 +323,67 @@ class Librarian:
             channel: int,
             adaptation,
             patch: List[int],
-            target=None
+            target=None,
+            on_finished: Optional[Callable[[UploadResult], None]] = None,
     ) -> List[List[int]]:
         messages = self.data_file_to_sysex(adaptation, channel, patch, target)
-        self.send_block_of_messages_to_synth(midi_controller, adaptation, messages)
+        self.send_block_of_messages_to_synth(midi_controller, adaptation, messages, on_finished)
         return messages
 
-    def send_block_of_messages_to_synth(self, midi_controller: MidiController, adaptation, messages: List[List[int]]) -> None:
+    def send_block_of_messages_to_synth(
+            self,
+            midi_controller: MidiController,
+            adaptation,
+            messages: List[List[int]],
+            on_finished: Optional[Callable[[UploadResult], None]] = None,
+    ) -> None:
         delay = self.message_delay(adaptation)
         if hasattr(midi_controller, "set_send_delay"):
             midi_controller.set_send_delay(delay)
-        self._send_block(midi_controller, messages)
+
+        if not adaptation_has_implemented(adaptation, "isPartOfUploadReply"):
+            self._send_block(midi_controller, messages)
+            if on_finished is not None:
+                on_finished(UploadResult(
+                    UploadStatus.SENT_WITHOUT_ACKNOWLEDGEMENT,
+                    completed_messages=len(messages),
+                ))
+            return
+
+        timeout = self.upload_reply_timeout(adaptation)
+        if self._active_upload is not None:
+            if on_finished is not None:
+                on_finished(UploadResult(
+                    UploadStatus.ADAPTATION_ERROR,
+                    "upload_busy",
+                    "Another upload is still active",
+                ))
+            return
+        if not messages:
+            if on_finished is not None:
+                on_finished(UploadResult(
+                    UploadStatus.ADAPTATION_ERROR,
+                    "empty_upload",
+                    "The upload produced no MIDI messages",
+                ))
+            return
+
+        state = {
+            "adaptation": adaptation,
+            "controller": midi_controller,
+            "messages": [list(message) for message in messages],
+            "index": 0,
+            "completed": 0,
+            "waiting": False,
+            "used_acknowledgement": False,
+            "timeout_ms": timeout,
+            "finished": on_finished,
+        }
+        handler = partial(self._handle_upload_reply, state=state)
+        state["handler"] = handler
+        self._active_upload = state
+        midi_controller.add_message_handler(handler)
+        self._send_next_upload_message(state)
 
     @staticmethod
     def message_delay(adaptation) -> int:
@@ -314,6 +394,165 @@ class Librarian:
         if adaptation_has_implemented(adaptation, "generalMessageDelay"):
             return adaptation.generalMessageDelay()
         return 0
+
+    @staticmethod
+    def upload_reply_timeout(adaptation) -> int:
+        timeout = 5000
+        if adaptation_has_implemented(adaptation, "messageTimings"):
+            timings = adaptation.messageTimings()
+            if not isinstance(timings, dict):
+                raise ValueError("messageTimings must return a dict")
+            timeout = timings.get("uploadReplyTimeoutMs", timeout)
+        if not isinstance(timeout, int) or timeout <= 0:
+            raise ValueError("uploadReplyTimeoutMs must be a positive integer")
+        return timeout
+
+    def _send_next_upload_message(self, state) -> None:
+        while self._active_upload is state and state["index"] < len(state["messages"]):
+            sent_message = state["messages"][state["index"]]
+            expects_reply = True
+            if adaptation_has_implemented(state["adaptation"], "expectsUploadReply"):
+                expects_reply = state["adaptation"].expectsUploadReply(sent_message)
+                if not isinstance(expects_reply, bool):
+                    self._finish_upload(state, UploadResult(
+                        UploadStatus.ADAPTATION_ERROR,
+                        "invalid_upload_handshake",
+                        "expectsUploadReply must return a bool",
+                        state["completed"],
+                    ))
+                    return
+
+            state["waiting"] = expects_reply
+            state["used_acknowledgement"] = state["used_acknowledgement"] or expects_reply
+            state["controller"].send(sent_message)
+            if expects_reply:
+                return
+            state["index"] += 1
+            state["completed"] += 1
+
+        if self._active_upload is state:
+            status = (UploadStatus.ACKNOWLEDGED if state["used_acknowledgement"]
+                      else UploadStatus.SENT_WITHOUT_ACKNOWLEDGEMENT)
+            self._finish_upload(state, UploadResult(
+                status,
+                completed_messages=state["completed"],
+            ))
+
+    def _handle_upload_reply(self, message: List[int], state) -> None:
+        if self._active_upload is not state or not state["waiting"]:
+            return
+
+        try:
+            reply = state["adaptation"].isPartOfUploadReply(
+                message,
+                state["messages"][state["index"]],
+            )
+        except Exception as ex:
+            self._finish_upload(state, UploadResult(
+                UploadStatus.ADAPTATION_ERROR,
+                "invalid_upload_reply",
+                str(ex),
+                state["completed"],
+                True,
+            ))
+            return
+
+        if reply is None:
+            return
+        if not isinstance(reply, dict) or not isinstance(reply.get("status"), str):
+            self._finish_upload(state, UploadResult(
+                UploadStatus.ADAPTATION_ERROR,
+                "invalid_upload_reply",
+                "isPartOfUploadReply must return None or a dict with a string status",
+                state["completed"],
+                True,
+            ))
+            return
+
+        status = reply["status"]
+        response = reply.get("messages", [])
+        if not isinstance(response, list) or not all(isinstance(value, int) and 0 <= value < 256 for value in response):
+            self._finish_upload(state, UploadResult(
+                UploadStatus.ADAPTATION_ERROR,
+                "invalid_upload_response",
+                "Upload response messages must be a flat list of bytes",
+                state["completed"],
+                True,
+            ))
+            return
+
+        if status == "continue":
+            self._send_block(state["controller"], response)
+            return
+        if status == "accepted":
+            self._send_block(state["controller"], response)
+            state["waiting"] = False
+            state["index"] += 1
+            state["completed"] += 1
+            self._send_next_upload_message(state)
+            return
+        if status == "error":
+            code = reply.get("code")
+            description = reply.get("message")
+            if not isinstance(code, str) or not code or not isinstance(description, str) or not description:
+                self._finish_upload(state, UploadResult(
+                    UploadStatus.ADAPTATION_ERROR,
+                    "invalid_upload_reply",
+                    "Upload errors require nonempty code and message strings",
+                    state["completed"],
+                    True,
+                ))
+                return
+            self._finish_upload(state, UploadResult(
+                UploadStatus.DEVICE_ERROR,
+                code,
+                description,
+                state["completed"],
+            ))
+            return
+
+        self._finish_upload(state, UploadResult(
+            UploadStatus.ADAPTATION_ERROR,
+            "invalid_upload_reply",
+            f"Unknown upload reply status: {status}",
+            state["completed"],
+            True,
+        ))
+
+    def timeout_upload(self) -> None:
+        if self._active_upload is not None and self._active_upload["waiting"]:
+            state = self._active_upload
+            self._finish_upload(state, UploadResult(
+                UploadStatus.TIMEOUT,
+                "upload_reply_timeout",
+                "Timed out waiting for the synth to acknowledge the upload",
+                state["completed"],
+                True,
+            ))
+
+    def cancel_upload(self) -> None:
+        if self._active_upload is not None:
+            state = self._active_upload
+            self._finish_upload(state, UploadResult(
+                UploadStatus.CANCELLED,
+                "upload_cancelled",
+                "Upload cancelled",
+                state["completed"],
+                state["waiting"],
+            ))
+
+    def _finish_upload(self, state, result: UploadResult) -> None:
+        if self._active_upload is not state:
+            return
+        self._active_upload = None
+        state["waiting"] = False
+        controller = state["controller"]
+        if hasattr(controller, "remove_message_handler"):
+            controller.remove_message_handler(state["handler"])
+        if hasattr(controller, "mark_finished"):
+            controller.mark_finished()
+        if state["finished"] is not None:
+            state["finished"](result)
 
     def _finish_download(self, midi_controller: MidiController, patches: List[List[int]]):
         if hasattr(midi_controller, "mark_finished"):

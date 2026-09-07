@@ -11,7 +11,7 @@ import knobkraft
 import testing
 import functools
 
-from testing.librarian import Librarian, handshake_flag
+from testing.librarian import Librarian, UploadStatus, handshake_flag
 from testing.mock_midi import MockMidiController, ScriptedMockDevice
 
 
@@ -586,14 +586,79 @@ def test_send_patch_to_synth_via_mock_device(adaptation, test_data: testing.Test
     send_test_data = materialized_send_test_data(test_data)
     patch = patch_for_send_to_synth(send_test_data)
     librarian = Librarian()
-    controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
+    if send_test_data.send_to_synth_mock_device_factory is not None:
+        device = send_test_data.send_to_synth_mock_device_factory(send_test_data, adaptation)
+    else:
+        device = ScriptedMockDevice({}, ignore_unmatched=True)
+    controller = MockMidiController(device)
+    results = []
 
-    messages = librarian.send_patch_to_synth(controller, 0, adaptation, patch)
+    messages = librarian.send_patch_to_synth(
+        controller,
+        0,
+        adaptation,
+        patch,
+        on_finished=lambda result: results.append(result),
+    )
+    controller.drain()
 
     expected_messages = send_test_data.expected_send_to_synth_messages(send_test_data, adaptation)
     assert messages == expected_messages
     assert controller.sent_messages == expected_messages
     assert controller.sent_message_delays == [Librarian.message_delay(adaptation)] * len(expected_messages)
+    assert len(results) == 1
+    if hasattr(adaptation, "isPartOfUploadReply"):
+        assert results[0].status == UploadStatus.ACKNOWLEDGED
+    else:
+        assert results[0].status == UploadStatus.SENT_WITHOUT_ACKNOWLEDGEMENT
+
+
+@require_implemented("isPartOfUploadReply")
+@require_testdata("upload_reply_cases")
+def test_upload_reply_cases(adaptation, test_data: testing.TestData):
+    for case in test_data.upload_reply_cases:
+        result = adaptation.isPartOfUploadReply(
+            case.reply_message.byte_list,
+            case.sent_message.byte_list,
+        )
+        assert result == case.expected_result
+        if hasattr(adaptation, "expectsUploadReply"):
+            assert adaptation.expectsUploadReply(case.sent_message.byte_list) is case.expects_reply
+
+
+@require_implemented("isPartOfUploadReply")
+@require_testdata("upload_reply_cases")
+def test_upload_device_error_stops_the_sequence(adaptation, test_data: testing.TestData):
+    error_case = next(
+        (case for case in test_data.upload_reply_cases
+         if case.expected_result is not None and case.expected_result.get("status") == "error"),
+        None,
+    )
+    if error_case is None:
+        pytest.skip("upload_reply_cases does not provide a device error")
+
+    sent_message = error_case.sent_message.byte_list
+    unsent_message = [0xC0, 0x01]
+    device = ScriptedMockDevice({
+        tuple(sent_message): [error_case.reply_message.byte_list],
+    })
+    controller = MockMidiController(device)
+    librarian = Librarian()
+    results = []
+
+    librarian.send_block_of_messages_to_synth(
+        controller,
+        adaptation,
+        [sent_message, unsent_message],
+        lambda result: results.append(result),
+    )
+    controller.drain()
+
+    assert controller.sent_messages == [sent_message]
+    assert len(results) == 1
+    assert results[0].status == UploadStatus.DEVICE_ERROR
+    assert results[0].code == error_case.expected_result["code"]
+    assert results[0].completed_messages == 0
 
 
 @require_testdata("single_edit_buffer_mock_device_factory")

@@ -1,4 +1,5 @@
-from testing.librarian import Librarian
+from testing.librarian import Librarian, UploadStatus
+from testing.mock_midi import MockMidiController, ScriptedMockDevice
 
 
 def program_dump(slot: int, sound: int):
@@ -130,3 +131,77 @@ def test_load_sysex_preserves_bank_patch_when_fingerprint_mutates_input():
     patches = Librarian().load_sysex(MutatingFingerprintBankAdaptation, [[0xF0, 0x02, 0xF7]])
 
     assert patches == [program_dump(0, 10)]
+
+
+class UploadHandshakeAdaptation:
+    @staticmethod
+    def expectsUploadReply(sent_message):
+        return sent_message[0] == 0xF0
+
+    @staticmethod
+    def isPartOfUploadReply(message, sent_message):
+        if sent_message != [0xF0, 0x01, 0xF7]:
+            return None
+        if message == [0xF0, 0x10, 0xF7]:
+            return {"status": "continue", "messages": [0xF0, 0x55, 0xF7]}
+        if message == [0xF0, 0x11, 0xF7]:
+            return {"status": "accepted"}
+        return None
+
+    @staticmethod
+    def messageTimings():
+        return {"uploadReplyTimeoutMs": 1234}
+
+
+def test_upload_handshake_waits_orders_responses_and_skips_unacknowledged_messages():
+    upload = [0xF0, 0x01, 0xF7]
+    unrelated = [0xF0, 0x09, 0xF7]
+    progress = [0xF0, 0x10, 0xF7]
+    accepted = [0xF0, 0x11, 0xF7]
+    response = [0xF0, 0x55, 0xF7]
+    program_change = [0xC0, 0x07]
+    device = ScriptedMockDevice(
+        {tuple(upload): [unrelated, progress, accepted]},
+        ignore_unmatched=True,
+    )
+    controller = MockMidiController(device)
+    librarian = Librarian()
+    results = []
+
+    librarian.send_block_of_messages_to_synth(
+        controller,
+        UploadHandshakeAdaptation,
+        [upload, program_change],
+        lambda result: results.append(result),
+    )
+
+    assert controller.sent_messages == [upload]
+    controller.drain()
+
+    assert controller.sent_messages == [upload, response, program_change]
+    assert len(results) == 1
+    assert results[0].status == UploadStatus.ACKNOWLEDGED
+    assert results[0].completed_messages == 2
+    assert controller.handlers == []
+    assert Librarian.upload_reply_timeout(UploadHandshakeAdaptation) == 1234
+
+
+def test_upload_handshake_timeout_is_terminal_and_uncertain():
+    upload = [0xF0, 0x01, 0xF7]
+    controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
+    librarian = Librarian()
+    results = []
+
+    librarian.send_block_of_messages_to_synth(
+        controller,
+        UploadHandshakeAdaptation,
+        [upload],
+        lambda result: results.append(result),
+    )
+    librarian.timeout_upload()
+
+    assert controller.sent_messages == [upload]
+    assert len(results) == 1
+    assert results[0].status == UploadStatus.TIMEOUT
+    assert results[0].outcome_uncertain
+    assert controller.handlers == []

@@ -744,6 +744,29 @@ def expectsUploadReply(sent_message):
 
 It defaults to `True`. For example, an adaptation can acknowledge its program dump while letting a trailing program change advance immediately. Configure the per-step deadline with the positive integer `uploadReplyTimeoutMs` in `messageTimings()`; it defaults to 5000 ms. Unrelated input and `continue` replies do not extend the deadline, and the Orm does not retry a timed-out write automatically.
 
+Add representative replies to `make_test_data()` so the generic adaptation tests enforce this contract:
+
+```python
+upload_reply_cases = [
+    testing.UploadReplyTestData(
+        sent_message=program_write,
+        reply_message=write_complete,
+        expected_result={"status": "accepted"},
+    ),
+    testing.UploadReplyTestData(
+        sent_message=program_write,
+        reply_message=write_error,
+        expected_result={
+            "status": "error",
+            "code": "write_failed",
+            "message": "The synth rejected the write",
+        },
+    ),
+]
+```
+
+The suite checks each classifier result and verifies that a device error prevents the next queued message from being sent. To exercise a successful end-to-end send, also provide `expected_send_to_synth_messages` and `send_to_synth_mock_device_factory` on `testing.TestData`; the mock device should return the accepted reply for the program-write message. The testing librarian follows the same accepted/error/continue sequencing, response-message ordering, per-message opt-out, timeout, and cancellation rules as the runtime operation.
+
 ## Renaming patches
 For example, the Orm always allows the user to specify a name for a patch, but that name will not appear on the synth unless you implement the following function. If you don't implement it, the patches will keep their original name even if you change the database name for a patch.
 
