@@ -22,6 +22,7 @@
 #include "UIModel.h"
 #include "AutoDetection.h"
 #include "DataFileLoadCapability.h"
+#include "UploadHandshakeCapability.h"
 #include "StoredPatchNameCapability.h"
 #include "CustomProgramChangeCapability.h"
 #include "ScriptedQuery.h"
@@ -1113,7 +1114,16 @@ void PatchView::sendPatchAsSysex(midikraft::PatchHolder &patch) {
 	// Send out to Synth into edit buffer
 	if (patch.patch()) {
 		spdlog::info("Sending sysex for patch '{}' to {}", patch.name(), patch.synth()->getName());
-		patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+		if (midikraft::Capability::hasCapability<midikraft::UploadHandshakeCapability>(patch.synth())) {
+			patch.synth()->sendDataFileToSynthAsync(patch.patch(), nullptr, [synthName = patch.synth()->getName()](const midikraft::UploadResult& result) {
+				if (!result.successful()) {
+					spdlog::error("Upload to {} failed: {}", synthName, result.message);
+				}
+			});
+		}
+		else {
+			patch.synth()->sendDataFileToSynth(patch.patch(), nullptr);
+		}
 	}
 	else {
 		spdlog::debug("Empty patch slot selected, can't send to synth");

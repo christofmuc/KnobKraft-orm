@@ -153,6 +153,17 @@ class UploadHandshakeAdaptation:
         return {"uploadReplyTimeoutMs": 1234}
 
 
+class ErrorWithMessagesUploadAdaptation(UploadHandshakeAdaptation):
+    @staticmethod
+    def isPartOfUploadReply(message, sent_message):
+        return {
+            "status": "error",
+            "code": "write_failed",
+            "message": "Write failed",
+            "messages": [0xF0, 0x55, 0xF7],
+        }
+
+
 def test_upload_handshake_waits_orders_responses_and_skips_unacknowledged_messages():
     upload = [0xF0, 0x01, 0xF7]
     unrelated = [0xF0, 0x09, 0xF7]
@@ -205,3 +216,25 @@ def test_upload_handshake_timeout_is_terminal_and_uncertain():
     assert results[0].status == UploadStatus.TIMEOUT
     assert results[0].outcome_uncertain
     assert controller.handlers == []
+
+
+def test_upload_handshake_rejects_error_replies_with_response_messages():
+    upload = [0xF0, 0x01, 0xF7]
+    reply = [0xF0, 0x12, 0xF7]
+    controller = MockMidiController(ScriptedMockDevice({tuple(upload): [reply]}))
+    librarian = Librarian()
+    results = []
+
+    librarian.send_block_of_messages_to_synth(
+        controller,
+        ErrorWithMessagesUploadAdaptation,
+        [upload],
+        lambda result: results.append(result),
+    )
+    controller.drain()
+
+    assert controller.sent_messages == [upload]
+    assert len(results) == 1
+    assert results[0].status == UploadStatus.ADAPTATION_ERROR
+    assert results[0].code == "invalid_upload_reply"
+    assert results[0].outcome_uncertain

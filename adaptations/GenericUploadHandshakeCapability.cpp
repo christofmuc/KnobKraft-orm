@@ -54,8 +54,13 @@ namespace knobkraft {
 				return { midikraft::UploadHandshakeReply::Status::ADAPTATION_ERROR, {}, "invalid_upload_reply", "Upload reply dict requires a string status" };
 			}
 
-			std::vector<MidiMessage> response;
+			auto status = dict[statusKey].cast<std::string>();
 			auto messagesKey = py::str("messages");
+			if (status == "error" && dict.contains(messagesKey)) {
+				return { midikraft::UploadHandshakeReply::Status::ADAPTATION_ERROR, {}, "invalid_upload_reply", "Upload error must not include response messages" };
+			}
+
+			std::vector<MidiMessage> response;
 			if (dict.contains(messagesKey)) {
 				auto bytes = dict[messagesKey].cast<std::vector<int>>();
 				response = GenericAdaptation::vectorToMessages(bytes);
@@ -64,7 +69,6 @@ namespace knobkraft {
 				}
 			}
 
-			auto status = dict[statusKey].cast<std::string>();
 			if (status == "continue") {
 				return { midikraft::UploadHandshakeReply::Status::CONTINUE, std::move(response) };
 			}

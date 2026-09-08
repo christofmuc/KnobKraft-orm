@@ -121,6 +121,8 @@ def isPartOfUploadReply(message, sent_message):
         return {"status": "error", "code": "write_failed", "message": "Write failed"}
     if message[1] == 0x13:
         return {"status": "unknown"}
+    if message[1] == 0x14:
+        return {"status": "error", "code": "write_failed", "message": "Write failed", "messages": [0xf0, 0x7d, 0xf7]}
     return None
 
 def messageTimings():
@@ -146,4 +148,7 @@ def messageTimings():
 	CHECK(error.code == "write_failed");
 	auto malformed = capability->isMessagePartOfUploadReply(sysex(0x13), sysex(0x01));
 	CHECK(malformed.status == midikraft::UploadHandshakeReply::Status::ADAPTATION_ERROR);
+	auto errorWithMessages = capability->isMessagePartOfUploadReply(sysex(0x14), sysex(0x01));
+	CHECK(errorWithMessages.status == midikraft::UploadHandshakeReply::Status::ADAPTATION_ERROR);
+	CHECK(errorWithMessages.code == "invalid_upload_reply");
 }

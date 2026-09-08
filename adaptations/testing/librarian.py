@@ -470,6 +470,16 @@ class Librarian:
             return
 
         status = reply["status"]
+        if status == "error" and "messages" in reply:
+            self._finish_upload(state, UploadResult(
+                UploadStatus.ADAPTATION_ERROR,
+                "invalid_upload_reply",
+                "Upload error must not include response messages",
+                state["completed"],
+                True,
+            ))
+            return
+
         response = reply.get("messages", [])
         if not isinstance(response, list) or not all(isinstance(value, int) and 0 <= value < 256 for value in response):
             self._finish_upload(state, UploadResult(
