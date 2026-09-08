@@ -284,6 +284,8 @@ def _extract_sysex_from_midi_bytes(data: bytes) -> List[List[int]]:
                         elif escaped:
                             escaped.append(byte)
                             if byte == 0xF7:
+                                if any(data_byte >= 0x80 for data_byte in escaped[1:-1]):
+                                    raise ValueError("Embedded status byte in MIDI SysEx")
                                 messages.append(escaped)
                                 escaped = []
                     if escaped:

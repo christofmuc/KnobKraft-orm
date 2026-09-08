@@ -1,0 +1,19 @@
+/* KnobKraft identity v1. Shared by the landing page and manual. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url('./fonts/Inter.ttf') format('truetype'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url('./fonts/JetBrainsMono.ttf') format('truetype'); }
+:root {
+  --kk-chassis: #0b0e14;
+  --kk-panel: #131922;
+  --kk-display: #05070a;
+  --kk-border: #303d4e;
+  --kk-text: #e6edf5;
+  --kk-muted: #a8b6c8;
+  --kk-cyan: #65e5ec;
+  --kk-cyan-bright: #00f3ff;
+  --kk-orange: #ffba7a;
+  --kk-text-font: Inter, system-ui, sans-serif;
+  --kk-label-font: 'JetBrains Mono', ui-monospace, monospace;
+}
+.kk-github { display: inline-flex; align-items: center; justify-content: center; gap: .5em; min-height: 44px; padding: .4em .55em; border: 1px solid var(--kk-border); border-radius: 4px; color: var(--kk-text); text-decoration: none; font: 600 14px/1.4 var(--kk-text-font); white-space: nowrap; }
+.kk-github svg { width: 24px; height: 24px; fill: currentColor; flex: none; }
+.kk-github:hover { color: var(--kk-cyan); border-color: var(--kk-cyan); }

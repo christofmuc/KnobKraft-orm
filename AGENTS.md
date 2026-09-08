@@ -61,7 +61,7 @@ Explicitly distinguish partial fixes from complete fixes. An open issue may have
 
 - Every adaptation promised in the notes must exist in `adaptations/` and be included in `adaptations/CMakeLists.txt`'s `adaptation_files`. An entry in README alone does not ship it (see #542).
 - Register applicable dedicated tests in `adaptation_files_test_shipped`; check support-module installation if new shared modules were added.
-- Keep the synth listings in `README.md` and `docs/README.md` consistent with actual support and maturity. Preserve contributor credits.
+- Maintain synth support in `docs/data/supported-synths.yml` and regenerate `README.md`, `docs/supported-synths.md` and `data/supported-synths.json` with `scripts/generate_supported_synths.py`. Keep actual support, release availability and contributor credits accurate; `docs/README.md` is a documentation bridge, not a second matrix.
 - Check `The-Orm/gitversion.cmake`, `The-Orm/CMakeLists.txt`, and the workflows before assuming a hard-coded version bump is needed. `git describe` drives the application/package version and `ORM_VERSION`; `release_notes/<tag>.md` must exist before tagging.
 - For adaptation API, database, or fingerprint changes, test legacy inputs and document the upgrade path. Never use the user's live database for migration experiments.
 
@@ -82,7 +82,7 @@ For C++/database changes, initialize pinned submodules in the clean worktree (`g
 
 For documentation-only changes, check the history/credit ledger, Markdown rendering, links and `git diff --check`; do not claim that this replaces the release candidate's build/test gate.
 
-Before publication, check CI for the **exact candidate SHA**, not an earlier green PR head. Inspect GitHub workflow state as well as YAML; disabled or missing jobs are not passing jobs. As audited for 2.10.0, Windows, macOS, Ubuntu 22 and Ubuntu 24 are active, while Arch Linux Docker and static Pages are manually disabled. Recheck this each release and report disabled coverage; do not silently enable it.
+Before publication, check CI for the **exact candidate SHA**, not an earlier green PR head. Inspect GitHub workflow state as well as YAML; disabled or missing jobs are not passing jobs. As checked on 4 September 2026, Windows, macOS, Ubuntu 22, Ubuntu 24 and Website and Docs (GitHub Pages) are active; Arch Linux Docker remains manually disabled. Pages was enabled with the owner's approval for the first website publication. Recheck this each release and report disabled coverage; do not silently enable it.
 
 ```text
 gh api repos/christofmuc/KnobKraft-orm/actions/workflows
@@ -108,4 +108,22 @@ Record pending builds, unresolved reviews and hardware gaps. Inspect packaged ar
    - `KnobKraft_Orm-<version>-Ubuntu24.tar.gz`
 5. Check that the appcast references the correct installer and version, its signature is present, and its release-notes link renders correctly. Never expose signing keys or tokens in logs or notes.
 6. If a publishing job fails, inspect the release and appcast before retrying. Do not delete/recreate assets, tags, releases or appcast entries without agreement on the recovery action. If an existing release body is stale, update it explicitly after approval rather than assuming the creation script overwrites it.
-7. Notify relevant reporters/contributors of the available release when requested. Close only issues actually resolved; leave partial fixes and hardware-verification requests clearly tracked. Finish with the release link and a truthful summary of validation and remaining limitations.
+7. Refresh the public website after a stable release and all intended assets are verified. Follow **Refresh the website after an app release** in `website/README.md`: update the version/date, four exact asset URLs and release-notes link in `docs/download.md`; update the homepage and compatibility-page wording; reconcile `release_checked` and per-model availability in `docs/data/supported-synths.yml` against the tagged packaging manifest; regenerate the README/docs/JSON outputs; build and check the site. Versioned asset filenames require updating the full URLs, not just the tag segment. Do not present a draft, prerelease or source-only feature as released. Publish through the authorized master workflow, observe the exact commit's Pages deployment, and verify the live download targets. If website publication is not yet authorized, prepare these changes and report the pending website update. Never move the app release tag to update website links.
+8. Notify relevant reporters/contributors of the available release when requested. Close only issues actually resolved; leave partial fixes and hardware-verification requests clearly tracked. Finish with the release link and a truthful summary of validation and remaining limitations.
+
+## 7. Finish the release-ready issue lifecycle
+
+The GitHub label is exactly `Ready for release`, on both issues and pull requests. It marks work in flight for a forthcoming release, not an archive of shipped changes.
+
+1. Wait until the release's intended assets, release notes and appcast are published and verified. A successful build alone is not enough. During 2.10.0, an Ubuntu asset upload created an empty release before Windows ran; `make_github_release.py` then skipped creation and left the body empty. After approval, `gh release edit <version> --notes-file release_notes/<version>.md` repaired only the description. Verify the resulting text against the tagged notes; never rerun `write_appcast.py` just to repair the GitHub description.
+2. When post-release housekeeping is authorized, enumerate labeled items in **all states**, including merged/closed PRs and closed issues, and include affected issues from the release ledger even if unlabeled. Use pagination; GitHub's REST issues endpoint includes PRs:
+
+   ```text
+   gh api --method GET repos/christofmuc/KnobKraft-orm/issues -f state=all -f "labels=Ready for release" -f per_page=100 --paginate
+   ```
+
+3. Match each item to a verified published version. Read release notes and issue discussions; check linked fix/merge commits against the release tag with `git merge-base --is-ancestor`. Check equivalent code for cherry-picks or squashes. Neither age, closure, nor a PR's merge alone establishes that a fix shipped. Distinguish a resolved subproblem from a broader request or later follow-up.
+4. Re-read the current issue and comments before writing. Post one short release update with the release link, accurate scope, contributor/reporter thanks, and any migration or hardware caveats. Avoid duplicate comments on retries. Close fully resolved open issues as completed; leave partially resolved or genuinely unverified reports open and explain what remains. Do not close every issue merely mentioned in release notes.
+5. Remove **only** `Ready for release` from verified shipped PRs and resolved shipped issues, preserving all other labels and PR state. Keep unresolved/ambiguous items labeled until their status is settled. Do not delete the label definition. Already closed historical items normally need only label removal, not redundant notification comments or reopening/reclosing.
+6. For a historical sweep, keep an audit ledger outside the published release notes: item number/type, a verified containing release, evidence, action, and exceptions. Re-enumerate labeled items after cleanup, verify closures and comments, and report counts plus the items left in flight. Treat the sweep as a one-time operation; future releases should clear their own shipped items immediately after verification.
+7. Workflow-documentation follow-ups after tagging must not move the published tag or silently change the approved release commit. Commit them separately and push only with authorization.
