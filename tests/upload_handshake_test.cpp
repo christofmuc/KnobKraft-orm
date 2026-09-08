@@ -26,6 +26,9 @@ public:
 		if (code == 0x02) {
 			return { midikraft::UploadHandshakeReply::Status::DEVICE_ERROR, {}, "rejected", "The device rejected the write" };
 		}
+		if (code == 0x03) {
+			return { midikraft::UploadHandshakeReply::Status::CONTINUE, { MidiMessage::programChange(1, 5) } };
+		}
 		return {};
 	}
 };
@@ -49,15 +52,21 @@ TEST_CASE("upload sequence acknowledges selected messages and preserves response
 	sequence.start();
 	REQUIRE(sent.size() == 1);
 	CHECK(sequence.waitingForReply());
-	sequence.handleIncomingMessage(MidiMessage::programChange(1, 1));
+	auto unrelated = sequence.handleIncomingMessage(MidiMessage::programChange(1, 1));
+	CHECK(unrelated == midikraft::UploadHandshakeReply::Status::UNRELATED);
 	CHECK(sent.size() == 1);
-	sequence.handleIncomingMessage(sysex(0x01));
+	auto progress = sequence.handleIncomingMessage(sysex(0x03));
+	CHECK(progress == midikraft::UploadHandshakeReply::Status::CONTINUE);
+	CHECK(sequence.waitingForReply());
+	REQUIRE(sent.size() == 2);
+	CHECK(sent[1].getProgramChangeNumber() == 5);
+	CHECK(sequence.handleIncomingMessage(sysex(0x01)) == midikraft::UploadHandshakeReply::Status::ACCEPTED);
 
-	REQUIRE(sent.size() == 3);
-	CHECK(sent[1].isProgramChange());
-	CHECK(sent[1].getProgramChangeNumber() == 9);
+	REQUIRE(sent.size() == 4);
 	CHECK(sent[2].isProgramChange());
-	CHECK(sent[2].getProgramChangeNumber() == 7);
+	CHECK(sent[2].getProgramChangeNumber() == 9);
+	CHECK(sent[3].isProgramChange());
+	CHECK(sent[3].getProgramChangeNumber() == 7);
 	REQUIRE(results.size() == 1);
 	CHECK(results[0].status == midikraft::UploadResult::Status::ACKNOWLEDGED);
 	CHECK(results[0].completedMessages == 2);

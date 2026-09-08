@@ -14,7 +14,7 @@ namespace {
 class SendTestSynth : public test_helpers::DummySynth,
 	public midikraft::MidiLocationCapability, public midikraft::ProgramDumpCabability {
 public:
-	SendTestSynth() : DummySynth("SendTestSynth", 2) {}
+	explicit SendTestSynth(int bankSize = 2) : DummySynth("SendTestSynth", bankSize) {}
 
 	MidiChannel channel() const override { return MidiChannel::fromZeroBase(0); }
 	juce::MidiDeviceInfo midiInput() const override { return {}; }
@@ -31,15 +31,21 @@ public:
 		++conversions;
 		CHECK(patch != nullptr);
 		programs.push_back(number.toZeroBasedWithBank());
-		return { MidiMessage::programChange(1, number.toZeroBasedWithBank()) };
+		return { MidiMessage::programChange(1, number.toZeroBasedWithBank() % 128) };
 	}
 	void sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const&, std::vector<MidiMessage> const& messages) override {
 		sentMessages += messages.size();
+	}
+	bool prepareMidiOutputForUpload(juce::MidiDeviceInfo const&) override {
+		++outputPreparations;
+		return outputAvailable;
 	}
 
 	mutable int conversions = 0;
 	mutable std::vector<int> programs;
 	size_t sentMessages = 0;
+	int outputPreparations = 0;
+	bool outputAvailable = true;
 };
 
 class BankSendTestSynth : public SendTestSynth, public midikraft::BankSendCapability {
@@ -112,4 +118,37 @@ TEST_CASE("populated banks still send successfully") {
 	CHECK(synth->conversions == 2);
 	CHECK(synth->sentMessages == 2);
 	CHECK(synth->programs == std::vector<int>{ 0, 1 });
+}
+
+TEST_CASE("bank sends report an unavailable output") {
+	auto synth = std::make_shared<SendTestSynth>();
+	synth->outputAvailable = false;
+	midikraft::UserBank bank("test-bank", "Test bank", synth, MidiBankNumber::fromZeroBase(0, 2));
+	auto patch = test_helpers::makePatchHolder(synth, "Patch", { 1, 2 });
+	bank.setPatches({ patch, patch });
+	midikraft::Librarian librarian({});
+	int callbacks = 0;
+	librarian.sendBankToSynth(bank, true, nullptr, [&](bool completed) {
+		++callbacks;
+		CHECK_FALSE(completed);
+	});
+	CHECK(callbacks == 1);
+	CHECK(synth->outputPreparations == 1);
+	CHECK(synth->sentMessages == 0);
+}
+
+TEST_CASE("large legacy bank sends iterate without recursive callbacks") {
+	constexpr int patchCount = 4096;
+	auto synth = std::make_shared<SendTestSynth>(patchCount);
+	midikraft::UserBank bank("test-bank", "Test bank", synth, MidiBankNumber::fromZeroBase(0, patchCount));
+	auto patch = test_helpers::makePatchHolder(synth, "Patch", { 1, 2 });
+	bank.setPatches(std::vector<midikraft::PatchHolder>(patchCount, patch));
+	midikraft::Librarian librarian({});
+	int callbacks = 0;
+	librarian.sendBankToSynth(bank, true, nullptr, [&](bool completed) {
+		++callbacks;
+		CHECK(completed);
+	});
+	CHECK(callbacks == 1);
+	CHECK(synth->sentMessages == patchCount);
 }

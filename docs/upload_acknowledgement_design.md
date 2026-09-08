@@ -295,7 +295,7 @@ No automatic retries. A missing acknowledgement does not prove that the write fa
 
 ## Call sites and user-visible behavior
 
-For a single-patch send, `Synth::sendDataFileToSynth()` should submit an upload operation rather than directly invoking the byte sender. Add an asynchronous overload/result callback and retain a compatibility wrapper with a default error-reporting sink for callers that do not yet consume results.
+For a single-patch send, `Synth::sendDataFileToSynth()` should submit an upload operation rather than directly invoking the byte sender. Add `sendDataFileToSynthAsync()` with a result callback and retain the existing virtual method as a compatibility wrapper with a default error-reporting sink for callers that do not yet consume results. The distinct name prevents derived classes that override the compatibility method from hiding the asynchronous API.
 
 For bank sending, replace the immediate loop with a continuation that starts the next program only after the previous program operation succeeds. Device-specific bank conversion still passes through `BankSendCapability`; handshake-capable output messages are serialized according to the upload-step rule.
 
