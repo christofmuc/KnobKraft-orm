@@ -179,6 +179,42 @@ def isSingleProgramDump(message):
             and message[-1] == 0xF7)  # End of SysEx
 
 
+def expectsUploadReply(sent_message):
+    # Program dumps are acknowledged. Other messages in the send block, such as
+    # the program change used after auditioning, do not receive a reply.
+    return isSingleProgramDump(sent_message)
+
+
+def isPartOfUploadReply(message, sent_message):
+    if not isSingleProgramDump(sent_message):
+        return None
+
+    channel = sent_message[2]
+    if (len(message) != 7
+            or message[:3] != [0xF0, KawaiSysexID, channel]
+            or message[4:] != [0x00, 0x0A, 0xF7]):
+        return None
+
+    result = message[3]
+    if result == WriteComplete:
+        return {"status": "accepted"}
+
+    errors = {
+        WriteError: ("write_error", "The K5000 could not write the patch"),
+        WriteErrorByProtect: ("write_protected", "K5000 memory is write protected"),
+        WriteErrorByMemoryFull: ("memory_full", "K5000 memory is full"),
+        WriteErrorByNoExpandMemory: (
+            "expansion_missing",
+            "The required K5000 expansion board is missing",
+        ),
+    }
+    if result not in errors:
+        return None
+
+    code, description = errors[result]
+    return {"status": "error", "code": code, "message": description}
+
+
 def convertToProgramDump(channel: int, message: List[int], program_number: int) -> List[int]:
     """
     Converts a received program dump into a properly formatted SysEx message,
@@ -539,6 +575,7 @@ def calculateFingerprint(message: List[int]):
 def messageTimings():
     return {
         "replyTimeoutMs": 1000,             # how long to wait for a response before timing out
+        "uploadReplyTimeoutMs": 5000,       # how long to wait for write complete/error
     }
 
 
@@ -557,7 +594,7 @@ def make_test_data():
     global K5000_SPECIFIC_DEVICE
     K5000_SPECIFIC_DEVICE = "K5000R"
     import testing
-    from testing.mock_midi import BankDumpMockDevice
+    from testing.mock_midi import BankDumpMockDevice, ScriptedMockDevice
 
     def bankGenerator(test_data: testing.TestData) -> List[int]:
         bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
@@ -573,6 +610,52 @@ def make_test_data():
         bank_messages = knobkraft.load_sysex(R"testData/Kawai_K5000/full bank D midiOX K5000r.syx")
         return BankDumpMockDevice(adaptation, bank_messages, bank=test_data.wire_download_bank)
 
+    def send_messages(test_data: testing.TestData, adaptation):
+        target = adaptation.bankDescriptors()[0]["size"] - 1
+        patch = test_data.send_to_synth_patch(test_data)
+        messages = knobkraft.splitSysex(adaptation.convertToProgramDump(0, patch, target))
+        messages.append([0xC0, target & 0x7F])
+        return messages
+
+    def upload_mock_device(test_data: testing.TestData, adaptation):
+        program_write = send_messages(test_data, adaptation)[0]
+        accepted = [0xF0, KawaiSysexID, program_write[2], WriteComplete, 0x00, 0x0A, 0xF7]
+        return ScriptedMockDevice({tuple(program_write): [accepted]}, ignore_unmatched=True)
+
+    upload_sent = [0xF0, KawaiSysexID, 0x00, OneBlockDump, 0x00, 0x0A, 0x00, 0x00, 0x00, 0xF7]
+    upload_cases = [
+        testing.UploadReplyTestData(
+            upload_sent,
+            [0xF0, KawaiSysexID, 0x00, WriteComplete, 0x00, 0x0A, 0xF7],
+            {"status": "accepted"},
+        )
+    ] + [
+        testing.UploadReplyTestData(
+            upload_sent,
+            [0xF0, KawaiSysexID, 0x00, code, 0x00, 0x0A, 0xF7],
+            {"status": "error", "code": error_code, "message": description},
+        )
+        for code, error_code, description in [
+            (WriteError, "write_error", "The K5000 could not write the patch"),
+            (WriteErrorByProtect, "write_protected", "K5000 memory is write protected"),
+            (WriteErrorByMemoryFull, "memory_full", "K5000 memory is full"),
+            (WriteErrorByNoExpandMemory, "expansion_missing", "The required K5000 expansion board is missing"),
+        ]
+    ]
+    upload_cases.extend([
+        testing.UploadReplyTestData(
+            upload_sent,
+            [0xF0, KawaiSysexID, 0x01, WriteComplete, 0x00, 0x0A, 0xF7],
+            None,
+        ),
+        testing.UploadReplyTestData(
+            [0xC0, 0x7F],
+            [0xF0, KawaiSysexID, 0x00, WriteComplete, 0x00, 0x0A, 0xF7],
+            None,
+            expects_reply=False,
+        ),
+    ])
+
     return testing.TestData(sysex=R"testData/Kawai_K5000/full bank A midiOX K5000r.syx",
                             bank_generator=bankGenerator,
                             program_generator=programs,
@@ -580,4 +663,8 @@ def make_test_data():
                             expected_patch_count=98,
                             mock_device_factory=mock_device,
                             expected_wire_patch_count=40,
-                            wire_download_bank=1)
+                            wire_download_bank=1,
+                            send_to_synth_patch=lambda test_data: test_data.programs[0].message.byte_list,
+                            expected_send_to_synth_messages=send_messages,
+                            send_to_synth_mock_device_factory=upload_mock_device,
+                            upload_reply_cases=upload_cases)

@@ -711,6 +711,61 @@ def messageTimings():
 
 If `messageTimings()` is defined, the Orm will read these keys and ignore the older `generalMessageDelay()` or `deviceDetectWaitMilliseconds()` functions. Keys you leave out fall back to defaults. If `messageTimings()` is not provided, the legacy functions continue to work as before.
 
+## Acknowledging uploads
+
+Some synths reply after accepting or rejecting a program write. To make the Orm wait for that result before sending the next message, implement `isPartOfUploadReply(message, sent_message)`. The first argument is an incoming MIDI message and the second is the outgoing message currently awaiting a reply. Both are flat byte lists including SysEx framing bytes.
+
+Return `None` for unrelated input. Return a dictionary for a related result:
+
+```python
+def isPartOfUploadReply(message, sent_message):
+    if not isReplyFor(message, sent_message):
+        return None
+    if isWriteComplete(message):
+        return {"status": "accepted"}
+    if isWriteError(message):
+        return {
+            "status": "error",
+            "code": "write_failed",
+            "message": "The synth rejected the write",
+        }
+    return None
+```
+
+The supported statuses are `accepted`, `continue`, and `error`. `accepted` completes the current step. `continue` keeps waiting for that same step. Only `accepted` and `continue` may include a `messages` entry containing a flat byte list of complete MIDI messages to send as an immediate protocol response. An `error` result must not include response messages; it requires nonempty `code` and `message` strings and stops the upload.
+
+Defining `isPartOfUploadReply()` enables upload acknowledgement handling for the adaptation. The Orm sends one converted message at a time and advances only after `accepted`. If a converted block also contains messages that do not receive acknowledgements, add this optional predicate:
+
+```python
+def expectsUploadReply(sent_message):
+    return isProgramDump(sent_message)
+```
+
+It defaults to `True`. For example, an adaptation can acknowledge its program dump while letting a trailing program change advance immediately. Configure the per-step deadline with the positive integer `uploadReplyTimeoutMs` in `messageTimings()`; it defaults to 5000 ms. Unrelated input and `continue` replies do not extend the deadline, and the Orm does not retry a timed-out write automatically.
+
+Add representative replies to `make_test_data()` so the generic adaptation tests enforce this contract:
+
+```python
+upload_reply_cases = [
+    testing.UploadReplyTestData(
+        sent_message=program_write,
+        reply_message=write_complete,
+        expected_result={"status": "accepted"},
+    ),
+    testing.UploadReplyTestData(
+        sent_message=program_write,
+        reply_message=write_error,
+        expected_result={
+            "status": "error",
+            "code": "write_failed",
+            "message": "The synth rejected the write",
+        },
+    ),
+]
+```
+
+The suite checks each classifier result and verifies that a device error prevents the next queued message from being sent. To exercise a successful end-to-end send, also provide `expected_send_to_synth_messages` and `send_to_synth_mock_device_factory` on `testing.TestData`; the mock device should return the accepted reply for the program-write message. The testing librarian follows the same accepted/error/continue sequencing, response-message ordering, per-message opt-out, timeout, and cancellation rules as the runtime operation.
+
 ## Renaming patches
 For example, the Orm always allows the user to specify a name for a patch, but that name will not appear on the synth unless you implement the following function. If you don't implement it, the patches will keep their original name even if you change the database name for a patch.
 
@@ -785,7 +840,7 @@ What sounds complex can be actually quite simple in Python, for example to calcu
         # Blank out Layer A and Layer B name, they should not matter for the fingerprint
         data[402:402 + name_len] = [0] * name_len
         data[914:914 + name_len] = [0] * name_len  # each layer needs 512 bytes
-    return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
+        return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
 
 So the heavy lifting is done by Python's hashlib, make sure to have an `import hashlib` statement at the beginning of the adaptation file (yes, you can import libraries from Python!). We use the md5 hash function and generate a hexdigest human readable string.
 

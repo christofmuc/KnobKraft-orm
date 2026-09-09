@@ -52,6 +52,7 @@ set(adaptation_files_test_shipped
     "test_jv80.py"
     "test_JV1080.py"
     "test_KorgMS2000.py"
+	"test_KawaiK5000.py"
     "test_Roland_MKS50.py"
     "test_Roland_MKS70_V4.py"
     "test_Roland_XV3080.py"
@@ -87,6 +88,7 @@ set(Sources
 	GenericLegacyLoaderCapability.cpp GenericLegacyLoaderCapability.h
 	GenericPatch.cpp GenericPatch.h
 	GenericProgramDumpCapability.cpp GenericProgramDumpCapability.h
+	GenericUploadHandshakeCapability.cpp GenericUploadHandshakeCapability.h
 	PythonUtils.cpp PythonUtils.h
 	${adaptation_files}
 	${adaptation_files_test_shipped}

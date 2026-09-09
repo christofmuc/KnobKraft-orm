@@ -55,6 +55,18 @@ class ProgramTestData:
         self.message = make_midi_message(self.message)
 
 
+@dataclass
+class UploadReplyTestData:
+    sent_message: MidiMessageInitializer
+    reply_message: MidiMessageInitializer
+    expected_result: Optional[dict]
+    expects_reply: bool = True
+
+    def __post_init__(self):
+        self.sent_message = make_midi_message(self.sent_message)
+        self.reply_message = make_midi_message(self.reply_message)
+
+
 ProgramList = List[ProgramTestData]
 ProgramGenerator = Callable[[Any], ProgramList]
 BankGenerator = Callable[[Any], List]
@@ -104,6 +116,8 @@ class TestData:
     expected_multi_bank_sent_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
     send_to_synth_patch: Optional[Callable[[Any], ByteList]] = None
     expected_send_to_synth_messages: Optional[Callable[[Any, Any], List[ByteList]]] = None
+    send_to_synth_mock_device_factory: Optional[Callable[[Any, Any], Any]] = None
+    upload_reply_cases: Optional[List[UploadReplyTestData]] = None
 
     def __post_init__(self):
         self.all_messages = []
@@ -128,3 +142,4 @@ class TestData:
         self.device_detect_call = make_midi_message(self.device_detect_call)
         self.device_detect_reply = None if self.device_detect_reply is None else (make_midi_message(self.device_detect_reply[0]), self.device_detect_reply[1])
         self.legacy_loader_cases = [] if self.legacy_loader_cases is None else self.legacy_loader_cases
+        self.upload_reply_cases = [] if self.upload_reply_cases is None else self.upload_reply_cases

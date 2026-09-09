@@ -21,6 +21,7 @@
 #include "GenericHasBanksCapability.h"
 #include "GenericHasBankDescriptorsCapability.h"
 #include "GenericLegacyLoaderCapability.h"
+#include "GenericUploadHandshakeCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -84,7 +85,9 @@ namespace knobkraft {
 		* kSetupHelp = "setupHelp",
 		* kGetStoredTags = "storedTags",
 		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride",
-		* kMessageTimings = "messageTimings";
+		* kMessageTimings = "messageTimings",
+		* kExpectsUploadReply = "expectsUploadReply",
+		* kIsPartOfUploadReply = "isPartOfUploadReply";
 
 	std::vector<const char*> kAdaptationPythonFunctionNames = {
 		kName,
@@ -125,7 +128,9 @@ namespace knobkraft {
 		kFriendlyProgramName,
 		kSetupHelp,
 		kGetStoredTags,
-		kMessageTimings
+		kMessageTimings,
+		kExpectsUploadReply,
+		kIsPartOfUploadReply
 	};
 
 	std::vector<const char*> kMinimalRequiredFunctionNames = {
@@ -170,6 +175,7 @@ namespace knobkraft {
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
 		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
+		uploadHandshakeCapabilityImpl_ = std::make_shared<GenericUploadHandshakeCapability>(this);
 		try {
 			// Validate that the filename is a good idea
 			/*auto result = py::dict("filename"_a = pythonModuleFilePath);
@@ -208,11 +214,13 @@ namespace knobkraft {
 		hasBankDumpSendCapabilityImpl_ = std::make_shared<GenericBankDumpSendCapability>(this);
 		legacyLoaderCapabilityImpl_ = std::make_shared<GenericLegacyLoaderCapability>(this);
 		customProgramChangeCapabilityImpl_ = std::make_shared<GenericCustomProgramChangeCapability>(this);
+		uploadHandshakeCapabilityImpl_ = std::make_shared<GenericUploadHandshakeCapability>(this);
 		adaptation_module = adaptationModule;
 	}
 
 	GenericAdaptation::~GenericAdaptation()
 	{
+		cancelActiveUpload();
 		py::gil_scoped_acquire gil;
 		adaptation_module.release();
 	}
@@ -1113,6 +1121,26 @@ namespace knobkraft {
 		midikraft::CustomProgramChangeCapability* cap;
 		if (hasCapability(&cap)) {
 			outCapability = customProgramChangeCapabilityImpl_;
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(midikraft::UploadHandshakeCapability** outCapability) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (pythonModuleHasFunction(kIsPartOfUploadReply)) {
+			*outCapability = uploadHandshakeCapabilityImpl_.get();
+			return true;
+		}
+		return false;
+	}
+
+	bool GenericAdaptation::hasCapability(std::shared_ptr<midikraft::UploadHandshakeCapability>& outCapability) const
+	{
+		midikraft::UploadHandshakeCapability* capability;
+		if (hasCapability(&capability)) {
+			outCapability = uploadHandshakeCapabilityImpl_;
 			return true;
 		}
 		return false;

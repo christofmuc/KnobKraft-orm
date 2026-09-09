@@ -1,0 +1,322 @@
+# Reactive upload handshakes in the Python adaptation API
+
+Status: implemented in draft PR [#568](https://github.com/christofmuc/KnobKraft-orm/pull/568), with transport support in [MidiKraft PR #13](https://github.com/christofmuc/MidiKraft/pull/13), for [issue #426](https://github.com/christofmuc/KnobKraft-orm/issues/426). Hardware verification is still required before declaring the issue fixed.
+
+## Recommendation
+
+Add an optional `UploadHandshakeCapability`, enabled for Python adaptations by one reactive function:
+
+```python
+def isPartOfUploadReply(message, sent_message):
+    """Classify an incoming message while waiting for the current upload step."""
+```
+
+Adaptations whose outgoing blocks also contain messages without acknowledgements can add a predicate:
+
+```python
+def expectsUploadReply(sent_message):
+    """Return whether this outgoing message is an acknowledged upload step."""
+```
+
+Do not add a separate `prepareUpload()` hook. The upload operation already has the useful matching context: the outgoing message currently awaiting a reply, the remaining outgoing queue, the selected MIDI ports, and the transaction state. C++ owns that state and passes the current outgoing message to Python when a reply arrives.
+
+This follows the existing download-handshake pattern. `isPartOfEditBufferDump()` and `isPartOfSingleProgramDump()` inspect an incoming message and may return arbitrary MIDI messages in response. Uploads use the same reactive model, extended with explicit accepted/error results because a write reply can reject the current step.
+
+For the K5000, the exchange is:
+
+```text
+Orm                                      K5000
+ | ---- converted program dump ---------> |
+ | <--- write complete or write error --- |
+ |                                       |
+ | ---- next program, after acceptance -> |
+```
+
+For a multi-step protocol such as a 3rd Wave multisample upload, the same operation repeats per outgoing message:
+
+```text
+Orm                                      3rd Wave
+ | ---- multisample header --------------> |
+ | <--- header accepted ------------------ |
+ | ---- sample 1 ------------------------> |
+ | <--- sample accepted ------------------ |
+ | ---- sample 2 ------------------------> |
+ | <--- sample accepted ------------------ |
+```
+
+Existing conversion functions remain pure and retain their signatures. A new asynchronous C++ upload operation owns sending, listening, timeouts, cancellation, message sequencing, and progress. Python only recognizes the device protocol and constructs any immediate protocol response.
+
+## Relationship to existing handshakes
+
+The current capability interfaces already establish these responsibilities:
+
+- A conversion or request method creates outgoing MIDI messages.
+- An `isMessagePartOf...` callback examines each incoming message.
+- The callback can return MIDI messages to send in reaction to that input.
+- The host owns accumulated messages, completion, progression, cancellation, and cleanup.
+
+`EditBufferCapability::HandshakeReply`, `ProgramDumpCapability::HandshakeReply`, and `BankDumpCapability::HandshakeReply` all contain a membership flag and a list of reply messages. The Generic edit-buffer and program bridges expose the corresponding Python tuple form. The Generic bank bridge currently exposes only the Boolean form even though the C++ base interface supports replies; making that bridge consistent is useful but independent of this proposal.
+
+An upload differs in two ways:
+
+1. The host must retain an outgoing queue and wait before advancing it.
+2. A related response may accept the step, continue the exchange, or report a device error.
+
+The reactive upload callback therefore needs a richer disposition than the existing download-side Boolean, but it does not need adaptation-owned preparation context.
+
+## Where this fits today
+
+| Existing component | Existing responsibility | Implemented change |
+|---|---|---|
+| `convertToProgramDump()` / `convertToEditBuffer()` | Convert patch data into outgoing messages | Keep signatures and return types |
+| `convertPatchesToBankDump()` | Construct a device-specific bank dump | Keep signature and return type |
+| `GenericAdaptation::hasCapability()` | Discover capabilities from Python functions | Enable upload handshakes when the reactive hook exists |
+| `GenericAdaptation::sendBlockOfMessagesToSynth()` | Send bytes, optionally applying a delay | Retain as a low-level transport interface |
+| `Synth::sendDataFileToSynth()` | Convert and send an individual data file | Route actual uploads through the new operation |
+| `Librarian::sendBankToSynth()` | Send bank messages or loop over programs | Await acceptance before advancing acknowledged writes |
+| `PatchView::sendBankToSynth()` | Clear dirty state after sending | Clear only after confirmed completion |
+
+The low-level send primitive also carries dump requests, program changes, and replies generated by download handshakes. Adding an unconditional wait inside it would affect unrelated callers, and its `void` interface cannot express asynchronous success or device errors.
+
+Conversion must remain independent of I/O because it is also used for file export, interchange, clipboard operations, and tests. Those callers must never register listeners or wait for hardware.
+
+## Python contract
+
+### `isPartOfUploadReply(message, sent_message)`
+
+The function is called for each complete incoming MIDI message received from the operation's selected MIDI input while one outgoing upload message is awaiting acceptance.
+
+Arguments:
+
+- `message` is the incoming MIDI message as `list[int]`, including `F0`/`F7` for SysEx.
+- `sent_message` is the complete outgoing MIDI message currently awaiting a reply, also as `list[int]`.
+
+`sent_message` is the correlation context. Python can derive the manufacturer, model, channel/device address, destination, command, or other identifiers directly from the bytes that were actually sent. The adaptation must still validate all available identifying fields in the incoming message.
+
+Return values:
+
+```python
+None
+{"status": "continue", "messages": [...]}
+{"status": "accepted", "messages": [...]}
+{"status": "error", "code": "memory_full", "message": "Device memory is full"}
+```
+
+The meanings are:
+
+| Result | Meaning |
+|---|---|
+| `None` | Unrelated or unrecognized input; keep waiting |
+| `continue` | Related input, but the current outgoing step is not yet accepted |
+| `accepted` | The current outgoing step succeeded; advance the queue |
+| `error` | The current step failed; stop the operation |
+
+`messages` is valid only for `continue` and `accepted`. When present, it is a flat byte list containing zero or more complete MIDI messages. The host sends those messages before continuing to wait or advancing the original queue. This is symmetrical with the replies returned by existing `isPartOf...Dump()` hooks.
+
+For `error`, `code` and `message` are required nonempty strings. `code` is stable and machine-readable; `message` is suitable for display. Error results must not include response messages and do not advance the queue.
+
+An unknown status, malformed result, invalid response bytes, or Python exception is an adaptation error. Stop the upload and report it. Never interpret a parsing failure as acceptance or silently fall back to fire-and-forget after bytes have been submitted.
+
+Unrelated traffic does not extend the deadline and is not stored as patch data. Related protocol messages may be logged but are not included in patch fingerprints or exports.
+
+### Capability discovery and timing
+
+No `isPartOfUploadReply` function means legacy fire-and-forget behavior. A callable `isPartOfUploadReply` enables the capability. `expectsUploadReply(sent_message)` is optional and defaults to `True`; when implemented it must return a Boolean. A noncallable hook is an adaptation configuration error: importing and downloading can remain available, but uploads must fail with a useful diagnostic.
+
+Add one optional key to the existing timing dictionary:
+
+```python
+def messageTimings():
+    return {
+        "replyTimeoutMs": 1000,        # Existing download timing
+        "uploadReplyTimeoutMs": 5000,  # Per upload step
+    }
+```
+
+Default `uploadReplyTimeoutMs` to 5000 when absent and require a positive integer. This is a conservative starting point, not a measured requirement. Keep it independent from `replyTimeoutMs`, because receiving a dump and committing a write can have different timing. Existing outgoing pacing remains applicable.
+
+### Upload-step rule
+
+For an adaptation with `UploadHandshakeCapability`, each MIDI message produced by one conversion is an acknowledged upload step:
+
+1. Send one message.
+2. Wait until the hook returns `accepted` or `error`.
+3. Send any response messages returned by the hook.
+4. Advance only after acceptance.
+
+When `expectsUploadReply(sent_message)` returns `False`, the host sends that message and advances immediately. This covers auxiliary messages such as the program change appended after a K5000 audition without weakening acknowledgement handling for the preceding program dump.
+
+This rule supports the K5000 single-message program write and protocols such as 3rd Wave multisample transfer, where a header and every sample message receive separate acknowledgements.
+
+It deliberately does not cover a protocol that requires several original messages to be sent as one indivisible group before a single acknowledgement. Such a synth would need explicit step grouping rather than an adaptation-global mutable queue. If that case is encountered, extend conversion results or the upload operation with `vector<vector<MidiMessage>>` step groups; do not reintroduce opaque preparation context.
+
+Response messages returned by the hook are immediate protocol reactions. They are not inserted into the original upload queue and do not independently create another acknowledged step. A protocol in which those dynamically generated messages require their own acknowledgements needs a fuller protocol-state capability.
+
+## K5000 example
+
+The [K5000 discussion](https://github.com/christofmuc/KnobKraft-orm/issues/72#issuecomment-2665431616) specifies `F0 40 cc aa 00 0A F7` after receiving dump data. The current adaptation already defines constants for the five reply codes.
+
+```python
+def isPartOfUploadReply(message, sent_message):
+    # Only replies to a K5000 single-program write belong here.
+    if not isSingleProgramDump(sent_message):
+        return None
+
+    channel = sent_message[2]
+    if (len(message) != 7
+            or message[:3] != [0xF0, 0x40, channel]
+            or message[4:] != [0x00, 0x0A, 0xF7]):
+        return None
+
+    code = message[3]
+    if code == WriteComplete:
+        return {"status": "accepted"}
+
+    errors = {
+        WriteError: ("write_error", "The K5000 could not write the patch"),
+        WriteErrorByProtect: ("write_protected", "K5000 memory is write protected"),
+        WriteErrorByMemoryFull: ("memory_full", "K5000 memory is full"),
+        WriteErrorByNoExpandMemory: (
+            "expansion_missing",
+            "The required K5000 expansion board is missing",
+        ),
+    }
+    if code not in errors:
+        return None
+
+    error_code, description = errors[code]
+    return {"status": "error", "code": error_code, "message": description}
+```
+
+The K5000 also implements `expectsUploadReply(sent_message)` by returning `isSingleProgramDump(sent_message)`. Its trailing program change is therefore sent after the acknowledged dump without waiting for a reply that will never arrive.
+
+The K5000 reply has no bank, program number, or transaction identifier. Matching the input, model, and channel is necessary but cannot disambiguate two concurrent writes. Writes to that device must be serialized, and an uncertain result must stop the sequence without automatic retry.
+
+## Multi-step example
+
+A protocol can distinguish acknowledgements by inspecting both messages:
+
+```python
+def isPartOfUploadReply(message, sent_message):
+    if not isOwnSysex(message) or not isOwnSysex(sent_message):
+        return None
+
+    reply_command = command(message)
+
+    if isMultisampleHeader(sent_message) and reply_command == MULTISAMPLE_INIT_DONE:
+        return {"status": "accepted"}
+
+    if isSampleData(sent_message) and reply_command == SAMPLE_IMPORT_DONE:
+        return {"status": "accepted"}
+
+    if reply_command == IMPORT_ERROR:
+        return {
+            "status": "error",
+            "code": "import_error",
+            "message": describeImportError(message),
+        }
+
+    return None
+```
+
+The conversion or resource-transfer code produces the header and sample messages in the required order. The C++ operation retains that immutable queue and exposes only the current message to the callback. No Python module-global transaction state is required.
+
+## C++ capability and bridge
+
+Introduce `UploadHandshakeCapability.h` in MidiKraft's base module and `GenericUploadHandshakeCapability.{h,cpp}` alongside the existing Generic capability adapters. A possible shape is:
+
+```cpp
+struct UploadHandshakeReply {
+    enum class Status { Unrelated, Continue, Accepted, Error };
+
+    Status status = Status::Unrelated;
+    std::vector<MidiMessage> response;
+    std::string code;
+    std::string message;
+};
+
+class UploadHandshakeCapability {
+public:
+    virtual ~UploadHandshakeCapability() = default;
+
+    virtual bool expectsUploadReply(const MidiMessage& sentMessage) const {
+        return true;
+    }
+
+    virtual UploadHandshakeReply isMessagePartOfUploadReply(
+        const MidiMessage& message,
+        const MidiMessage& sentMessage) const = 0;
+
+    virtual int uploadReplyTimeoutMs() const { return 5000; }
+};
+```
+
+The Generic bridge validates Python results, converts response bytes into MIDI messages, and contains all pybind11 details. Unlike the previous session/context proposal, it retains no Python object between calls. Each invocation acquires the GIL and receives ordinary message values.
+
+Add the function-name constant, runtime-capability inheritance, owned implementation instance, and both `hasCapability` overloads using the established `GenericAdaptation` pattern. Initialize the same implementation in both constructors.
+
+## Upload operation
+
+Introduce an asynchronous `UploadOperation` shared by individual sends and librarian bank uploads. It owns:
+
+- An immutable queue of converted outgoing messages.
+- The current queue index and current sent message.
+- The selected MIDI input and output.
+- Listener registration and serialized event handling.
+- Per-step deadlines, cancellation, and exactly-once completion.
+- Progress and the association between steps and bank patches where available.
+
+Its result should distinguish `Acknowledged`, `SentWithoutAcknowledgement`, `DeviceError`, `Timeout`, `Cancelled`, `TransportError`, and `AdaptationError`. For bank operations, retain the completed patch count, failed program, and whether the current program's outcome is unknown. A Boolean cannot describe partial or uncertain completion.
+
+### Operation lifecycle
+
+1. Validate conversion output before any write. Empty output is an error. A failed Generic conversion must not fall back to sending the original patch bytes.
+2. Acquire a reservation preventing conflicting uploads, downloads, and detection against the same device. A bank holds one reservation while advancing its own sequence.
+3. Enable and validate the output. For a handshake-capable upload, validate the selected input and register its handler before sending the first message.
+4. If the adaptation has no upload handshake, send the converted block with existing behavior and finish as `SentWithoutAcknowledgement`.
+5. Otherwise send only the first queued message and start its deadline.
+6. Copy incoming messages into the operation's serialized event queue. For each one, call `isMessagePartOfUploadReply(incoming, currentSent)` outside the MIDI callback.
+7. On `Unrelated`, continue waiting. On `Continue`, send the returned response and keep waiting for the same step. On `Accepted`, send the returned response, mark the step complete, and submit the next queued message. On `Error`, stop without submitting later messages.
+8. Complete successfully when the final queued message is accepted. On every exit, unregister the listener, cancel scheduled work, release the reservation, and notify the caller exactly once on the UI thread.
+
+MIDI input callbacks must not run Python, block for the GIL, or update UI objects. They copy the message, source identifier, and receive timestamp into the serialized operation context. Copy identifiers rather than retaining raw `MidiInput*` pointers. In-flight callbacks use weak ownership or operation-generation checks so completed operations ignore late events.
+
+Cancellation stops future submissions and waiting but cannot undo bytes already handed to the MIDI driver. Disconnect and application shutdown follow the same cleanup path. The operation owns the converted message snapshot and must not retain unprotected UI views or progress objects.
+
+### Timing and correlation
+
+Use a per-step monotonic deadline. Unrelated traffic never resets it. A `continue` result also does not reset it in the first implementation; otherwise a noisy or stuck device could hold the operation indefinitely. If a documented protocol later has legitimate long-running progress notifications, add an explicit bounded extension policy.
+
+The current `SafeMidiOutput` interface provides no physical transmission-complete event. Returning from a send call does not prove that the final byte reached the synth. Start the acknowledgement budget conservatively from submission, accounting for scheduled pacing and estimated DIN transmission duration where relevant. Document the estimate and measure it on hardware.
+
+Do not reuse the existing `MidiController` handler inactivity timeout: unrelated MIDI currently updates its activity timestamp and could keep a write alive indefinitely.
+
+No automatic retries. A missing acknowledgement does not prove that the write failed, and another write could consume a delayed acknowledgement from the previous attempt. Timeout, transport failure, or cancellation after submission stops the sequence and marks the current outcome uncertain. Ignore already-queued input predating the operation.
+
+## Call sites and user-visible behavior
+
+For a single-patch send, `Synth::sendDataFileToSynth()` should submit an upload operation rather than directly invoking the byte sender. Add `sendDataFileToSynthAsync()` with a result callback and retain the existing virtual method as a compatibility wrapper with a default error-reporting sink for callers that do not yet consume results. The distinct name prevents derived classes that override the compatibility method from hiding the asynchronous API.
+
+For bank sending, replace the immediate loop with a continuation that starts the next program only after the previous program operation succeeds. Device-specific bank conversion still passes through `BankSendCapability`; handshake-capable output messages are serialized according to the upload-step rule.
+
+For an acknowledged device:
+
+- Advance progress only after `accepted`.
+- Stop at the first device error, timeout, transport failure, or adaptation error.
+- Report the affected program and confirmed count, for example: `Stopped at D017: memory full; 16 patches confirmed.`
+- State explicitly after timeout or cancellation that the current patch may have been written.
+- Keep the bank dirty after an incomplete result.
+
+On complete success, clear dirty flags only for the unchanged snapshot that was sent. Either prevent editing during the operation or compare revisions before clearing; edits made during an asynchronous upload must not be marked synchronized accidentally.
+
+Adaptations without the hook preserve current sending behavior and do not require an input connection. Low-level sends used for requests, program changes, and download-handshake replies remain outside the upload operation, subject to the device reservation when they conflict with an active transfer.
+
+File export, clipboard conversion, offline import, and download recognition never invoke the upload hook. Upload replies are protocol control messages, not patch data.
+
+## Implementation and validation status
+
+The implementation adds the capability and validated Python bridge, an asynchronous upload operation, per-message sequencing, cancellation, bank continuations, the timing key, and the K5000 classifier. Automated tests cover accepted replies, response ordering, per-message opt-out, device errors, timeout state, malformed bridge results, correlation checks, and all documented K5000 reply codes.
+
+The remaining validation is hardware-facing: verify the real K5000 with a known patch, write protection, available error conditions, and a missing reply, and capture MIDI traces to confirm the timeout budget. Broader reservation of downloads and detection against an active upload can follow separately; this implementation serializes uploads per synth and stops a bank at its first unsuccessful step.
+
+The proposed hook intentionally handles reactive, message-by-message upload handshakes without duplicating outgoing state in Python. If a future protocol requires dynamic branching beyond immediate responses, retransmission, or acknowledged groups of original messages, generalize the operation into a stateful protocol driver while preserving this reactive contract as the simple case.
