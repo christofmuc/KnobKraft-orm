@@ -24,7 +24,7 @@ Production scripts, video plans, raw API responses, task records and internal pr
 
 `docs/data/supported-synths.yml` is authoritative after this reconciliation. Status labels were preserved from current master README `a7c5cb9ca9d7a747805c853e344217a42e655325`, not copied from the stale legacy `docs/README.md`. The 92 rows are named synth/family entries, not a count of verified devices or guaranteed workflows. Status is not inferred from file existence or a passing unit test.
 
-The release column was checked against tag `2.10.0` and `adaptations/CMakeLists.txt`. UB-Xa, CZ-101/1000, Nord Lead family, Mirage SoundProcess, Fourm and Trigon-6 are included in that release; their maturity and hardware-verification limits still apply. The MKS-50 Python replacement, SE-02 PRM import and Pro 3 bank/pacing updates are also included. Entries not packaged remain marked **Not in regular builds**. Teo-5 and Quasimidi Cyber-6 are packaged but absent from the maintained master matrix; their support status needs maintainer reconciliation before adding a new status claim here.
+The release column was checked against tag `2.10.1` and `adaptations/CMakeLists.txt`. The K5000 upload acknowledgement flow, Korg X3 long-download timeout fix, UB-Xa transfer completion fix and Nord Lead malformed-file hardening are included in that release; their maturity and hardware-verification limits still apply. Entries not packaged remain marked **Not in regular builds**. Teo-5 and Quasimidi Cyber-6 are packaged but absent from the maintained master matrix; their support status needs maintainer reconciliation before adding a new status claim here.
 
 After editing the YAML:
 
