@@ -1,3 +1,5 @@
+from threading import Event
+
 from testing.librarian import Librarian, UploadStatus
 from testing.mock_midi import MockMidiController, ScriptedMockDevice
 
@@ -164,6 +166,18 @@ class ErrorWithMessagesUploadAdaptation(UploadHandshakeAdaptation):
         }
 
 
+class ShortTimeoutUploadAdaptation(UploadHandshakeAdaptation):
+    @staticmethod
+    def messageTimings():
+        return {"uploadReplyTimeoutMs": 10}
+
+
+class RaisingUploadHandshakeAdaptation(UploadHandshakeAdaptation):
+    @staticmethod
+    def expectsUploadReply(sent_message):
+        raise RuntimeError("broken upload predicate")
+
+
 def test_upload_handshake_waits_orders_responses_and_skips_unacknowledged_messages():
     upload = [0xF0, 0x01, 0xF7]
     unrelated = [0xF0, 0x09, 0xF7]
@@ -238,3 +252,63 @@ def test_upload_handshake_rejects_error_replies_with_response_messages():
     assert results[0].status == UploadStatus.ADAPTATION_ERROR
     assert results[0].code == "invalid_upload_reply"
     assert results[0].outcome_uncertain
+
+
+def test_upload_handshake_timeout_is_scheduled_and_releases_the_librarian():
+    upload = [0xF0, 0x01, 0xF7]
+    controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
+    librarian = Librarian()
+    results = []
+    finished = Event()
+
+    def upload_finished(result):
+        results.append(result)
+        finished.set()
+
+    librarian.send_block_of_messages_to_synth(
+        controller,
+        ShortTimeoutUploadAdaptation,
+        [upload],
+        upload_finished,
+    )
+
+    assert finished.wait(1)
+    assert len(results) == 1
+    assert results[0].status == UploadStatus.TIMEOUT
+    assert results[0].outcome_uncertain
+    assert controller.handlers == []
+
+    retry_controller = MockMidiController(ScriptedMockDevice({
+        tuple(upload): [[0xF0, 0x11, 0xF7]],
+    }))
+    retry_results = []
+    librarian.send_block_of_messages_to_synth(
+        retry_controller,
+        UploadHandshakeAdaptation,
+        [upload],
+        lambda result: retry_results.append(result),
+    )
+    retry_controller.drain()
+    assert retry_results[0].status == UploadStatus.ACKNOWLEDGED
+
+
+def test_upload_handshake_predicate_exception_finishes_and_releases_the_librarian():
+    upload = [0xF0, 0x01, 0xF7]
+    controller = MockMidiController(ScriptedMockDevice({}, ignore_unmatched=True))
+    librarian = Librarian()
+    results = []
+
+    librarian.send_block_of_messages_to_synth(
+        controller,
+        RaisingUploadHandshakeAdaptation,
+        [upload],
+        lambda result: results.append(result),
+    )
+
+    assert controller.sent_messages == []
+    assert len(results) == 1
+    assert results[0].status == UploadStatus.ADAPTATION_ERROR
+    assert results[0].code == "invalid_upload_handshake"
+    assert results[0].message == "broken upload predicate"
+    assert controller.handlers == []
+    assert librarian._active_upload is None

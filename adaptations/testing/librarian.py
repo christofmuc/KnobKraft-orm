@@ -2,6 +2,7 @@ from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import partial
+from threading import Timer
 from typing import List, Callable, Optional, Dict, Deque, Any, Union
 from enum import Enum
 import logging
@@ -377,6 +378,8 @@ class Librarian:
             "waiting": False,
             "used_acknowledgement": False,
             "timeout_ms": timeout,
+            "timeout_generation": 0,
+            "timer": None,
             "finished": on_finished,
         }
         handler = partial(self._handle_upload_reply, state=state)
@@ -412,7 +415,16 @@ class Librarian:
             sent_message = state["messages"][state["index"]]
             expects_reply = True
             if adaptation_has_implemented(state["adaptation"], "expectsUploadReply"):
-                expects_reply = state["adaptation"].expectsUploadReply(sent_message)
+                try:
+                    expects_reply = state["adaptation"].expectsUploadReply(sent_message)
+                except Exception as ex:
+                    self._finish_upload(state, UploadResult(
+                        UploadStatus.ADAPTATION_ERROR,
+                        "invalid_upload_handshake",
+                        str(ex),
+                        state["completed"],
+                    ))
+                    return
                 if not isinstance(expects_reply, bool):
                     self._finish_upload(state, UploadResult(
                         UploadStatus.ADAPTATION_ERROR,
@@ -426,6 +438,7 @@ class Librarian:
             state["used_acknowledgement"] = state["used_acknowledgement"] or expects_reply
             state["controller"].send(sent_message)
             if expects_reply:
+                self._schedule_upload_timeout(state)
                 return
             state["index"] += 1
             state["completed"] += 1
@@ -492,11 +505,14 @@ class Librarian:
             return
 
         if status == "continue":
+            self._cancel_upload_timeout(state)
             self._send_block(state["controller"], response)
+            self._schedule_upload_timeout(state)
             return
         if status == "accepted":
-            self._send_block(state["controller"], response)
             state["waiting"] = False
+            self._cancel_upload_timeout(state)
+            self._send_block(state["controller"], response)
             state["index"] += 1
             state["completed"] += 1
             self._send_next_upload_message(state)
@@ -531,14 +547,39 @@ class Librarian:
 
     def timeout_upload(self) -> None:
         if self._active_upload is not None and self._active_upload["waiting"]:
-            state = self._active_upload
-            self._finish_upload(state, UploadResult(
-                UploadStatus.TIMEOUT,
-                "upload_reply_timeout",
-                "Timed out waiting for the synth to acknowledge the upload",
-                state["completed"],
-                True,
-            ))
+            self._timeout_upload_state(self._active_upload)
+
+    def _schedule_upload_timeout(self, state) -> None:
+        self._cancel_upload_timeout(state)
+        generation = state["timeout_generation"]
+        timer = Timer(
+            state["timeout_ms"] / 1000,
+            lambda: self._timeout_upload_state(state, generation),
+        )
+        timer.daemon = True
+        state["timer"] = timer
+        timer.start()
+
+    @staticmethod
+    def _cancel_upload_timeout(state) -> None:
+        timer = state.get("timer")
+        state["timer"] = None
+        state["timeout_generation"] += 1
+        if timer is not None:
+            timer.cancel()
+
+    def _timeout_upload_state(self, state, generation=None) -> None:
+        if self._active_upload is not state or not state["waiting"]:
+            return
+        if generation is not None and generation != state["timeout_generation"]:
+            return
+        self._finish_upload(state, UploadResult(
+            UploadStatus.TIMEOUT,
+            "upload_reply_timeout",
+            "Timed out waiting for the synth to acknowledge the upload",
+            state["completed"],
+            True,
+        ))
 
     def cancel_upload(self) -> None:
         if self._active_upload is not None:
@@ -554,6 +595,7 @@ class Librarian:
     def _finish_upload(self, state, result: UploadResult) -> None:
         if self._active_upload is not state:
             return
+        self._cancel_upload_timeout(state)
         self._active_upload = None
         state["waiting"] = False
         controller = state["controller"]

@@ -840,7 +840,7 @@ What sounds complex can be actually quite simple in Python, for example to calcu
         # Blank out Layer A and Layer B name, they should not matter for the fingerprint
         data[402:402 + name_len] = [0] * name_len
         data[914:914 + name_len] = [0] * name_len  # each layer needs 512 bytes
-    return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
+        return hashlib.md5(bytearray(data)).hexdigest()  # Calculate the fingerprint from the cleaned payload data
 
 So the heavy lifting is done by Python's hashlib, make sure to have an `import hashlib` statement at the beginning of the adaptation file (yes, you can import libraries from Python!). We use the md5 hash function and generate a hexdigest human readable string.
 
