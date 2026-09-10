@@ -14,8 +14,9 @@
 
 class AutoDetectProgressWindow : public ProgressHandlerWindow {
 public:
+	enum class Mode { Find, CheckSavedConnection };
 	explicit AutoDetectProgressWindow(std::vector<midikraft::SynthHolder> synths);
-    explicit AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths);
+    explicit AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths, Mode mode = Mode::Find);
 	virtual ~AutoDetectProgressWindow() = default;
 
 	// Implement ThreadWithProgressWindow
@@ -26,6 +27,7 @@ public:
 	virtual void onCancel() override;
 
 private:
+	Mode mode_ = Mode::Find;
 	std::vector<std::weak_ptr<midikraft::SimpleDiscoverableDevice>> synths_;
 	midikraft::AutoDetection autodetector_;
 };

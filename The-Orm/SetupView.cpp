@@ -51,9 +51,9 @@ public:
 };
 
 
-const char *kSetupHint1 = "In case the auto-detection fails, setup the MIDI channel and MIDI interface below to get your synths detected.\n\n"
-	"This can *not* be used to change the synth's channel, but rather in case the autodetection fails you can manually enter the correct channel here.";
-const char *kSetupHint2 = "First please select at least one synth to use, then turn it on and press auto-detect to detect if a working bi-directional connection can be made.\n\n";
+const char *kSetupHint1 = "Turned on a synth? Check its saved connection. Use Find this synth when connecting it for the first time or after rewiring.\n\n"
+	"The settings below tell KnobKraft which ports and channel to use; they do not change the synth's MIDI channel.";
+const char *kSetupHint2 = "Select at least one synth, turn it on, then use Find this synth or Find all synths to locate it on your MIDI ports.";
 
 
 SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl *lights*/) :
@@ -81,14 +81,18 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 	addAndMakeVisible(synthSelection_);
 	synthSelection_.setProperties(synths_);
 	addAndMakeVisible(synthSetup_);
-	synthSetup_.setProperties(properties_);
 
-	// I want one very prominent button for auto-configure, because that should normally the first one to press
+	// Keep the everyday saved-connection check next to the full network search.
 	addAndMakeVisible(autoConfigureButton_);
 	autoConfigureButton_.onClick = [this]() {
 		autoDetect();
 	};
-	autoConfigureButton_.setButtonText("Auto-Detect");
+	autoConfigureButton_.setButtonText("Find all synths...");
+	autoConfigureButton_.setTooltip("Search every MIDI output for all enabled synths. Use for first-time setup or after rewiring.");
+	addAndMakeVisible(checkConnectionsButton_);
+	checkConnectionsButton_.setButtonText("Check saved connections");
+	checkConnectionsButton_.setTooltip("Check only the saved MIDI output and channel for each enabled synth. Use after turning synths on.");
+	checkConnectionsButton_.onClick = [this]() { quickConfigure(); };
 
 	midikraft::MidiController::instance()->addChangeListener(this);
 
@@ -96,6 +100,7 @@ SetupView::SetupView(midikraft::AutoDetection *autoDetection /*, HueLightControl
 }
 
 SetupView::~SetupView() {
+	midikraft::MidiController::instance()->removeChangeListener(this);
 	UIModel::instance()->currentSynth_.removeChangeListener(this);
 }
 
@@ -109,7 +114,8 @@ void SetupView::resized() {
 	int setupWidth = std::min(area.getWidth(), 1000);
 	synthSelection_.setBounds(area.removeFromLeft(area.getWidth() / 2).removeFromRight(setupWidth/2).reduced(8));
 	auto rightColumn = area.removeFromLeft(setupWidth / 2);
-	autoConfigureButton_.setBounds(rightColumn.removeFromTop(40).withSizeKeepingCentre(120, 30));
+	checkConnectionsButton_.setBounds(rightColumn.removeFromTop(36).reduced(8, 3));
+	autoConfigureButton_.setBounds(rightColumn.removeFromTop(36).reduced(8, 3));
 	synthSetup_.setBounds(rightColumn);
 }
 
@@ -125,6 +131,7 @@ void SetupView::rebuildSetupColumn() {
 	properties_.clear();
 
 	// Rebuild
+	PropertyEditor::SectionActions actions;
 	for (auto &synth: sortedSynthList_) {
 		if (!UIModel::instance()->synthList_.isSynthActive(synth.device())) continue;
 		auto sectionName = synth.getName();
@@ -132,11 +139,17 @@ void SetupView::rebuildSetupColumn() {
 		properties_.push_back(std::make_shared<MidiChannelPropertyEditorWithOldDevices>("Sent to device", sectionName, false));
 		properties_.push_back(std::make_shared<MidiChannelPropertyEditorWithOldDevices>("Receive from device", sectionName, true));
 		properties_.push_back(std::make_shared<MidiChannelPropertyEditor>("MIDI channel", sectionName));
+		auto device = synth.device();
+		bool canDetect = device && device->deviceDetectSleepMS() >= 0;
+		actions[sectionName] = {
+			{ "Check connection", "Check this synth's saved MIDI output and channel", [this, device]() { checkConnection(device); }, canDetect },
+			{ "Find this synth...", "Search all MIDI outputs for this synth", [this, device]() { findSynth(device); }, canDetect }
+		};
 	}
 	// We need to know if any of these are clicked
 	for (auto prop : properties_) prop->value().addListener(this);
 
-	synthSetup_.setProperties(properties_);
+	synthSetup_.setProperties(properties_, actions);
 	refreshData();
 
 	// Display a helpful text
@@ -234,6 +247,10 @@ void SetupView::valueChanged(Value& value)
 
 void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 {
+	if (detecting_) {
+		setupRefreshPending_ = true;
+		return;
+	}
 	if (source == midikraft::MidiController::instance()) {
 		// Refresh setup list on the right side
 		rebuildSetupColumn();
@@ -257,9 +274,7 @@ void SetupView::changeListenerCallback(ChangeBroadcaster* source)
 
 void SetupView::quickConfigure()
 {
-	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
-	autoDetection_->quickconfigure(currentSynths); // This rather should be synchronous!
-	refreshData();
+	runDetection(UIModel::instance()->synthList_.activeSynths(), false);
 }
 
 void SetupView::createNewAdaptation()
@@ -298,9 +313,46 @@ void SetupView::loopDetection()
 }
 
 void SetupView::autoDetect() {
-	auto currentSynths = UIModel::instance()->synthList_.activeSynths();
-	AutoDetectProgressWindow window(currentSynths);
-	if (window.runThread()) {
-		refreshData();
+	runDetection(UIModel::instance()->synthList_.activeSynths(), true);
+}
+
+bool SetupView::runDetection(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths, bool search) {
+	if (detecting_ || synths.empty()) return false;
+	juce::ScopedValueSetter<bool> busy(detecting_, true);
+	AutoDetectProgressWindow window(std::move(synths), search ? AutoDetectProgressWindow::Mode::Find
+		: AutoDetectProgressWindow::Mode::CheckSavedConnection);
+	bool completed = window.runThread();
+	if (setupRefreshPending_) {
+		setupRefreshPending_ = false;
+		rebuildSetupColumn();
+	}
+	else refreshData();
+	return completed;
+}
+
+void SetupView::findSynth(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
+	if (!synth || synth->deviceDetectSleepMS() < 0) return;
+	if (runDetection({ synth }, true) && !synth->wasDetected()) {
+		AlertWindow::showMessageBoxAsync(AlertWindow::InfoIcon, "Synth not found",
+			"No response from " + String(synth->getName()) + ". Check that it is turned on and its MIDI cables are connected.");
+	}
+}
+
+void SetupView::checkConnection(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth) {
+	if (detecting_ || !synth || synth->deviceDetectSleepMS() < 0) return;
+	if (!midikraft::AutoDetection::hasSavedConnection(synth.get())) {
+		findSynth(synth);
+		return;
+	}
+	while (runDetection({ synth }, false)) {
+		if (synth->wasDetected()) return;
+		auto output = Settings::instance().get(synth->getName() + "-output");
+		auto channel = Settings::instance().get(synth->getName() + "-channel", -1) + 1;
+		int choice = AlertWindow::showYesNoCancelBox(AlertWindow::QuestionIcon, "No response from " + String(synth->getName()),
+			"No response on " + String(output) + ", channel " + String(channel)
+			+ ".\n\nTurn on the synth and try again. If you have moved its MIDI connection, search the other ports.",
+			"Try again", "Find on other ports...", "Cancel", this);
+		if (choice == 2) { findSynth(synth); return; }
+		if (choice != 1) return;
 	}
 }
