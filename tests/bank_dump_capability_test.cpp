@@ -142,7 +142,7 @@ def extractPatchesFromAllBankMessages(messages):
 )");
 
 	REQUIRE(adaptation);
-	CHECK(pythonSystem.attr("_knobkraft_adaptation_api_version").cast<int>() == 2);
+	CHECK(pythonSystem.attr("_knobkraft_adaptation_api_version").cast<int>() >= 2);
 	std::shared_ptr<midikraft::BankSendCapability> sendCapability;
 	REQUIRE(adaptation->hasCapability(sendCapability));
 	auto bankMessages = sendCapability->createBankMessages({});

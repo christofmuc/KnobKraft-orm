@@ -15,15 +15,12 @@
 #include "MidiChannelPropertyEditor.h"
 #include "ElectraOneRouter.h"
 
-#include <mutex>
-
 class KeyboardMacroView : public Component, private ChangeListener, private Value::Listener {
 public:
 	KeyboardMacroView(std::function<void(KeyboardMacroEvent)> callback);
 	virtual ~KeyboardMacroView() override;
 
 	virtual void resized() override;
-	void handleMidiMessage(const MidiMessage& message, const String& source, bool isOut);
 
 private:
 	class RecordProgress;
@@ -64,6 +61,4 @@ private:
 	TypedNamedValueSet customMasterkeyboardSetup_;
 	std::shared_ptr<RecordProgress> activeRecorder_; // Should have maximum one active macro recorders open
 
-	std::mutex secondaryMidiOutMutex_;
-	juce::MidiDeviceInfo secondaryMidiOut_;
 };

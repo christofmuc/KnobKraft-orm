@@ -688,6 +688,34 @@ The funky last return line is a Python idiom to convert a list of bytes (or inte
 
 Some capabilities are not required to be implemented, but enhance the user experience.
 
+## Patch selection and send notifications
+
+Host API version 3 adds two optional hooks:
+
+```python
+def onPatchSelected(channel, message):
+    return []
+
+def onPatchSent(channel, message):
+    return [0xC0, 7]  # Example: program 8 on channel 1 of the secondary device.
+```
+
+Select **Secondary MIDI OUT** in the Macros tab to choose the destination. Both hooks return a flat list of MIDI bytes for that output only. Include a status byte for every message and `F0`/`F7` around each SysEx message. Multiple complete messages can be concatenated. KnobKraft preserves their order and channels. Returning `[]`, `None`, or omitting the hook produces no additional MIDI. A malformed result or a Python exception is logged and produces no hook MIDI; normal patch handling continues.
+
+`onPatchSelected` runs whenever a nonempty patch is selected in the library, including reselecting the same patch and selecting with sending disabled or the synth disconnected. It runs after updating the current library patch and before any send initiated by that selection.
+
+`onPatchSent` runs after a library selection successfully sends its edit/program dump or bank-select/program-change sequence. For synths with upload handshakes it waits for successful completion. Without a handshake, it means MIDI was submitted to the output; it does not confirm that the hardware accepted it. Failed, cancelled, busy, and skipped sends do not call this hook. An asynchronous completion refers to the patch that was sent, even if the user has since selected another patch.
+
+`channel` is the synth's zero-based MIDI channel (0–15), or `-1` when unknown at selection time. `message` is a copy of the original library patch's bytes, not the converted wire messages. Modifying this Python list does not change the patch or what KnobKraft sends. Neither hook runs for export, fingerprinting, conversion alone, bank uploads, or incoming master-keyboard messages.
+
+For a controller such as the Faderfox EC4, implement `onPatchSent` in the personalized adaptation and return the controller's setup-select SysEx instead of the example program change above. Use the controller's documented or captured message, including `F0` and `F7`. Faderfox describes remote setup/group selection in its [EC4 manual, page 7](https://www.faderfox.de/PDF/EC4%20Manual%20V03.pdf), and offers the advanced programming documentation on request through the [EC4 product page](https://www.faderfox.de/ec4.html). The synth's normal patch send completes first, then the controller switches setup. Use `onPatchSelected` instead if the controller should follow browsing even when no patch is sent. Implementing both can send the same controller command twice for one selection.
+
+The hooks run even when the secondary output is disabled or unavailable, but their output is discarded in that case. Ordinary outgoing MIDI is also mirrored to the secondary output, independently of the log filter. Hook output is sent once and does not recursively trigger mirroring or either hook. If the secondary output is configured to be the synth's own port, the additional MIDI will of course reach that physical port.
+
+These are notifications, not patch transformations or request/reply operations. Keep hooks short: they run synchronously on the host's event path and must not wait for MIDI replies. KnobKraft owns MIDI routing and send sequencing; there is no Python `sendToSynth()` or `sendToSecondaryMidiOut()` callback. Preserving sequencer data from a live edit buffer would require a separate host-managed read/transform/send operation.
+
+Older hosts ignore these hooks. If your adaptation requires them, use `knobkraft.require_host_api_version(3, "My adaptation")`; otherwise leave the hooks optional so its existing synth functions still work on older hosts.
+
 ## Throttling communication
 
 Some older devices don't like it if multiple messages are sent to them too quickly, their small processors need a while to finish with message received and they might just ignore another message if it comes up too quickly. Actually some older devices are really good and fast despite running on some 2 MHz micro-processor like the Zilog Z80, but many also like it if there is a delay between messages.

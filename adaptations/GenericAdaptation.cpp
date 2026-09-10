@@ -85,6 +85,8 @@ namespace knobkraft {
 		* kSetupHelp = "setupHelp",
 		* kGetStoredTags = "storedTags",
 		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride",
+		* kOnPatchSelected = "onPatchSelected",
+		* kOnPatchSent = "onPatchSent",
 		* kMessageTimings = "messageTimings",
 		* kExpectsUploadReply = "expectsUploadReply",
 		* kIsPartOfUploadReply = "isPartOfUploadReply";
@@ -129,6 +131,8 @@ namespace knobkraft {
 		kSetupHelp,
 		kGetStoredTags,
 		kMessageTimings,
+		kOnPatchSelected,
+		kOnPatchSent,
 		kExpectsUploadReply,
 		kIsPartOfUploadReply
 	};
@@ -141,7 +145,7 @@ namespace knobkraft {
 
 	const char* kUserAdaptationsFolderSettingsKey = "user_adaptations_folder";
 	constexpr auto kAdaptationApiVersionAttribute = "_knobkraft_adaptation_api_version";
-	constexpr int kAdaptationApiVersion = 2;
+	constexpr int kAdaptationApiVersion = 3;
 
 	std::unique_ptr<py::scoped_interpreter> sGenericAdaptationPythonEmbeddedGuard;
 	std::unique_ptr<py::gil_scoped_release> sGenericAdaptationDontLockGIL;
@@ -1144,6 +1148,70 @@ namespace knobkraft {
 			return true;
 		}
 		return false;
+	}
+
+	std::vector<MidiMessage> GenericAdaptation::onPatchSelected(MidiChannel channel, std::vector<uint8> const& patchData) const
+	{
+		return patchEventMessages(kOnPatchSelected, channel, patchData);
+	}
+
+	std::vector<MidiMessage> GenericAdaptation::onPatchSent(MidiChannel channel, std::vector<uint8> const& patchData) const
+	{
+		return patchEventMessages(kOnPatchSent, channel, patchData);
+	}
+
+	std::vector<MidiMessage> GenericAdaptation::patchEventMessages(const char* event, MidiChannel channel, std::vector<uint8> const& patchData) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (!pythonModuleHasFunction(event)) return {};
+		try {
+			int channelNumber = channel.isValid() ? channel.toZeroBasedInt() : -1;
+			std::vector<int> data(patchData.begin(), patchData.end());
+			auto result = callMethod(event, channelNumber, data);
+			if (result.is_none()) return {};
+			auto bytes = result.cast<std::vector<int>>();
+			std::vector<uint8> midi;
+			for (int byte : bytes) {
+				if (byte < 0 || byte > 255) throw std::invalid_argument("Hook MIDI bytes must be in the range 0..255");
+				midi.push_back(static_cast<uint8>(byte));
+			}
+
+			// Validate the entire result before sending anything. Require complete messages
+			// with explicit status bytes; a truncated hook result must not send half a command.
+			std::vector<MidiMessage> messages;
+			for (size_t start = 0; start < midi.size();) {
+				auto status = midi[start];
+				if (status < 0x80 || status == 0xf4 || status == 0xf5 || status == 0xf7 || status == 0xf9 || status == 0xfd) {
+					throw std::invalid_argument("Hook MIDI must contain complete messages with explicit status bytes");
+				}
+				size_t end;
+				if (status == 0xf0) {
+					end = start + 1;
+					while (end < midi.size() && midi[end] < 0x80) ++end;
+					if (end == midi.size() || midi[end] != 0xf7 || end == start + 1) {
+						throw std::invalid_argument("Hook SysEx must contain a payload and end with F7");
+					}
+					++end;
+				}
+				else {
+					end = start + static_cast<size_t>(MidiMessage::getMessageLengthFromFirstByte(status));
+					if (end > midi.size()) throw std::invalid_argument("Hook MIDI message is truncated");
+					for (size_t i = start + 1; i < end; ++i) {
+						if (midi[i] >= 0x80) throw std::invalid_argument("Hook MIDI data bytes must be in the range 0..127");
+					}
+				}
+				messages.emplace_back(midi.data() + start, static_cast<int>(end - start), 0.0);
+				start = end;
+			}
+			return messages;
+		}
+		catch (py::error_already_set& ex) {
+			logAdaptationError(event, ex);
+		}
+		catch (std::exception& ex) {
+			logAdaptationError(event, ex);
+		}
+		return {};
 	}
 
 	void GenericAdaptation::logAdaptationError(const char* methodName, std::exception& ex) const
