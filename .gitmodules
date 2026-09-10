@@ -10,9 +10,6 @@
 	path = juce-utils
 	url = https://github.com/christofmuc/juce-utils.git
 	branch = master
-[submodule "third_party/dtl"]
-	path = third_party/dtl
-	url = https://github.com/cubicdaiya/dtl.git
 [submodule "third_party/SQLiteCpp"]
 	path = third_party/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
