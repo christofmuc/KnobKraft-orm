@@ -384,3 +384,17 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		midikraft-access-virus
 		SQLiteCpp)
 endif()
+
+option(BUILD_PATCH_TEXT_TESTS "Build patch text view and diff tests" OFF)
+if(BUILD_PATCH_TEXT_TESTS)
+	add_executable(patch_text_test
+		tests/patch_text_test.cpp
+		The-Orm/PatchDiff.cpp
+		The-Orm/PatchTextBox.cpp)
+	target_include_directories(patch_text_test PRIVATE
+		${CMAKE_CURRENT_LIST_DIR}
+		${CMAKE_CURRENT_LIST_DIR}/third_party/doctest)
+	target_link_libraries(patch_text_test PRIVATE midikraft-database knobkraft-generic-adaptation)
+	enable_testing()
+	add_test(NAME patch_text_test COMMAND patch_text_test)
+endif()

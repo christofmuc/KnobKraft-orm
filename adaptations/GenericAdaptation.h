@@ -17,6 +17,7 @@
 #include "LegacyLoaderCapability.h"
 #include "CustomProgramChangeCapability.h"
 #include "UploadHandshakeCapability.h"
+#include "PatchTextCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -77,6 +78,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::CustomProgramChangeCapability>,
 		public midikraft::RuntimeCapability<midikraft::UploadHandshakeCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
+		public midikraft::PatchTextCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -109,6 +111,7 @@ namespace knobkraft {
 		virtual void sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const &midiOutput, std::vector<MidiMessage> const& buffer) override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;  //TODO this looks like a capability
 		virtual std::string setupHelpText() const override;
+		midikraft::PatchTextViews getClearText(midikraft::DataFile const& patch) const override;
 
 		// Internal workings of the Generic Adaptation module
 		bool pythonModuleHasFunction(std::string const &functionName) const;

@@ -9,86 +9,72 @@
 #include "Capability.h"
 #include "DetailedParametersCapability.h"
 #include "LayeredPatchCapability.h"
+#include "PatchTextViews.h"
 
 #include <fmt/format.h>
 
-PatchTextBox::PatchTextBox(std::function<void()> forceResize, bool showParams /* = true */) : forceResize_(forceResize), showParams_(showParams), mode_(showParams ? DisplayMode::PARAMS : DisplayMode::HEX)
+PatchTextBox::PatchTextBox(std::function<void()> forceResize, bool showParams /* = true */) : forceResize_(forceResize), showParams_(showParams)
 {
 	document_ = std::make_unique<CodeDocument>();
 	textBox_ = std::make_unique<CodeEditorComponent>(*document_, nullptr);
 	textBox_->setScrollbarThickness(10);
-
 	textBox_->setReadOnly(true);
 	textBox_->setLineNumbersShown(false);
 	addChildComponent(*textBox_);
+	textBox_->setVisible(showParams_);
 
-	addAndMakeVisible(hexBased_);
-	hexBased_.setButtonText(showParams_ ? "Show hex values" : "Hex Dump");
+	addChildComponent(hexBased_);
+	hexBased_.setVisible(!showParams_);
+	hexBased_.setButtonText("Hex Dump");
 	hexBased_.setClickingTogglesState(true);
-	
-	if (showParams_) {
-		textBox_->setVisible(true);
-		hexBased_.setRadioGroupId(3, dontSendNotification);
-		hexBased_.onClick = [this]() {
-			mode_ = DisplayMode::HEX;
-			refreshText();
-		};
+	hexBased_.onClick = [this]() {
+		textBox_->setVisible(hexBased_.getToggleState());
+		viewSelector_.setVisible(hexBased_.getToggleState() && viewSelector_.getNumItems() > 1);
+		if (forceResize_) forceResize_();
+	};
 
-		addAndMakeVisible(textBased_);
-		textBased_.setButtonText("Show parameter values");
-		textBased_.setToggleState(true, dontSendNotification);
-		textBased_.setRadioGroupId(3, dontSendNotification);
-		textBased_.setClickingTogglesState(true);
-		textBased_.setVisible(false);
-		textBased_.onClick = [this]() {
-			mode_ = DisplayMode::PARAMS;
-			refreshText();
-		};
-
-		hexBased_.setToggleState(true, dontSendNotification);
-	}
-	else {
-		hexBased_.setToggleState(false, dontSendNotification);
-		hexBased_.onClick = [this]() {
-			textBox_->setVisible(hexBased_.getToggleState());
-			if (forceResize_) {
-				forceResize_();
-			}
-		};
-	}
+	addChildComponent(viewSelector_);
+	viewSelector_.setVisible(showParams_);
+	viewSelector_.addItem("Raw hex", 1);
+	viewSelector_.setSelectedId(1, dontSendNotification);
+	viewSelector_.onChange = [this]() {
+		refreshText();
+		if (forceResize_) forceResize_();
+	};
 }
 
 void PatchTextBox::fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch)
 {
+	auto previousId = viewSelector_.getSelectedId();
+	std::string previousName;
+	if (previousId >= 3) previousName = customViews_.at(static_cast<size_t>(previousId - 3)).first;
+	bool firstPatch = !patch_;
 	patch_ = patch;
-
-	if (patch) {
-		// If there is detailed parameter information, also show the second option
-		if (showParams_) {
-			auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
-			if (parameterDetails) {
-				textBased_.setVisible(true);
-			}
-			else {
-				mode_ = DisplayMode::HEX;
-				textBased_.setVisible(false);
-				hexBased_.setToggleState(true, dontSendNotification);
-			}
-		}
-		refreshText();
+	customViews_ = patch ? patch_text::viewsFor(*patch) : midikraft::PatchTextViews{};
+	viewSelector_.clear(dontSendNotification);
+	viewSelector_.addItem("Raw hex", 1);
+	bool hasParams = patch && midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch->patch());
+	if (hasParams) viewSelector_.addItem("Parameter values", 2);
+	int selectedId = hasParams && (previousId == 2 || (firstPatch && showParams_)) ? 2 : 1;
+	for (size_t i = 0; i < customViews_.size(); ++i) {
+		auto id = 3 + static_cast<int>(i);
+		viewSelector_.addItem(String::fromUTF8(customViews_[i].first.c_str()), id);
+		if (previousId >= 3 && customViews_[i].first == previousName) selectedId = id;
 	}
+	viewSelector_.setSelectedId(selectedId, dontSendNotification);
+	viewSelector_.setVisible(showParams_ || (hexBased_.getToggleState() && viewSelector_.getNumItems() > 1));
+	hexBased_.setButtonText(viewSelector_.getNumItems() > 1 ? "Patch text" : "Hex Dump");
+	refreshText();
+	if (forceResize_) forceResize_();
 }
 
 void PatchTextBox::refreshText() {
 	String text;
-	switch (mode_) {
-	case DisplayMode::HEX:
-		text = makeHexDocument(patch_);
-		break;
-	case DisplayMode::PARAMS:
-		text = makeTextDocument(patch_);
-		break;
-	}
+	auto selectedId = viewSelector_.getSelectedId();
+	if (selectedId == 1) text = makeHexDocument(patch_);
+	else if (selectedId == 2) text = makeTextDocument(patch_);
+	else text = String::fromUTF8(customViews_.at(static_cast<size_t>(selectedId - 3)).second.c_str());
+	// No reflow, trimming, or newline normalization of adaptation-provided text.
 	document_->replaceAllContent(text);
 }
 
@@ -97,12 +83,12 @@ void PatchTextBox::resized()
 	auto area = getLocalBounds();
 
 	auto topRow = area.removeFromTop(20);
-	hexBased_.setBounds(topRow.removeFromLeft(100));
-	textBased_.setBounds(topRow.removeFromLeft(100));
+	if (!showParams_) hexBased_.setBounds(topRow.removeFromLeft(100));
+	viewSelector_.setBounds(topRow);
 
 	textBox_->setBounds(area);
 
-	if (lastLayoutedWidth_.has_value() && *lastLayoutedWidth_ != area.getWidth() && patch_) {
+	if (viewSelector_.getSelectedId() == 1 && lastLayoutedWidth_.has_value() && *lastLayoutedWidth_ != area.getWidth() && patch_) {
 		refreshText();
 	}
 }

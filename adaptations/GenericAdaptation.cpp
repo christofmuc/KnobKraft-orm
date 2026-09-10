@@ -32,6 +32,7 @@
 #pragma warning ( pop )
 #endif
 #include <memory>
+#include <set>
 #include <spdlog/spdlog.h>
 #include "SpdLogJuce.h"
 
@@ -83,6 +84,7 @@ namespace knobkraft {
 		* kFriendlyBankName = "friendlyBankName",
 		* kFriendlyProgramName = "friendlyProgramName",
 		* kSetupHelp = "setupHelp",
+		* kGetClearText = "getClearText",
 		* kGetStoredTags = "storedTags",
 		* kIndicateBankDownloadMethod= "bankDownloadMethodOverride",
 		* kMessageTimings = "messageTimings",
@@ -127,6 +129,7 @@ namespace knobkraft {
 		kFriendlyBankName,
 		kFriendlyProgramName,
 		kSetupHelp,
+		kGetClearText,
 		kGetStoredTags,
 		kMessageTimings,
 		kExpectsUploadReply,
@@ -687,6 +690,30 @@ namespace knobkraft {
 			logAdaptationError(kSetupHelp, ex);
 			return Synth::setupHelpText();
 		}
+	}
+
+	midikraft::PatchTextViews GenericAdaptation::getClearText(midikraft::DataFile const& patch) const
+	{
+		py::gil_scoped_acquire acquire;
+		if (!pythonModuleHasFunction(kGetClearText)) return {};
+		try {
+			// Pass a copy, just like the other patch callbacks. Never change stored data.
+			std::vector<int> data(patch.data().begin(), patch.data().end());
+			auto views = py::cast<midikraft::PatchTextViews>(callMethod(kGetClearText, data));
+			std::set<std::string> names;
+			for (auto const& view : views) {
+				if (view.first.empty() || !names.insert(view.first).second) {
+					throw std::runtime_error("getClearText view names must be nonempty and unique");
+				}
+			}
+			return views;
+		}
+		catch (std::exception& ex) {
+			// In particular, consume Python errors here so a faulty optional view
+			// cannot prevent the raw view or subsequent adaptation calls from working.
+			logAdaptationError(kGetClearText, ex);
+		}
+		return {};
 	}
 
 	int GenericAdaptation::defaultReplyTimeoutMs() const
