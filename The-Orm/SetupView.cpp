@@ -15,7 +15,7 @@
 #include "GenericAdaptation.h"
 #include "CreateNewAdaptationDialog.h"
 #include "AutoDetectProgressWindow.h"
-#include "LoopDetection.h"
+#include "MidiLoopbackTest.h"
 
 
 #include "UIModel.h"
@@ -267,33 +267,102 @@ void SetupView::createNewAdaptation()
 	knobkraft::CreateNewAdaptationDialog::showDialog(&synthSetup_);
 }
 
-class LoopDetectorWindow : public ProgressHandlerWindow, public std::enable_shared_from_this<LoopDetectorWindow> {
+class MidiTestProgressWindow : public ProgressHandlerWindow, public std::enable_shared_from_this<MidiTestProgressWindow> {
 public:
-	LoopDetectorWindow() : ProgressHandlerWindow("Checking for MIDI loops...", "Sending test messages to all MIDI outputs to detect if we have a loop in the configuration") {
+	MidiTestProgressWindow(juce::MidiDeviceInfo input, juce::MidiDeviceInfo output) :
+		ProgressHandlerWindow("Testing MIDI connection...", "Preparing MIDI loopback test..."),
+		input_(std::move(input)), output_(std::move(output)) {
 	}
 
 	virtual void run() override {
-		// Call the method that will block
-		loops = midikraft::LoopDetection::detectLoops(shared_from_this());
+		report = midikraft::MidiLoopbackTest::run(input_, output_, shared_from_this());
 	}
 
-	std::vector<midikraft::MidiLoop> loops;
+	midikraft::MidiLoopbackTestReport report;
+
+private:
+	juce::MidiDeviceInfo input_;
+	juce::MidiDeviceInfo output_;
 };
 
-void SetupView::loopDetection()
-{
-	std::shared_ptr<LoopDetectorWindow> modalWindow = std::make_shared<LoopDetectorWindow>();
-	modalWindow->runThread();
-	for (auto loop : modalWindow->loops) {
-		std::string typeName;
-		switch (loop.type) {
-		case midikraft::MidiLoopType::Note: typeName = "MIDI Note"; break;
-		case midikraft::MidiLoopType::Sysex: typeName = "Sysex"; break;
+namespace {
+
+	std::string statusName(midikraft::MidiLoopbackTestStatus status)
+	{
+		switch (status) {
+		case midikraft::MidiLoopbackTestStatus::Passed: return "PASS";
+		case midikraft::MidiLoopbackTestStatus::TimedOut: return "TIMEOUT";
+		case midikraft::MidiLoopbackTestStatus::Incomplete: return "INCOMPLETE";
+		case midikraft::MidiLoopbackTestStatus::Mismatch: return "MISMATCH";
+		case midikraft::MidiLoopbackTestStatus::Cancelled: return "CANCELLED";
 		}
-		spdlog::warn("Warning: {} loop detected. Sending sysex to {} is returned on {}", typeName, loop.midiOutput.name, loop.midiInput.name);
+		return "UNKNOWN";
 	}
-	if (modalWindow->loops.empty()) {
-		spdlog::info("All clear, no MIDI loops detected when sending to all available MIDI outputs");
+
+	juce::String resultText(midikraft::MidiLoopbackTestReport const& report)
+	{
+		if (!report.error.empty()) return report.error;
+
+		juce::String text;
+		text << "Output: " << report.midiOutput.name << "\n"
+			<< "Input: " << report.midiInput.name << "\n\n";
+		for (auto const& result : report.results) {
+			text << result.name << ": " << statusName(result.status)
+				<< " (" << result.received.size() << "/" << result.expected.size()
+				<< " bytes, " << result.elapsedMilliseconds << " ms)";
+			if (result.firstDifferentByte >= 0) {
+				text << ", first difference at offset " << result.firstDifferentByte;
+			}
+			text << "\n";
+		}
+		if (report.cancelled) text << "\nTest cancelled.";
+		return text;
+	}
+
+}
+
+void SetupView::midiTest()
+{
+	auto inputs = juce::MidiInput::getAvailableDevices();
+	auto outputs = juce::MidiOutput::getAvailableDevices();
+	if (inputs.isEmpty() || outputs.isEmpty()) {
+		juce::AlertWindow::showMessageBox(juce::AlertWindow::WarningIcon, "MIDI Test",
+			"At least one MIDI input and one MIDI output are required.");
+		return;
+	}
+
+	juce::StringArray inputNames;
+	for (auto const& input : inputs) inputNames.add(input.name);
+	juce::StringArray outputNames;
+	for (auto const& output : outputs) outputNames.add(output.name);
+
+	juce::AlertWindow selector("MIDI Test",
+		"Connect the selected MIDI output directly to the selected MIDI input with a cable. "
+		"The test sends channel messages and deterministic SysEx data up to 16 KiB, then compares what returns byte-for-byte.",
+		juce::AlertWindow::QuestionIcon);
+	selector.addComboBox("midiOutput", outputNames, "MIDI output");
+	selector.addComboBox("midiInput", inputNames, "MIDI input");
+	selector.getComboBoxComponent("midiOutput")->setSelectedItemIndex(0);
+	selector.getComboBoxComponent("midiInput")->setSelectedItemIndex(0);
+	selector.addButton("Run test", 1, juce::KeyPress(juce::KeyPress::returnKey));
+	selector.addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+	if (selector.runModalLoop() != 1) return;
+
+	const auto outputIndex = selector.getComboBoxComponent("midiOutput")->getSelectedItemIndex();
+	const auto inputIndex = selector.getComboBoxComponent("midiInput")->getSelectedItemIndex();
+	if (!juce::isPositiveAndBelow(outputIndex, outputs.size()) || !juce::isPositiveAndBelow(inputIndex, inputs.size())) return;
+
+	auto progressWindow = std::make_shared<MidiTestProgressWindow>(inputs.getReference(inputIndex), outputs.getReference(outputIndex));
+	progressWindow->runThread();
+
+	const auto text = resultText(progressWindow->report);
+	if (progressWindow->report.allPassed()) {
+		spdlog::info("MIDI loopback test passed:\n{}", text.toStdString());
+		juce::AlertWindow::showMessageBox(juce::AlertWindow::InfoIcon, "MIDI Test passed", text);
+	}
+	else {
+		spdlog::warn("MIDI loopback test did not pass:\n{}", text.toStdString());
+		juce::AlertWindow::showMessageBox(juce::AlertWindow::WarningIcon, "MIDI Test results", text);
 	}
 }
 
