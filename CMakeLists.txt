@@ -356,8 +356,8 @@ add_subdirectory(pytschirp)
 # Main module
 add_subdirectory(The-Orm)
 
-option(BUILD_PATCH_DATABASE_TESTS "Build the Orm C++ regression tests" OFF)
-if(BUILD_PATCH_DATABASE_TESTS)
+option(BUILD_UNIT_TESTS "Build the Orm C++ regression tests" OFF)
+if(BUILD_UNIT_TESTS)
 	add_executable(patch_database_migration_test
 		tests/patch_database_migration_test.cpp
 		tests/bank_dump_capability_test.cpp
