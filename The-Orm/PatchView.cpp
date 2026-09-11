@@ -5,6 +5,7 @@
 */
 
 #include "PatchView.h"
+#include "PatchSelectionEvents.h"
 
 #include "PatchSearchComponent.h"
 #include "SimplePatchGrid.h"
@@ -1094,11 +1095,19 @@ std::vector<MidiMessage> PatchView::buildSelectBankAndProgramMessages(MidiProgra
 }
 
 void PatchView::sendProgramChangeMessagesForPatch(std::shared_ptr<midikraft::MidiLocationCapability> midiLocation,  MidiProgramNumber program, midikraft::PatchHolder &patch) {
+	if (!midikraft::MidiController::instance()->getMidiOutput(midiLocation->midiOutput())->isValid()) {
+		spdlog::error("MIDI output unavailable for {}", patch.smartSynth()->getName());
+		return;
+	}
 	// We can get away with just a bank select and program change, and will try to select the patch directly
 		// Build the MIDI messages required to select bank and program
 	auto selectPatch = buildSelectBankAndProgramMessages(program, patch);
 	if (selectPatch.size() > 0) {
 		patch.smartSynth()->sendBlockOfMessagesToSynth(midiLocation->midiOutput(), selectPatch);
+		if (patch.patch()) {
+			PatchSelectionEvents(patch.smartSynth(), midiLocation->channel(), patch.patch()->data())
+				.sent({ midikraft::UploadResult::Status::SENT_WITHOUT_ACKNOWLEDGEMENT, {}, {} });
+		}
 	}
 	else {
 		if (midikraft::Capability::hasCapability<midikraft::CustomProgramChangeCapability>(patch.smartSynth())) {
@@ -1114,11 +1123,17 @@ void PatchView::sendPatchAsSysex(midikraft::PatchHolder &patch) {
 	// Send out to Synth into edit buffer
 	if (patch.patch()) {
 		spdlog::info("Sending sysex for patch '{}' to {}", patch.name(), patch.synth()->getName());
-		if (midikraft::Capability::hasCapability<midikraft::UploadHandshakeCapability>(patch.synth())) {
-			patch.synth()->sendDataFileToSynthAsync(patch.patch(), nullptr, [synthName = patch.synth()->getName()](const midikraft::UploadResult& result) {
+		auto events = midikraft::Capability::hasCapability<midikraft::PatchEventCapability>(patch.smartSynth());
+		if (events || midikraft::Capability::hasCapability<midikraft::UploadHandshakeCapability>(patch.synth())) {
+			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+			auto channel = location ? location->channel() : MidiChannel::invalidChannel();
+			PatchSelectionEvents notifications(patch.smartSynth(), channel, patch.patch()->data());
+			patch.synth()->sendDataFileToSynthAsync(patch.patch(), nullptr, [notifications, synthName = patch.synth()->getName()](const midikraft::UploadResult& result) {
 				if (!result.successful()) {
 					spdlog::error("Upload to {} failed: {}", synthName, result.message);
+					return;
 				}
+				notifications.sent(result);
 			});
 		}
 		else {
@@ -1143,6 +1158,11 @@ void PatchView::selectPatch(midikraft::PatchHolder &patch, bool alsoSendToSynth)
 
 		UIModel::instance()->currentPatch_.changeCurrentPatch(patch);
 		currentLayer_ = 0;
+		if (patch.patch()) {
+			auto location = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());
+			auto channel = location ? location->channel() : MidiChannel::invalidChannel();
+			PatchSelectionEvents(patch.smartSynth(), channel, patch.patch()->data()).selected();
+		}
 
 		if (alsoSendToSynth) {
 			auto midiLocation = midikraft::Capability::hasCapability<midikraft::MidiLocationCapability>(patch.smartSynth());

@@ -540,31 +540,6 @@ bool KeyboardMacroView::isMacroState(KeyboardMacro const &macro)
 	return allDetected && !extraKeyDetected;
 }
 
-void KeyboardMacroView::handleMidiMessage(const MidiMessage& message, const String& source, bool isOut)
-{
-	if (!isOut) {
-		// Don't relay incoming messages
-		return;
-	}
-
-	juce::MidiDeviceInfo secondaryInfo;
-	{
-		std::scoped_lock lock(secondaryMidiOutMutex_);
-		secondaryInfo = secondaryMidiOut_;
-	}
-
-	if (secondaryInfo.name.isEmpty() || source == secondaryInfo.name) {
-		// No secondary selected or coming from secondary device - avoid loops!
-		return;
-	}
-
-	auto secondaryOutput = midikraft::MidiController::instance()->getMidiOutput(secondaryInfo);
-	if (secondaryOutput->isValid()) {
-		// Forward a copy to the secondary output
-		secondaryOutput->sendMessageNow(message);
-	}
-}
-
 void KeyboardMacroView::refreshSecondaryMidiOutList()
 {
 	if (secondaryMidiOutList_) {
@@ -578,8 +553,5 @@ void KeyboardMacroView::updateSecondaryMidiOutSelection()
 		return;
 	}
 
-	{
-		std::scoped_lock lock(secondaryMidiOutMutex_);
-		secondaryMidiOut_ = secondaryMidiOutList_->selectedDevice();
-	}
+	midikraft::MidiController::instance()->setSecondaryMidiOutput(secondaryMidiOutList_->selectedDevice());
 }
