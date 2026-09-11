@@ -64,6 +64,9 @@ jobs:
           cmake --build Builds --config RelWithDebInfo --target patch_database_migration_test
           Builds\RelWithDebInfo\patch_database_migration_test.exe
 
+      - name: Run patch text doctest
+        run: Builds\RelWithDebInfo\patch_text_test.exe
+
       - name: Setup Sentry CLI
         uses: mathieu-bour/setup-sentry-cli@1.2.0
         if: startsWith(github.ref, 'refs/tags/')

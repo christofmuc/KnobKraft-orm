@@ -356,7 +356,7 @@ add_subdirectory(pytschirp)
 # Main module
 add_subdirectory(The-Orm)
 
-option(BUILD_PATCH_DATABASE_TESTS "Build the PatchDatabase doctest binary" OFF)
+option(BUILD_PATCH_DATABASE_TESTS "Build the Orm C++ regression tests" OFF)
 if(BUILD_PATCH_DATABASE_TESTS)
 	add_executable(patch_database_migration_test
 		tests/patch_database_migration_test.cpp
@@ -383,10 +383,7 @@ if(BUILD_PATCH_DATABASE_TESTS)
 		knobkraft-generic-adaptation
 		midikraft-access-virus
 		SQLiteCpp)
-endif()
 
-option(BUILD_PATCH_TEXT_TESTS "Build patch text view and diff tests" OFF)
-if(BUILD_PATCH_TEXT_TESTS)
 	add_executable(patch_text_test
 		tests/patch_text_test.cpp
 		The-Orm/PatchDiff.cpp
