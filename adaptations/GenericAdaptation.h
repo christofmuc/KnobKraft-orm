@@ -16,6 +16,7 @@
 #include "BankDumpCapability.h"
 #include "LegacyLoaderCapability.h"
 #include "CustomProgramChangeCapability.h"
+#include "PatchEventCapability.h"
 #include "UploadHandshakeCapability.h"
 
 #ifdef _MSC_VER
@@ -77,6 +78,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::CustomProgramChangeCapability>,
 		public midikraft::RuntimeCapability<midikraft::UploadHandshakeCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
+		public midikraft::PatchEventCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
 	public:
@@ -109,6 +111,8 @@ namespace knobkraft {
 		virtual void sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const &midiOutput, std::vector<MidiMessage> const& buffer) override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;  //TODO this looks like a capability
 		virtual std::string setupHelpText() const override;
+		std::vector<MidiMessage> onPatchSelected(MidiChannel channel, std::vector<uint8> const& patchData) const override;
+		std::vector<MidiMessage> onPatchSent(MidiChannel channel, std::vector<uint8> const& patchData) const override;
 
 		// Internal workings of the Generic Adaptation module
 		bool pythonModuleHasFunction(std::string const &functionName) const;
@@ -172,6 +176,7 @@ namespace knobkraft {
 		void insertFingerprint(Synth::PatchData const& patchData, std::string const& inName) const;
 
 	private:
+		std::vector<MidiMessage> patchEventMessages(const char* event, MidiChannel channel, std::vector<uint8> const& patchData) const;
 		friend class GenericEditBufferCapability;
 		std::shared_ptr<GenericEditBufferCapability> editBufferCapabilityImpl_;
 

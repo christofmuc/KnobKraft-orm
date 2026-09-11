@@ -83,6 +83,7 @@ set(SOURCES
 	PatchSearchComponent.cpp PatchSearchComponent.h
 	PatchTextBox.cpp PatchTextBox.h
 	PatchView.cpp PatchView.h
+	PatchSelectionEvents.h
 	ReceiveManualDumpWindow.cpp ReceiveManualDumpWindow.h
 	RecordingView.cpp RecordingView.h
 	RotaryWithLabel.cpp RotaryWithLabel.h
