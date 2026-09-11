@@ -119,6 +119,17 @@ def numberOfPatchesPerBank():
     return 16
 
 
+def getClearText(message):
+    if not isEditBufferDump(message):
+        return []
+    data = unescapeSysex(message[5:-1])
+    text = "\n".join(
+        f"{offset:04x} " + " ".join(f"{byte:02x}" for byte in data[offset:offset + 8])
+        for offset in range(0, len(data), 8)
+    )
+    return [("Unescaped patch data", text)]
+
+
 def nameFromDump(message):
     if isEditBufferDump(message):
         # We need to first convert from 7 bit data to 8 bit data, before we can extract the program name

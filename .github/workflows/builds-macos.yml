@@ -77,6 +77,14 @@ jobs:
         path: |
           build/KnobKraft_Orm-*.dmg
 
+    - name: Archive DMG diagnostics
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: DMG packaging logs
+        path: build/_CPack_Packages/**/*.log
+        if-no-files-found: ignore
+
     - name: Publish release
       uses: xresloader/upload-to-github-release@v1
       env:

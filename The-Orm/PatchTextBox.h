@@ -9,12 +9,10 @@
 #include "JuceHeader.h"
 
 #include "PatchHolder.h"
+#include "PatchTextCapability.h"
 
 class PatchTextBox : public Component {
 public:
-	enum class DisplayMode {
-		HEX, PARAMS
-	};
 	PatchTextBox(std::function<void()> forceResize = {}, bool showParams = true);
 
 	void fillTextBox(std::shared_ptr<midikraft::PatchHolder> patch);
@@ -35,8 +33,9 @@ private:
 	std::shared_ptr<midikraft::PatchHolder> patch_;
 	std::unique_ptr<CodeDocument> document_;
 	std::unique_ptr<CodeEditorComponent> textBox_;
-	TextButton hexBased_, textBased_;
-	DisplayMode mode_;
+	TextButton hexBased_;
+	ComboBox viewSelector_;
+	midikraft::PatchTextViews customViews_;
 	std::optional<int> lastLayoutedWidth_;
 };
 

@@ -18,6 +18,7 @@
 #include "CustomProgramChangeCapability.h"
 #include "PatchEventCapability.h"
 #include "UploadHandshakeCapability.h"
+#include "PatchTextCapability.h"
 
 #ifdef _MSC_VER
 #pragma warning ( push )
@@ -78,6 +79,7 @@ namespace knobkraft {
 		public midikraft::RuntimeCapability<midikraft::CustomProgramChangeCapability>,
 		public midikraft::RuntimeCapability<midikraft::UploadHandshakeCapability>,
 		public midikraft::BankDownloadMethodIndicationCapability,
+		public midikraft::PatchTextCapability,
 		public midikraft::PatchEventCapability,
 		public std::enable_shared_from_this<GenericAdaptation>
 	{
@@ -111,6 +113,7 @@ namespace knobkraft {
 		virtual void sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const &midiOutput, std::vector<MidiMessage> const& buffer) override;
 		virtual std::string friendlyProgramName(MidiProgramNumber programNo) const override;  //TODO this looks like a capability
 		virtual std::string setupHelpText() const override;
+		midikraft::PatchTextViews getClearText(midikraft::DataFile const& patch) const override;
 		std::vector<MidiMessage> onPatchSelected(MidiChannel channel, std::vector<uint8> const& patchData) const override;
 		std::vector<MidiMessage> onPatchSent(MidiChannel channel, std::vector<uint8> const& patchData) const override;
 

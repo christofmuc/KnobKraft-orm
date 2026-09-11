@@ -10,6 +10,7 @@
 
 #include "Synth.h"
 #include "PatchHolder.h"
+#include "PatchTextViews.h"
 
 class DiffTokenizer;
 class CoupledScrollCodeEditor;
@@ -21,16 +22,12 @@ public:
 
 	void resized() override;
 	void buttonClicked(Button*) override;
-	void buttonStateChanged(Button*) override;
 
 private:
 	void fillDocuments();
 	static int positionInHexDocument(int positionInBinary);
 	String makeHexDocument(midikraft::PatchHolder *patch);
-	String makeTextDocument(midikraft::PatchHolder *patch);
-	std::vector<Range<int>> diffFromText(String &doc1, String &doc2);
 	std::vector<Range<int>> diffFromData(std::shared_ptr<midikraft::DataFile> patch1, std::shared_ptr<midikraft::DataFile> patch2);
-	std::string patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive);
 
 	midikraft::Synth *activeSynth_;
 	midikraft::PatchHolder p1_, p2_;
@@ -43,9 +40,8 @@ private:
 	std::unique_ptr <CoupledScrollCodeEditor> p1Editor_;
 	std::unique_ptr <CoupledScrollCodeEditor> p2Editor_;
 	TextButton closeButton_;
-	TextButton hexBased_, textBased_;
-
-	bool showHexDiff_;
+	ComboBox viewSelector_;
+	std::vector<patch_text::ComparisonView> customViews_;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PatchDiff)
 };

@@ -78,7 +78,7 @@ python -m pytest --all . -q --no-header
 
 The focused command is an example; select every affected adaptation and its dedicated tests. Report passed, failed and skipped tests honestly, and investigate unexpected skips. Mock MIDI verifies protocol sequences, not physical device timing.
 
-For C++/database changes, initialize pinned submodules in the clean worktree (`git submodule update --init --recursive`), follow the platform workflow's CMake prerequisites, configure with `-DBUILD_PATCH_DATABASE_TESTS=ON`, build `patch_database_migration_test`, and run that executable. Do not assume `ctest` executes it: the current Windows workflow runs the binary directly. On Visual Studio builds it is normally under the selected configuration directory.
+For C++/database changes, initialize pinned submodules in the clean worktree (`git submodule update --init --recursive`), follow the platform workflow's CMake prerequisites, configure with `-DBUILD_UNIT_TESTS=ON`, build `patch_database_migration_test`, and run that executable. Do not assume `ctest` executes it: the current Windows workflow runs the binary directly. On Visual Studio builds it is normally under the selected configuration directory.
 
 For documentation-only changes, check the history/credit ledger, Markdown rendering, links and `git diff --check`; do not claim that this replaces the release candidate's build/test gate.
 

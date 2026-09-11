@@ -75,7 +75,7 @@ set(SOURCES
 	MidiLogPanel.cpp MidiLogPanel.h
 	OrmLookAndFeel.cpp OrmLookAndFeel.h
 	PatchButtonPanel.cpp PatchButtonPanel.h
-	PatchDiff.cpp PatchDiff.h
+	PatchDiff.cpp PatchDiff.h TextDiffRanges.h PatchTextViews.h
 	PatchHistoryPanel.cpp PatchHistoryPanel.h
 	PatchHolderButton.cpp PatchHolderButton.h
 	PatchListTree.cpp PatchListTree.h
@@ -141,7 +141,7 @@ if (SPARKLE_UPDATES AND WIN32)
   target_link_directories(KnobKraftOrm PRIVATE "${WINSPARKLE_LIBDIR}")
 endif()
 target_include_directories(KnobKraftOrm SYSTEM
-	PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../third_party/dtl" "${CMAKE_CURRENT_BINARY_DIR}")
+	PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_compile_definitions(KnobKraftOrm PRIVATE JUCE_MODULE_AVAILABLE_gin_gui JUCE_MODULE_AVAILABLE_gin)
 get_target_property(gin_include_dirs gin INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(KnobKraftOrm SYSTEM PRIVATE ${gin_include_dirs})

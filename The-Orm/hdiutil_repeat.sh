@@ -34,12 +34,15 @@ if [ "$cmd" = "detach" ]; then
     exit 0
   fi
 
-  # Last-resort fallback for stale/busy mounts.
-  if [ -n "${2:-}" ]; then
-    hdiutil "$@" -force
+  # XProtect/Spotlight can also briefly hold the mount during forced detach.
+  # Keep retrying the same temporary image; never detach unrelated volumes.
+  if [ -n "${2:-}" ] && retry_hdiutil 10 "$@" -force; then
     exit 0
   fi
 
+  # CPack otherwise hides hdiutil's output in its private log directory.
+  echo "Failed to detach temporary image after normal and forced retries: ${2:-}" >&2
+  hdiutil info >&2 || true
   exit 1
 fi
 

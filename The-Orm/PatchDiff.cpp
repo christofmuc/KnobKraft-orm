@@ -11,20 +11,11 @@
 #include "Patch.h"
 #include "Capability.h"
 
-#include "LayeredPatchCapability.h"
 #include "DetailedParametersCapability.h"
+#include "PatchTextBox.h"
+#include "TextDiffRanges.h"
 
 #include <algorithm>
-#include <fmt/format.h>
-// Turn off warning on unknown pragmas for VC++
-#pragma warning(push)
-#pragma warning(disable: 4068)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#include "dtl/dtl.hpp"
-#pragma GCC diagnostic pop
-#pragma warning(pop)
-
 
 class DiffTokenizer : public CodeTokeniser {
 public:
@@ -113,26 +104,18 @@ PatchDiff::PatchDiff(midikraft::Synth *activeSynth, midikraft::PatchHolder const
 	addAndMakeVisible(*p1Editor_);
 	addAndMakeVisible(*p2Editor_);
 
-	// Build the toggle buttons for the diff mode
-	addAndMakeVisible(hexBased_);
-	hexBased_.setButtonText("Show hex values");
-	hexBased_.setClickingTogglesState(true);
-	hexBased_.setToggleState(true, dontSendNotification);
-	hexBased_.setRadioGroupId(3, dontSendNotification);
-	hexBased_.addListener(this);
-	showHexDiff_ = true;
-
-	// If there is detailed parameter information, also show the second option
+	// Built-in views and adaptation-provided views share one selector.
+	addAndMakeVisible(viewSelector_);
+	viewSelector_.addItem("Raw hex", 1);
 	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch1.patch());
-	if (parameterDetails) {
-		addAndMakeVisible(textBased_);
-		textBased_.setButtonText("Show parameter values");
-		textBased_.setToggleState(true, dontSendNotification);
-		textBased_.setRadioGroupId(3, dontSendNotification);
-		textBased_.setClickingTogglesState(true);
-		textBased_.addListener(this);	
-		showHexDiff_ = false;
+	auto parameterDetails2 = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch2.patch());
+	if (parameterDetails && parameterDetails2) viewSelector_.addItem("Parameter values", 2);
+	customViews_ = patch_text::commonViews(patch_text::viewsFor(p1_), patch_text::viewsFor(p2_));
+	for (size_t i = 0; i < customViews_.size(); ++i) {
+		viewSelector_.addItem(String::fromUTF8(customViews_[i].name.c_str()), 3 + static_cast<int>(i));
 	}
+	viewSelector_.setSelectedId(parameterDetails && parameterDetails2 ? 2 : 1, dontSendNotification);
+	viewSelector_.onChange = [this]() { fillDocuments(); };
 
 	fillDocuments();
 
@@ -149,8 +132,7 @@ void PatchDiff::resized()
 	Rectangle<int> area(getLocalBounds());
 	closeButton_.setBounds(area.removeFromBottom(20).withSizeKeepingCentre(100, 20));
 	auto topRow = area.removeFromTop(20);
-	hexBased_.setBounds(topRow.removeFromLeft(100));
-	textBased_.setBounds(topRow.removeFromLeft(100));
+	viewSelector_.setBounds(topRow);
 	auto leftColumn = area.removeFromLeft(area.getWidth() / 2);
 	patch1Name_.setBounds(leftColumn.removeFromTop(30));
 	p1Editor_->setBounds(leftColumn);
@@ -167,27 +149,13 @@ void PatchDiff::buttonClicked(Button *button)
 	} 
 }
 
-void PatchDiff::buttonStateChanged(Button *button)
-{
-	if (button->getToggleState()) {
-		if (button == &hexBased_) {
-			showHexDiff_ = true;
-			fillDocuments();
-		}
-		else if (button == &textBased_) {
-			showHexDiff_ = false;
-			fillDocuments();
-		}
-	}
-}
-
 void PatchDiff::fillDocuments()
 {
 	patch1Name_.setText(p1_.name(), dontSendNotification);
 	patch2Name_.setText(p2_.name(), dontSendNotification);
 
 	String doc1, doc2;
-	if (showHexDiff_) {
+	if (viewSelector_.getSelectedId() == 1) {
 		doc1 = makeHexDocument(&p1_);
 		doc2 = makeHexDocument(&p2_);
 		std::vector<Range<int>> diffRanges = diffFromData(p1_.patch(), p2_.patch());
@@ -195,15 +163,21 @@ void PatchDiff::fillDocuments()
 		tokenizer2_->setRangeList(diffRanges);
 	}
 	else {
-		doc1 = makeTextDocument(&p1_);
-		doc2 = makeTextDocument(&p2_);
-		std::vector<Range<int>> diffRanges1 = diffFromText(doc1, doc2);
-		std::vector<Range<int>> diffRanges2 = diffFromText(doc2, doc1);
-		tokenizer1_->setRangeList(diffRanges1);
-		tokenizer2_->setRangeList(diffRanges2);
+		if (viewSelector_.getSelectedId() == 2) {
+			doc1 = PatchTextBox::makeTextDocument(std::make_shared<midikraft::PatchHolder>(p1_));
+			doc2 = PatchTextBox::makeTextDocument(std::make_shared<midikraft::PatchHolder>(p2_));
+		}
+		else {
+			auto const& view = customViews_.at(static_cast<size_t>(viewSelector_.getSelectedId() - 3));
+			doc1 = String::fromUTF8(view.left.c_str());
+			doc2 = String::fromUTF8(view.right.c_str());
+		}
+		auto ranges = patch_text::diffRanges(doc1, doc2);
+		tokenizer1_->setRangeList(ranges.left);
+		tokenizer2_->setRangeList(ranges.right);
 	}
 
-	// Setup view
+	// Keep supplied whitespace and line endings verbatim. applyChanges() normalizes them.
 	p1Document_->replaceAllContent(doc1);
 	p2Document_->replaceAllContent(doc2);
 }
@@ -240,34 +214,6 @@ String PatchDiff::makeHexDocument(midikraft::PatchHolder *patch)
 	return result;
 }
 
-String PatchDiff::makeTextDocument(midikraft::PatchHolder *patch) {
-	auto realPatch = std::dynamic_pointer_cast<midikraft::Patch>(patch->patch());
-	if (realPatch) {
-		return patchToTextRaw(realPatch, false);
-	}
-	else {
-		return "makeTextDocument not implemented yet";
-	}
-}
-
-std::vector<Range<int>> PatchDiff::diffFromText(String &doc1, String &doc2) {
-	dtl::Diff< char, std::string> difference(doc1.toStdString(), doc2.toStdString());
-	difference.compose();
-
-	// Diff calculation for highlighting
-	std::vector<Range<int>> diffRanges;
-
-	// Loop over edit script and create highlighting ranges
-	auto editScript = difference.getSes();
-	for (auto edit : editScript.getSequence()) {
-	if (edit.second.type == dtl::SES_DELETE) {
-			diffRanges.push_back(Range<int>((int) (edit.second.beforeIdx - 1), (int) edit.second.beforeIdx));
-		}
-	}
-
-	return diffRanges;
-}
-
 std::vector<Range<int>> PatchDiff::diffFromData(std::shared_ptr<midikraft::DataFile> patch1, std::shared_ptr<midikraft::DataFile> patch2) {
 	// Diff calculation for highlighting
 	std::vector<Range<int>> diffRanges;
@@ -298,41 +244,5 @@ std::vector<Range<int>> PatchDiff::diffFromData(std::shared_ptr<midikraft::DataF
 		diffRanges.push_back(Range<int>(diffstart, positionInHexDocument((int) doc1.size())));
 	}
 	return diffRanges;
-}
-
-std::string PatchDiff::patchToTextRaw(std::shared_ptr<midikraft::Patch> patch, bool onlyActive)
-{
-	std::string result;
-
-	int numLayers = 1;
-	auto layers = midikraft::Capability::hasCapability<midikraft::LayeredPatchCapability>(patch);
-	if (layers) {
-		numLayers = layers->numberOfLayers();
-	}
-
-	auto parameterDetails = midikraft::Capability::hasCapability<midikraft::DetailedParametersCapability>(patch);
-
-	if (parameterDetails) {
-		for (int layer = 0; layer < numLayers; layer++) {
-			if (layers) {
-				if (layer > 0) result += "\n";
-				result = result + fmt::format("Layer: {}\n", layers->layerName(layer));
-			}
-			for (auto param : parameterDetails->allParameterDefinitions()) {
-				if (layers) {
-					auto multiLayerParam = midikraft::Capability::hasCapability<midikraft::SynthMultiLayerParameterCapability>(param);
-					jassert(multiLayerParam);
-					if (multiLayerParam) {
-						multiLayerParam->setSourceLayer(layer);
-					}
-				}
-				auto activeCheck = midikraft::Capability::hasCapability<midikraft::SynthParameterActiveDetectionCapability>(param);
-				if (!onlyActive || !activeCheck || !(activeCheck->isActive(patch.get()))) {
-					result = result + fmt::format("{}: {}\n", param->description(), param->valueInPatchToText(*patch));
-				}
-			}
-		}
-	}
-	return result;
 }
 

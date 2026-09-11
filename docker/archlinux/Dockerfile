@@ -30,7 +30,7 @@ RUN git config --global --add safe.directory /KnobKraft-orm \
     && git submodule update --recursive --init --depth 1
 
 RUN cmake -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=off \
-    -DBUILD_PATCH_DATABASE_TESTS=ON \
+    -DBUILD_UNIT_TESTS=ON \
     -S . \
     -B builds
 
