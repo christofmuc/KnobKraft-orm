@@ -130,6 +130,7 @@ public:
 	{
 		return device() && device()->wasDetected();
 	}
+	bool canCheckConnection() override { return device() && device()->deviceDetectSleepMS() >= 0; }
 
 
 	Colour getColour() override
@@ -288,7 +289,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 
 	// Define the actions in the menu bar in form of an invisible LambdaButtonStrip 
 	LambdaButtonStrip::TButtonMap buttons = {
-	{ "Auto-detect synths", { "Auto-detect synths", [this]() {
+	{ "Find all synths...", { "Auto-detect synths", [this]() {
 		setupView_->autoDetect();
 	}, juce::KeyPress::F1Key } },
 	{ "Import patches from synth", { kRetrievePatches, [this]() {
@@ -318,7 +319,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
     { "Copy names of current bank to clipboard...", { kCopyBankPatchNames , [this]() {
         patchView_->copyBankPatchNamesToClipboard();
     } } },
-	{ "Quick check connectivity", { kSynthDetection, [this]() {
+	{ "Check saved connections", { kSynthDetection, [this]() {
 		setupView_->quickConfigure();
 	}, juce::KeyPress::F2Key } },
 	{ "Check for MIDI loops", { kLoopDetection, [this]() {
@@ -939,15 +940,13 @@ void MainComponent::resized()
 	//auto topRow = area.removeFromTop(40).withTrimmedLeft(8).withTrimmedRight(8).withTrimmedTop(8);
 	//patchList_.setBounds(topRow);
 
-	if (UIModel::instance()->synthList_.activeSynths().size() > 1) {
+	if (!UIModel::instance()->synthList_.activeSynths().empty()) {
 		auto secondTopRow = area.removeFromTop(LAYOUT_LINE_SPACING + 20 + LAYOUT_INSET_NORMAL)
 			.withTrimmedLeft(LAYOUT_INSET_NORMAL).withTrimmedRight(LAYOUT_INSET_NORMAL).withTrimmedTop(LAYOUT_INSET_NORMAL);
 		synthList_.setBounds(secondTopRow);
 		synthList_.setVisible(true);
 	}
 	else {
-		//TODO - one synth needs to be implemented differently.
-// At most one synth selected - do not display the large synth selector row you need when you use the software with multiple synths
 		synthList_.setVisible(false);
 	}
 	splitter_->setBounds(area);
@@ -1006,6 +1005,10 @@ void MainComponent::refreshSynthList() {
 			// What did you put into the list?
 			jassert(false);
 		}
+		}, [this](std::shared_ptr<ActiveListItem> const &clicked) {
+			if (auto synth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked)) setupView_->checkConnection(synth->device());
+		}, [this](std::shared_ptr<ActiveListItem> const &clicked) {
+			if (auto synth = std::dynamic_pointer_cast<ActiveSynthHolder>(clicked)) setupView_->findSynth(synth->device());
 		});
 
 	// Need to make sure the correct button is pressed
@@ -1021,6 +1024,15 @@ void MainComponent::changeListenerCallback(ChangeBroadcaster* source)
 		// Kick off a new quickconfigure, as the MIDI interface setup has changed and synth available will be different
 		auto synthList = UIModel::instance()->synthList_.activeSynths();
 		quickconfigreDebounce_.callDebounced([this, synthList]() {
+			// A modal detection dialog still pumps USB hot-plug events. Defer the
+			// automatic check until its worker has released the MIDI inputs.
+			if (setupView_->isDetecting()) {
+				Component::SafePointer<MainComponent> safeThis(this);
+				MessageManager::callAsync([safeThis]() {
+					if (safeThis) safeThis->changeListenerCallback(midikraft::MidiController::instance());
+				});
+				return;
+			}
 			auto myList = synthList;
 			autodetector_.quickconfigure(myList);
 			}, 2000);

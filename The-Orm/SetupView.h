@@ -31,12 +31,16 @@ public:
 	void quickConfigure();
 	void loopDetection();
 	void autoDetect();
+	void findSynth(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	void checkConnection(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
+	bool isDetecting() const { return detecting_; }
 	void createNewAdaptation();
 
 private:
 	void refreshSynthActiveness();
 	void refreshData();
 	void rebuildSetupColumn();
+	bool runDetection(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths, bool search);
 
 	virtual void valueChanged(Value& value) override;
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
@@ -51,6 +55,9 @@ private:
 	InfoText header_;
 	//HueLightControl * lights_;
 	TextButton autoConfigureButton_;
+	TextButton checkConnectionsButton_;
+	bool detecting_ = false;
+	bool setupRefreshPending_ = false;
 	PropertyEditor synthSelection_;
 	PropertyEditor synthSetup_;
 

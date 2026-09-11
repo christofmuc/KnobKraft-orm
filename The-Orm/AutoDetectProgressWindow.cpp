@@ -18,8 +18,9 @@ AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<midikraft::SynthH
 	}
 }
 
-AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths) :
-	ProgressHandlerWindow("Running auto-detection", "Detecting synth...")
+AutoDetectProgressWindow::AutoDetectProgressWindow(std::vector<std::shared_ptr<midikraft::SimpleDiscoverableDevice>> synths, Mode mode) :
+	ProgressHandlerWindow(mode == Mode::Find ? "Finding synths on MIDI ports" : "Checking saved connections",
+		mode == Mode::Find ? "Searching MIDI outputs..." : "Checking saved MIDI output and channel..."), mode_(mode)
 {
 	for (auto synth : synths) {
 		synths_.push_back(synth); // Convert from shared to weak_ptr
@@ -34,7 +35,8 @@ void AutoDetectProgressWindow::run()
 			synths.push_back(synth.lock());
 		}
 	}
-	autodetector_.autoconfigure(synths, this);
+	if (mode_ == Mode::Find) autodetector_.autoconfigure(synths, this);
+	else autodetector_.quickconfigure(synths, this);
 	if (!shouldAbort()) {
 		onSuccess();
 	}
@@ -51,5 +53,7 @@ void AutoDetectProgressWindow::onSuccess()
 
 void AutoDetectProgressWindow::onCancel()
 {
+	// Earlier synths may already have completed when a global operation is cancelled.
+	UIModel::instance()->currentSynth_.sendChangeMessage();
 	//Forgot why, but we should not signal the thread to exit as in the default implementation of ProgressHandlerWindow
 }
