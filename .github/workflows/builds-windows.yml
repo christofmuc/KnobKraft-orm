@@ -53,9 +53,11 @@ jobs:
       - name: Run Python tests first
         run: |
           pip install -r requirements.txt
-          python -m pytest tests/test_hdiutil_repeat.py -q
           cd adaptations
           python -m pytest --all . -q --no-header
+
+      - name: Test DMG cleanup retries
+        run: python -m pytest tests/test_hdiutil_repeat.py -q
 
       - name: CMake build
         run: cmake --build Builds --config RelWithDebInfo --parallel
