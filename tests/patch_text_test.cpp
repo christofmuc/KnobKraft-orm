@@ -6,13 +6,19 @@
 #include "The-Orm/PatchDiff.h"
 #include "The-Orm/PatchTextBox.h"
 #include "GenericAdaptation.h"
+#include "Settings.h"
 #include "test_helpers.h"
 
 // Keep JUCE alive for the whole test run, including doctest reporters and
 // queued adaptation error messages, rather than shutting it down in a test case.
 int main(int argc, char** argv) {
 	juce::ScopedJuceInitialiser_GUI gui;
-	return doctest::Context(argc, argv).run();
+	Settings::setSettingsID("KnobKraftPatchTextTests");
+	const auto result = doctest::Context(argc, argv).run();
+	// PropertiesFile owns a Timer, so destroy settings before JUCE's timer
+	// infrastructure shuts down, just as the application does.
+	Settings::shutdown();
+	return result;
 }
 
 namespace {
