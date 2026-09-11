@@ -692,13 +692,11 @@ Some capabilities are not required to be implemented, but enhance the user exper
 
 Host API version 3 adds two optional hooks:
 
-```python
-def onPatchSelected(channel, message):
-    return []
+    def onPatchSelected(channel, message):
+        return []
 
-def onPatchSent(channel, message):
-    return [0xC0, 7]  # Example: program 8 on channel 1 of the secondary device.
-```
+    def onPatchSent(channel, message):
+        return [0xC0, 7]  # Example: program 8 on channel 1 of the secondary device.
 
 Select **Secondary MIDI OUT** in the Macros tab to choose the destination. Both hooks return a flat list of MIDI bytes for that output only. Include a status byte for every message and `F0`/`F7` around each SysEx message. Multiple complete messages can be concatenated. KnobKraft preserves their order and channels. Returning `[]`, `None`, or omitting the hook produces no additional MIDI. A malformed result or a Python exception is logged and produces no hook MIDI; normal patch handling continues.
 
