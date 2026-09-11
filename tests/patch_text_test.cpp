@@ -1,4 +1,4 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
 
 #include "The-Orm/TextDiffRanges.h"
@@ -7,6 +7,13 @@
 #include "The-Orm/PatchTextBox.h"
 #include "GenericAdaptation.h"
 #include "test_helpers.h"
+
+// Keep JUCE alive for the whole test run, including doctest reporters and
+// queued adaptation error messages, rather than shutting it down in a test case.
+int main(int argc, char** argv) {
+	juce::ScopedJuceInitialiser_GUI gui;
+	return doctest::Context(argc, argv).run();
+}
 
 namespace {
 
@@ -129,7 +136,6 @@ TEST_CASE("Python patch text callback is optional and failures do not poison lat
 }
 
 TEST_CASE("comparison and sidebar retain custom whitespace through resize and view switching") {
-	juce::ScopedJuceInitialiser_GUI gui;
 	auto synth = std::make_shared<TextSynth>();
 	auto left = test_helpers::makePatchHolder(synth, "Left", {1});
 	auto right = test_helpers::makePatchHolder(synth, "Right", {2});

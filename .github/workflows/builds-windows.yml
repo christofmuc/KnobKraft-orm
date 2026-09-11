@@ -53,6 +53,7 @@ jobs:
       - name: Run Python tests first
         run: |
           pip install -r requirements.txt
+          python -m pytest tests/test_hdiutil_repeat.py -q
           cd adaptations
           python -m pytest --all . -q --no-header
 
