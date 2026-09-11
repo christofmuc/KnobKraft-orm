@@ -11,7 +11,7 @@ import sys
 
 # Pytest imports adaptations without the C++ application, so advertise the API
 # level provided by the current GenericAdaptation host bridge.
-setattr(sys, "_knobkraft_adaptation_api_version", 2)
+setattr(sys, "_knobkraft_adaptation_api_version", 3)
 
 
 def load_adaptation(adaptation_file):
