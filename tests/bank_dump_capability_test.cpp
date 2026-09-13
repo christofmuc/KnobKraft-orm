@@ -3,6 +3,7 @@
 #include "BankDumpCapability.h"
 #include "EditBufferCapability.h"
 #include "GenericAdaptation.h"
+#include "HasBanksCapability.h"
 #include "MidiHelpers.h"
 #include "MidiController.h"
 #include "PatchDatabase.h"
@@ -111,6 +112,37 @@ public:
 	mutable int resetCalls = 0;
 	mutable size_t parsedBankSize = 0;
 };
+
+TEST_CASE("generic bank select converts Python MIDI bytes") {
+	pybind11::scoped_interpreter python;
+	auto adaptation = knobkraft::GenericAdaptation::fromBinaryCode(
+		"bank_select_bridge_test",
+		R"(
+def name():
+    return "Bank select bridge test"
+
+def numberOfBanks():
+    return 8
+
+def numberOfPatchesPerBank():
+    return 99
+
+def bankSelect(channel, bank):
+    return [0xb0 | (channel & 0x0f), 32, bank]
+)");
+
+	REQUIRE(adaptation);
+	adaptation->setChannel(MidiChannel::fromZeroBase(0));
+	std::shared_ptr<midikraft::HasBanksCapability> banks;
+	REQUIRE(adaptation->hasCapability(banks));
+
+	auto messages = banks->bankSelectMessages(MidiBankNumber::fromZeroBase(3, 99));
+	REQUIRE(messages.size() == 1);
+	CHECK(messages.front().isController());
+	CHECK(messages.front().getChannel() == 1);
+	CHECK(messages.front().getControllerNumber() == 32);
+	CHECK(messages.front().getControllerValue() == 3);
+}
 
 TEST_CASE("generic bank dump bridge and MKS-50 legacy records remain compatible") {
 	pybind11::scoped_interpreter python;
