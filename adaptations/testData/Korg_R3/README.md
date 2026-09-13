@@ -13,14 +13,23 @@ printed pages 11-13:
 
 - Section (9): program dump = `F0 42 3g 7D 4C pp PP`, packed data, `F7`.
 - Section (8): edit-buffer dump = `F0 42 3g 7D 40`, packed data, `F7`.
-- Note 1: 452 unpacked bytes become 517 MIDI-safe bytes: 64 full groups
-  of seven bytes plus a final four-byte group, each with an MSB prefix.
+- Note 1 says 452 unpacked bytes become 517 MIDI-safe bytes, but this is an
+  error: Table 1 enumerates the program data through byte 455, for 456 bytes.
 - Note 5: prefix bit 0 holds the first source byte's MSB, bit 6 the seventh.
 - Table 1: unpacked bytes 0-7 are the eight-character name.
+- Table 1: unpacked bytes 448-455 are the eight arpeggio bytes.
 
-Thus the complete messages have 525 and 523 bytes respectively. These are
-specification-derived expectations; the downloaded editor files below do not
-independently confirm the hardware's wire format.
+The 456 bytes form 65 complete seven-byte groups and a final one-byte group,
+which pack to 522 MIDI-safe bytes. Complete program and edit-buffer messages
+therefore have 530 and 528 bytes respectively.
+
+This resolves an internal contradiction in Korg's document rather than a
+firmware variation. It is corroborated by molenick's working
+[midilab R3 implementation](https://github.com/molenick/midilab/blob/d0649fe68bdd5f762ec81509276f5857ae608718/crates/midilab/src/manufacturer/korg/r3/raw.rs#L637-L638),
+which models a program as 456 bytes and tests the packed payload as
+[522 bytes](https://github.com/molenick/midilab/blob/d0649fe68bdd5f762ec81509276f5857ae608718/crates/midilab/src/manufacturer/korg/r3.rs#L470-L473).
+The downloaded editor files below do not independently confirm the hardware's
+wire format.
 
 ## Public files inspected on 2026-09-04
 
@@ -69,6 +78,7 @@ exact lengths, MSB order, the partial final group, and malformed messages.
 
 The incomplete prefix in [issue #547](https://github.com/christofmuc/KnobKraft-orm/issues/547)
 is tested as a rejected fragment, not padded and represented as a hardware
-capture. The issue still needs a complete received dump to determine whether
-its actual length or format differs from the specification, or whether the
-problem lies in delivery to the application.
+capture. With the former 517-byte payload expectation, a real 522-byte R3
+payload was discarded despite its valid header, explaining the reported
+timeout. A complete hardware capture would still be useful to verify the
+reported A1 request followed by a B1 response.

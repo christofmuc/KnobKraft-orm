@@ -9,9 +9,9 @@ import knobkraft
 FIXTURE = Path(__file__).parent / "testData/Korg_R3/synthetic.syx"
 
 
-def test_published_dump_layout():
+def test_parameter_table_dump_layout():
     messages = knobkraft.load_sysex(str(FIXTURE))
-    assert [len(message) for message in messages] == [525, 525, 525, 525, 523]
+    assert [len(message) for message in messages] == [530, 530, 530, 530, 528]
     for message in messages:
         is_program = message[4] == 0x4c
         assert r3.isSingleProgramDump(message) == is_program
@@ -19,11 +19,11 @@ def test_published_dump_layout():
         packed = message[7:-1] if is_program else message[5:-1]
         assert all(value < 128 for value in packed)
         assert packed[16:24] == [0x55, 0, 1, 2, 3, 4, 5, 6]
-        assert packed[-5:] == [5, 0, 1, 0x7e, 0x7f]
+        assert packed[-10:] == [0x55, 0, 1, 0x7e, 0x7f, 4, 5, 6, 1, 0]
         unpacked = r3._program_data_from_dump(message)
-        assert len(unpacked) == 452
+        assert len(unpacked) == 456
         assert unpacked[14:21] == [0x80, 1, 0x82, 3, 0x84, 5, 0x86]
-        assert unpacked[-4:] == [0x80, 1, 0xfe, 0x7f]
+        assert unpacked[-8:] == [0x80, 1, 0xfe, 0x7f, 0x84, 5, 0x86, 0x80]
 
 
 @pytest.mark.parametrize("index", [0, 4])

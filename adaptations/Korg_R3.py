@@ -22,10 +22,13 @@ command_program_write_request = 0x11
 command_current_program_data_dump = 0x40
 command_program_data_dump = 0x4c
 
-program_data_size = 452
+# Korg's summary note incorrectly says 452 bytes, but its parameter table
+# enumerates offsets 0 through 455. Hardware-backed implementations likewise
+# use 456 bytes, which become 522 bytes after Korg's 7-bit packing.
+program_data_size = 456
 program_name_offset = 0
 program_name_length = 8
-packed_program_data_size = 517
+packed_program_data_size = 522
 
 
 def name():
