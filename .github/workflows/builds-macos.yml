@@ -51,6 +51,18 @@ jobs:
         MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
         MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
         MACOS_TEMPORARY_KEYCHAIN_PASSWORD: $ {{ secrets.MACOS_TEMPORARY_KEYCHAIN_PASSWORD }}
+
+    - name: Run C++ regression tests
+      shell: bash
+      run: |
+        export BUILD_TYPE=RelWithDebInfo
+        export BUILD_DIR=./build
+        cmake -S . -B "$BUILD_DIR" \
+          -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+          -DPYTHON_EXECUTABLE=/Library/Frameworks/Python.framework/Versions/3.12/bin/python3 \
+          -DBUILD_UNIT_TESTS=ON
+        cmake --build "$BUILD_DIR" --target patch_database_migration_test --parallel "$(sysctl -n hw.ncpu)"
+        "$BUILD_DIR/patch_database_migration_test"
         
     - name: Build the MacOS DMG
       shell: bash
