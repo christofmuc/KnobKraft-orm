@@ -264,7 +264,7 @@ synths:
   synth: R3
   status: alpha
   type: adaptation
-  kudos: 100% AI generated
+  kudos: 100% AI generated. Thanks to @molenick for reporting and sharing a working implementation!
   availability: 2.10.1
 - manufacturer: Line 6
   synth: POD Series

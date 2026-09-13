@@ -66,7 +66,7 @@ This table is generated from `docs/data/supported-synths.yml` by `scripts/genera
 | Korg | microKORG S | works | adaptation | 2.10.1 | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | 2.10.1 | Thanks to @andy2no |
 | Korg | MS2000/microKORG | works | adaptation | 2.10.1 | Thanks to @windo |
-| Korg | R3 | alpha | adaptation | 2.10.1 | 100% AI generated |
+| Korg | R3 | alpha | adaptation | 2.10.1 | 100% AI generated. Thanks to @molenick for reporting and sharing a working implementation! |
 | Line 6 | POD Series | works | adaptation | 2.10.1 | Thanks to @milnak! |
 | Moog | Voyager | works | adaptation | 2.10.1 | Thanks to @troach242 for the nudge and test! |
 | Novation | AStation/KStation | beta | adaptation | 2.10.1 | Thanks to @thechildofroth |

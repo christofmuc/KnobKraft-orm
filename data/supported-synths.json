@@ -396,7 +396,7 @@
       "status": "alpha",
       "statusLabel": "Alpha",
       "type": "adaptation",
-      "kudos": "100% AI generated",
+      "kudos": "100% AI generated. Thanks to @molenick for reporting and sharing a working implementation!",
       "availability": "2.10.1"
     },
     {
