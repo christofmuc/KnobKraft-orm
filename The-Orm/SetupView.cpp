@@ -319,6 +319,18 @@ namespace {
 		return text;
 	}
 
+	void showResultDialog(juce::String const& title, juce::String const& text,
+		juce::AlertWindow::AlertIconType icon)
+	{
+		juce::AlertWindow results(title, text, icon);
+		results.addButton("Copy results", 1);
+		results.addButton("Close", 0, juce::KeyPress(juce::KeyPress::returnKey),
+			juce::KeyPress(juce::KeyPress::escapeKey));
+		if (results.runModalLoop() == 1) {
+			juce::SystemClipboard::copyTextToClipboard(text);
+		}
+	}
+
 }
 
 void SetupView::midiTest()
@@ -358,11 +370,11 @@ void SetupView::midiTest()
 	const auto text = resultText(progressWindow->report);
 	if (progressWindow->report.allPassed()) {
 		spdlog::info("MIDI loopback test passed:\n{}", text.toStdString());
-		juce::AlertWindow::showMessageBox(juce::AlertWindow::InfoIcon, "MIDI Test passed", text);
+		showResultDialog("MIDI Test passed", text, juce::AlertWindow::InfoIcon);
 	}
 	else {
 		spdlog::warn("MIDI loopback test did not pass:\n{}", text.toStdString());
-		juce::AlertWindow::showMessageBox(juce::AlertWindow::WarningIcon, "MIDI Test results", text);
+		showResultDialog("MIDI Test results", text, juce::AlertWindow::WarningIcon);
 	}
 }
 

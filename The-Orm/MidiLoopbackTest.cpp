@@ -54,10 +54,15 @@ namespace midikraft {
 				{ "Channel Pressure", MidiMessage::channelPressureChange(16, 53) }
 			};
 
-			const std::vector<size_t> sysexSizes = { 16, 128, 1024, 4096, 16384 };
+			// Include the exact payload sizes of common DX7 dumps. JUCE adds F0 and F7,
+			// producing 163-byte single-voice and 4104-byte bank messages on the wire.
+			const std::vector<size_t> sysexSizes = { 16, 128, 161, 1024, 4096, 4102, 16384 };
 			juce::uint8 testNumber = 1;
 			for (auto size : sysexSizes) {
-				tests.push_back({ "SysEx payload " + std::to_string(size) + " bytes", makeTestSysex(size, testNumber++) });
+				auto name = "SysEx payload " + std::to_string(size) + " bytes";
+				if (size == 161) name += " (DX7 single voice, 163 bytes on wire)";
+				if (size == 4102) name += " (DX7 bank, 4104 bytes on wire)";
+				tests.push_back({ name, makeTestSysex(size, testNumber++) });
 			}
 			return tests;
 		}
