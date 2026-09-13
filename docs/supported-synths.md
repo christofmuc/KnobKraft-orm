@@ -182,7 +182,7 @@ Use the <a href="../../#checker">searchable model filter</a>, or choose a manufa
 | microKORG S | works | adaptation | 2.10.1 | Thanks to @ilantz! |
 | Minilogue XD | works | adaptation | 2.10.1 | Thanks to @andy2no |
 | MS2000/microKORG | works | adaptation | 2.10.1 | Thanks to @windo |
-| R3 | alpha | adaptation | 2.10.1 | 100% AI generated |
+| R3 | alpha | adaptation | 2.10.1 | 100% AI generated. Thanks to @molenick for reporting and sharing a working implementation! |
 
 <a id="manufacturer-line-6"></a>
 ## Line 6
