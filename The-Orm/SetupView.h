@@ -29,7 +29,7 @@ public:
 	virtual void resized() override;
 
 	void quickConfigure();
-	void loopDetection();
+	void midiTest();
 	void autoDetect();
 	void findSynth(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
 	void checkConnection(std::shared_ptr<midikraft::SimpleDiscoverableDevice> synth);
