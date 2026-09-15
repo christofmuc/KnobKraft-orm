@@ -365,7 +365,9 @@ void SetupView::midiTest()
 	if (!juce::isPositiveAndBelow(outputIndex, outputs.size()) || !juce::isPositiveAndBelow(inputIndex, inputs.size())) return;
 
 	auto progressWindow = std::make_shared<MidiTestProgressWindow>(inputs.getReference(inputIndex), outputs.getReference(outputIndex));
-	progressWindow->runThread();
+	if (!progressWindow->runThread()) {
+		progressWindow->report.cancelled = true;
+	}
 
 	const auto text = resultText(progressWindow->report);
 	if (progressWindow->report.allPassed()) {

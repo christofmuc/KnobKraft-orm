@@ -77,7 +77,16 @@ namespace midikraft {
 
 		bool isCandidate(MidiMessage const& expected, MidiMessage const& received)
 		{
-			if (expected.isSysEx()) return received.isSysEx();
+			if (expected.isSysEx()) {
+				if (!received.isSysEx()) return false;
+
+				// F0, 7D, K, K, and the test number identify the current SysEx test.
+				constexpr int correlationSize = 5;
+				if (expected.getRawDataSize() < correlationSize
+					|| received.getRawDataSize() < correlationSize) return false;
+				return std::equal(expected.getRawData(), expected.getRawData() + correlationSize,
+					received.getRawData());
+			}
 			if (received.isSysEx() || received.getRawDataSize() == 0) return false;
 			return received.getRawData()[0] == expected.getRawData()[0];
 		}
