@@ -38,6 +38,7 @@ column_names = ["Synth name",
                 "Layer Capability",
                 "setLayerName",
                 "setupHelp",
+                "getClearText",
                 ]
 table_result = ["Synth name" if i == 0 else str(i + 1) for i in range(len(column_names))]
 yes_char = "Y"
@@ -47,7 +48,9 @@ total_columns = 0
 mdFile = MdUtils(file_name='implementation_overview.md', title='Adaptation: Implementation status')
 mdFile.write("This table lists which implementation has implemented which function or capability.\n\n"
              "Note that not all synths need to implement all functions, so it is not necessarily an incomplete implementation"
-             " if some columns are marked as not implemented\n\n")
+             " if some columns are marked as not implemented.\n\n"
+             "See [Additional patch text views](../docs/programming-guide.md#additional-patch-text-views)"
+             " for details and an example of the optional `getClearText` callback.\n\n")
 legend_table = []
 
 
@@ -130,6 +133,7 @@ def test_implementation_status(adaptation, md_file):
               capability_check(adaptation, ["numberOfLayers", "layerName"]),
               check(adaptation, "setLayerName"),
               check(adaptation, "setupHelp"),
+              check(adaptation, "getClearText"),
               ]
     table_result.extend(my_row)
     total_columns = len(my_row)
