@@ -14,6 +14,7 @@
 #include "AutoDetectProgressWindow.h"
 #include "EditCategoryDialog.h"
 #include "ExportDialog.h"
+#include "PatchHolderButton.h"
 #include "SimplePatchGrid.h"
 #include "SecondaryWindow.h"
 #include "Settings.h"
@@ -60,6 +61,9 @@ const std::string kFullMidiLog{ "fullMidiLog" };
 const std::string kSysexMidiLog{ "sysexMidiLog" };
 const std::string kSelectAdaptationDirect{ "selectAdaptationDir" };
 const std::string kCreateNewAdaptation{ "createNewAdaptation" };
+
+constexpr int kPatchColourMenuBase = 4400;
+constexpr char kPatchColourModeSetting[] = "PatchColourMode";
 
 extern std::string getOrmVersion();
 
@@ -160,6 +164,9 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	midiLogArea_(&midiLogView_, BorderSize<int>(10)),
 	logArea_(&logView_, BorderSize<int>(8))
 {
+	PatchHolderButton::setPatchColourMode(
+		Settings::instance().get(kPatchColourModeSetting, "primary") == "striped" ? PatchColourMode::Striped : PatchColourMode::Primary);
+
 	logger_ = std::make_unique<LogViewLogger>(logView_);
 	logViewSink_ = std::make_shared<LogViewSink_mt>(logView_);
 	logViewSink_->set_pattern("%H:%M:%S: %l %v");
@@ -274,7 +281,8 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 		{2, { "MIDI", { { "Auto-detect synths" }, { kSynthDetection},  { kRetrievePatches }, { kFetchEditBuffer }, { kReceiveManualDump }, { kLoopDetection}, { kFullMidiLog }, { kSysexMidiLog} }}},
 		{3, { "Patches", { { kLoadSysEx}, { kExportSysEx }, { kExportBank},  { kExportPIF}, { kShowDiff} }}},
 		{4, { "Categories", { { "Edit categories" }, {{ "Show category naming rules file"}},  {"Edit category import mapping"},  {"Rerun auto categorize"}}}},
-		{5, { "View", { { "Open 2nd window" }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
+		{5, { "View", { { "Open 2nd window" }, { "Patch colours", true, kPatchColourMenuBase, [this]() { return patchColourMenu(); },
+			[this](int selected) { patchColourSelected(selected); } }, {"Scale 75%"}, {"Scale 100%"}, {"Scale 125%"}, {"Scale 150%"}, {"Scale 175%"}, {"Scale 200%"}}}},
 		{6, { "Options", { { kCreateNewAdaptation}, { kSelectAdaptationDirect} }}},
 		{7, { "Help", {
 #ifndef _DEBUG
@@ -860,6 +868,28 @@ PopupMenu MainComponent::recentFileMenu() {
 	PopupMenu menu;
 	recentFiles_.createPopupMenuItems(menu, 3333, true, false);
 	return menu;
+}
+
+PopupMenu MainComponent::patchColourMenu() const
+{
+	PopupMenu menu;
+	menu.addItem(kPatchColourMenuBase + static_cast<int>(PatchColourMode::Primary), "Primary",
+		true, PatchHolderButton::patchColourMode() == PatchColourMode::Primary);
+	menu.addItem(kPatchColourMenuBase + static_cast<int>(PatchColourMode::Striped), "Striped",
+		true, PatchHolderButton::patchColourMode() == PatchColourMode::Striped);
+	return menu;
+}
+
+void MainComponent::patchColourSelected(int selected)
+{
+	if (selected < static_cast<int>(PatchColourMode::Primary) || selected > static_cast<int>(PatchColourMode::Striped)) {
+		jassertfalse;
+		return;
+	}
+
+	auto mode = static_cast<PatchColourMode>(selected);
+	Settings::instance().set(kPatchColourModeSetting, mode == PatchColourMode::Striped ? "striped" : "primary");
+	PatchHolderButton::setPatchColourMode(mode);
 }
 
 void MainComponent::recentFileSelected(int selected)

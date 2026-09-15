@@ -62,6 +62,8 @@ private:
 	void mergeDatabases();
 	PopupMenu recentFileMenu();
 	void recentFileSelected(int selected);
+	PopupMenu patchColourMenu() const;
+	void patchColourSelected(int selected);
 	void persistRecentFileList();
 #ifndef _DEBUG
 #ifdef USE_SENTRY
