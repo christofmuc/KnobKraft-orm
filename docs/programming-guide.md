@@ -731,23 +731,44 @@ generic mapping between packed and unpacked byte indices is inferred.
 
 Host API version 3 adds two optional hooks:
 
-    def onPatchSelected(channel, message):
+    def onPatchSelected(channel, patchData):
         return []
 
-    def onPatchSent(channel, message):
-        return [0xC0, 7]  # Example: program 8 on channel 1 of the secondary device.
+    def onPatchSent(channel, patchData):
+        return []
 
-Select **Secondary MIDI OUT** in the Macros tab to choose the destination. Both hooks return a flat list of MIDI bytes for that output only. Include a status byte for every message and `F0`/`F7` around each SysEx message. Multiple complete messages can be concatenated. KnobKraft preserves their order and channels. Returning `[]`, `None`, or omitting the hook produces no additional MIDI. A malformed result or a Python exception is logged and produces no hook MIDI; normal patch handling continues.
+Select **Secondary MIDI OUT** in the Macros tab to choose the destination. KnobKraft automatically mirrors every ordinary outgoing MIDI message to this output, including program changes, bank selects, notes, realtime messages, and patch SysEx. This mirroring does not depend on either hook or on the MIDI log filter.
 
-`onPatchSelected` runs whenever a nonempty patch is selected in the library, including reselecting the same patch and selecting with sending disabled or the synth disconnected. It runs after updating the current library patch and before any send initiated by that selection.
+The hooks add messages to that automatic stream. Their return value is a flat list of MIDI bytes for the secondary output only; it does not replace or control ordinary mirroring. Include a status byte for every message and `F0`/`F7` around each SysEx message. Multiple complete messages can be concatenated. KnobKraft preserves their order and channels. Returning `[]`, `None`, or omitting the hook produces no additional MIDI. A malformed result or a Python exception is logged and produces no hook MIDI; normal patch handling continues.
+
+`onPatchSelected` runs whenever a nonempty patch is selected in the library, including reselecting the same patch and selecting with sending disabled or the synth disconnected. It runs after updating the current library patch and before any send initiated by that selection. Use it when an editor, controller, display, or other secondary device should follow browsing in the library even when the patch is not sent to the synth.
 
 `onPatchSent` runs after a library selection successfully sends its edit/program dump or bank-select/program-change sequence. For synths with upload handshakes it waits for successful completion. Without a handshake, it means MIDI was submitted to the output; it does not confirm that the hardware accepted it. Failed, cancelled, busy, and skipped sends do not call this hook. An asynchronous completion refers to the patch that was sent, even if the user has since selected another patch.
 
-`channel` is the synth's zero-based MIDI channel (0–15), or `-1` when unknown at selection time. `message` is a copy of the original library patch's bytes, not the converted wire messages. Modifying this Python list does not change the patch or what KnobKraft sends. Neither hook runs for export, fingerprinting, conversion alone, bank uploads, or incoming master-keyboard messages.
+`channel` is the synth's zero-based MIDI channel (0–15), or `-1` when unknown at selection time. `patchData` is a copy of the original library patch's bytes, not the converted MIDI messages sent to the synth. The argument is positional, so existing hooks that call it `message` continue to work. Do not return `patchData` merely to forward the patch: the normal outgoing patch data is already mirrored, and returning the stored bytes could send a duplicate or the wrong representation. Modifying this Python list does not change the patch or what KnobKraft sends. Neither hook runs for export, fingerprinting, conversion alone, bank uploads, or incoming master-keyboard messages.
 
-For a controller such as the Faderfox EC4, implement `onPatchSent` in the personalized adaptation and return the controller's setup-select SysEx instead of the example program change above. Use the controller's documented or captured message, including `F0` and `F7`. Faderfox describes remote setup/group selection in its [EC4 manual, page 7](https://www.faderfox.de/PDF/EC4%20Manual%20V03.pdf), and offers the advanced programming documentation on request through the [EC4 product page](https://www.faderfox.de/ec4.html). The synth's normal patch send completes first, then the controller switches setup. Use `onPatchSelected` instead if the controller should follow browsing even when no patch is sent. Implementing both can send the same controller command twice for one selection.
+For example, the following personalized-adaptation hook selects setup 2 and group 2 on a Faderfox EC4 with device ID 11 after the synth patch has been sent. Setup and group indices are zero based, from 0 to 15; change the two arguments to select a different mapping. This sequence was tested by [@RadekPilich](https://github.com/RadekPilich):
 
-The hooks run even when the secondary output is disabled or unavailable, but their output is discarded in that case. Ordinary outgoing MIDI is also mirrored to the secondary output, independently of the log filter. Hook output is sent once and does not recursively trigger mirroring or either hook. If the secondary output is configured to be the synth's own port, the additional MIDI will of course reach that physical port.
+    EC4_DEVICE_ID = 0x1B  # Device ID 11, encoded as 0x10 | 11.
+
+    def ec4SelectSetup(setupIndex):
+        assert 0 <= setupIndex <= 15
+        return [0xF0, 0x00, 0x00, 0x00, 0x4E, 0x2C, EC4_DEVICE_ID,
+                0x4E, 0x28, 0x10 | setupIndex, 0xF7]
+
+    def ec4SelectGroup(groupIndex):
+        assert 0 <= groupIndex <= 15
+        return [0xF0, 0x00, 0x00, 0x00, 0x4E, 0x2C, EC4_DEVICE_ID,
+                0x4E, 0x24, 0x10 | groupIndex, 0xF7]
+
+    def onPatchSent(channel, patchData):
+        return ec4SelectSetup(1) + ec4SelectGroup(1)
+
+The public [Faderfox EC4 SysEx command reference](https://github.com/lsim/faderfox-editor/blob/master/doc/faderfox%20EC4%20sysex%20commands.txt) documents these setup and group commands. It also says to wait for the EC4's reply before sending the next command. Patch hooks cannot wait for MIDI replies, so the combined two-command example relies on the EC4 accepting them back to back. Return only one command if the device or firmware requires the documented handshake.
+
+Use `onPatchSent` when the controller should follow the patch actually sent to the synth. Use `onPatchSelected` instead when it should follow library browsing even if sending is disabled or the synth is disconnected. Implementing both can send the same controller command twice for one selection.
+
+The hooks run even when the secondary output is disabled or unavailable, but their output is discarded in that case. Hook output is sent once and does not recursively trigger mirroring or either hook. If the secondary output is configured to be the synth's own port, the additional MIDI will of course reach that physical port.
 
 These are notifications, not patch transformations or request/reply operations. Keep hooks short: they run synchronously on the host's event path and must not wait for MIDI replies. KnobKraft owns MIDI routing and send sequencing; there is no Python `sendToSynth()` or `sendToSecondaryMidiOut()` callback. Preserving sequencer data from a live edit buffer would require a separate host-managed read/transform/send operation.
 
