@@ -264,7 +264,22 @@ def make_test_data():
         assert isBankDumpFinished(test_data.all_messages)
         return test_data.all_messages
 
-    return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, bank_generator=banks, expected_patch_count=32)
+    def expected_send_messages(test_data: testing.TestData, _adaptation):
+        patch = test_data.edit_buffers[0].message.byte_list
+        assert len(patch) == 163
+        assert patch[:6] == [0xf0, 0x43, 0x00, 0x00, 0x01, 0x1b]
+        assert patch[-2] == checksum(patch[6:-2])
+        assert patch[-1] == 0xf7
+        return [patch]
+
+    return testing.TestData(
+        sysex=R"testData/yamahaDX7-ROM2B.SYX",
+        edit_buffer_generator=make_patches,
+        bank_generator=banks,
+        expected_patch_count=32,
+        send_to_synth_patch=lambda test_data: test_data.edit_buffers[0].message.byte_list,
+        expected_send_to_synth_messages=expected_send_messages,
+    )
 
 
     return testing.TestData(sysex=R"testData/yamahaDX7-ROM2B.SYX", edit_buffer_generator=make_patches, bank_generator=banks)
