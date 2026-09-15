@@ -4,6 +4,8 @@
 #include "PatchList.h"
 #include "test_helpers.h"
 
+#include <SQLiteCpp/Database.h>
+
 #include <algorithm>
 #include <filesystem>
 #include <functional>
@@ -677,4 +679,53 @@ TEST_CASE("patch database duplicate-name filter honors list scope and synth part
 	expectNames(result, { "DupList", "DupList" });
 	REQUIRE(result.size() == 2);
 	CHECK(result[0].md5() != result[1].md5());
+}
+
+TEST_CASE("failed patch insert is not reported as available for import lists") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	{
+		SQLite::Database raw(tmp.path().string(), SQLite::OPEN_READWRITE);
+		raw.exec("CREATE TRIGGER reject_patch_insert BEFORE INSERT ON patches BEGIN SELECT RAISE(ABORT, 'forced patch insert failure'); END");
+	}
+
+	auto synth = std::make_shared<DummySynth>("RejectedPatchSynth", 4, 1);
+	auto patch = makePatchHolder(synth, "Rejected", { 0x51 });
+	std::vector<midikraft::PatchHolder> patches = { patch };
+	std::vector<midikraft::PatchHolder> inserted;
+
+	auto count = db.mergePatchesIntoDatabase(patches, inserted, nullptr, midikraft::PatchDatabase::UPDATE_ALL);
+
+	CHECK(count == 0);
+	CHECK(inserted.empty());
+}
+
+TEST_CASE("import list creation rolls back when a parent patch is missing") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synth = std::make_shared<DummySynth>("MissingParentSynth", 4, 1);
+	auto patch = makePatchHolder(synth, "Missing", { 0x52 });
+
+	db.createImportLists({ patch });
+
+	CHECK(db.allImportLists(synth).empty());
+}
+
+TEST_CASE("merge keeps identical fingerprints separate across synths") {
+	auto tmp = makeTempDatabasePath();
+	midikraft::PatchDatabase db(tmp.path().string(), midikraft::PatchDatabase::OpenMode::READ_WRITE);
+
+	auto synthA = std::make_shared<DummySynth>("SameDataSynthA", 4, 1);
+	auto synthB = std::make_shared<DummySynth>("SameDataSynthB", 4, 1);
+	auto patchA = makePatchHolder(synthA, "Same A", { 0x53 });
+	auto patchB = makePatchHolder(synthB, "Same B", { 0x53 });
+	std::vector<midikraft::PatchHolder> patches = { patchA, patchB };
+	std::vector<midikraft::PatchHolder> inserted;
+
+	auto count = db.mergePatchesIntoDatabase(patches, inserted, nullptr, midikraft::PatchDatabase::UPDATE_ALL);
+
+	CHECK(count == 2);
+	CHECK(inserted.size() == 2);
 }

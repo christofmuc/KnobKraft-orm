@@ -53,3 +53,16 @@ def test_unrelated_messages_are_ignored(reply, sent):
 
 def test_upload_reply_timeout_is_configured_separately():
     assert k5000.messageTimings()["uploadReplyTimeoutMs"] == 5000
+
+
+def test_bank_reply_timeout_allows_slow_k5000_bank_startup():
+    assert k5000.messageTimings()["replyTimeoutMs"] == 60000
+
+
+def test_multi_dump_is_not_classified_as_single_program():
+    single = program_dump()
+    multi = single.copy()
+    multi[6] = 0x20
+
+    assert k5000.isSingleProgramDump(single)
+    assert not k5000.isSingleProgramDump(multi)
