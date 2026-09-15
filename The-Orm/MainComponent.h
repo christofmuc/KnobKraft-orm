@@ -40,13 +40,14 @@
 
 class LogViewLogger;
 
-class MainComponent : public Component, private ChangeListener
+class MainComponent : public Component, private ChangeListener, public juce::ApplicationCommandTarget
 {
 public:
 	MainComponent(bool makeYourOwnSize);
     virtual ~MainComponent() override;
 
 	virtual void resized() override;
+	void parentHierarchyChanged() override;
 
 	void shutdown();
 
@@ -80,9 +81,19 @@ private:
 	static std::unique_ptr<SecondaryMainWindow> sSecondMainWindow;
 
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
+
+	// ApplicationCommandTarget
+	juce::ApplicationCommandTarget* getNextCommandTarget() override;
+	void getAllCommands(juce::Array<juce::CommandID>& commands) override;
+	void getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result) override;
+	bool perform(const juce::ApplicationCommandTarget::InvocationInfo& info) override;
 	
 	// Helper function because of JUCE API
 	static int findIndexOfTabWithNameEnding(TabbedComponent *mainTabs, String const &name);
+	juce::CommandID commandIdForMacro(KeyboardMacroEvent event) const;
+	void updateCommandKeyListenerTarget();
+	void persistCommandKeyMappings();
+	void restoreCommandKeyMappings();
 
 	std::unique_ptr<midikraft::PatchDatabase> database_;
 	std::shared_ptr<midikraft::AutomaticCategory> automaticCategories_;
@@ -122,6 +133,7 @@ private:
 	spdlog::sink_ptr logViewSink_;
 
 	ListenerSet listeners_;
+	juce::Component* keyListenerTarget_ = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
