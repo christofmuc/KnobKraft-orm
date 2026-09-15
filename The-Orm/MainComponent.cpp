@@ -558,7 +558,7 @@ MainComponent::MainComponent(bool makeYourOwnSize) :
 	// Make sure you set the size of the component after
 	// you add any child components.
 	if (makeYourOwnSize) {
-		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
+		juce::Rectangle<int> mainScreenSize = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userBounds.toNearestInt();
 		auto initialSize = mainScreenSize.reduced(100);
 		setSize(initialSize.getWidth(), initialSize.getHeight());
 	}
@@ -922,7 +922,7 @@ float MainComponent::calcAcceptableGlobalScaleFactor() {
 	// The idea is that we use a staircase of "good" scaling factors matching the Windows HighDPI settings of 100%, 125%, 150%, 175%, and 200%
 	// and find out what is the largest scale factor that we still retain a virtual height of 1024 pixels (which is what I had designed this for at the start)
 	// So effectively, with a globalScaling of 1.0 (standard Windows normal DPI), this can make it only bigger, and with a Retina scaling factor 2.0 (Mac book pro) this can only shrink
-	auto availableHeight = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea.getHeight();
+	auto availableHeight = (float)Desktop::getInstance().getDisplays().getPrimaryDisplay()->userBounds.getHeight();
 	std::vector<float> scales = { 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.00f };
 	float goodScale = 0.75f;
 	for (auto scale : scales) {

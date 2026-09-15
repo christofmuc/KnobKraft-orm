@@ -24,8 +24,8 @@ SimplePatchGrid::SimplePatchGrid(PatchView* patchView) : patchView_(patchView)
 		patchView_->loadPage(skip, limit, patchView_->currentFilter(), callback);
 		});
 
-	Data::ensureEphemeralPropertyExists(EPROPERTY_LIBRARY_PATCH_LIST, {});
-	listeners_.addListener(Data::getEphemeralPropertyAsValue(EPROPERTY_LIBRARY_PATCH_LIST), [this](juce::Value& newValue) {
+	::Data::ensureEphemeralPropertyExists(EPROPERTY_LIBRARY_PATCH_LIST, {});
+	listeners_.addListener(::Data::getEphemeralPropertyAsValue(EPROPERTY_LIBRARY_PATCH_LIST), [this](juce::Value& newValue) {
 		ignoreUnused(newValue);
 		reload();
 		});

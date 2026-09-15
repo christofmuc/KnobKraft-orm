@@ -34,7 +34,7 @@ void SecondaryMainWindow::initialShow()
 
 juce::ValueTree SecondaryMainWindow::thisWindowSettings()
 {
-	auto windows = Data::instance().get().getOrCreateChildWithName(PROPERTY_WINDOW_LIST, nullptr);
+	auto windows = ::Data::instance().get().getOrCreateChildWithName(PROPERTY_WINDOW_LIST, nullptr);
 	return windows.getOrCreateChildWithName(juce::Identifier(settingsName_), nullptr);
 }
 
