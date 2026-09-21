@@ -58,9 +58,9 @@ KeyboardMacroEvent KeyboardMacro::fromText(std::string const &event)
 	return KeyboardMacroEvent::Unknown;
 }
 
-MacroConfig::MacroConfig(KeyboardMacroEvent event, 
+MacroConfig::MacroConfig(KeyboardMacroEvent event,
 	std::function<void(KeyboardMacroEvent)> recordHander,
-	std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event), 
+	std::function<void(KeyboardMacroEvent, bool)> showHandler) : event_(event),
 	recordHander_(recordHander),
 	showHandler_(showHandler), play_([this](TextButton *button) { buttonStateChanged(button);  }) // NOLINT
 {
