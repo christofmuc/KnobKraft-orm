@@ -55,7 +55,8 @@ def isEditBufferDump(message):
             and message[2] & 0xF0 == 0x00
             and message[3] == 0x7E
             and message[6:16] == _header
-            and message[-1] == 0xF7)
+            and message[-1] == 0xF7
+            and checksum(message[6:-2]) == message[-2])
 
 
 def numberOfBanks():
@@ -98,6 +99,9 @@ def make_test_data():
         assert checksum(voice[6:-2]) == voice[-2]
         assert createEditBufferRequest(2) == [0xF0, 0x43, 0x22, 0x7E] + _header + [0xF7]
         assert channelIfValidDeviceResponse(convertToEditBuffer(5, voice)) == 5
+        damaged = voice.copy()
+        damaged[100] ^= 0x01
+        assert not isEditBufferDump(damaged), "a voice damaged in transfer is refused"
         yield testing.ProgramTestData(message=voice, name="Untitled", rename_name="Vector 1")
 
     return testing.TestData(sysex=R"testData/Yamaha_TG33/edisyn-init-voice.syx", edit_buffer_generator=edit_buffers)
