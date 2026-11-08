@@ -22,7 +22,6 @@ import testing
 PROG_SIZE, COMBI_SIZE = 164, 136
 PROG_COUNT, COMBI_COUNT = 200, 200
 
-# Houd de laatst opgevraagde bank bij voor de 1-argument parser
 _last_requested_bank = 0
 
 def name(): return "Korg X3"
@@ -93,7 +92,7 @@ def isPartOfEditBufferDump(msg):
     
     if msg[4] == 0x42:  # MODE DATA response
         mode = msg[5] & 0x07
-        req_cmd = 0x19 if mode in (0, 1) else 0x10  # 0x19 Combi, 0x10 Program fallback
+        req_cmd = 0x19 if mode in (0, 1) else 0x10
         print("Korg X3 MODE DATA: mode=0x{:02X}; requesting {}".format(mode, "COMBI" if req_cmd == 0x19 else "PROGRAM"))
         return (False, _x3_hdr(msg[2] & 0x0f, req_cmd) + [0xf7])
         
@@ -149,7 +148,6 @@ def extractPatchesFromBank(msg):
     raw = unescapeSysex(msg[6:-1])
     if len(raw) != rec_size * PROG_COUNT: raise Exception("Bank size mismatch")
 
-    # Slice 200-patch bulk dump op basis van de laatst opgevraagde bank
     start_idx = (_last_requested_bank % 2) * 100
     res = []
     for i in range(100):
@@ -210,7 +208,7 @@ def make_test_data():
     raw = []
     for i in range(200):
         p = [0x20] * PROG_SIZE
-        p[:10] = [ord(c) for c in "Prog {:03d}".format(i)]
+        p[:10] = [ord(c) for c in "Prog {:03d}".format(i).ljust(10)]
         raw.extend(p)
     synthetic = [0xf0, 0x42, 0x30, 0x35, 0x4c, 0x00] + escapeSysex(raw) + [0xf7]
     
@@ -220,7 +218,7 @@ def make_test_data():
         yield testing.ProgramTestData(message=patches[50], name="Prog 050")
 
     return testing.TestData(
-        sysex=synthetic,
+        all_messages=[synthetic],
         edit_buffer_generator=programs,
         bank_generator=lambda d: [d.all_messages],
         expected_patch_count=100
