@@ -4,6 +4,7 @@
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
 
+import hashlib
 from typing import List
 
 import knobkraft
@@ -83,6 +84,14 @@ def renamePatch(message: List[int], new_name: str) -> List[int]:
         data = unescapeSysex(message[5:-1])
         return message[:5] + escapeSysex(new_name_list + data[10:]) + [0xf7]
     raise Exception("Can only rename program data dumps!")
+
+
+def calculateFingerprint(message):
+    # The program data without its name, nor the device id: a renamed copy is the same sound
+    if isEditBufferDump(message):
+        data = unescapeSysex(message[5:-1])
+        return hashlib.md5(bytearray(data[10:])).hexdigest()
+    raise Exception("Can only fingerprint program data dumps")
 
 
 def convertToEditBuffer(device_id, message):
@@ -166,6 +175,10 @@ def make_test_data():
     def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         bank = knobkraft.load_sysex("testData/Korg_M1/bank21.syx")
         patches = knobkraft.splitSysex(extractPatchesFromBank(bank[0]))
+        program = convertToEditBuffer(0, patches[0])
+        assert calculateFingerprint(renamePatch(program, "Other")) == calculateFingerprint(program), "renamed, the same sound"
+        assert calculateFingerprint(convertToEditBuffer(5, program)) == calculateFingerprint(program), "nor its device id"
+        assert calculateFingerprint(convertToEditBuffer(0, patches[1])) != calculateFingerprint(program)
         yield testing.ProgramTestData(message=patches[0], name="Grandbient")
         yield testing.ProgramTestData(message=patches[49], name="ToyNFlt   ")
 
