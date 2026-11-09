@@ -59,7 +59,9 @@ def isEditBufferDump(message):
             and message[2] == 0x21
             and message[3] == 0x45  # Electra manufacturer ID
             and message[4] == 0x01  # Data dump
-            and message[5] == 0x00  # Preset file
+            # Preset file: 0x00 in older firmware, 0x01 (the documented Preset resource) in current
+            # firmware, which answers the request with it; current firmware still accepts 0x00 uploads.
+            and message[5] in (0x00, 0x01)
             )
 
 
@@ -140,6 +142,11 @@ def make_test_data():
     assert name_from_corrupt == "ROLAND MKS-80 v3"
     not_renamed = renamePatch(testCrash, "do crash")
     assert nameFromDump(not_renamed) == "ROLAND MKS-80 v3"
+
+    # Current firmware (seen with 5.0.0f on an Electra One MK2) answers with the Preset resource 0x01
+    current = [0xF0, 0x00, 0x21, 0x45, 0x01, 0x01] + [ord(x) for x in '{"version":2,"name":"16-Step Sequencer"}'] + [0xF7]
+    assert isEditBufferDump(current)
+    assert nameFromDump(current) == "16-Step Sequencer"
 
     def programs(test_data: testing.TestData) -> List[testing.ProgramTestData]:
         with open(R"testData/elektraOne-demo-preset.syx", mode="rb") as preset:
