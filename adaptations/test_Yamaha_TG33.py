@@ -43,5 +43,25 @@ def test_a_bank_download_selects_the_internal_bank_first():
     assert [tg33.nameFromDump(v) for v in downloaded] == [f"INT {i}".ljust(8) for i in range(64)]
     assert midi.sent_messages[:5] == [[0xF0, 0x43, 0x13, 0x26, 0x07, 0x06, 0xF7], [0xB3, 0, 0], [0xB3, 32, 0], [0xC3, 0],
                                       tg33.createEditBufferRequest(3)]
-    # The Orm waits this long between the messages of one request, as Edisyn does after the button.
-    assert tg33.messageTimings()["generalMessageDelay"] == 1000
+
+
+def test_program_requests_pause_only_after_voice_and_program_change():
+    timing = tg33.messageTimings()
+    for channel in (0, 3, 15):
+        for patch_number in (0, 9, 63):
+            request = tg33.createProgramDumpRequest(channel, patch_number)
+            delays = tg33.messageSendDelays(request)
+            assert delays == [0, 1000, 0, 0, 1000]
+            assert sum(delays) < timing["replyTimeoutMs"]
+    # The fallback sleeps before all five messages on older hosts.
+    assert 5 * timing["generalMessageDelay"] < timing["replyTimeoutMs"]
+    assert tg33.messageSendDelays(tg33.createEditBufferRequest(3)) == [0]
+    assert tg33.messageSendDelays(tg33.convertToEditBuffer(3, VOICE)) == [0]
+    assert tg33.messageSendDelays([]) is None
+
+
+def test_internal_bank_is_read_only_but_voices_can_be_sent_to_the_edit_buffer():
+    assert tg33.bankDescriptors() == [{"bank": 0, "name": "Internal", "size": 64, "isROM": True}]
+    sent = tg33.convertToEditBuffer(3, VOICE)
+    assert tg33.channelIfValidDeviceResponse(sent) == 3
+    assert tg33.nameFromDump(sent) == tg33.nameFromDump(VOICE)

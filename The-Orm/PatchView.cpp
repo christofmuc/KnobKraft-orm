@@ -460,7 +460,7 @@ void PatchView::downloadBanksFromSynth(std::shared_ptr<midikraft::Synth> synth,
 
 void PatchView::sendBankToSynth(std::shared_ptr<midikraft::SynthBank> bankToSend, bool ignoreDirty, std::function<void()> finishedHandler)
 {
-	if (!bankToSend) return;
+	if (!bankToSend || !bankToSend->isWritable()) return;
 	if (bankToSend->hasEmptySlots()) {
 		AlertWindow::showMessageBox(juce::AlertWindow::AlertIconType::WarningIcon, "Bank has empty slots",
 			"Fill all slots with patches before sending this bank to the synth. No patches have been sent.");

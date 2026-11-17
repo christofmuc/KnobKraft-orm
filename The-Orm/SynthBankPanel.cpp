@@ -196,13 +196,13 @@ void SynthBankPanel::refresh() {
 		{
 			auto activeBank = std::static_pointer_cast<midikraft::ActiveSynthBank>(synthBank_);
 			auto timeAgo = (juce::Time::getCurrentTime() - activeBank->lastSynced()).getApproximateDescription();
-			std::string romText;
+			std::string readOnlyText;
 			if (!synthBank_->isWritable()) {
-				romText = " [ROM]";
+				readOnlyText = " [Read-only]";
 			}
 			bankNameAndDate_.setText(fmt::format("'{}'{} ({} ago)"
 				, midikraft::SynthBank::friendlyBankName(synthBank_->synth(), synthBank_->bankNumber())
-				, romText
+				, readOnlyText
 				, timeAgo.toStdString())
 				, dontSendNotification);
 		}

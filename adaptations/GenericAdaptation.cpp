@@ -31,6 +31,7 @@
 #ifdef _MSC_VER
 #pragma warning ( pop )
 #endif
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <spdlog/spdlog.h>
@@ -90,6 +91,7 @@ namespace knobkraft {
 		* kOnPatchSelected = "onPatchSelected",
 		* kOnPatchSent = "onPatchSent",
 		* kMessageTimings = "messageTimings",
+		* kMessageSendDelays = "messageSendDelays",
 		* kExpectsUploadReply = "expectsUploadReply",
 		* kIsPartOfUploadReply = "isPartOfUploadReply";
 
@@ -134,6 +136,7 @@ namespace knobkraft {
 		kGetClearText,
 		kGetStoredTags,
 		kMessageTimings,
+		kMessageSendDelays,
 		kOnPatchSelected,
 		kOnPatchSent,
 		kExpectsUploadReply,
@@ -608,6 +611,41 @@ namespace knobkraft {
 	void GenericAdaptation::sendBlockOfMessagesToSynth(juce::MidiDeviceInfo const& midiOutput, std::vector<MidiMessage> const& buffer)
 	{
 		py::gil_scoped_acquire acquire;
+		std::vector<int> messageDelays;
+		if (!buffer.empty() && pythonModuleHasFunction(kMessageSendDelays)) {
+			try {
+				// The optional hook receives the flattened block and can return the
+				// delay before each message in milliseconds, or None for normal pacing.
+				auto messages = midiMessagesToVector(buffer);
+				auto result = callMethod(kMessageSendDelays, messages);
+				if (!result.is_none()) {
+					auto delays = result.cast<std::vector<int>>();
+					if (delays.size() != buffer.size()
+						|| std::any_of(delays.begin(), delays.end(), [](int delay) { return delay < 0; })) {
+						throw std::invalid_argument("Expected one non-negative delay per MIDI message");
+					}
+					messageDelays = std::move(delays);
+				}
+			}
+			catch (py::error_already_set& ex) {
+				logAdaptationError(kMessageSendDelays, ex);
+			}
+			catch (std::exception& ex) {
+				logAdaptationError(kMessageSendDelays, ex);
+			}
+		}
+		if (!messageDelays.empty()) {
+			py::gil_scoped_release release;
+			auto output = midikraft::MidiController::instance()->getMidiOutput(midiOutput);
+			for (size_t i = 0; i < buffer.size(); ++i) {
+				if (messageDelays[i] > 0) {
+					juce::Thread::sleep(messageDelays[i]);
+				}
+				output->sendMessageNow(buffer[i]);
+			}
+			return;
+		}
+
 		int delay = 0;
 		bool handled = false;
 		if (pythonModuleHasFunction(kMessageTimings)) {

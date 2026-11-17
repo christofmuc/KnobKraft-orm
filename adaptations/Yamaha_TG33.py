@@ -30,6 +30,7 @@ _name_length = 8
 _count = [(_voice_length - 8) >> 7, (_voice_length - 8) & 0x7F]  # 597: 04 55
 _voice_button = 0x06
 _internal_bank = 0
+_selection_pause_ms = 1000
 
 
 def name():
@@ -46,9 +47,10 @@ def needsChannelSpecificDetection():
 
 def messageTimings():
     return {
-        # Between the messages of a voice request: Edisyn waits a second after the VOICE button and after the
-        # program change before the TG33 answers reliably.
-        "generalMessageDelay": 1000,
+        # Orm starts the reply timer before sending the selection sequence.
+        "replyTimeoutMs": 8000,
+        # Fallback for Orm builds without messageSendDelays().
+        "generalMessageDelay": _selection_pause_ms,
         "deviceDetectWaitMilliseconds": 300,
     }
 
@@ -82,13 +84,27 @@ def createProgramDumpRequest(channel, patchNo):
             + createEditBufferRequest(channel))
 
 
+def messageSendDelays(messages):
+    if len(messages) == 30:
+        channel = messages[2] & 0x0F
+        patch_number = messages[14]
+        if messages == createProgramDumpRequest(channel, patch_number):
+            # Wait after VOICE and Program Change, as Edisyn does.
+            return [0, _selection_pause_ms, 0, 0, _selection_pause_ms]
+    # Detection and edit-buffer writes need no selection delay.
+    if isEditBufferDump(messages) or (len(messages) == 15 and messages == createEditBufferRequest(messages[2] & 0x0F)):
+        return [0]
+    return None
+
+
 def isSingleProgramDump(message):
     # The voice comes back as the current voice: it holds no program number.
     return isEditBufferDump(message)
 
 
 def convertToProgramDump(channel, message, program_number):
-    # The TG33 cannot be told to store a voice at a place: it goes to the voice being edited.
+    # Orm uses this hook to enable numbered reads and to export individual voices.
+    # Bank descriptors prevent the resulting edit-buffer SysEx from being used for bank writes.
     return convertToEditBuffer(channel, message)
 
 
@@ -98,6 +114,11 @@ def numberOfBanks():
 
 def numberOfPatchesPerBank():
     return 64
+
+
+def bankDescriptors():
+    # The internal bank can be read, but this adaptation only sends to the edit buffer.
+    return [{"bank": _internal_bank, "name": "Internal", "size": numberOfPatchesPerBank(), "isROM": True}]
 
 
 def convertToEditBuffer(channel, message):
