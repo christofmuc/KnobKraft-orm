@@ -287,7 +287,8 @@ Use the <a href="../../#checker">searchable model filter</a>, or choose a manufa
 | FS1R | alpha | adaptation | 2.10.2 | Thanks to @markusschlosser for testing! |
 | reface DX | works | adaptation | 2.10.2 |  |
 | reface CP | beta | adaptation | 2.10.2 | Thanks to @milnak! |
-| SY77 / TG77 (voices) | beta | adaptation | After 2.10.2 | Contributed and tested on TG77 by Giovanni Candiago. SY77 hardware testing pending. |
+| SY77 (voices) | beta | adaptation | After 2.10.2 | Contributed by @hmmbug and Giovanni Candiago. Original SY77 hardware testing by @hmmbug. |
+| TG77 (voices) | beta | adaptation | After 2.10.2 | Contributed by @hmmbug and Giovanni Candiago. Original TG77 hardware testing by Giovanni Candiago. |
 | TX7 | works | adaptation | 2.10.2 | Thanks to Gerome S! |
 | TX81Z | works | adaptation | 2.10.2 | Contributed by @summersetter! |
 | Yamaha YC61/YC73/YC88 | works | adaptation | 2.10.2 | Thanks to @milnak! |

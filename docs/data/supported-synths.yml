@@ -532,10 +532,16 @@ synths:
   kudos: Thanks to @milnak!
   availability: 2.10.2
 - manufacturer: Yamaha
-  synth: SY77 / TG77 (voices)
+  synth: SY77 (voices)
   status: beta
   type: adaptation
-  kudos: Contributed and tested on TG77 by Giovanni Candiago. SY77 hardware testing pending.
+  kudos: Contributed by @hmmbug and Giovanni Candiago. Original SY77 hardware testing by @hmmbug.
+  availability: After 2.10.2
+- manufacturer: Yamaha
+  synth: TG77 (voices)
+  status: beta
+  type: adaptation
+  kudos: Contributed by @hmmbug and Giovanni Candiago. Original TG77 hardware testing by Giovanni Candiago.
   availability: After 2.10.2
 - manufacturer: Yamaha
   synth: TX7
