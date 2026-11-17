@@ -35,7 +35,7 @@ set(adaptation_files
 	"Sequential_Fourm.py" "Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" "Sequential_Trigon6.py"
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py" "Waldorf_M.py" "Waldorf_Pulse.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "Yamaha_FS1R.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha_TX81Z.py" "Yamaha-YC-Series.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "Yamaha_FS1R.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha_TX81Z.py" "Yamaha-YC-Series.py" "Yamaha_SY77.py" "Yamaha_TG77.py"
 	"Zoom_MS.py"
 )
 
@@ -60,6 +60,7 @@ set(adaptation_files_test_shipped
     "test_Sequential_Fourm.py"
     "test_Sequential_Pro_3.py"
     "test_YamahaRefaceDX.py"
+    "test_Yamaha_SY77_TG77.py"
 )
 
 set(adaptation_files_test_only
@@ -71,6 +72,7 @@ set(adaptation_files_test_only
 
 set(adaptation_support_files
 	"roland/__init__.py" "roland/GenericRoland.py" "sequential/__init__.py" "sequential/GenericSequential.py"
+	"yamaha/__init__.py" "yamaha/Yamaha77Voice.py"
 	"knobkraft/__init__.py" "knobkraft/adaptation_module.py" "knobkraft/sysex.py" "knobkraft/test_helper.py"
         "korg/__init__.py" "korg/GenericKorg.py"
     "testing/__init__.py" "testing/test_data.py"
@@ -129,6 +131,7 @@ if(UNIX AND NOT APPLE)
 	# Define additional install files - in our case, all adaptation files and the python modules
 	install(DIRECTORY sequential/ DESTINATION bin/sequential PATTERN "__pycache__" EXCLUDE)
 	install(DIRECTORY roland/ DESTINATION bin/roland PATTERN "__pycache__" EXCLUDE)
+        install(DIRECTORY yamaha/ DESTINATION bin/yamaha PATTERN "__pycache__" EXCLUDE)
         install(DIRECTORY korg/ DESTINATION bin/korg PATTERN "__pycache__" EXCLUDE)
         install(DIRECTORY knobkraft/ DESTINATION bin/knobkraft PATTERN "__pycache__" EXCLUDE)
 	install(DIRECTORY testing/ DESTINATION bin/testing PATTERN "__pycache__" EXCLUDE)

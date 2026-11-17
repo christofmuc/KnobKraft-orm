@@ -279,6 +279,12 @@ add_custom_command(TARGET KnobKraftOrm POST_BUILD
                 )
 add_custom_command(TARGET KnobKraftOrm POST_BUILD
 		COMMAND ${CMAKE_COMMAND}
+		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/yamaha
+		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/yamaha
+		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake
+		)
+add_custom_command(TARGET KnobKraftOrm POST_BUILD
+		COMMAND ${CMAKE_COMMAND}
 		-DNO_PYCACHE_SOURCE_DIR=${CMAKE_SOURCE_DIR}/adaptations/knobkraft
 		-DNO_PYCACHE_DEST_DIR=$<TARGET_FILE_DIR:KnobKraftOrm>/knobkraft
 		-P ${CMAKE_SOURCE_DIR}/cmake/copy_without_pycache.cmake

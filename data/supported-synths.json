@@ -1,7 +1,7 @@
 {
   "source_revision": "76b39b7c767129eaeb01534008547e8a320b0886",
   "release_checked": "2.10.2",
-  "count": 92,
+  "count": 94,
   "synths": [
     {
       "manufacturer": "Access",
@@ -794,6 +794,24 @@
       "type": "adaptation",
       "kudos": "Thanks to @milnak!",
       "availability": "2.10.2"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "SY77 (voices)",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Contributed by @hmmbug and Giovanni Candiago. Original SY77 hardware testing by @hmmbug.",
+      "availability": "After 2.10.2"
+    },
+    {
+      "manufacturer": "Yamaha",
+      "synth": "TG77 (voices)",
+      "status": "beta",
+      "statusLabel": "Beta",
+      "type": "adaptation",
+      "kudos": "Contributed by @hmmbug and Giovanni Candiago. Original TG77 hardware testing by Giovanni Candiago.",
+      "availability": "After 2.10.2"
     },
     {
       "manufacturer": "Yamaha",
