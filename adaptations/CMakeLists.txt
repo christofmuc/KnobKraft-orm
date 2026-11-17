@@ -35,7 +35,7 @@ set(adaptation_files
 	"Sequential_Fourm.py" "Sequential Pro 3.py" "Sequential Prophet 5 Rev4.py" "Sequential Prophet 6.py" "Sequential Prophet X.py" "Sequential_Take_5.py" "Sequential_Trigon6.py"
 	"Studiologic Sledge.py" 
 	"Waldorf Blofeld.py" "Waldorf_Kyra.py" "Waldorf_MicroWave.py" "Waldorf_M.py" "Waldorf_Pulse.py"
-	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "Yamaha_FS1R.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha_TX81Z.py" "Yamaha-YC-Series.py"
+	"YamahaDX7.py" "YamahaDX7II.py" "Yamaha_TX7.py" "Yamaha_FS1R.py" "YamahaRefaceDX.py" "YamahaRefaceCP.py" "Yamaha_TX81Z.py" "Yamaha-YC-Series.py" "Yamaha_SY77-TG77.py"
 	"Zoom_MS.py"
 )
 
@@ -60,6 +60,7 @@ set(adaptation_files_test_shipped
     "test_Sequential_Fourm.py"
     "test_Sequential_Pro_3.py"
     "test_YamahaRefaceDX.py"
+    "test_Yamaha_SY77_TG77.py"
 )
 
 set(adaptation_files_test_only
