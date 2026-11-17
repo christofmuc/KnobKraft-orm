@@ -363,6 +363,13 @@ synths:
   kudos: Shout out to @summersetter for testing!
   availability: 2.10.2
 - manufacturer: Roland
+  synth: D-110
+  status: alpha
+  type: adaptation
+  kudos: Tones only. Contributed by @roomi-fields, after Sean Luke's Edisyn editor;
+    hardware validation needed
+  availability: After 2.10.2
+- manufacturer: Roland
   synth: JD-Xi
   status: alpha
   type: adaptation
