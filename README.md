@@ -111,6 +111,7 @@ This table is generated from `docs/data/supported-synths.yml` by `scripts/genera
 | Yamaha | FS1R | alpha | adaptation | 2.10.2 | Thanks to @markusschlosser for testing! |
 | Yamaha | reface DX | works | adaptation | 2.10.2 |  |
 | Yamaha | reface CP | beta | adaptation | 2.10.2 | Thanks to @milnak! |
+| Yamaha | SY77 / TG77 (voices) | beta | adaptation | After 2.10.2 | Contributed and tested on TG77 by Giovanni Candiago. SY77 hardware testing pending. |
 | Yamaha | TX7 | works | adaptation | 2.10.2 | Thanks to Gerome S! |
 | Yamaha | TX81Z | works | adaptation | 2.10.2 | Contributed by @summersetter! |
 | Yamaha | Yamaha YC61/YC73/YC88 | works | adaptation | 2.10.2 | Thanks to @milnak! |
