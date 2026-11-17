@@ -53,6 +53,7 @@ set(adaptation_files_test_shipped
     "test_JV1080.py"
     "test_KorgMS2000.py"
 	"test_KawaiK5000.py"
+    "test_Roland_D110.py"
     "test_Roland_MKS50.py"
     "test_Roland_MKS70_V4.py"
     "test_Roland_XV3080.py"
