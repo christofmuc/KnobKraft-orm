@@ -83,6 +83,7 @@ This table is generated from `docs/data/supported-synths.yml` by `scripts/genera
 | Roland | JX-8P | alpha | adaptation | 2.10.2 |  |
 | Roland | Juno-DS | works | adaptation | 2.10.2 | contributed by @mslinn! Thank you! |
 | Roland | D-50 | works | adaptation | 2.10.2 | Shout out to @summersetter for testing! |
+| Roland | D-110 | alpha | adaptation | After 2.10.2 | Tones only. Contributed by @roomi-fields, after Sean Luke's Edisyn editor; hardware validation needed |
 | Roland | JD-Xi | alpha | adaptation | 2.10.2 | 100% AI generated |
 | Roland | JV-80/880/90/1000 | beta | adaptation | 2.10.2 |  |
 | Roland | JV-1080/2080 | beta | adaptation | 2.10.2 |  |

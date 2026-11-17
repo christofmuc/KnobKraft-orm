@@ -235,6 +235,7 @@ Use the <a href="../../#checker">searchable model filter</a>, or choose a manufa
 | JX-8P | alpha | adaptation | 2.10.2 |  |
 | Juno-DS | works | adaptation | 2.10.2 | contributed by @mslinn! Thank you! |
 | D-50 | works | adaptation | 2.10.2 | Shout out to @summersetter for testing! |
+| D-110 | alpha | adaptation | After 2.10.2 | Tones only. Contributed by @roomi-fields, after Sean Luke's Edisyn editor; hardware validation needed |
 | JD-Xi | alpha | adaptation | 2.10.2 | 100% AI generated |
 | JV-80/880/90/1000 | beta | adaptation | 2.10.2 |  |
 | JV-1080/2080 | beta | adaptation | 2.10.2 |  |
