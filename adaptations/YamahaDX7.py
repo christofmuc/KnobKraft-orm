@@ -3,6 +3,7 @@
 #
 #   Dual licensed: Distributed under Affero GPL license by default, an MIT license is available for purchase
 #
+import hashlib
 from ctypes import *
 from typing import List
 
@@ -88,12 +89,13 @@ def createEditBufferRequest(channel):
 
 def isEditBufferDump(message):
     # It's not really edit buffer dumps, but single voice dumps
-    return len(message) > 5 and message[:6] == [0xf0, 0x43, 0x00, 0x00, 0x01, 0x1b]
+    return len(message) == 163 and isBulkDump(message, [0x00, 0x01, 0x1b])
 
 
 def convertToEditBuffer(channel, message):
     if isEditBufferDump(message):
-        return message
+        # Patch in the MIDI channel the DX7 is set to, it ignores a voice sent on another one
+        return message[:2] + [channel & 0x0f] + message[3:]
     raise Exception("This is not an EditBufferDump")
 
 
@@ -103,7 +105,7 @@ def createBankDumpRequest(channel, bank):
 
 
 def isPartOfBankDump(message):
-    return len(message) > 5 and message[:6] == [0xf0, 0x43, 0x00, 0x09, 0x20, 0x00]
+    return len(message) > 5 and isBulkDump(message, [0x09, 0x20, 0x00])
 
 
 def isBankDumpFinished(messages: List[List[int]]):
@@ -138,6 +140,30 @@ def nameFromDump(message):
             # The last 10 bytes of the data block of the common message are the name
             return "".join([chr(x) for x in data_block[-10:]])
     raise Exception("Can only extract a name from a single program dump")
+
+
+def renamePatch(message, new_name):
+    if isEditBufferDump(message):
+        name = [ord(c) if 32 <= ord(c) < 127 else 0x20 for c in new_name[:10].ljust(10)]
+        data_block = message[6:-12] + name
+        return message[:6] + data_block + [checksum(data_block), 0xf7]
+    raise Exception("Can only rename a single voice dump")
+
+
+def calculateFingerprint(message):
+    # The voice data without its name (the last 10 of its 155 bytes): a renamed copy is the same sound
+    if isEditBufferDump(message):
+        data_block = message[6:-12]
+        return hashlib.md5(bytearray(data_block)).hexdigest()
+    raise Exception("Can only fingerprint a single voice dump")
+
+
+def isBulkDump(message, format_and_byte_count):
+    # A bulk dump starts with F0 43 0n, n being the MIDI channel the DX7 transmits on (sub status 0),
+    # followed by the format number and the two bytes of the byte count
+    return (list(message[:2]) == [0xf0, 0x43]
+            and (message[2] & 0xf0) == 0x00
+            and list(message[3:6]) == format_and_byte_count)
 
 
 def setupHelp():
@@ -258,7 +284,41 @@ def make_test_data():
         assert isBankDumpFinished(test_data.all_messages)
         patches = knobkraft.sysex.splitSysex(extractPatchesFromBank(flat_list_of_messages))
         assert len(patches) == 32
-        yield testing.ProgramTestData(patches[0], name="SYN-LEAD 2")
+        voice = patches[0]
+        renamed = renamePatch(voice, "Other")
+        assert nameFromDump(renamed) == "Other     " and renamed[-2] == checksum(renamed[6:-2])
+        assert calculateFingerprint(renamed) == calculateFingerprint(voice), "a renamed copy is the same sound"
+        changed = voice.copy()
+        changed[20] ^= 0x01
+        assert calculateFingerprint(changed) != calculateFingerprint(voice)
+        assert not isEditBufferDump(voice[:100] + [0xf7]), "a truncated voice is not a voice"
+        assert_any_channel_is_accepted(voice, flat_list_of_messages)
+        yield testing.ProgramTestData(voice, name="SYN-LEAD 2", rename_name="Renamed")
+
+    def assert_any_channel_is_accepted(voice, bank):
+        # Regression test: the DX7 sends on the MIDI channel it is set to, and only listens on that one
+        channel = 0x0a
+        voice_on_channel = voice[:2] + [channel] + voice[3:]
+        assert isEditBufferDump(voice_on_channel), "a voice from a DX7 on another channel is a voice"
+        assert nameFromDump(voice_on_channel) == nameFromDump(voice)
+        assert calculateFingerprint(voice_on_channel) == calculateFingerprint(voice), "the channel is not the sound"
+        bank_on_channel = bank[:2] + [channel] + bank[3:]
+        assert isPartOfBankDump(bank_on_channel) and isBankDumpFinished([bank_on_channel])
+        assert extractPatchesFromBank(bank_on_channel) == extractPatchesFromBank(bank)
+        sent = convertToEditBuffer(channel, voice)
+        assert sent == voice_on_channel, "a voice goes out on the configured channel"
+        assert sent[-2] == checksum(sent[6:-2]), "the checksum covers the voice data only"
+        assert convertToEditBuffer(0x00, voice_on_channel) == voice
+        assert renamePatch(voice_on_channel, "Other")[2] == channel
+        # The upper nibble is the sub status, a parameter change (1n) or a dump request (2n) is not a dump
+        for sub_status in [0x10, 0x20]:
+            assert not isEditBufferDump(voice[:2] + [sub_status | channel] + voice[3:])
+            assert not isPartOfBankDump(bank[:2] + [sub_status | channel] + bank[3:])
+        # The format number and the byte count are still checked
+        assert not isEditBufferDump(voice[:3] + [0x09] + voice[4:])
+        assert not isEditBufferDump(voice[:5] + [0x1c] + voice[6:])
+        assert not isPartOfBankDump(bank[:3] + [0x00] + bank[4:])
+        assert not isPartOfBankDump(bank[:4] + [0x10] + bank[5:])
 
     def banks(test_data: testing.TestData):
         assert isBankDumpFinished(test_data.all_messages)
