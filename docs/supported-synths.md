@@ -176,8 +176,8 @@ Use the <a href="../../#checker">searchable model filter</a>, or choose a manufa
 | Synth | Status | Type | Release | Notes / thanks |
 | --- | --- | --- | --- | --- |
 | 03R/W | works | adaptation | 2.10.2 | Thanks to Philippe! |
-| DW-6000 | works | adaptation | 2.10.2 |  |
-| DW-8000/EX-8000 | works | adaptation | 2.10.2 |  |
+| DW-6000 | works | adaptation | 2.10.2 | The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending. |
+| DW-8000/EX-8000 | works | adaptation | 2.10.2 | The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending. |
 | M1 | works | adaptation | 2.10.2 | Thanks to Jentusalentu at YT for giving the nudge |
 | microKORG S | works | adaptation | 2.10.2 | Thanks to @ilantz! |
 | Minilogue XD | works | adaptation | 2.10.2 | Thanks to @andy2no |
