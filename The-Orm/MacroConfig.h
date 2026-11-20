@@ -36,7 +36,9 @@ class MacroConfig : public Component,
 	private TextButton::Listener
 {
 public:
-	MacroConfig(KeyboardMacroEvent event, std::function<void(KeyboardMacroEvent)> recordHander, std::function<void(KeyboardMacroEvent, bool)> showHandler);
+	MacroConfig(KeyboardMacroEvent event,
+		std::function<void(KeyboardMacroEvent)> recordHander,
+		std::function<void(KeyboardMacroEvent, bool)> showHandler);
 
 	virtual void resized() override;
 
@@ -54,5 +56,4 @@ private:
 	TextButton record_;
 	MouseUpAndDownButton play_;
 };
-
 
