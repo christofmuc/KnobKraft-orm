@@ -13,24 +13,137 @@
 
 #include <fmt/format.h>
 
-Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
-	Colour color = ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground);
-	auto cats = patch.categories();
-	if (!cats.empty()) {
-		// Random in case the patch has multiple categories
-		color = cats.cbegin()->color();
+#include <algorithm>
+#include <cmath>
+#include <tuple>
+
+PatchColourMode PatchHolderButton::patchColourMode_ = PatchColourMode::Primary;
+
+class PatchHolderButton::StripedLookAndFeel : public LookAndFeel_V4 {
+public:
+	explicit StripedLookAndFeel(PatchHolderButton& owner) : owner_(owner)
+	{
+		if (auto* inherited = dynamic_cast<LookAndFeel_V4*>(&owner.getLookAndFeel())) {
+			setColourScheme(inherited->getCurrentColourScheme());
+		}
 	}
-	return color;
+
+	void drawButtonBackground(Graphics& g, Button& button, Colour const& backgroundColour, bool shouldDrawButtonAsHighlighted,
+		bool shouldDrawButtonAsDown) override
+	{
+		const bool drawStripes = !button.getToggleState()
+			&& PatchHolderButton::patchColourMode() == PatchColourMode::Striped
+			&& owner_.patchColours_.size() > 1;
+
+		if (!drawStripes) {
+			LookAndFeel_V4::drawButtonBackground(g, button, backgroundColour, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+			return;
+		}
+
+		// Let JUCE draw the normal shape and border using the stable primary colour,
+		// then clip the secondary stripes into that shape.
+		LookAndFeel_V4::drawButtonBackground(g, button, owner_.patchColours_.front(), false, false);
+
+		Graphics::ScopedSaveState savedState(g);
+		auto bounds = button.getLocalBounds().toFloat().reduced(1.0f);
+		Path clipPath;
+		clipPath.addRoundedRectangle(bounds, 5.0f);
+		g.reduceClipRegion(clipPath);
+
+		constexpr float stripeWidth = 10.0f;
+		constexpr float stripeAngle = MathConstants<float>::pi / 6.0f;
+		const float diagonal = std::sqrt(bounds.getWidth() * bounds.getWidth() + bounds.getHeight() * bounds.getHeight());
+		const auto centre = bounds.getCentre();
+		const float firstStripe = centre.x - diagonal;
+		const float lastStripe = centre.x + diagonal;
+		int band = 0;
+		int secondaryColour = 0;
+
+		for (float x = firstStripe; x < lastStripe; x += stripeWidth, ++band) {
+			// Leave every other band in the primary colour. For three or more
+			// categories, rotate the remaining colours through the other bands.
+			if ((band % 2) == 0) {
+				continue;
+			}
+
+			Path stripe;
+			stripe.addRectangle(x, centre.y - diagonal, stripeWidth, diagonal * 2.0f);
+			stripe.applyTransform(AffineTransform::rotation(stripeAngle, centre.x, centre.y));
+			auto colour = owner_.patchColours_[1 + (secondaryColour++ % (owner_.patchColours_.size() - 1))];
+			g.setColour(colour.withMultipliedAlpha(button.isEnabled() ? 1.0f : 0.5f));
+			g.fillPath(stripe);
+		}
+
+		// Apply interaction feedback uniformly instead of only to the primary bands.
+		if (shouldDrawButtonAsHighlighted || shouldDrawButtonAsDown) {
+			g.setColour(Colours::white.withAlpha(shouldDrawButtonAsDown ? 0.16f : 0.08f));
+			g.fillRoundedRectangle(bounds, 5.0f);
+		}
+	}
+
+private:
+	PatchHolderButton& owner_;
+};
+
+std::vector<Colour> PatchHolderButton::sortedColoursForCategories(std::set<midikraft::Category> const& categories,
+	Component* componentForDefaultBackground)
+{
+	std::vector<midikraft::Category> sortedCategories(categories.cbegin(), categories.cend());
+	std::sort(sortedCategories.begin(), sortedCategories.end(), [](auto const& left, auto const& right) {
+		return std::tie(left.def()->sort_order, left.def()->id) < std::tie(right.def()->sort_order, right.def()->id);
+	});
+
+	std::vector<Colour> colours;
+	colours.reserve(std::max<size_t>(1, sortedCategories.size()));
+	for (auto const& category : sortedCategories) {
+		colours.push_back(category.color());
+	}
+	if (colours.empty()) {
+		colours.push_back(ColourHelpers::getUIColour(componentForDefaultBackground, LookAndFeel_V4::ColourScheme::widgetBackground));
+	}
+	return colours;
+}
+
+Colour PatchHolderButton::buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground) {
+	return sortedColoursForCategories(patch.categories(), componentForDefaultBackground).front();
+}
+
+PatchColourMode PatchHolderButton::patchColourMode()
+{
+	return patchColourMode_;
+}
+
+void PatchHolderButton::setPatchColourMode(PatchColourMode mode)
+{
+	if (patchColourMode_ != mode) {
+		patchColourMode_ = mode;
+		UIModel::instance()->patchColourModeChanged.sendChangeMessage();
+	}
 }
 
 PatchHolderButton::PatchHolderButton(int id, bool isToggle, std::function<void(int)> clickHandler) : PatchButtonWithDropTarget(id, isToggle, clickHandler)
 	, isDirty_(false)
 {
+	stripedLookAndFeel_ = std::make_unique<StripedLookAndFeel>(*this);
+	for (int child = 0; child < getNumChildComponents(); ++child) {
+		if (auto* button = dynamic_cast<Button*>(getChildComponent(child))) {
+			patchButton_ = button;
+			patchButton_->setLookAndFeel(stripedLookAndFeel_.get());
+			break;
+		}
+	}
 	UIModel::instance()->currentPatch_.addChangeListener(this);
+	UIModel::instance()->categoriesChanged.addChangeListener(this);
+	UIModel::instance()->patchColourModeChanged.addChangeListener(this);
 }
 
 PatchHolderButton::~PatchHolderButton()
 {
+	if (patchButton_) {
+		patchButton_->setLookAndFeel(nullptr);
+	}
+	UIModel::instance()->patchColourModeChanged.removeChangeListener(this);
+	UIModel::instance()->categoriesChanged.removeChangeListener(this);
 	UIModel::instance()->currentPatch_.removeChangeListener(this);
 }
 
@@ -130,20 +243,30 @@ void PatchHolderButton::setPatchHolder(midikraft::PatchHolder *holder, PatchButt
 			setSubtitle("");
 		}
 
-		setPatchColour(TextButton::ColourIds::buttonColourId, buttonColourForPatch(*holder, this));
+		patchCategories_ = holder->categories();
+		refreshPatchColours();
 		setFavorite(holder->isFavorite());
 		setHidden(holder->isHidden());
 	}
 	else {
-		Colour color = ColourHelpers::getUIColour(this, LookAndFeel_V4::ColourScheme::widgetBackground);
 		setButtonData("");
 		setSubtitle("");
-		setPatchColour(TextButton::ColourIds::buttonColourId, color);
+		patchCategories_.clear();
+		refreshPatchColours();
 		setFavorite(false);
 		setHidden(false);
 		md5_.reset();
 	}
 	refreshActiveState();
+}
+
+void PatchHolderButton::refreshPatchColours()
+{
+	patchColours_ = sortedColoursForCategories(patchCategories_, this);
+	setPatchColour(TextButton::ColourIds::buttonColourId, patchColours_.front());
+	if (patchButton_) {
+		patchButton_->repaint();
+	}
 }
 
 PatchButtonInfo PatchHolderButton::getCurrentInfoForSynth(std::string const& synthname) {
@@ -172,5 +295,15 @@ void PatchHolderButton::refreshActiveState()
 void PatchHolderButton::changeListenerCallback(ChangeBroadcaster* source) {
 	if (source == &UIModel::instance()->currentPatch_) {
 		refreshActiveState();
+	}
+	else if (source == &UIModel::instance()->categoriesChanged) {
+		// Category definitions are shared by the patch holders, so re-reading the
+		// colours here picks up user edits without reloading the page first.
+		refreshPatchColours();
+	}
+	else if (source == &UIModel::instance()->patchColourModeChanged) {
+		if (patchButton_) {
+			patchButton_->repaint();
+		}
 	}
 }

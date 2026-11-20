@@ -9,6 +9,8 @@
 #include "PatchButton.h"
 #include "PatchHolder.h"
 
+#include <vector>
+
 enum class PatchButtonInfo {
 	NoneMasked = 0b0,
 	CenterName = 0b001,
@@ -26,6 +28,11 @@ enum class PatchButtonInfo {
 	LayerDisplay = DefaultDisplay,
 };
 
+enum class PatchColourMode {
+	Primary,
+	Striped,
+};
+
 class PatchHolderButton : public PatchButtonWithDropTarget, private juce::ChangeListener {
 public:
 	PatchHolderButton(int id, bool isToggle, std::function<void(int)> clickHandler);
@@ -41,13 +48,24 @@ public:
 	void setPatchHolder(midikraft::PatchHolder *holder, PatchButtonInfo info);
 
 	static Colour buttonColourForPatch(midikraft::PatchHolder &patch, Component *componentForDefaultBackground);
+	static PatchColourMode patchColourMode();
+	static void setPatchColourMode(PatchColourMode mode);
 	static PatchButtonInfo getCurrentInfoForSynth(std::string const& synthname);
 	static void setCurrentInfoForSynth(std::string const& synthname, PatchButtonInfo newValue);
 
 private:
+	class StripedLookAndFeel;
+
+	static std::vector<Colour> sortedColoursForCategories(std::set<midikraft::Category> const& categories, Component* componentForDefaultBackground);
+	void refreshPatchColours();
 	void refreshActiveState();
 	virtual void changeListenerCallback(ChangeBroadcaster* source) override;
 
+	static PatchColourMode patchColourMode_;
+	std::unique_ptr<StripedLookAndFeel> stripedLookAndFeel_;
+	juce::Button* patchButton_ = nullptr;
+	std::set<midikraft::Category> patchCategories_;
+	std::vector<Colour> patchColours_;
 	std::optional<std::string> md5_;
 	bool isDirty_;
 	GlowEffect glow;
