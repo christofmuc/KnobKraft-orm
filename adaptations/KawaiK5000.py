@@ -176,6 +176,7 @@ def isSingleProgramDump(message):
             and message[3] == OneBlockDump  # Function ID for single dump
             and message[4] == 0x00  # Reserved
             and message[5] == 0x0A
+            and message[6] == 0x00  # Single patch data, not a Multi/Combi dump
             and message[-1] == 0xF7)  # End of SysEx
 
 
@@ -574,7 +575,9 @@ def calculateFingerprint(message: List[int]):
 
 def messageTimings():
     return {
-        "replyTimeoutMs": 1000,             # how long to wait for a response before timing out
+        # The K5000 can take about 16 seconds before beginning a bank response.
+        # Partial SysEx activity keeps this inactivity timeout alive while data arrives.
+        "replyTimeoutMs": 60000,
         "uploadReplyTimeoutMs": 5000,       # how long to wait for write complete/error
     }
 
