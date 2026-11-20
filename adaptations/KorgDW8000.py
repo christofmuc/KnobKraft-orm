@@ -10,6 +10,9 @@ from typing import List
 import testing
 
 
+DATA_DUMP_SIZE = 57
+
+
 def name():
     return "Korg DW 8000"
 
@@ -72,7 +75,8 @@ def convertToEditBuffer(channel, message):
     if isLegacyFormat(message):
         return convertFromLegacyFormat(channel, message)
     elif isEditBufferDump(message):
-        return message[0:2] + [0x30 | channel] + message[3:]
+        # Bank files can pair each sound dump with a write request. Audition only the sound.
+        return message[:2] + [0x30 | (channel & 0x0f)] + message[3:DATA_DUMP_SIZE]
     raise Exception("This is not an edit buffer - can't be converted")
 
 
@@ -99,12 +103,34 @@ def isSingleProgramDump(message):
 
 
 def convertToProgramDump(channel, message, program_number):
-    if isLegacyFormat(message):
-        message = convertFromLegacyFormat(channel, message)
-    if isEditBufferDump(message):
-        return message + createStoreToProgramMessage(channel, program_number)
-        #return program_change(channel, program_number) + message + createStoreToProgramMessage(channel, program_number)
-    raise Exception("Can only convert edit buffers!")
+    return convertToEditBuffer(channel, message) + createStoreToProgramMessage(channel, program_number)
+
+
+def expectsUploadReply(sent_message):
+    return (
+        len(sent_message) == 7
+        and sent_message[:2] == [0xf0, 0x42]
+        and (sent_message[2] & 0xf0) == 0x30
+        and sent_message[3:5] == [0x03, 0x11]
+        and 0 <= sent_message[5] < 64
+        and sent_message[6] == 0xf7
+    )
+
+
+def isPartOfUploadReply(message, sent_message):
+    if not expectsUploadReply(sent_message):
+        return None
+    header = sent_message[:4]
+    if message == header + [0x21, 0xf7]:
+        return {"status": "accepted"}
+    if message == header + [0x22, 0xf7]:
+        program = friendlyProgramName(sent_message[5])
+        return {
+            "status": "error",
+            "code": "write_error",
+            "message": f"DW-8000 rejected the write to program {program}. Check the rear WRITE switch.",
+        }
+    return None
 
 
 def isLegacyFormat(message):
@@ -136,5 +162,18 @@ def make_test_data():
         patch = [x for sublist in data.all_messages[0:2] for x in sublist]
         yield testing.ProgramTestData(message=patch)
 
-    assert friendlyProgramName(0) == "11"
-    return testing.TestData(sysex="testData/KorgDW8000_bank_a.syx", edit_buffer_generator=programs, friendly_bank_name=(63, "88"), expected_patch_count=64)
+    write = "F0 42 35 03 11 3F F7"
+    return testing.TestData(
+        sysex="testData/KorgDW8000_bank_a.syx",
+        edit_buffer_generator=programs,
+        expected_patch_count=64,
+        upload_reply_cases=[
+            testing.UploadReplyTestData(write, "F0 42 35 03 21 F7", {"status": "accepted"}),
+            testing.UploadReplyTestData(write, "F0 42 35 03 22 F7", {
+                "status": "error",
+                "code": "write_error",
+                "message": "DW-8000 rejected the write to program 88. Check the rear WRITE switch.",
+            }),
+            testing.UploadReplyTestData(write, "F0 42 30 03 21 F7", None),
+        ],
+    )

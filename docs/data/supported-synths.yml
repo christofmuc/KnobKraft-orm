@@ -228,13 +228,13 @@ synths:
   synth: DW-6000
   status: works
   type: adaptation
-  kudos: ''
+  kudos: The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending.
   availability: 2.10.2
 - manufacturer: Korg
   synth: DW-8000/EX-8000
   status: works
   type: adaptation
-  kudos: ''
+  kudos: The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending.
   availability: 2.10.2
 - manufacturer: Korg
   synth: M1

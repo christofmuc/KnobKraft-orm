@@ -60,8 +60,8 @@ This table is generated from `docs/data/supported-synths.yml` by `scripts/genera
 | Kawai | K4 | alpha | adaptation | 2.10.2 |  |
 | Kawai | K5000 | beta | adaptation | 2.10.2 | Heroic effort by @markusschlosser! Most complex! |
 | Korg | 03R/W | works | adaptation | 2.10.2 | Thanks to Philippe! |
-| Korg | DW-6000 | works | adaptation | 2.10.2 |  |
-| Korg | DW-8000/EX-8000 | works | adaptation | 2.10.2 |  |
+| Korg | DW-6000 | works | adaptation | 2.10.2 | The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending. |
+| Korg | DW-8000/EX-8000 | works | adaptation | 2.10.2 | The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending. |
 | Korg | M1 | works | adaptation | 2.10.2 | Thanks to Jentusalentu at YT for giving the nudge |
 | Korg | microKORG S | works | adaptation | 2.10.2 | Thanks to @ilantz! |
 | Korg | Minilogue XD | works | adaptation | 2.10.2 | Thanks to @andy2no |

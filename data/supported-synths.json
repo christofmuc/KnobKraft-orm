@@ -342,7 +342,7 @@
       "status": "works",
       "statusLabel": "Works",
       "type": "adaptation",
-      "kudos": "",
+      "kudos": "The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending.",
       "availability": "2.10.2"
     },
     {
@@ -351,7 +351,7 @@
       "status": "works",
       "statusLabel": "Works",
       "type": "adaptation",
-      "kudos": "",
+      "kudos": "The updated adaptation waits for write confirmation when sending to program memory. Hardware validation pending.",
       "availability": "2.10.2"
     },
     {
